@@ -17,7 +17,12 @@ import type {
   SolutionId,
 } from '@kbn/core-chrome-browser';
 import { replayMoves } from '@kbn/core-chrome-navigation-customization';
+import { i18n } from '@kbn/i18n';
 import { flattenNav, getRenderableNodes, parseNavigationTree } from './utils';
+
+const HOME_TITLE = i18n.translate('core.ui.chrome.sideNavigation.homeItemTitle', {
+  defaultMessage: 'Home',
+});
 
 export interface ParsedNavigation {
   id: SolutionId;
@@ -27,8 +32,10 @@ export interface ParsedNavigation {
   overflowItemIds: string[];
   defaultItemIds: string[];
   /**
-   * Top-level body nodes the sidebar will actually render: home node excluded,
-   * hidden nodes removed, and panel-openers with no visible descendants pruned.
+   * Top-level body nodes the sidebar will actually render: hidden nodes removed
+   * and panel-openers with no visible descendants pruned. The home node is
+   * excluded unless `isHomeCustomizable` is set, in which case it is kept as a
+   * regular customizable item.
    */
   renderableNodes: ChromeProjectNavigationNode[];
 }
@@ -43,13 +50,21 @@ export interface ParsedNavigation {
  *
  * `defaultItemIds` is captured from the *original* body (before any moves) so
  * callers can always determine which items ship with the solution by default.
+ *
+ * When `isHomeCustomizable` is true the `renderAs: 'home'` node is treated as a
+ * regular, customizable item: it is kept in `defaultItemIds`/`renderableNodes`
+ * and normalized to the shared "Home" title and icon so the customize modal and
+ * the rendered sidebar present it identically. When false (classic chrome) the
+ * home node is excluded from customization and left for the render layer to
+ * extract as the solution logo.
  */
 export const applyCustomization = (
   solutionId: SolutionId,
   def: NavigationTreeDefinition,
   deepLinks: Record<string, ChromeNavLink>,
   cloudLinks: CloudLinks,
-  customization: NavigationCustomization | undefined
+  customization: NavigationCustomization | undefined,
+  isHomeCustomizable: boolean = false
 ): ParsedNavigation => {
   let body = [...def.body];
   let overflowItemIds: string[] = [];
@@ -60,7 +75,7 @@ export const applyCustomization = (
 
   // Capture default item IDs from the raw body before any customization is applied.
   const defaultItemIds = body
-    .filter((item) => item.renderAs !== 'home')
+    .filter((item) => isHomeCustomizable || item.renderAs !== 'home')
     .map((item) => getId(item) as string)
     .filter(Boolean);
 
@@ -75,13 +90,22 @@ export const applyCustomization = (
     { deepLinks, cloudLinks }
   );
 
+  // When the home node is customizable it renders as a regular sidebar item, so
+  // normalize its title/icon here once. Both `treeUI` (rendered sidebar) and
+  // `renderableNodes` (customize modal) read from the same normalized body.
+  const bodyUI = isHomeCustomizable
+    ? navigationTreeUI.body.map((node) =>
+        node.renderAs === 'home' ? { ...node, title: HOME_TITLE, icon: 'home' } : node
+      )
+    : navigationTreeUI.body;
+
   return {
     id: solutionId,
-    treeUI: navigationTreeUI,
+    treeUI: { ...navigationTreeUI, body: bodyUI },
     tree: navigationTree,
     flattened: flattenNav(navigationTree),
     overflowItemIds,
     defaultItemIds,
-    renderableNodes: getRenderableNodes(navigationTreeUI.body),
+    renderableNodes: getRenderableNodes(bodyUI, isHomeCustomizable),
   };
 };

@@ -330,6 +330,66 @@ describe('applyCustomization', () => {
     });
   });
 
+  describe('isHomeCustomizable=true', () => {
+    const homeDef = {
+      id: SOLUTION_ID,
+      body: [
+        {
+          id: 'home_node',
+          title: 'My solution',
+          icon: 'logoElastic',
+          renderAs: 'home' as const,
+          href: 'https://localhost/app/home',
+        },
+        { id: 'a', title: 'A', href: 'https://localhost/app/a' },
+        { id: 'b', title: 'B', href: 'https://localhost/app/b' },
+      ],
+    };
+
+    const applyHome = (customizationArg?: NavigationCustomization) =>
+      applyCustomization(
+        SOLUTION_ID,
+        homeDef,
+        EMPTY_DEEP_LINKS,
+        EMPTY_CLOUD_LINKS,
+        customizationArg,
+        true
+      );
+
+    it('includes the home node in defaultItemIds', () => {
+      expect(applyHome().defaultItemIds).toEqual(['home_node', 'a', 'b']);
+    });
+
+    it('includes the home node in renderableNodes', () => {
+      expect(renderableIds(applyHome())).toEqual(['home_node', 'a', 'b']);
+    });
+
+    it('normalizes the home node title and icon to "Home"/"home" in both treeUI and renderableNodes', () => {
+      const result = applyHome();
+
+      const homeRenderable = result.renderableNodes.find((n) => n.id === 'home_node');
+      expect(homeRenderable?.title).toBe('Home');
+      expect(homeRenderable?.icon).toBe('home');
+
+      const homeInTree = result.treeUI.body.find((n) => n.id === 'home_node');
+      expect(homeInTree?.title).toBe('Home');
+      expect(homeInTree?.icon).toBe('home');
+    });
+
+    it('allows hiding the home node (signalled via overflowItemIds, still present in renderableNodes)', () => {
+      const result = applyHome(customization([], ['home_node' as any]));
+
+      expect(result.overflowItemIds).toEqual(['home_node']);
+      expect(renderableIds(result)).toContain('home_node');
+    });
+
+    it('allows moving the home node', () => {
+      const result = applyHome(customization([{ id: 'home_node', afterId: 'a' }]));
+
+      expect(renderableIds(result)).toEqual(['a', 'home_node', 'b']);
+    });
+  });
+
   describe('version skew (smoke test — full coverage in replay_moves.test.ts)', () => {
     it('replays a still-valid move and ignores a stale move that references a removed item', () => {
       const oldCustomization = customization(

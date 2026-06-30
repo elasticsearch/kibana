@@ -25,6 +25,7 @@ import type { UserProfileService } from '@kbn/core-user-profile-browser';
 import type { IUiSettingsClient } from '@kbn/core-ui-settings-browser';
 import type { FeatureFlagsStart } from '@kbn/core-feature-flags-browser';
 import { SidebarService } from '@kbn/core-chrome-sidebar-internal';
+import { isNextChrome } from '@kbn/core-chrome-feature-flags';
 
 import { DocTitleService } from './services/doc_title';
 import { NavControlsService } from './services/nav_controls';
@@ -163,6 +164,7 @@ export class ChromeService {
       },
       logger: this.logger,
       chromeBreadcrumbs$: state.breadcrumbs.classic.$,
+      isNextChrome: isNextChrome(featureFlags),
     });
 
     const sidebar = this.sidebar.start();

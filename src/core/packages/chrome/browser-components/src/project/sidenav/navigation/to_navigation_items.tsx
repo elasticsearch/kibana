@@ -25,15 +25,10 @@ import type {
 } from '@kbn/ui-side-navigation/types';
 import { toSentenceCase } from '@kbn/shared-ux-label-formatter';
 
-import { i18n } from '@kbn/i18n';
 import type { PanelStateManager } from './panel_state_manager';
 import { isActiveFromUrl } from './utils/is_active_from_url';
 
 const SKIP_WARNINGS = process.env.NODE_ENV === 'production';
-
-const HOME_TITLE = i18n.translate('core.ui.chrome.sideNavigation.homeItemTitle', {
-  defaultMessage: 'Home',
-});
 
 export interface NavigationItems {
   logoItem?: SideNavLogo;
@@ -118,12 +113,7 @@ export const toNavigationItems = (
     const homeNode = primaryNodes[homeNodeIndex];
     maybeMarkActive(homeNode, 0);
 
-    if (isNextChrome) {
-      // TODO: https://github.com/elastic/kibana/issues/272291
-      primaryNodes = primaryNodes.map((node, i) =>
-        i === homeNodeIndex ? { ...node, title: HOME_TITLE, icon: 'home' } : node
-      );
-    } else {
+    if (!isNextChrome) {
       primaryNodes = primaryNodes.filter((_, i) => i !== homeNodeIndex);
       logoItem = {
         href: warnIfMissing(homeNode, 'href', '/missing-href-😭'),
@@ -133,6 +123,11 @@ export const toNavigationItems = (
         'data-test-subj': getTestSubj(homeNode, ['nav-item-home']),
       };
     }
+    // In Chrome Next the home node stays in `primaryNodes` as a regular,
+    // customizable sidebar item. Its title/icon are normalized upstream in
+    // `applyCustomization`, so no override is needed here.
+    // TODO: remove the `renderAs: 'home'` special-casing entirely in favor of
+    // solution-owned nav tree config: https://github.com/elastic/kibana/issues/272291
   } else {
     warnOnce(
       `No "home" node found in primary nodes. There should be a logo node with solution logo, name and home page href. renderAs: "home" is expected.`

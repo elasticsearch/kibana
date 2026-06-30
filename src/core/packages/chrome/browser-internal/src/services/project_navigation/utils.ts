@@ -294,7 +294,8 @@ const initNavNode = <
  * Returns the top-level body nodes that the sidebar will actually render, in
  * order. Specifically it prunes:
  *
- * - The home/logo node (`renderAs === 'home'`)
+ * - The home/logo node (`renderAs === 'home'`), unless `isHomeCustomizable` is
+ *   true — then home is a regular customizable item and is kept
  * - Nodes explicitly hidden from the side nav (`sideNavStatus === 'hidden'`)
  * - Panel-opener nodes whose every descendant leaf has been removed or hidden
  *   (i.e. the user has no access to any item inside them)
@@ -309,7 +310,8 @@ const initNavNode = <
  * Icon resolution for the same nodes lives in `@kbn/core-chrome-browser-navigation-utils`.
  */
 export const getRenderableNodes = (
-  nodes: ChromeProjectNavigationNode[]
+  nodes: ChromeProjectNavigationNode[],
+  isHomeCustomizable: boolean = false
 ): ChromeProjectNavigationNode[] => {
   const hasVisibleLeaf = (node: ChromeProjectNavigationNode): boolean => {
     if (node.sideNavStatus === 'hidden') return false;
@@ -318,7 +320,7 @@ export const getRenderableNodes = (
   };
 
   return nodes.filter((node) => {
-    if (node.renderAs === 'home') return false;
+    if (!isHomeCustomizable && node.renderAs === 'home') return false;
     if (node.sideNavStatus === 'hidden') return false;
     if (!hasVisibleLeaf(node)) return false;
     return true;
