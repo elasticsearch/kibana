@@ -20,6 +20,18 @@ const PRECONFIGURED_QUERY = JSON.stringify(
   null,
   2
 );
+const PERSISTED_INDEX_NAME = 'persisted-search-profiler-index';
+const PERSISTED_QUERY = JSON.stringify(
+  {
+    query: {
+      match: {
+        message: 'persisted profiler query',
+      },
+    },
+  },
+  null,
+  2
+);
 
 test.describe('Search Profiler query loading', { tag: testData.SEARCH_PROFILER_TAGS }, () => {
   test.beforeEach(async ({ browserAuth }) => {
@@ -34,5 +46,21 @@ test.describe('Search Profiler query loading', { tag: testData.SEARCH_PROFILER_T
 
     await expect(pageObjects.searchProfiler.indexInput).toHaveValue(INDEX_NAME);
     await expect.poll(() => pageObjects.searchProfiler.getQuery()).toBe(PRECONFIGURED_QUERY);
+  });
+
+  test('restores index and query after navigating away and back', async ({ pageObjects }) => {
+    await pageObjects.searchProfiler.goto();
+
+    await pageObjects.searchProfiler.setIndex(PERSISTED_INDEX_NAME);
+    await pageObjects.searchProfiler.setQuery(PERSISTED_QUERY);
+
+    await expect(pageObjects.searchProfiler.indexInput).toHaveValue(PERSISTED_INDEX_NAME);
+    await expect.poll(() => pageObjects.searchProfiler.getQuery()).toBe(PERSISTED_QUERY);
+
+    await pageObjects.searchProfiler.gotoConsole();
+    await pageObjects.searchProfiler.goto();
+
+    await expect(pageObjects.searchProfiler.indexInput).toHaveValue(PERSISTED_INDEX_NAME);
+    await expect.poll(() => pageObjects.searchProfiler.getQuery()).toBe(PERSISTED_QUERY);
   });
 });

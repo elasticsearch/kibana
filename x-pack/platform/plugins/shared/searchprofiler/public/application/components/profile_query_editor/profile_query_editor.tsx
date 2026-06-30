@@ -5,9 +5,10 @@
  * 2.0.
  */
 
-import React, { useRef, memo, useCallback } from 'react';
+import React, { useRef, memo, useCallback, useEffect, useMemo } from 'react';
 import { i18n } from '@kbn/i18n';
 import { css } from '@emotion/react';
+import { debounce } from 'lodash';
 import {
   EuiForm,
   EuiFieldText,
@@ -24,8 +25,10 @@ import { useHasIndices, useRequestProfile } from '../../hooks';
 import { useAppContext } from '../../contexts/app_context';
 import { useProfilerActionContext } from '../../contexts/profiler_context';
 import { Editor, type EditorProps } from './editor';
+import { readSearchProfilerState, updateSearchProfilerState } from '../../lib';
 
 const DEFAULT_INDEX_VALUE = '_all';
+const UPDATE_LOCAL_STORAGE_DEBOUNCE_DELAY = 500;
 
 const INITIAL_EDITOR_VALUE = `{
   "query":{
@@ -60,14 +63,36 @@ export const ProfileQueryEditor = memo(() => {
   const queryParams = new URLSearchParams(location.search);
   const indexName = queryParams.get('index');
   const searchProfilerQueryURI = queryParams.get('load_from');
+  const storedState = useMemo(() => readSearchProfilerState(), []);
 
   const searchProfilerQuery =
     searchProfilerQueryURI &&
     decompressFromEncodedURIComponent(searchProfilerQueryURI.replace(/^data:text\/plain,/, ''));
 
-  const editorValue = useRef(searchProfilerQuery || INITIAL_EDITOR_VALUE);
+  const initialIndexValue = indexName ?? storedState.index ?? DEFAULT_INDEX_VALUE;
+  const initialEditorValue =
+    searchProfilerQuery ??
+    (searchProfilerQueryURI ? undefined : storedState.query) ??
+    INITIAL_EDITOR_VALUE;
+  const editorValue = useRef(initialEditorValue);
 
   const requestProfile = useRequestProfile();
+  const debouncedUpdateQueryStorage = useMemo(
+    () =>
+      debounce((query: string) => {
+        updateSearchProfilerState({ query });
+      }, UPDATE_LOCAL_STORAGE_DEBOUNCE_DELAY),
+    []
+  );
+
+  useEffect(() => {
+    updateSearchProfilerState({ index: initialIndexValue, query: editorValue.current });
+
+    return () => {
+      debouncedUpdateQueryStorage.flush();
+      debouncedUpdateQueryStorage.cancel();
+    };
+  }, [debouncedUpdateQueryStorage, initialIndexValue]);
 
   const handleProfileClick = async () => {
     dispatch({ type: 'setProfiling', value: true });
@@ -136,9 +161,12 @@ export const ProfileQueryEditor = memo(() => {
                   inputRef={(ref) => {
                     if (ref) {
                       indexInputRef.current = ref;
-                      ref.value = indexName ? indexName : DEFAULT_INDEX_VALUE;
+                      ref.value = initialIndexValue;
                     }
                   }}
+                  onChange={(event) =>
+                    updateSearchProfilerState({ index: event.currentTarget.value })
+                  }
                 />
               </EuiFormRow>
             </EuiFlexItem>
@@ -165,7 +193,10 @@ export const ProfileQueryEditor = memo(() => {
       <EuiFlexItem grow={1} css={styles.editorContainer}>
         <Editor
           onEditorReady={onEditorReady}
-          setEditorValue={(val) => (editorValue.current = val)}
+          setEditorValue={(val) => {
+            editorValue.current = val;
+            debouncedUpdateQueryStorage(val);
+          }}
           editorValue={editorValue.current}
           licenseEnabled={licenseEnabled}
         />
