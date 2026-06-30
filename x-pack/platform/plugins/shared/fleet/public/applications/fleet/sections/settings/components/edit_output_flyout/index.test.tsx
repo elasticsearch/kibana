@@ -183,6 +183,9 @@ describe('EditOutputFlyout', () => {
       kafkaSectionsLabels.forEach((label) => {
         expect(utils.queryByText(label)).toBeNull();
       });
+
+      // Show the Client certificate mTLS sub-section heading
+      expect(utils.queryByText('Client certificate (mTLS)')).not.toBeNull();
     });
   });
 
@@ -321,6 +324,146 @@ describe('EditOutputFlyout', () => {
         })
       );
     });
+  });
+
+  it('should save a logstash output with only server CA configured (no client cert or key)', async () => {
+    // Regression test for https://github.com/elastic/kibana/issues/272243
+    // Server-only TLS (one-way) must be saveable without a client certificate or key.
+    jest.spyOn(ExperimentalFeaturesService, 'get').mockReturnValue({} as any);
+
+    mockedUseFleetStatus.mockReturnValue({
+      isLoading: false,
+      isReady: true,
+      isSecretsStorageEnabled: true,
+    } as any);
+
+    const { utils } = renderFlyout({
+      type: 'logstash',
+      name: 'logstash output',
+      id: 'outputL',
+      is_default: false,
+      is_default_monitoring: false,
+      hosts: ['logstash:5044'],
+      ssl: {
+        certificate: '',
+        certificate_authorities: ['/etc/ssl/ca.pem'],
+      },
+    });
+
+    // Trigger a change to mark the form as modified so the Save button becomes enabled
+    fireEvent.change(utils.getByDisplayValue('logstash output'), {
+      target: { value: 'logstash output updated' },
+    });
+
+    fireEvent.click(utils.getByText('Save and apply settings'));
+
+    await waitFor(() => {
+      expect(mockSendPutOutput).toHaveBeenCalledWith(
+        'outputL',
+        expect.objectContaining({
+          ssl: expect.objectContaining({
+            certificate_authorities: ['/etc/ssl/ca.pem'],
+          }),
+        })
+      );
+    });
+  });
+
+  it('should block saving a logstash output when client cert is set but key is missing', async () => {
+    // Regression guard: cert without key must not save — mTLS requires both fields.
+    jest.spyOn(ExperimentalFeaturesService, 'get').mockReturnValue({} as any);
+
+    mockedUseFleetStatus.mockReturnValue({
+      isLoading: false,
+      isReady: true,
+      isSecretsStorageEnabled: false,
+    } as any);
+
+    const { utils } = renderFlyout({
+      type: 'logstash',
+      name: 'logstash output',
+      id: 'outputL',
+      is_default: false,
+      is_default_monitoring: false,
+      hosts: ['logstash:5044'],
+      ssl: {
+        certificate: 'cert',
+        certificate_authorities: [],
+      },
+    });
+
+    fireEvent.change(utils.getByDisplayValue('logstash output'), {
+      target: { value: 'logstash output updated' },
+    });
+
+    fireEvent.click(utils.getByText('Save and apply settings'));
+
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    expect(mockSendPutOutput).not.toHaveBeenCalled();
+  });
+
+  it('should block saving a logstash output when key is set but client cert is missing', async () => {
+    jest.spyOn(ExperimentalFeaturesService, 'get').mockReturnValue({} as any);
+
+    mockedUseFleetStatus.mockReturnValue({
+      isLoading: false,
+      isReady: true,
+      isSecretsStorageEnabled: false,
+    } as any);
+
+    const { utils } = renderFlyout({
+      type: 'logstash',
+      name: 'logstash output',
+      id: 'outputL',
+      is_default: false,
+      is_default_monitoring: false,
+      hosts: ['logstash:5044'],
+      ssl: {
+        key: 'key',
+        certificate_authorities: [],
+      },
+    });
+
+    fireEvent.change(utils.getByDisplayValue('logstash output'), {
+      target: { value: 'logstash output updated' },
+    });
+
+    fireEvent.click(utils.getByText('Save and apply settings'));
+
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    expect(mockSendPutOutput).not.toHaveBeenCalled();
+  });
+
+  it('should block saving an elasticsearch output when client cert is set but key is missing', async () => {
+    jest.spyOn(ExperimentalFeaturesService, 'get').mockReturnValue({} as any);
+
+    mockedUseFleetStatus.mockReturnValue({
+      isLoading: false,
+      isReady: true,
+      isSecretsStorageEnabled: false,
+    } as any);
+
+    const { utils } = renderFlyout({
+      type: 'elasticsearch',
+      name: 'elasticsearch output',
+      id: 'outputES',
+      is_default: false,
+      is_default_monitoring: false,
+      hosts: ['http://localhost:9200'],
+      ssl: {
+        certificate: 'cert',
+        certificate_authorities: [],
+      },
+    });
+
+    fireEvent.change(utils.getByDisplayValue('elasticsearch output'), {
+      target: { value: 'elasticsearch output updated' },
+    });
+
+    fireEvent.click(utils.getByText('Save and apply settings'));
+
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    expect(mockSendPutOutput).not.toHaveBeenCalled();
   });
 
   it('should show a callout in the flyout if the selected output is logstash and no encrypted key is set', async () => {
