@@ -15,7 +15,7 @@ import {
   PAGE_OVERLAY_DOCUMENT_BODY_LOCK_CLASSNAME,
   PageOverlay,
 } from './page_overlay';
-import { act, waitFor } from '@testing-library/react';
+import { act, fireEvent, waitFor } from '@testing-library/react';
 
 describe('When using PageOverlay component', () => {
   let render: () => ReturnType<AppContextTestRender['render']>;
@@ -144,6 +144,56 @@ describe('When using PageOverlay component', () => {
 
     expect(overlay.classList.contains('eui-scrollBar')).toBe(false);
     expect(overlay.classList.contains('scrolling')).toBe(false);
+  });
+
+  it('should call `onHide` on Escape and stop it from reaching underlying window-level handlers', () => {
+    // Mirrors an underlying layer (e.g. EuiFlyout) that closes itself via a window-level keydown
+    // listener. While the overlay is visible, its Escape must not reach that handler.
+    const underlyingWindowHandler = jest.fn();
+    window.addEventListener('keydown', underlyingWindowHandler);
+
+    try {
+      render();
+
+      fireEvent.keyDown(renderResult.getByTestId('test-body'), { key: 'Escape' });
+
+      expect(renderProps.onHide).toHaveBeenCalledTimes(1);
+      expect(underlyingWindowHandler).not.toHaveBeenCalled();
+    } finally {
+      window.removeEventListener('keydown', underlyingWindowHandler);
+    }
+  });
+
+  it('should let Escape reach underlying window-level handlers (and not call `onHide`) when hidden', () => {
+    const underlyingWindowHandler = jest.fn();
+    window.addEventListener('keydown', underlyingWindowHandler);
+
+    try {
+      renderProps.isHidden = true;
+      render();
+
+      fireEvent.keyDown(renderResult.getByTestId('test-body'), { key: 'Escape' });
+
+      expect(renderProps.onHide).not.toHaveBeenCalled();
+      expect(underlyingWindowHandler).toHaveBeenCalled();
+    } finally {
+      window.removeEventListener('keydown', underlyingWindowHandler);
+    }
+  });
+
+  it('should ignore an Escape that was already handled (defaultPrevented) by an inner widget', () => {
+    render();
+
+    const event = new KeyboardEvent('keydown', {
+      key: 'Escape',
+      bubbles: true,
+      cancelable: true,
+    });
+    event.preventDefault(); // simulate an inner widget (e.g. a popover) having handled it
+
+    renderResult.getByTestId('test-body').dispatchEvent(event);
+
+    expect(renderProps.onHide).not.toHaveBeenCalled();
   });
 
   it.each`

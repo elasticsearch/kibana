@@ -9,7 +9,6 @@ import React from 'react';
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import type { DataTableRecord } from '@kbn/discover-utils';
 import type { EcsSecurityExtension as Ecs } from '@kbn/securitysolution-ecs';
-import type { TimelineNonEcsData } from '../../../../../common/search_strategy';
 import { useAddToCaseActions } from '../../../../detections/components/alerts_table/timeline_actions/use_add_to_case_actions';
 import { useAlertsActions } from '../../../../detections/components/alerts_table/timeline_actions/use_alerts_actions';
 import { useAlertAssigneesActions } from '../../../../detections/components/alerts_table/timeline_actions/use_alert_assignees_actions';
@@ -54,6 +53,11 @@ jest.mock(
     ),
   })
 );
+
+const mockUseResponderActionItem = jest.fn().mockReturnValue([]);
+jest.mock('../../../../common/components/endpoint/responder', () => ({
+  useResponderActionItem: (...args: unknown[]) => mockUseResponderActionItem(...args),
+}));
 
 const mockUseExploreActions = jest.fn().mockReturnValue({ exploreActionItems: [] });
 jest.mock('../hooks/use_explore_actions', () => ({
@@ -110,7 +114,6 @@ const mockUseInvestigateInTimeline = useInvestigateInTimeline as jest.Mock;
 const mockUseIsInSecurityApp = useIsInSecurityApp as jest.Mock;
 const mockUseHostIsolationAction = useHostIsolationAction as jest.Mock;
 const mockEcsData: Ecs = { _id: 'test-id', _index: 'test-index' };
-const mockNonEcsData: TimelineNonEcsData[] = [{ field: 'host.name', value: ['test-host'] }];
 const mockDetailsData = [
   {
     category: 'host',
@@ -124,10 +127,8 @@ const mockRefetchFlyoutData = jest.fn().mockResolvedValue(undefined);
 const mockOnAlertUpdated = jest.fn();
 const mockOnShowNotes = jest.fn();
 const defaultProps = {
-  hit: createMockHit(),
+  hit: createMockHit({ 'host.name': ['test-host'] }),
   ecsData: mockEcsData,
-  nonEcsData: mockNonEcsData,
-  detailsData: mockDetailsData,
   refetchFlyoutData: mockRefetchFlyoutData,
   onAlertUpdated: mockOnAlertUpdated,
   onShowNotes: mockOnShowNotes,
@@ -152,6 +153,7 @@ describe('<TakeActionButton />', () => {
       runAlertWorkflowPanel: [],
     });
     mockUseExploreActions.mockReturnValue({ exploreActionItems: [] });
+    mockUseResponderActionItem.mockReturnValue([]);
     mockUseHostIsolationAction.mockReturnValue([]);
   });
 
@@ -194,7 +196,7 @@ describe('<TakeActionButton />', () => {
     expect(mockUseAddToCaseActions).toHaveBeenCalledWith(
       expect.objectContaining({
         ecsData: mockEcsData,
-        nonEcsData: mockNonEcsData,
+        nonEcsData: [{ field: 'host.name', value: ['test-host'] }],
         onSuccess: mockRefetchFlyoutData,
       })
     );
@@ -327,6 +329,32 @@ describe('<TakeActionButton />', () => {
         documents: [expect.objectContaining({ _id: 'test-id', _index: 'test-index' })],
       })
     );
+  });
+
+  it('should call useResponderActionItem with field-browser data and closePopover', () => {
+    renderTakeActionButton();
+
+    expect(mockUseResponderActionItem).toHaveBeenCalledWith(mockDetailsData, expect.any(Function));
+  });
+
+  it('should include the Respond action for local documents in Discover', () => {
+    mockUseIsInSecurityApp.mockReturnValue(false);
+    mockUseResponderActionItem.mockReturnValue([
+      {
+        key: 'endpointResponseActions-action-item',
+        name: 'Respond',
+        onClick: jest.fn(),
+      },
+    ]);
+
+    const { getByTestId, getByText } = renderTakeActionButton({
+      ...defaultProps,
+      hit: createMockHit({ 'event.kind': 'signal' }),
+    });
+
+    fireEvent.click(getByTestId(FLYOUT_FOOTER_DROPDOWN_BUTTON_TEST_ID));
+
+    expect(getByText('Respond')).toBeInTheDocument();
   });
 
   it('should not include run workflow menu item when hook returns empty (no permissions)', () => {
