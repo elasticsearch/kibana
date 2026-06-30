@@ -1,6 +1,7 @@
 # Kibana
 
 ## Setup
+- Use the Node version pinned in `.nvmrc` (matches `engines.node` in `package.json`).
 - Run `yarn kbn bootstrap` for initial setup, after switching branches, or when encountering dependency errors
 
 ## Overview
@@ -34,6 +35,7 @@ Run `node scripts/check.js --scope=local|staged|branch` to validate changes (Jes
 
 ### Scout (UI/API with Playwright)
 `node scripts/scout run-tests --arch stateful --domain classic --config <scoutConfigPath>` (or `--testFiles <specPath1,specPath2>`)
+- When iterating, start the stack once with `node scripts/scout start-server --arch stateful --domain classic` and run `run-tests` against it, instead of rebooting ES+Kibana on every run.
 
 ## Code Style Guidelines
 Follow existing patterns in the target area first; below are common defaults.
@@ -81,6 +83,9 @@ Follow existing patterns in the target area first; below are common defaults.
 - Keep hooks at the top level; avoid conditional hooks.
 - Avoid inline styles unless consistent with the file’s conventions.
 - Use `@elastic/eui` components with Emotion (`@emotion/react`) for styling.
+
+### Schema validation
+- When adding `schema.string()` / `schema.arrayOf()` (`@kbn/config-schema`) or `z.string()` / `z.array()` (`zod`) for HTTP request input, always bound them (`maxLength` / `maxSize` / `.max()`) to avoid the CodeQL DoS findings `js/kibana/unbounded-string-in-schema` and `js/kibana/unbounded-array-in-schema`.
 
 ## Internationalization (i18n)
 - Guidelines are found in src/platform/packages/shared/kbn-i18n/GUIDELINE.md
