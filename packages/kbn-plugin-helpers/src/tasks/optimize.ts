@@ -80,19 +80,14 @@ export async function optimize({
       Rx.fromEvent<Error>(proc, 'error').pipe(Rx.map((error) => ({ type: 'error', data: error })))
     );
 
-    const simpleOrWatchObservable = watch
-      ? eventObservable
-      : eventObservable.pipe(
-          Rx.take(1),
-          Rx.tap({
-            complete() {
-              proc.kill('SIGKILL');
-            },
-          })
-        );
+    if (!watch) {
+      Rx.fromEvent<[WorkerMsg]>(proc, 'message')
+        .pipe(Rx.take(1))
+        .subscribe(() => proc.kill('SIGKILL'));
+    }
 
     // Subscribe to eventObservable to log events
-    const eventSubscription = simpleOrWatchObservable.subscribe((event) => {
+    const eventSubscription = eventObservable.subscribe((event) => {
       if (event.type === 'stdout') {
         log.debug(event.data as string);
       } else if (event.type === 'stderr') {
