@@ -372,9 +372,11 @@ export class RequestContextFactory implements IRequestContextFactory {
         });
       }),
       getEntityStoreUpdateClient: memoize(() => {
+        const { workflowsExtensions } = startPlugins;
         return startPlugins.entityStore.createCRUDClient(
           coreContext.elasticsearch.client.asCurrentUser,
-          getSpaceId()
+          getSpaceId(),
+          workflowsExtensions ? () => workflowsExtensions.getClient(request) : undefined
         );
       }),
       getMlAuthz: memoize(() => {

@@ -10,6 +10,7 @@ import type { TaskManagerStartContract } from '@kbn/task-manager-plugin/server';
 import type { CoreStart, ElasticsearchClient, KibanaRequest } from '@kbn/core/server';
 import type { LicenseCheckState, LicenseType } from '@kbn/licensing-types';
 import type { LicensingPluginStart } from '@kbn/licensing-plugin/server';
+import type { WorkflowsExtensionsServerPluginStart } from '@kbn/workflows-extensions/server';
 import {
   EntityMaintainerTaskStatus,
   EntityMaintainerTelemetryEventType,
@@ -43,6 +44,7 @@ export interface ExecuteMaintainerRunParams {
   type: string;
   coreStart: CoreStart;
   licensing: LicensingPluginStart;
+  workflowsExtensions: WorkflowsExtensionsServerPluginStart;
   analytics: TelemetryReporter;
   logger: Logger;
 }
@@ -112,6 +114,7 @@ export async function executeMaintainerRun({
   type,
   coreStart,
   licensing,
+  workflowsExtensions,
   analytics,
   logger,
 }: ExecuteMaintainerRunParams): Promise<{ state: EntityMaintainerStatus } | null> {
@@ -135,10 +138,15 @@ export async function executeMaintainerRun({
   const cpsEsClient = coreStart.elasticsearch.client.asScoped(request, {
     projectRouting: 'space',
   }).asCurrentUser;
+  const emitWorkflowTriggerEvent = async (triggerId: string, payload: Record<string, unknown>) => {
+    const workflowsClient = await workflowsExtensions.getClient(request);
+    await workflowsClient.emitEvent(triggerId, payload);
+  };
   const crudClient = new CRUDClient({
     logger,
     esClient,
     namespace: maintainerStatus.metadata.namespace,
+    emitWorkflowTriggerEvent,
   });
   const entityMetadataClient = new EntityMetadataClient({
     logger,

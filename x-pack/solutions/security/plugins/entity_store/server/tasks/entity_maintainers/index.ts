@@ -132,6 +132,7 @@ export function registerEntityMaintainerTask({
                   type,
                   coreStart,
                   licensing: plugins.licensing,
+                  workflowsExtensions: plugins.workflowsExtensions,
                   analytics,
                   logger,
                 });

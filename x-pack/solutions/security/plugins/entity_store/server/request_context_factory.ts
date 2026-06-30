@@ -44,6 +44,11 @@ export async function createRequestHandlerContext({
   const core = await context.core;
   const [coreStart, startPlugins] = await coreSetup.getStartServices();
   const taskManagerStart = startPlugins.taskManager;
+
+  const emitEvent = async (triggerId: string, payload: Record<string, unknown>) => {
+    const workflowsClient = await startPlugins.workflowsExtensions.getClient(request);
+    await workflowsClient.emitEvent(triggerId, payload);
+  };
   const namespace = startPlugins.spaces.spacesService.getSpaceId(request);
 
   const dataViewsService = await startPlugins.dataViews.dataViewsServiceFactory(
@@ -73,6 +78,7 @@ export async function createRequestHandlerContext({
     logger,
     esClient,
     namespace,
+    emitWorkflowTriggerEvent: emitEvent,
   });
   const entityMetadataClient = new EntityMetadataClient({
     logger,

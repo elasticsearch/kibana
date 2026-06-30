@@ -50,7 +50,8 @@ export const EntitySummaryGrid = memo(
       const attrs = (entityRecord.entity as Record<string, unknown>)?.attributes as
         | Record<string, unknown>
         | undefined;
-      return (attrs?.watchlists as string[] | undefined) ?? [];
+      const watchlists = attrs?.watchlists;
+      return Array.isArray(watchlists) ? (watchlists as string[]) : [];
     }, [entityRecord]);
 
     return (

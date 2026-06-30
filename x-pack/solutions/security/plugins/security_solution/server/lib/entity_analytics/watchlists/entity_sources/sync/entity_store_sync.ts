@@ -9,6 +9,7 @@ import type { Logger } from '@kbn/core/server';
 import type { CRUDClient } from '@kbn/entity-store/server/domain/crud/crud_client';
 import type { EntityType } from '@kbn/entity-store/common';
 import type { Entity } from '@kbn/entity-store/common/domain/definitions/entity.gen';
+import type { EntityStoreCRUDClient } from '@kbn/entity-store/server';
 
 export interface EntityRef {
   euid: string;
@@ -26,7 +27,7 @@ export const addWatchlistAttributeToStore = async ({
   entityRefs,
   watchlistId,
 }: {
-  crudClient: CRUDClient;
+  crudClient: EntityStoreCRUDClient;
   logger: Logger;
   entityRefs: EntityRef[];
   watchlistId: string;

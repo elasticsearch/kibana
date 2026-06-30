@@ -14,7 +14,8 @@
       "taskManager",
       "dataViews",
       "security",
-      "licensing"
+      "licensing",
+      "workflowsExtensions"
     ],
     "optionalPlugins": [
       "encryptedSavedObjects"
