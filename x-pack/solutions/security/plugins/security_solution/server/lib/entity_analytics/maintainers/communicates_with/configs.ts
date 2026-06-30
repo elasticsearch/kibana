@@ -6,20 +6,6 @@
  */
 
 import type { RelationshipIntegrationConfig } from '../engine/types';
-import { COMPOSITE_PAGE_SIZE } from '../engine/constants';
-
-const OKTA_USER_ADMIN_EVENT_ACTIONS = [
-  'user.lifecycle.create',
-  'user.lifecycle.activate',
-  'user.lifecycle.deactivate',
-  'user.lifecycle.suspend',
-  'user.lifecycle.unsuspend',
-  'group.user_membership.add',
-  'group.user_membership.remove',
-  'application.user_membership.add',
-  'application.user_membership.remove',
-  'application.user_membership.change_username',
-];
 
 const HUMAN_IAM_IDENTITY_TYPES = [
   'IAMUser',
@@ -29,59 +15,60 @@ const HUMAN_IAM_IDENTITY_TYPES = [
   'IdentityCenterUser',
 ];
 
-const AZURE_AUDITLOGS_ACTOR_UPN_FIELD =
-  'azure.auditlogs.properties.initiated_by.user.userPrincipalName';
+const EXCLUDED_USERNAMES = ['SYSTEM', 'LOCAL SERVICE', 'NETWORK SERVICE', 'ANONYMOUS LOGON'];
 
-const AZURE_AUDITLOGS_TARGET_UPN_FIELD =
-  'azure.auditlogs.properties.target_resources.0.user_principal_name';
-
-const AZURE_AUDITLOGS_TARGET_TYPE_FIELD = 'azure.auditlogs.properties.target_resources.0.type';
-
-const AZURE_AUDITLOGS_TARGET_DISPLAY_NAME_FIELD =
-  'azure.auditlogs.properties.target_resources.0.display_name';
-
-// Azure override body — the engine prepends `ESQL_ENGINE_PREAMBLE` (i.e.
-// `SET unmapped_fields="nullify";`) when running the query, so override
-// functions MUST NOT include it themselves (it would be redundant and
-// could mislead future readers about which value is in effect).
-function buildAzureEsqlQuery(namespace: string): string {
-  const tType = `\`${AZURE_AUDITLOGS_TARGET_TYPE_FIELD}\``;
-  const tUpn = `\`${AZURE_AUDITLOGS_TARGET_UPN_FIELD}\``;
-  const tDisplayName = `\`${AZURE_AUDITLOGS_TARGET_DISPLAY_NAME_FIELD}\``;
-
-  return `FROM logs-azure.auditlogs-${namespace}
-| WHERE ${AZURE_AUDITLOGS_ACTOR_UPN_FIELD} IS NOT NULL
-    AND (
-      (${tType} == "User" AND ${tUpn} IS NOT NULL)
-      OR
-      (${tType} == "Device" AND ${tDisplayName} IS NOT NULL)
-    )
-| EVAL actorUserId = CONCAT("user:", ${AZURE_AUDITLOGS_ACTOR_UPN_FIELD}, "@entra_id")
-| EVAL targetEntityId = CASE(
-    ${tType} == "User", CONCAT("user:", ${tUpn}, "@entra_id"),
-    ${tType} == "Device", CONCAT("host:", ${tDisplayName}),
-    NULL
-  )
-| WHERE actorUserId != "user:@entra_id"
-    AND targetEntityId IS NOT NULL AND targetEntityId != "" AND targetEntityId != "host:" AND targetEntityId != "user:@entra_id"
-| STATS communicates_with = VALUES(targetEntityId) BY actorUserId
-| LIMIT ${COMPOSITE_PAGE_SIZE}`;
-}
+const SUCCESSFUL_OUTCOME_FILTER = { term: { 'event.outcome': 'success' } } as const;
 
 export const COMMUNICATES_WITH_INTEGRATION_RELATIONSHIP_CONFIGS: RelationshipIntegrationConfig[] = [
   {
     kind: 'standard',
-    id: 'okta',
-    name: 'Okta',
-    indexPattern: (ns) => `logs-okta.system-${ns}`,
+    id: 'elastic_defend',
+    name: 'Elastic Defend',
+    indexPattern: (ns) => `logs-endpoint.events.security-${ns}`,
     relationshipKey: 'communicates_with',
-    targetEntityType: 'user',
-    esqlWhereClause: `event.action IN (${OKTA_USER_ADMIN_EVENT_ACTIONS.map((a) => `"${a}"`).join(
-      ', '
-    )})
-    AND user.target.email IS NOT NULL`,
-    targetEvalOverride: `CONCAT("user:", user.target.email, "@okta")`,
-    additionalTargetFilter: `AND targetEntityId != "user:@okta"`,
+    targetEntityType: 'host',
+    requireTargetEntityIdExists: true,
+    esqlWhereClause: `event.action == "log_on"
+    AND process.Ext.session_info.logon_type IN ("RemoteInteractive", "Interactive", "Network")
+    AND event.outcome == "success"`,
+    compositeAggAdditionalFilters: [
+      { term: { 'event.action': 'log_on' } },
+      SUCCESSFUL_OUTCOME_FILTER,
+    ],
+  },
+  {
+    kind: 'standard',
+    id: 'system_auth',
+    name: 'System Auth',
+    indexPattern: (ns) => `logs-system.auth-${ns}`,
+    relationshipKey: 'communicates_with',
+    targetEntityType: 'host',
+    requireTargetEntityIdExists: true,
+    esqlWhereClause: `event.category IN ("authentication", "session")
+    AND event.action == "ssh_login"
+    AND event.outcome == "success"`,
+    compositeAggAdditionalFilters: [
+      { term: { 'event.action': 'ssh_login' } },
+      SUCCESSFUL_OUTCOME_FILTER,
+    ],
+  },
+  {
+    kind: 'standard',
+    id: 'system_security',
+    name: 'System Security',
+    indexPattern: (ns) => `logs-system.security-${ns}`,
+    relationshipKey: 'communicates_with',
+    targetEntityType: 'host',
+    requireTargetEntityIdExists: true,
+    esqlWhereClause: `event.action IN ("logged-in", "logged-in-explicit")
+    AND event.code IN ("4624", "4648")
+    AND winlog.logon.type IN ("Interactive", "RemoteInteractive", "CachedInteractive")
+    AND event.outcome == "success"
+    AND NOT user.name IN (${EXCLUDED_USERNAMES.map((u) => `"${u}"`).join(', ')})`,
+    compositeAggAdditionalFilters: [
+      { terms: { 'event.action': ['logged-in', 'logged-in-explicit'] } },
+      SUCCESSFUL_OUTCOME_FILTER,
+    ],
   },
   {
     kind: 'standard',
@@ -91,7 +78,9 @@ export const COMMUNICATES_WITH_INTEGRATION_RELATIONSHIP_CONFIGS: RelationshipInt
     relationshipKey: 'communicates_with',
     targetEntityType: 'host',
     requireTargetEntityIdExists: true,
-    esqlWhereClause: `user.name IS NOT NULL`,
+    esqlWhereClause: `event.action == "UserLogin"
+    AND user.name IS NOT NULL`,
+    compositeAggAdditionalFilters: [{ term: { 'event.action': 'UserLogin' } }],
   },
   {
     kind: 'standard',
@@ -109,15 +98,5 @@ export const COMMUNICATES_WITH_INTEGRATION_RELATIONSHIP_CONFIGS: RelationshipInt
     ).join(', ')})
     AND host.target.entity.id IS NOT NULL`,
     targetEvalOverride: `CONCAT("host:", host.target.entity.id)`,
-  },
-  {
-    kind: 'override',
-    id: 'azure_auditlogs',
-    name: 'Azure Audit Logs',
-    indexPattern: (ns) => `logs-azure.auditlogs-${ns}`,
-    relationshipKey: 'communicates_with',
-    targetEntityType: 'user',
-    customActor: { fields: [AZURE_AUDITLOGS_ACTOR_UPN_FIELD] },
-    esqlQueryOverride: buildAzureEsqlQuery,
   },
 ];

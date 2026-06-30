@@ -9,42 +9,34 @@ import { COMMUNICATES_WITH_INTEGRATION_RELATIONSHIP_CONFIGS } from './configs';
 import { buildActorDiscoveryQuery } from '../engine/build_actor_discovery_query';
 import { buildTargetsPerActorQuery } from '../engine/build_targets_per_actor_query';
 import { COMPOSITE_PAGE_SIZE } from '../engine/constants';
-import type {
-  StandardRelationshipIntegrationConfig,
-  OverrideRelationshipIntegrationConfig,
-} from '../engine/types';
+import type { StandardRelationshipIntegrationConfig } from '../engine/types';
 
 const standardConfigs = COMMUNICATES_WITH_INTEGRATION_RELATIONSHIP_CONFIGS.filter(
   (c): c is StandardRelationshipIntegrationConfig => c.kind === 'standard'
 );
-const overrideConfigs = COMMUNICATES_WITH_INTEGRATION_RELATIONSHIP_CONFIGS.filter(
-  (c): c is OverrideRelationshipIntegrationConfig => c.kind === 'override'
-);
 
 describe('COMMUNICATES_WITH_INTEGRATION_RELATIONSHIP_CONFIGS', () => {
-  it('ships exactly the four expected integrations', () => {
+  it('ships exactly the five expected integrations', () => {
     expect(COMMUNICATES_WITH_INTEGRATION_RELATIONSHIP_CONFIGS.map((c) => c.id).sort()).toEqual([
       'aws_cloudtrail',
-      'azure_auditlogs',
+      'elastic_defend',
       'jamf_pro',
-      'okta',
+      'system_auth',
+      'system_security',
     ]);
   });
 
-  it('declares relationshipKey "communicates_with" on every standard/override config (bucketed has no relationshipKey)', () => {
-    for (const config of [...standardConfigs, ...overrideConfigs]) {
+  it('declares relationshipKey "communicates_with" on every config', () => {
+    for (const config of standardConfigs) {
       expect(config.relationshipKey).toBe('communicates_with');
     }
   });
 
-  it('uses only kind: "standard" or "override" (no bucketing — communicates_with is a flat targets list)', () => {
+  it('uses only kind: "standard" (no bucketing or overrides — communicates_with is a flat targets list)', () => {
     for (const config of COMMUNICATES_WITH_INTEGRATION_RELATIONSHIP_CONFIGS) {
-      expect(['standard', 'override']).toContain(config.kind);
+      expect(config.kind).toBe('standard');
     }
-    // Sanity-check that filtered partitions cover every config.
-    expect(standardConfigs.length + overrideConfigs.length).toBe(
-      COMMUNICATES_WITH_INTEGRATION_RELATIONSHIP_CONFIGS.length
-    );
+    expect(standardConfigs.length).toBe(COMMUNICATES_WITH_INTEGRATION_RELATIONSHIP_CONFIGS.length);
   });
 
   it.each(COMMUNICATES_WITH_INTEGRATION_RELATIONSHIP_CONFIGS)(
@@ -74,8 +66,14 @@ describe('COMMUNICATES_WITH_INTEGRATION_RELATIONSHIP_CONFIGS', () => {
       (c) => c.targetEntityType === 'host'
     );
 
-    it('jamf_pro and aws_cloudtrail are the host-targeted configs', () => {
-      expect(hostTargeted.map((c) => c.id).sort()).toEqual(['aws_cloudtrail', 'jamf_pro']);
+    it('all configs are host-targeted', () => {
+      expect(hostTargeted.map((c) => c.id).sort()).toEqual([
+        'aws_cloudtrail',
+        'elastic_defend',
+        'jamf_pro',
+        'system_auth',
+        'system_security',
+      ]);
     });
 
     // Each host-targeted config narrows Step 1 by target presence so it
@@ -100,11 +98,15 @@ describe('COMMUNICATES_WITH_INTEGRATION_RELATIONSHIP_CONFIGS', () => {
       }
     );
 
-    it('jamf_pro uses the broad target-EUID gate (no targetEvalOverride)', () => {
+    it('jamf_pro uses the broad target-EUID gate (no targetEvalOverride) and restricts to UserLogin events in both steps', () => {
       const jamf = standardConfigs.find((c) => c.id === 'jamf_pro');
       expect(jamf).toBeDefined();
       expect(jamf?.requireTargetEntityIdExists).toBe(true);
       expect(jamf?.targetEvalOverride).toBeUndefined();
+      expect(jamf?.esqlWhereClause).toContain('"UserLogin"');
+      expect(jamf?.compositeAggAdditionalFilters).toContainEqual({
+        term: { 'event.action': 'UserLogin' },
+      });
     });
 
     it('aws_cloudtrail uses the narrow exists filter (because targetEvalOverride reads a single field)', () => {
@@ -127,82 +129,6 @@ describe('COMMUNICATES_WITH_INTEGRATION_RELATIONSHIP_CONFIGS', () => {
         expect(query).not.toContain('access_count');
       }
     );
-  });
-
-  describe('user-targeted configs', () => {
-    it('okta is the only standard-builder user-targeted config (azure uses an override)', () => {
-      const userStandard = standardConfigs.filter((c) => c.targetEntityType === 'user');
-      expect(userStandard.map((c) => c.id)).toEqual(['okta']);
-    });
-
-    it('okta uses targetEvalOverride + additionalTargetFilter to handle the @okta suffix and empty guard', () => {
-      const okta = standardConfigs.find((c) => c.id === 'okta');
-      expect(okta).toBeDefined();
-      expect(okta?.targetEvalOverride).toContain('@okta');
-      expect(okta?.additionalTargetFilter).toContain('user:@okta');
-    });
-  });
-
-  describe('azure_auditlogs override path', () => {
-    const azure = overrideConfigs.find((c) => c.id === 'azure_auditlogs');
-
-    it('declares an esqlQueryOverride and an explicit customActor.fields list', () => {
-      expect(azure).toBeDefined();
-      expect(azure?.esqlQueryOverride).toBeInstanceOf(Function);
-      expect(azure?.customActor?.fields).toEqual([
-        'azure.auditlogs.properties.initiated_by.user.userPrincipalName',
-      ]);
-    });
-
-    it('produced override query includes the SET unmapped_fields preamble (parity with default builder)', () => {
-      const query = buildTargetsPerActorQuery(azure!, 'default');
-      expect(query).toMatch(/^SET unmapped_fields="nullify";\n/);
-    });
-
-    it('produced override query emits the engine-required column contract (actorUserId + communicates_with)', () => {
-      const query = buildTargetsPerActorQuery(azure!, 'default');
-      expect(query).toContain('EVAL actorUserId =');
-      expect(query).toContain('STATS communicates_with =');
-    });
-
-    it('produced override query templates namespace into the FROM clause', () => {
-      expect(buildTargetsPerActorQuery(azure!, 'prod')).toContain('FROM logs-azure.auditlogs-prod');
-    });
-
-    it('produced override query handles both User and Device target subtypes (multi-target)', () => {
-      const query = buildTargetsPerActorQuery(azure!, 'default');
-      expect(query).toContain('"User"');
-      expect(query).toContain('"Device"');
-      expect(query).toContain('CONCAT("user:"');
-      expect(query).toContain('CONCAT("host:"');
-    });
-
-    it('produced override query guards against empty/missing-target-id false positives', () => {
-      const query = buildTargetsPerActorQuery(azure!, 'default');
-      expect(query).toContain('targetEntityId != "user:@entra_id"');
-      expect(query).toContain('targetEntityId != "host:"');
-    });
-
-    // Regression: every config — including `kind: 'override'` — runs through
-    // Step 1 actor discovery. Before the fix, Step 1 hardcoded an ECS
-    // user-EUID-exists base filter, so Azure auditlogs documents (which have
-    // only `azure.auditlogs.properties.initiated_by.user.userPrincipalName`
-    // and no ECS `user.*` fields) were silently dropped at Step 1, and the
-    // override Step 2 never executed. This test locks in the fix: Step 1
-    // must use the customActor field as the actor-presence gate, not ECS
-    // user.*.
-    it('actor-discovery (Step 1) uses customActor.fields — not ECS user.* — as the actor-presence gate', () => {
-      const query = JSON.stringify(buildActorDiscoveryQuery(azure!, undefined));
-      // The Azure UPN field is required to be non-empty (composite source +
-      // base presence filter both reference it).
-      expect(query).toContain('azure.auditlogs.properties.initiated_by.user.userPrincipalName');
-      // The base filter does NOT depend on ECS user.* fields. (We assert via
-      // exact field-name strings rather than a snapshot to keep the test
-      // resilient to unrelated DSL formatting changes.)
-      expect(query).not.toContain('"user.email"');
-      expect(query).not.toContain('"user.id"');
-      expect(query).not.toContain('"user.name"');
-    });
   });
 
   describe('non-override configs share the COALESCE empty-guard form', () => {
