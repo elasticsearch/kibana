@@ -27,6 +27,8 @@ import {
   getAllFieldTypesFromState,
   getFieldsFromState,
   getTypeLabelFromField,
+  getStateWithCopyToFields,
+  hasSemanticTextField,
 } from './lib';
 import { useMappingsState, useDispatch } from './mappings_state_context';
 
@@ -83,11 +85,18 @@ export const useMappingsStateListener = ({ onChange, value, status }: Args) => {
       onChange({
         // Output a mappings object from the user's input.
         getData: () => {
-          // Pull the mappings properties from the current editor
+          // Pull the mappings properties from the current editor.
+          // For semantic_text fields the UI stores a `reference_field` param that
+          // ES doesn't accept. Strip it (and wire copy_to on the
+          // referenced text field when one was chosen) before serializing.
+          const resolvedFields =
+            state.documentFields.editor !== 'json' && hasSemanticTextField(state.fields)
+              ? getStateWithCopyToFields(state).fields
+              : state.fields;
           const fields =
             state.documentFields.editor === 'json'
               ? state.fieldsJsonEditor.format()
-              : deNormalize(state.fields);
+              : deNormalize(resolvedFields);
 
           // Get the runtime fields
           const runtime = deNormalizeRuntimeFields(state.runtimeFields);

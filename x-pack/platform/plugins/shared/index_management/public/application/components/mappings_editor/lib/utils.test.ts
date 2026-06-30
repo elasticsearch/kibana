@@ -829,6 +829,58 @@ describe('utils', () => {
         } as any;
         expect(getStateWithCopyToFields(state)).toEqual(expectedState);
       });
+
+      test('strips reference_field without throwing when reference_field is not a string', () => {
+        // Handles edge cases where the field ends up in state without reference_field set
+        const state = {
+          fields: {
+            byId: {
+              'sem-field': {
+                id: 'sem-field',
+                isMultiField: false,
+                path: ['title'],
+                source: {
+                  name: 'title',
+                  type: 'semantic_text',
+                  inference_id: 'id',
+                  // reference_field intentionally absent (undefined)
+                },
+              },
+            },
+            rootLevelFields: ['sem-field'],
+          },
+        } as any;
+
+        // Should not throw and should return the field without reference_field
+        const result = getStateWithCopyToFields(state);
+        expect(result.fields.byId['sem-field'].source).not.toHaveProperty('reference_field');
+      });
+
+      test('strips reference_field without throwing when the referenced field does not exist', () => {
+        const state = {
+          fields: {
+            byId: {
+              'sem-field': {
+                id: 'sem-field',
+                isMultiField: false,
+                path: ['title'],
+                source: {
+                  name: 'title',
+                  type: 'semantic_text',
+                  inference_id: 'id',
+                  reference_field: 'nonexistent_field',
+                },
+              },
+            },
+            rootLevelFields: ['sem-field'],
+          },
+          mappingViewFields: { byId: {} },
+        } as any;
+
+        // Should not throw, reference_field is stripped and copy_to wiring gets skipped
+        const result = getStateWithCopyToFields(state);
+        expect(result.fields.byId['sem-field'].source).not.toHaveProperty('reference_field');
+      });
     });
   });
 });

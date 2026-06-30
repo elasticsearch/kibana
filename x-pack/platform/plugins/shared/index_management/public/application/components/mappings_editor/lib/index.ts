@@ -30,6 +30,8 @@ export {
   getAllFieldTypesFromState,
   getFieldsFromState,
   getFieldsMatchingFilterFromState,
+  getStateWithCopyToFields,
+  hasSemanticTextField,
 } from './utils';
 
 export * from './serializers';
