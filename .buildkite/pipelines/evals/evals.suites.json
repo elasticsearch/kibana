@@ -43,6 +43,20 @@
       ]
     },
     {
+      "id": "agent-builder-red-team",
+      "name": "Agent Builder Red Team",
+      "slackChannel": "#agent-builder-alerts",
+      "configPath": "x-pack/platform/packages/shared/agent-builder/kbn-evals-suite-agent-builder/red_team.playwright.config.ts",
+      "tags": [
+        "platform",
+        "agent-builder",
+        "red-team"
+      ],
+      "ciLabels": [
+        "evals:agent-builder-red-team"
+      ]
+    },
+    {
       "id": "streams",
       "name": "Streams",
       "slackChannel": "#observability-streams-dev",
