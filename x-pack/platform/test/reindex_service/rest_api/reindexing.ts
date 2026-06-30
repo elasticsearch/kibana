@@ -13,7 +13,8 @@ import { generateNewIndexName } from '@kbn/upgrade-assistant-plugin/public';
 import { getIndexState } from '@kbn/upgrade-assistant-pkg-server';
 import { Version } from '@kbn/upgrade-assistant-pkg-common';
 import type { ResolveIndexResponseFromES } from '@kbn/upgrade-assistant-pkg-server';
-import { REINDEX_SERVICE_BASE_PATH } from '@kbn/reindex-service-plugin/common';
+import { REINDEX_SERVICE_BASE_PATH, ReindexStep } from '@kbn/reindex-service-plugin/common';
+import type { ReindexOperation } from '@kbn/reindex-service-plugin/common';
 import type { FtrProviderContext } from '../../common/ftr_provider_context';
 
 // eslint-disable-next-line import/no-default-export
@@ -44,6 +45,38 @@ export default function ({ getService }: FtrProviderContext) {
     }
 
     return lastState;
+  };
+
+  const createPausedReindexOperation = async ({
+    indexName,
+    newIndexName,
+  }: Pick<ReindexOperation, 'indexName' | 'newIndexName'>) => {
+    const now = new Date().toISOString();
+    const attributes: ReindexOperation = {
+      indexName,
+      newIndexName,
+      status: ReindexStatus.paused,
+      lastCompletedStep: ReindexStep.created,
+      locked: null,
+      reindexTaskId: null,
+      reindexTaskPercComplete: null,
+      errorMessage: null,
+      runningReindexCount: null,
+      reindexOptions,
+    };
+
+    await es.index({
+      index: '.kibana',
+      id: `${REINDEX_OP_TYPE}:${indexName}`,
+      refresh: 'wait_for',
+      document: {
+        [REINDEX_OP_TYPE]: attributes,
+        type: REINDEX_OP_TYPE,
+        references: [],
+        updated_at: now,
+        created_at: now,
+      },
+    });
   };
 
   describe('reindexing', function () {
@@ -170,23 +203,23 @@ export default function ({ getService }: FtrProviderContext) {
       });
     });
 
-    // https://github.com/elastic/kibana/issues/267685: This test no longer works,
-    // because the reindex api will error if you're trying to reindex into an existing index.
-    // Need to find another method of testing this.
-    it.skip('can resume after reindexing was stopped right after creating the new index', async () => {
+    it('can resume a paused reindex operation', async () => {
       await esArchiver.load('x-pack/platform/test/fixtures/es_archives/upgrade_assistant/reindex');
 
-      // This new index is the new soon to be created reindexed index. We create it
-      // upfront to simulate a situation in which the user restarted kibana half
-      // way through the reindex process and ended up with an extra index.
-      await es.indices.create({ index: 'reindexed-v8-dummydata' });
+      const newIndexName = generateNewIndexName('dummydata', versionService);
+      await createPausedReindexOperation({
+        indexName: 'dummydata',
+        newIndexName,
+      });
+
+      expect(await es.indices.exists({ index: newIndexName })).to.be(false);
 
       const { body } = await supertest
         .post(REINDEX_SERVICE_BASE_PATH)
         .set('kbn-xsrf', 'xxx')
         .send({
           indexName: 'dummydata',
-          newIndexName: generateNewIndexName('dummydata', versionService),
+          newIndexName,
           reindexOptions,
         })
         .expect(200);
@@ -198,9 +231,14 @@ export default function ({ getService }: FtrProviderContext) {
       expect(lastState.errorMessage).to.equal(null);
       expect(lastState.status).to.equal(ReindexStatus.completed);
 
+      const indexSummary = await es.indices.get({ index: 'dummydata', flat_settings: true });
+      expect(indexSummary[newIndexName]).to.be.an('object');
+      expect(indexSummary[newIndexName].aliases?.dummydata).to.be.an('object');
+      expect((await es.count({ index: newIndexName })).count).to.be(3);
+
       // Cleanup newly created index
       await es.indices.delete({
-        index: lastState.newIndexName,
+        index: newIndexName,
       });
     });
 

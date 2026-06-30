@@ -97,7 +97,7 @@ export interface ReindexService {
    */
   resumeReindexOperation(
     indexName: string,
-    opts?: { enqueue?: boolean }
+    opts?: ReindexArgs['reindexOptions']
   ): Promise<ReindexSavedObject>;
 
   /**
@@ -772,11 +772,17 @@ export const reindexServiceFactory = (
         } else if (op.attributes.status !== ReindexStatus.paused) {
           throw new Error(`Reindex operation must be paused in order to be resumed.`);
         }
-        const queueSettings = opts?.enqueue ? { queuedAt: Date.now() } : undefined;
+        const { queueSettings: _previousQueueSettings, ...previousReindexOptions } =
+          op.attributes.reindexOptions ?? {};
+        const reindexOptions: ReindexSavedObject['attributes']['reindexOptions'] = {
+          ...previousReindexOptions,
+          ...(opts?.enqueue ? { queueSettings: { queuedAt: Date.now() } } : {}),
+          ...(opts?.deleteOldIndex ? { deleteOldIndex: true } : {}),
+        };
 
         return actions.updateReindexOp(op, {
           status: ReindexStatus.inProgress,
-          reindexOptions: queueSettings ? { queueSettings } : undefined,
+          reindexOptions: Object.keys(reindexOptions).length ? reindexOptions : undefined,
         });
       });
     },

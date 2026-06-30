@@ -366,6 +366,54 @@ describe('reindexService', () => {
       findSpy.mockRestore();
     });
 
+    it('preserves existing non-queue reindex options', async () => {
+      const reindexOp = {
+        id: '2',
+        attributes: {
+          indexName: 'myIndex',
+          status: ReindexStatus.paused,
+          reindexOptions: {
+            deleteOldIndex: true,
+            queueSettings: { queuedAt: 123 },
+          },
+        },
+      } as ReindexSavedObject;
+      const findSpy = jest.spyOn(service, 'findReindexOperation').mockResolvedValueOnce(reindexOp);
+
+      await service.resumeReindexOperation('myIndex');
+
+      expect(actions.updateReindexOp).toHaveBeenCalledWith(reindexOp, {
+        status: ReindexStatus.inProgress,
+        reindexOptions: { deleteOldIndex: true },
+      });
+      findSpy.mockRestore();
+    });
+
+    it('re-queues a resumed reindex operation when requested', async () => {
+      const reindexOp = {
+        id: '2',
+        attributes: {
+          indexName: 'myIndex',
+          status: ReindexStatus.paused,
+          reindexOptions: {
+            deleteOldIndex: true,
+          },
+        },
+      } as ReindexSavedObject;
+      const findSpy = jest.spyOn(service, 'findReindexOperation').mockResolvedValueOnce(reindexOp);
+
+      await service.resumeReindexOperation('myIndex', { enqueue: true });
+
+      expect(actions.updateReindexOp).toHaveBeenCalledWith(reindexOp, {
+        status: ReindexStatus.inProgress,
+        reindexOptions: {
+          deleteOldIndex: true,
+          queueSettings: { queuedAt: expect.any(Number) },
+        },
+      });
+      findSpy.mockRestore();
+    });
+
     it('throws if reindexOp is not inProgress', async () => {
       const reindexOp = {
         id: '2',
