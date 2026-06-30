@@ -65,15 +65,17 @@ const saveModalObjectType = i18n.translate(
  */
 export function VisualizeVega({
   services,
-  spec,
+  visualization,
   timeRange,
   registerActionButtons,
 }: {
   services: VisualizationServices;
-  spec: string;
+  visualization: Record<string, unknown>;
   timeRange?: TimeRange;
   registerActionButtons?: InlineRenderCallbacks['registerActionButtons'];
 }) {
+  const spec =
+    'spec' in visualization && typeof visualization.spec === 'string' ? visualization.spec : '';
   const { application, unifiedSearch, embeddable } = services;
   const SearchBar = unifiedSearch.ui.SearchBar;
   const canWriteDashboards = application?.capabilities.dashboard_v2?.showWriteControls === true;

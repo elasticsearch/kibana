@@ -10,7 +10,7 @@ import { EuiLoadingSpinner } from '@elastic/eui';
 import { i18n } from '@kbn/i18n';
 import type { VisualizationAttachment } from '@kbn/agent-builder-common/attachments';
 import { type AttachmentUIDefinition } from '@kbn/agent-builder-browser/attachments';
-import { getVisualizationDimensionsFromLensConfig } from './shared/get_visualization_dimensions';
+import { getVisualizationDimensionsFromConfig } from './shared/get_visualization_dimensions';
 import type { VisualizationServices } from './services';
 
 const LazyVisualizeLens = React.lazy(() =>
@@ -36,15 +36,14 @@ export const createVisualizationAttachmentDefinition = (
 ): AttachmentUIDefinition<VisualizationAttachment> => {
   return {
     getLabel: (attachment: VisualizationAttachment): string => {
-      return attachment.data?.title ?? defaultVisualizationLabel;
+      return 'title' in attachment.data && typeof attachment.data.title === 'string'
+        ? attachment.data.title
+        : defaultVisualizationLabel;
     },
     getIcon: () => 'lensApp',
     getMaxWidth: (attachment) => {
       const { data } = attachment;
-      if (data.renderer === 'vega') {
-        return undefined;
-      }
-      return getVisualizationDimensionsFromLensConfig(data.visualization as Record<string, unknown>)
+      return getVisualizationDimensionsFromConfig(data.visualization as Record<string, unknown>)
         .width;
     },
     renderInlineContent: ({ attachment, screenContext }, callbacks) => {
@@ -53,15 +52,11 @@ export const createVisualizationAttachmentDefinition = (
       const timeRange = data.time_range ?? screenContext?.time_range;
 
       if (data.renderer === 'vega') {
-        const spec = data.visualization?.spec;
-        if (typeof spec !== 'string') {
-          return null;
-        }
         return (
           <Suspense fallback={<EuiLoadingSpinner />}>
             <LazyVisualizeVega
               services={services}
-              spec={spec}
+              visualization={data.visualization}
               timeRange={timeRange}
               registerActionButtons={callbacks?.registerActionButtons}
             />

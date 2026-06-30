@@ -10,7 +10,7 @@ surfaces can consume one implementation.
 - **`VisualizeLens`** — renders a stored Lens API config by value.
 - **`VisualizeESQL`** — renders an ES|QL query result by suggesting a Lens config.
 - **`VisualizeVega`** — renders a Vega/Vega-Lite spec via the visualize embeddable.
-- **`getVisualizationDimensionsFromLensConfig` / `getVisualizationDimensionsFromChartType`** —
+- **`getVisualizationDimensionsFromConfig` / `getVisualizationDimensionsFromChartType`** —
   recommended container sizing helpers.
 
 ## Services

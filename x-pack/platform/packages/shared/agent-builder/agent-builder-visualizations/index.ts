@@ -10,7 +10,7 @@ export { VisualizeESQL } from './visualize_esql';
 export { VisualizeVega } from './visualize_vega';
 export { createVisualizationAttachmentDefinition } from './visualization_attachment';
 export {
-  getVisualizationDimensionsFromLensConfig,
+  getVisualizationDimensionsFromConfig,
   getVisualizationDimensionsFromChartType,
   DEFAULT_VISUALIZATION_HEIGHT,
   type VisualizationDimensions,

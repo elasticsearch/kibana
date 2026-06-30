@@ -19,7 +19,7 @@ import { useLensInput } from './use_lens_input';
 import { BaseVisualization } from '../shared/base_visualization';
 import { FallbackVisualizationActions } from '../shared/visualization_actions';
 import { visualizationWrapperStyles } from '../shared/styles';
-import { getVisualizationDimensionsFromLensConfig } from '../shared/get_visualization_dimensions';
+import { getVisualizationDimensionsFromConfig } from '../shared/get_visualization_dimensions';
 
 export function VisualizeLens({
   services,
@@ -39,7 +39,7 @@ export function VisualizeLens({
     lensConfig,
     timeRange,
   });
-  const { height, width } = getVisualizationDimensionsFromLensConfig(
+  const { height, width } = getVisualizationDimensionsFromConfig(
     lensConfig as Record<string, unknown>
   );
 
