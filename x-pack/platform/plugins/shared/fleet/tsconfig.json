@@ -140,6 +140,7 @@
     "@kbn/charts-theme",
     "@kbn/search-types",
     "@kbn/human-readable-id",
-    "@kbn/elastic-agent-condition-language"
+    "@kbn/elastic-agent-condition-language",
+    "@kbn/app-header"
   ]
 }

@@ -7,18 +7,31 @@
 
 import React from 'react';
 import { FormattedMessage } from '@kbn/i18n-react';
-import { EuiCallOut, EuiLink } from '@elastic/eui';
+import { EuiCallOut, EuiLink, useIsWithinMinBreakpoint } from '@elastic/eui';
+
+import type { AppHeaderBadge } from '@kbn/app-header';
+import { AppHeader, type AppHeaderTab } from '@kbn/app-header';
+
+import { i18n } from '@kbn/i18n';
+
+import { WithoutHeaderLayout } from '../../../../layouts';
 
 import { useDismissableTour } from '../../../../hooks/use_dismissable_tour';
 import type { Section } from '../../sections';
-import { useLink, useConfig, useAuthz, useStartServices } from '../../hooks';
-import { WithHeaderLayout } from '../../../../layouts';
+import { useLink, useAuthz, useConfig, useStartServices } from '../../hooks';
 import { TourManagerProvider } from '../../../../hooks/use_tour_manager';
 
 import { AutoUpgradeAgentsTour } from '../../sections/agent_policy/components/auto_upgrade_agents_tour';
 import { useCanEnableAutomaticAgentUpgrades } from '../../../../hooks/use_can_enable_auto_upgrades';
 
-import { DefaultPageTitle } from './default_page_title';
+export const FLEET_TAB_IDS = {
+  agents: 'fleet-agents-tab',
+  agentPolicies: 'fleet-agent-policies-tab',
+  enrollmentTokens: 'fleet-enrollment-tokens-tab',
+  uninstallTokens: 'fleet-uninstall-tokens-tab',
+  dataStreams: 'fleet-datastreams-tab',
+  settings: 'fleet-settings-tab',
+} as const;
 
 interface Props {
   section?: Section;
@@ -38,82 +51,89 @@ export const DefaultLayout: React.FunctionComponent<Props> = ({
   const granularPrivilegesCallout = useDismissableTour('GRANULAR_PRIVILEGES');
   const canEnableAutomaticAgentUpgrades = useCanEnableAutomaticAgentUpgrades();
 
-  const tabs = [
-    {
-      name: (
-        <FormattedMessage id="xpack.fleet.appNavigation.agentsLinkText" defaultMessage="Agents" />
-      ),
-      isSelected: section === 'agents',
-      href: getHref('agent_list'),
-      disabled: !agents?.enabled,
-      'data-test-subj': 'fleet-agents-tab',
-      isHidden: !authz.fleet.readAgents,
-    },
+  const isBiggerScreen = useIsWithinMinBreakpoint('xxl');
+  const contentWidth = section === 'settings' && isBiggerScreen ? '80%' : '100%';
 
-    {
-      name: (
-        <FormattedMessage
-          id="xpack.fleet.appNavigation.policiesLinkText"
-          defaultMessage="Agent policies"
-        />
-      ),
-      isHidden: !authz.fleet.readAgentPolicies,
-      isSelected: section === 'agent_policies',
-      href: getHref('policies_list'),
-      'data-test-subj': 'fleet-agent-policies-tab',
-      id: 'fleet-agent-policies-tab',
-    },
-    {
-      name: (
-        <FormattedMessage
-          id="xpack.fleet.appNavigation.enrollmentTokensText"
-          defaultMessage="Enrollment tokens"
-        />
-      ),
-      isHidden: !authz.fleet.allAgents,
-      isSelected: section === 'enrollment_tokens',
-      href: getHref('enrollment_tokens'),
-      'data-test-subj': 'fleet-enrollment-tokens-tab',
-    },
-    {
-      name: (
-        <FormattedMessage
-          id="xpack.fleet.appNavigation.uninstallTokensText"
-          defaultMessage="Uninstall tokens"
-        />
-      ),
-      isSelected: section === 'uninstall_tokens',
-      href: getHref('uninstall_tokens'),
-      'data-test-subj': 'fleet-uninstall-tokens-tab',
-      isHidden: !authz.fleet.allAgents,
-    },
-    {
-      name: (
-        <FormattedMessage
-          id="xpack.fleet.appNavigation.dataStreamsLinkText"
-          defaultMessage="Data streams"
-        />
-      ),
-      isSelected: section === 'data_streams',
-      href: getHref('data_streams'),
-      'data-test-subj': 'fleet-datastreams-tab',
-    },
-    {
-      name: (
-        <FormattedMessage
-          id="xpack.fleet.appNavigation.settingsLinkText"
-          defaultMessage="Settings"
-        />
-      ),
-      isHidden: !authz.fleet.readSettings,
-      isSelected: section === 'settings',
-      href: getHref('settings'),
-      'data-test-subj': 'fleet-settings-tab',
-    },
-  ]
-    // Removed hidden tabs
-    .filter(({ isHidden }) => !isHidden)
-    .map(({ isHidden, ...tab }) => tab);
+  const isReadOnly =
+    (section === 'agents' && !authz.fleet.allAgents) ||
+    (section === 'agent_policies' && !authz.fleet.allAgentPolicies) ||
+    (section === 'settings' && !authz.fleet.allSettings);
+
+  const tabs: AppHeaderTab[] = (
+    [
+      {
+        id: FLEET_TAB_IDS.agents,
+        label: i18n.translate('xpack.fleet.appNavigation.agentsLinkText', {
+          defaultMessage: 'Agents',
+        }),
+        isSelected: section === 'agents',
+        href: getHref('agent_list'),
+        disabled: !agents?.enabled,
+        isVisible: authz.fleet.readAgents,
+      },
+      {
+        id: FLEET_TAB_IDS.agentPolicies,
+        label: i18n.translate('xpack.fleet.appNavigation.policiesLinkText', {
+          defaultMessage: 'Agent policies',
+        }),
+        isSelected: section === 'agent_policies',
+        href: getHref('policies_list'),
+        isVisible: authz.fleet.readAgentPolicies,
+      },
+      {
+        id: FLEET_TAB_IDS.enrollmentTokens,
+        label: i18n.translate('xpack.fleet.appNavigation.enrollmentTokensText', {
+          defaultMessage: 'Enrollment tokens',
+        }),
+        isSelected: section === 'enrollment_tokens',
+        href: getHref('enrollment_tokens'),
+        isVisible: authz.fleet.allAgents,
+      },
+      {
+        id: FLEET_TAB_IDS.uninstallTokens,
+        label: i18n.translate('xpack.fleet.appNavigation.uninstallTokensText', {
+          defaultMessage: 'Uninstall tokens',
+        }),
+        isSelected: section === 'uninstall_tokens',
+        href: getHref('uninstall_tokens'),
+        isVisible: authz.fleet.allAgents,
+      },
+      {
+        id: FLEET_TAB_IDS.dataStreams,
+        label: i18n.translate('xpack.fleet.appNavigation.dataStreamsLinkText', {
+          defaultMessage: 'Data streams',
+        }),
+        isSelected: section === 'data_streams',
+        href: getHref('data_streams'),
+        isVisible: true,
+      },
+      {
+        id: FLEET_TAB_IDS.settings,
+        label: i18n.translate('xpack.fleet.appNavigation.settingsLinkText', {
+          defaultMessage: 'Settings',
+        }),
+        isSelected: section === 'settings',
+        href: getHref('settings'),
+        isVisible: authz.fleet.readSettings,
+      },
+    ] satisfies Array<Omit<AppHeaderTab, 'data-test-subj'> & { isVisible: boolean }>
+  )
+    .filter((tab) => tab.isVisible)
+    .map(({ isVisible, ...tab }) => ({ ...tab, 'data-test-subj': tab.id }));
+
+  const badges: AppHeaderBadge[] = [];
+  if (isReadOnly) {
+    badges.push({
+      label: i18n.translate('xpack.fleet.appNavigation.readOnlyBadge', {
+        defaultMessage: 'Read-only',
+      }),
+      tooltip: i18n.translate('xpack.fleet.appNavigation.readOnlyTooltip', {
+        defaultMessage:
+          "You can view most Fleet settings, but your current privileges don't allow you to perform all actions.",
+      }),
+      color: 'hollow',
+    });
+  }
 
   return (
     <TourManagerProvider>
@@ -145,11 +165,22 @@ export const DefaultLayout: React.FunctionComponent<Props> = ({
           }
         />
       )}
-      <WithHeaderLayout leftColumn={<DefaultPageTitle />} rightColumn={rightColumn} tabs={tabs}>
+      <WithoutHeaderLayout
+        restrictWidth={contentWidth}
+        header={
+          <AppHeader
+            title={i18n.translate('xpack.fleet.overviewPageTitle', { defaultMessage: 'Fleet' })}
+            tabs={tabs}
+            docLink={docLinks.links.fleet.guide}
+            badges={badges}
+          />
+        }
+      >
+        {rightColumn}
         {children}
-      </WithHeaderLayout>
+      </WithoutHeaderLayout>
       {canEnableAutomaticAgentUpgrades ? (
-        <AutoUpgradeAgentsTour anchor="#fleet-agent-policies-tab" />
+        <AutoUpgradeAgentsTour anchor={`[data-test-subj='${FLEET_TAB_IDS.agentPolicies}']`} />
       ) : null}
     </TourManagerProvider>
   );

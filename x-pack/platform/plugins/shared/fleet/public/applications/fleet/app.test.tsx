@@ -31,7 +31,6 @@ describe('AppRoutes', () => {
       {
         description: 'with Fleet:Agents:Read it should render AgentsApp',
         path: '/agents',
-        expectReadOnly: true,
         expectApp: 'AgentsApp',
         authz: {
           fleet: {
@@ -44,7 +43,6 @@ describe('AppRoutes', () => {
         description:
           'with Fleet:Agents:Read and Fleet:Agents:All  it should render AgentsApp without readonly',
         path: '/agents',
-        expectReadOnly: false,
         expectApp: 'AgentsApp',
         authz: {
           fleet: {
@@ -68,7 +66,6 @@ describe('AppRoutes', () => {
         description: 'with Fleet:AgentPolicies:Read it should render AgentPolicyApp',
         path: '/policies',
         expectApp: 'AgentPolicyApp',
-        expectReadOnly: true,
         authz: {
           fleet: {
             readAgentPolicies: true,
@@ -81,7 +78,6 @@ describe('AppRoutes', () => {
           'with Fleet:AgentPolicies:Read and Fleet:AgentPolicies:All it should render AgentPolicyApp without readonly',
         path: '/policies',
         expectApp: 'AgentPolicyApp',
-        expectReadOnly: false,
         authz: {
           fleet: {
             allAgentPolicies: true,
@@ -103,7 +99,6 @@ describe('AppRoutes', () => {
       {
         description: 'with Fleet:Settings:Read it should render SettingsApp',
         path: '/settings',
-        expectReadOnly: true,
         expectApp: 'SettingsApp',
         authz: {
           fleet: {
@@ -116,7 +111,6 @@ describe('AppRoutes', () => {
         description:
           'with Fleet:Settings:Read and Fleet:Settings:All it should render SettingsApp without readonly',
         path: '/settings',
-        expectReadOnly: false,
         expectApp: 'SettingsApp',
         authz: {
           fleet: {
@@ -141,9 +135,8 @@ describe('AppRoutes', () => {
       it(scenario.description, () => {
         jest.mocked(useAuthz).mockReturnValue(scenario.authz as any);
         const testRenderer = createFleetTestRendererMock();
-        testRenderer.startServices.navigation.ui.TopNavMenu = jest.fn().mockReturnValue(null);
         testRenderer.history.push(`/mock${scenario.path}`);
-        const result = testRenderer.render(<AppRoutes setHeaderActionMenu={() => {}} />, {});
+        const result = testRenderer.render(<AppRoutes />, {});
         if (scenario.expectMissingPrivileges) {
           const promptMessage = result.queryByTestId('missingPrivilegesPromptMessage');
           expect(promptMessage).not.toBeNull();
@@ -151,30 +144,6 @@ describe('AppRoutes', () => {
         }
         if (scenario.expectApp) {
           expect(result.queryByText(scenario.expectApp)).not.toBeNull();
-        }
-
-        if (scenario.expectReadOnly) {
-          expect(testRenderer.startServices.navigation.ui.TopNavMenu).toBeCalledWith(
-            expect.objectContaining({
-              config: expect.arrayContaining([
-                expect.objectContaining({
-                  label: 'Read-only',
-                }),
-              ]),
-            }),
-            expect.anything()
-          );
-        } else {
-          expect(testRenderer.startServices.navigation.ui.TopNavMenu).not.toBeCalledWith(
-            expect.objectContaining({
-              config: expect.arrayContaining([
-                expect.objectContaining({
-                  label: 'Read-only',
-                }),
-              ]),
-            }),
-            expect.anything()
-          );
         }
       });
     }

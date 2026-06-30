@@ -31,12 +31,19 @@ export const ContentWrapper = styled.div`
 `;
 
 interface Props {
-  restrictWidth?: number;
+  restrictWidth?: number | string;
+  /**
+   * Rendered inside the full-height wrapper, above the (width-restricted) page body. Use this for a
+   * full-bleed inline app header so it counts toward the wrapper's `min-height` and doesn't add an
+   * extra header-height of scroll on top of the application content area.
+   */
+  header?: React.ReactNode;
   children?: React.ReactNode;
 }
 
-export const WithoutHeaderLayout: React.FC<Props> = ({ restrictWidth, children }) => (
+export const WithoutHeaderLayout: React.FC<Props> = ({ restrictWidth, header, children }) => (
   <Wrapper>
+    {header}
     <Page restrictWidth={restrictWidth || 1200}>
       <EuiPageBody>
         <ContentWrapper>

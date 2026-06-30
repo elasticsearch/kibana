@@ -11,8 +11,9 @@ import { createFleetTestRendererMock } from '../../../../mock';
 import { useFleetStatus } from '../../../../hooks/use_fleet_status';
 import { useAuthz } from '../../../../hooks/use_authz';
 
-import { AgentsApp } from '.';
 import { useGetSpaceSettings } from '../../hooks';
+
+import { AgentsApp } from '.';
 
 jest.mock('../../../../hooks/use_fleet_status', () => ({
   ...jest.requireActual('../../../../hooks/use_fleet_status'),

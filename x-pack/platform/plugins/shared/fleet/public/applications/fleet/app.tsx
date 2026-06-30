@@ -8,7 +8,7 @@
 import React, { memo, useEffect, useState } from 'react';
 import useObservable from 'react-use/lib/useObservable';
 import type { AppMountParameters } from '@kbn/core/public';
-import { EuiPortal, useEuiTheme } from '@elastic/eui';
+import { EuiPortal } from '@elastic/eui';
 import type { History } from 'history';
 import { Redirect, useRouteMatch } from 'react-router-dom';
 import { Router, Routes, Route } from '@kbn/shared-ux-router';
@@ -17,8 +17,6 @@ import { FormattedMessage } from '@kbn/i18n-react';
 import { i18n } from '@kbn/i18n';
 import { QueryClient, QueryClientProvider } from '@kbn/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
-import { css } from '@emotion/css';
-import type { TopNavMenuData } from '@kbn/navigation-plugin/public';
 import { KibanaContextProvider } from '@kbn/kibana-react-plugin/public';
 import { RedirectAppLinks } from '@kbn/shared-ux-link-redirect-app';
 import { EuiThemeProvider } from '@kbn/kibana-react-plugin/common';
@@ -257,231 +255,137 @@ export const FleetAppContext: React.FC<{
   }
 );
 
-const FleetTopNav = memo(
-  ({
-    setHeaderActionMenu,
-    isReadOnly,
-  }: {
-    setHeaderActionMenu: AppMountParameters['setHeaderActionMenu'];
-    isReadOnly?: boolean;
-  }) => {
-    const services = useStartServices();
-    const { euiTheme } = useEuiTheme();
+export const AppRoutes = memo(() => {
+  const flyoutContext = useFlyoutContext();
+  const fleetStatus = useFleetStatus();
+  const authz = useAuthz();
 
-    const readOnlyBtnClass = React.useMemo(() => {
-      return css`
-        color: ${euiTheme.colors.textParagraph};
-      `;
-    }, [euiTheme]);
-
-    const { TopNavMenu } = services.navigation.ui;
-
-    const topNavConfig: TopNavMenuData[] = [];
-
-    if (isReadOnly) {
-      topNavConfig.push({
-        label: i18n.translate('xpack.fleet.appNavigation.readOnlyBtn', {
-          defaultMessage: 'Read-only',
-        }),
-        disableButton: true,
-        className: readOnlyBtnClass,
-        iconType: 'readOnly',
-        tooltip: i18n.translate('xpack.fleet.appNavigation.readOnlyTooltip', {
-          defaultMessage:
-            "You can view most Fleet settings, but your current privileges don't allow you to perform all actions.",
-        }),
-        run: () => {},
-      });
-    }
-    return (
-      <TopNavMenu
-        appName={i18n.translate('xpack.fleet.appTitle', { defaultMessage: 'Fleet' })}
-        config={topNavConfig}
-        setMenuMountPoint={setHeaderActionMenu}
-      />
-    );
-  }
-);
-
-const AppLayout: React.FC<
-  React.PropsWithChildren<{
-    setHeaderActionMenu: AppMountParameters['setHeaderActionMenu'];
-    isReadOnly?: boolean;
-  }>
-> = ({ children, setHeaderActionMenu, isReadOnly }) => {
   return (
     <>
-      <FleetTopNav setHeaderActionMenu={setHeaderActionMenu} isReadOnly={isReadOnly} />
-      {children}
+      <Routes>
+        <Route path={FLEET_ROUTING_PATHS.agents} key={FLEET_ROUTING_PATHS.agents}>
+          {authz.fleet.readAgents ? (
+            <AgentsApp />
+          ) : (
+            <ErrorLayout isAddIntegrationsPath={false}>
+              <PermissionsError
+                callingApplication="Fleet"
+                error="MISSING_PRIVILEGES"
+                requiredFleetRole="Agents Read"
+              />
+            </ErrorLayout>
+          )}
+        </Route>
+
+        <Route path={FLEET_ROUTING_PATHS.policies}>
+          {authz.fleet.readAgentPolicies ? (
+            <AgentPolicyApp />
+          ) : (
+            <ErrorLayout isAddIntegrationsPath={false}>
+              <PermissionsError
+                callingApplication="Fleet"
+                error="MISSING_PRIVILEGES"
+                requiredFleetRole="Agent policies Read"
+              />
+            </ErrorLayout>
+          )}
+        </Route>
+
+        <Route path={FLEET_ROUTING_PATHS.enrollment_tokens}>
+          {authz.fleet.allAgents ? (
+            <EnrollmentTokenListPage />
+          ) : (
+            <ErrorLayout isAddIntegrationsPath={false}>
+              <PermissionsError
+                callingApplication="Fleet"
+                error="MISSING_PRIVILEGES"
+                requiredFleetRole="Agents All"
+              />
+            </ErrorLayout>
+          )}
+        </Route>
+
+        <Route path={FLEET_ROUTING_PATHS.uninstall_tokens}>
+          {authz.fleet.allAgents ? (
+            <UninstallTokenListPage />
+          ) : (
+            <ErrorLayout isAddIntegrationsPath={false}>
+              <PermissionsError
+                callingApplication="Fleet"
+                error="MISSING_PRIVILEGES"
+                requiredFleetRole="Agents All"
+              />
+            </ErrorLayout>
+          )}
+        </Route>
+
+        <Route path={FLEET_ROUTING_PATHS.data_streams}>
+          <DataStreamApp />
+        </Route>
+
+        <Route path={FLEET_ROUTING_PATHS.settings}>
+          {authz.fleet.readSettings ? (
+            <SettingsApp />
+          ) : (
+            <ErrorLayout isAddIntegrationsPath={false}>
+              <PermissionsError
+                callingApplication="Fleet"
+                error="MISSING_PRIVILEGES"
+                requiredFleetRole="Settings Read"
+              />
+            </ErrorLayout>
+          )}
+        </Route>
+
+        {/* TODO: Move this route to the Integrations app */}
+        <Route path={FLEET_ROUTING_PATHS.add_integration_to_policy}>
+          <CreatePackagePolicyPage />
+        </Route>
+
+        <Route
+          render={({ location }) => {
+            const shouldRedirectHash = location.pathname === '' && location.hash.length > 0;
+            if (!shouldRedirectHash) {
+              const redirectTo = authz.fleet.readAgents
+                ? FLEET_ROUTING_PATHS.agents
+                : authz.fleet.readAgentPolicies
+                ? FLEET_ROUTING_PATHS.policies
+                : FLEET_ROUTING_PATHS.settings;
+
+              return <Redirect to={redirectTo} />;
+            }
+            const pathname = location.hash.replace(/^#(\/fleet)?/, '');
+
+            return (
+              <Redirect
+                to={{
+                  ...location,
+                  pathname,
+                  hash: undefined,
+                }}
+              />
+            );
+          }}
+        />
+      </Routes>
+      {flyoutContext.isEnrollmentFlyoutOpen && (
+        <EuiPortal>
+          <AgentEnrollmentFlyout
+            defaultMode={
+              fleetStatus.isReady && !fleetStatus.missingRequirements?.includes('fleet_server')
+                ? 'managed'
+                : 'standalone'
+            }
+            isIntegrationFlow={true}
+            onClose={() => flyoutContext.closeEnrollmentFlyout()}
+          />
+        </EuiPortal>
+      )}
+      {flyoutContext.isFleetServerFlyoutOpen && (
+        <EuiPortal>
+          <FleetServerFlyout onClose={() => flyoutContext.closeFleetServerFlyout()} />
+        </EuiPortal>
+      )}
     </>
   );
-};
-
-export const AppRoutes = memo(
-  ({ setHeaderActionMenu }: { setHeaderActionMenu: AppMountParameters['setHeaderActionMenu'] }) => {
-    const flyoutContext = useFlyoutContext();
-    const fleetStatus = useFleetStatus();
-
-    const authz = useAuthz();
-
-    return (
-      <>
-        <Routes>
-          <Route path={FLEET_ROUTING_PATHS.agents} key={FLEET_ROUTING_PATHS.agents}>
-            {authz.fleet.readAgents ? (
-              <AppLayout
-                setHeaderActionMenu={setHeaderActionMenu}
-                isReadOnly={!authz.fleet.allAgents}
-              >
-                <AgentsApp />
-              </AppLayout>
-            ) : (
-              <AppLayout setHeaderActionMenu={setHeaderActionMenu}>
-                <ErrorLayout isAddIntegrationsPath={false}>
-                  <PermissionsError
-                    callingApplication="Fleet"
-                    error="MISSING_PRIVILEGES"
-                    requiredFleetRole="Agents Read"
-                  />
-                </ErrorLayout>
-              </AppLayout>
-            )}
-          </Route>
-
-          <Route path={FLEET_ROUTING_PATHS.policies}>
-            {authz.fleet.readAgentPolicies ? (
-              <AppLayout
-                setHeaderActionMenu={setHeaderActionMenu}
-                isReadOnly={!authz.fleet.allAgentPolicies}
-              >
-                <AgentPolicyApp />
-              </AppLayout>
-            ) : (
-              <AppLayout setHeaderActionMenu={setHeaderActionMenu}>
-                <ErrorLayout isAddIntegrationsPath={false}>
-                  <PermissionsError
-                    callingApplication="Fleet"
-                    error="MISSING_PRIVILEGES"
-                    requiredFleetRole="Agent policies Read"
-                  />
-                </ErrorLayout>
-              </AppLayout>
-            )}
-          </Route>
-
-          <Route path={FLEET_ROUTING_PATHS.enrollment_tokens}>
-            {authz.fleet.allAgents ? (
-              <AppLayout setHeaderActionMenu={setHeaderActionMenu}>
-                <EnrollmentTokenListPage />
-              </AppLayout>
-            ) : (
-              <AppLayout setHeaderActionMenu={setHeaderActionMenu}>
-                <ErrorLayout isAddIntegrationsPath={false}>
-                  <PermissionsError
-                    callingApplication="Fleet"
-                    error="MISSING_PRIVILEGES"
-                    requiredFleetRole="Agents All"
-                  />
-                </ErrorLayout>
-              </AppLayout>
-            )}
-          </Route>
-          <Route path={FLEET_ROUTING_PATHS.uninstall_tokens}>
-            {authz.fleet.allAgents ? (
-              <AppLayout setHeaderActionMenu={setHeaderActionMenu}>
-                <UninstallTokenListPage />
-              </AppLayout>
-            ) : (
-              <AppLayout setHeaderActionMenu={setHeaderActionMenu}>
-                <ErrorLayout isAddIntegrationsPath={false}>
-                  <PermissionsError
-                    callingApplication="Fleet"
-                    error="MISSING_PRIVILEGES"
-                    requiredFleetRole="Agents All"
-                  />
-                </ErrorLayout>
-              </AppLayout>
-            )}
-          </Route>
-          <Route path={FLEET_ROUTING_PATHS.data_streams}>
-            <AppLayout setHeaderActionMenu={setHeaderActionMenu}>
-              <DataStreamApp />
-            </AppLayout>
-          </Route>
-
-          <Route path={FLEET_ROUTING_PATHS.settings}>
-            {authz.fleet.readSettings ? (
-              <AppLayout
-                setHeaderActionMenu={setHeaderActionMenu}
-                isReadOnly={!authz.fleet.allSettings}
-              >
-                <SettingsApp />
-              </AppLayout>
-            ) : (
-              <ErrorLayout isAddIntegrationsPath={false}>
-                <AppLayout setHeaderActionMenu={setHeaderActionMenu}>
-                  <PermissionsError
-                    callingApplication="Fleet"
-                    error="MISSING_PRIVILEGES"
-                    requiredFleetRole="Settings Read"
-                  />
-                </AppLayout>
-              </ErrorLayout>
-            )}
-          </Route>
-
-          {/* TODO: Move this route to the Integrations app */}
-          <Route path={FLEET_ROUTING_PATHS.add_integration_to_policy}>
-            <CreatePackagePolicyPage />
-          </Route>
-
-          <Route
-            render={({ location }) => {
-              // BWC < 7.15 Fleet was using a hash router: redirect old routes using hash
-              const shouldRedirectHash = location.pathname === '' && location.hash.length > 0;
-              if (!shouldRedirectHash) {
-                // Redirect to the first authorized tab
-                const redirectTo = authz.fleet.readAgents
-                  ? FLEET_ROUTING_PATHS.agents
-                  : authz.fleet.readAgentPolicies
-                  ? FLEET_ROUTING_PATHS.policies
-                  : FLEET_ROUTING_PATHS.settings;
-
-                return <Redirect to={redirectTo} />;
-              }
-              const pathname = location.hash.replace(/^#(\/fleet)?/, '');
-
-              return (
-                <Redirect
-                  to={{
-                    ...location,
-                    pathname,
-                    hash: undefined,
-                  }}
-                />
-              );
-            }}
-          />
-        </Routes>
-        {flyoutContext.isEnrollmentFlyoutOpen && (
-          <EuiPortal>
-            <AgentEnrollmentFlyout
-              defaultMode={
-                fleetStatus.isReady && !fleetStatus.missingRequirements?.includes('fleet_server')
-                  ? 'managed'
-                  : 'standalone'
-              }
-              isIntegrationFlow={true}
-              onClose={() => flyoutContext.closeEnrollmentFlyout()}
-            />
-          </EuiPortal>
-        )}
-        {flyoutContext.isFleetServerFlyoutOpen && (
-          <EuiPortal>
-            <FleetServerFlyout onClose={() => flyoutContext.closeFleetServerFlyout()} />
-          </EuiPortal>
-        )}
-      </>
-    );
-  }
-);
+});
