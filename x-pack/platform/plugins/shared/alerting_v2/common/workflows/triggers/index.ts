@@ -70,3 +70,12 @@ export {
   episodeDeactivatedTriggerCommonDefinition,
 } from './episode_deactivated';
 export type { EpisodeDeactivatedPayload } from './episode_deactivated';
+
+export { buildRuleExecutionSnapshot } from './build_rule_execution_snapshot';
+export {
+  RULE_SIGNALS_WRITTEN_TRIGGER_ID,
+  ruleExecutionSnapshotSchema,
+  ruleSignalsWrittenPayloadSchema,
+  ruleSignalsWrittenTriggerCommonDefinition,
+} from './rule_signals_written';
+export type { RuleExecutionSnapshot, RuleSignalsWrittenPayload } from './rule_signals_written';

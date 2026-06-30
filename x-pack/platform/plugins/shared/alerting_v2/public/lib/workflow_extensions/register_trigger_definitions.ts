@@ -47,4 +47,9 @@ export function registerTriggerDefinitions(
       (m) => m.episodeDeactivatedTriggerPublicDefinition
     )
   );
+  workflowsExtensions.registerTriggerDefinition(() =>
+    import('./triggers/rule_signals_written').then(
+      (m) => m.ruleSignalsWrittenTriggerPublicDefinition
+    )
+  );
 }

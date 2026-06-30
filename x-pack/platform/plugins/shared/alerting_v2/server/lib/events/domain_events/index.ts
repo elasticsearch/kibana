@@ -25,6 +25,7 @@ import type { KibanaRequest } from '@kbn/core/server';
 import type { ServiceIdentifier } from 'inversify';
 import type { EventBus } from '../event_bus';
 import type { AlertActionEvent } from '../alert_action_event_publisher/events';
+import type { RuleExecutorEvent } from '../rule_executor_event_publisher/events';
 
 export type {
   AlertActionEvent,
@@ -57,16 +58,22 @@ export {
   EPISODE_DEACTIVATED_EVENT_TYPE,
 } from '../alert_action_event_publisher/events';
 
+export type {
+  RuleExecutorEvent,
+  RuleExecutionSignalsWrittenEvent,
+} from '../rule_executor_event_publisher/events';
+export { RULE_EXECUTION_SIGNALS_WRITTEN_EVENT_TYPE } from '../rule_executor_event_publisher/events';
+
 /**
  * Discriminated union of every domain event the alerting framework publishes
  * on its event bus.
  *
  * Composed from per-subdomain unions so each subdomain owns its own catalog
- * (and its own envelope shape if it diverges). Today only the alert-action
- * subdomain publishes. Future subdomains (rule executor, dispatcher) extend
- * this union by adding their own sub-union here.
+ * (and its own envelope shape if it diverges). Alert-action and rule-executor
+ * subdomains publish today. Future subdomains (rule lifecycle CRUD, dispatcher)
+ * extend this union by adding their own sub-union here.
  */
-export type AlertingDomainEvent = AlertActionEvent;
+export type AlertingDomainEvent = AlertActionEvent | RuleExecutorEvent;
 
 /**
  * Publisher-side context threaded through every alerting bus publish call.

@@ -64,6 +64,10 @@ export const APPROVED_TRIGGER_DEFINITIONS: Array<{ id: string; schemaHash: strin
     schemaHash: 'd280f377a1b17bcbd655e93f00ebb80b1935ef93951115cc1559305a5da01942',
   },
   {
+    id: 'alerting.ruleSignalsWritten',
+    schemaHash: '7915d3db51bd460805a70fd71bf4692e6fad734f7af6a94d0f28024b16cb9750',
+  },
+  {
     id: 'cases.caseCreated',
     schemaHash: '616f3b574681800b6ee48d4809ea220bd2179ddc97a08c72f77171c0844de98b',
   },

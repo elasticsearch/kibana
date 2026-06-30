@@ -60,6 +60,7 @@ RuleExecutionPipeline
    +--> CreateRecoveryEventsStep
    +--> DirectorStep
    +--> StoreAlertEventsStep
+   +--> PublishRuleExecutionEventsStep
 ```
 
 ## The most important design detail: streaming
@@ -168,6 +169,8 @@ Step order is defined in `setup/bind_rule_executor.ts`.
 | 7 | `CreateRecoveryEventsStep` | Append recovery events for alert rules when configured. |
 | 8 | `DirectorStep` | Enrich alert-type events with episode state. |
 | 9 | `StoreAlertEventsStep` | Persist the final batch into `.rule-events`. |
+| 10 | `PublishRuleExecutionEventsStep` | Emit a workflow trigger when signal events were written. |
+
 
 ## Recovery behavior
 

@@ -12,3 +12,4 @@ export { ValidateRuleStep } from './validate_rule_step';
 export { ExecuteRuleQueryStep } from './execute_rule_query_step';
 export { CreateAlertEventsStep } from './create_alert_events_step';
 export { CreateRecoveryEventsStep } from './create_recovery_events_step';
+export { PublishRuleExecutionEventsStep } from './publish_rule_execution_events_step';

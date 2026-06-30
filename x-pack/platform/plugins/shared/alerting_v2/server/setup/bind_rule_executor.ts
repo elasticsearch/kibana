@@ -19,6 +19,7 @@ import {
   ExecuteRuleQueryStep,
   CreateAlertEventsStep,
   CreateRecoveryEventsStep,
+  PublishRuleExecutionEventsStep,
 } from '../lib/rule_executor/steps';
 import {
   CancellationBoundaryMiddleware,
@@ -57,6 +58,7 @@ export const bindRuleExecutionServices = ({ bind }: ContainerModuleLoadOptions) 
   bind(RuleExecutionStepsToken).to(CreateRecoveryEventsStep).inRequestScope();
   bind(RuleExecutionStepsToken).to(DirectorStep).inSingletonScope();
   bind(RuleExecutionStepsToken).to(StoreAlertEventsStep).inSingletonScope();
+  bind(RuleExecutionStepsToken).to(PublishRuleExecutionEventsStep).inRequestScope();
 
   bind(RuleExecutionPipeline).toSelf().inRequestScope();
 };
