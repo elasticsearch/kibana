@@ -1833,3 +1833,121 @@
     }
   }
 }
+
+{
+  "type": "doc",
+  "value": {
+    "id": "unrelated-rel-my-server-1",
+    "index": ".entities.v2.latest.security_entities-space-00001",
+    "source": {
+      "@timestamp": "2024-09-01T12:00:00.000Z",
+      "entity": {
+        "EngineMetadata": { "Type": "host" },
+        "id": "host:my-server-1",
+        "name": "my-server-1",
+        "source": "manual",
+        "sub_type": "Linux Host",
+        "type": "Host",
+        "relationships": {
+          "resolution": {
+            "resolved_to": ["host:my-server-2"]
+          }
+        }
+      },
+      "host": { "name": "my-server-1", "id": "some-hw-uuid", "ip": ["10.0.1.42"] },
+      "event": { "ingested": "2024-09-01T12:00:00.000Z" }
+    }
+  }
+}
+
+{
+  "type": "doc",
+  "value": {
+    "id": "unrelated-rel-my-server-2",
+    "index": ".entities.v2.latest.security_entities-space-00001",
+    "source": {
+      "@timestamp": "2024-09-01T12:00:00.000Z",
+      "entity": {
+        "EngineMetadata": { "Type": "host" },
+        "id": "host:my-server-2",
+        "name": "my-server-2",
+        "source": "manual",
+        "sub_type": "Linux Host",
+        "type": "Host"
+      },
+      "host": { "name": "my-server-2", "id": "some-hw-uuid", "ip": ["10.0.1.42"] },
+      "event": { "ingested": "2024-09-01T12:00:00.000Z" }
+    }
+  }
+}
+
+{
+  "type": "doc",
+  "value": {
+    "id": "unrelated-rel-my-server-3",
+    "index": ".entities.v2.latest.security_entities-space-00001",
+    "source": {
+      "@timestamp": "2024-09-01T12:00:00.000Z",
+      "entity": {
+        "EngineMetadata": { "Type": "host" },
+        "id": "host:my-server-3",
+        "name": "my-server-3",
+        "source": "manual",
+        "sub_type": "Linux Host",
+        "type": "Host",
+        "relationships": {
+          "communicates_with": {
+            "ids": ["host:my-server-2", "host:my-server-5"]
+          },
+          "resolution": {
+            "resolved_to": ["host:my-server-4"]
+          }
+        }
+      },
+      "host": { "name": "my-server-3", "id": "some-hw-uuid", "ip": ["10.0.1.42"] },
+      "event": { "ingested": "2024-09-01T12:00:00.000Z" }
+    }
+  }
+}
+
+{
+  "type": "doc",
+  "value": {
+    "id": "unrelated-rel-my-server-4",
+    "index": ".entities.v2.latest.security_entities-space-00001",
+    "source": {
+      "@timestamp": "2024-09-01T12:00:00.000Z",
+      "entity": {
+        "EngineMetadata": { "Type": "host" },
+        "id": "host:my-server-4",
+        "name": "my-server-4",
+        "source": "manual",
+        "sub_type": "Linux Host",
+        "type": "Host"
+      },
+      "host": { "name": "my-server-4", "id": "some-hw-uuid", "ip": ["10.0.1.42"] },
+      "event": { "ingested": "2024-09-01T12:00:00.000Z" }
+    }
+  }
+}
+
+{
+  "type": "doc",
+  "value": {
+    "id": "unrelated-rel-my-server-5",
+    "index": ".entities.v2.latest.security_entities-space-00001",
+    "source": {
+      "@timestamp": "2024-09-01T12:00:00.000Z",
+      "entity": {
+        "EngineMetadata": { "Type": "host" },
+        "id": "host:my-server-5",
+        "name": "my-server-5",
+        "source": "manual",
+        "sub_type": "Linux Host",
+        "type": "Host"
+      },
+      "host": { "name": "my-server-5", "id": "some-hw-uuid", "ip": ["10.0.1.42"] },
+      "event": { "ingested": "2024-09-01T12:00:00.000Z" }
+    }
+  }
+}

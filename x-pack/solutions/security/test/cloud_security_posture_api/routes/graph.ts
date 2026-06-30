@@ -2673,7 +2673,7 @@ export default function (providerContext: FtrProviderContext) {
               logger,
               retry,
               entitiesIndex: getEntitiesLatestIndexName(entitiesSpaceId),
-              expectedCount: 48,
+              expectedCount: 53,
             });
           });
 
@@ -3159,6 +3159,77 @@ export default function (providerContext: FtrProviderContext) {
                   }),
                 })
               );
+            });
+
+            it('should not include unrelated relationships from intermediary nodes (issue #272043)', async () => {
+              // Scenario:
+              //   my-server-1  --resolution.resolved_to-->  my-server-2
+              //   my-server-3  --communicates_with-->        my-server-2   (✓ relevant)
+              //   my-server-3  --communicates_with-->        my-server-5   (✗ unrelated)
+              //   my-server-3  --resolution.resolved_to-->   my-server-4   (✗ unrelated)
+              //
+              // When expanding relationships for my-server-2, only the two edges that
+              // touch my-server-2 should appear. my-server-3's outbound edges to my-server-5
+              // and my-server-4 must be filtered out.
+              const response = await postGraph(
+                supertest,
+                {
+                  query: {
+                    originEventIds: [],
+                    entityIds: [{ id: 'host:my-server-2', isOrigin: false }],
+                    start: 'now-30d',
+                    end: 'now',
+                  },
+                },
+                undefined,
+                entitiesSpaceId
+              ).expect(result(200, logger));
+
+              const allNodes: NodeDataModel[] = response.body.nodes;
+              const allEdges: EdgeDataModel[] = response.body.edges;
+
+              // --- Entity nodes ---
+              const entityNodes = allNodes.filter(
+                (n: NodeDataModel) =>
+                  n.shape === 'hexagon' || n.shape === 'ellipse' || n.shape === 'rectangle'
+              ) as EntityNodeDataModel[];
+
+              const entityIds = entityNodes.map((n) => n.id).sort();
+              expectExpect(entityIds).toEqual(
+                ['host:my-server-1', 'host:my-server-2', 'host:my-server-3'].sort()
+              );
+
+              // --- Relationship nodes ---
+              const relationshipNodes = allNodes.filter(
+                (n: NodeDataModel) => n.shape === 'relationship'
+              ) as RelationshipNodeDataModel[];
+
+              expect(relationshipNodes.length).to.equal(2);
+
+              const resolvedToNode = relationshipNodes.find(
+                (n) => n.id === 'rel(host:my-server-1-resolution.resolved_to)'
+              ) as RelationshipNodeDataModel;
+              expect(resolvedToNode).not.to.be(undefined);
+              expect(resolvedToNode.label).to.equal('Resolved to');
+
+              const communicatesWithNode = relationshipNodes.find(
+                (n) => n.id === 'rel(host:my-server-3-communicates_with)'
+              ) as RelationshipNodeDataModel;
+              expect(communicatesWithNode).not.to.be(undefined);
+              expect(communicatesWithNode.label).to.equal('Communicates with');
+
+              expect(allNodes.length).to.equal(5);
+              expect(allEdges.length).to.equal(4);
+
+              const expectedEdgeIds = [
+                'a(host:my-server-1)-b(rel(host:my-server-1-resolution.resolved_to))',
+                'a(rel(host:my-server-1-resolution.resolved_to))-b(host:my-server-2)',
+                'a(host:my-server-3)-b(rel(host:my-server-3-communicates_with))',
+                'a(rel(host:my-server-3-communicates_with))-b(host:my-server-2)',
+              ].sort();
+
+              const actualEdgeIds = allEdges.map((e: EdgeDataModel) => e.id).sort();
+              expectExpect(actualEdgeIds).toEqual(expectedEdgeIds);
             });
 
             it('should return hierarchical relationships with grouped targets and events', async () => {

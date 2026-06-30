@@ -32,6 +32,7 @@ import type { EntityEnrichmentFields } from './fetch_entity_enrichment';
 interface BuildRelationshipsEsqlQueryParams {
   indexName: string;
   relationshipFields: readonly string[];
+  entityIds: EntityId[];
 }
 
 const RESOLUTION_RELATIONSHIP_FIELD = 'resolution.resolved_to' as const;
@@ -55,10 +56,16 @@ const buildRelationshipTargetsEval = (field: string): string => {
  * Uses FORK to expand each relationship field and aggregates results.
  * The filter is applied via the DSL filter parameter.
  * Target enrichment is applied later in TypeScript via fetchEntityEnrichment.
+ *
+ * After FORK expansion each row is filtered to only include relationships where the actor
+ * or the target is one of the originally requested entity IDs. This prevents entities
+ * fetched because they point TO a requested entity (via the DSL should clauses) from
+ * leaking their unrelated outbound relationships into the result set.
  */
 const buildRelationshipsEsqlQuery = ({
   indexName,
   relationshipFields,
+  entityIds,
 }: BuildRelationshipsEsqlQueryParams): string => {
   const targetsEval = relationshipFields
     .map((field) => buildRelationshipTargetsEval(field))
@@ -72,6 +79,12 @@ const buildRelationshipsEsqlQuery = ({
     })
     .join('\n');
 
+  // Restrict rows to only those where the actor or target is one of the requested entity IDs.
+  // Without this, entities fetched because they point TO a requested entity would expose all
+  // of their own outbound relationships, not just the ones touching the requested entity.
+  const idParams = entityIds.map((_, idx) => `?entityId${idx}`).join(', ');
+  const relevantEntityFilter = `TO_STRING(entity.id) IN (${idParams}) OR _target_id IN (${idParams})`;
+
   return `SET unmapped_fields="nullify";
 FROM ${indexName}
 | EVAL _source_source_fields = ${buildSourceFieldsJson(GRAPH_ACTOR_EUID_SOURCE_FIELDS)}
@@ -80,6 +93,7 @@ FROM ${indexName}
 | FORK
 ${forkBranches}
 | WHERE _target_id != ""
+| WHERE ${relevantEntityFilter}
 // Build actors doc data with entity metadata (from the entity store source entity)
 | EVAL actorDocData = CONCAT(${JSON_OBJECT_START},
     ${concatJsonObjectPropertyEsqlExprSafe('id', 'entity.id')},
@@ -203,8 +217,10 @@ export const fetchEntityRelationships = async ({
   const query = buildRelationshipsEsqlQuery({
     indexName,
     relationshipFields: ENTITY_RELATIONSHIP_FIELDS,
+    entityIds,
   });
   const filter = buildRelationshipDslFilter(entityIds);
+  const params = entityIds.map((entity, idx) => ({ [`entityId${idx}`]: entity.id }));
 
   logger.trace(`Relationships ES|QL query: ${query}`);
   logger.trace(`Relationships filter: ${JSON.stringify(filter)}`);
@@ -214,6 +230,7 @@ export const fetchEntityRelationships = async ({
       columnar: false,
       filter,
       query,
+      params,
     })
     .toRecords<RelationshipEsqlRow>();
 
