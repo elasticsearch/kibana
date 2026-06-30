@@ -6,8 +6,8 @@
  */
 
 import type { CoreSetup, CoreStart, Plugin, PluginInitializerContext } from '@kbn/core/public';
-import { createVisualizationAttachmentDefinition } from '@kbn/agent-builder-visualizations/vega';
 import { VISUALIZATION_ATTACHMENT_TYPE } from '@kbn/agent-builder-visualizations-common';
+import { createVisualizationAttachmentDefinition } from './attachment_types/visualization_attachment';
 import type {
   AgentBuilderVisualizationsPluginPublicSetup,
   AgentBuilderVisualizationsPluginPublicStart,

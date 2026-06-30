@@ -99,6 +99,7 @@
     "xpack.observabilityLogsOverview": ["platform/packages/shared/logs-overview/src/components"],
     "xpack.agentBuilder": [
       "platform/plugins/shared/agent_builder",
+      "platform/plugins/shared/agent_builder_visualizations",
       "platform/packages/shared/agent-builder"
     ],
     "xpack.agentBuilderPlatform": "platform/plugins/shared/agent_builder_platform",

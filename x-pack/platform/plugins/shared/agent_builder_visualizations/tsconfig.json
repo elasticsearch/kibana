@@ -6,6 +6,7 @@
   "include": ["common/**/*", "public/**/*", "server/**/*"],
   "kbn_references": [
     "@kbn/core",
+    "@kbn/i18n",
     "@kbn/agent-builder-server",
     "@kbn/agent-builder-browser",
     "@kbn/agent-builder-common",

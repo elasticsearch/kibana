@@ -10,5 +10,4 @@
 // should import from the package root instead.
 export { VisualizeVega } from './visualize_vega';
 export { InlineVisualization, type InlineVisualizationProps } from './inline_visualization';
-export { createVisualizationAttachmentDefinition } from './visualization_attachment';
 export type { VegaVisualizationServices } from './services';

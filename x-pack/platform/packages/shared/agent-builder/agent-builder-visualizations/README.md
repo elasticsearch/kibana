@@ -21,7 +21,6 @@ The package has two entries so Lens-only consumers don't pull the Vega renderer
 
 - **`VisualizeVega`** — renders a Vega/Vega-Lite spec via the visualize embeddable.
 - **`InlineVisualization`** — dispatches to the Lens or Vega renderer based on `renderer`.
-- **`createVisualizationAttachmentDefinition`** — the visualization attachment UI definition.
 
 Importing from this entry pulls `@kbn/embeddable-plugin` and
 `@kbn/presentation-util-plugin`. Only consumers that actually render Vega (e.g.
