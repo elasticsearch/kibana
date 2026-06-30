@@ -9,8 +9,9 @@ import { platformCoreTools } from '@kbn/agent-builder-common';
 import { validateSkillDefinition } from '@kbn/agent-builder-server/skills/type_definition';
 import { threatHuntingSkill } from './threat_hunting';
 import { alertAnalysisSkill } from './alert_analysis';
+import { alertTriageSkill } from './alert_triage';
 
-const ALL_SKILLS = [threatHuntingSkill, alertAnalysisSkill];
+const ALL_SKILLS = [threatHuntingSkill, alertAnalysisSkill, alertTriageSkill];
 
 describe('Security Skills', () => {
   describe('threat-hunting skill', () => {
@@ -95,6 +96,41 @@ describe('Security Skills', () => {
 
     it('content references entity-analytics skill for deeper profiling', () => {
       expect(alertAnalysisSkill.content).toContain('entity-analytics');
+    });
+  });
+
+  describe('alert-triage skill', () => {
+    it('validates successfully via validateSkillDefinition', async () => {
+      await expect(validateSkillDefinition(alertTriageSkill)).resolves.toBeDefined();
+    });
+
+    it('has non-empty content', () => {
+      expect(alertTriageSkill.content.length).toBeGreaterThan(100);
+    });
+
+    it('has description under 1024 characters', () => {
+      expect(alertTriageSkill.description.length).toBeLessThanOrEqual(1024);
+    });
+
+    it('returns 0 registry tools (all access is via the inline tool)', async () => {
+      const tools = await alertTriageSkill.getRegistryTools!();
+      expect(tools).toHaveLength(0);
+    });
+
+    it('returns 1 inline tool (prioritize-alerts)', async () => {
+      const inlineTools = await alertTriageSkill.getInlineTools!();
+      expect(inlineTools).toHaveLength(1);
+      expect(inlineTools[0].id).toBe('security.alert-triage.prioritize-alerts');
+    });
+
+    it('has total tool count within limits (0 registry + 1 inline = 1)', async () => {
+      const registryTools = await alertTriageSkill.getRegistryTools!();
+      const inlineTools = await alertTriageSkill.getInlineTools!();
+      expect(registryTools.length + inlineTools.length).toBeLessThanOrEqual(7);
+    });
+
+    it('content references alert-analysis for investigation', () => {
+      expect(alertTriageSkill.content).toContain('alert-analysis');
     });
   });
 

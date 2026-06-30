@@ -6,6 +6,7 @@
  */
 
 export { alertAnalysisSkill } from './alert_analysis';
+export { alertTriageSkill } from './alert_triage';
 export { threatHuntingSkill } from './threat_hunting';
 export { createAutomaticTroubleshootingSkill } from './automatic_troubleshooting';
 export { pciComplianceSkill } from './pci_compliance';

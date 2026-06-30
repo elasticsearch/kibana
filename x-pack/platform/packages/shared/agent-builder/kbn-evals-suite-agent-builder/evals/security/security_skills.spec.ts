@@ -249,6 +249,119 @@ evaluate.describe(
 );
 
 evaluate.describe(
+  'Security Skills - Alert Triage',
+  { tag: [...tags.serverless.security.complete, ...tags.serverless.security.ease] },
+  () => {
+    evaluate(
+      'alert triage queries activate the correct skill and tools',
+      async ({ evaluateDataset }) => {
+        await evaluateDataset({
+          dataset: {
+            name: 'agent builder: security-alert-triage-skill',
+            description:
+              'Validates that alert queue prioritization queries activate the alert-triage skill and use the prioritize-alerts tool',
+            examples: [
+              {
+                input: {
+                  question: 'What should I focus on right now?',
+                },
+                output: {
+                  expected:
+                    'I will fetch and prioritize the current alert queue, scoring alerts by risk level and MITRE tactic, then group them by shared entities so you have a ranked starting point.',
+                },
+                metadata: {
+                  query_intent: 'Alert Queue Triage',
+                  expectedSkill: 'alert-triage',
+                },
+              },
+              {
+                input: {
+                  question:
+                    'Which alerts from the last 8 hours are most urgent? Give me a prioritized view.',
+                },
+                output: {
+                  expected:
+                    'I will retrieve alerts from the last 8 hours, score them by risk score and MITRE tactic weight, cluster them by shared host and user entities, and return a ranked prioritization.',
+                },
+                metadata: {
+                  query_intent: 'Alert Queue Triage',
+                  expectedSkill: 'alert-triage',
+                  expectedOnlyToolId: 'security.alert-triage.prioritize-alerts',
+                },
+              },
+              {
+                input: {
+                  question:
+                    'What alerts should I look at to start my shift? I want to know where to begin.',
+                },
+                output: {
+                  expected:
+                    'I will prioritize the current open alert queue and group alerts by shared entities, so you have a clear ranked starting point for your shift.',
+                },
+                metadata: {
+                  query_intent: 'Alert Queue Triage',
+                  expectedSkill: 'alert-triage',
+                },
+              },
+              {
+                input: {
+                  question:
+                    'I have a large alert queue. Which of these are the highest priority to investigate?',
+                },
+                output: {
+                  expected:
+                    'I will score and rank the alerts in your queue by risk score, MITRE tactic boost, and entity clustering to surface the highest-priority groups first.',
+                },
+                metadata: {
+                  query_intent: 'Alert Queue Triage',
+                  expectedSkill: 'alert-triage',
+                },
+              },
+            ],
+          },
+        });
+      }
+    );
+  }
+);
+
+evaluate.describe(
+  'Security Skills - Alert Triage Routing Boundaries',
+  { tag: [...tags.serverless.security.complete, ...tags.serverless.security.ease] },
+  () => {
+    evaluate(
+      'single-alert investigation queries do not activate alert-triage',
+      async ({ evaluateDataset }) => {
+        await evaluateDataset({
+          dataset: {
+            name: 'agent builder: security-alert-triage-routing-boundary',
+            description:
+              'Validates that single-alert investigation queries route to alert-analysis, not alert-triage (negative test)',
+            examples: [
+              {
+                input: {
+                  question:
+                    'Help me triage alert abc-123. Is it a true positive or false positive?',
+                },
+                output: {
+                  expected:
+                    'I will investigate alert abc-123 by fetching its details, finding related alerts by shared entities, checking threat intelligence, and assessing entity risk to determine its disposition.',
+                },
+                metadata: {
+                  query_intent: 'Single Alert Investigation',
+                  shouldNotActivateSkill: 'alert-triage',
+                  expectedSkill: 'alert-analysis',
+                },
+              },
+            ],
+          },
+        });
+      }
+    );
+  }
+);
+
+evaluate.describe(
   'Security Skills - Distractor Queries',
   { tag: [...tags.serverless.security.complete, ...tags.serverless.security.ease] },
   () => {
