@@ -134,16 +134,10 @@ This tool will:
           }
         }
 
-        // Step 3: Generate the spec/config for the chosen renderer.
-        let payload:
-          | { renderer: 'vega'; visualization: { spec: string }; esql: string }
-          | {
-              renderer: 'lens';
-              visualization: Record<string, unknown>;
-              chart_type: SupportedChartType;
-              esql: string;
-              time_range?: { from: string; to: string };
-            };
+        // Step 3: Generate the spec/config for the chosen renderer and assemble
+        // the unified attachment data. `chart_type` is narrowed to
+        // SupportedChartType so the same object also satisfies the tool result.
+        let visualizationData: VisualizationAttachmentData & { chart_type?: SupportedChartType };
 
         if (renderer === 'vega') {
           const existingSpec = getExistingVegaSpec(existingData);
@@ -157,7 +151,12 @@ This tool will:
             events,
             esClient,
           });
-          payload = { renderer: 'vega', visualization: { spec }, esql: esqlQuery };
+          visualizationData = {
+            renderer: 'vega',
+            query: nlQuery,
+            visualization: { spec },
+            esql: esqlQuery,
+          };
         } else {
           const parsedExistingConfig = getExistingLensConfig(existingData);
           const existingConfig = parsedExistingConfig
@@ -176,31 +175,15 @@ This tool will:
               events,
               esClient,
             });
-          payload = {
+          visualizationData = {
             renderer: 'lens',
+            query: nlQuery,
             visualization: validatedConfig,
             chart_type: selectedChartType,
             esql: esqlQuery,
             ...(timeRange && { time_range: timeRange }),
           };
         }
-
-        const visualizationData: VisualizationAttachmentData =
-          payload.renderer === 'vega'
-            ? {
-                renderer: 'vega',
-                query: nlQuery,
-                visualization: payload.visualization,
-                esql: payload.esql,
-              }
-            : {
-                renderer: 'lens',
-                query: nlQuery,
-                visualization: payload.visualization,
-                chart_type: payload.chart_type,
-                esql: payload.esql,
-                ...(payload.time_range && { time_range: payload.time_range }),
-              };
 
         // Step 4: Try to store as attachment (optional - may fail if visualization type not registered)
         const description = `Visualization: ${nlQuery.slice(0, 50)}${
@@ -250,24 +233,10 @@ This tool will:
             {
               type: ToolResultType.visualization,
               tool_result_id: getToolResultId(),
-              data:
-                payload.renderer === 'vega'
-                  ? {
-                      renderer: 'vega' as const,
-                      query: nlQuery,
-                      esql: payload.esql,
-                      visualization: payload.visualization,
-                      ...resultMeta,
-                    }
-                  : {
-                      renderer: 'lens' as const,
-                      query: nlQuery,
-                      esql: payload.esql,
-                      visualization: payload.visualization,
-                      chart_type: payload.chart_type,
-                      ...(payload.time_range && { time_range: payload.time_range }),
-                      ...resultMeta,
-                    },
+              data: {
+                ...visualizationData,
+                ...resultMeta,
+              },
             },
           ],
         };
