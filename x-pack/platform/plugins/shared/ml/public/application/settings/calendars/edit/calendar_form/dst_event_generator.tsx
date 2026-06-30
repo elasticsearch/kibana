@@ -17,6 +17,7 @@ import {
 } from '@elastic/eui';
 import type { FC } from 'react';
 import React, { useEffect, useMemo, useState } from 'react';
+import { i18n } from '@kbn/i18n';
 import { FormattedMessage } from '@kbn/i18n-react';
 import { createDstEvents, generateTimeZones } from '../../dst_utils';
 
@@ -57,6 +58,9 @@ export const DstEventGenerator: FC<Props> = ({ addEvents, setTimezone, isDisable
     <>
       <EuiFormRow
         fullWidth
+        label={i18n.translate('xpack.ml.calendarsEdit.calendarForm.dstEventsAriaLabel', {
+          defaultMessage: 'Time zone',
+        })}
         helpText={
           <FormattedMessage
             id="xpack.ml.calendarsEdit.calendarForm.dstEventsHelpText"

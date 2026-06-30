@@ -5,6 +5,7 @@
  * 2.0.
  */
 
+import { i18n } from '@kbn/i18n';
 import { FormattedMessage } from '@kbn/i18n-react';
 import React, { useState, type FC } from 'react';
 
@@ -69,6 +70,10 @@ export const Failures: FC<Props> = ({ failedDocs, docCount }) => {
         <div css={containerStyle}>
           {failedDocs.length > PAGE_SIZE && (
             <EuiPagination
+              aria-label={i18n.translate(
+                'xpack.fileUpload.importSummary.failedDocumentsPaginationAriaLabel',
+                { defaultMessage: 'Failed documents pagination' }
+              )}
               pageCount={Math.ceil(failedDocs.length / PAGE_SIZE)}
               activePage={page}
               onPageClick={(newPage) => setPage(newPage)}
