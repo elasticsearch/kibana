@@ -43,9 +43,7 @@
     "nyc",
     // oxlint is invoked as a binary via procRunner in @kbn/lint-cli;
     // knip can't trace dynamic cmd invocations.
-    "oxlint",
-    // patch-package is invoked as a binary during bootstrap and builds;
-    "patch-package"
+    "oxlint"
   ],
   "workspaces": {
     ".": {

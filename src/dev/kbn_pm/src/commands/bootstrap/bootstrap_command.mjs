@@ -122,20 +122,6 @@ export const command = {
       log.info('skipping pre-built webpack bundles (--no-prebuilt)');
     }
 
-    if (await areNodeModulesPresent()) {
-      await time('apply node_modules patches', async () => {
-        log.info('applying node_modules patches via patch-package');
-        // The patch-package command is used to apply patches to the node_modules directory.
-        // Add patch files under ./patches using patch-package's package+version naming convention.
-        // Example: patches/example-package+1.2.3.patch
-        await run('node', ['node_modules/.bin/patch-package', '--error-on-fail'], {
-          pipe: !quiet,
-          description: 'patch-package',
-        });
-        log.success('node_modules patches applied');
-      });
-    }
-
     await Promise.all([
       skipPrebuilt
         ? undefined

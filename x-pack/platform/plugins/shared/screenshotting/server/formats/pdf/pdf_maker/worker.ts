@@ -170,7 +170,14 @@ async function execute({ data: { layout, logo, title, content } }: GeneratePdfRe
         buffers.push(data);
       });
       pdfDoc.on('end', () => {
-        resolve(Buffer.concat(buffers));
+        const output = Buffer.allocUnsafeSlow(
+          buffers.reduce((length, chunk) => length + chunk.length, 0)
+        );
+        let offset = 0;
+        for (const chunk of buffers) {
+          offset += chunk.copy(output, offset);
+        }
+        resolve(output);
       });
       pdfDoc.end();
     });
@@ -189,8 +196,7 @@ async function execute({ data: { layout, logo, title, content } }: GeneratePdfRe
         },
       },
     };
-    // @ts-expect-error upgrade typescript v5.9.3
-    port.postMessage(successResponse, [buffer.buffer /* Transfer buffer instead of copying */]);
+    port.postMessage(successResponse, [buffer.buffer as ArrayBuffer]);
   } catch (error) {
     const errorResponse: GeneratePdfResponse = {
       type: GeneratePdfResponseType.Error,
