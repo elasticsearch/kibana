@@ -61,7 +61,7 @@ const observabilityThresholdAlertingFeature = {
   consumers: [STACK_ALERTS_FEATURE_ID],
 };
 
-const alertingFeatures = [
+export const alertingFeatures = [
   ...basicAlertingFeatures,
   esQueryAlertingFeature,
   mlAnomalyDetectionAlertingFeature,
@@ -73,6 +73,7 @@ export const BUILT_IN_ALERTS_FEATURE: KibanaFeatureConfig = {
   name: i18n.translate('xpack.stackAlerts.featureRegistry.actionsFeatureName', {
     defaultMessage: 'Stack Rules',
   }),
+  order: 2000,
   app: [],
   category: DEFAULT_APP_CATEGORIES.management,
   management: {

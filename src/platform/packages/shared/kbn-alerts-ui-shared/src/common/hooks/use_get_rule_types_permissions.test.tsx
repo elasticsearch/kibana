@@ -114,7 +114,32 @@ describe('useGetRuleTypesPermissions', () => {
     expect(result.current.ruleTypesState.data.size).toBe(0);
     expect(result.current.hasAnyAuthorizedRuleType).toBe(false);
     expect(result.current.authorizedToReadAnyRules).toBe(false);
+    expect(result.current.authorizedToReadAnyAlerts).toBe(false);
     expect(result.current.authorizedToCreateAnyRules).toBe(false);
+  });
+
+  it('should return authorizedToReadAnyAlerts=true when capabilities grant stackAlertsOnly.show', async () => {
+    getRuleTypes.mockResolvedValueOnce([]);
+    const { result } = renderHook(
+      () =>
+        useGetRuleTypesPermissions({
+          http,
+          toasts,
+          enabled: true,
+          capabilities: {
+            navLinks: {},
+            management: {},
+            catalogue: {},
+            stackAlertsOnly: { show: true },
+          },
+        }),
+      {
+        wrapper: Wrapper,
+      }
+    );
+    await waitFor(() => result.current.isSuccess);
+    expect(result.current.authorizedToReadAnyAlerts).toBe(true);
+    expect(result.current.authorizedToReadAnyRules).toBe(false);
   });
 
   it('should return the correct authz flags for read-only rule types', async () => {

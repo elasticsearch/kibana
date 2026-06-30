@@ -77,12 +77,13 @@ const PageContentWrapperComponent: React.FC = () => {
     setBreadcrumbs,
     http,
     notifications: { toasts },
+    application: { capabilities },
   } = useKibana().services;
 
   const {
     ruleTypesState: { data: ruleTypesIndex, isInitialLoad: isInitialLoadingRuleTypes },
-    authorizedToReadAnyRules,
-  } = useGetRuleTypesPermissions({ http, toasts, filteredRuleTypes: [] });
+    authorizedToReadAnyAlerts,
+  } = useGetRuleTypesPermissions({ http, toasts, capabilities, filteredRuleTypes: [] });
 
   const ruleTypeIdsByFeatureId = useRuleTypeIdsByFeatureId(ruleTypesIndex);
 
@@ -94,7 +95,7 @@ const PageContentWrapperComponent: React.FC = () => {
   return !isInitialLoadingRuleTypes ? (
     <PageContent
       isLoading={isInitialLoadingRuleTypes}
-      authorizedToReadAnyRules={authorizedToReadAnyRules}
+      authorizedToReadAnyRules={authorizedToReadAnyAlerts}
       ruleTypeIdsByFeatureId={ruleTypeIdsByFeatureId}
     />
   ) : null;

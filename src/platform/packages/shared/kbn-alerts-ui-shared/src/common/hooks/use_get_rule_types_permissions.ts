@@ -12,6 +12,7 @@ import { keyBy } from 'lodash';
 import type { UseQueryOptions } from '@kbn/react-query';
 import type { HttpStart } from '@kbn/core-http-browser';
 import type { ToastsStart } from '@kbn/core-notifications-browser';
+import type { Capabilities } from '@kbn/core/public';
 import type { RuleType } from '@kbn/triggers-actions-ui-types';
 import type {
   RuleTypeIndexWithDescriptions,
@@ -19,11 +20,13 @@ import type {
 } from '@kbn/triggers-actions-ui-types';
 import { useGetRuleTypesQuery } from '@kbn/response-ops-rules-apis/hooks/use_get_rule_types_query';
 import { i18n } from '@kbn/i18n';
+import { STACK_ALERTS_ONLY_FEATURE_ID } from '@kbn/rule-data-utils';
 import { ALERTS_FEATURE_ID } from '../constants';
 
 export interface UseGetRuleTypesPermissionsParams {
   http: HttpStart;
   toasts: ToastsStart;
+  capabilities?: Capabilities;
   filteredRuleTypes?: string[];
   registeredRuleTypes?: Array<{ id: string; description: string }>;
   enabled?: boolean;
@@ -66,6 +69,7 @@ const getFilteredIndex = ({
 export const useGetRuleTypesPermissions = ({
   http,
   toasts,
+  capabilities,
   filteredRuleTypes,
   registeredRuleTypes,
   context,
@@ -107,6 +111,9 @@ export const useGetRuleTypesPermissions = ({
     authorizedToCreateAnyRules ||
     authorizedRuleTypes.some((ruleType) => ruleType.authorizedConsumers[ALERTS_FEATURE_ID]?.read);
 
+  const authorizedToReadAnyAlerts =
+    authorizedToReadAnyRules || Boolean(capabilities?.[STACK_ALERTS_ONLY_FEATURE_ID]?.show);
+
   return {
     ruleTypesState: {
       isInitialLoad: isInitialLoading,
@@ -117,6 +124,7 @@ export const useGetRuleTypesPermissions = ({
     hasAnyAuthorizedRuleType,
     authorizedRuleTypes,
     authorizedToReadAnyRules,
+    authorizedToReadAnyAlerts,
     authorizedToCreateAnyRules,
     isSuccess,
   };

@@ -121,6 +121,7 @@ export default function ({ getService }: FtrProviderContext) {
             'apm',
             'automatic_import',
             'stackAlerts',
+            'stackAlertsOnly',
             'canvas',
             'generalCasesV3',
             'infrastructure',
