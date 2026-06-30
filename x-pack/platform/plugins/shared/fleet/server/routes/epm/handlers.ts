@@ -113,6 +113,7 @@ import {
 } from '../../services/epm/packages/rollback';
 import { updatePackage, reviewUpgrade } from '../../services/epm/packages/update';
 import { scheduleSyncNamespaceTemplatesTask } from '../../tasks/sync_namespace_templates_task';
+import { scheduleSyncIlmPolicyTask } from '../../tasks/sync_ilm_policy_task';
 import { getGpgKeyIdOrUndefined } from '../../services/epm/packages/package_verification';
 import type {
   ReauthorizeTransformRequestSchema,
@@ -356,7 +357,7 @@ export const updatePackageHandler: FleetRequestHandler<
     }
   }
 
-  const { packageInfo, namespaceCustomizationDiff } = await updatePackage({
+  const { packageInfo, namespaceCustomizationDiff, ilmPolicyChanges } = await updatePackage({
     savedObjectsClient,
     pkgName,
     ...request.body,
@@ -371,6 +372,15 @@ export const updatePackageHandler: FleetRequestHandler<
       packageName: pkgName,
       addedNamespaces: namespaceCustomizationDiff.addedNamespaces,
       removedNamespaces: namespaceCustomizationDiff.removedNamespaces,
+    });
+  }
+
+  for (const { namespace, ilmPolicy } of ilmPolicyChanges) {
+    await scheduleSyncIlmPolicyTask(getTaskManagerStart(), {
+      spaceId,
+      packageName: pkgName,
+      namespace,
+      ilmPolicy,
     });
   }
 

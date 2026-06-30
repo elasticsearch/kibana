@@ -19,6 +19,7 @@ import {
   getNamespaceTemplatePriority,
 } from '../elasticsearch/template/template';
 import { isUserSettingsTemplate } from '../elasticsearch/template/utils';
+import { deleteComponentTemplates } from '../elasticsearch/template/remove';
 import {
   getRegistryDataStreamAssetBaseName,
   dataStreamUsesOtelInput,
@@ -29,6 +30,7 @@ import type { PackageInfo } from '../../../../common/types';
 
 import { updateEsAssetReferences } from './es_assets_reference';
 import { getInstalledPackageWithAssets, getInstallation } from './get';
+import { handleIlmSettingsRestoreAfterPackageInstall } from './namespace_ilm_settings';
 
 /**
  * Returns true if any of the data stream's streams effectively use the OTel collector input
@@ -358,14 +360,19 @@ async function deleteNamespaceTemplatesForPackage({
     return [];
   }
 
+  // Also delete any Fleet-managed ILM component templates that share the same names.
+  // These exist only for (data stream, namespace) pairs where an ILM policy was assigned,
+  // so a 404 is expected and silently ignored.
+  await deleteComponentTemplates(esClient, deleted);
+
   const freshInstallation = await getInstallation({
     savedObjectsClient: soClient,
     pkgName: packageName,
   });
-  const assetsToRemove = deleted.map((id) => ({
-    id,
-    type: ElasticsearchAssetType.indexTemplate,
-  }));
+  const assetsToRemove = [
+    ...deleted.map((id) => ({ id, type: ElasticsearchAssetType.indexTemplate })),
+    ...deleted.map((id) => ({ id, type: ElasticsearchAssetType.componentTemplate })),
+  ];
   await updateEsAssetReferences(soClient, packageName, freshInstallation?.installed_es ?? [], {
     assetsToRemove,
   });
@@ -419,6 +426,12 @@ export async function handleNamespaceTemplateRestoreAfterPackageInstall({
     dataStreams,
     namespaces,
     logContext: 'handleNamespaceTemplateRestoreAfterPackageInstall',
+  });
+
+  await handleIlmSettingsRestoreAfterPackageInstall({
+    soClient,
+    esClient,
+    packageName,
   });
 }
 

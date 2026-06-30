@@ -118,3 +118,14 @@ export const EpmPackagesSchemaV10 = EpmPackagesSchemaV9.extends({
     )
   ),
 });
+
+export const EpmPackagesSchemaV11 = EpmPackagesSchemaV10.extends({
+  namespace_customization_settings: schema.maybe(
+    schema.recordOf(
+      schema.string(),
+      schema.object({
+        ilm_policy: schema.maybe(schema.string()),
+      })
+    )
+  ),
+});

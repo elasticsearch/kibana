@@ -132,6 +132,7 @@ import {
   postBulkNamespaceCustomizationHandler,
 } from './bulk_handler';
 import { deletePackageDatastreamAssetsHandler } from './package_datastream_assets_handler';
+import { getIlmPoliciesHandler } from './ilm_policies_handler';
 
 const MAX_FILE_SIZE_BYTES = 104857600; // 100MB
 
@@ -1867,4 +1868,34 @@ export const registerRoutes = (router: FleetAuthzRouter, config: FleetConfigType
         bulkRollbackAvailableCheckHandler
       );
   }
+
+  router.versioned
+    .get({
+      path: EPM_API_ROUTES.ILM_POLICIES_PATTERN,
+      security: READ_PACKAGE_INFO_SECURITY,
+      summary: `Get available ILM policies`,
+      description: `Returns the list of user-created ILM policies and whether the current user has the manage_ilm cluster privilege.`,
+      options: {
+        tags: ['internal', 'oas-tag:Elastic Package Manager (EPM)'],
+        availability: {
+          since: '9.5.0',
+          stability: 'experimental',
+        },
+      },
+      access: 'internal',
+    })
+    .addVersion(
+      {
+        version: API_VERSIONS.internal.v1,
+        validate: {
+          request: {},
+          response: {
+            200: {
+              description: 'OK: A successful request.',
+            },
+          },
+        },
+      },
+      getIlmPoliciesHandler
+    );
 };

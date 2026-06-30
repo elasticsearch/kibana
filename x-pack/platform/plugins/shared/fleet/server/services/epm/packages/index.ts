@@ -42,6 +42,12 @@ export {
   syncNamespaceTemplates,
 } from './namespace_datastream_templates';
 export type { SyncNamespaceTemplatesSummary } from './namespace_datastream_templates';
+export {
+  handleIlmSettingsRestoreAfterPackageInstall,
+  insertIlmComponentTemplate,
+  syncIlmPolicy,
+} from './namespace_ilm_settings';
+export type { SyncIlmPolicySummary } from './namespace_ilm_settings';
 export class PackageNotInstalledError extends Error {
   constructor(pkgkey: string) {
     super(`${pkgkey} is not installed`);

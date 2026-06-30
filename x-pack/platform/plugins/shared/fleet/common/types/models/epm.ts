@@ -857,6 +857,8 @@ export interface Installation {
   installed_as_dependency?: boolean;
   /** Namespaces opted in for namespace-level customization for this package. */
   namespace_customization_enabled_for?: string[];
+  /** Per-namespace managed settings (e.g. ILM policy) for this package. */
+  namespace_customization_settings?: { [namespace: string]: { ilm_policy?: string } };
   /** Snapshot of dependency version changes made when this (composable) package was last installed/upgraded; used for rollback */
   previous_dependency_versions?: Array<{ name: string; previous_version: string | null }> | null;
 }

@@ -789,6 +789,20 @@ export const UpdatePackageRequestSchema = {
           }
         )
       ),
+      namespace_customization_settings: schema.maybe(
+        schema.recordOf(
+          schema.string(),
+          schema.object({
+            ilm_policy: schema.maybe(schema.string()),
+          }),
+          {
+            meta: {
+              description:
+                'Per-namespace managed settings (e.g. ILM policy) for this package. Keyed by namespace name.',
+            },
+          }
+        )
+      ),
     },
     { meta: { id: 'update_package_request' } }
   ),

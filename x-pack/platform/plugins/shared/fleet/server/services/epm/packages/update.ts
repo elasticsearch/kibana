@@ -23,6 +23,11 @@ export interface NamespaceCustomizationDiff {
   removedNamespaces: string[];
 }
 
+export interface IlmPolicyChange {
+  namespace: string;
+  ilmPolicy: string | undefined;
+}
+
 export async function updatePackage(
   options: {
     savedObjectsClient: SavedObjectsClientContract;
@@ -32,12 +37,14 @@ export async function updatePackage(
 ): Promise<{
   packageInfo: Awaited<ReturnType<typeof getPackageInfo>>;
   namespaceCustomizationDiff: NamespaceCustomizationDiff;
+  ilmPolicyChanges: IlmPolicyChange[];
 }> {
   const {
     savedObjectsClient,
     pkgName,
     keepPoliciesUpToDate,
     namespace_customization_enabled_for: newNamespaceCustomization,
+    namespace_customization_settings: newNamespaceCustomizationSettings,
   } = options;
   const installedPackage = await getInstallationObject({ savedObjectsClient, pkgName });
 
@@ -57,6 +64,7 @@ export async function updatePackage(
     addedNamespaces: [],
     removedNamespaces: [],
   };
+  const ilmPolicyChanges: IlmPolicyChange[] = [];
 
   if (keepPoliciesUpToDate !== undefined) {
     updateAttrs.keep_policies_up_to_date = keepPoliciesUpToDate;
@@ -71,6 +79,38 @@ export async function updatePackage(
     namespaceCustomizationDiff.addedNamespaces = newList.filter((ns) => !oldList.includes(ns));
     namespaceCustomizationDiff.removedNamespaces = oldList.filter((ns) => !newList.includes(ns));
     updateAttrs.namespace_customization_enabled_for = newList;
+
+    // When a namespace is opted out, automatically clear its ILM policy setting.
+    if (namespaceCustomizationDiff.removedNamespaces.length > 0) {
+      const currentSettings = installedPackage.attributes.namespace_customization_settings ?? {};
+      const patchedSettings = { ...currentSettings };
+      for (const ns of namespaceCustomizationDiff.removedNamespaces) {
+        if (patchedSettings[ns]?.ilm_policy) {
+          ilmPolicyChanges.push({ namespace: ns, ilmPolicy: undefined });
+          const { ilm_policy: _removed, ...rest } = patchedSettings[ns];
+          if (Object.keys(rest).length > 0) {
+            patchedSettings[ns] = rest;
+          } else {
+            delete patchedSettings[ns];
+          }
+        }
+      }
+      if (ilmPolicyChanges.length > 0) {
+        updateAttrs.namespace_customization_settings = patchedSettings;
+      }
+    }
+  }
+
+  if (newNamespaceCustomizationSettings) {
+    const oldSettings = installedPackage.attributes.namespace_customization_settings ?? {};
+    for (const [namespace, newNsSettings] of Object.entries(newNamespaceCustomizationSettings)) {
+      const oldIlmPolicy = oldSettings[namespace]?.ilm_policy;
+      const newIlmPolicy = newNsSettings.ilm_policy;
+      if (oldIlmPolicy !== newIlmPolicy) {
+        ilmPolicyChanges.push({ namespace, ilmPolicy: newIlmPolicy });
+      }
+    }
+    updateAttrs.namespace_customization_settings = newNamespaceCustomizationSettings;
   }
 
   await savedObjectsClient.update<Installation>(
@@ -85,7 +125,7 @@ export async function updatePackage(
     pkgVersion: installedPackage.attributes.version,
   });
 
-  return { packageInfo, namespaceCustomizationDiff };
+  return { packageInfo, namespaceCustomizationDiff, ilmPolicyChanges };
 }
 
 export async function reviewUpgrade(options: {
