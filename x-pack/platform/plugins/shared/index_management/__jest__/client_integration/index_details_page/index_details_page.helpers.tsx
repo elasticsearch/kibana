@@ -7,6 +7,7 @@
 
 import React from 'react';
 import { render, screen } from '@testing-library/react';
+import { APP_HEADER_TEST_SUBJECTS } from '@kbn/app-header';
 import { MemoryRouter } from '@kbn/shared-ux-router';
 import { Route } from '@kbn/shared-ux-router';
 import type { RouteComponentProps } from 'react-router-dom';
@@ -62,6 +63,6 @@ export const renderIndexDetailsPage = async ({
   );
 
   render(<Comp />);
-  await screen.findByTestId('indexDetailsHeader');
+  await screen.findByTestId(APP_HEADER_TEST_SUBJECTS.title);
   return { history: capturedHistory };
 };

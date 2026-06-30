@@ -7,8 +7,8 @@
 
 import React, { useEffect, useState } from 'react';
 import type { RouteComponentProps } from 'react-router-dom';
+import { i18n } from '@kbn/i18n';
 import { FormattedMessage } from '@kbn/i18n-react';
-import { EuiPageSection } from '@elastic/eui';
 import type { ScopedHistory } from '@kbn/core/public';
 
 import type { Error } from '../../../shared_imports';
@@ -103,23 +103,18 @@ export const TemplateClone: React.FunctionComponent<RouteComponentProps<MatchPar
   } as TemplateDeserialized;
 
   return (
-    <EuiPageSection restrictWidth style={{ width: '100%' }}>
-      <TemplateForm
-        title={
-          <FormattedMessage
-            id="xpack.idxMgmt.createTemplate.cloneTemplatePageTitle"
-            defaultMessage="Clone template ''{name}''"
-            values={{ name: decodedTemplateName }}
-          />
-        }
-        defaultValue={templateData}
-        onSave={onSave}
-        isSaving={isSaving}
-        saveError={saveError}
-        clearSaveError={clearSaveError}
-        isLegacy={isLegacy}
-        history={history as ScopedHistory}
-      />
-    </EuiPageSection>
+    <TemplateForm
+      title={i18n.translate('xpack.idxMgmt.createTemplate.cloneTemplatePageTitle', {
+        defaultMessage: "Clone template ''{name}''",
+        values: { name: decodedTemplateName },
+      })}
+      defaultValue={templateData}
+      onSave={onSave}
+      isSaving={isSaving}
+      saveError={saveError}
+      clearSaveError={clearSaveError}
+      isLegacy={isLegacy}
+      history={history as ScopedHistory}
+    />
   );
 };

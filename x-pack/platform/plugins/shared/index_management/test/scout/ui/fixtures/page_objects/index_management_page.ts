@@ -20,7 +20,7 @@ export class IndexManagement extends AbstractPageObject {
   }
 
   async sectionHeadingText() {
-    return await this.page.testSubj.locator('appTitle').textContent();
+    return await this.page.testSubj.locator('appHeaderTitle').textContent();
   }
 
   async changeTabs(
@@ -74,7 +74,7 @@ export class IndexManagement extends AbstractPageObject {
     await indexLinks.nth(indexOfRow).click();
 
     // Wait for index details page to load using web-first assertion
-    await expect(this.page.testSubj.locator('indexDetailsHeader')).toBeVisible();
+    await expect(this.page.testSubj.locator('indexDetailsContent')).toBeVisible();
   }
 
   async navigateToIndexManagementTab(
@@ -126,7 +126,7 @@ export class IndexManagement extends AbstractPageObject {
     expectIndexDetailsPageIsLoaded: async () => {
       await expect(this.page.testSubj.locator('indexDetailsTab-overview')).toBeVisible();
       await expect(this.page.testSubj.locator('indexDetailsContent')).toBeVisible();
-      await expect(this.page.testSubj.locator('indexDetailsBackToIndicesButton')).toBeVisible();
+      await expect(this.page.testSubj.locator('appHeaderBack')).toBeVisible();
     },
   };
 

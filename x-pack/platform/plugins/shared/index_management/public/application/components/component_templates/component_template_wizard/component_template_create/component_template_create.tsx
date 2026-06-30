@@ -7,9 +7,10 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import type { RouteComponentProps } from 'react-router-dom';
-import { FormattedMessage } from '@kbn/i18n-react';
-import { EuiPageSection, EuiSpacer, EuiPageHeader } from '@elastic/eui';
+import { i18n } from '@kbn/i18n';
+import { EuiPageSection, EuiSpacer } from '@elastic/eui';
 
+import { AppHeader } from '@kbn/app-header';
 import { useRedirectPath } from '../../../../hooks/redirect_path';
 import { breadcrumbService, IndexManagementBreadcrumb } from '../../../../services/breadcrumbs';
 import type { ComponentTemplateDeserialized } from '../../shared_imports';
@@ -124,41 +125,38 @@ export const ComponentTemplateCreate: React.FunctionComponent<RouteComponentProp
   }, [isCloning]);
 
   return (
-    <EuiPageSection restrictWidth style={{ width: '100%' }}>
-      <EuiPageHeader
-        pageTitle={
-          <span data-test-subj="pageTitle">
-            {isCloning ? (
-              <FormattedMessage
-                id="xpack.idxMgmt.cloneComponentTemplate.pageTitle"
-                defaultMessage="Clone component template"
-              />
-            ) : (
-              <FormattedMessage
-                id="xpack.idxMgmt.createComponentTemplate.pageTitle"
-                defaultMessage="Create component template"
-              />
-            )}
-          </span>
+    <>
+      <AppHeader
+        title={
+          isCloning
+            ? i18n.translate('xpack.idxMgmt.cloneComponentTemplate.pageTitle', {
+                defaultMessage: 'Clone component template',
+              })
+            : i18n.translate('xpack.idxMgmt.createComponentTemplate.pageTitle', {
+                defaultMessage: 'Create component template',
+              })
         }
-        bottomBorder
+        back="/app/management/data/index_management/component_templates"
+        padding={{ bleed: 'l' }}
       />
 
-      <EuiSpacer size="l" />
+      <EuiPageSection restrictWidth style={{ width: '100%' }} paddingSize="none">
+        <EuiSpacer size="l" />
 
-      <ComponentTemplateForm
-        defaultActiveWizardSection={defaultActiveStep}
-        onStepChange={(step) => {
-          setCurrentStep(step);
-          updateStep(step);
-        }}
-        defaultValue={defaultValue}
-        onSave={onSave}
-        isSaving={isSaving}
-        saveError={saveError}
-        setComponentName={setComponentName}
-        clearSaveError={clearSaveError}
-      />
-    </EuiPageSection>
+        <ComponentTemplateForm
+          defaultActiveWizardSection={defaultActiveStep}
+          onStepChange={(step) => {
+            setCurrentStep(step);
+            updateStep(step);
+          }}
+          defaultValue={defaultValue}
+          onSave={onSave}
+          isSaving={isSaving}
+          saveError={saveError}
+          setComponentName={setComponentName}
+          clearSaveError={clearSaveError}
+        />
+      </EuiPageSection>
+    </>
   );
 };

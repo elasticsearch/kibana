@@ -7,6 +7,8 @@
 
 import { screen, waitFor } from '@testing-library/react';
 
+import { APP_HEADER_TEST_SUBJECTS } from '@kbn/app-header';
+import { openAppMenuOverflow } from '@kbn/app-header/test_helpers';
 import {
   getMatchingIndices,
   getFieldsFromIndices,
@@ -42,8 +44,14 @@ describe('Create enrich policy', () => {
 
     await screen.findByTestId('configurationForm');
 
-    expect(exists('createEnrichPolicyHeaderContent')).toBe(true);
-    expect(exists('createEnrichPolicyDocumentationLink')).toBe(true);
+    expect(screen.getByTestId(APP_HEADER_TEST_SUBJECTS.title)).toHaveTextContent(
+      'Create enrich policy'
+    );
+
+    await openAppMenuOverflow();
+    expect(await screen.findByTestId(APP_HEADER_TEST_SUBJECTS.menuDocumentation)).toHaveAttribute(
+      'href'
+    );
   });
 
   describe('Configuration step', () => {

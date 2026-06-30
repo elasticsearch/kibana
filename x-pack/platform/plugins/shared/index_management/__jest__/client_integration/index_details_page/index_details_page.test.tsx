@@ -11,6 +11,8 @@ import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from '@kbn/shared-ux-router';
 import { Route } from '@kbn/shared-ux-router';
 import { EuiButtonGroupTestHarness, EuiComboBoxTestHarness } from '@kbn/test-eui-helpers';
+import { APP_HEADER_TEST_SUBJECTS, APP_MENU_TEST_SUBJECTS } from '@kbn/app-header';
+import { openAppMenuOverflow } from '@kbn/app-header/test_helpers';
 import type { RouteComponentProps } from 'react-router-dom';
 
 import type { IndexDetailsTab, IndexDetailsTabId } from '../../../common/constants';
@@ -346,7 +348,7 @@ describe('<IndexDetailsPage />', () => {
 
   it('displays index name in the header', async () => {
     await renderPage();
-    const header = screen.getByTestId('indexDetailsHeader');
+    const header = screen.getByTestId(APP_HEADER_TEST_SUBJECTS.root);
     expect(within(header).getByRole('heading', { level: 1 })).toHaveTextContent(testIndexName);
   });
 
@@ -504,10 +506,11 @@ describe('<IndexDetailsPage />', () => {
           },
         },
       });
-      const header = screen.getByTestId('indexDetailsHeader');
-      expect(within(header).getByRole('heading', { level: 1 })).toHaveTextContent(
-        `${testIndexName} ${testBadges.join(' ')}`
-      );
+      const header = screen.getByTestId(APP_HEADER_TEST_SUBJECTS.root);
+      expect(within(header).getByRole('heading', { level: 1 })).toHaveTextContent(testIndexName);
+      testBadges.forEach((badge) => {
+        expect(within(header).getByText(badge)).toBeInTheDocument();
+      });
     });
 
     describe('extension service overview content', () => {
@@ -712,21 +715,26 @@ describe('<IndexDetailsPage />', () => {
   });
 
   describe('context menu', () => {
-    afterEach(async () => {
-      // Ensure the index actions popover doesn't stay open across tests.
-      if (screen.queryByTestId('indexContextMenu')) {
-        fireEvent.click(screen.getByTestId('indexActionsContextMenuButton'));
-        await waitFor(() => {
-          expect(screen.queryByTestId('indexContextMenu')).not.toBeInTheDocument();
-        });
+    // The "Manage index" actions live behind the app-menu overflow popover: open it, then open the
+    // manage-index submenu so the individual action buttons become queryable.
+    const openManageIndexMenu = async () => {
+      await openAppMenuOverflow();
+      fireEvent.click(await screen.findByTestId('indexActionsContextMenuButton'));
+    };
+
+    afterEach(() => {
+      // Close the app-menu overflow popover if a test left it open.
+      const overflowButton = screen.queryByTestId(APP_MENU_TEST_SUBJECTS.overflowButton);
+      if (overflowButton && screen.queryByTestId(APP_MENU_TEST_SUBJECTS.popover)) {
+        fireEvent.click(overflowButton);
       }
     });
 
-    it('opens an index context menu when "manage index" button is clicked', async () => {
+    it('opens the manage index menu when "manage index" button is clicked', async () => {
       await renderPage();
-      expect(screen.queryByTestId('indexContextMenu')).not.toBeInTheDocument();
-      fireEvent.click(screen.getByTestId('indexActionsContextMenuButton'));
-      await screen.findByTestId('indexContextMenu');
+      expect(screen.queryByTestId('deleteIndexMenuButton')).not.toBeInTheDocument();
+      await openManageIndexMenu();
+      await screen.findByTestId('deleteIndexMenuButton');
     });
 
     it('closes an index', async () => {
@@ -734,7 +742,7 @@ describe('<IndexDetailsPage />', () => {
       const getMock = jest.mocked(httpSetup.get);
       const requestsBefore = getMock.mock.calls.length;
 
-      fireEvent.click(screen.getByTestId('indexActionsContextMenuButton'));
+      await openManageIndexMenu();
       const closeButton = await screen.findByTestId('closeIndexMenuButton');
       fireEvent.click(closeButton);
 
@@ -758,7 +766,7 @@ describe('<IndexDetailsPage />', () => {
       const getMock = jest.mocked(httpSetup.get);
       const requestsBefore = getMock.mock.calls.length;
 
-      fireEvent.click(screen.getByTestId('indexActionsContextMenuButton'));
+      await openManageIndexMenu();
       const openButton = await screen.findByTestId('openIndexMenuButton');
       fireEvent.click(openButton);
 
@@ -776,7 +784,7 @@ describe('<IndexDetailsPage />', () => {
       const getMock = jest.mocked(httpSetup.get);
       const requestsBefore = getMock.mock.calls.length;
 
-      fireEvent.click(screen.getByTestId('indexActionsContextMenuButton'));
+      await openManageIndexMenu();
       const forcemergeButton = await screen.findByTestId('forcemergeIndexMenuButton');
       fireEvent.click(forcemergeButton);
 
@@ -799,7 +807,7 @@ describe('<IndexDetailsPage />', () => {
       const getMock = jest.mocked(httpSetup.get);
       const requestsBefore = getMock.mock.calls.length;
 
-      fireEvent.click(screen.getByTestId('indexActionsContextMenuButton'));
+      await openManageIndexMenu();
       const refreshButton = await screen.findByTestId('refreshIndexMenuButton');
       fireEvent.click(refreshButton);
 
@@ -818,7 +826,7 @@ describe('<IndexDetailsPage />', () => {
       const getMock = jest.mocked(httpSetup.get);
       const requestsBefore = getMock.mock.calls.length;
 
-      fireEvent.click(screen.getByTestId('indexActionsContextMenuButton'));
+      await openManageIndexMenu();
       const clearCacheButton = await screen.findByTestId('clearCacheIndexMenuButton');
       fireEvent.click(clearCacheButton);
 
@@ -837,7 +845,7 @@ describe('<IndexDetailsPage />', () => {
       const getMock = jest.mocked(httpSetup.get);
       const requestsBefore = getMock.mock.calls.length;
 
-      fireEvent.click(screen.getByTestId('indexActionsContextMenuButton'));
+      await openManageIndexMenu();
       const flushButton = await screen.findByTestId('flushIndexMenuButton');
       fireEvent.click(flushButton);
 
@@ -854,7 +862,7 @@ describe('<IndexDetailsPage />', () => {
     it(`deletes an index`, async () => {
       await renderPage();
 
-      fireEvent.click(screen.getByTestId('indexActionsContextMenuButton'));
+      await openManageIndexMenu();
       const deleteButton = await screen.findByTestId('deleteIndexMenuButton');
       fireEvent.click(deleteButton);
 
@@ -1689,31 +1697,29 @@ describe('<IndexDetailsPage />', () => {
   });
 
   describe('navigates back to the indices list', () => {
+    // The back button is an internal app link; the global redirectAppLinks wrapper (absent in tests)
+    // turns the click into SPA navigation, so we assert the href the link carries instead.
     it('without indices list params', async () => {
-      const { history } = await renderPage();
-      fireEvent.click(screen.getByTestId('indexDetailsBackToIndicesButton'));
-
-      await waitFor(() => {
-        expect(history.location.pathname).toBe('/indices');
-        expect(history.location.search).toBe('');
-      });
+      await renderPage();
+      expect(screen.getByTestId(APP_HEADER_TEST_SUBJECTS.back)).toHaveAttribute(
+        'href',
+        '/app/management/data/index_management/indices'
+      );
     });
 
     it('with indices list params', async () => {
       const filter = 'isFollower:true';
-      const { history } = await renderPage(
+      await renderPage(
         `/indices/index_details?indexName=${testIndexName}&filter=${encodeURIComponent(
           filter
         )}&includeHiddenIndices=true`
       );
-      fireEvent.click(screen.getByTestId('indexDetailsBackToIndicesButton'));
-
-      await waitFor(() => {
-        expect(history.location.pathname).toBe('/indices');
-        expect(history.location.search).toBe(
-          `?filter=${encodeURIComponent(filter)}&includeHiddenIndices=true`
-        );
-      });
+      expect(screen.getByTestId(APP_HEADER_TEST_SUBJECTS.back)).toHaveAttribute(
+        'href',
+        `/app/management/data/index_management/indices?filter=${encodeURIComponent(
+          filter
+        )}&includeHiddenIndices=true`
+      );
     });
   });
 });

@@ -7,6 +7,8 @@
 
 import { screen, fireEvent, within } from '@testing-library/react';
 
+import { APP_HEADER_TEST_SUBJECTS } from '@kbn/app-header';
+import { openAppMenuOverflow } from '@kbn/app-header/test_helpers';
 import { setupEnvironment } from '../helpers/setup_environment';
 import { renderHome } from '../helpers/render_home';
 
@@ -27,22 +29,28 @@ describe('<IndexManagementHome />', () => {
 
       await renderHome(httpSetup);
 
-      await screen.findByTestId('appTitle');
+      await screen.findByTestId(APP_HEADER_TEST_SUBJECTS.title);
     });
 
     test('should set the correct app title', () => {
-      expect(screen.getByTestId('appTitle')).toBeInTheDocument();
-      expect(screen.getByTestId('appTitle')).toHaveTextContent('Index Management');
+      expect(screen.getByTestId(APP_HEADER_TEST_SUBJECTS.title)).toBeInTheDocument();
+      expect(screen.getByTestId(APP_HEADER_TEST_SUBJECTS.title)).toHaveTextContent(
+        'Index Management'
+      );
     });
 
-    test('should have a link to the documentation', () => {
-      expect(screen.getByTestId('documentationLink')).toBeInTheDocument();
-      expect(screen.getByTestId('documentationLink')).toHaveTextContent('Index Management docs');
+    test('should have a link to the documentation', async () => {
+      await openAppMenuOverflow();
+      const documentationLink = await screen.findByTestId(
+        APP_HEADER_TEST_SUBJECTS.menuDocumentation
+      );
+      expect(documentationLink).toHaveAttribute('href');
+      expect(documentationLink).toHaveAttribute('target', '_blank');
     });
 
     describe('tabs', () => {
       test('should have 5 tabs', () => {
-        const indexManagementHeader = screen.getByTestId('indexManagementHeaderContent');
+        const indexManagementHeader = screen.getByTestId(APP_HEADER_TEST_SUBJECTS.tabs);
         const tabs = within(indexManagementHeader).getAllByRole('tab');
 
         const expectedTabLabels = [
@@ -90,7 +98,7 @@ describe('<IndexManagementHome />', () => {
           },
         },
       });
-      await screen.findByTestId('appTitle');
+      await screen.findByTestId(APP_HEADER_TEST_SUBJECTS.title);
     });
 
     test('SHOULD still open Component Templates without create affordances', async () => {

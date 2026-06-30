@@ -8,6 +8,8 @@
 import React, { useEffect } from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { I18nProvider } from '@kbn/i18n-react';
+import { coreMock } from '@kbn/core/public/mocks';
+import { KibanaRenderContextProvider } from '@kbn/react-kibana-context-render';
 
 import type { TemplateDeserialized } from '../../../../common';
 import { Forms, GlobalFlyout } from '../../../shared_imports';
@@ -168,11 +170,13 @@ const renderTemplateForm = (props: Partial<React.ComponentProps<typeof TemplateF
   };
 
   return render(
-    <I18nProvider>
-      <GlobalFlyoutProvider>
-        <TemplateForm {...defaultProps} />
-      </GlobalFlyoutProvider>
-    </I18nProvider>
+    <KibanaRenderContextProvider {...coreMock.createStart()}>
+      <I18nProvider>
+        <GlobalFlyoutProvider>
+          <TemplateForm {...defaultProps} />
+        </GlobalFlyoutProvider>
+      </I18nProvider>
+    </KibanaRenderContextProvider>
   );
 };
 

@@ -77,6 +77,8 @@
     "@kbn/cloud-connect-plugin",
     "@kbn/shared-ux-column-presets",
     "@kbn/index-lifecycle-management-common-shared",
+    "@kbn/core-chrome-app-menu-components",
+    "@kbn/app-header",
   ],
   "exclude": ["target/**/*"]
 }

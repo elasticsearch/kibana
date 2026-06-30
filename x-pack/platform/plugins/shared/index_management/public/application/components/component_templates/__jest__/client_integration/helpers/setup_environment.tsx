@@ -19,6 +19,7 @@ import {
   scopedHistoryMock,
   httpServiceMock,
 } from '@kbn/core/public/mocks';
+import { KibanaRenderContextProvider } from '@kbn/react-kibana-context-render';
 import { GlobalFlyout } from '@kbn/es-ui-shared-plugin/public';
 
 import { breadcrumbService } from '../../../../../services/breadcrumbs';
@@ -99,14 +100,18 @@ export const WithAppDependencies =
       appContextMerge
     ) as AppDependencies;
     return (
-      <AppContextProvider value={appDependencies}>
-        <MappingsEditorProvider>
-          <ComponentTemplatesProvider value={componentTemplatesDependencies(httpSetup, coreStart)}>
-            <GlobalFlyoutProvider>
-              <Comp {...props} />
-            </GlobalFlyoutProvider>
-          </ComponentTemplatesProvider>
-        </MappingsEditorProvider>
-      </AppContextProvider>
+      <KibanaRenderContextProvider {...(coreStart ?? coreMock.createStart())}>
+        <AppContextProvider value={appDependencies}>
+          <MappingsEditorProvider>
+            <ComponentTemplatesProvider
+              value={componentTemplatesDependencies(httpSetup, coreStart)}
+            >
+              <GlobalFlyoutProvider>
+                <Comp {...props} />
+              </GlobalFlyoutProvider>
+            </ComponentTemplatesProvider>
+          </MappingsEditorProvider>
+        </AppContextProvider>
+      </KibanaRenderContextProvider>
     );
   };

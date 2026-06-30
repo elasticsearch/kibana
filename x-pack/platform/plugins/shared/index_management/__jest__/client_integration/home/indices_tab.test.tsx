@@ -11,6 +11,7 @@
 import React from 'react';
 import { screen, fireEvent, waitFor } from '@testing-library/react';
 import { httpServiceMock } from '@kbn/core/public/mocks';
+import { APP_HEADER_TEST_SUBJECTS } from '@kbn/app-header';
 
 import type { Index } from '../../../common';
 import { API_BASE_PATH, INTERNAL_API_BASE_PATH } from '../../../common';
@@ -128,8 +129,7 @@ describe('<IndexManagementHome />', () => {
     const tableActions = createIndexTableActions();
     await tableActions.clickIndexNameAt(0);
 
-    await screen.findByTestId('indexDetailsHeader');
-    expect(screen.getByTestId('indexDetailsHeader')).toBeInTheDocument();
+    expect(await screen.findByTestId(APP_HEADER_TEST_SUBJECTS.title)).toHaveTextContent(indexName);
   });
 
   it('index page works with % character in index name', async () => {
@@ -147,8 +147,7 @@ describe('<IndexManagementHome />', () => {
     const tableActions = createIndexTableActions();
     await tableActions.clickIndexNameAt(0);
 
-    await screen.findByTestId('indexDetailsHeader');
-    expect(screen.getByTestId('indexDetailsHeader')).toBeInTheDocument();
+    expect(await screen.findByTestId(APP_HEADER_TEST_SUBJECTS.title)).toHaveTextContent(indexName);
     expect(httpSetup.get).toHaveBeenCalledWith(
       `${INTERNAL_API_BASE_PATH}/indices/${encodeURIComponent(indexName)}`,
       expect.anything()

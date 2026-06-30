@@ -7,6 +7,7 @@
 
 import { screen, fireEvent, within, waitFor } from '@testing-library/react';
 import { coreMock } from '@kbn/core/public/mocks';
+import { APP_HEADER_TEST_SUBJECTS } from '@kbn/app-header';
 
 import { breadcrumbService, IndexManagementBreadcrumb } from '../../../../services/breadcrumbs';
 import { setupEnvironment } from './helpers';
@@ -57,7 +58,7 @@ describe('<ComponentTemplateEdit />', () => {
       });
 
       renderComponentTemplateEdit(httpSetup, coreStart);
-      await screen.findByTestId('pageTitle');
+      await screen.findByTestId(APP_HEADER_TEST_SUBJECTS.title);
     });
 
     test('updates the breadcrumbs to component templates', () => {
@@ -67,9 +68,9 @@ describe('<ComponentTemplateEdit />', () => {
     });
 
     test('should set the correct page title', () => {
-      expect(screen.getByTestId('pageTitle')).toBeInTheDocument();
+      expect(screen.getByTestId(APP_HEADER_TEST_SUBJECTS.title)).toBeInTheDocument();
       expect(screen.getByTestId('deprecatedTemplateCallout')).toBeInTheDocument();
-      expect(screen.getByTestId('pageTitle')).toHaveTextContent(
+      expect(screen.getByTestId(APP_HEADER_TEST_SUBJECTS.title)).toHaveTextContent(
         `Edit component template '${COMPONENT_TEMPLATE_NAME}'`
       );
     });
@@ -98,7 +99,7 @@ describe('<ComponentTemplateEdit />', () => {
       });
 
       renderComponentTemplateEdit(httpSetup, coreStart);
-      await screen.findByTestId('pageTitle');
+      await screen.findByTestId(APP_HEADER_TEST_SUBJECTS.title);
     });
 
     it('should send the correct payload with changed values', async () => {
@@ -158,7 +159,7 @@ describe('<ComponentTemplateEdit />', () => {
       });
 
       renderComponentTemplateEdit(httpSetup, coreStart, '@custom');
-      await screen.findByTestId('pageTitle');
+      await screen.findByTestId(APP_HEADER_TEST_SUBJECTS.title);
     });
 
     it('should show mappings rollover modal on save if apply mappings call failed', async () => {
@@ -265,7 +266,7 @@ describe('<ComponentTemplateEdit />', () => {
       );
 
       renderComponentTemplateEdit(httpSetup, coreStart);
-      await screen.findByTestId('pageTitle');
+      await screen.findByTestId(APP_HEADER_TEST_SUBJECTS.title);
 
       httpRequestsMockHelpers.setPostDatastreamMappingsFromTemplate(
         DATASTREAM_NAME,

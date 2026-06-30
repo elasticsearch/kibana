@@ -26,7 +26,7 @@ test.describe('Index template wizard - Preview template', { tag: tags.stateful.c
 
     await test.step('open wizard and fill logistics', async () => {
       await page.testSubj.locator('createTemplateButton').click();
-      await expect(page.testSubj.locator('pageTitle')).toHaveText('Create template');
+      await expect(page.testSubj.locator('appHeaderTitle')).toHaveText('Create template');
       await expect(page.testSubj.locator('stepTitle')).toHaveText('Logistics');
 
       const nameField = new EuiFieldTextWrapper(page, { dataTestSubj: 'nameField' });

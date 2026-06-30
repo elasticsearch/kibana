@@ -118,6 +118,11 @@ import { APP_HEADER_TEST_SUBJECTS } from '@kbn/app-header';
 expect(screen.getByTestId(APP_HEADER_TEST_SUBJECTS.title)).toHaveTextContent('My app');
 ```
 
+`APP_HEADER_TEST_SUBJECTS.title` is placed on the visible title text element (not the wrapper), so
+exact text matchers such as Playwright `toHaveText` or jest exact text resolve to just the rendered
+title and are not polluted by the hidden width sizer. In edit mode the visible title is replaced by
+the input, exposed as `APP_HEADER_TEST_SUBJECTS.titleInput`.
+
 Menu items — including the header's own documentation/feedback/integrations — collapse into the app
 menu overflow popover at narrow widths (the default in jsdom). Open it with the helper from
 `@kbn/app-header/test_helpers` before querying those items:

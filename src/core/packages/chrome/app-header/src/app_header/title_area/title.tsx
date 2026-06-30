@@ -402,17 +402,17 @@ export const Title = React.memo<TitleProps>(({ title, titleOffset, size = 's' })
   const readContent = (
     <>
       {renderSizer(displayText)}
-      <span css={[styles.titleText, isPlaceholder ? styles.placeholderText : undefined]}>
+      <span
+        data-test-subj={APP_HEADER_TEST_SUBJECTS.title}
+        css={[styles.titleText, isPlaceholder ? styles.placeholderText : undefined]}
+      >
         {displayText}
       </span>
     </>
   );
 
   return (
-    <div
-      css={[styles.titleWrapper, titleOffset ? styles.titleOffsetStyle : undefined]}
-      data-test-subj={APP_HEADER_TEST_SUBJECTS.title}
-    >
+    <div css={[styles.titleWrapper, titleOffset ? styles.titleOffsetStyle : undefined]}>
       <EuiTitle size={size}>
         <h1>
           {isEditing ? (

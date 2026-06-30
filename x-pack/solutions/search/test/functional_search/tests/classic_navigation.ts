@@ -61,7 +61,7 @@ export default function searchSolutionNavigation({
         {
           navItem: 'Indices',
           breadcrumbs: ['Build', 'Index Management'],
-          pageTestSubject: 'indexManagementHeaderContent',
+          pageTestSubject: 'indicesList',
         },
         {
           navItem: 'Playground',

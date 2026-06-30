@@ -9,7 +9,7 @@ import expect from '@kbn/expect';
 import type { FtrProviderContext } from '../../../ftr_provider_context';
 
 export default ({ getPageObjects, getService }: FtrProviderContext) => {
-  const pageObjects = getPageObjects(['common', 'indexManagement', 'header']);
+  const pageObjects = getPageObjects(['common', 'indexManagement', 'header', 'appMenu']);
   const log = getService('log');
   const security = getService('security');
   const comboBox = getService('comboBox');
@@ -64,8 +64,8 @@ export default ({ getPageObjects, getService }: FtrProviderContext) => {
     });
 
     it('shows create enrich policies page and docs link', async () => {
-      expect(await testSubjects.exists('createEnrichPolicyHeaderContent')).to.be(true);
-      expect(await testSubjects.exists('createEnrichPolicyDocumentationLink')).to.be(true);
+      expect(await testSubjects.getVisibleText('appHeaderTitle')).to.be('Create enrich policy');
+      expect(await pageObjects.appMenu.menuItemExists('appHeaderMenuDocumentation')).to.be(true);
     });
 
     it('can create an enrich policy', async () => {

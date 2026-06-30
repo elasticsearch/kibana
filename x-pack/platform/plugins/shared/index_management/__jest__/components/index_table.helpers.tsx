@@ -16,7 +16,9 @@ import {
   notificationServiceMock,
   executionContextServiceMock,
   chromeServiceMock,
+  coreMock,
 } from '@kbn/core/public/mocks';
+import { KibanaRenderContextProvider } from '@kbn/react-kibana-context-render';
 import { settingsServiceMock } from '@kbn/core-ui-settings-browser-mocks';
 import type { AppDependencies } from '../../public/application/app_context';
 import { AppContextProvider } from '../../public/application/app_context';
@@ -223,15 +225,17 @@ export const renderIndexApp = async (options?: {
   store.dispatch(loadIndicesSuccess({ indices }));
 
   render(
-    <I18nProvider>
-      <Provider store={store}>
-        <MemoryRouter initialEntries={[`${BASE_PATH}indices`]}>
-          <AppContextProvider value={{ ...appDependencies, ...(dependenciesOverride || {}) }}>
-            <AppWithoutRouter />
-          </AppContextProvider>
-        </MemoryRouter>
-      </Provider>
-    </I18nProvider>
+    <KibanaRenderContextProvider {...coreMock.createStart()}>
+      <I18nProvider>
+        <Provider store={store}>
+          <MemoryRouter initialEntries={[`${BASE_PATH}indices`]}>
+            <AppContextProvider value={{ ...appDependencies, ...(dependenciesOverride || {}) }}>
+              <AppWithoutRouter />
+            </AppContextProvider>
+          </MemoryRouter>
+        </Provider>
+      </I18nProvider>
+    </KibanaRenderContextProvider>
   );
 
   await runPendingTimers();

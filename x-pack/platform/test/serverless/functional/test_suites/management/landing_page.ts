@@ -36,7 +36,7 @@ export default ({ getPageObjects, getService }: FtrProviderContext) => {
     it('navigates to index management by clicking the card', async () => {
       await testSubjects.click('app-card-index_management');
       await retry.waitFor('Index Management title to be visible', async () => {
-        return await testSubjects.exists('indexManagementHeaderContent');
+        return await testSubjects.exists('indicesList');
       });
     });
 

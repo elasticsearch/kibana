@@ -32,8 +32,8 @@ test.describe('Index template wizard - Create', { tag: tags.stateful.classic }, 
     await page.testSubj.locator('createTemplateButton').click();
 
     await test.step('verify page title', async () => {
-      await expect(page.testSubj.locator('pageTitle')).toBeVisible();
-      await expect(page.testSubj.locator('pageTitle')).toHaveText('Create template');
+      await expect(page.testSubj.locator('appHeaderTitle')).toBeVisible();
+      await expect(page.testSubj.locator('appHeaderTitle')).toHaveText('Create template');
     });
 
     await test.step('1: Logistics', async () => {

@@ -7,25 +7,24 @@
 
 import type { FunctionComponent } from 'react';
 import React, { useCallback, useMemo } from 'react';
-import type { EuiPageHeaderProps } from '@elastic/eui';
-import { EuiButtonEmpty, EuiIcon, EuiPageHeader, EuiSpacer } from '@elastic/eui';
+import { EuiBadge, EuiSpacer } from '@elastic/eui';
 import { css } from '@emotion/react';
-import { FormattedMessage } from '@kbn/i18n-react';
 import { i18n } from '@kbn/i18n';
 import type { RouteComponentProps } from 'react-router-dom';
 import { openWiredConnectionDetails } from '@kbn/cloud/connection_details';
+import { ROLLUP_DEPRECATION_BADGE_LABEL, RollupDeprecationTooltip } from '@kbn/rollup';
 
+import { AppHeader, type AppHeaderTab, type AppHeaderBadge } from '@kbn/app-header';
+import type { AppMenuConfig } from '@kbn/core-chrome-app-menu-components';
 import { useIndexErrors } from '../../../../hooks/use_index_errors';
 import { resetIndexUrlParams } from './reset_index_url_params';
-import { renderBadges } from '../../../../lib/render_badges';
 import { useLoadIndexDocumentsSample } from '../../../../services/api';
 import type { Index } from '../../../../../../common';
 import type { IndexDetailsTab, IndexDetailsTabId } from '../../../../../../common/constants';
-import { INDEX_OPEN, IndexDetailsSection } from '../../../../../../common/constants';
+import { INDEX_OPEN, IndexDetailsSection, Section } from '../../../../../../common/constants';
 import { getIndexDetailsLink } from '../../../../services/routing';
 import { useAppContext } from '../../../../app_context';
-import { DiscoverLink } from '../../../../lib/discover_link';
-import { ManageIndexButton } from './manage_index_button';
+import { useManageIndexMenu } from './use_manage_index_menu';
 import { DetailsPageMappings } from './details_page_mappings';
 import { DetailsPageSettings } from './details_page_settings';
 import { DetailsPageStats } from './details_page_stats';
@@ -87,7 +86,9 @@ export const DetailsPageContent: FunctionComponent<Props> = ({
     config: { enableIndexStats },
     plugins: { console: consolePlugin, ml },
     services: { extensionsService, notificationService },
+    url,
   } = useAppContext();
+  const discoverLocator = url?.locators.get('DISCOVER_APP_LOCATOR');
   const hasMLPermissions = capabilities?.ml?.canGetTrainedModels ? true : false;
 
   const indexErrors = useIndexErrors(index, ml, hasMLPermissions);
@@ -146,86 +147,122 @@ export const DetailsPageContent: FunctionComponent<Props> = ({
     [history, index.name, search]
   );
 
+  // An internal app link; the global redirectAppLinks wrapper turns the click into SPA navigation.
+  // The preserved indices-list params (filter, hidden toggle, …) are carried in the href itself.
+  const indicesListHref = useMemo(() => {
+    const paramsString = resetIndexUrlParams(search);
+    return `/app/management/data/index_management/${Section.Indices}${
+      paramsString ? `?${paramsString}` : ''
+    }`;
+  }, [search]);
+
   const onIndexRefresh = useCallback(() => {
     return resendDocumentsSampleRequest();
   }, [resendDocumentsSampleRequest]);
 
-  const headerTabs = useMemo<EuiPageHeaderProps['tabs']>(() => {
-    return tabs.map((tabConfig) => ({
-      onClick: () => onSectionChange(tabConfig.id),
-      isSelected: tabConfig.id === tab,
-      key: tabConfig.id,
-      'data-test-subj': `indexDetailsTab-${tabConfig.id}`,
-      label: tabConfig.name,
-    }));
-  }, [tabs, tab, onSectionChange]);
+  const { manageIndexItems, modalHost } = useManageIndexMenu({
+    index,
+    reloadIndexDetails: fetchIndexDetails,
+    navigateToIndicesList,
+    onIndexRefresh,
+  });
 
-  const pageTitle = (
-    <>
-      {index.name}
-      {renderBadges(index, extensionsService)}
-    </>
+  const headerTabs = useMemo<AppHeaderTab[]>(
+    () =>
+      tabs.map((tabConfig) => ({
+        id: tabConfig.id,
+        label: tabConfig.name as string,
+        isSelected: tabConfig.id === tab,
+        onClick: () => onSectionChange(tabConfig.id),
+        'data-test-subj': `indexDetailsTab-${tabConfig.id}`,
+      })),
+    [tabs, tab, onSectionChange]
+  );
+
+  const badges = useMemo<AppHeaderBadge[]>(() => {
+    const result: AppHeaderBadge[] = [];
+    extensionsService.badges.forEach((indexBadge) => {
+      if (indexBadge.matchIndex(index)) {
+        const badge: AppHeaderBadge = {
+          label: indexBadge.label,
+          color: indexBadge.color as AppHeaderBadge['color'],
+        };
+
+        if (indexBadge.label === ROLLUP_DEPRECATION_BADGE_LABEL) {
+          badge.renderCustomBadge = ({ badgeText }) => (
+            <RollupDeprecationTooltip>
+              <EuiBadge color={indexBadge.color}>{badgeText}</EuiBadge>
+            </RollupDeprecationTooltip>
+          );
+        }
+
+        result.push(badge);
+      }
+    });
+    return result;
+  }, [extensionsService.badges, index]);
+
+  const appMenu = useMemo<AppMenuConfig>(
+    () => ({
+      primaryActionItem: discoverLocator
+        ? {
+            id: 'discoverIndex',
+            label: i18n.translate('xpack.idxMgmt.indexDetails.openInDiscoverMenuLabel', {
+              defaultMessage: 'Open in Discover',
+            }),
+            iconType: 'discoverApp' as const,
+            run: () => {
+              discoverLocator.navigate({ dataViewSpec: { title: index.name } });
+            },
+            testId: 'discoverButtonLink',
+          }
+        : undefined,
+      items: [
+        {
+          id: 'connectionDetails',
+          order: 1,
+          label: i18n.translate('xpack.idxMgmt.indexDetails.connectionDetailsMenuLabel', {
+            defaultMessage: 'Connection details',
+          }),
+          iconType: 'plugs' as const,
+          run: () => {
+            openWiredConnectionDetails({
+              props: { options: { defaultTabId: 'apiKeys' } },
+            }).catch((error) => {
+              notificationService.showDangerToast(
+                error?.body?.message ?? error?.message ?? 'An unexpected error occurred'
+              );
+            });
+          },
+          testId: 'openConnectionDetails',
+        },
+        {
+          id: 'manageIndex',
+          order: 2,
+          label: i18n.translate('xpack.idxMgmt.indexDetails.manageIndexMenuLabel', {
+            defaultMessage: 'Manage index',
+          }),
+          iconType: 'managementApp' as const,
+          items: manageIndexItems,
+          testId: 'indexActionsContextMenuButton',
+        },
+      ],
+    }),
+    [index.name, discoverLocator, notificationService, manageIndexItems]
   );
 
   return (
     <>
-      <EuiPageHeader
-        data-test-subj="indexDetailsHeader"
-        pageTitle={pageTitle}
-        breadcrumbs={[
-          {
-            ['data-test-subj']: 'indexDetailsBackToIndicesButton',
-            text: (
-              <>
-                <EuiIcon size="s" aria-hidden={true} type="chevronSingleLeft" />
-                <FormattedMessage
-                  id="xpack.idxMgmt.indexDetails.backToIndicesButtonLabel"
-                  defaultMessage="Back to indices"
-                />
-              </>
-            ),
-            color: 'primary',
-            'aria-current': false,
-            onClick: (e) => {
-              e.preventDefault();
-              navigateToIndicesList();
-            },
-          },
-        ]}
-        bottomBorder
+      <AppHeader
+        title={index.name}
+        back={indicesListHref}
         tabs={headerTabs}
-        rightSideItems={[
-          <ManageIndexButton
-            index={index}
-            reloadIndexDetails={fetchIndexDetails}
-            navigateToIndicesList={navigateToIndicesList}
-            onIndexRefresh={onIndexRefresh}
-            fill={true}
-          />,
-          <DiscoverLink indexName={index.name} asButton={true} fill={false} />,
-          <EuiButtonEmpty
-            onClick={() =>
-              openWiredConnectionDetails({
-                props: { options: { defaultTabId: 'apiKeys' } },
-              }).catch((error) => {
-                notificationService.showDangerToast(
-                  error?.body?.message ?? error?.message ?? 'An unexpected error occurred'
-                );
-              })
-            }
-            iconType="plugs"
-            data-test-subj="openConnectionDetails"
-          >
-            <FormattedMessage
-              id="xpack.idxMgmt.indexDetails.connectionDetailsButtonLabel"
-              defaultMessage="Connection details"
-            />
-          </EuiButtonEmpty>,
-        ]}
-      >
-        {indexErrors.length > 0 ? <IndexErrorCallout errors={indexErrors} /> : null}
-      </EuiPageHeader>
+        badges={badges}
+        menu={appMenu}
+        padding={{ bleed: 'l' }}
+      />
       <EuiSpacer size="l" />
+      {indexErrors.length > 0 && <IndexErrorCallout errors={indexErrors} />}
       <div
         data-test-subj={`indexDetailsContent`}
         css={css`
@@ -235,6 +272,7 @@ export const DetailsPageContent: FunctionComponent<Props> = ({
         <DetailsPageTab tabs={tabs} tab={tab} index={index} />
       </div>
       {consolePlugin?.EmbeddableConsole ? <consolePlugin.EmbeddableConsole /> : null}
+      {modalHost}
     </>
   );
 };
