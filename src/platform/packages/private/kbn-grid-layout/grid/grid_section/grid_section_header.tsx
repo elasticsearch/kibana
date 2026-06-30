@@ -373,6 +373,7 @@ const styles = {
       gridRowStart: `span 1`,
       gridRowEnd: `start-${sectionId}`,
       height: `${euiTheme.size.xl}`,
+      marginTop: `${euiTheme.size.s}`,
       touchAction: 'none', // prevents default scroll on drag behaviour on mobile
       ...(readOnly
         ? {
