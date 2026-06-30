@@ -1,0 +1,66 @@
+/*
+ * Copyright Elasticsearch B.V. and/or licensed to Elasticsearch B.V. under one
+ * or more contributor license agreements. Licensed under the Elastic License
+ * 2.0; you may not use this file except in compliance with the Elastic License
+ * 2.0.
+ */
+
+import React from 'react';
+import { i18n } from '@kbn/i18n';
+import type {
+  VISUALIZATION_ATTACHMENT_TYPE,
+  VisualizationAttachmentData,
+} from '@kbn/agent-builder-visualizations-common';
+import type { Attachment } from '@kbn/agent-builder-common/attachments';
+import { type AttachmentUIDefinition } from '@kbn/agent-builder-browser/attachments';
+import {
+  getVisualizationDimensionsFromConfig,
+  InlineVisualization,
+  type VisualizationServices,
+} from '@kbn/agent-builder-visualizations';
+
+const defaultVisualizationLabel = i18n.translate(
+  'xpack.agentBuilder.attachments.visualization.label',
+  { defaultMessage: 'Visualization' }
+);
+
+export type VisualizationAttachment = Attachment<
+  typeof VISUALIZATION_ATTACHMENT_TYPE,
+  VisualizationAttachmentData
+>;
+
+/**
+ * Builds the visualization attachment UI definition that bridges the rendering
+ * components from `@kbn/agent-builder-visualizations` into the Agent Builder
+ * attachment registry. Renderers receive Kibana services explicitly via
+ * `VisualizationServices`.
+ */
+export const createVisualizationAttachmentDefinition = (
+  services: VisualizationServices
+): AttachmentUIDefinition<VisualizationAttachment> => {
+  return {
+    getLabel: (attachment: VisualizationAttachment): string => {
+      const { title } = attachment.data.visualization ?? {};
+      return typeof title === 'string' && title.length > 0 ? title : defaultVisualizationLabel;
+    },
+    getIcon: () => 'lensApp',
+    getMaxWidth: (attachment) => {
+      const { data } = attachment;
+      return getVisualizationDimensionsFromConfig(data.visualization as Record<string, unknown>)
+        .width;
+    },
+    renderInlineContent: ({ attachment, screenContext }, callbacks) => {
+      const { data } = attachment;
+
+      return (
+        <InlineVisualization
+          services={services}
+          renderer={data.renderer}
+          visualization={data.visualization}
+          timeRange={data.time_range ?? screenContext?.time_range}
+          registerActionButtons={callbacks?.registerActionButtons}
+        />
+      );
+    },
+  };
+};

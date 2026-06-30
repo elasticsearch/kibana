@@ -72,7 +72,6 @@ import {
   setSidebarRuntimeContext,
   clearSidebarRuntimeContext,
 } from './sidebar';
-import { createVisualizationAttachmentDefinition } from './application/components/attachments/visualization_attachment';
 import { storageKeys } from './application/storage_keys';
 
 export class AgentBuilderPlugin
@@ -156,11 +155,6 @@ export class AgentBuilderPlugin
     const agentService = new AgentService({ http });
     const attachmentsService = new AttachmentsService({ http });
     const renderersService = new RenderersService();
-
-    attachmentsService.addAttachmentType(
-      'visualization',
-      createVisualizationAttachmentDefinition({ startDependencies })
-    );
 
     const eventsService = new EventsService();
     const chatService = new ChatService({ http, events: eventsService });

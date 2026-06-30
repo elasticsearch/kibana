@@ -1,0 +1,20 @@
+{
+  "extends": "@kbn/tsconfig-base/tsconfig.json",
+  "compilerOptions": {
+    "outDir": "target/types",
+    "types": ["jest", "node"]
+  },
+  "include": ["**/*.ts"],
+  "exclude": ["target/**/*"],
+  "kbn_references": [
+    "@kbn/agent-builder-common",
+    "@kbn/agent-builder-genai-utils",
+    "@kbn/agent-builder-server",
+    "@kbn/core-elasticsearch-server",
+    "@kbn/esql-server-utils",
+    "@kbn/lens-embeddable-utils",
+    "@kbn/logging",
+    "@kbn/palettes",
+    "@kbn/zod"
+  ]
+}

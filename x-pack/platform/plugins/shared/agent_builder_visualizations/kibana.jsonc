@@ -1,0 +1,24 @@
+{
+  "type": "plugin",
+  "id": "@kbn/agent-builder-visualizations-plugin",
+  "owner": "@elastic/kibana-presentation",
+  "group": "platform",
+  "visibility": "shared",
+  "plugin": {
+    "id": "agentBuilderVisualizations",
+    "server": true,
+    "browser": true,
+    "configPath": ["xpack", "agentBuilderVisualizations"],
+    "requiredPlugins": [
+      "agentBuilder",
+      "agentContextLayer",
+      "lens",
+      "data",
+      "dataViews",
+      "uiActions",
+      "unifiedSearch",
+      "embeddable",
+      "presentationUtil"
+    ]
+  }
+}

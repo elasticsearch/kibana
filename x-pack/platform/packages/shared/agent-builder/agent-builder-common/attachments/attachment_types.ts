@@ -16,7 +16,6 @@ export enum AttachmentType {
   screenContext = 'screen_context',
   text = 'text',
   esql = 'esql',
-  visualization = 'visualization',
   connector = 'connector',
 }
 
@@ -24,7 +23,6 @@ interface AttachmentDataMap {
   [AttachmentType.esql]: EsqlAttachmentData;
   [AttachmentType.text]: TextAttachmentData;
   [AttachmentType.screenContext]: ScreenContextAttachmentData;
-  [AttachmentType.visualization]: VisualizationAttachmentData;
   [AttachmentType.connector]: ConnectorAttachmentData;
 }
 
@@ -99,36 +97,6 @@ export interface ScreenContextAttachmentData {
   time_range?: TimeRange;
   /** arbitrary additional context data */
   additional_data?: Record<string, string>;
-}
-
-export const visualizationTimeRangeSchema = z.object({
-  from: z.string(),
-  to: z.string(),
-});
-
-export const visualizationAttachmentDataSchema = z.object({
-  query: z.string(),
-  visualization: z.record(z.string(), z.unknown()),
-  chart_type: z.string(),
-  esql: z.string(),
-  time_range: visualizationTimeRangeSchema.optional(),
-});
-
-/**
- * Data for a visualization attachment.
- * Same shape for both by-value and resolved by-ref attachments.
- */
-export interface VisualizationAttachmentData {
-  /** The display query */
-  query: string;
-  /** Lens API configuration */
-  visualization: Record<string, unknown>;
-  /** Chart type identifier */
-  chart_type: string;
-  /** The ES|QL query */
-  esql: string;
-  /** Optional time range for the visualization (e.g., { from: 'now-24h', to: 'now' }) */
-  time_range?: { from: string; to: string };
 }
 
 /**

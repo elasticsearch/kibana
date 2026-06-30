@@ -11,7 +11,6 @@ export type {
   TextAttachment,
   ScreenContextAttachment,
   EsqlAttachment,
-  VisualizationAttachment,
   ConnectorAttachment,
 } from './attachments';
 
@@ -27,7 +26,6 @@ export {
   textAttachmentDataSchema,
   esqlAttachmentDataSchema,
   screenContextAttachmentDataSchema,
-  visualizationAttachmentDataSchema,
   connectorAttachmentDataSchema,
   CONNECTOR_TAG_PREFIX,
   type TextAttachmentData,
@@ -35,7 +33,6 @@ export {
   type TimeRange,
   screenContextTimeRangeSchema,
   type EsqlAttachmentData,
-  type VisualizationAttachmentData,
   type ConnectorAttachmentData,
 } from './attachment_types';
 
