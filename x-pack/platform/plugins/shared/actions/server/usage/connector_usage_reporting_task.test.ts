@@ -93,25 +93,26 @@ describe('ConnectorUsageReportingTask', () => {
         CONNECTOR_USAGE_REPORTING_TASK_TYPE
       ].createTaskRunner;
 
-    return createTaskRunnerFunction({
-      taskInstance: {
-        id: CONNECTOR_USAGE_REPORTING_TASK_ID,
-        runAt: timestamp,
-        attempts: 0,
-        ownerId: '',
-        status: TaskStatus.Running,
-        startedAt: timestamp,
-        scheduledAt: timestamp,
-        retryAt: null,
-        params: {},
-        state: {
-          lastReportedUsageDate,
-          attempts,
+    return createTaskRunnerFunction(
+      taskManagerMock.createRunContext({
+        taskInstance: {
+          id: CONNECTOR_USAGE_REPORTING_TASK_ID,
+          runAt: timestamp,
+          attempts: 0,
+          ownerId: '',
+          status: TaskStatus.Running,
+          startedAt: timestamp,
+          scheduledAt: timestamp,
+          retryAt: null,
+          params: {},
+          state: {
+            lastReportedUsageDate,
+            attempts,
+          },
+          taskType: CONNECTOR_USAGE_REPORTING_TASK_TYPE,
         },
-        taskType: CONNECTOR_USAGE_REPORTING_TASK_TYPE,
-      },
-      abortController: new AbortController(),
-    });
+      })
+    );
   };
 
   it('registers the task', async () => {

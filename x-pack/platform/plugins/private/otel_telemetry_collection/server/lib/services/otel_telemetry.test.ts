@@ -12,6 +12,7 @@ import type {
   TaskManagerSetupContract,
   TaskManagerStartContract,
 } from '@kbn/task-manager-plugin/server';
+import { taskManagerMock } from '@kbn/task-manager-plugin/server/mocks';
 import type { AnalyticsServiceStart, ElasticsearchClient } from '@kbn/core/server';
 import { OtelTelemetryService } from './otel_telemetry';
 import { OtelTelemetryReceiver } from './receiver';
@@ -212,7 +213,9 @@ describe('OtelTelemetryService', () => {
       const taskDef = taskManager.registerTaskDefinitions.mock.calls[0][0][TASK_TYPE];
       const taskInstance = { state: {} } as unknown as ConcreteTaskInstance;
       taskAbortController = new AbortController();
-      taskRunner = taskDef.createTaskRunner({ taskInstance, abortController: taskAbortController });
+      taskRunner = taskDef.createTaskRunner(
+        taskManagerMock.createRunContext({ taskInstance, abortController: taskAbortController })
+      );
     });
 
     it('should call publishOtelPerServiceStats when opted in', async () => {

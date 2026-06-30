@@ -55,6 +55,7 @@ describe('Session index', () => {
       status: TaskStatus.Idle,
     },
     abortController: new AbortController(),
+    executionUuid: 'test-execution-uuid',
   };
 
   const createSessionIndexOptions = (
@@ -1152,6 +1153,7 @@ describe('Session index', () => {
           state: { shardMissingCounter: 9 },
         },
         abortController: new AbortController(),
+        executionUuid: 'test-execution-uuid',
       };
 
       await expect(sessionIndex.cleanUp(runContext)).resolves.toEqual({

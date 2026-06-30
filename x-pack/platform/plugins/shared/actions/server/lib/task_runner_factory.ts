@@ -5,7 +5,6 @@
  * 2.0.
  */
 
-import { v4 as uuidv4 } from 'uuid';
 import { pick } from 'lodash';
 import type { RunContext } from '@kbn/task-manager-plugin/server';
 import { asSpaceId } from '@kbn/core-spaces-common';
@@ -73,7 +72,7 @@ export class TaskRunnerFactory {
     this.taskRunnerContext = taskRunnerContext;
   }
 
-  public create({ taskInstance, abortController }: RunContext) {
+  public create({ taskInstance, abortController, executionUuid }: RunContext) {
     if (!this.isInitialized) {
       throw new Error('TaskRunnerFactory not initialized');
     }
@@ -86,7 +85,7 @@ export class TaskRunnerFactory {
       scheduled: taskInstance.runAt,
       attempts: taskInstance.attempts,
     };
-    const actionExecutionId = uuidv4();
+    const actionExecutionId = executionUuid;
     const actionTaskExecutorParams = taskInstance.params as ActionTaskExecutorParams;
 
     return {

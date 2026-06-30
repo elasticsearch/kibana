@@ -26,6 +26,7 @@ import type {
   TaskManagerSetupContract,
   TaskManagerStartContract,
 } from '@kbn/task-manager-plugin/server';
+import { taskManagerMock } from '@kbn/task-manager-plugin/server/mocks';
 import type { AutomaticImportPluginStartDependencies } from '../types';
 import type { ApproveIntegrationParams, CreateUpdateIntegrationParams } from '../routes/types';
 import type { AutomaticImportSamplesIndexService } from './samples_index/index_service';
@@ -965,11 +966,13 @@ describe('AutomaticImportSetupService', () => {
       const abortController = new AbortController();
 
       // Create task runner
-      const taskRunner = createTaskRunner({
-        taskInstance: mockTaskInstance as unknown as ConcreteTaskInstance,
-        fakeRequest: {} as unknown as KibanaRequest,
-        abortController,
-      });
+      const taskRunner = createTaskRunner(
+        taskManagerMock.createRunContext({
+          taskInstance: mockTaskInstance as unknown as ConcreteTaskInstance,
+          fakeRequest: {} as unknown as KibanaRequest,
+          abortController,
+        })
+      );
 
       // Replace runTask to inject our mock core setup
       const tmForRunTask = asTaskManagerPrivate(taskManagerService);
@@ -1085,11 +1088,12 @@ describe('AutomaticImportSetupService', () => {
         invokeAutomaticImportAgent: jest.fn(),
       };
 
-      const taskRunner = createTaskRunner({
-        taskInstance: mockTaskInstance as unknown as ConcreteTaskInstance,
-        fakeRequest: {} as unknown as KibanaRequest,
-        abortController: new AbortController(),
-      });
+      const taskRunner = createTaskRunner(
+        taskManagerMock.createRunContext({
+          taskInstance: mockTaskInstance as unknown as ConcreteTaskInstance,
+          fakeRequest: {} as unknown as KibanaRequest,
+        })
+      );
 
       const originalRunTask = tmFailedTest.runTask;
       tmFailedTest.runTask = jest
@@ -1186,11 +1190,12 @@ describe('AutomaticImportSetupService', () => {
         invokeAutomaticImportAgent: jest.fn(),
       };
 
-      const taskRunner = createTaskRunner({
-        taskInstance: mockTaskInstance as unknown as ConcreteTaskInstance,
-        fakeRequest: {} as unknown as KibanaRequest,
-        abortController: new AbortController(),
-      });
+      const taskRunner = createTaskRunner(
+        taskManagerMock.createRunContext({
+          taskInstance: mockTaskInstance as unknown as ConcreteTaskInstance,
+          fakeRequest: {} as unknown as KibanaRequest,
+        })
+      );
 
       const originalRunTask = tmUnrecoverable.runTask;
       tmUnrecoverable.runTask = jest

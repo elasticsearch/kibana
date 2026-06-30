@@ -140,7 +140,9 @@ describe('Upgrade Agentless Deployments', () => {
         mockTaskManagerSetup.registerTaskDefinitions.mock.calls[0][0][
           UPGRADE_AGENTLESS_DEPLOYMENTS_TASK_TYPE
         ].createTaskRunner;
-      const taskRunner = createTaskRunner({ taskInstance, abortController });
+      const taskRunner = createTaskRunner(
+        taskManagerMock.createRunContext({ taskInstance, abortController })
+      );
       return taskRunner.run();
     };
 

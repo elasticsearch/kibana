@@ -7,6 +7,7 @@
 
 import { loggerMock } from '@kbn/logging-mocks';
 import type { KibanaRequest } from '@kbn/core/server';
+import { taskManagerMock } from '@kbn/task-manager-plugin/server/mocks';
 import {
   DEFAULT_ENTITY_MAINTAINER_TIMEOUT,
   DEFAULT_ENTITY_MAINTAINER_MIN_LICENSE,
@@ -299,14 +300,12 @@ describe('entity_maintainer task', () => {
       const [defs] = mockRegisterTaskDefinitions.mock.calls[0];
       const taskType = 'entity_store:v2:entity_maintainer_task:test-maintainer';
       const createTaskRunner = defs[taskType].createTaskRunner;
-      const runner = createTaskRunner({
-        taskInstance: {
-          id: 'test-maintainer:default',
-          state: { namespace: 'default' },
-        },
-        abortController: new AbortController(),
-        fakeRequest: { headers: {} } as KibanaRequest,
-      });
+      const runner = createTaskRunner(
+        taskManagerMock.createRunContext({
+          taskInstance: { id: 'test-maintainer:default', state: { namespace: 'default' } } as any,
+          fakeRequest: { headers: {} } as KibanaRequest,
+        })
+      );
 
       await runner.run();
 
@@ -353,14 +352,12 @@ describe('entity_maintainer task', () => {
         taskStatus: EntityMaintainerTaskStatus.STARTED,
         metadata: { runs: 0 },
       };
-      const runner = createTaskRunner({
-        taskInstance: {
-          id: 'test-maintainer:default',
-          state: taskState,
-        },
-        abortController: new AbortController(),
-        fakeRequest: { headers: {} } as KibanaRequest,
-      });
+      const runner = createTaskRunner(
+        taskManagerMock.createRunContext({
+          taskInstance: { id: 'test-maintainer:default', state: taskState } as any,
+          fakeRequest: { headers: {} } as KibanaRequest,
+        })
+      );
 
       const result = await runner.run();
 
@@ -397,18 +394,16 @@ describe('entity_maintainer task', () => {
       const defs1 = mockRegisterTaskDefinitions.mock.calls[0][0];
       const defs2 = mockRegisterTaskDefinitions.mock.calls[1][0];
       const runnerA = defs1['entity_store:v2:entity_maintainer_task:maintainer-a'].createTaskRunner(
-        {
-          taskInstance: { id: 'maintainer-a:default', state: { namespace: 'default' } },
-          abortController: new AbortController(),
+        taskManagerMock.createRunContext({
+          taskInstance: { id: 'maintainer-a:default', state: { namespace: 'default' } } as any,
           fakeRequest: { headers: {} } as KibanaRequest,
-        }
+        })
       );
       const runnerB = defs2['entity_store:v2:entity_maintainer_task:maintainer-b'].createTaskRunner(
-        {
-          taskInstance: { id: 'maintainer-b:default', state: { namespace: 'default' } },
-          abortController: new AbortController(),
+        taskManagerMock.createRunContext({
+          taskInstance: { id: 'maintainer-b:default', state: { namespace: 'default' } } as any,
           fakeRequest: { headers: {} } as KibanaRequest,
-        }
+        })
       );
 
       await runnerA.run();
@@ -438,31 +433,33 @@ describe('entity_maintainer task', () => {
       const createTaskRunner = defs[taskType].createTaskRunner;
       const fakeRequest = { headers: {} } as KibanaRequest;
 
-      const runner1 = createTaskRunner({
-        taskInstance: { id: 'test-maintainer:default', state: { namespace: 'default' } },
-        abortController: new AbortController(),
-        fakeRequest,
-      });
+      const runner1 = createTaskRunner(
+        taskManagerMock.createRunContext({
+          taskInstance: { id: 'test-maintainer:default', state: { namespace: 'default' } } as any,
+          fakeRequest,
+        })
+      );
       await runner1.run();
       expect(setup).toHaveBeenCalledTimes(1);
       expect(run).toHaveBeenCalledTimes(1);
 
-      const runner2 = createTaskRunner({
-        taskInstance: {
-          id: 'test-maintainer:default',
-          state: {
-            metadata: {
-              runs: 1,
-              lastSuccessTimestamp: new Date().toISOString(),
-              lastErrorTimestamp: null,
-              namespace: 'default',
+      const runner2 = createTaskRunner(
+        taskManagerMock.createRunContext({
+          taskInstance: {
+            id: 'test-maintainer:default',
+            state: {
+              metadata: {
+                runs: 1,
+                lastSuccessTimestamp: new Date().toISOString(),
+                lastErrorTimestamp: null,
+                namespace: 'default',
+              },
+              state: { synced: true },
             },
-            state: { synced: true },
-          },
-        },
-        abortController: new AbortController(),
-        fakeRequest,
-      });
+          } as any,
+          fakeRequest,
+        })
+      );
       await runner2.run();
       expect(setup).toHaveBeenCalledTimes(1);
       expect(run).toHaveBeenCalledTimes(2);
@@ -491,23 +488,22 @@ describe('entity_maintainer task', () => {
       const createTaskRunner = defs[taskType].createTaskRunner;
       const fakeRequest = { headers: {} } as KibanaRequest;
 
-      const runner1 = createTaskRunner({
-        taskInstance: { id: 'test-maintainer:default', state: { namespace: 'default' } },
-        abortController: new AbortController(),
-        fakeRequest,
-      });
+      const runner1 = createTaskRunner(
+        taskManagerMock.createRunContext({
+          taskInstance: { id: 'test-maintainer:default', state: { namespace: 'default' } } as any,
+          fakeRequest,
+        })
+      );
       const result1 = await runner1.run();
       expect(result1.state.state.setupState).toBe(1);
       expect(result1.state.state.runState).toBe(2);
 
-      const runner2 = createTaskRunner({
-        taskInstance: {
-          id: 'test-maintainer:default',
-          state: result1.state,
-        },
-        abortController: new AbortController(),
-        fakeRequest,
-      });
+      const runner2 = createTaskRunner(
+        taskManagerMock.createRunContext({
+          taskInstance: { id: 'test-maintainer:default', state: result1.state } as any,
+          fakeRequest,
+        })
+      );
       const result2 = await runner2.run();
       expect(result2.state.state.runState).toBe(3);
     });
@@ -529,11 +525,12 @@ describe('entity_maintainer task', () => {
       const [defs] = mockRegisterTaskDefinitions.mock.calls[0];
       const taskType = 'entity_store:v2:entity_maintainer_task:test-maintainer';
       const createTaskRunner = defs[taskType].createTaskRunner;
-      const runner = createTaskRunner({
-        taskInstance: { id: 'test-maintainer:default', state: { namespace: 'default' } },
-        abortController: new AbortController(),
-        fakeRequest: { headers: {} } as KibanaRequest,
-      });
+      const runner = createTaskRunner(
+        taskManagerMock.createRunContext({
+          taskInstance: { id: 'test-maintainer:default', state: { namespace: 'default' } } as any,
+          fakeRequest: { headers: {} } as KibanaRequest,
+        })
+      );
 
       const result = await runner.run();
 
@@ -559,11 +556,12 @@ describe('entity_maintainer task', () => {
       const [defs] = mockRegisterTaskDefinitions.mock.calls[0];
       const taskType = 'entity_store:v2:entity_maintainer_task:test-maintainer';
       const createTaskRunner = defs[taskType].createTaskRunner;
-      const runner = createTaskRunner({
-        taskInstance: { id: 'test-maintainer:default', state: { namespace: 'default' } },
-        abortController: new AbortController(),
-        fakeRequest: { headers: {} } as KibanaRequest,
-      });
+      const runner = createTaskRunner(
+        taskManagerMock.createRunContext({
+          taskInstance: { id: 'test-maintainer:default', state: { namespace: 'default' } } as any,
+          fakeRequest: { headers: {} } as KibanaRequest,
+        })
+      );
 
       const result = await runner.run();
 
@@ -591,14 +589,12 @@ describe('entity_maintainer task', () => {
       const taskType = 'entity_store:v2:entity_maintainer_task:test-maintainer';
       const createTaskRunner = defs[taskType].createTaskRunner;
       const currentState = { metadata: { runs: 2 }, state: { x: 1 } };
-      const runner = createTaskRunner({
-        taskInstance: {
-          id: 'test-maintainer:default',
-          state: currentState,
-        },
-        abortController: new AbortController(),
-        fakeRequest: undefined,
-      });
+      const runner = createTaskRunner(
+        taskManagerMock.createRunContext({
+          taskInstance: { id: 'test-maintainer:default', state: currentState } as any,
+          fakeRequest: undefined,
+        })
+      );
 
       const result = await runner.run();
 

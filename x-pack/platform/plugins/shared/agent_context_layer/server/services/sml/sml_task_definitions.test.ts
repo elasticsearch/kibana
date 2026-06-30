@@ -10,6 +10,7 @@ import type {
   TaskManagerSetupContract,
   TaskManagerStartContract,
 } from '@kbn/task-manager-plugin/server';
+import { taskManagerMock } from '@kbn/task-manager-plugin/server/mocks';
 import type { Logger } from '@kbn/logging';
 import type { SmlTypeDefinition, SmlService } from './types';
 import {
@@ -66,10 +67,12 @@ function getRegisteredTaskRunner(params: { attachmentType?: string }) {
   });
   const registered = mockTaskManager.registerTaskDefinitions.mock.calls[0][0];
   const taskDef = registered[SML_CRAWLER_TASK_TYPE];
-  return taskDef.createTaskRunner({
-    taskInstance: { params },
-    abortController: mockAbortController,
-  } as unknown as { taskInstance: { params?: Record<string, unknown> }; abortController: AbortController });
+  return taskDef.createTaskRunner(
+    taskManagerMock.createRunContext({
+      taskInstance: { params } as any,
+      abortController: mockAbortController,
+    })
+  );
 }
 
 describe('sml_task_definitions', () => {

@@ -97,7 +97,7 @@ describe('check deleted files task', () => {
       await mockTask.start({ taskManager: mockTaskManagerStart });
       const createTaskRunner =
         mockTaskManagerSetup.registerTaskDefinitions.mock.calls[0][0][TYPE].createTaskRunner;
-      const taskRunner = createTaskRunner({ taskInstance, abortController: new AbortController() });
+      const taskRunner = createTaskRunner(taskManagerMock.createRunContext({ taskInstance }));
       return taskRunner.run();
     };
 

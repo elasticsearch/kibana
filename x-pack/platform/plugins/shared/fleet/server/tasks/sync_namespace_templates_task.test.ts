@@ -107,10 +107,9 @@ describe('syncNamespaceTemplatesTask', () => {
       const registeredDef =
         taskManager.registerTaskDefinitions.mock.calls[0][0]['fleet:sync_namespace_templates'];
       const abortController = new AbortController();
-      const runner = registeredDef.createTaskRunner({
-        taskInstance: { params } as any,
-        abortController,
-      });
+      const runner = registeredDef.createTaskRunner(
+        taskManagerMock.createRunContext({ taskInstance: { params } as any, abortController })
+      );
       return { runner, abortController };
     };
 

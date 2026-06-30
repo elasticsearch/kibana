@@ -9,6 +9,7 @@ import sinon from 'sinon';
 import { usageCountersServiceMock } from '@kbn/usage-collection-plugin/server/usage_counters/usage_counters_service.mock';
 import type { ConcreteTaskInstance } from '@kbn/task-manager-plugin/server';
 import { TaskStatus } from '@kbn/task-manager-plugin/server';
+import { taskManagerMock } from '@kbn/task-manager-plugin/server/mocks';
 import { TaskRunnerFactory } from './task_runner_factory';
 import { encryptedSavedObjectsMock } from '@kbn/encrypted-saved-objects-plugin/server/mocks';
 import {
@@ -151,7 +152,7 @@ describe('Task Runner Factory', () => {
     expect(() =>
       factory.create(
         ruleType,
-        { taskInstance: mockedTaskInstance, abortController: new AbortController() },
+        taskManagerMock.createRunContext({ taskInstance: mockedTaskInstance }),
         inMemoryMetrics
       )
     ).toThrowErrorMatchingInlineSnapshot(`"TaskRunnerFactory not initialized"`);
@@ -160,10 +161,7 @@ describe('Task Runner Factory', () => {
   test(`throws an error if createAdHoc is called when factory isn't initialized`, () => {
     const factory = new TaskRunnerFactory();
     expect(() =>
-      factory.createAdHoc({
-        taskInstance: mockedTaskInstance,
-        abortController: new AbortController(),
-      })
+      factory.createAdHoc(taskManagerMock.createRunContext({ taskInstance: mockedTaskInstance }))
     ).toThrowErrorMatchingInlineSnapshot(`"TaskRunnerFactory not initialized"`);
   });
 });

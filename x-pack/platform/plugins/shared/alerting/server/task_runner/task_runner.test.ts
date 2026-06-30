@@ -108,6 +108,7 @@ import {
 import { ErrorWithType } from '../lib/error_with_type';
 import { eventLogClientMock } from '@kbn/event-log-plugin/server/mocks';
 
+const RULE_EXECUTION_UUID = '5f6aa57d-3e22-484e-bae8-cbed868f4d28';
 jest.mock('uuid', () => ({
   v4: () => '5f6aa57d-3e22-484e-bae8-cbed868f4d28',
 }));
@@ -269,9 +270,19 @@ describe('Task Runner', () => {
     (RuleResultService as jest.Mock).mockImplementation(() => ruleResultService);
   });
 
-  test('successfully executes the task', async () => {
-    const taskRunner = new TaskRunner({
+  const createTaskRunner = (overrides: Partial<ConstructorParameters<typeof TaskRunner>[0]> = {}) =>
+    new TaskRunner({
       ruleType,
+      taskInstance: mockedTaskInstance,
+      context: taskRunnerFactoryInitializerParams,
+      inMemoryMetrics,
+      internalSavedObjectsRepository,
+      executionUuid: RULE_EXECUTION_UUID,
+      ...overrides,
+    });
+
+  test('successfully executes the task', async () => {
+    const taskRunner = createTaskRunner({
       taskInstance: {
         ...mockedTaskInstance,
         state: {
@@ -279,9 +290,6 @@ describe('Task Runner', () => {
           previousStartedAt: new Date(Date.now() - 5 * 60 * 1000).toISOString(),
         },
       },
-      context: taskRunnerFactoryInitializerParams,
-      inMemoryMetrics,
-      internalSavedObjectsRepository,
     });
     expect(AlertingEventLogger).toHaveBeenCalledTimes(1);
 
@@ -364,13 +372,27 @@ describe('Task Runner', () => {
     ).toHaveBeenCalled();
   });
 
+  test('uses executionUuid from constructor as the rule execution id', async () => {
+    const executionUuid = 'custom-execution-uuid-from-task-manager';
+    const taskRunner = createTaskRunner({ executionUuid });
+
+    mockGetRuleFromRaw.mockReturnValue(mockedRuleTypeSavedObject as Rule);
+    encryptedSavedObjectsClient.getDecryptedAsInternalUser.mockResolvedValue(mockedRawRuleSO);
+    await taskRunner.run();
+
+    expect(alertingEventLogger.initialize).toHaveBeenCalledWith(
+      expect.objectContaining({
+        context: expect.objectContaining({ executionId: executionUuid }),
+      })
+    );
+  });
+
   test('passes total_search_duration_ms from execution metrics into rule monitoring via addFrameworkMetrics', async () => {
     const addFrameworkMetricsSpy = jest.spyOn(
       RuleMonitoringService.prototype,
       'addFrameworkMetrics'
     );
-    const taskRunner = new TaskRunner({
-      ruleType,
+    const taskRunner = createTaskRunner({
       taskInstance: {
         ...mockedTaskInstance,
         state: {
@@ -378,9 +400,6 @@ describe('Task Runner', () => {
           previousStartedAt: new Date(Date.now() - 5 * 60 * 1000).toISOString(),
         },
       },
-      context: taskRunnerFactoryInitializerParams,
-      inMemoryMetrics,
-      internalSavedObjectsRepository,
     });
 
     mockGetRuleFromRaw.mockReturnValue(mockedRuleTypeSavedObject as Rule);
@@ -406,8 +425,7 @@ describe('Task Runner', () => {
       return { state: {} };
     });
 
-    const taskRunner = new TaskRunner({
-      ruleType,
+    const taskRunner = createTaskRunner({
       taskInstance: {
         ...mockedTaskInstance,
         state: {
@@ -415,9 +433,6 @@ describe('Task Runner', () => {
           previousStartedAt: new Date(Date.now() - 5 * 60 * 1000).toISOString(),
         },
       },
-      context: taskRunnerFactoryInitializerParams,
-      inMemoryMetrics,
-      internalSavedObjectsRepository,
     });
 
     mockGetRuleFromRaw.mockReturnValue(mockedRuleTypeSavedObject as Rule);
@@ -474,13 +489,7 @@ describe('Task Runner', () => {
 
     alertsService.createAlertsClient.mockImplementation(() => alertsClient);
 
-    const taskRunner = new TaskRunner({
-      ruleType,
-      internalSavedObjectsRepository,
-      taskInstance: mockedTaskInstance,
-      context: taskRunnerFactoryInitializerParams,
-      inMemoryMetrics,
-    });
+    const taskRunner = createTaskRunner();
 
     mockGetRuleFromRaw.mockReturnValue({
       ...(mockedRuleTypeSavedObject as Rule),
@@ -516,8 +525,7 @@ describe('Task Runner', () => {
       ...mockedRawRuleSO,
       attributes: { ...mockedRawRuleSO.attributes, schedule: {} },
     });
-    const taskRunner = new TaskRunner({
-      ruleType,
+    const taskRunner = createTaskRunner({
       taskInstance: {
         ...mockedTaskInstance,
         state: {
@@ -527,9 +535,6 @@ describe('Task Runner', () => {
         // @ts-ignore
         schedule: {},
       },
-      context: taskRunnerFactoryInitializerParams,
-      inMemoryMetrics,
-      internalSavedObjectsRepository,
     });
 
     await expect(taskRunner.run()).rejects.toThrowErrorMatchingInlineSnapshot(
@@ -555,13 +560,7 @@ describe('Task Runner', () => {
         return { state: {} };
       }
     );
-    const taskRunner = new TaskRunner({
-      ruleType,
-      taskInstance: mockedTaskInstance,
-      context: taskRunnerFactoryInitializerParams,
-      inMemoryMetrics,
-      internalSavedObjectsRepository,
-    });
+    const taskRunner = createTaskRunner();
     expect(AlertingEventLogger).toHaveBeenCalledTimes(1);
 
     mockGetRuleFromRaw.mockReturnValue(mockedRuleTypeSavedObject as Rule);
@@ -699,13 +698,7 @@ describe('Task Runner', () => {
         return { state: {} };
       }
     );
-    const taskRunner = new TaskRunner({
-      ruleType,
-      taskInstance: mockedTaskInstance,
-      context: taskRunnerFactoryInitializerParams,
-      inMemoryMetrics,
-      internalSavedObjectsRepository,
-    });
+    const taskRunner = createTaskRunner();
     expect(AlertingEventLogger).toHaveBeenCalledTimes(1);
 
     mockGetRuleFromRaw.mockReturnValue({
@@ -833,13 +826,7 @@ describe('Task Runner', () => {
           return { state: {} };
         }
       );
-      const taskRunner = new TaskRunner({
-        ruleType,
-        taskInstance: mockedTaskInstance,
-        context: taskRunnerFactoryInitializerParams,
-        inMemoryMetrics,
-        internalSavedObjectsRepository,
-      });
+      const taskRunner = createTaskRunner();
       expect(AlertingEventLogger).toHaveBeenCalledTimes(1);
 
       mockGetRuleFromRaw.mockReturnValue({
@@ -895,13 +882,7 @@ describe('Task Runner', () => {
         return { state: {} };
       }
     );
-    const taskRunner = new TaskRunner({
-      ruleType,
-      taskInstance: mockedTaskInstance,
-      context: taskRunnerFactoryInitializerParams,
-      inMemoryMetrics,
-      internalSavedObjectsRepository,
-    });
+    const taskRunner = createTaskRunner();
     expect(AlertingEventLogger).toHaveBeenCalledTimes(1);
     mockGetRuleFromRaw.mockReturnValue(mockedRuleTypeSavedObject as Rule);
 
@@ -966,13 +947,7 @@ describe('Task Runner', () => {
         return { state: {} };
       }
     );
-    const taskRunner = new TaskRunner({
-      ruleType,
-      taskInstance: mockedTaskInstance,
-      context: taskRunnerFactoryInitializerParams,
-      inMemoryMetrics,
-      internalSavedObjectsRepository,
-    });
+    const taskRunner = createTaskRunner();
     expect(AlertingEventLogger).toHaveBeenCalledTimes(1);
     mockGetRuleFromRaw.mockReturnValue(mockedRuleTypeSavedObject as Rule);
 
@@ -1028,13 +1003,7 @@ describe('Task Runner', () => {
         return { state: {} };
       }
     );
-    const taskRunner = new TaskRunner({
-      ruleType,
-      taskInstance: mockedTaskInstance,
-      context: taskRunnerFactoryInitializerParams,
-      inMemoryMetrics,
-      internalSavedObjectsRepository,
-    });
+    const taskRunner = createTaskRunner();
     expect(AlertingEventLogger).toHaveBeenCalledTimes(1);
     mockGetRuleFromRaw.mockReturnValue(mockedRuleTypeSavedObject as Rule);
 
@@ -1091,13 +1060,7 @@ describe('Task Runner', () => {
         return { state: {} };
       }
     );
-    const taskRunner = new TaskRunner({
-      ruleType,
-      taskInstance: mockedTaskInstance,
-      context: taskRunnerFactoryInitializerParams,
-      inMemoryMetrics,
-      internalSavedObjectsRepository,
-    });
+    const taskRunner = createTaskRunner();
     expect(AlertingEventLogger).toHaveBeenCalledTimes(1);
 
     mockGetRuleFromRaw.mockReturnValue({
@@ -1161,9 +1124,7 @@ describe('Task Runner', () => {
         return { state: {} };
       }
     );
-    const taskRunner = new TaskRunner({
-      ruleType,
-      internalSavedObjectsRepository,
+    const taskRunner = createTaskRunner({
       taskInstance: {
         ...mockedTaskInstance,
         state: {
@@ -1182,8 +1143,6 @@ describe('Task Runner', () => {
           },
         },
       },
-      context: taskRunnerFactoryInitializerParams,
-      inMemoryMetrics,
     });
     expect(AlertingEventLogger).toHaveBeenCalledTimes(1);
 
@@ -1222,13 +1181,7 @@ describe('Task Runner', () => {
         return { state: {} };
       }
     );
-    const taskRunner = new TaskRunner({
-      ruleType,
-      internalSavedObjectsRepository,
-      taskInstance: mockedTaskInstance,
-      context: taskRunnerFactoryInitializerParams,
-      inMemoryMetrics,
-    });
+    const taskRunner = createTaskRunner();
     expect(AlertingEventLogger).toHaveBeenCalledTimes(1);
 
     mockGetRuleFromRaw.mockReturnValue({
@@ -1265,9 +1218,7 @@ describe('Task Runner', () => {
         return { state: {} };
       }
     );
-    const taskRunner = new TaskRunner({
-      ruleType,
-      internalSavedObjectsRepository,
+    const taskRunner = createTaskRunner({
       taskInstance: {
         ...mockedTaskInstance,
         state: {
@@ -1286,8 +1237,6 @@ describe('Task Runner', () => {
           },
         },
       },
-      context: taskRunnerFactoryInitializerParams,
-      inMemoryMetrics,
     });
     expect(AlertingEventLogger).toHaveBeenCalledTimes(1);
 
@@ -1333,9 +1282,7 @@ describe('Task Runner', () => {
         return { state: {} };
       }
     );
-    const taskRunner = new TaskRunner({
-      ruleType,
-      internalSavedObjectsRepository,
+    const taskRunner = createTaskRunner({
       taskInstance: {
         ...mockedTaskInstance,
         state: {
@@ -1350,8 +1297,6 @@ describe('Task Runner', () => {
           },
         },
       },
-      context: taskRunnerFactoryInitializerParams,
-      inMemoryMetrics,
     });
     expect(AlertingEventLogger).toHaveBeenCalledTimes(1);
 
@@ -1403,13 +1348,7 @@ describe('Task Runner', () => {
         return { state: {} };
       }
     );
-    const taskRunner = new TaskRunner({
-      ruleType,
-      internalSavedObjectsRepository,
-      taskInstance: mockedTaskInstance,
-      context: taskRunnerFactoryInitializerParams,
-      inMemoryMetrics,
-    });
+    const taskRunner = createTaskRunner();
     expect(AlertingEventLogger).toHaveBeenCalled();
 
     mockGetRuleFromRaw.mockReturnValue(mockedRuleTypeSavedObject as Rule);
@@ -1480,9 +1419,7 @@ describe('Task Runner', () => {
         return { state: {} };
       }
     );
-    const taskRunner = new TaskRunner({
-      ruleType,
-      internalSavedObjectsRepository,
+    const taskRunner = createTaskRunner({
       taskInstance: {
         ...mockedTaskInstance,
         state: {
@@ -1507,8 +1444,6 @@ describe('Task Runner', () => {
           },
         },
       },
-      context: taskRunnerFactoryInitializerParams,
-      inMemoryMetrics,
     });
     expect(AlertingEventLogger).toHaveBeenCalled();
 
@@ -1626,9 +1561,7 @@ describe('Task Runner', () => {
         return { state: {} };
       }
     );
-    const taskRunner = new TaskRunner({
-      ruleType,
-      internalSavedObjectsRepository,
+    const taskRunner = createTaskRunner({
       taskInstance: {
         ...mockedTaskInstance,
         state: {
@@ -1639,8 +1572,6 @@ describe('Task Runner', () => {
           },
         },
       },
-      context: taskRunnerFactoryInitializerParams,
-      inMemoryMetrics,
     });
     expect(AlertingEventLogger).toHaveBeenCalled();
 
@@ -1725,9 +1656,8 @@ describe('Task Runner', () => {
         return { state: {} };
       }
     );
-    const taskRunner = new TaskRunner({
+    const taskRunner = createTaskRunner({
       ruleType: ruleTypeWithCustomRecovery,
-      internalSavedObjectsRepository,
       taskInstance: {
         ...mockedTaskInstance,
         state: {
@@ -1738,8 +1668,6 @@ describe('Task Runner', () => {
           },
         },
       },
-      context: taskRunnerFactoryInitializerParams,
-      inMemoryMetrics,
     });
     expect(AlertingEventLogger).toHaveBeenCalled();
 
@@ -1817,13 +1745,7 @@ describe('Task Runner', () => {
     });
     alertsService.createAlertsClient.mockImplementation(() => alertsClient);
 
-    const taskRunner = new TaskRunner({
-      ruleType,
-      internalSavedObjectsRepository,
-      taskInstance: mockedTaskInstance,
-      context: taskRunnerFactoryInitializerParams,
-      inMemoryMetrics,
-    });
+    const taskRunner = createTaskRunner();
     expect(AlertingEventLogger).toHaveBeenCalledTimes(1);
 
     mockGetRuleFromRaw.mockReturnValue({
@@ -1873,13 +1795,7 @@ describe('Task Runner', () => {
     alertsClient.getRawAlertInstancesForState.mockResolvedValueOnce({ state: {}, meta: {} });
     alertsService.createAlertsClient.mockImplementation(() => alertsClient);
 
-    const taskRunner = new TaskRunner({
-      ruleType,
-      internalSavedObjectsRepository,
-      taskInstance: mockedTaskInstance,
-      context: taskRunnerFactoryInitializerParams,
-      inMemoryMetrics,
-    });
+    const taskRunner = createTaskRunner();
     expect(AlertingEventLogger).toHaveBeenCalledTimes(1);
 
     mockGetRuleFromRaw.mockReturnValue({
@@ -1939,9 +1855,7 @@ describe('Task Runner', () => {
       }
     );
     const date = new Date().toISOString();
-    const taskRunner = new TaskRunner({
-      ruleType,
-      internalSavedObjectsRepository,
+    const taskRunner = createTaskRunner({
       taskInstance: {
         ...mockedTaskInstance,
         state: {
@@ -1966,9 +1880,6 @@ describe('Task Runner', () => {
           },
         },
       },
-
-      context: taskRunnerFactoryInitializerParams,
-      inMemoryMetrics,
     });
     expect(AlertingEventLogger).toHaveBeenCalled();
 
@@ -2028,13 +1939,7 @@ describe('Task Runner', () => {
       });
     });
 
-    const taskRunner = new TaskRunner({
-      ruleType,
-      internalSavedObjectsRepository,
-      taskInstance: mockedTaskInstance,
-      context: taskRunnerFactoryInitializerParams,
-      inMemoryMetrics,
-    });
+    const taskRunner = createTaskRunner();
     expect(AlertingEventLogger).toHaveBeenCalled();
     mockGetRuleFromRaw.mockReturnValue(mockedRuleTypeSavedObject as Rule);
     encryptedSavedObjectsClient.getDecryptedAsInternalUser.mockResolvedValue(mockedRawRuleSO);
@@ -2057,13 +1962,7 @@ describe('Task Runner', () => {
       throw new Error('test');
     });
 
-    const taskRunner = new TaskRunner({
-      ruleType,
-      internalSavedObjectsRepository,
-      taskInstance: mockedTaskInstance,
-      context: taskRunnerFactoryInitializerParams,
-      inMemoryMetrics,
-    });
+    const taskRunner = createTaskRunner();
     expect(AlertingEventLogger).toHaveBeenCalled();
     mockGetRuleFromRaw.mockReturnValue(mockedRuleTypeSavedObject as Rule);
     encryptedSavedObjectsClient.getDecryptedAsInternalUser.mockResolvedValue(mockedRawRuleSO);
@@ -2099,13 +1998,7 @@ describe('Task Runner', () => {
       }
     );
 
-    const taskRunner = new TaskRunner({
-      ruleType,
-      internalSavedObjectsRepository,
-      taskInstance: mockedTaskInstance,
-      context: taskRunnerFactoryInitializerParams,
-      inMemoryMetrics,
-    });
+    const taskRunner = createTaskRunner();
     expect(AlertingEventLogger).toHaveBeenCalled();
 
     mockGetRuleFromRaw.mockReturnValue(mockedRuleTypeSavedObject as Rule);
@@ -2143,13 +2036,7 @@ describe('Task Runner', () => {
       throw taskRunError;
     });
 
-    const taskRunner = new TaskRunner({
-      ruleType,
-      internalSavedObjectsRepository,
-      taskInstance: mockedTaskInstance,
-      context: taskRunnerFactoryInitializerParams,
-      inMemoryMetrics,
-    });
+    const taskRunner = createTaskRunner();
     expect(AlertingEventLogger).toHaveBeenCalled();
 
     const runnerResult = await taskRunner.run();
@@ -2177,13 +2064,7 @@ describe('Task Runner', () => {
     // ensure we return a fallback schedule when this happens, otherwise the task might be deleted
     const legacyTaskInstance = omit(mockedTaskInstance, 'schedule');
 
-    const taskRunner = new TaskRunner({
-      ruleType,
-      internalSavedObjectsRepository,
-      taskInstance: legacyTaskInstance,
-      context: taskRunnerFactoryInitializerParams,
-      inMemoryMetrics,
-    });
+    const taskRunner = createTaskRunner({ taskInstance: legacyTaskInstance });
     expect(AlertingEventLogger).toHaveBeenCalled();
 
     const runnerResult = await taskRunner.run();
@@ -2214,15 +2095,11 @@ describe('Task Runner', () => {
       }
     );
 
-    const taskRunner = new TaskRunner({
-      ruleType,
-      internalSavedObjectsRepository,
+    const taskRunner = createTaskRunner({
       taskInstance: {
         ...mockedTaskInstance,
         state: originalAlertSate,
       },
-      context: taskRunnerFactoryInitializerParams,
-      inMemoryMetrics,
     });
     expect(AlertingEventLogger).toHaveBeenCalled();
 
@@ -2236,9 +2113,7 @@ describe('Task Runner', () => {
   });
 
   test('avoids rescheduling a failed Rule Task Runner when it throws due to failing to fetch the rule', async () => {
-    const taskRunner = new TaskRunner({
-      ruleType,
-      internalSavedObjectsRepository,
+    const taskRunner = createTaskRunner({
       taskInstance: {
         ...mockedTaskInstance,
         params: {
@@ -2246,8 +2121,6 @@ describe('Task Runner', () => {
           spaceId: 'foo',
         },
       },
-      context: taskRunnerFactoryInitializerParams,
-      inMemoryMetrics,
     });
     expect(AlertingEventLogger).toHaveBeenCalled();
 
@@ -2277,13 +2150,7 @@ describe('Task Runner', () => {
   });
 
   test('reschedules for next schedule interval if es connectivity error encountered and schedule interval is less than connectivity retry', async () => {
-    const taskRunner = new TaskRunner({
-      ruleType,
-      internalSavedObjectsRepository,
-      taskInstance: mockedTaskInstance,
-      context: taskRunnerFactoryInitializerParams,
-      inMemoryMetrics,
-    });
+    const taskRunner = createTaskRunner();
     expect(AlertingEventLogger).toHaveBeenCalled();
 
     encryptedSavedObjectsClient.getDecryptedAsInternalUser.mockResolvedValue(mockedRawRuleSO);
@@ -2300,17 +2167,13 @@ describe('Task Runner', () => {
       );
     });
 
-    const taskRunner = new TaskRunner({
-      ruleType,
-      internalSavedObjectsRepository,
+    const taskRunner = createTaskRunner({
       taskInstance: {
         ...mockedTaskInstance,
         schedule: {
           interval: '1d',
         },
       },
-      context: taskRunnerFactoryInitializerParams,
-      inMemoryMetrics,
     });
     expect(AlertingEventLogger).toHaveBeenCalled();
 
@@ -2322,9 +2185,7 @@ describe('Task Runner', () => {
   });
 
   test('correctly logs warning when Rule Task Runner throws due to failing to fetch the rule in a space', async () => {
-    const taskRunner = new TaskRunner({
-      ruleType,
-      internalSavedObjectsRepository,
+    const taskRunner = createTaskRunner({
       taskInstance: {
         ...mockedTaskInstance,
         params: {
@@ -2332,8 +2193,6 @@ describe('Task Runner', () => {
           spaceId: 'test space',
         },
       },
-      context: taskRunnerFactoryInitializerParams,
-      inMemoryMetrics,
     });
     expect(AlertingEventLogger).toHaveBeenCalled();
 
@@ -2380,9 +2239,7 @@ describe('Task Runner', () => {
         return { state: {} };
       }
     );
-    const taskRunner = new TaskRunner({
-      ruleType,
-      internalSavedObjectsRepository,
+    const taskRunner = createTaskRunner({
       taskInstance: {
         ...mockedTaskInstance,
         state: {
@@ -2390,8 +2247,6 @@ describe('Task Runner', () => {
           alertInstances: {},
         },
       },
-      context: taskRunnerFactoryInitializerParams,
-      inMemoryMetrics,
     });
     expect(AlertingEventLogger).toHaveBeenCalled();
 
@@ -2473,9 +2328,7 @@ describe('Task Runner', () => {
         return { state: {} };
       }
     );
-    const taskRunner = new TaskRunner({
-      ruleType,
-      internalSavedObjectsRepository,
+    const taskRunner = createTaskRunner({
       taskInstance: {
         ...mockedTaskInstance,
         state: {
@@ -2500,9 +2353,6 @@ describe('Task Runner', () => {
           },
         },
       },
-
-      context: taskRunnerFactoryInitializerParams,
-      inMemoryMetrics,
     });
     expect(AlertingEventLogger).toHaveBeenCalled();
 
@@ -2560,9 +2410,7 @@ describe('Task Runner', () => {
         return { state: {} };
       }
     );
-    const taskRunner = new TaskRunner({
-      ruleType,
-      internalSavedObjectsRepository,
+    const taskRunner = createTaskRunner({
       taskInstance: {
         ...mockedTaskInstance,
         state: {
@@ -2579,8 +2427,6 @@ describe('Task Runner', () => {
           },
         },
       },
-      context: taskRunnerFactoryInitializerParams,
-      inMemoryMetrics,
     });
     expect(AlertingEventLogger).toHaveBeenCalled();
 
@@ -2624,9 +2470,7 @@ describe('Task Runner', () => {
     ruleType.executor.mockImplementation(async () => {
       return { state: {} };
     });
-    const taskRunner = new TaskRunner({
-      ruleType,
-      internalSavedObjectsRepository,
+    const taskRunner = createTaskRunner({
       taskInstance: {
         ...mockedTaskInstance,
         state: {
@@ -2651,8 +2495,6 @@ describe('Task Runner', () => {
           },
         },
       },
-      context: taskRunnerFactoryInitializerParams,
-      inMemoryMetrics,
     });
     expect(AlertingEventLogger).toHaveBeenCalled();
 
@@ -2710,9 +2552,7 @@ describe('Task Runner', () => {
         return { state: {} };
       }
     );
-    const taskRunner = new TaskRunner({
-      ruleType,
-      internalSavedObjectsRepository,
+    const taskRunner = createTaskRunner({
       taskInstance: {
         ...mockedTaskInstance,
         state: {
@@ -2729,8 +2569,6 @@ describe('Task Runner', () => {
           },
         },
       },
-      context: taskRunnerFactoryInitializerParams,
-      inMemoryMetrics,
     });
     expect(AlertingEventLogger).toHaveBeenCalled();
 
@@ -2769,13 +2607,7 @@ describe('Task Runner', () => {
   });
 
   test('successfully stores successful runs', async () => {
-    const taskRunner = new TaskRunner({
-      ruleType,
-      internalSavedObjectsRepository,
-      taskInstance: mockedTaskInstance,
-      context: taskRunnerFactoryInitializerParams,
-      inMemoryMetrics,
-    });
+    const taskRunner = createTaskRunner();
     expect(AlertingEventLogger).toHaveBeenCalled();
 
     mockGetRuleFromRaw.mockReturnValue(mockedRuleTypeSavedObject as Rule);
@@ -2786,13 +2618,7 @@ describe('Task Runner', () => {
 
   test('successfully stores failure runs', async () => {
     const taskRunError = new Error(GENERIC_ERROR_MESSAGE);
-    const taskRunner = new TaskRunner({
-      ruleType,
-      internalSavedObjectsRepository,
-      taskInstance: mockedTaskInstance,
-      context: taskRunnerFactoryInitializerParams,
-      inMemoryMetrics,
-    });
+    const taskRunner = createTaskRunner();
     expect(AlertingEventLogger).toHaveBeenCalled();
 
     mockGetRuleFromRaw.mockReturnValue(mockedRuleTypeSavedObject as Rule);
@@ -2819,13 +2645,7 @@ describe('Task Runner', () => {
 
   test('successfully stores the success ratio', async () => {
     const taskRunError = new Error(GENERIC_ERROR_MESSAGE);
-    const taskRunner = new TaskRunner({
-      ruleType,
-      internalSavedObjectsRepository,
-      taskInstance: mockedTaskInstance,
-      context: taskRunnerFactoryInitializerParams,
-      inMemoryMetrics,
-    });
+    const taskRunner = createTaskRunner();
     expect(AlertingEventLogger).toHaveBeenCalled();
 
     mockGetRuleFromRaw.mockReturnValue(mockedRuleTypeSavedObject as Rule);
@@ -2860,13 +2680,7 @@ describe('Task Runner', () => {
   });
 
   test('successfully stores next run', async () => {
-    const taskRunner = new TaskRunner({
-      ruleType,
-      internalSavedObjectsRepository,
-      taskInstance: mockedTaskInstance,
-      context: taskRunnerFactoryInitializerParams,
-      inMemoryMetrics,
-    });
+    const taskRunner = createTaskRunner();
     expect(AlertingEventLogger).toHaveBeenCalled();
     mockGetRuleFromRaw.mockReturnValue(mockedRuleTypeSavedObject as Rule);
     encryptedSavedObjectsClient.getDecryptedAsInternalUser.mockResolvedValue({
@@ -2884,13 +2698,7 @@ describe('Task Runner', () => {
   });
 
   test('updates the rule saved object correctly when failed', async () => {
-    const taskRunner = new TaskRunner({
-      ruleType,
-      internalSavedObjectsRepository,
-      taskInstance: mockedTaskInstance,
-      context: taskRunnerFactoryInitializerParams,
-      inMemoryMetrics,
-    });
+    const taskRunner = createTaskRunner();
     expect(AlertingEventLogger).toHaveBeenCalled();
 
     mockGetRuleFromRaw.mockReturnValue(mockedRuleTypeSavedObject as Rule);
@@ -2925,13 +2733,7 @@ describe('Task Runner', () => {
   });
 
   test('caps monitoring history at 200', async () => {
-    const taskRunner = new TaskRunner({
-      ruleType,
-      internalSavedObjectsRepository,
-      taskInstance: mockedTaskInstance,
-      context: taskRunnerFactoryInitializerParams,
-      inMemoryMetrics,
-    });
+    const taskRunner = createTaskRunner();
     expect(AlertingEventLogger).toHaveBeenCalled();
 
     mockGetRuleFromRaw.mockReturnValue(mockedRuleTypeSavedObject as Rule);
@@ -3016,15 +2818,11 @@ describe('Task Runner', () => {
     ruleTypeRegistry.get.mockReturnValue(ruleType);
     encryptedSavedObjectsClient.getDecryptedAsInternalUser.mockResolvedValue(mockedRawRuleSO);
 
-    const taskRunner = new TaskRunner({
-      ruleType,
-      internalSavedObjectsRepository,
-      taskInstance: mockedTaskInstance,
+    const taskRunner = createTaskRunner({
       context: {
         ...taskRunnerFactoryInitializerParams,
         actionsConfigMap,
       },
-      inMemoryMetrics,
     });
     expect(AlertingEventLogger).toHaveBeenCalled();
 
@@ -3192,15 +2990,11 @@ describe('Task Runner', () => {
     encryptedSavedObjectsClient.getDecryptedAsInternalUser.mockResolvedValueOnce(mockedRawRuleSO);
     encryptedSavedObjectsClient.getDecryptedAsInternalUser.mockResolvedValueOnce(mockedRawRuleSO);
 
-    const taskRunner = new TaskRunner({
-      ruleType,
-      internalSavedObjectsRepository,
-      taskInstance: mockedTaskInstance,
+    const taskRunner = createTaskRunner({
       context: {
         ...taskRunnerFactoryInitializerParams,
         actionsConfigMap,
       },
-      inMemoryMetrics,
     });
     expect(AlertingEventLogger).toHaveBeenCalled();
 
@@ -3288,13 +3082,7 @@ describe('Task Runner', () => {
   });
 
   test('increments monitoring metrics after execution', async () => {
-    const taskRunner = new TaskRunner({
-      ruleType,
-      internalSavedObjectsRepository,
-      taskInstance: mockedTaskInstance,
-      context: taskRunnerFactoryInitializerParams,
-      inMemoryMetrics,
-    });
+    const taskRunner = createTaskRunner();
     expect(AlertingEventLogger).toHaveBeenCalled();
 
     mockGetRuleFromRaw.mockReturnValue(mockedRuleTypeSavedObject as Rule);
@@ -3348,9 +3136,7 @@ describe('Task Runner', () => {
       }
     );
     const date = new Date().toISOString();
-    const taskRunner = new TaskRunner({
-      ruleType,
-      internalSavedObjectsRepository,
+    const taskRunner = createTaskRunner({
       taskInstance: {
         ...mockedTaskInstance,
         state: {
@@ -3375,8 +3161,6 @@ describe('Task Runner', () => {
           },
         },
       },
-      context: taskRunnerFactoryInitializerParams,
-      inMemoryMetrics,
     });
     expect(AlertingEventLogger).toHaveBeenCalled();
 
@@ -3403,13 +3187,7 @@ describe('Task Runner', () => {
     mockGetRuleFromRaw.mockReturnValue(mockedRuleTypeSavedObject as Rule);
     encryptedSavedObjectsClient.getDecryptedAsInternalUser.mockResolvedValue(mockedRawRuleSO);
 
-    const taskRunner = new TaskRunner({
-      ruleType,
-      taskInstance: mockedTaskInstance,
-      context: taskRunnerFactoryInitializerParams,
-      inMemoryMetrics,
-      internalSavedObjectsRepository,
-    });
+    const taskRunner = createTaskRunner();
 
     ruleResultService.getLastRunResults.mockImplementation(() => ({
       errors: [
@@ -3447,13 +3225,7 @@ describe('Task Runner', () => {
     mockGetRuleFromRaw.mockReturnValue(mockedRuleTypeSavedObject as Rule);
     encryptedSavedObjectsClient.getDecryptedAsInternalUser.mockResolvedValue(mockedRawRuleSO);
 
-    const taskRunner = new TaskRunner({
-      ruleType,
-      taskInstance: mockedTaskInstance,
-      context: taskRunnerFactoryInitializerParams,
-      inMemoryMetrics,
-      internalSavedObjectsRepository,
-    });
+    const taskRunner = createTaskRunner();
 
     ruleResultService.getLastRunResults.mockImplementation(() => ({
       errors: [
@@ -3487,13 +3259,7 @@ describe('Task Runner', () => {
       }
     );
 
-    const taskRunner = new TaskRunner({
-      ruleType,
-      internalSavedObjectsRepository,
-      taskInstance: mockedTaskInstance,
-      context: taskRunnerFactoryInitializerParams,
-      inMemoryMetrics,
-    });
+    const taskRunner = createTaskRunner();
     mockGetRuleFromRaw.mockReturnValue(mockedRuleTypeSavedObject as Rule);
     encryptedSavedObjectsClient.getDecryptedAsInternalUser.mockResolvedValueOnce(mockedRawRuleSO);
 
@@ -3528,13 +3294,7 @@ describe('Task Runner', () => {
       };
     });
 
-    const taskRunner = new TaskRunner({
-      ruleType,
-      taskInstance: mockedTaskInstance,
-      context: taskRunnerFactoryInitializerParams,
-      inMemoryMetrics,
-      internalSavedObjectsRepository,
-    });
+    const taskRunner = createTaskRunner();
 
     await taskRunner.run();
 
@@ -3553,13 +3313,7 @@ describe('Task Runner', () => {
     alertsClient.persistAlerts.mockRejectedValueOnce(err);
     alertsService.createAlertsClient.mockImplementation(() => alertsClient);
 
-    const taskRunner = new TaskRunner({
-      ruleType,
-      taskInstance: mockedTaskInstance,
-      context: taskRunnerFactoryInitializerParams,
-      inMemoryMetrics,
-      internalSavedObjectsRepository,
-    });
+    const taskRunner = createTaskRunner();
     mockGetRuleFromRaw.mockReturnValue(mockedRuleTypeSavedObject as Rule);
     encryptedSavedObjectsClient.getDecryptedAsInternalUser.mockResolvedValueOnce(mockedRawRuleSO);
 
@@ -3582,13 +3336,7 @@ describe('Task Runner', () => {
     alertsClient.initializeExecution.mockRejectedValueOnce(err);
     alertsService.createAlertsClient.mockImplementation(() => alertsClient);
 
-    const taskRunner = new TaskRunner({
-      ruleType,
-      taskInstance: mockedTaskInstance,
-      context: taskRunnerFactoryInitializerParams,
-      inMemoryMetrics,
-      internalSavedObjectsRepository,
-    });
+    const taskRunner = createTaskRunner();
     mockGetRuleFromRaw.mockReturnValue(mockedRuleTypeSavedObject as Rule);
     encryptedSavedObjectsClient.getDecryptedAsInternalUser.mockResolvedValueOnce(mockedRawRuleSO);
 
@@ -3607,12 +3355,8 @@ describe('Task Runner', () => {
   });
 
   test('should not run the rule and return DeleteRuleTaskRunResult when the task is outdated', async () => {
-    const taskRunner = new TaskRunner({
-      ruleType,
-      internalSavedObjectsRepository,
+    const taskRunner = createTaskRunner({
       taskInstance: { ...mockedTaskInstance, id: 'old-task-id' },
-      context: taskRunnerFactoryInitializerParams,
-      inMemoryMetrics,
     });
     expect(AlertingEventLogger).toHaveBeenCalled();
     mockGetRuleFromRaw.mockReturnValue(mockedRuleTypeSavedObject as Rule);
@@ -3637,13 +3381,7 @@ describe('Task Runner', () => {
   });
 
   test('should return shouldDisableTask when task is enabled but rule is not', async () => {
-    const taskRunner = new TaskRunner({
-      ruleType,
-      internalSavedObjectsRepository,
-      taskInstance: { ...mockedTaskInstance },
-      context: taskRunnerFactoryInitializerParams,
-      inMemoryMetrics,
-    });
+    const taskRunner = createTaskRunner({ taskInstance: { ...mockedTaskInstance } });
     expect(AlertingEventLogger).toHaveBeenCalled();
     const mockedRuleTypeSavedObjectDisabled = {
       ...(mockedRuleTypeSavedObject as Rule),

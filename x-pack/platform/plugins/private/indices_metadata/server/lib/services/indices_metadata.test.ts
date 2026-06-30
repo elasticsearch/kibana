@@ -12,6 +12,7 @@ import type {
   TaskManagerSetupContract,
   TaskManagerStartContract,
 } from '@kbn/task-manager-plugin/server';
+import { taskManagerMock } from '@kbn/task-manager-plugin/server/mocks';
 import type { AnalyticsServiceStart, ElasticsearchClient } from '@kbn/core/server';
 import type {
   DataStream,
@@ -444,10 +445,9 @@ describe('Indices Metadata - IndicesMetadataService', () => {
       const taskDefinition =
         taskManager.registerTaskDefinitions.mock.calls[0][0]['IndicesMetadata:IndicesMetadataTask'];
       taskInstance = { state: { lastRun: '2023-01-01' } } as unknown as ConcreteTaskInstance;
-      taskRunner = taskDefinition.createTaskRunner({
-        taskInstance,
-        abortController: new AbortController(),
-      });
+      taskRunner = taskDefinition.createTaskRunner(
+        taskManagerMock.createRunContext({ taskInstance })
+      );
 
       configurationService.getIndicesMetadataConfiguration$.mockReturnValue({
         subscribe: jest.fn().mockImplementation((callback) => {

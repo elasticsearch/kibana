@@ -52,7 +52,7 @@ export class TaskRunnerFactory {
       RecoveryActionGroupId,
       AlertData
     >,
-    { taskInstance }: RunContext,
+    { taskInstance, executionUuid }: RunContext,
     inMemoryMetrics: InMemoryMetrics
   ) {
     if (!this.isInitialized) {
@@ -76,16 +76,18 @@ export class TaskRunnerFactory {
       ),
       ruleType,
       taskInstance,
+      executionUuid,
     });
   }
 
-  public createAdHoc({ taskInstance }: RunContext) {
+  public createAdHoc({ taskInstance, executionUuid }: RunContext) {
     if (!this.isInitialized) {
       throw new Error('TaskRunnerFactory not initialized');
     }
 
     return new AdHocTaskRunner({
       taskInstance,
+      executionUuid,
       context: this.taskRunnerContext!,
       internalSavedObjectsRepository: this.taskRunnerContext!.savedObjects.createInternalRepository(
         [RULE_SAVED_OBJECT_TYPE, AD_HOC_RUN_SAVED_OBJECT_TYPE]

@@ -56,8 +56,9 @@ const getNextRunAtSpy = jest.spyOn(nextRunAtUtils, 'getNextRunAt');
 const eventLoggerMock = { logEvent: jest.fn() } as unknown as TaskEventLogger;
 const dateRegExp = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{1,3})?Z$/;
 
+const TASK_EXECUTION_UUID = 'NEW_UUID';
 jest.mock('uuid', () => ({
-  v4: () => 'NEW_UUID',
+  v4: () => TASK_EXECUTION_UUID,
 }));
 
 beforeAll(() => {
@@ -3075,6 +3076,7 @@ describe('TaskManagerRunner', () => {
               type: 'bar',
               schedule_delay: expect.any(String),
               scheduled: expect.any(String),
+              execution: { uuid: TASK_EXECUTION_UUID },
             },
           },
           message: `Task bar "${id}" started.`,
@@ -3105,6 +3107,35 @@ describe('TaskManagerRunner', () => {
         expect(startCallIndex).toBeGreaterThanOrEqual(0);
         expect(endCallIndex).toBeGreaterThanOrEqual(0);
         expect(startCallIndex).toBeLessThan(endCallIndex);
+      });
+
+      test('task-run-start and task-run events share the same execution.uuid', async () => {
+        const id = _.random(1, 20).toString();
+        const { runner } = await readyToRunStageSetup({
+          instance: { id },
+          definitions: {
+            bar: {
+              title: 'Bar!',
+              createTaskRunner: () => ({
+                async run() {
+                  return { state: {} };
+                },
+              }),
+            },
+          },
+        });
+
+        await runner.run();
+
+        const calls = (eventLoggerMock.logEvent as jest.Mock).mock.calls;
+        const startEvent = calls.find((c) => c[0].event.action === 'task-run-start');
+        const endEvent = calls.find((c) => c[0].event.action === 'task-run');
+        expect(startEvent).toBeDefined();
+        expect(endEvent).toBeDefined();
+        const startUuid = startEvent![0].kibana.task.execution.uuid;
+        const endUuid = endEvent![0].kibana.task.execution.uuid;
+        expect(startUuid).toEqual(expect.any(String));
+        expect(startUuid).toBe(endUuid);
       });
 
       test('eventLog logs a start event even when a task run fails', async () => {
@@ -3170,6 +3201,7 @@ describe('TaskManagerRunner', () => {
               type: 'bar',
               schedule_delay: expect.any(String),
               scheduled: expect.any(String),
+              execution: { uuid: TASK_EXECUTION_UUID },
             },
           },
           message: `Task bar "${id}" completed successfully.`,
@@ -3219,6 +3251,7 @@ describe('TaskManagerRunner', () => {
               type: 'bar',
               schedule_delay: expect.any(String),
               scheduled: expect.any(String),
+              execution: { uuid: TASK_EXECUTION_UUID },
             },
           },
           message: `Task bar "${id}" failed with a taskRunError.`,
@@ -3262,6 +3295,7 @@ describe('TaskManagerRunner', () => {
               type: 'bar',
               schedule_delay: expect.any(String),
               scheduled: expect.any(String),
+              execution: { uuid: TASK_EXECUTION_UUID },
             },
           },
           message: `Task bar "${id}" failed.`,
@@ -3315,7 +3349,12 @@ describe('TaskManagerRunner', () => {
             start: expect.stringMatching(dateRegExp),
           },
           kibana: {
-            task: { id, type: 'bar', scheduled: expect.any(String) },
+            task: {
+              id,
+              type: 'bar',
+              scheduled: expect.any(String),
+              execution: { uuid: TASK_EXECUTION_UUID },
+            },
           },
           message: `Task bar "${id}" has been cancelled.`,
         });
@@ -3336,6 +3375,7 @@ describe('TaskManagerRunner', () => {
               type: 'bar',
               schedule_delay: expect.any(String),
               scheduled: expect.any(String),
+              execution: { uuid: TASK_EXECUTION_UUID },
             },
           },
           message: `Task bar "${id}" failed.`,
@@ -3387,7 +3427,12 @@ describe('TaskManagerRunner', () => {
             start: expect.stringMatching(dateRegExp),
           },
           kibana: {
-            task: { id, type: 'bar', scheduled: expect.any(String) },
+            task: {
+              id,
+              type: 'bar',
+              scheduled: expect.any(String),
+              execution: { uuid: TASK_EXECUTION_UUID },
+            },
           },
           message: `Task bar "${id}" has been cancelled.`,
         });
@@ -3407,6 +3452,7 @@ describe('TaskManagerRunner', () => {
               type: 'bar',
               schedule_delay: expect.any(String),
               scheduled: expect.any(String),
+              execution: { uuid: TASK_EXECUTION_UUID },
             },
           },
           message: `Task bar "${id}" failed.`,
@@ -3453,7 +3499,12 @@ describe('TaskManagerRunner', () => {
             start: expect.stringMatching(dateRegExp),
           },
           kibana: {
-            task: { id, type: 'bar', scheduled: expect.any(String) },
+            task: {
+              id,
+              type: 'bar',
+              scheduled: expect.any(String),
+              execution: { uuid: TASK_EXECUTION_UUID },
+            },
           },
           message: `Task bar "${id}" has been cancelled.`,
         });
@@ -3471,6 +3522,7 @@ describe('TaskManagerRunner', () => {
               type: 'bar',
               schedule_delay: expect.any(String),
               scheduled: expect.any(String),
+              execution: { uuid: TASK_EXECUTION_UUID },
             },
           },
           message: `Task bar "${id}" completed successfully.`,
@@ -3514,7 +3566,12 @@ describe('TaskManagerRunner', () => {
             start: expect.stringMatching(dateRegExp),
           },
           kibana: {
-            task: { id, type: 'bar', scheduled: expect.any(String) },
+            task: {
+              id,
+              type: 'bar',
+              scheduled: expect.any(String),
+              execution: { uuid: TASK_EXECUTION_UUID },
+            },
           },
           message: `Task bar "${id}" has been cancelled.`,
         });
@@ -3532,6 +3589,7 @@ describe('TaskManagerRunner', () => {
               type: 'bar',
               schedule_delay: expect.any(String),
               scheduled: expect.any(String),
+              execution: { uuid: TASK_EXECUTION_UUID },
             },
           },
           message: `Task bar "${id}" completed successfully.`,

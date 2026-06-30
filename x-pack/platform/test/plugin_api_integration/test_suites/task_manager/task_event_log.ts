@@ -91,6 +91,7 @@ export default function ({ getService }: FtrProviderContext) {
         expect(event.event.outcome).to.eql('success');
         expect(event.kibana.task.id).to.eql(scheduledTask.id);
         expect(event.kibana.task.type).to.eql('sampleTask');
+        expect(event.kibana.task.execution.uuid).to.be.a('string');
       });
     });
 
@@ -126,6 +127,7 @@ export default function ({ getService }: FtrProviderContext) {
         expect(event.error.message).to.eql('Task error');
         expect(event.kibana.task.id).to.eql(scheduledTask.id);
         expect(event.kibana.task.type).to.eql('sampleTask');
+        expect(event.kibana.task.execution.uuid).to.be.a('string');
       });
     });
 
@@ -161,6 +163,7 @@ export default function ({ getService }: FtrProviderContext) {
         expect(startEvent!.event.provider).to.eql('taskManager');
         expect(startEvent!.kibana.task.id).to.eql(scheduledTask.id);
         expect(startEvent!.kibana.task.type).to.eql('sampleRecurringTaskTimingOut');
+        expect(startEvent!.kibana.task.execution.uuid).to.be.a('string');
 
         expect(cancelledEvent).to.be.ok();
         expect(cancelledEvent!.event.provider).to.eql('taskManager');
@@ -169,12 +172,15 @@ export default function ({ getService }: FtrProviderContext) {
         );
         expect(cancelledEvent!.kibana.task.id).to.eql(scheduledTask.id);
         expect(cancelledEvent!.kibana.task.type).to.eql('sampleRecurringTaskTimingOut');
+        expect(cancelledEvent!.kibana.task.execution.uuid).to.be.a('string');
 
         expect(runEvent).to.be.ok();
         expect(runEvent!.event.provider).to.eql('taskManager');
         expect(runEvent!.event.outcome).to.eql('success');
         expect(runEvent!.kibana.task.id).to.eql(scheduledTask.id);
         expect(runEvent!.kibana.task.type).to.eql('sampleRecurringTaskTimingOut');
+        expect(runEvent!.kibana.task.execution.uuid).to.be.a('string');
+        expect(startEvent!.kibana.task.execution.uuid).to.eql(runEvent!.kibana.task.execution.uuid);
       });
     });
 
@@ -210,6 +216,7 @@ export default function ({ getService }: FtrProviderContext) {
         expect(startEvent!.event.provider).to.eql('taskManager');
         expect(startEvent!.kibana.task.id).to.eql(scheduledTask.id);
         expect(startEvent!.kibana.task.type).to.eql('sampleRecurringTaskTimingOutWithError');
+        expect(startEvent!.kibana.task.execution.uuid).to.be.a('string');
 
         expect(cancelledEvent).to.be.ok();
         expect(cancelledEvent!.event.provider).to.eql('taskManager');
@@ -218,6 +225,7 @@ export default function ({ getService }: FtrProviderContext) {
         );
         expect(cancelledEvent!.kibana.task.id).to.eql(scheduledTask.id);
         expect(cancelledEvent!.kibana.task.type).to.eql('sampleRecurringTaskTimingOutWithError');
+        expect(cancelledEvent!.kibana.task.execution.uuid).to.be.a('string');
 
         expect(runEvent).to.be.ok();
         expect(runEvent!.event.provider).to.eql('taskManager');
@@ -225,6 +233,8 @@ export default function ({ getService }: FtrProviderContext) {
         expect(runEvent!.event.reason).to.eql(`Task "${scheduledTask.id}" was cancelled.`);
         expect(runEvent!.kibana.task.id).to.eql(scheduledTask.id);
         expect(runEvent!.kibana.task.type).to.eql('sampleRecurringTaskTimingOutWithError');
+        expect(runEvent!.kibana.task.execution.uuid).to.be.a('string');
+        expect(startEvent!.kibana.task.execution.uuid).to.eql(runEvent!.kibana.task.execution.uuid);
       });
     });
   });

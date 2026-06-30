@@ -153,7 +153,7 @@ export function registerExtractEntityTasks({
         [taskType]: {
           title: config.title,
           timeout: config.timeout,
-          createTaskRunner: ({ taskInstance, abortController, fakeRequest }) => ({
+          createTaskRunner: ({ taskInstance, abortController, fakeRequest, executionUuid }) => ({
             run: () =>
               wrapTaskRun({
                 spanName: 'entityStore.task.extract_entity.run',
@@ -167,6 +167,7 @@ export function registerExtractEntityTasks({
                   runTask({
                     taskInstance,
                     abortController,
+                    executionUuid,
                     logger: logger.get(taskInstance.id),
                     core,
                     entityType: type,

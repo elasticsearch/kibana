@@ -7,7 +7,8 @@
 
 import type { ConcreteTaskInstance } from '@kbn/task-manager-plugin/server';
 import { isUnrecoverableError } from '@kbn/task-manager-plugin/server';
-import { loggingSystemMock } from '@kbn/core/server/mocks';
+import { taskManagerMock } from '@kbn/task-manager-plugin/server/mocks';
+import { httpServerMock, loggingSystemMock } from '@kbn/core/server/mocks';
 import {
   DATA_STREAM_CREATION_TASK_TYPE,
   TaskManagerService,
@@ -94,7 +95,7 @@ describe('runTask abort handling', () => {
     ownerId: null,
   };
 
-  const mockFakeRequest = {} as unknown;
+  const mockFakeRequest = httpServerMock.createKibanaRequest();
 
   const mockCoreStart = {
     elasticsearch: { client: { asInternalUser: {} } },
@@ -163,11 +164,13 @@ describe('runTask abort handling', () => {
 
   const createRunner = (abortController: AbortController) => {
     const def = taskDefinition[DATA_STREAM_CREATION_TASK_TYPE];
-    return def.createTaskRunner({
-      taskInstance: mockTaskInstance,
-      fakeRequest: mockFakeRequest,
-      abortController,
-    });
+    return def.createTaskRunner(
+      taskManagerMock.createRunContext({
+        taskInstance: mockTaskInstance,
+        fakeRequest: mockFakeRequest,
+        abortController,
+      })
+    );
   };
 
   it('completes successfully when not aborted', async () => {
@@ -690,7 +693,7 @@ describe('runTask error edge cases', () => {
     ownerId: null,
   };
 
-  const mockFakeRequest = {} as unknown;
+  const mockFakeRequest = httpServerMock.createKibanaRequest();
 
   const mockCoreStart = {
     elasticsearch: { client: { asInternalUser: {} } },
@@ -757,11 +760,13 @@ describe('runTask error edge cases', () => {
 
   const createRunner = (abortController: AbortController) => {
     const def = taskDefinition[DATA_STREAM_CREATION_TASK_TYPE];
-    return def.createTaskRunner({
-      taskInstance: mockTaskInstance,
-      fakeRequest: mockFakeRequest,
-      abortController,
-    });
+    return def.createTaskRunner(
+      taskManagerMock.createRunContext({
+        taskInstance: mockTaskInstance,
+        fakeRequest: mockFakeRequest,
+        abortController,
+      })
+    );
   };
 
   it('fails with error when required task params are missing', async () => {
@@ -786,11 +791,13 @@ describe('runTask error edge cases', () => {
 
     const def = taskDefinition[DATA_STREAM_CREATION_TASK_TYPE];
     const abortController = new AbortController();
-    const runner = def.createTaskRunner({
-      taskInstance: incompleteTaskInstance,
-      fakeRequest: mockFakeRequest,
-      abortController,
-    });
+    const runner = def.createTaskRunner(
+      taskManagerMock.createRunContext({
+        taskInstance: incompleteTaskInstance,
+        fakeRequest: mockFakeRequest,
+        abortController,
+      })
+    );
 
     const result = await runner.run();
 

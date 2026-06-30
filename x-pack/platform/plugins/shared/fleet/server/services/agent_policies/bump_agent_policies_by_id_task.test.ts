@@ -10,6 +10,7 @@ import type {
   TaskManagerSetupContract,
   TaskManagerStartContract,
 } from '@kbn/task-manager-plugin/server';
+import { taskManagerMock } from '@kbn/task-manager-plugin/server/mocks';
 import { loggingSystemMock } from '@kbn/core/server/mocks';
 
 import { agentPolicyService } from '../agent_policy';
@@ -43,7 +44,9 @@ const getRegisteredTaskRunner = (
 
   const definition = registerTaskDefinitions.mock.calls[0][0][TASK_TYPE];
   return {
-    ...(definition.createTaskRunner({ taskInstance, abortController }) as any),
+    ...(definition.createTaskRunner(
+      taskManagerMock.createRunContext({ taskInstance, abortController })
+    ) as any),
     abortController,
   };
 };

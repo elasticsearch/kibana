@@ -94,10 +94,9 @@ describe('test osquery telemetry task', () => {
     const createTaskRunner =
       mockTaskManagerSetup.registerTaskDefinitions.mock.calls[0][0][testType].createTaskRunner;
 
-    const taskRunner = createTaskRunner({
-      taskInstance: mockTaskInstance,
-      abortController: new AbortController(),
-    });
+    const taskRunner = createTaskRunner(
+      taskManagerMock.createRunContext({ taskInstance: mockTaskInstance })
+    );
     const testResult = (await taskRunner.run()) as SuccessfulRunResult;
 
     expect(mockTelemetryTaskConfig.getLastExecutionTime).toHaveBeenCalled();

@@ -279,11 +279,12 @@ describe('Gap Auto Fill Scheduler Task', () => {
 
       const registeredTask =
         taskManager.registerTaskDefinitions.mock.calls[0][0][GAP_AUTO_FILL_SCHEDULER_TASK_TYPE];
-      taskRunner = registeredTask.createTaskRunner({
-        taskInstance: mockTaskInstance,
-        fakeRequest: mockRequest,
-        abortController: new AbortController(),
-      });
+      taskRunner = registeredTask.createTaskRunner(
+        taskManagerMock.createRunContext({
+          taskInstance: mockTaskInstance,
+          fakeRequest: mockRequest,
+        })
+      );
     });
 
     afterEach(() => {
@@ -676,11 +677,13 @@ describe('Gap Auto Fill Scheduler Task', () => {
 
           const registeredTask =
             taskManager.registerTaskDefinitions.mock.calls[0][0][GAP_AUTO_FILL_SCHEDULER_TASK_TYPE];
-          const taskRunnerWithAbort = registeredTask.createTaskRunner({
-            taskInstance: mockTaskInstance,
-            fakeRequest: mockRequest,
-            abortController,
-          });
+          const taskRunnerWithAbort = registeredTask.createTaskRunner(
+            taskManagerMock.createRunContext({
+              taskInstance: mockTaskInstance,
+              fakeRequest: mockRequest,
+              abortController,
+            })
+          );
 
           rulesClient.findBackfill.mockResolvedValue({ data: [], total: 50, page: 1, perPage: 1 });
           (rulesClient.getRuleIdsWithGaps as jest.Mock).mockResolvedValue({ ruleIds: ['rule-1'] });
@@ -999,11 +1002,12 @@ describe('Gap Auto Fill Scheduler Task', () => {
 
         const registeredTask =
           taskManager.registerTaskDefinitions.mock.calls[0][0][GAP_AUTO_FILL_SCHEDULER_TASK_TYPE];
-        const taskRunnerWithoutRequest = registeredTask.createTaskRunner({
-          taskInstance: mockTaskInstance,
-          fakeRequest: undefined,
-          abortController: new AbortController(),
-        });
+        const taskRunnerWithoutRequest = registeredTask.createTaskRunner(
+          taskManagerMock.createRunContext({
+            taskInstance: mockTaskInstance,
+            fakeRequest: undefined,
+          })
+        );
 
         const result = await taskRunnerWithoutRequest.run();
 

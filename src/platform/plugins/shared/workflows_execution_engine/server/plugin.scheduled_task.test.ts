@@ -120,11 +120,12 @@ describe('workflow:scheduled task runner', () => {
     const scheduledTaskDefinition = taskDefinitions[WORKFLOW_SCHEDULED_TASK_TYPE];
     expect(scheduledTaskDefinition).toBeDefined();
 
-    const runner = scheduledTaskDefinition!.createTaskRunner({
-      taskInstance: createTaskInstance(),
-      fakeRequest: {} as KibanaRequest,
-      abortController: new AbortController(),
-    });
+    const runner = scheduledTaskDefinition!.createTaskRunner(
+      taskManagerMock.createRunContext({
+        taskInstance: createTaskInstance(),
+        fakeRequest: {} as KibanaRequest,
+      })
+    );
 
     const result = await runner.run();
 

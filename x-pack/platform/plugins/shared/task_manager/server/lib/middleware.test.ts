@@ -55,6 +55,7 @@ const getMockConcreteTaskInstance = () => {
 const getMockRunContext = (runTask: ConcreteTaskInstance) => ({
   taskInstance: runTask,
   kbnServer: {},
+  executionUuid: 'test-execution-uuid',
 });
 
 const defaultBeforeSave = async (opts: BeforeSaveOpts) => {
@@ -157,6 +158,7 @@ describe('addMiddlewareToChain', () => {
       .then((contextOpts) => {
         expect(contextOpts).toMatchInlineSnapshot(`
           Object {
+            "executionUuid": "test-execution-uuid",
             "kbnServer": Object {},
             "m1": true,
             "m2": true,

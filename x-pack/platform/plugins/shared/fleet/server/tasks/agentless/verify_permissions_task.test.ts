@@ -153,10 +153,12 @@ describe('verify_permissions_task', () => {
       registerVerifyPermissionsTask(taskManager);
       const registeredDef =
         taskManager.registerTaskDefinitions.mock.calls[0][0]['fleet:verify_permissions'];
-      return registeredDef.createTaskRunner({
-        taskInstance: {} as any,
-        abortController: abortCtrl ?? new AbortController(),
-      });
+      return registeredDef.createTaskRunner(
+        taskManagerMock.createRunContext({
+          taskInstance: {} as any,
+          ...(abortCtrl !== undefined && { abortController: abortCtrl }),
+        })
+      );
     };
 
     let taskRunner: ReturnType<typeof createTaskRunner>;

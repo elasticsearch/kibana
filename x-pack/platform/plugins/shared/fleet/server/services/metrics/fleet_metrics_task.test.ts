@@ -122,7 +122,7 @@ describe('fleet metrics task', () => {
       await mockTask.start(mockTaskManagerStart, esClient);
       const createTaskRunner =
         mockTaskManagerSetup.registerTaskDefinitions.mock.calls[0][0][TYPE].createTaskRunner;
-      const taskRunner = createTaskRunner({ taskInstance, abortController: new AbortController() });
+      const taskRunner = createTaskRunner(taskManagerMock.createRunContext({ taskInstance }));
       return taskRunner.run();
     };
 

@@ -116,6 +116,7 @@ import {
 import { rulesSettingsServiceMock } from '../rules_settings/rules_settings_service.mock';
 import { eventLogClientMock } from '@kbn/event-log-plugin/server/mocks';
 
+const RULE_EXECUTION_UUID = '5f6aa57d-3e22-484e-bae8-cbed868f4d28';
 jest.mock('uuid', () => ({
   v4: () => '5f6aa57d-3e22-484e-bae8-cbed868f4d28',
 }));
@@ -301,6 +302,25 @@ describe('Task Runner', () => {
         });
       });
 
+      const createTaskRunner = (
+        overrides: Partial<ConstructorParameters<typeof TaskRunner>[0]> = {}
+      ) =>
+        new TaskRunner({
+          ruleType: ruleTypeWithAlerts,
+          internalSavedObjectsRepository,
+          taskInstance: {
+            ...mockedTaskInstance,
+            state: {
+              ...mockedTaskInstance.state,
+              previousStartedAt: new Date(Date.now() - 5 * 60 * 1000).toISOString(),
+            },
+          },
+          context: taskRunnerFactoryInitializerParams,
+          inMemoryMetrics,
+          executionUuid: RULE_EXECUTION_UUID,
+          ...overrides,
+        });
+
       test('should not use legacy alerts client if alerts client created', async () => {
         const spy1 = jest
           .spyOn(LegacyAlertsClientModule, 'LegacyAlertsClient')
@@ -325,19 +345,7 @@ describe('Task Runner', () => {
           hasReachedAlertLimit: false,
           triggeredActionsStatus: 'complete',
         });
-        const taskRunner = new TaskRunner({
-          ruleType: ruleTypeWithAlerts,
-          internalSavedObjectsRepository,
-          taskInstance: {
-            ...mockedTaskInstance,
-            state: {
-              ...mockedTaskInstance.state,
-              previousStartedAt: new Date(Date.now() - 5 * 60 * 1000).toISOString(),
-            },
-          },
-          context: taskRunnerFactoryInitializerParams,
-          inMemoryMetrics,
-        });
+        const taskRunner = createTaskRunner();
         expect(AlertingEventLogger).toHaveBeenCalledTimes(1);
 
         mockGetAlertFromRaw.mockReturnValue(mockedRuleTypeSavedObject as Rule);
@@ -443,21 +451,11 @@ describe('Task Runner', () => {
           .spyOn(alertsService, 'getContextInitializationPromise')
           .mockResolvedValue({ result: true });
 
-        const taskRunner = new TaskRunner({
-          ruleType: ruleTypeWithAlerts,
-          internalSavedObjectsRepository,
-          taskInstance: {
-            ...mockedTaskInstance,
-            state: {
-              ...mockedTaskInstance.state,
-              previousStartedAt: new Date(Date.now() - 5 * 60 * 1000).toISOString(),
-            },
-          },
+        const taskRunner = createTaskRunner({
           context: {
             ...taskRunnerFactoryInitializerParams,
             alertsService,
           },
-          inMemoryMetrics,
         });
         expect(AlertingEventLogger).toHaveBeenCalledTimes(1);
         mockGetAlertFromRaw.mockReturnValue(mockedRuleTypeSavedObject as Rule);
@@ -600,15 +598,12 @@ describe('Task Runner', () => {
           }
         );
 
-        const taskRunner = new TaskRunner({
-          ruleType: ruleTypeWithAlerts,
-          internalSavedObjectsRepository,
+        const taskRunner = createTaskRunner({
           taskInstance: mockedTaskInstance,
           context: {
             ...taskRunnerFactoryInitializerParams,
             alertsService,
           },
-          inMemoryMetrics,
         });
         expect(AlertingEventLogger).toHaveBeenCalledTimes(1);
         mockGetAlertFromRaw.mockReturnValue(mockedRuleTypeSavedObject as Rule);
@@ -698,19 +693,7 @@ describe('Task Runner', () => {
           hasReachedAlertLimit: false,
           triggeredActionsStatus: 'complete',
         });
-        const taskRunner = new TaskRunner({
-          ruleType: ruleTypeWithAlerts,
-          internalSavedObjectsRepository,
-          taskInstance: {
-            ...mockedTaskInstance,
-            state: {
-              ...mockedTaskInstance.state,
-              previousStartedAt: new Date(Date.now() - 5 * 60 * 1000).toISOString(),
-            },
-          },
-          context: taskRunnerFactoryInitializerParams,
-          inMemoryMetrics,
-        });
+        const taskRunner = createTaskRunner();
         expect(AlertingEventLogger).toHaveBeenCalledTimes(1);
 
         mockGetAlertFromRaw.mockReturnValue(mockedRuleTypeSavedObject as Rule);
@@ -796,18 +779,8 @@ describe('Task Runner', () => {
           hasReachedAlertLimit: false,
           triggeredActionsStatus: 'complete',
         });
-        const taskRunner = new TaskRunner({
-          ruleType: ruleTypeWithAlerts,
-          internalSavedObjectsRepository,
-          taskInstance: {
-            ...mockedTaskInstance,
-            state: {
-              ...mockedTaskInstance.state,
-              previousStartedAt: new Date(Date.now() - 5 * 60 * 1000).toISOString(),
-            },
-          },
+        const taskRunner = createTaskRunner({
           context: { ...taskRunnerFactoryInitializerParams, alertsService: null },
-          inMemoryMetrics,
         });
         expect(AlertingEventLogger).toHaveBeenCalledTimes(1);
 
@@ -875,19 +848,7 @@ describe('Task Runner', () => {
           rawRecoveredAlerts: {},
         });
 
-        const taskRunner = new TaskRunner({
-          ruleType: ruleTypeWithAlerts,
-          internalSavedObjectsRepository,
-          taskInstance: {
-            ...mockedTaskInstance,
-            state: {
-              ...mockedTaskInstance.state,
-              previousStartedAt: new Date(Date.now() - 5 * 60 * 1000).toISOString(),
-            },
-          },
-          context: taskRunnerFactoryInitializerParams,
-          inMemoryMetrics,
-        });
+        const taskRunner = createTaskRunner();
 
         const ruleSpecificFlapping = {
           enabled: false,
@@ -934,19 +895,7 @@ describe('Task Runner', () => {
           rawRecoveredAlerts: {},
         });
 
-        const taskRunner = new TaskRunner({
-          ruleType: ruleTypeWithAlerts,
-          internalSavedObjectsRepository,
-          taskInstance: {
-            ...mockedTaskInstance,
-            state: {
-              ...mockedTaskInstance.state,
-              previousStartedAt: new Date(Date.now() - 5 * 60 * 1000).toISOString(),
-            },
-          },
-          context: taskRunnerFactoryInitializerParams,
-          inMemoryMetrics,
-        });
+        const taskRunner = createTaskRunner();
 
         const ruleSpecificFlapping = {
           lookBackWindow: 10,

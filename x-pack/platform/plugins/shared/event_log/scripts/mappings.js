@@ -33,6 +33,14 @@ exports.EcsCustomPropertyMappings = {
           schedule_delay: {
             type: 'long',
           },
+          execution: {
+            properties: {
+              uuid: {
+                type: 'keyword',
+                ignore_above: 1024,
+              },
+            },
+          },
         },
       },
       // alerting specific fields
