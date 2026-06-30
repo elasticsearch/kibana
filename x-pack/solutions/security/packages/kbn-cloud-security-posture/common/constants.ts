@@ -196,3 +196,58 @@ export const getGraphTargetEuidSourceFields = (euid: EntityStoreEuid) => {
 };
 
 export type EuidSourceFields = ReturnType<typeof getGraphActorEuidSourceFields>;
+
+export const GRAPH_SUPPORTED_RUNTIME_MAPPINGS_INTEGRATIONS = [
+  'aws_bedrock',
+  'aws_bedrock_agentcore',
+  'aws_cloudtrail_otel',
+  'aws_securityhub',
+  'aws_vpcflow_otel',
+  'azure_ai_foundry',
+  'azure_app_service',
+  'azure_openai',
+  'checkpoint_email',
+  'cisco_meraki',
+  'cisco_secure_email_gateway',
+  'cisco_umbrella',
+  'citrix_waf',
+  'corelight',
+  'cyera',
+  'darktrace',
+  'entityanalytics_ad',
+  'entityanalytics_okta',
+  'extrahop',
+  'forgerock',
+  'fortinet_fortigate',
+  'gcp_vertexai',
+  'gitlab',
+  'greenhouse',
+  'infoblox_bloxone_ddi',
+  'jamf_pro',
+  'linux',
+  'm365_defender',
+  'microsoft_dhcp',
+  'microsoft_intune',
+  'openai',
+  'osquery',
+  'ping_federate',
+  'ping_one',
+  'prisma_cloud',
+  'qualys_vmdr',
+  'salesforce',
+  'servicenow',
+  'slack',
+  'snort',
+  'snyk',
+  'suricata',
+  'sysdig',
+  'tanium',
+  'ti_misp',
+  'wiz',
+  'zscaler_zia',
+] as const;
+
+export const isGraphSupportedRuntimeMappingsIntegration = (dataset: string): boolean =>
+  GRAPH_SUPPORTED_RUNTIME_MAPPINGS_INTEGRATIONS.some(
+    (integration) => dataset === integration || dataset.startsWith(`${integration}.`)
+  );

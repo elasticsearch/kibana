@@ -221,6 +221,32 @@ describe('useGraphPreview', () => {
     expect(result.current.hasGraphData).toBe(true);
   });
 
+  it('returns hasGraphData=true for supported runtime-mappings integrations without actor/target', () => {
+    const { result } = renderHook(() =>
+      useGraphPreview({
+        hit: createMockHit({
+          '@timestamp': '2025-01-01T00:00:00.000Z',
+          'event.dataset': 'aws_bedrock.invocation',
+        }),
+      })
+    );
+
+    expect(result.current.hasGraphData).toBe(true);
+  });
+
+  it('returns hasGraphData=false for unsupported datasets', () => {
+    const { result } = renderHook(() =>
+      useGraphPreview({
+        hit: createMockHit({
+          '@timestamp': '2025-01-01T00:00:00.000Z',
+          'event.dataset': 'google_cloud.audit',
+        }),
+      })
+    );
+
+    expect(result.current.hasGraphData).toBe(false);
+  });
+
   it('returns shouldShowGraph=false when license is missing', () => {
     mockUseHasGraphVisualizationLicense.mockReturnValue(false);
 

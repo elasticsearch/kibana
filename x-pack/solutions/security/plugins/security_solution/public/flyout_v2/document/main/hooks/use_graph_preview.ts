@@ -13,6 +13,7 @@ import {
   GRAPH_TARGET_ENTITY_FIELDS,
   getGraphActorEuidSourceFields,
   getGraphTargetEuidSourceFields,
+  isGraphSupportedRuntimeMappingsIntegration,
 } from '@kbn/cloud-security-posture-common';
 import { ALL_ENTITY_TYPES, useEntityStoreEuidApi } from '@kbn/entity-store/public';
 import { getField, getFieldArray } from '../../../../flyout/document_details/shared/utils';
@@ -75,6 +76,10 @@ export const useGraphPreview = ({ hit }: UseGraphPreviewParams): UseGraphPreview
   const getFieldsData = (field: string) => hit.flattened[field];
 
   const timestamp = getField(getFieldsData('@timestamp'));
+  const dataset = getField(getFieldsData('event.dataset'));
+
+  const isSupportedRuntimeMappingsIntegration =
+    dataset != null && isGraphSupportedRuntimeMappingsIntegration(dataset);
 
   const originalEventId = getFieldsData('kibana.alert.original_event.id');
   const eventId = getFieldsData('event.id');
@@ -111,7 +116,9 @@ export const useGraphPreview = ({ hit }: UseGraphPreviewParams): UseGraphPreview
     actionField != null ? (getFieldArray(actionField) as string[]) : undefined;
 
   const hasGraphData =
-    Boolean(timestamp) && Boolean(action?.length) && eventIds.length > 0 && hasActor && hasTarget;
+    Boolean(timestamp) &&
+    (isSupportedRuntimeMappingsIntegration ||
+      (Boolean(action?.length) && eventIds.length > 0 && hasActor && hasTarget));
 
   const hasRequiredLicense = useHasGraphVisualizationLicense();
   // Entity-store availability is detected via two complementary signals because either may be

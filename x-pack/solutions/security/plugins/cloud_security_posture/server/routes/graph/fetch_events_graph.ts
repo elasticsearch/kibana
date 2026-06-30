@@ -9,13 +9,11 @@ import { castArray } from 'lodash';
 import type { Logger, IScopedClusterClient } from '@kbn/core/server';
 import {
   DOCUMENT_TYPE_ALERT,
+  DOCUMENT_TYPE_ENTITY,
   DOCUMENT_TYPE_EVENT,
 } from '@kbn/cloud-security-posture-common/types/graph/v1';
 import type { EsqlToRecords } from '@elastic/elasticsearch/lib/helpers';
-import {
-  DOCUMENT_TYPE_ENTITY,
-  INDEX_PATTERN_REGEX,
-} from '@kbn/cloud-security-posture-common/schema/graph/v1';
+import { INDEX_PATTERN_REGEX } from '@kbn/cloud-security-posture-common/schema/graph/v1';
 import type { ProjectRouting } from '@kbn/cloud-security-posture-common/schema/graph/v1';
 
 import { ALL_ENTITY_TYPES } from '@kbn/entity-store/common';
@@ -28,10 +26,10 @@ import {
   JSON_OBJECT_START,
   JSON_OBJECT_END,
   JSON_OBJECT_SEPARATOR,
-  concatJsonObjectPropertyEsqlExprAsString,
-  concatJsonObjectPropertyString,
   hashIds,
   rebuildDocData,
+  concatJsonObjectPropertyEsqlExprAsString,
+  concatJsonObjectPropertyString,
 } from './utils';
 import {
   type EuidSourceFields,
@@ -43,6 +41,7 @@ import { getTargetEuidEsqlEvaluation } from './target_euid';
 import { SECURITY_ALERTS_PARTIAL_IDENTIFIER } from '../../../common/constants';
 import type { EsQuery, OriginEventId, EventEdge, EventEsqlRow } from './types';
 import type { EntityEnrichmentFields } from './fetch_entity_enrichment';
+import { buildEnrichmentQuery } from './runtime_evaluations';
 
 interface BuildEsqlQueryParams {
   indexPatterns: string[];
@@ -124,7 +123,9 @@ export const fetchEvents = async ({
     pinnedIds,
   });
 
-  logger.trace(`Executing events query [project_routing: ${projectRouting ?? 'default'}]`);
+  logger.trace(
+    `Executing events query [project_routing: ${projectRouting ?? 'default'}] [${query}]`
+  );
 
   return esClient.asCurrentUser.helpers
     .esql({
@@ -154,23 +155,6 @@ const buildDslFilter = (
           },
         },
       },
-      ...(showUnknownTarget
-        ? []
-        : [
-            {
-              bool: {
-                should: [
-                  ...GRAPH_TARGET_EUID_SOURCE_FIELDS.generic,
-                  ...GRAPH_TARGET_EUID_SOURCE_FIELDS.host,
-                  ...GRAPH_TARGET_EUID_SOURCE_FIELDS.user,
-                  ...GRAPH_TARGET_EUID_SOURCE_FIELDS.service,
-                ].map((field) => ({
-                  exists: { field },
-                })),
-                minimum_should_match: 1,
-              },
-            },
-          ]),
       {
         bool: {
           should: [
@@ -419,10 +403,18 @@ const buildEsqlQuery = ({
   alertsMappingsIncluded,
   pinnedIds,
 }: BuildEsqlQueryParams): string => {
-  const query = `SET unmapped_fields="nullify";
+  // TODO: TEMPORARY USING NULLIFY INSTEAD OF LOAD - LOAD is still experimental and makes the query fail more often than nullify.
+  const query = `SET unmapped_fields="NULLIFY";
 FROM ${indexPatterns
     .filter((indexPattern) => indexPattern.length > 0)
     .join(',')} METADATA _id, _index
+| EVAL  __actor_exists = user.id IS NOT NULL OR user.full_name IS NOT NULL OR user.email IS NOT NULL
+| EVAL __target_exists = user.target.id IS NOT NULL OR user.target.name IS NOT NULL OR user.target.email IS NOT NULL
+    OR service.target.id IS NOT NULL OR service.target.name IS NOT NULL
+    OR entity.target.id IS NOT NULL OR entity.target.name IS NOT NULL
+| EVAL  __action_exists = event.action IS NOT NULL
+| EVAL data_stream.dataset = COALESCE(event.dataset, MV_FIRST(SPLIT(_index, "-")))
+${buildEnrichmentQuery({ skipColumns: ['host.ip', 'host.target.ip', 'host.target.port'] })}
 ${buildV2ActorResolution()}
 | WHERE event.action IS NOT NULL AND actorEntityId IS NOT NULL
 ${buildV2TargetResolution()}
@@ -442,7 +434,6 @@ ${buildPinnedEsql(pinnedIds)}
     ${JSON_OBJECT_SEPARATOR}, ${concatJsonObjectPropertyString('type', DOCUMENT_TYPE_ENTITY)},
     ${JSON_OBJECT_SEPARATOR}, ${buildTargetSourceFieldsEsql()},
   ${JSON_OBJECT_END})
-
 // Map host and source values to enriched contextual data
 | EVAL sourceIps = source.ip
 | EVAL sourceCountryCodes = source.geo.country_iso_code
