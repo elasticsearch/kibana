@@ -66,7 +66,9 @@ interface Stats {
 
 export interface Runner extends EventEmitter {
   abort(): void;
-  failures: any[];
+  failures: number;
+  on(event: 'fail', listener: (test: Test, err: Error) => void): this;
+  on(event: string | symbol, listener: (...args: any[]) => void): this;
   uncaught: (error: Error) => void;
   stats?: Stats;
 }

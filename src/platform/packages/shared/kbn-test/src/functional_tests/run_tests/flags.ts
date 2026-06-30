@@ -32,9 +32,13 @@ export const FLAG_OPTIONS: FlagOptions = {
     'include',
     'exclude',
     'writeLogsToPath',
+    'retry',
   ],
   alias: {
     updateAll: 'u',
+  },
+  default: {
+    retry: '0',
   },
   help: `
     --config             Define a FTR config that should be executed. Can be specified multiple times
@@ -48,6 +52,7 @@ export const FLAG_OPTIONS: FlagOptions = {
     --grep               Pattern to select which tests to run
     --kibana-install-dir Run Kibana from existing install directory instead of from source
     --bail               Stop the test run at the first failure
+    --retry              Retry failed test files N times after the initial run, cannot be used with --bail
     --logToFile          Write the log output from Kibana/ES to files instead of to stdout
     --writeLogsToPath    Write the log output from Kibana/ES to files in specified path
     --dry-run            Report tests without executing them
@@ -82,10 +87,17 @@ export function parseFlags(flags: FlagsReader) {
     ? Path.resolve(REPO_ROOT, 'data/ftr_servers_logs', uuidV4())
     : undefined;
 
+  const bail = flags.boolean('bail');
+  const retry = flags.requiredNumber('retry');
+  if (bail && retry) {
+    throw createFlagError('--retry cannot be used with --bail');
+  }
+
   return {
     configs,
     esVersion: esVersionString ? new EsVersion(esVersionString) : EsVersion.getDefault(),
-    bail: flags.boolean('bail'),
+    bail,
+    retry,
     dryRun: flags.boolean('dry-run'),
     updateBaselines: flags.boolean('updateBaselines') || flags.boolean('updateAll'),
     updateSnapshots: flags.boolean('updateSnapshots') || flags.boolean('updateAll'),

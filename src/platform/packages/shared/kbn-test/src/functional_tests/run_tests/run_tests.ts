@@ -99,6 +99,7 @@ export async function runTests(log: ToolingLog, options: RunTestsOptions) {
           log,
           config,
           esVersion: options.esVersion,
+          retry: options.retry,
         }).finally(() => {
           tx.end();
         });
@@ -186,6 +187,7 @@ export async function runTests(log: ToolingLog, options: RunTestsOptions) {
               config,
               esVersion: options.esVersion,
               signal: abortCtrl.signal,
+              retry: options.retry,
             })
           );
 

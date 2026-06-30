@@ -9,7 +9,12 @@
 
 import * as Rx from 'rxjs';
 import type { Lifecycle } from '../lifecycle';
-import type { Mocha } from '../../fake_mocha_types';
+import type { Mocha, Test } from '../../fake_mocha_types';
+
+export interface RunTestsResult {
+  failureCount: number;
+  failedTestFiles: string[];
+}
 
 /**
  *  Run the tests that have already been loaded into
@@ -18,12 +23,23 @@ import type { Mocha } from '../../fake_mocha_types';
  *  @param  {Lifecycle} lifecycle
  *  @param  {ToolingLog} log
  *  @param  {Mocha} mocha
- *  @return {Promise<Number>} resolves to the number of test failures
+ *  @return {Promise<RunTestsResult>} resolves to the number of test failures and failed test files
  */
-export async function runTests(lifecycle: Lifecycle, mocha: Mocha, abortSignal?: AbortSignal) {
+export async function runTests(
+  lifecycle: Lifecycle,
+  mocha: Mocha,
+  abortSignal?: AbortSignal
+): Promise<RunTestsResult> {
   let runComplete = false;
+  const failedTestFiles = new Set<string>();
   const runner = mocha.run(() => {
     runComplete = true;
+  });
+
+  runner.on('fail', (test: Test) => {
+    if (test.file) {
+      failedTestFiles.add(test.file);
+    }
   });
 
   Rx.race(
@@ -40,7 +56,19 @@ export async function runTests(lifecycle: Lifecycle, mocha: Mocha, abortSignal?:
   });
 
   return new Promise((resolve) => {
-    const respond = () => resolve(runner.failures);
+    const respond = () => {
+      if (failedTestFiles.size) {
+        // eslint-disable-next-line no-console
+        console.log(
+          '\nFailed test files:\n' + [...failedTestFiles].map((file) => `- ${file}`).join('\n')
+        );
+      }
+
+      resolve({
+        failureCount: runner.failures,
+        failedTestFiles: [...failedTestFiles],
+      });
+    };
 
     // if there are no tests, mocha.run() is sync
     // and the 'end' event can't be listened to

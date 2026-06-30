@@ -12,8 +12,9 @@ import Path, { dirname } from 'path';
 import type { ToolingLog } from '@kbn/tooling-log';
 import { REPO_ROOT } from '@kbn/repo-info';
 import type { Suite, Test } from './fake_mocha_types';
-import type { Providers, Config } from './lib';
+import type { Providers } from './lib';
 import {
+  Config,
   Lifecycle,
   ProviderCollection,
   readProviderSpec,
@@ -28,6 +29,11 @@ import {
   activateTiming,
 } from './lib';
 import { createEsClientForFtrConfig } from '../ftr_es_client';
+
+interface FunctionalTestRunnerRunResult {
+  failureCount: number;
+  failedTestFiles: string[];
+}
 
 export class FunctionalTestRunner {
   private readonly esVersion: EsVersion;
@@ -44,7 +50,29 @@ export class FunctionalTestRunner {
         : new EsVersion(esVersion);
   }
 
-  async run(abortSignal?: AbortSignal) {
+  async run(abortSignal?: AbortSignal, retry = 0) {
+    let result = await this.runWithResult(abortSignal);
+
+    for (let attempt = 1; attempt <= retry; attempt++) {
+      if (result.failureCount === 0 || result.failedTestFiles.length === 0) {
+        break;
+      }
+
+      // eslint-disable-next-line no-console
+      console.log(
+        `\nRetrying failed test files (${attempt}/${retry}):\n` +
+          result.failedTestFiles.map((file) => `- ${file}`).join('\n')
+      );
+
+      const retryConfig = this.createRetryConfig(result.failedTestFiles);
+      const retryRunner = new FunctionalTestRunner(this.log, retryConfig, this.esVersion);
+      result = await retryRunner.runWithResult(abortSignal);
+    }
+
+    return result.failureCount;
+  }
+
+  private async runWithResult(abortSignal?: AbortSignal): Promise<FunctionalTestRunnerRunResult> {
     const testStats = await this.getTestStats();
     const realServices =
       !testStats || (testStats.testCount > 0 && testStats.nonSkippedTestCount > 0);
@@ -84,7 +112,10 @@ export class FunctionalTestRunner {
         this.log.warning(
           'custom test runner defined, ignoring all mocha/suite/filtering related options'
         );
-        return (await providers.invokeProviderFn(customTestRunner)) || 0;
+        return {
+          failureCount: (await providers.invokeProviderFn(customTestRunner)) || 0,
+          failedTestFiles: [],
+        };
       }
 
       let reporter;
@@ -117,19 +148,28 @@ export class FunctionalTestRunner {
       // the mocha object and writing a report file with similar structure to the json report
       // (just leave out some execution details like timing, retry and erros)
       if (this.config.get('mochaOpts.dryRun')) {
-        return this.simulateMochaDryRun(mocha);
+        return {
+          failureCount: this.simulateMochaDryRun(mocha),
+          failedTestFiles: [],
+        };
       }
 
       if (abortSignal?.aborted) {
         this.log.warning('run aborted');
-        return;
+        return {
+          failureCount: 0,
+          failedTestFiles: [],
+        };
       }
 
       if (realServices) {
         await lifecycle.beforeTests.trigger(mocha.suite);
         if (abortSignal?.aborted) {
           this.log.warning('run aborted');
-          return;
+          return {
+            failureCount: 0,
+            failedTestFiles: [],
+          };
         }
       }
 
@@ -138,6 +178,22 @@ export class FunctionalTestRunner {
         activateTiming();
       }
       return await runTests(lifecycle, mocha, abortSignal);
+    });
+  }
+
+  private createRetryConfig(failedTestFiles: string[]) {
+    const settings = this.config.getAll();
+
+    return new Config({
+      settings: {
+        ...settings,
+        suiteFiles: {
+          ...settings.suiteFiles,
+          include: failedTestFiles,
+        },
+      },
+      path: this.config.path,
+      module: this.config.module,
     });
   }
 

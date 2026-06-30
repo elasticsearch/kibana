@@ -18,10 +18,11 @@ export async function runFtr(options: {
   config: Config;
   esVersion: EsVersion;
   signal?: AbortSignal;
+  retry?: number;
 }) {
   const ftr = new FunctionalTestRunner(options.log, options.config, options.esVersion);
 
-  const failureCount = await ftr.run(options.signal);
+  const failureCount = await ftr.run(options.signal, options.retry);
   if (failureCount > 0) {
     throw createFailError(
       `${failureCount} functional test ${failureCount === 1 ? 'failure' : 'failures'}`

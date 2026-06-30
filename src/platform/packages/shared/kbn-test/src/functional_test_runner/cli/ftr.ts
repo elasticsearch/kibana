@@ -39,10 +39,16 @@ export function runFtrCli() {
         throw createFlagError(`Expected there to be exactly one --config/--journey flag`);
       }
 
+      const bail = flagsReader.boolean('bail');
+      const retry = flagsReader.requiredNumber('retry');
+      if (bail && retry) {
+        throw createFlagError('--retry cannot be used with --bail');
+      }
+
       const esVersion = esVersionInput ? new EsVersion(esVersionInput) : EsVersion.getDefault();
       const settingOverrides = {
         mochaOpts: {
-          bail: flagsReader.boolean('bail'),
+          bail,
           dryRun: flagsReader.boolean('dry-run'),
           grep: flagsReader.string('grep'),
           invert: flagsReader.boolean('invert'),
@@ -117,7 +123,7 @@ export function runFtrCli() {
             JSON.stringify(await functionalTestRunner.getTestStats(), null, 2) + '\n'
           );
         } else {
-          const failureCount = await functionalTestRunner.run();
+          const failureCount = await functionalTestRunner.run(undefined, retry);
           process.exitCode = failureCount ? 1 : 0;
         }
       } catch (err) {
@@ -141,6 +147,7 @@ export function runFtrCli() {
           'exclude-tag',
           'kibana-install-dir',
           'es-version',
+          'retry',
         ],
         boolean: [
           'bail',
@@ -154,6 +161,9 @@ export function runFtrCli() {
           'dry-run',
           'pauseOnError',
         ],
+        default: {
+          retry: '0',
+        },
         help: `
           --config=path      path to a config file (either this or --journey is required)
           --journey=path     path to a journey file (either this or --config is required)
@@ -179,6 +189,7 @@ export function runFtrCli() {
           --headless         run browser in headless mode
           --dry-run          report tests without executing them
           --pauseOnError     pause test runner on error
+          --retry            retry failed test files N times after the initial run, cannot be used with --bail
         `,
       },
     }
