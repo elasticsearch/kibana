@@ -1,0 +1,170 @@
+# =============================================================================
+# Workflow 4 — hit_provenance_backfill
+#
+# Schedule: every hour.
+# Purpose:  Walk back from Detection Engine alerts to the originating
+#           `.kibana-threat-reports-*` doc and update
+#           `provenance.environment_hits[]` +
+#           `provenance.environment_hits_total` so the report-table attachment
+#           can render the already-defined "Env. hits" column with real values.
+#
+# Two sources of hits, mapped to the two implemented layers of the detection
+# model. (Layer 3 — Streams Query KIs — is intentionally not handled here;
+# see `docs/rfcs/0001_streams_layer3_grounded_hypothesis_flow.md` for the
+# proposed contract.)
+#
+#   - **Layer 1 (IOC match)** — alerts produced by Indicator Match rules
+#     (`kibana.alert.rule.type == "threat_match"`). The IOC indicator-sync
+#     Task Manager task writes a `threat.indicator.reference` of the form
+#     `threat-report:<report_id>` onto every indicator it syncs from
+#     `.kibana-threat-reports-*`, so Indicator Match alerts carry that
+#     backlink through to `threat.enrichments.indicator.reference` on alerts.
+#
+#   - **Layer 2 (behavioral DE rule)** — alerts whose
+#     `kibana.alert.rule.threat.technique[].id` overlaps with this report's
+#     `extracted.behaviors.technique_id` values (written by
+#     `nl_extraction_behavioral`). The match is technique-level, not
+#     report-level, so we attribute the hit to every report that surfaced the
+#     same technique in the lookback window. This is intentional — the
+#     "Env. hits" badge measures the in-the-wild signal, not authorship.
+#
+# Bounded to reports with at least one extracted IOC OR behavior. Reports
+# with neither cannot produce env hits and are skipped.
+# =============================================================================
+name: Threat intelligence — Hit provenance backfill (Layers 1/2)
+description: Attribute Detection Engine alerts back to their originating .kibana-threat-reports docs (Layers 1/2)
+enabled: true
+triggers:
+  - type: scheduled
+    with:
+      every: "1h"
+steps:
+  - name: load_reports_with_extractions
+    type: elasticsearch.search
+    with:
+      index: .kibana-threat-reports
+      size: 500
+      query:
+        bool:
+          filter:
+            - range:
+                provenance.extracted_at:
+                  gte: "now-30d"
+          should:
+            # `extracted.iocs` / `extracted.behaviors` are `nested` in the
+            # reports mapping; `exists` on the parent path matches nothing (see
+            # `HAS_EXTRACTED_IOCS_FILTER` in `ioc_indicator_sync.ts`).
+            - nested:
+                path: extracted.iocs
+                query:
+                  exists:
+                    field: extracted.iocs.value
+            - nested:
+                path: extracted.behaviors
+                query:
+                  exists:
+                    field: extracted.behaviors.technique_id
+          minimum_should_match: 1
+      # `@timestamp` is always mapped on this data stream, so it's a safe
+      # sort field. The `<field>:<direction>` shorthand (`search_sort`) only
+      # applies when `sort` is sent as a URL query param; `buildElasticsearchRequest`
+      # in `kbn-workflows` prefers body params when both are declared, so
+      # `"@timestamp:desc"` lands in the request body and ES treats the whole
+      # string as a field name. Use the body `types_sort` array form instead
+      # (same as `nl_extraction_behavioral.yaml`'s `load_pending_reports`).
+      sort:
+        - "@timestamp"
+
+  - name: backfill_each_report
+    type: foreach
+    foreach: "{{ steps.load_reports_with_extractions.output.hits.hits }}"
+    steps:
+      # Layer 1 — Indicator Match alerts that reference this report_id.
+      # The indicator-sync Task Manager task writes
+      # `threat.indicator.reference = "threat-report:<report_id>"` on every
+      # row in the `.kibana-threat-intel-indicators` index so the join is exact.
+      - name: count_layer1_hits
+        type: elasticsearch.search
+        with:
+          index: .alerts-security.alerts-*
+          size: 0
+          query:
+            bool:
+              filter:
+                - range:
+                    "@timestamp":
+                      gte: "now-7d"
+                - term:
+                    kibana.alert.rule.type: threat_match
+                # Indicator Match copies matched indicators into
+                # `threat.enrichments` (see ENRICHMENT_DESTINATION_PATH), not
+                # `kibana.alert.threat.*` — use a nested term on the reference.
+                - nested:
+                    path: threat.enrichments
+                    query:
+                      term:
+                        threat.enrichments.indicator.reference: "threat-report:{{ foreach.item._id }}"
+        on-failure:
+          # If the alerts index doesn't exist yet (fresh deployment) or RBAC
+          # blocks the read, treat as zero rather than failing the loop.
+          continue: true
+
+      # Layer 2 — behavioral DE rule alerts whose ATT&CK techniques overlap
+      # with this report's `extracted.behaviors.technique_id` values. The
+      # technique list is resolved by Elasticsearch via `terms_lookup` rather
+      # than interpolated as a Liquid variable — only the report's `_index` +
+      # `_id` are needed. IOC-only reports get an empty lookup and zero hits.
+      - name: layer2_search
+        type: elasticsearch.search
+        with:
+          index: .alerts-security.alerts-*
+          size: 0
+          query:
+            bool:
+              filter:
+                - range:
+                    "@timestamp":
+                      gte: "now-7d"
+                - terms:
+                    kibana.alert.rule.threat.technique.id:
+                      index: "{{ foreach.item._index }}"
+                      id: "{{ foreach.item._id }}"
+                      path: extracted.behaviors.technique_id
+              must_not:
+                - term:
+                    kibana.alert.rule.type: threat_match
+        on-failure:
+          continue: true
+
+      # `index` is bound to the concrete backing index of the loaded hit
+      # (`{{ foreach.item._index }}`) — `_update` cannot target a data-stream
+      # alias or a wildcard pattern by id, so we use the index Elasticsearch
+      # returned on the load search rather than `.kibana-threat-reports*`.
+      - name: write_provenance
+        type: elasticsearch.update
+        with:
+          index: "{{ foreach.item._index }}"
+          id: "{{ foreach.item._id }}"
+          # See the matching note in `nl_extraction_behavioral.yaml`'s
+          # `persist_extractions` step: `"{{ expr }}"` always coerces to a
+          # string (so `now` becomes the JS `Date.toString()` form ES
+          # rejects, and numeric counters land as quoted strings). Use
+          # `"${{ expr }}"` for non-string fields so the templating engine
+          # preserves the JS type — Dates land as ISO 8601 via
+          # `JSON.stringify`, numbers stay numeric.
+          doc:
+            provenance:
+              environment_hits:
+                window: "7d"
+                computed_at: "${{ now }}"
+                layer_1_ioc_match: "${{ steps.count_layer1_hits.output.hits.total.value | default: 0 }}"
+                layer_2_behavioral: "${{ steps.layer2_search.output.hits.total.value | default: 0 }}"
+              # Liquid has no arithmetic operators — `(a) + (b)` is parsed as
+              # a range literal and rejected. Use the `plus` filter, which
+              # coerces missing step outputs to 0 when a search step fails.
+              environment_hits_total: "${{ steps.count_layer1_hits.output.hits.total.value | default: 0 | plus: steps.layer2_search.output.hits.total.value }}"
+        on-failure:
+          # Doc deleted mid-run, mapping mismatch, or version conflict from a
+          # concurrent ingest. Backfill is idempotent — the next hourly run
+          # will overwrite cleanly.
+          continue: true

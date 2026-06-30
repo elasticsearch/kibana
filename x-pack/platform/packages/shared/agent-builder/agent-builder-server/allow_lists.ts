@@ -75,6 +75,19 @@ export const AGENT_BUILDER_BUILTIN_TOOLS = [
   `${internalNamespaces.workflows}.get_workflow`,
   `${internalNamespaces.workflows}.get_examples`,
   `${internalNamespaces.workflows}.workflow_execute_step`,
+  // Threat Intelligence tools are owned by Security Solution but registered under
+  // the `threat_intel.` namespace to match the `threat-intelligence` skill ID
+  // (see `security_solution/common/threat_intelligence/hub/constants.ts`).
+  'threat_intel.extract_iocs',
+  'threat_intel.analyse_environment',
+  'threat_intel.correlate_threat',
+  'threat_intel.correlate_start',
+  'threat_intel.correlate_poll',
+  'threat_intel.search_by_anchors',
+  'threat_intel.search_by_diamond',
+  'threat_intel.extract_diamond',
+  'threat_intel.get_report',
+  'threat_intel.correlate_synthesis_pack',
 ] as const;
 
 export type AgentBuilderBuiltinTool = (typeof AGENT_BUILDER_BUILTIN_TOOLS)[number];
@@ -145,6 +158,7 @@ export const AGENT_BUILDER_BUILTIN_SKILLS = [
   'detection-rule-edit',
   'recommend-prebuilt-rules',
   'threat-hunting',
+  'threat-intelligence',
   'find-security-rules',
   'pci-compliance',
   'siem-readiness',

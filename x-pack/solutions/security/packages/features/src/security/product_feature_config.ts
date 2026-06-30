@@ -72,6 +72,7 @@ export const securityDefaultProductFeaturesConfig: SecurityProductFeaturesConfig
   },
 
   [ProductFeatureSecurityKey.threatIntelligence]: {
+    subFeatureIds: [SecuritySubFeatureId.threatIntelligence],
     privileges: {
       all: {
         ui: ['threat-intelligence'],

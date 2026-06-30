@@ -1,0 +1,447 @@
+# =============================================================================
+# Workflow 2 — nl_extraction_behavioral
+#
+# Schedule: every 4 hours (offset from Workflow 1 by ~30m so newly-ingested
+# documents are available). Matches Workflow 1's 4h cadence so the extraction
+# pass doesn't lag the ingestion pass.
+# Purpose:  For each freshly-ingested report (where extraction_method == 'pending'),
+#           extract IOCs and behaviors via internal threat-intelligence routes
+#           (deterministic IOC regex + catalog-validated hunt_behavior), and the closed-set
+#           threat-category + geographic-region tags via a stage-2 LLM step.
+#           Skip documents whose content_fingerprint has already been processed
+#           (dedup gate).
+# =============================================================================
+name: Threat intelligence — IOC and behavior extraction
+description: Extract IOCs + behaviors from freshly ingested threat reports (deduped by content_fingerprint)
+enabled: true
+triggers:
+  - type: scheduled
+    with:
+      every: "4h"
+steps:
+  - name: load_pending_reports
+    type: elasticsearch.search
+    with:
+      # Source-ingestion writes to the bare data stream name
+      # (`THREAT_REPORTS_DATA_STREAM` in `common/threat_intelligence/hub/constants.ts`).
+      # The `.kibana-threat-reports-*` pattern requires at least one
+      # character after the dash and therefore matches neither the data
+      # stream alias nor its backing `.ds-.kibana-threat-reports-…` indices
+      # (see the long comment next to `THREAT_REPORTS_INDEX_PATTERN`).
+      index: .kibana-threat-reports
+      size: 200
+      query:
+        bool:
+          must:
+            - term:
+                provenance.extraction_method: pending
+      # The generated `types_sort` schema only accepts a string, a string
+      # array, or the closed-set `types_sort_options` keys (`_score`, `_doc`,
+      # `_geo_distance`, `_script`) — arbitrary field-name keys like
+      # `{ "@timestamp": "asc" }` are rejected by the strict workflow JSON
+      # schema. Plain field-name strings default to ascending order, which
+      # is what we want here (oldest pending reports first).
+      sort:
+        - "@timestamp"
+
+  - name: extract_each_report
+    type: foreach
+    foreach: "{{ steps.load_pending_reports.output.hits.hits }}"
+    steps:
+      # Per-iteration dedup gate. A single upfront `terms` aggregation over
+      # already-extracted fingerprints would be cheaper, but `if` conditions
+      # are evaluated as KQL (`IfStepConfigSchema` in
+      # `kbn-workflows/spec/schema.ts`), and KQL has no array-containment
+      # operator. A per-item `term` lookup keeps the condition expressible
+      # in KQL while remaining O(N) on a single-index data stream — the
+      # 200-doc page size caps the fan-out per run.
+      - name: check_already_extracted
+        type: elasticsearch.search
+        with:
+          index: .kibana-threat-reports
+          size: 0
+          track_total_hits: true
+          query:
+            bool:
+              must:
+                - term:
+                    content_fingerprint: "{{ foreach.item._source.content_fingerprint }}"
+              must_not:
+                - term:
+                    provenance.extraction_method: pending
+
+      - name: skip_already_extracted
+        type: loop.continue
+        if: "steps.check_already_extracted.output.hits.total.value > 0"
+
+      - name: extract_iocs
+        type: kibana.request
+        with:
+          method: POST
+          path: /api/threat_intelligence/extract_iocs
+          headers:
+            # Versioned Kibana route — `registerExtractIocsRoute` registers
+            # `version: '2023-10-31'` on a `router.versioned.post` handler,
+            # which the core HTTP layer enforces via the `elastic-api-version`
+            # header. Without it the request fails with HTTP 400 before the
+            # body schema even runs.
+            elastic-api-version: "2023-10-31"
+            x-elastic-internal-origin: "kibana"
+          body:
+            # html primary: body_html is stored index:false (not searchable) but
+            # is retrievable from _source. The route converts it via htmlToStructured()
+            # which preserves table rows / headers / lists so IOC values in vendor
+            # HTML tables survive extraction. body_text is the fallback — the route
+            # uses it when html is absent (STIX, manual ingest, text-only sources).
+            html: "{{ foreach.item._source.content.body_html }}"
+            text: "{{ foreach.item._source.content.body_text }}"
+            defang: true
+        on-failure:
+          # A single oversized or malformed report should not abort the
+          # entire batch. `registerExtractIocsRoute` lifts Kibana's default
+          # 1 MiB body cap to 10 MiB, but RSS/STIX/TAXII feeds occasionally
+          # exceed even that — and the regex extractor itself can in
+          # principle reject pathological input. Downstream steps already
+          # tolerate a missing IOC output: `find_related_reports` is gated
+          # on `if: "steps.extract_iocs.output.ioc_set_hash : *"`, and
+          # `persist_extractions` drops undefined fields from the partial
+          # update doc (see its long comment on Liquid string coercion).
+          continue: true
+
+      - name: extract_behaviors
+        type: kibana.request
+        with:
+          method: POST
+          path: /api/threat_intelligence/hunt_behavior
+          headers:
+            elastic-api-version: "2023-10-31"
+            x-elastic-internal-origin: "kibana"
+          body:
+            # Truncate before the LLM call — same 30 KB cap the former
+            # `ai.agent` step used. Keeps connector latency predictable on
+            # syndicated RSS dumps while preserving advisory signal.
+            text: "{{ foreach.item._source.content.body_text | slice: 0, 30000 }}"
+            report_id: "{{ foreach.item._id }}"
+        on-failure:
+          # Behavior extraction is best-effort, mirroring `enrich_taxonomy`
+          # below. A missing GenAI connector (503) or LLM failure must not
+          # abort the foreach — downstream steps tolerate missing behaviors:
+          # `find_related_reports` falls back to the `__no_techniques__`
+          # sentinel and `persist_extractions` drops undefined fields.
+          continue: true
+
+      # Stage 2 — closed-set taxonomy enrichment + detection-actionability
+      # scoring. Drives the visual dashboard's category-breakdown panel,
+      # the "Affects You" geo filter, AND the tradecraft-style multiplicative
+      # rank_score (severity × relevance) used by `search_reports` when
+      # `sort_by='rank'`. The LLM is constrained to the THREAT_CATEGORIES /
+      # THREAT_REGIONS / DETECTION_ACTIONABILITY_LEVELS enums so downstream
+      # consumers don't have to handle long-tail free-text labels.
+      #
+      # Backed by `services/enrich_taxonomy.ts` via `kibana.request` (NOT
+      # `ai.agent`) so the per-stage connector is operator-configurable via
+      # the `securitySolution:threatIntelligence:diamondGateConnector` advanced
+      # setting — pin it to a cheap model (Haiku/Sonnet) to reduce per-report
+      # cost. The route falls through to `genAi:defaultAIConnector` when the
+      # setting is blank.
+      #
+      # NEVER set use_server_info: true (resolves to https://0.0.0.0:5601 on Cloud).
+      - name: enrich_taxonomy
+        type: kibana.request
+        with:
+          method: POST
+          path: /api/threat_intelligence/enrich_taxonomy
+          headers:
+            elastic-api-version: "2023-10-31"
+            x-elastic-internal-origin: "kibana"
+          body:
+            text: "{{ foreach.item._source.content.body_text | slice: 0, 30000 }}"
+            report_id: "{{ foreach.item._id }}"
+            title: "{{ foreach.item._source.content.title }}"
+        on-failure:
+          # Enrichment is best-effort — a stale connector or an over-quota
+          # LLM should not block the rest of the extraction pipeline.
+          # When enrichment fails, `capture_ranking_signals` below falls
+          # back to a neutral relevance of 0.5 so the report still gets
+          # a usable rank_score (severity.score * 0.5) instead of being
+          # silently dropped from sort_by='rank' results.
+          continue: true
+
+      # Compute and hoist the ranking signals so `persist_extractions`
+      # can write a single composite `rank_score` to the doc without
+      # reaching back into the LLM step's output (and so the rest of the
+      # workflow doesn't pay the cost of repeatedly evaluating the
+      # multiplicative expression). The neutral defaults match the
+      # "best-effort" stance of `enrich_taxonomy`'s `on-failure:
+      # continue: true` — a missing relevance yields a baseline rank of
+      # `severity.score * 0.5`, never a NaN or 0 that would hide the
+      # report from sort_by='rank' results.
+      #
+      # `"${{ ... }}"` (dollar-prefixed) takes the evaluateExpression()
+      # branch of WorkflowTemplatingEngine so the multiplication
+      # returns a number rather than a coerced string — same pattern
+      # used in `persist_extractions` below for the arrays.
+      - name: capture_ranking_signals
+        type: data.set
+        with:
+          relevance: "${{ steps.enrich_taxonomy.output.relevance | default: 0.5 }}"
+          detection_actionability: "{{ steps.enrich_taxonomy.output.detection_actionability | default: 'informational' }}"
+          # Failure-default false: enrich_taxonomy on-failure:continue means the field may be
+          # absent. False is also Liquid-falsy so `default:` fires correctly for both absent
+          # and explicit-false, giving the correct gate behaviour in both cases.
+          diamond_suitable: "${{ steps.enrich_taxonomy.output.diamond_suitable | default: false }}"
+          severity_score: "${{ foreach.item._source.severity.score | default: 0 }}"
+          # Hoist the technique-id list with a sentinel fallback so the
+          # `find_related_reports` `terms` clause downstream never receives
+          # an empty array. Elasticsearch's query parser rejects an empty
+          # `terms` value with `parsing_exception: No value specified for
+          # terms query` (verified in production), and there is no in-DSL
+          # way to omit the clause conditionally from a templated YAML
+          # `should[]`.
+          #
+          # Filter chain:
+          #   `map: 'technique_id'`  — pull the keyword the index mapping
+          #                            indexes on (see `extracted.behaviors`
+          #                            in `index_templates.ts`).
+          #   `join: ','`            — collapse to a CSV string; this also
+          #                            converts an empty array to the empty
+          #                            string so `default` can fire (Liquid
+          #                            `default` matches falsy values
+          #                            including '' / nil / false).
+          #   `default: '__no_techniques__'`
+          #                          — sentinel. ATT&CK technique ids are
+          #                            `T<digits>(.<digits>)?` so this
+          #                            literal cannot collide with a real
+          #                            indexed value, and the boost-1 nested
+          #                            terms clause contributes 0 to the
+          #                            `_score` (the comma never appears
+          #                            inside a single id either, so split
+          #                            is safe).
+          #   `split: ','`           — back to an array. Guarantees at
+          #                            least one element so Elasticsearch
+          #                            accepts the query unconditionally.
+          # `${{ … }}` (dollar-prefixed) preserves the JS array via
+          # `evaluateExpression` rather than coercing to a string.
+          technique_ids: "${{ steps.extract_behaviors.output.indexed_behaviors | map: 'technique_id' | join: ',' | default: '__no_techniques__' | split: ',' }}"
+
+      # Diamond Model extraction — heavy single-call with per-vertex fallback.
+      # Only runs for threat-positive reports (`diamond_suitable: true`).
+      # NEVER set use_server_info: true — on Cloud that resolves the URL to
+      # https://0.0.0.0:5601 (root cause: config.host == 0.0.0.0). Default
+      # URL resolution uses cloudSetup.kibanaUrl and works correctly.
+      - name: extract_diamond
+        type: kibana.request
+        if: "variables.diamond_suitable: true"
+        with:
+          method: POST
+          path: /api/threat_intelligence/extract_diamond
+          headers:
+            elastic-api-version: "2023-10-31"
+            x-elastic-internal-origin: "kibana"
+          body:
+            text: "{{ foreach.item._source.content.body_text | slice: 0, 30000 }}"
+            report_id: "{{ foreach.item._id }}"
+        on-failure:
+          continue: true
+
+      # Write extracted diamond fields to the backing index. Separate from
+      # persist_extractions so a diamond write failure never blocks the main
+      # extraction fields and vice versa. Gated on the same signal so a
+      # skipped extract_diamond step (diamond_suitable == false) doesn't
+      # produce a partial update with null vertex fields.
+      - name: persist_diamond_fields
+        type: elasticsearch.update
+        if: "variables.diamond_suitable: true"
+        with:
+          index: "{{ foreach.item._index }}"
+          id: "{{ foreach.item._id }}"
+          doc:
+            extracted:
+              diamond:
+                adversary: "${{ steps.extract_diamond.output.adversary }}"
+                capability: "${{ steps.extract_diamond.output.capability }}"
+                infrastructure: "${{ steps.extract_diamond.output.infrastructure }}"
+                victim: "${{ steps.extract_diamond.output.victim }}"
+                signal_count: "${{ steps.extract_diamond.output.signal_count }}"
+                model_id: "{{ steps.extract_diamond.output.model_id }}"
+                extracted_at: "{{ steps.extract_diamond.output.extracted_at }}"
+                extraction_mode: "{{ steps.extract_diamond.output.extraction_mode }}"
+        on-failure:
+          continue: true
+
+      # Cross-report correlation: find OTHER reports related to this one via a
+      # three-tier scoring. Higher boost = stronger confidence the two reports
+      # describe the same incident:
+      #
+      #  1. **Exact IOC set hash** (boost 5) — verbatim match on the
+      #     stage-1 deterministic digest. Zero-FP but very low recall
+      #     in practice (two reports rarely list identical IOC sets).
+      #  2. **Partial IOC value overlap** (boost 2, score_mode=sum) —
+      #     `nested terms` over `extracted.iocs.value`. Each shared IOC
+      #     contributes ~1.0 × IDF × boost to `_score`. After the #3
+      #     extract_iocs precision fix, the IOC list contains only real
+      #     indicators; IDF naturally weights rare C2 domains and hashes
+      #     higher than shared CDN hostnames, so promiscuous low-IDF
+      #     noise is already penalised without structural changes.
+      #  3. **Partial technique overlap** (boost 0.3, score_mode=sum) —
+      #     `nested terms` over `extracted.behaviors.technique_id`.
+      #     Intentionally low boost: common ATT&CK techniques (T1059,
+      #     T1566, …) appear in dozens of reports and their IDF is low;
+      #     even 10 shared techniques rarely exceed min_score alone.
+      #     Provides additive signal when combined with IOC overlap.
+      #
+      # `min_score: 4` — conservative starting threshold; calibrate
+      # against the phase0_test_corpus in Dev Tools after the #3
+      # re-extraction pass completes. Requires at least one strong
+      # signal (ioc_set_hash, a high-IDF hash, or several clean IOCs)
+      # before a pair is considered "related." Single shared common
+      # domains fall below the floor. Fall back to the structural
+      # discriminating-clause split (must: ioc_set_hash OR hash-IOC)
+      # if min_score proves fragile after calibration.
+      #
+      # `size: 15` — was 50. Phase0 evidence: one doc had
+      # related_reports_count 49 (≈ entire corpus), confirming the
+      # old size cap was not a meaningful bound. 15 is a tighter ceiling
+      # post-cleanup; adjust after calibration if needed.
+      #
+      # Skipped when no IOCs were extracted from this report: same
+      # rationale as before — zero-IOC reports lack the anchor for
+      # signals 1 and 2, and technique-only matching via signal 3 is
+      # now below min_score by design.
+      - name: find_related_reports
+        type: elasticsearch.search
+        if: "steps.extract_iocs.output.ioc_set_hash : *"
+        with:
+          index: .kibana-threat-reports
+          size: 15
+          _source: false
+          min_score: 4
+          query:
+            bool:
+              minimum_should_match: 1
+              must_not:
+                - ids:
+                    values:
+                      - "{{ foreach.item._id }}"
+              should:
+                # Signal 1 — exact IOC set hash. Highest-confidence;
+                # term query stays cheap (single keyword equality).
+                - term:
+                    extracted.ioc_set_hash:
+                      value: "{{ steps.extract_iocs.output.ioc_set_hash }}"
+                      boost: 5
+                # Signal 2 — partial IOC value overlap. `"${{ ... | map: 'value' }}"`
+                # routes through `evaluateExpression` so the JS array is
+                # passed through verbatim; the `terms` clause then handles
+                # the array natively. `score_mode: sum` makes _score grow
+                # linearly with the overlap count (each matched IOC adds
+                # ~IDF × boost to the parent score) so reports sharing many
+                # IOCs outrank reports sharing one.
+                - nested:
+                    path: extracted.iocs
+                    score_mode: sum
+                    boost: 2
+                    query:
+                      terms:
+                        extracted.iocs.value: "${{ steps.extract_iocs.output.iocs | map: 'value' }}"
+                # Signal 3 — partial technique overlap. Same `score_mode: sum`
+                # rationale as signal 2. boost reduced from 1 → 0.3 so
+                # common ATT&CK techniques (low IDF) cannot by themselves
+                # exceed min_score. An empty `terms` clause causes
+                # Elasticsearch to reject the whole search with
+                # `parsing_exception: No value specified for terms query`,
+                # so `variables.technique_ids` is sourced from
+                # `capture_ranking_signals` above, which guarantees a
+                # non-empty array (falling back to the `__no_techniques__`
+                # sentinel when `extract_behaviors` returned no behaviors
+                # or hit `on-failure: continue: true`). The sentinel cannot
+                # collide with a real `Txxxx` technique id, so it
+                # contributes nothing to `_score`.
+                - nested:
+                    path: extracted.behaviors
+                    score_mode: sum
+                    boost: 0.3
+                    query:
+                      terms:
+                        extracted.behaviors.technique_id: "${{ variables.technique_ids }}"
+        on-failure:
+          # If the related-reports query fails, treat the result as empty
+          # rather than failing the doc.
+          continue: true
+
+      - name: persist_extractions
+        type: elasticsearch.update
+        with:
+          # `elasticsearch.update` targets a single doc, so wildcards are
+          # rejected by the index-selection handler ("Wildcard patterns are
+          # not allowed" — see `index_selection_handler.ts`). We bind to the
+          # concrete backing index returned by `load_pending_reports`,
+          # mirroring the pattern used by `hit_provenance_backfill.yaml`.
+          index: "{{ foreach.item._index }}"
+          id: "{{ foreach.item._id }}"
+          # `WorkflowTemplatingEngine` (in
+          # `workflows_execution_engine/server/templating_engine.ts`)
+          # routes `"{{ expr }}"` through `renderString()`, which always
+          # coerces the rendered value to a string — arrays of objects
+          # collapse to `"[object Object][object Object]…"`, arrays of
+          # strings concatenate without a separator, numbers come out
+          # quoted, and `now` (a JS `Date`) serialises via
+          # `Date.prototype.toString()` which Elasticsearch's
+          # `strict_date_optional_time||epoch_millis` parser rejects with
+          # `failed to parse date field [Thu May 14 2026 21:01:55 …]`.
+          # `"${{ expr }}"` instead routes through `evaluateExpression()`
+          # / `evalValueSync()` and preserves the underlying JS type
+          # (arrays stay arrays, numbers stay numbers, Dates land in the
+          # update doc as the JS Date which JSON.stringify writes as
+          # ISO 8601). Plain string fields stay on `"{{ … }}"` so adjacent
+          # literals continue to interpolate correctly. LiquidJS has no
+          # array literal, so a `default: []` would silently parse to
+          # `undefined` rather than `[]` — when the upstream step is
+          # skipped (`on-failure: continue: true`) we let the field
+          # resolve to `undefined` and rely on JSON serialisation to drop
+          # it from the update doc, which is exactly what a partial
+          # update wants.
+          doc:
+            extracted:
+              iocs: "${{ steps.extract_iocs.output.iocs }}"
+              ioc_set_hash: "{{ steps.extract_iocs.output.ioc_set_hash }}"
+              behaviors: "${{ steps.extract_behaviors.output.indexed_behaviors }}"
+              # Denormalize ATT&CK ids for flat `terms` aggs (dashboard, coverage_gap).
+              # Nested `extracted.behaviors` remains the source of truth for hunts.
+              ttps:
+                techniques: "${{ steps.extract_behaviors.output.indexed_behaviors | map: 'technique_id' }}"
+              categories: "${{ steps.enrich_taxonomy.output.categories }}"
+              # Hoisted from `capture_ranking_signals` so the neutral
+              # defaults (0.5 / 'informational') apply uniformly whether
+              # `enrich_taxonomy` succeeded or hit `on-failure: continue: true`.
+              # Mapped as `float` / `keyword` by the v8 index template.
+              relevance: "${{ variables.relevance }}"
+              detection_actionability: "{{ variables.detection_actionability }}"
+              # Gate result persisted for EVERY report (true+false) so the backfill
+              # task can filter already-gated candidates and future dry_runs can
+              # count the real fraction. Written here (all-reports persist) not in
+              # persist_diamond_fields (KEEP-only). variables.diamond_suitable is
+              # guaranteed non-null by capture_ranking_signals's `default: false`.
+              diamond:
+                suitable: "${{ variables.diamond_suitable }}"
+            geography:
+              regions: "${{ steps.enrich_taxonomy.output.regions }}"
+            # Top-level multiplicative composite (`severity.score *
+            # extracted.relevance`) — the tradecraft-style ranking signal.
+            # Consumed by `search_reports` when `sort_by: 'rank'` and by
+            # the dashboard's "Top reports" panel. Computed at extraction
+            # time rather than at query time so the read path stays a
+            # single `_search` with a regular `sort` clause (no painless,
+            # no script_score).
+            rank_score: "${{ variables.severity_score | times: variables.relevance }}"
+            provenance:
+              extracted_at: "${{ now }}"
+              extraction_method: workflow_v2
+              related_reports: "${{ steps.find_related_reports.output.hits.hits | map: '_id' }}"
+              # `find_related_reports` runs with `on-failure: continue: true`
+              # so its output type is unknown to the validator. Default to 0
+              # so the consumer remains numeric even when the search step
+              # was skipped.
+              related_reports_count: "${{ steps.find_related_reports.output.hits.total.value | default: 0 }}"
+        on-failure:
+          continue: true

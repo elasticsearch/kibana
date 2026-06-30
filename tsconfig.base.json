@@ -2280,6 +2280,8 @@
       "@kbn/securitysolution-list-utils/*": ["x-pack/solutions/security/packages/kbn-securitysolution-list-utils/*"],
       "@kbn/securitysolution-lists-common": ["x-pack/solutions/security/packages/kbn-securitysolution-lists-common"],
       "@kbn/securitysolution-lists-common/*": ["x-pack/solutions/security/packages/kbn-securitysolution-lists-common/*"],
+      "@kbn/securitysolution-mitre-catalog": ["x-pack/solutions/security/packages/kbn-securitysolution-mitre-catalog"],
+      "@kbn/securitysolution-mitre-catalog/*": ["x-pack/solutions/security/packages/kbn-securitysolution-mitre-catalog/*"],
       "@kbn/securitysolution-rules": ["src/platform/packages/shared/kbn-securitysolution-rules"],
       "@kbn/securitysolution-rules/*": ["src/platform/packages/shared/kbn-securitysolution-rules/*"],
       "@kbn/securitysolution-t-grid": ["x-pack/solutions/security/packages/kbn-securitysolution-t-grid"],

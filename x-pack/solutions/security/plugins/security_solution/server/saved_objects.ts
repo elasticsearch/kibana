@@ -37,6 +37,7 @@ import {
   PrivilegeMonitoringApiKeyEncryptionParams,
   PrivilegeMonitoringApiKeyType,
 } from './lib/entity_analytics/privilege_monitoring/auth/saved_object';
+import { SavedViewType } from './threat_intelligence/saved_objects/saved_view';
 
 // Conditional Saved Object Types
 // Saved object types that will only be registered if the associated feature flag is enabled
@@ -66,6 +67,7 @@ const types = [
   promptType,
   referenceDataSavedObjectType,
   trialCompanionNBASavedObjectType,
+  SavedViewType,
 ];
 
 export const savedObjectTypes = types.map((type) => type.name);

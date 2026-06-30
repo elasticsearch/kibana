@@ -88,6 +88,8 @@ export enum SecurityPageName {
    * All threat intelligence page names must match `TIPageId` in x-pack/solutions/security/plugins/threat_intelligence/public/common/navigation/types.ts
    */
   threatIntelligence = 'threat_intelligence',
+  threatIntelligenceHub = 'threat_intelligence-hub',
+  threatIntelligenceCorrelation = 'threat_intelligence-correlation',
   timelines = 'timelines',
   timelinesTemplates = 'timelines-templates',
   trustedApps = 'trusted_apps',

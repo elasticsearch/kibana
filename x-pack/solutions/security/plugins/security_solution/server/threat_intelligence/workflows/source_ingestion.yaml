@@ -1,0 +1,167 @@
+# =============================================================================
+# Workflow 1 — source_ingestion
+#
+# Schedule: every 4 hours (matches the PRD's "feed ingestion cadence" target).
+#           The downstream Workflow 2 keeps its ~30-minute offset relative to
+#           this run via its own scheduled trigger.
+# Purpose:  Pull `.kibana-threat-intel-sources`, hand each enabled source to
+#           the server-side `threat_intel.fetch_source` step (registered by
+#           the security_solution plugin via `workflowsExtensions`), and
+#           write the per-item normalized documents the step returns into
+#           the `.kibana-threat-reports` data stream (op_type: create with
+#           an upstream-precomputed `content_fingerprint`, so RSS-syndicated
+#           duplicates short-circuit).
+#
+# Per-adapter logic lives in TypeScript under
+# `server/threat_intelligence/adapters/{rss,stix,taxii,vendor_api}/`:
+#   - Each adapter parses the upstream payload (xml2js for RSS, JSON +
+#     bundle splitter for STIX/TAXII, vendor-specific dispatch for
+#     vendor_api) and emits one normalized `.kibana-threat-reports`
+#     document per upstream item.
+#   - Each adapter computes the per-item fingerprint as
+#     `sha256(<source.url>:<item.id>:<item.modified|title>)` — a stable
+#     keyword-sized digest. Re-fetches collapse to one row; revised items
+#     produce a fresh row for `nl_extraction_behavioral` to re-extract.
+#   - `threat_intel.fetch_source` is an atomic step, so it consumes
+#     `foreach.item` directly without a `switch` / `data.set` wrapper.
+#
+# `_id` is intentionally NOT set on the `elasticsearch.index` step. The
+# target is a data stream and Elasticsearch rejects writes that combine
+# `op_type: create` with a caller-supplied `_id` against a data stream
+# (`op_type create with a provided id is not allowed in data streams`).
+# Dedup is therefore enforced upstream of the write via the
+# `check_dedup` `elasticsearch.search` step that aborts the per-report
+# branch when the same `content_fingerprint` is already present in the
+# data stream within the configured TTL window (the tradecraft 90-day
+# horizon — stale duplicates can re-enter the pipeline only after the
+# upstream advisory has had time to rotate).
+#
+# Index names mirror the constants in `common/threat_intelligence/hub/`. They
+# live under `.kibana-*` so the `kibana_system` reserved role can create /
+# read / write them without a custom Elasticsearch role descriptor — see
+# `dev_docs/key_concepts/kibana_system_user.mdx`.
+# =============================================================================
+name: Threat intelligence — Source ingestion
+description: Pull enabled .kibana-threat-intel-sources and write normalized reports to .kibana-threat-reports
+enabled: true
+triggers:
+  - type: scheduled
+    with:
+      every: "4h"
+steps:
+  - name: load_sources
+    type: elasticsearch.search
+    with:
+      index: .kibana-threat-intel-sources
+      size: 1000
+      query:
+        term:
+          # `term` value must be a string or an object — boolean shorthand is
+          # rejected by the generated ES query schema (see
+          # `types_query_dsl_term_query` in es_openapi_zod.gen.ts).
+          enabled:
+            value: true
+
+  - name: dispatch_each_source
+    type: foreach
+    foreach: "{{ steps.load_sources.output.hits.hits }}"
+    steps:
+      # Fetch one source. The step is registered by the security_solution
+      # plugin via `workflowsExtensions.registerStepDefinition` (see
+      # `server/threat_intelligence/workflows/step_types/fetch_source/`),
+      # dispatches to the right adapter from the source's `adapter_type`,
+      # and returns one normalized `.kibana-threat-reports` document per
+      # upstream item with a precomputed per-item `content_fingerprint`.
+      #
+      # `source` is passed as `${{ foreach.item }}` (the `$` prefix), NOT
+      # `{{ foreach.item }}`. The two are not interchangeable: plain
+      # `{{ … }}` is Liquid rendering, which stringifies the hit to
+      # `"[object Object]"` before the step receives it — the adapter
+      # then throws `TypeError: Cannot read properties of undefined
+      # (reading 'adapter_type')` on every iteration. `${{ … }}`
+      # routes through `evaluateExpression` in
+      # `workflows_execution_engine/server/templating_engine.ts`, which
+      # preserves the structured `SourceHit` (`_id` / `_index` /
+      # `_source.adapter_type` / `_source.config` / …) the adapter
+      # contract requires.
+      #
+      # `on-failure: continue: true` keeps a single bad feed from
+      # aborting the run — the adapter raises a structured error which
+      # the engine logs, then the next iteration proceeds.
+      - name: fetch_source
+        type: threat_intel.fetch_source
+        with:
+          source: "${{ foreach.item }}"
+        on-failure:
+          continue: true
+
+      # Cheap pre-filter — skip the dedup-and-write block when the
+      # adapter ran cleanly but produced nothing (empty feed, unknown
+      # vendor handler, etc.). `total_fetched > 0` covers the happy
+      # path; the more permissive shape also tolerates the field being
+      # missing if an adapter ever forgets to set it.
+      - name: skip_empty_source
+        type: loop.continue
+        if: "NOT steps.fetch_source.output.total_fetched > 0"
+
+      # Per-item dedup-and-write loop. Iterates over the adapter's
+      # normalized reports — each is a complete `.kibana-threat-reports`
+      # document, so this branch only does the bookkeeping the data
+      # stream's `op_type: create` semantics require.
+      - name: emit_reports
+        type: foreach
+        foreach: "{{ steps.fetch_source.output.reports }}"
+        steps:
+          # Pre-write dedup gate. The data stream target rejects
+          # `op_type: create` with a caller-supplied `_id`, so we
+          # can't push dedup into the write itself. The 90-day TTL
+          # mirrors tradecraft's URL-normalized seen-store horizon —
+          # an advisory that disappears for 90+ days can legitimately
+          # re-enter the pipeline as fresh content.
+          - name: check_dedup
+            type: elasticsearch.search
+            with:
+              index: .kibana-threat-reports
+              size: 0
+              track_total_hits: true
+              query:
+                bool:
+                  filter:
+                    - term:
+                        content_fingerprint: "{{ foreach.item.content_fingerprint }}"
+                    - range:
+                        "@timestamp":
+                          gte: "now-90d"
+
+          - name: skip_if_seen
+            type: loop.continue
+            if: "steps.check_dedup.output.hits.total.value > 0"
+
+          - name: write_report
+            type: elasticsearch.index
+            with:
+              index: .kibana-threat-reports
+              # Data stream target — `op_type: create` is required,
+              # `_id` is intentionally omitted (see top-of-file
+              # comment on the fingerprint shape).
+              op_type: create
+              # The adapter already emitted the document in the exact
+              # `.kibana-threat-reports` mapping shape, so we hand it
+              # to ES verbatim. Re-mapping fields here would just
+              # introduce drift between the strict mapping and the
+              # adapter's TS shape — the common Zod schema in
+              # `common/threat_intelligence/workflows/step_types/fetch_source/`
+              # is the single source of truth for both.
+              #
+              # `${{ foreach.item }}` (with the `$` prefix), NOT
+              # `{{ foreach.item }}`. See the matching note on the
+              # `fetch_source` step above for why this matters — plain
+              # Liquid would stringify the document to
+              # `"[object Object]"` before ES sees it.
+              document: "${{ foreach.item }}"
+            on-failure:
+              # Defensive — `check_dedup` should have caught any
+              # duplicate already. A 409 here means another worker
+              # raced us on the same fingerprint in the dedup TTL
+              # window; treat it the same as the dedup skip.
+              continue: true

@@ -308,6 +308,16 @@ export const allowedExperimentalValues = Object.freeze({
    * Release: 9.5
    */
   attacksPageTourEnabled: false,
+
+  /**
+   * Enables the Threat Intelligence AI skill assistant integration.
+   */
+  threatIntelligenceSkillEnabled: false,
+
+  /**
+   * Enables IOC indicator sync background task.
+   */
+  iocIndicatorSyncEnabled: false,
 });
 
 type ExperimentalConfigKeys = Array<keyof ExperimentalFeatures>;

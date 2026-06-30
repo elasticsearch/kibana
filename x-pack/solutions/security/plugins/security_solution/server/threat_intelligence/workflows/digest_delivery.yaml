@@ -1,0 +1,256 @@
+# =============================================================================
+# Workflow 3 — digest_delivery
+#
+# Schedule: per-subscription cron (the per-sub schedule lives in
+# .kibana-threat-intel-subscriptions.schedule_rrule). This wrapper runs
+# hourly and fans out to subscriptions whose RRULE next-fire window matches
+# "now".
+#
+# Purpose:  For each due subscription, ask the default agent to load the
+#           threat-intelligence skill, build a digest matching the
+#           subscription's tags+severity, and deliver it via the configured
+#           channel. The agent — not this workflow — picks the right tools
+#           and attachment types.
+# =============================================================================
+name: Threat intelligence — Digest delivery
+description: Render and deliver per-subscription threat intelligence digests
+enabled: true
+triggers:
+  - type: scheduled
+    with:
+      every: "1h"
+steps:
+  - name: load_subscriptions
+    type: elasticsearch.search
+    with:
+      index: .kibana-threat-intel-subscriptions
+      size: 500
+
+  - name: deliver_each
+    type: foreach
+    foreach: "{{ steps.load_subscriptions.output.hits.hits }}"
+    steps:
+      # NOTE: cron evaluation against schedule_rrule is intentionally
+      # simplified — this wrapper fans out to every loaded subscription and
+      # leaves per-subscription RRULE matching to a future pre-filter step.
+      - name: render_digest
+        type: ai.agent
+        # `agent-id` is intentionally omitted so the step falls back to
+        # `agentBuilderDefaultAgentId` (`elastic-ai-agent`) inside
+        # `run_agent_step.ts`. Passing the literal string `default` is
+        # treated as a real agent id by `agentRegistry.has(...)` and
+        # surfaces as `Agent "default" not found or not available` —
+        # there is no agent registered under that id.
+        #
+        # Two-pass prompt: the agent (1) calls
+        # `threat_intel.synthesize_advisory` with `persist: true` to mint
+        # an executive-summary advisory over the same time window and
+        # severity floor as the digest, then (2) calls
+        # `threat_intel.search_reports` for the per-report table. The
+        # advisory step is graceful — `no_reports` / `no_inference`
+        # statuses (see `services/synthesize_advisory.ts`) leave the
+        # `advisory_id` absent and the agent renders the digest without
+        # the lede section. The `advisory_id` returned by step 1 is
+        # threaded into the structured output so `archive_digest` can
+        # persist it for dashboard cross-linking.
+        with:
+          message: >-
+            Use the threat-intelligence skill and tools as needed.
+
+            Build the recurring digest for subscription {{ foreach.item._id }}.
+            Tags: {{ foreach.item._source.tags | join: ", " }}.
+            Min severity: {{ foreach.item._source.severity_threshold }}.
+            Time range: last 7 days
+            ({{ now | date: '%s' | minus: 604800 | date: '%Y-%m-%dT%H:%M:%SZ' }}
+            to {{ now | date: '%Y-%m-%dT%H:%M:%SZ' }}).
+
+            STEP 1 — Executive summary. Call
+            `threat_intel.synthesize_advisory` with that same time_range,
+            `min_severity` set to this subscription's severity_threshold, and
+            `persist: true` so the advisory is written to
+            `.kibana-threat-intel-advisories` for dashboard cross-linking.
+            If any of this subscription's tags happen to map to the closed
+            `THREAT_CATEGORIES` enum (ransomware, supply_chain,
+            credential_access, etc.), pass them as `categories[]` to focus the
+            synthesis — otherwise omit `categories`. If the response status is
+            `advisory_persisted` or `advisory_generated`, use `theme_title` as
+            the H2 header, then `narrative_markdown` as the lede paragraph(s),
+            then `recommended_actions` as a bulleted "What you should do this
+            week" list at the TOP of the digest, and forward the returned
+            `advisory_id` (when present) on the structured output. If the
+            status is `no_reports` or `no_inference`, skip the lede section
+            entirely and leave `advisory_id` empty — DO NOT invent narrative
+            text in the no_inference fallback.
+
+            STEP 2 — Report detail. Call `threat_intel.search_reports` to
+            gather the matching reports. Render the result as a
+            threat-intel-mitre-heatmap attachment, then a
+            threat-intel-report-table attachment, then a short prose summary
+            and (if time range > 7 days) a threat-intel-severity-timeline.
+
+            Respond with JSON matching the provided schema: digest_markdown
+            must contain the full digest as markdown for archival and
+            delivery (including the executive-summary section from STEP 1
+            when present), report_ids must list the threat report ids
+            included in the digest, and advisory_id (optional) must echo
+            the `_id` returned by `threat_intel.synthesize_advisory` when
+            persisted — omit it on the graceful-degradation paths.
+          schema:
+            type: object
+            properties:
+              digest_markdown:
+                type: string
+                description: Full digest as markdown for email and archival
+              report_ids:
+                type: array
+                items:
+                  type: string
+                description: Kibana threat report ids included in the digest
+              advisory_id:
+                type: string
+                description: >-
+                  Optional. _id of the row in
+                  .kibana-threat-intel-advisories the digest cites as its
+                  executive summary. Absent when synthesize_advisory
+                  returned no_reports / no_inference.
+            required:
+              - digest_markdown
+              - report_ids
+
+      - name: archive_digest
+        type: elasticsearch.index
+        with:
+          index: .kibana-threat-intel-digests
+          # `"{{ expr }}"` coerces the rendered value to a string, so a JS
+          # `Date` becomes `Date.prototype.toString()` (e.g. `Thu May 14
+          # 2026 21:01:55 GMT-0700 (Pacific Daylight Time)`) which
+          # Elasticsearch's `strict_date_optional_time||epoch_millis` parser
+          # rejects on `@timestamp`. `"${{ expr }}"` instead preserves the
+          # JS type — the Date is JSON-serialised as ISO 8601 which
+          # `strict_date_optional_time` parses cleanly. See
+          # `nl_extraction_behavioral.yaml`'s `persist_extractions` for the
+          # full templating-engine writeup.
+          document:
+            "@timestamp": "${{ now }}"
+            subscription_id: "{{ foreach.item._id }}"
+            space_id: "{{ foreach.item._source.space_id | default: 'default' }}"
+            # `time_range.{from,to}` are stored as keyword strings in the
+            # mapping (free-form ISO ranges), not `date` fields, so the
+            # `{{ … }}` string-coercion form is intentional here. The
+            # arithmetic via `date: '%s' | minus: 604800` keeps the
+            # template within Liquid's filter set (no custom `date_minus`
+            # filter is registered on the workflow engine).
+            time_range:
+              from: "{{ now | date: '%s' | minus: 604800 | date: '%Y-%m-%dT%H:%M:%SZ' }}"
+              to: "{{ now | date: '%Y-%m-%dT%H:%M:%SZ' }}"
+            content_markdown: "{{ steps.render_digest.output.structured_output.digest_markdown }}"
+            report_ids: "${{ steps.render_digest.output.structured_output.report_ids }}"
+            # `advisory_id` is optional. The `"${{ … }}"` form goes
+            # through `WorkflowTemplatingEngine.evaluateExpression` →
+            # `liquid.evalValueSync`, which returns `undefined` for a
+            # missing property on the structured output (the
+            # graceful-degradation paths in
+            # `services/synthesize_advisory.ts` — `no_reports` and
+            # `no_inference` — leave `advisory_id` off the LLM's
+            # response). The ES client's JSON serialiser strips
+            # `undefined` values, so the document indexed in those cases
+            # simply omits the field — which is exactly what the strict
+            # mapping expects for an unset optional keyword. When the
+            # advisory IS persisted, the `_id` round-trips as a plain
+            # string and is stored verbatim.
+            advisory_id: "${{ steps.render_digest.output.structured_output.advisory_id }}"
+            delivered: false
+        on-failure:
+          continue: true
+
+      # Capture the per-iteration subscription fields into a step output so
+      # downstream switch-level fields (`expression`, `default`) can reference
+      # them. Those fields are validated against the *switch* step's context,
+      # which currently does not include `foreach.item`; capturing here (where
+      # `foreach.item` IS in scope) keeps the YAML editor green without
+      # changing the workflow engine.
+      - name: capture_subscription
+        type: data.set
+        with:
+          subscription_id: "{{ foreach.item._id }}"
+          delivery_type: "{{ foreach.item._source.delivery.type }}"
+
+      # Delivery dispatched per subscription delivery.type. The
+      # `connector-id` is liquid-rendered per iteration so each subscription
+      # ships through its own configured Kibana actions connector. The
+      # delivery branches are gated on `delivery.connector_id` being present
+      # because a missing connector id would surface as an opaque "connector
+      # not found" runtime error — far less actionable than the explicit
+      # warning below. Operators wire the connector id in via the
+      # subscription-confirmation form (or `create_subscription`'s
+      # `delivery_connector_id` parameter).
+      - name: deliver
+        type: switch
+        expression: "{{ steps.capture_subscription.output.delivery_type }}"
+        cases:
+          - match: email
+            steps:
+              - name: email_guard
+                type: if
+                condition: "foreach.item._source.delivery.connector_id : *"
+                steps:
+                  - name: email_send
+                    type: email
+                    connector-id: "{{ foreach.item._source.delivery.connector_id }}"
+                    with:
+                      to:
+                        - "{{ foreach.item._source.delivery.target }}"
+                      subject: >-
+                        Threat intelligence digest [{{ foreach.item._source.severity_threshold }}+] -
+                        {{ foreach.item._source.tags | join: ", " }}
+                      message: "{{ steps.render_digest.output.structured_output.digest_markdown }}"
+                    on-failure:
+                      continue: true
+                else:
+                  - name: email_missing_connector
+                    type: data.set
+                    with:
+                      key: warning
+                      value: >-
+                        Subscription {{ foreach.item._id }} has delivery.type=email but no
+                        delivery.connector_id - skipping email send. Update the
+                        subscription with a configured Kibana actions connector id
+                        (preconfigured-email-connector / Gmail / etc.).
+          - match: slack
+            steps:
+              - name: slack_guard
+                type: if
+                condition: "foreach.item._source.delivery.connector_id : *"
+                steps:
+                  - name: slack_send
+                    type: slack
+                    connector-id: "{{ foreach.item._source.delivery.connector_id }}"
+                    with:
+                      message: >-
+                        *Threat intelligence digest* [{{ foreach.item._source.severity_threshold }}+]
+                        ({{ foreach.item._source.tags | join: ", " }})
+
+                        {{ steps.render_digest.output.structured_output.digest_markdown }}
+                    on-failure:
+                      continue: true
+                else:
+                  - name: slack_missing_connector
+                    type: data.set
+                    with:
+                      key: warning
+                      value: >-
+                        Subscription {{ foreach.item._id }} has delivery.type=slack but no
+                        delivery.connector_id - skipping slack send. Update the
+                        subscription with a configured Kibana actions connector id.
+        default:
+          - name: log_unknown_delivery
+            type: data.set
+            with:
+              key: warning
+              # `default` branch fields resolve to the `switch` step's context
+              # which does not include `foreach.item`, so reference the
+              # captured subscription id from `capture_subscription` above.
+              value: >-
+                Subscription
+                {{ steps.capture_subscription.output.subscription_id }}
+                has unknown delivery.type

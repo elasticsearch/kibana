@@ -1,0 +1,7 @@
+{
+  "type": "shared-common",
+  "id": "@kbn/securitysolution-mitre-catalog",
+  "owner": ["@elastic/security-detection-engine"],
+  "group": "security",
+  "visibility": "shared"
+}

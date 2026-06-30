@@ -11,12 +11,33 @@ import type { LinkItem } from '../common/links';
 import { getSecuritySolutionLink } from './utils/security_solution_links';
 
 /**
- * Adds the Threat Intelligence entry to Kibana global sidenav as well as the Security sidenav.
- * Most of the properties are coming from the Threat Intelligence plugin directly through {@link getSecuritySolutionLink}.
- * The ones added below are more related to the Security Solution plugin.
+ * Adds the Threat Intelligence entry to Kibana global sidenav as well as the
+ * Security sidenav. The top-level entry retains the indicators page name
+ * (`SecurityPageName.threatIntelligence`) so existing role bindings keyed on
+ * `${SECURITY_FEATURE_ID}.threat-intelligence` continue to gate the whole
+ * area without migration.
+ *
+ * The Intelligence Hub dashboard — folded in from the standalone
+ * threat-intelligence plugin — is registered as a child deep link so
+ * it surfaces as `Security > Threat Intelligence > Intelligence Hub` in the
+ * sub-nav. Sharing the parent's capability list intentionally:
+ * Phase 4 of the migration plan will split capabilities into sub-feature
+ * privileges; until then the existing one continues to gate both children.
  */
 export const indicatorsLinks: LinkItem = {
   ...getSecuritySolutionLink<SecurityPageName>('indicators'),
   globalNavPosition: 10,
   capabilities: [`${SECURITY_FEATURE_ID}.threat-intelligence`],
+  links: [
+    {
+      ...getSecuritySolutionLink<SecurityPageName>('intelligenceHub'),
+      capabilities: [`${SECURITY_FEATURE_ID}.threat-intelligence`],
+      links: [
+        {
+          ...getSecuritySolutionLink<SecurityPageName>('correlationReport'),
+          capabilities: [`${SECURITY_FEATURE_ID}.threat-intelligence`],
+        },
+      ],
+    },
+  ],
 };

@@ -12,19 +12,24 @@ export type BrowserFields = Readonly<Record<string, Partial<BrowserField>>>;
 /**
  * All the names for the threat intelligence pages.
  *
- * Example to add more names:
- *   export type TIPage = 'indicators' | 'feed';
+ * `intelligenceHub` was added when the standalone threat-intelligence
+ * plugin was folded into `securitySolution` — see the migration plan in
+ * AGENTS.md for context.
  */
-export type TIPage = 'indicators';
+export type TIPage = 'indicators' | 'intelligenceHub' | 'correlationReport';
 
 /**
  * All the IDs for the threat intelligence pages.
- * This needs to match the threat intelligence page entries in SecurityPageName` (x-pack/solutions/security/plugins/security_solution/common/constants.ts).
+ * This needs to match the threat intelligence page entries in
+ * `SecurityPageName` (`@kbn/deeplinks-security/deep_links.ts`).
  *
- * Example to add more IDs:
- *   export type TIPageId = 'threat_intelligence' | 'threat_intelligence-feed';
+ * `threat_intelligence-hub` (alias `intelligenceHub`) is the Intelligence
+ * Hub dashboard deep link added during the standalone-plugin merge.
  */
-export type TIPageId = 'threat_intelligence';
+export type TIPageId =
+  | 'threat_intelligence'
+  | 'threat_intelligence-hub'
+  | 'threat_intelligence-correlation';
 
 /**
  * A record of all the properties that will be used to build deeplinks, links and navtabs objects.

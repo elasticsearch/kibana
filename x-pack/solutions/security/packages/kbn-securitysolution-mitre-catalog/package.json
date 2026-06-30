@@ -1,0 +1,8 @@
+{
+  "name": "@kbn/securitysolution-mitre-catalog",
+  "version": "1.0.0",
+  "description": "Canonical MITRE ATT&CK catalog (id, name, reference, tactics) shared across Kibana security packages and plugins. Slim — no i18n labels, no rendering helpers.",
+  "license": "Elastic License 2.0",
+  "private": true,
+  "sideEffects": false
+}

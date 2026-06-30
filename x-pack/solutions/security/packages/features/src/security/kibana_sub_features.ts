@@ -180,6 +180,109 @@ export const trustedDevicesSubFeature = (): SubFeatureConfig => ({
   ],
 });
 
+/**
+ * Threat-intelligence sub-feature on the Security Solution feature.
+ *
+ * Folds in the three-tier privilege model that the standalone
+ * threat-intelligence plugin originally exposed as a top-level Kibana feature
+ * (id `threatIntelligence`). The API privilege names are unchanged
+ * (`threatIntelligence_read`, `threatIntelligence_write_subscriptions`,
+ * `threatIntelligence_manage_sources`) so the migrated routes' existing
+ * `requiredPrivileges` declarations continue to match.
+ *
+ * Saved-view persistence (saved-object type `threat-intelligence-saved-view`)
+ * follows the original split: `write` and `admin` get full CRUD; `read` gets
+ * read-only access.
+ *
+ * The deprecated top-level `threatIntelligence` feature is preserved by
+ * `security_solution`'s server (see
+ * `server/threat_intelligence/feature_deprecation.ts`) with `replacedBy`
+ * mappings that point at the privilege IDs declared here, so existing role
+ * bindings lazy-migrate on next save.
+ */
+export const threatIntelligenceSubFeature = (): SubFeatureConfig => ({
+  name: i18n.translate(
+    'securitySolutionPackages.features.featureRegistry.subFeatures.threatIntelligence',
+    { defaultMessage: 'Threat Intelligence' }
+  ),
+  description: i18n.translate(
+    'securitySolutionPackages.features.featureRegistry.subFeatures.threatIntelligence.description',
+    {
+      defaultMessage:
+        'Search and ingest threat reports, subscribe to feeds, hunt against the environment, and manage feed sources in the Intelligence Hub.',
+    }
+  ),
+  privilegeGroups: [
+    {
+      groupType: 'mutually_exclusive',
+      privileges: [
+        {
+          api: ['threatIntelligence_read', 'threatIntelligence_write_subscriptions'],
+          id: 'threat_intelligence_write_subscriptions',
+          includeIn: 'none',
+          name: i18n.translate(
+            'securitySolutionPackages.features.featureRegistry.subFeatures.threatIntelligence.manageSubscriptionsPrivilegeName',
+            { defaultMessage: 'Manage subscriptions' }
+          ),
+          savedObject: {
+            all: ['threat-intelligence-saved-view'],
+            read: ['threat-intelligence-saved-view'],
+          },
+          ui: [
+            'threat-intelligence:show',
+            'threat-intelligence:createSubscription',
+            'threat-intelligence:manageSubscriptions',
+            'threat-intelligence:createSavedView',
+          ],
+        },
+        {
+          api: ['threatIntelligence_read'],
+          id: 'threat_intelligence_read',
+          includeIn: 'none',
+          name: TRANSLATIONS.read,
+          savedObject: {
+            all: [],
+            read: ['threat-intelligence-saved-view'],
+          },
+          ui: ['threat-intelligence:show'],
+        },
+      ],
+    },
+    {
+      groupType: 'independent',
+      privileges: [
+        {
+          api: ['threatIntelligence_manage_sources'],
+          id: 'threat_intelligence_manage_sources',
+          includeIn: 'none',
+          name: i18n.translate(
+            'securitySolutionPackages.features.featureRegistry.subFeatures.threatIntelligence.manageSourcesPrivilegeName',
+            { defaultMessage: 'Manage feed sources' }
+          ),
+          savedObject: { all: [], read: [] },
+          ui: ['threat-intelligence:manageSources'],
+        },
+      ],
+    },
+    {
+      groupType: 'independent',
+      privileges: [
+        {
+          api: ['threatIntelligence_correlate'],
+          id: 'threat_intelligence_correlate',
+          includeIn: 'none',
+          name: i18n.translate(
+            'securitySolutionPackages.features.featureRegistry.subFeatures.threatIntelligence.correlatePrivilegeName',
+            { defaultMessage: 'Correlate threats' }
+          ),
+          savedObject: { all: [], read: [] },
+          ui: ['threat-intelligence:correlate'],
+        },
+      ],
+    },
+  ],
+});
+
 export const hostIsolationExceptionsBasicSubFeature = (): SubFeatureConfig => ({
   name: i18n.translate(
     'securitySolutionPackages.features.featureRegistry.subFeatures.hostIsolationExceptions',

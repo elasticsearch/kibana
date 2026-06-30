@@ -28,3 +28,33 @@ export const DESCRIPTION = i18n.translate(
       'Elastic threat intelligence helps you see if you are open to or have been subject to current or historical known threats.',
   }
 );
+
+export const INTELLIGENCE_HUB = i18n.translate(
+  'xpack.securitySolution.threatIntelligence.navigation.intelligenceHubNavItemLabel',
+  {
+    defaultMessage: 'Intelligence Hub',
+  }
+);
+
+export const INTELLIGENCE_HUB_DESCRIPTION = i18n.translate(
+  'xpack.securitySolution.threatIntelligence.navigation.intelligenceHubNavItemDescription',
+  {
+    defaultMessage:
+      'Cross-source threat intelligence dashboard with per-region, per-category, and environment-impact breakdowns.',
+  }
+);
+
+export const CORRELATION_REPORT = i18n.translate(
+  'xpack.securitySolution.threatIntelligence.navigation.correlationReportNavItemLabel',
+  {
+    defaultMessage: 'Correlation Report',
+  }
+);
+
+export const CORRELATION_REPORT_DESCRIPTION = i18n.translate(
+  'xpack.securitySolution.threatIntelligence.navigation.correlationReportNavItemDescription',
+  {
+    defaultMessage:
+      'Correlate a threat report against the knowledge base and view structured findings.',
+  }
+);

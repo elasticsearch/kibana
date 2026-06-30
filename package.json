@@ -1097,6 +1097,7 @@
     "@kbn/securitysolution-list-hooks": "link:x-pack/solutions/security/packages/kbn-securitysolution-list-hooks",
     "@kbn/securitysolution-list-utils": "link:x-pack/solutions/security/packages/kbn-securitysolution-list-utils",
     "@kbn/securitysolution-lists-common": "link:x-pack/solutions/security/packages/kbn-securitysolution-lists-common",
+    "@kbn/securitysolution-mitre-catalog": "link:x-pack/solutions/security/packages/kbn-securitysolution-mitre-catalog",
     "@kbn/securitysolution-rules": "link:src/platform/packages/shared/kbn-securitysolution-rules",
     "@kbn/securitysolution-t-grid": "link:x-pack/solutions/security/packages/kbn-securitysolution-t-grid",
     "@kbn/securitysolution-utils": "link:x-pack/solutions/security/packages/kbn-securitysolution-utils",

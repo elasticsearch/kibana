@@ -209,3 +209,6 @@ src/platform/plugins/shared/console/packaging/react/translations
 # Agent skill working output (team-auto-tests-stats markdown only — never commit)
 .cursor/tmp/
 .agents/tmp/
+
+scripts/ioc_eval/
+.claude/CLAUDE.local.md

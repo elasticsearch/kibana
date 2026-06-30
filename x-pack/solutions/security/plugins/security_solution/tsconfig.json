@@ -66,6 +66,7 @@
     "@kbn/rule-data-utils",
     "@kbn/securitysolution-t-grid",
     "@kbn/rule-registry-plugin",
+    "@kbn/securitysolution-mitre-catalog",
     "@kbn/securitysolution-utils",
     "@kbn/securitysolution-list-constants",
     "@kbn/config-schema",
