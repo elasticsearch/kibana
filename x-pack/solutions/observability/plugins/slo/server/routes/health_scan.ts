@@ -13,7 +13,12 @@ import {
   type ListHealthScanResponse,
   type PostHealthScanResponse,
 } from '@kbn/slo-schema';
-import { getHealthScanResults, listHealthScans, scheduleHealthScan } from '../services/health_scan';
+import {
+  getAccessibleSpaceIds,
+  getHealthScanResults,
+  listHealthScans,
+  scheduleHealthScan,
+} from '../services/health_scan';
 import { createSloServerRoute } from './utils/create_slo_server_route';
 import { assertPlatinumLicense } from './utils/assert_platinum_license';
 
@@ -51,10 +56,18 @@ export const listHealthScanRoute = createSloServerRoute({
     logger,
   }): Promise<ListHealthScanResponse> => {
     await assertPlatinumLicense(plugins);
-    const { scopedClusterClient } = await getScopedClients({ request, logger });
+    const { scopedClusterClient, spaceId } = await getScopedClients({ request, logger });
     const taskManager = await plugins.taskManager.start();
+    const spaceIds = await getAccessibleSpaceIds({
+      plugins,
+      request,
+      activeSpaceId: spaceId,
+    });
 
-    return listHealthScans({ size: params?.query?.size }, { scopedClusterClient, taskManager });
+    return listHealthScans(
+      { size: params?.query?.size },
+      { scopedClusterClient, taskManager, spaceIds }
+    );
   },
 });
 
@@ -78,15 +91,18 @@ export const getHealthScanRoute = createSloServerRoute({
     const taskManager = await plugins.taskManager.start();
     const { scopedClusterClient, spaceId } = await getScopedClients({ request, logger });
 
+    const spaceIds = params.query?.allSpaces
+      ? await getAccessibleSpaceIds({ plugins, request, activeSpaceId: spaceId })
+      : [spaceId];
+
     return getHealthScanResults(
       {
         scanId: params.path.scanId,
         size: params.query?.size,
         problematic: params.query?.problematic,
-        allSpaces: params.query?.allSpaces,
         searchAfter: params.query?.searchAfter,
       },
-      { scopedClusterClient, taskManager, spaceId }
+      { scopedClusterClient, taskManager, spaceIds }
     );
   },
 });

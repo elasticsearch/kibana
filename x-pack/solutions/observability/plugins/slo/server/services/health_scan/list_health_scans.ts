@@ -15,6 +15,7 @@ import { HEALTH_SCAN_TASK_TYPE } from '../tasks/health_scan_task/health_scan_tas
 interface Dependencies {
   scopedClusterClient: IScopedClusterClient;
   taskManager: TaskManagerStartContract;
+  spaceIds: string[];
 }
 
 interface Params {
@@ -23,7 +24,7 @@ interface Params {
 
 export async function listHealthScans(
   params: Params,
-  { scopedClusterClient, taskManager }: Dependencies
+  { scopedClusterClient, taskManager, spaceIds }: Dependencies
 ): Promise<ListHealthScanResponse> {
   const { size = 25 } = params;
   if (size <= 0 || size > 100) {
@@ -32,7 +33,7 @@ export async function listHealthScans(
 
   const [recentTasks, buckets] = await Promise.all([
     getRecentTasks(taskManager, size),
-    getScanBuckets(scopedClusterClient, size),
+    getScanBuckets(scopedClusterClient, size, spaceIds),
   ]);
 
   const scanIds = buckets.map((bucket) => bucket.key.scanId);
@@ -85,7 +86,11 @@ async function getRecentTasks(taskManager: TaskManagerStartContract, size: numbe
     .catch(() => ({ docs: [] }));
 }
 
-async function getScanBuckets(scopedClusterClient: IScopedClusterClient, size: number) {
+async function getScanBuckets(
+  scopedClusterClient: IScopedClusterClient,
+  size: number,
+  spaceIds: string[]
+) {
   interface ScanBucket {
     key: { scanId: string };
     doc_count: number;
@@ -99,6 +104,11 @@ async function getScanBuckets(scopedClusterClient: IScopedClusterClient, size: n
   >({
     index: HEALTH_DATA_STREAM_NAME,
     size: 0,
+    query: {
+      bool: {
+        filter: [{ terms: { spaceId: spaceIds } }],
+      },
+    },
     aggs: {
       scans: {
         composite: {

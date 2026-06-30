@@ -91,7 +91,7 @@ describe('getHealthScanResults', () => {
   const deps = {
     scopedClusterClient: {} as ScopedClusterClientMock,
     taskManager: {} as ReturnType<typeof taskManagerMock.createStart>,
-    spaceId: 'default',
+    spaceIds: ['default'],
   };
 
   beforeEach(() => {
@@ -121,7 +121,7 @@ describe('getHealthScanResults', () => {
       });
 
       const result = await getHealthScanResults(
-        { scanId: TEST_SCAN_ID, size, problematic: true, allSpaces: true },
+        { scanId: TEST_SCAN_ID, size, problematic: true },
         deps
       );
 
@@ -146,7 +146,7 @@ describe('getHealthScanResults', () => {
       });
 
       const result = await getHealthScanResults(
-        { scanId: TEST_SCAN_ID, size, problematic: true, allSpaces: true },
+        { scanId: TEST_SCAN_ID, size, problematic: true },
         deps
       );
 
@@ -173,7 +173,6 @@ describe('getHealthScanResults', () => {
           scanId: TEST_SCAN_ID,
           size: 25,
           problematic: true,
-          allSpaces: true,
           searchAfter: Buffer.from(JSON.stringify(searchAfter)).toString('base64'),
         },
         deps
@@ -200,7 +199,6 @@ describe('getHealthScanResults', () => {
           scanId: TEST_SCAN_ID,
           size: 25,
           problematic: true,
-          allSpaces: true,
           searchAfter: 'not-valid-json',
         },
         deps
@@ -243,6 +241,58 @@ describe('getHealthScanResults', () => {
     it('accepts size 100', async () => {
       const result = await getHealthScanResults({ scanId: TEST_SCAN_ID, size: 100 }, deps);
       expect(result).toBeDefined();
+    });
+  });
+
+  describe('space filtering', () => {
+    beforeEach(() => {
+      scopedClusterClient.asInternalUser.search.mockImplementation(async (params: any) => {
+        if (params?.size === 0) {
+          return createMockSummaryAggResponse(10, 2) as any;
+        }
+        return createMockSearchHitsResponse([createMockHealthDoc()], 1) as any;
+      });
+    });
+
+    it('always includes a spaceId filter in the scan results query', async () => {
+      await getHealthScanResults({ scanId: TEST_SCAN_ID }, deps);
+
+      const resultsCall = scopedClusterClient.asInternalUser.search.mock.calls.find(
+        (call: any) => call[0]?.size > 0
+      );
+      const filter = resultsCall?.[0]?.query?.bool?.filter;
+      expect(filter).toEqual(expect.arrayContaining([{ terms: { spaceId: ['default'] } }]));
+    });
+
+    it('always includes a spaceId filter in the summary query', async () => {
+      await getHealthScanResults({ scanId: TEST_SCAN_ID }, deps);
+
+      const summaryCall = scopedClusterClient.asInternalUser.search.mock.calls.find(
+        (call: any) => call[0]?.size === 0
+      );
+      const filter = summaryCall?.[0]?.query?.bool?.filter;
+      expect(filter).toEqual(expect.arrayContaining([{ terms: { spaceId: ['default'] } }]));
+    });
+
+    it('filters by multiple space IDs when provided', async () => {
+      const multiSpaceDeps = { ...deps, spaceIds: ['space-a', 'space-b'] };
+      await getHealthScanResults({ scanId: TEST_SCAN_ID }, multiSpaceDeps);
+
+      const resultsCall = scopedClusterClient.asInternalUser.search.mock.calls.find(
+        (call: any) => call[0]?.size > 0
+      );
+      const filter = resultsCall?.[0]?.query?.bool?.filter;
+      expect(filter).toEqual(
+        expect.arrayContaining([{ terms: { spaceId: ['space-a', 'space-b'] } }])
+      );
+
+      const summaryCall = scopedClusterClient.asInternalUser.search.mock.calls.find(
+        (call: any) => call[0]?.size === 0
+      );
+      const summaryFilter = summaryCall?.[0]?.query?.bool?.filter;
+      expect(summaryFilter).toEqual(
+        expect.arrayContaining([{ terms: { spaceId: ['space-a', 'space-b'] } }])
+      );
     });
   });
 });
