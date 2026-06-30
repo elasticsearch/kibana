@@ -103,6 +103,7 @@ actions:
         | `discover_session` | Discover session |
         | `image` | Image |
         | `markdown` | Markdown text |
+        | `links` | Navigation links to dashboards and external URLs |
         | `esql_control` | ES&#124;QL variable control |
         | `options_list_control` | Dropdown filter by field value |
         | `range_slider_control` | Slider filter by numeric range |
@@ -118,13 +119,26 @@ actions:
         | `slo_overview` | SLO overview |
         | `synthetics_monitors` | Synthetics monitors |
         | `synthetics_stats_overview` | Synthetics stats overview |
+        | `apm_service_map` | APM service map |
+
+        Additional panel types for machine learning use cases:
+
+        | Type | Description |
+        |------|-------------|
+        | `ml_single_metric_viewer` | Single metric viewer |
+        | `ml_anomaly_swimlane` | Anomaly swim lane |
+        | `ml_anomaly_charts` | Anomaly charts |
+        | `aiops_change_point_chart` | Change point detection chart |
+        | `aiops_log_rate_analysis` | Log rate analysis |
+        | `aiops_pattern_analysis` | Pattern analysis |
+        | `field_stats_table` | Field statistics table |
 
         > info
-        > The following panel types are supported in the Kibana UI but not yet by the REST API: `map`, `legacy_vis`, `links`, `field_stats_table`, `aiops_change_point_chart`, `aiops_log_rate_analysis`, `aiops_pattern_analysis`. Write operations (`POST`, `PUT`) return a `400` error when these panel types are included. Read operations (`GET`) strip these panels from the response and include them in a list of warnings.
+        > The following panel types are supported in the Kibana UI but not yet by the REST API: `map`, `legacy_vis`. Write operations (`POST`, `PUT`) return a `400` error when these panel types are included. Read operations (`GET`) strip these panels from the response and include them in a list of warnings.
 
         ### Embedding library items
 
-        `vis`, `discover_session`, and `markdown` panels can be embedded **inline** (full config stored in the dashboard) or **linked from library** (references a library item by ID).
+        `vis`, `discover_session`, `markdown`, and `links` panels can be embedded **inline** (full config stored in the dashboard) or **linked from library** (references a library item by ID).
 
         For the full `config` schema for visualization panels, including chart types, metric operations, and breakdowns, refer to the [Visualizations API](visualizations#tag/Visualizations/operation/post-visualizations).
 
@@ -158,7 +172,7 @@ actions:
           }
           ```
 
-        - **Linked from library**: references an item in your library by its ID. Use `ref_id` with any supported panel type (`vis`, `discover_session`, `markdown`). Use the [Visualizations API](visualizations#tag/Visualizations/operation/post-visualizations) to create and retrieve IDs for visualization items.
+        - **Linked from library**: references an item in your library by its ID. Use `ref_id` with any supported panel type (`vis`, `discover_session`, `markdown`, `links`). Use the [Visualizations API](visualizations#tag/Visualizations/operation/post-visualizations) to create and retrieve IDs for visualization items.
 
           ```json
           {
