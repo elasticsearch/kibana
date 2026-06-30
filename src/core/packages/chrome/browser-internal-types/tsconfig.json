@@ -1,18 +1,13 @@
 {
   "extends": "@kbn/tsconfig-base/tsconfig.json",
   "compilerOptions": {
-    "outDir": "target/types",
+    "outDir": "target/types"
   },
-  "include": [
-    "**/*.ts",
-    "**/*.tsx",
-  ],
-  "exclude": [
-    "target/**/*"
-  ],
+  "include": ["**/*.ts", "**/*.tsx"],
+  "exclude": ["target/**/*"],
   "kbn_references": [
     "@kbn/core-chrome-browser",
     "@kbn/core-http-browser",
-    "@kbn/core-mount-utils-browser",
+    "@kbn/core-mount-utils-browser"
   ]
 }

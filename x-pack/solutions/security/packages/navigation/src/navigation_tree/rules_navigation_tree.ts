@@ -11,7 +11,10 @@ import { SecurityLinkGroup } from '../link_groups';
 import { securityLink } from '../links';
 import { i18nStrings } from '../i18n_strings';
 
-export const createRulesNavigationTree = (): NodeDefinition => ({
+export const createRulesNavigationTree = (): Extract<
+  NodeDefinition,
+  { renderAs: 'panelOpener' }
+> => ({
   id: SecurityGroupName.rules,
   title: SecurityLinkGroup[SecurityGroupName.rules].title,
   icon: 'radar',

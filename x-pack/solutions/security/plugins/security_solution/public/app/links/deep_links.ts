@@ -9,7 +9,12 @@ import type { Subject, Subscription } from 'rxjs';
 import { combineLatestWith, debounceTime } from 'rxjs';
 import type { AppDeepLink, AppUpdater, AppDeepLinkLocations } from '@kbn/core/public';
 import type { SecurityPageName } from '@kbn/deeplinks-security';
-import type { NavigationTreeDefinition, NodeDefinition } from '@kbn/core-chrome-browser';
+import type {
+  NavigationTreeDefinition,
+  NodeDefinition,
+  PanelOpenerChildDefinition,
+  StandardNodeDefinition,
+} from '@kbn/core-chrome-browser';
 import { SecurityLinkGroup } from '@kbn/security-solution-navigation/links';
 import type { SecurityGroupName } from '@kbn/security-solution-navigation';
 import type { AppLinkItems, LinkItem, NormalizedLinks } from '../../common/links/types';
@@ -62,13 +67,20 @@ export const solutionFormatter = (
   return solutionNodesFormatter(nodes, normalizedLinks);
 };
 
+type SolutionNavNode = NodeDefinition | PanelOpenerChildDefinition | StandardNodeDefinition;
+
 const solutionNodesFormatter = (
-  navigationNodes: NodeDefinition[],
+  navigationNodes: SolutionNavNode[],
   normalizedLinks: NormalizedLinks
 ): AppDeepLink[] => {
   const deepLinks: AppDeepLink[] = [];
 
   navigationNodes.forEach((node) => {
+    // skip extension nodes
+    if (node.renderAs === 'extension') {
+      return;
+    }
+
     // Process links without an id: external links or second level groups
     if (!node.id && node.children) {
       deepLinks.push(...solutionNodesFormatter(node.children, normalizedLinks));

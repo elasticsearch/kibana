@@ -31,7 +31,8 @@
     "@kbn/deeplinks-workflows",
     "@kbn/deeplinks-agent-builder",
     "@kbn/ui-side-navigation",
-    "@kbn/core-chrome-sidebar"
+    "@kbn/core-chrome-sidebar",
+    "@kbn/utility-types"
   ],
   "exclude": [
     "target/**/*",

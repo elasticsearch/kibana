@@ -142,6 +142,43 @@ describe('parseNavigationTree', () => {
     expect(result.navigationTreeUI.body).toHaveLength(1);
     expect(result.navigationTreeUI.footer).toBeUndefined();
   });
+
+  it('should parse extension point nodes under panel openers', () => {
+    const navigationTreeDef: NavigationTreeDefinition = {
+      body: [
+        {
+          id: 'dashboards',
+          title: 'Dashboards',
+          renderAs: 'panelOpener',
+          children: [
+            {
+              id: 'recent-dashboards',
+              title: 'Recently viewed',
+              renderAs: 'extension',
+              slotId: 'security.dashboards.recent',
+              extensionId: 'recentlyAccessedDashboards',
+              popoverOnly: true,
+            },
+          ],
+        },
+      ],
+    };
+
+    const result = parseNavigationTree('security', navigationTreeDef, mockDeps);
+    const panelOpener = result.navigationTreeUI.body[0];
+
+    expect(panelOpener.renderAs).toBe('panelOpener');
+    expect(panelOpener.children).toHaveLength(1);
+
+    const extensionNode = panelOpener.children![0];
+    expect(extensionNode.renderAs).toBe('extension');
+    expect(extensionNode.slotId).toBe('security.dashboards.recent');
+    expect(extensionNode.extensionId).toBe('recentlyAccessedDashboards');
+    expect(extensionNode.popoverOnly).toBe(true);
+    expect(extensionNode.deepLink).toBeUndefined();
+    expect(extensionNode.href).toBeUndefined();
+    expect(extensionNode.path).toBe('dashboards.recent-dashboards');
+  });
 });
 
 describe('findActiveNodes', () => {

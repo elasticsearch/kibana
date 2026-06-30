@@ -24,9 +24,9 @@ const mockMenuItemHeight = 51;
 
 // Basic mock reusable IDs
 const dashboardsItemId = basicMock.navItems.primaryItems[0].id;
-const tlsCertificatesItemId = basicMock.navItems.primaryItems[2].sections?.[0].items[1].id!;
+const tlsCertificatesItemId = basicMock.navItems.primaryItems[2].sections?.[0]?.items?.[1]?.id!;
 const settingsItemId = basicMock.navItems.footerItems[2].id;
-const advancedSettingsItemId = basicMock.navItems.footerItems[2].sections?.[0].items[1].id!;
+const advancedSettingsItemId = basicMock.navItems.footerItems[2].sections?.[0]?.items?.[1]?.id!;
 
 // Security mock reusable IDs
 const detectionRulesItemId = securityMock.navItems.primaryItems[2].id;
@@ -305,14 +305,15 @@ describe('Both modes', () => {
               id: 'parent_different_id',
               sections: [
                 {
-                  ...basicMock.navItems.primaryItems[2].sections![0],
+                  id: basicMock.navItems.primaryItems[2].sections![0].id,
+                  label: basicMock.navItems.primaryItems[2].sections![0].label,
                   items: [
                     {
                       id: 'child_different_id',
                       label: 'Child with different ID',
                       href: '/child_different',
                     },
-                    ...basicMock.navItems.primaryItems[2].sections![0].items.slice(1),
+                    ...(basicMock.navItems.primaryItems[2].sections![0].items?.slice(1) ?? []),
                   ],
                 },
               ],
