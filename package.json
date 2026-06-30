@@ -203,6 +203,7 @@
     "@kbn/ai-assistant-cta": "link:x-pack/platform/packages/shared/ai-assistant/ai-assistant-cta",
     "@kbn/ai-assistant-icon": "link:x-pack/platform/packages/shared/ai-assistant/icon",
     "@kbn/ai-assistant-management-plugin": "link:src/platform/plugins/shared/ai_assistant_management/selection",
+    "@kbn/ai-panel-plugin": "link:x-pack/platform/plugins/shared/ai_panel",
     "@kbn/ai-security-labs-content": "link:x-pack/solutions/security/packages/ai-security-labs-content",
     "@kbn/ai-tools": "link:x-pack/platform/packages/shared/kbn-ai-tools",
     "@kbn/aiops-change-point-detection": "link:x-pack/platform/packages/shared/ml/aiops_change_point_detection",

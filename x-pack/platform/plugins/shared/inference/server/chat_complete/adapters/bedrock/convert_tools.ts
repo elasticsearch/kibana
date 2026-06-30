@@ -50,7 +50,7 @@ export const toolsToConverseBedrock = (tools: ToolOptions['tools'], messages: Me
       (message.role === MessageRole.Assistant && message.toolCalls?.length)
   );
 
-  if (hasToolUse) {
+  if (hasToolUse.length) {
     return [
       {
         toolSpec: {

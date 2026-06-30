@@ -20,6 +20,7 @@ import {
   markdownPanelDefinition,
   editMarkdownPanelConfigInputSchema,
 } from './markdown';
+import { aiPanelConfigInputSchema, aiPanelDefinition } from './ai_panel';
 
 /**
  * Panel registry barrel.
@@ -51,6 +52,7 @@ export type { PanelContent } from './panel_type';
 const configPanelInputSchema = z.discriminatedUnion('type', [
   visPanelConfigInputSchema,
   markdownPanelConfigInputSchema,
+  aiPanelConfigInputSchema,
 ]);
 
 export type ConfigPanelInput = z.infer<typeof configPanelInputSchema>;
@@ -60,6 +62,7 @@ export type PanelType = ConfigPanelInput['type'];
 export const PANEL_TYPE_DEFINITIONS: Record<PanelType, PanelTypeDefinition> = {
   vis: visPanelDefinition,
   markdown: markdownPanelDefinition,
+  ai_panel: aiPanelDefinition,
 };
 
 const sectionIdField = z
@@ -75,6 +78,7 @@ export const addPanelsItemSchema = z.discriminatedUnion('source', [
   z.discriminatedUnion('type', [
     visPanelConfigInputSchema.extend({ sectionId: sectionIdField }),
     markdownPanelConfigInputSchema.extend({ sectionId: sectionIdField }),
+    aiPanelConfigInputSchema.extend({ sectionId: sectionIdField }),
   ]),
   panelRequestSchema.extend({ sectionId: sectionIdField }),
 ]);

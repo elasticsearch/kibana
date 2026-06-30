@@ -158,7 +158,8 @@
     "xpack.urlDrilldown": "platform/plugins/private/drilldowns/url_drilldown",
     "xpack.watcher": "platform/plugins/private/watcher",
     "xpack.eventStacktrace": "platform/packages/shared/kbn-event-stacktrace",
-    "xpack.notificationCenter": "platform/plugins/shared/notification_center"
+    "xpack.notificationCenter": "platform/plugins/shared/notification_center",
+    "xpack.aiPanel": "platform/plugins/shared/ai_panel"
     
   },
   "exclude": ["examples"],

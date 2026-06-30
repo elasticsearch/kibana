@@ -116,6 +116,7 @@ export const AGENT_BUILDER_BUILTIN_SKILLS = [
 
   // Platform – Dashboard
   'dashboard-management',
+  'ai-panel-authoring',
 
   // Platform – Discover
   'discover-data-analysis',

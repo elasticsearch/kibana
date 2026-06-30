@@ -1,0 +1,28 @@
+{
+  "extends": "@kbn/tsconfig-base/tsconfig.json",
+  "compilerOptions": {
+    "outDir": "target/types"
+  },
+  "include": ["*.ts", "common/**/*", "public/**/*", "server/**/*"],
+  "kbn_references": [
+    "@kbn/core",
+    "@kbn/datemath",
+    "@kbn/embeddable-plugin",
+    "@kbn/es-query",
+    "@kbn/presentation-publishing",
+    "@kbn/presentation-publishing-schemas",
+    "@kbn/config-schema",
+    "@kbn/i18n",
+    "@kbn/i18n-react",
+    "@kbn/inference-common",
+    "@kbn/inference-plugin",
+    "@kbn/management-settings-ids",
+    "@kbn/esql-utils",
+    "@kbn/esql",
+    "@kbn/search-types",
+    "@kbn/data-plugin",
+    "@kbn/code-editor",
+    "@kbn/monaco"
+  ],
+  "exclude": ["target/**/*"]
+}

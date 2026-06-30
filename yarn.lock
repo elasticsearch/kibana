@@ -4588,6 +4588,10 @@
   version "0.0.0"
   uid ""
 
+"@kbn/ai-panel-plugin@link:x-pack/platform/plugins/shared/ai_panel":
+  version "0.0.0"
+  uid ""
+
 "@kbn/ai-security-labs-content@link:x-pack/solutions/security/packages/ai-security-labs-content":
   version "0.0.0"
   uid ""
