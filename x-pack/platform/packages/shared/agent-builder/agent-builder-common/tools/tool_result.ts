@@ -132,6 +132,14 @@ export interface VisualizationResultData {
   visualization: Record<string, unknown> & { spec?: string };
   /** Optional chart type identifier (primarily Lens). */
   chart_type?: SupportedChartType;
+  /**
+   * ID of the persisted visualization attachment. Present when persistence
+   * succeeded; the agent renders the visualization inline via
+   * `<render_attachment id version>` and reuses it for follow-up updates.
+   */
+  attachment_id?: string;
+  /** Version of the persisted attachment backing this result. */
+  version?: number;
 }
 
 export type VisualizationResult = ToolResultMixin<ToolResultType.visualization>;

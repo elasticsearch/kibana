@@ -68,14 +68,25 @@ Do **not** use this skill when:
    } once per requested panel.
 
 4. **Interpret output and preserve artifacts**
-   - Save successful \`data.attachment_id\` values for follow-up operations.
-   - If the tool returns \`data.attachment_id\`, include that ID in your response so the visualization attachment can be rendered in the conversation.
-   - If \`attachment_id\` is missing, report that persistence failed and treat the result as non-reusable.
+   - Each successful call returns \`data.attachment_id\` and \`data.version\`. Save them: they identify the persisted attachment for rendering and for later updates (pass \`attachment_id\` back to update it in place).
+   - If \`data.attachment_id\` is missing, persistence failed; report that and treat the result as non-renderable and non-reusable.
 
 ## Inline Rendering Guidelines
 
-- **When creating standalone visualizations** (i.e. the user directly asked for a chart or visualization), render each visualization attachment inline so the user can see and interact with it immediately.
-- **When creating visualizations as intermediate reusable artifacts** for a later workflow, do NOT render individual visualization attachments inline unless the user asked to inspect them. Only the final composed artifact should be rendered. Rendering intermediate visualizations clutters the conversation.
+Render a created visualization by referencing its persisted attachment, using the \`attachment_id\` and \`version\` returned by ${
+    platformCoreTools.createVisualization
+  }:
+
+\`\`\`
+<render_attachment id="{attachment_id}" version="{version}" />
+\`\`\`
+
+- This renders both Lens and Vega visualizations. Copy \`attachment_id\` and \`version\` verbatim from the tool result; never invent them.
+- Do **NOT** use the \`<visualization>\` element for ${
+    platformCoreTools.createVisualization
+  } output — that element is only for \`esql_results\` from \`${platformCoreTools.executeEsql}\`.
+- **Standalone visualizations** (the user directly asked for a chart): render the attachment inline so the user can see and interact with it immediately.
+- **Intermediate reusable artifacts** for a later workflow: do NOT render inline unless the user asked to inspect them. Only the final composed artifact should be rendered, to avoid cluttering the conversation.
 
 ## Writing Effective Visualization Prompts
 

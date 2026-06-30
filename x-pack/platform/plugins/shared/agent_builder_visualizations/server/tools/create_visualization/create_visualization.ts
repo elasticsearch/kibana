@@ -183,20 +183,23 @@ This tool will:
           };
         }
 
-        // Step 4: Try to store as attachment (optional - may fail if visualization type not registered)
+        // Step 4: Persist as an attachment so the agent can render it inline
+        // (via <render_attachment>) and update it later by id.
         const description = `Visualization: ${nlQuery.slice(0, 50)}${
           nlQuery.length > 50 ? '...' : ''
         }`;
+        let resultAttachmentId: string | undefined;
+        let resultVersion: number | undefined;
         try {
           if (attachmentId && attachments.getAttachmentRecord(attachmentId)) {
             const updated = await attachments.update(attachmentId, {
               data: visualizationData,
               description,
             });
+            resultAttachmentId = attachmentId;
+            resultVersion = updated?.current_version;
             logger.debug(
-              `Updated visualization attachment ${attachmentId} to version ${
-                updated?.current_version ?? 1
-              }`
+              `Updated visualization attachment ${attachmentId} to version ${resultVersion ?? 1}`
             );
           } else {
             const newAttachment = await attachments.add({
@@ -204,10 +207,13 @@ This tool will:
               data: visualizationData,
               description,
             });
+            resultAttachmentId = newAttachment.id;
+            resultVersion = newAttachment.current_version;
             logger.debug(`Created new visualization attachment ${newAttachment.id}`);
           }
         } catch (attachmentError) {
-          // Attachment creation is optional - continue without it
+          // Persistence is best-effort: without an attachment the agent cannot
+          // render or reuse the visualization, but the config is still returned.
           logger.warn(
             `Could not create visualization attachment (type may not be registered): ${
               attachmentError instanceof Error ? attachmentError.message : String(attachmentError)
@@ -220,7 +226,11 @@ This tool will:
             {
               type: ToolResultType.visualization,
               tool_result_id: getToolResultId(),
-              data: visualizationData,
+              data: {
+                ...visualizationData,
+                ...(resultAttachmentId && { attachment_id: resultAttachmentId }),
+                ...(resultVersion !== undefined && { version: resultVersion }),
+              },
             },
           ],
         };
