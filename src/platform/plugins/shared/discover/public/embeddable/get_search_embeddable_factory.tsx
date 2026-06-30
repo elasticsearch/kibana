@@ -18,6 +18,7 @@ import { i18n } from '@kbn/i18n';
 import { KibanaContextProvider } from '@kbn/kibana-react-plugin/public';
 import type { FetchContext } from '@kbn/presentation-publishing';
 import {
+  apiHasParentApi,
   initializeTimeRangeManager,
   initializeTitleManager,
   initializeStateApi,
@@ -53,6 +54,35 @@ import { createInMemoryContextAwarenessToolkit } from '../context_awareness';
 import { ScopedServicesProvider } from '../components/scoped_services_provider';
 import { isFieldStatsMode } from './utils/is_field_stats_mode';
 import { isTabDeleted } from './utils/is_tab_deleted';
+
+interface HasForceRefresh {
+  forceRefresh: () => void;
+}
+
+const apiHasForceRefresh = (api: unknown): api is HasForceRefresh =>
+  Boolean(api && typeof (api as HasForceRefresh).forceRefresh === 'function');
+
+/**
+ * When a child embeddable triggers a refresh, prefer triggering a container-level refresh
+ */
+export const triggerEmbeddableRefresh = ({
+  api,
+  refreshTrigger$,
+}: {
+  api: SearchEmbeddableApi;
+  refreshTrigger$: BehaviorSubject<void>;
+}) => {
+  // When embedded in Dashboard, prefer container-level refresh so sibling panels
+  // observing the same data are refreshed consistently.
+  if (apiHasParentApi(api) && apiHasForceRefresh(api.parentApi)) {
+    api.parentApi.forceRefresh();
+    return;
+  }
+
+  // Fallback for non-dashboard parents (or parents without forceRefresh support):
+  // trigger the local Discover embeddable fetch pipeline.
+  refreshTrigger$.next(undefined);
+};
 
 export const getSearchEmbeddableFactory = ({
   startServices,
@@ -319,7 +349,8 @@ export const getSearchEmbeddableFactory = ({
         profileStateRegistry: discoverServices.profileStateRegistry,
         actions: {
           addFilter: enableFilters ? addFilter : undefined,
-          refreshData: () => refreshTrigger$.next(undefined),
+          // Alert actions triggered from embedded Discover should refresh the whole dashboard when possible.
+          refreshData: () => triggerEmbeddableRefresh({ api, refreshTrigger$ }),
           setExpandedDoc: enableDocumentViewer ? setExpandedDoc : undefined,
         },
       });

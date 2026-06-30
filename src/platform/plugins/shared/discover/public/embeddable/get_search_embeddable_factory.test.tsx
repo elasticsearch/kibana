@@ -25,7 +25,10 @@ import type { EmbeddableApiRegistration } from '@kbn/embeddable-plugin/public/re
 import { createDataViewDataSource } from '../../common/data_sources';
 import type { SearchEmbeddableState } from '../../common/embeddable/types';
 import { discoverServiceMock } from '../__mocks__/services';
-import { getSearchEmbeddableFactory } from './get_search_embeddable_factory';
+import {
+  getSearchEmbeddableFactory,
+  triggerEmbeddableRefresh,
+} from './get_search_embeddable_factory';
 import type {
   SearchEmbeddableApi,
   SearchEmbeddablePanelApiState,
@@ -185,6 +188,35 @@ describe('saved search embeddable', () => {
   });
 
   const waitOneTick = () => act(() => new Promise((resolve) => setTimeout(resolve, 0)));
+
+  describe('triggerEmbeddableRefresh', () => {
+    it('calls parent forceRefresh when available', () => {
+      const forceRefresh = jest.fn();
+      const refreshTrigger$ = new BehaviorSubject<void>(undefined);
+      const refreshTriggerSpy = jest.spyOn(refreshTrigger$, 'next');
+      const api = {
+        parentApi: { forceRefresh },
+      } as unknown as SearchEmbeddableApi;
+
+      triggerEmbeddableRefresh({ api, refreshTrigger$ });
+
+      expect(forceRefresh).toHaveBeenCalledTimes(1);
+      expect(refreshTriggerSpy).not.toHaveBeenCalled();
+    });
+
+    it('falls back to local refresh trigger when parent forceRefresh is unavailable', () => {
+      const refreshTrigger$ = new BehaviorSubject<void>(undefined);
+      const refreshTriggerSpy = jest.spyOn(refreshTrigger$, 'next');
+      const api = {
+        parentApi: {},
+      } as unknown as SearchEmbeddableApi;
+
+      triggerEmbeddableRefresh({ api, refreshTrigger$ });
+
+      expect(refreshTriggerSpy).toHaveBeenCalledTimes(1);
+      expect(refreshTriggerSpy).toHaveBeenCalledWith(undefined);
+    });
+  });
 
   describe('search embeddable component', () => {
     it('should render empty grid when empty data is returned', async () => {
