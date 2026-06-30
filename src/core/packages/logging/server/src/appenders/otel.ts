@@ -106,4 +106,17 @@ export interface OtelAppenderConfig {
    * Optional TLS settings for HTTPS/gRPC to the OTLP endpoint, including mutual TLS (client certificates).
    */
   ssl?: OtelAppenderTlsConfig;
+  /**
+   * Optional map of source attribute paths to target attribute path(s) applied after meta fields are
+   * flattened into OTel attributes. Use this to rename or fan-out fields without changing the
+   * upstream `AuditEvent` / `LogRecord` shape.
+   *
+   * - Single target: `{ 'kibana.space_id': 'kibana.space.id' }` — rename in place.
+   * - Multiple targets: `{ 'client.ip': ['source.address', 'source.ip'] }` — copy value to all
+   *   listed keys and remove the original.
+   *
+   * Keys absent from the log record are silently skipped. Applied only when using pattern layout
+   * (meta fields are part of the structured body for JSON layout and are not repeated in attributes).
+   */
+  fieldRenames?: Record<string, string | string[]>;
 }

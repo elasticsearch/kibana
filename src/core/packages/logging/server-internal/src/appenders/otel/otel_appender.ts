@@ -119,7 +119,11 @@ const resolveLayoutConfig = (config?: LayoutConfigType): LayoutConfigType => {
  * - When using the JSON layout, `meta` is already part of the structured body,
  *   so `log.meta` is omitted from attributes to avoid duplication.
  */
-const toAttributes = (record: LogRecord, includeLogMeta: boolean): Attributes => {
+const toAttributes = (
+  record: LogRecord,
+  includeLogMeta: boolean,
+  fieldRenames?: Record<string, string | string[]>
+): Attributes => {
   const attrs: Attributes = {
     'log.logger': record.context,
   };
@@ -168,6 +172,19 @@ const toAttributes = (record: LogRecord, includeLogMeta: boolean): Attributes =>
     });
   }
 
+  if (fieldRenames) {
+    for (const [oldKey, newKeys] of Object.entries(fieldRenames)) {
+      if (oldKey in attrs) {
+        const value = attrs[oldKey];
+        delete attrs[oldKey];
+        const targets = Array.isArray(newKeys) ? newKeys : [newKeys];
+        for (const newKey of targets) {
+          attrs[newKey] = value;
+        }
+      }
+    }
+  }
+
   return attrs;
 };
 
@@ -194,6 +211,12 @@ export class OtelAppender implements DisposableAppender {
     layout: schema.maybe(Layouts.configSchema),
     // Optional: user-provided attributes override the service attributes derived from APM config.
     attributes: schema.maybe(schema.recordOf(schema.string(), schema.string())),
+    fieldRenames: schema.maybe(
+      schema.recordOf(
+        schema.string(),
+        schema.oneOf([schema.string(), schema.arrayOf(schema.string(), { minSize: 1 })])
+      )
+    ),
     ssl: schema.maybe(
       schema.object(
         {
@@ -234,6 +257,7 @@ export class OtelAppender implements DisposableAppender {
   private readonly layout: Layout;
   /** True when using JSON layout: the full LogRecord is sent as `body.structured`. */
   private readonly useStructuredBody: boolean;
+  private readonly fieldRenames?: Record<string, string | string[]>;
 
   constructor(config: OtelAppenderConfig) {
     const exporter = createExporter(config);
@@ -258,6 +282,7 @@ export class OtelAppender implements DisposableAppender {
     // JSON layout → sanitised LogRecord as AnyValueMap → indexed as body.structured.
     // Pattern layout → formatted string → indexed as body.text (aliased to `message`).
     this.useStructuredBody = layoutConfig.type !== 'pattern';
+    this.fieldRenames = config.fieldRenames;
   }
 
   public append(record: LogRecord): void {
@@ -279,7 +304,7 @@ export class OtelAppender implements DisposableAppender {
       context: toTraceContext(record),
       // log.meta is omitted from attributes when using JSON layout because it
       // is already part of the structured body.
-      attributes: toAttributes(record, !this.useStructuredBody),
+      attributes: toAttributes(record, !this.useStructuredBody, this.fieldRenames),
     });
   }
 

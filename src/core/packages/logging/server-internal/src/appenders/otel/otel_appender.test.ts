@@ -106,6 +106,30 @@ describe('OtelAppender', () => {
       expect(result.attributes).toEqual({ 'service.name': 'my-kibana' });
     });
 
+    it('accepts fieldRenames with string target', () => {
+      const result = OtelAppender.configSchema.validate({
+        ...validConfig,
+        fieldRenames: { 'kibana.space_id': 'kibana.space.id' },
+      });
+      expect(result.fieldRenames).toEqual({ 'kibana.space_id': 'kibana.space.id' });
+    });
+
+    it('accepts fieldRenames with array target (fan-out)', () => {
+      const result = OtelAppender.configSchema.validate({
+        ...validConfig,
+        fieldRenames: { 'client.ip': ['source.address', 'source.ip'] },
+      });
+      expect(result.fieldRenames).toEqual({ 'client.ip': ['source.address', 'source.ip'] });
+    });
+
+    it('is optional and absent by default', () => {
+      const result = OtelAppender.configSchema.validate({
+        type: 'otel',
+        url: 'http://collector:4318/v1/logs',
+      });
+      expect(result.fieldRenames).toBeUndefined();
+    });
+
     it('rejects config without url', () => {
       expect(() => OtelAppender.configSchema.validate({ type: 'otel' })).toThrow();
     });
@@ -588,6 +612,101 @@ describe('OtelAppender', () => {
 
         const { attributes } = mockEmit.mock.calls[0][0];
         expect(attributes).not.toHaveProperty('log.meta');
+      });
+    });
+
+    describe('fieldRenames', () => {
+      // toHaveProperty('a.b') traverses nested objects; use array form (['a.b']) for flat dotted keys.
+
+      it('renames a meta attribute to the specified target key', () => {
+        const appender = new OtelAppender({
+          ...validConfig,
+          fieldRenames: { 'kibana.space_id': 'kibana.space.id' },
+        });
+        appender.append(makeRecord({ meta: { kibana: { space_id: 'default' } } }));
+
+        const { attributes } = mockEmit.mock.calls[0][0];
+        expect(attributes).toHaveProperty(['kibana.space.id'], 'default');
+        expect(attributes).not.toHaveProperty(['kibana.space_id']);
+      });
+
+      it('fans out a single source key to multiple target keys and removes the original', () => {
+        const appender = new OtelAppender({
+          ...validConfig,
+          fieldRenames: { 'client.ip': ['source.address', 'source.ip'] },
+        });
+        appender.append(makeRecord({ meta: { client: { ip: '1.2.3.4' } } }));
+
+        const { attributes } = mockEmit.mock.calls[0][0];
+        expect(attributes).toHaveProperty(['source.address'], '1.2.3.4');
+        expect(attributes).toHaveProperty(['source.ip'], '1.2.3.4');
+        expect(attributes).not.toHaveProperty(['client.ip']);
+      });
+
+      it('is a no-op when the source key is absent from the record', () => {
+        const appender = new OtelAppender({
+          ...validConfig,
+          fieldRenames: { 'kibana.space_id': 'kibana.space.id' },
+        });
+        appender.append(makeRecord({ meta: { other: 'value' } }));
+
+        const { attributes } = mockEmit.mock.calls[0][0];
+        expect(attributes).not.toHaveProperty(['kibana.space.id']);
+        expect(attributes).not.toHaveProperty(['kibana.space_id']);
+      });
+
+      it('leaves attributes unchanged when fieldRenames is not configured', () => {
+        const appender = new OtelAppender(validConfig);
+        appender.append(makeRecord({ meta: { kibana: { space_id: 'default' } } }));
+
+        const { attributes } = mockEmit.mock.calls[0][0];
+        expect(attributes).toHaveProperty(['kibana.space_id'], 'default');
+        expect(attributes).not.toHaveProperty(['kibana.space.id']);
+      });
+
+      it('applies all audit field renames for a representative audit event meta payload', () => {
+        const appender = new OtelAppender({
+          ...validConfig,
+          fieldRenames: {
+            'kibana.space_id': 'kibana.space.id',
+            'kibana.session_id': 'kibana.session.id',
+            'kibana.lookup_realm': 'kibana.lookup.realm',
+            'kibana.authentication_type': 'authentication.type',
+            'client.ip': ['source.address', 'source.ip'],
+            'trace.id': 'request.id',
+          },
+        });
+        appender.append(
+          makeRecord({
+            meta: {
+              kibana: {
+                space_id: 'default',
+                session_id: 'abc123',
+                lookup_realm: 'native',
+                authentication_type: 'basic',
+              },
+              client: { ip: '1.2.3.4' },
+              trace: { id: 'req-xyz' },
+            },
+          })
+        );
+
+        const { attributes } = mockEmit.mock.calls[0][0];
+        // Renamed keys present with correct values
+        expect(attributes).toHaveProperty(['kibana.space.id'], 'default');
+        expect(attributes).toHaveProperty(['kibana.session.id'], 'abc123');
+        expect(attributes).toHaveProperty(['kibana.lookup.realm'], 'native');
+        expect(attributes).toHaveProperty(['authentication.type'], 'basic');
+        expect(attributes).toHaveProperty(['source.address'], '1.2.3.4');
+        expect(attributes).toHaveProperty(['source.ip'], '1.2.3.4');
+        expect(attributes).toHaveProperty(['request.id'], 'req-xyz');
+        // Original keys removed
+        expect(attributes).not.toHaveProperty(['kibana.space_id']);
+        expect(attributes).not.toHaveProperty(['kibana.session_id']);
+        expect(attributes).not.toHaveProperty(['kibana.lookup_realm']);
+        expect(attributes).not.toHaveProperty(['kibana.authentication_type']);
+        expect(attributes).not.toHaveProperty(['client.ip']);
+        expect(attributes).not.toHaveProperty(['trace.id']);
       });
     });
   });

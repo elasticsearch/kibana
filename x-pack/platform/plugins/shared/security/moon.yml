@@ -112,6 +112,7 @@ dependsOn:
   - '@kbn/agent-builder-browser'
   - '@kbn/core-user-profile-common'
   - '@kbn/core-chrome-browser-components'
+  - '@kbn/core-logging-server'
 tags:
   - plugin
   - prod

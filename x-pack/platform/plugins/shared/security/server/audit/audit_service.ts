@@ -25,6 +25,19 @@ import type { SecurityPluginSetup } from '../plugin';
 export const ECS_VERSION = '1.6.0';
 export const RECORD_USAGE_INTERVAL = 60 * 60 * 1000; // 1 hour
 
+// Field renames applied at the OTel output layer when the audit appender is of type 'otel'.
+// These translate legacy underscore-separated ECS field names to their OTel-native dot-separated
+// equivalents, and resolve collisions (e.g. trace.id vs OTel TraceId).
+// The AuditEvent type is intentionally left unchanged to avoid breaking non-OTel consumers.
+export const AUDIT_OTEL_FIELD_RENAMES: Record<string, string | string[]> = {
+  'kibana.space_id': 'kibana.space.id',
+  'kibana.session_id': 'kibana.session.id',
+  'kibana.lookup_realm': 'kibana.lookup.realm',
+  'kibana.authentication_type': 'authentication.type',
+  'client.ip': ['source.address', 'source.ip'],
+  'trace.id': 'request.id',
+};
+
 const normalize = <T>(value: T | T[]): T[] => (Array.isArray(value) ? value : [value]);
 
 interface AuditServiceSetupParams {
@@ -165,24 +178,37 @@ export class AuditService {
 }
 
 export const createLoggingConfig = (config: ConfigType['audit']) =>
-  map<Pick<SecurityLicenseFeatures, 'allowAuditLogging'>, LoggerContextConfigInput>((features) => ({
-    appenders: {
-      auditTrailAppender: config.appender ?? {
-        type: 'console',
-        layout: {
-          type: 'pattern',
-          highlight: true,
+  map<Pick<SecurityLicenseFeatures, 'allowAuditLogging'>, LoggerContextConfigInput>((features) => {
+    const baseAppender = config.appender ?? {
+      type: 'console' as const,
+      layout: {
+        type: 'pattern' as const,
+        highlight: true,
+      },
+    };
+    // When the configured appender is OTel, inject the audit-specific field renames so that
+    // legacy underscore-separated field names are translated to their OTel-native equivalents
+    // at the output layer — without touching the upstream AuditEvent type.
+    // Any user-supplied fieldRenames are preserved; audit renames take precedence on conflicts.
+    const appender =
+      baseAppender.type === 'otel'
+        ? {
+            ...baseAppender,
+            fieldRenames: { ...baseAppender.fieldRenames, ...AUDIT_OTEL_FIELD_RENAMES },
+          }
+        : baseAppender;
+
+    return {
+      appenders: { auditTrailAppender: appender },
+      loggers: [
+        {
+          name: 'audit.ecs',
+          level: config.enabled && config.appender && features.allowAuditLogging ? 'info' : 'off',
+          appenders: ['auditTrailAppender'],
         },
-      },
-    },
-    loggers: [
-      {
-        name: 'audit.ecs',
-        level: config.enabled && config.appender && features.allowAuditLogging ? 'info' : 'off',
-        appenders: ['auditTrailAppender'],
-      },
-    ],
-  }));
+      ],
+    };
+  });
 
 /**
  * Evaluates the list of provided ignore rules, and filters out events only
