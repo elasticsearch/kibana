@@ -49,28 +49,32 @@ describe('Severity level chart', () => {
   });
 
   it('should render the table correctly with data', () => {
-    const { queryAllByRole, getByTestId } = render(
+    const { container, getByTestId } = render(
       <TestProviders>
         <SeverityLevelChart data={parsedAlerts} isLoading={false} showCellActions={true} />
       </TestProviders>
     );
     expect(getByTestId('severity-level-table')).toBeInTheDocument();
     parsedAlerts.forEach((_, i) => {
-      expect(queryAllByRole('row')[i + 1].textContent).toContain(parsedAlerts[i].label);
-      expect(queryAllByRole('row')[i + 1].textContent).toContain(parsedAlerts[i].value.toString());
-      expect(queryAllByRole('row')[i + 1].children).toHaveLength(3);
+      expect(container.querySelectorAll('.euiTableRow')[i].textContent).toContain(
+        parsedAlerts[i].label
+      );
+      expect(container.querySelectorAll('.euiTableRow')[i].textContent).toContain(
+        parsedAlerts[i].value.toString()
+      );
+      expect(container.querySelectorAll('.euiTableRow')[i].children).toHaveLength(3);
     });
   });
 
   it('should render the table without the third columns (cell actions)', () => {
-    const { queryAllByRole, getByTestId } = render(
+    const { container, getByTestId } = render(
       <TestProviders>
         <SeverityLevelChart data={parsedAlerts} isLoading={false} showCellActions={false} />
       </TestProviders>
     );
     expect(getByTestId('severity-level-table')).toBeInTheDocument();
     parsedAlerts.forEach((_, i) => {
-      expect(queryAllByRole('row')[i + 1].children).toHaveLength(2);
+      expect(container.querySelectorAll('.euiTableRow')[i].children).toHaveLength(2);
     });
   });
 });

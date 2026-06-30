@@ -6,7 +6,7 @@
  */
 
 import React from 'react';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render } from '@testing-library/react';
 import { SuggestedPrompts } from './suggested_prompts';
 import { useAssistantContext, useAssistantOverlay } from '@kbn/elastic-assistant';
 
@@ -30,19 +30,18 @@ describe('SuggestedPrompts', () => {
   });
 
   it('renders the suggested prompts', () => {
-    render(
+    const { container } = render(
       <SuggestedPrompts
         getPromptContext={jest.fn()}
         ruleName="Test Rule"
         timestamp="2023-01-01T00:00:00Z"
       />
     );
-
-    expect(screen.getAllByRole('button')).toHaveLength(3); // Assuming there are 3 prompts
+    expect(container.querySelectorAll('button')).toHaveLength(3); // Assuming there are 3 prompts
   });
 
   it('calls showAssistantOverlay when a prompt is clicked', () => {
-    render(
+    const { container } = render(
       <SuggestedPrompts
         getPromptContext={jest.fn()}
         ruleName="Test Rule"
@@ -50,14 +49,14 @@ describe('SuggestedPrompts', () => {
       />
     );
 
-    const firstPromptButton = screen.getAllByRole('button')[0];
+    const firstPromptButton = container.querySelectorAll('button')[0];
     fireEvent.click(firstPromptButton);
 
     expect(mockShowAssistantOverlay).toHaveBeenCalledWith(true);
   });
 
   it('displays the correct title and description in the overlay', () => {
-    render(
+    const { container } = render(
       <SuggestedPrompts
         getPromptContext={jest.fn()}
         ruleName="Test Rule"
@@ -65,7 +64,7 @@ describe('SuggestedPrompts', () => {
       />
     );
 
-    const firstPromptButton = screen.getAllByRole('button')[0];
+    const firstPromptButton = container.querySelectorAll('button')[0];
     fireEvent.click(firstPromptButton);
 
     expect(mockShowAssistantOverlay).toHaveBeenCalledWith(true);

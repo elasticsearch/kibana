@@ -84,7 +84,8 @@ describe('Modal Inspect', () => {
         'true'
       );
 
-      const responseTextContent = screen.getByRole('tabpanel').textContent ?? '';
+      const responseTextContent =
+        screen.getByTestId('modal-inspect-response-preview').textContent ?? '';
       expect(JSON.parse(responseTextContent)).toMatchObject({
         took: 880,
         timed_out: false,
@@ -145,7 +146,8 @@ describe('Modal Inspect', () => {
         'true'
       );
 
-      const requestTextContent = screen.getByRole('tabpanel').textContent ?? '';
+      const requestTextContent =
+        screen.getByTestId('modal-inspect-request-preview').textContent ?? '';
 
       expect(JSON.parse(requestTextContent)).toMatchObject({
         aggregations: {
@@ -178,7 +180,8 @@ describe('Modal Inspect', () => {
         'true'
       );
 
-      const requestTextContent = screen.getByRole('tabpanel').textContent ?? '';
+      const requestTextContent =
+        screen.getByTestId('modal-inspect-request-preview').textContent ?? '';
 
       expect(requestTextContent).toMatch(esqlQuery);
     });

@@ -13,15 +13,15 @@ describe('Link', () => {
   it('renders <a> tag when there is a path', () => {
     render(<Link copy="test_copy" path="/test-path" />);
 
-    expect(screen.getByRole('link')).toBeInTheDocument();
-    expect(screen.getByRole('link')).toHaveAttribute('href', '/test-path');
-    expect(screen.getByRole('link')).toHaveTextContent('test_copy');
+    expect(screen.getByTestId('panel-link')).toBeInTheDocument();
+    expect(screen.getByTestId('panel-link')).toHaveAttribute('href', '/test-path');
+    expect(screen.getByTestId('panel-link')).toHaveTextContent('test_copy');
   });
 
   it('does not render <a> tag when there is no path', () => {
     render(<Link copy="test_copy" />);
 
     expect(screen.getByText('test_copy')).toBeInTheDocument();
-    expect(screen.queryByRole('link')).toBeNull();
+    expect(screen.queryByTestId('panel-link')).toBeNull();
   });
 });

@@ -46,6 +46,7 @@ export const useChartSettingsPopoverConfiguration = ({
               setIsPopoverOpen(false);
               handleClick();
             },
+            'data-test-subj': 'inspect',
           },
           {
             name: i18n.RESET_GROUP_BY_FIELDS,
@@ -53,6 +54,7 @@ export const useChartSettingsPopoverConfiguration = ({
               setIsPopoverOpen(false);
               onResetStackByFields();
             },
+            'data-test-subj': 'reset-group-by',
           },
         ],
       },

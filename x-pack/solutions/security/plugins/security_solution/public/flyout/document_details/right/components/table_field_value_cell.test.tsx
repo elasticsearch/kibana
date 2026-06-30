@@ -204,7 +204,9 @@ describe('TableFieldValueCell', () => {
     });
 
     it('should render link buttons for each of the host ip addresses', () => {
-      expect(screen.getAllByRole('button').length).toBe(hostIpValues.length);
+      expect(screen.getAllByTestId(/securitySolutionFlyoutTablePreviewLinkField-/).length).toBe(
+        hostIpValues.length
+      );
     });
 
     it('should render each of the expected values when `fieldFromBrowserField` is provided', () => {

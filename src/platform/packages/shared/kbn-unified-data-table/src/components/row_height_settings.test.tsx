@@ -48,39 +48,63 @@ const renderRowHeightSettings = ({
 describe('RowHeightSettings', () => {
   it('should set rowHight to Custom by default', async () => {
     renderRowHeightSettings();
-    expect(screen.getByRole('button', { name: 'Auto', pressed: false })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Custom', pressed: true })).toBeInTheDocument();
+    expect(screen.getByTestId('rowHeightSettings_rowHeight_auto')).toHaveAttribute(
+      'aria-pressed',
+      'false'
+    );
+    expect(screen.getByTestId('rowHeightSettings_rowHeight_custom')).toHaveAttribute(
+      'aria-pressed',
+      'true'
+    );
   });
 
   it('should set rowHeight when the selected button changes', async () => {
     renderRowHeightSettings();
-    expect(screen.getByRole('button', { name: 'Auto', pressed: false })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Custom', pressed: true })).toBeInTheDocument();
-    await userEvent.click(screen.getByRole('button', { name: 'Auto' }));
-    expect(screen.getByRole('button', { name: 'Auto', pressed: true })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Custom', pressed: false })).toBeInTheDocument();
-    await userEvent.click(screen.getByRole('button', { name: 'Custom' }));
-    expect(screen.getByRole('button', { name: 'Auto', pressed: false })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Custom', pressed: true })).toBeInTheDocument();
+    expect(screen.getByTestId('rowHeightSettings_rowHeight_auto')).toHaveAttribute(
+      'aria-pressed',
+      'false'
+    );
+    expect(screen.getByTestId('rowHeightSettings_rowHeight_custom')).toHaveAttribute(
+      'aria-pressed',
+      'true'
+    );
+    await userEvent.click(screen.getByTestId('rowHeightSettings_rowHeight_auto'));
+    expect(screen.getByTestId('rowHeightSettings_rowHeight_auto')).toHaveAttribute(
+      'aria-pressed',
+      'true'
+    );
+    expect(screen.getByTestId('rowHeightSettings_rowHeight_custom')).toHaveAttribute(
+      'aria-pressed',
+      'false'
+    );
+    await userEvent.click(screen.getByTestId('rowHeightSettings_rowHeight_custom'));
+    expect(screen.getByTestId('rowHeightSettings_rowHeight_auto')).toHaveAttribute(
+      'aria-pressed',
+      'false'
+    );
+    expect(screen.getByTestId('rowHeightSettings_rowHeight_custom')).toHaveAttribute(
+      'aria-pressed',
+      'true'
+    );
   });
 
   it('should disable FieldNumber when Auto is selected', async () => {
     renderRowHeightSettings();
-    await userEvent.click(screen.getByRole('button', { name: 'Auto' }));
-    expect(screen.getByRole('spinbutton')).toBeDisabled();
+    await userEvent.click(screen.getByTestId('rowHeightSettings_rowHeight_auto'));
+    expect(screen.getByTestId('rowHeightSettings_lineCountNumber')).toBeDisabled();
   });
 
   it('field number should persevere previously selected Custom number after changing rowHight to Auto', async () => {
     renderRowHeightSettings();
 
-    const fieldNumber = screen.getByRole('spinbutton');
+    const fieldNumber = screen.getByTestId('rowHeightSettings_lineCountNumber');
     expect(fieldNumber).toHaveValue(3);
     fireEvent.change(fieldNumber, {
       target: { value: 10 },
     });
     expect(fieldNumber).toHaveValue(10);
 
-    await userEvent.click(screen.getByRole('button', { name: 'Auto' }));
+    await userEvent.click(screen.getByTestId('rowHeightSettings_rowHeight_auto'));
 
     expect(fieldNumber).toHaveValue(10);
   });

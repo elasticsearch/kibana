@@ -32,7 +32,9 @@ describe('IndexResultBadge', () => {
 
       await userEvent.hover(screen.getByTestId('indexResultBadge'));
 
-      await waitFor(() => expect(screen.getByRole('tooltip')).toHaveTextContent('Tooltip text'));
+      await waitFor(() =>
+        expect(screen.getByText('Tooltip text').closest('[role="tooltip"]')).toBeInTheDocument()
+      );
     });
   });
 });

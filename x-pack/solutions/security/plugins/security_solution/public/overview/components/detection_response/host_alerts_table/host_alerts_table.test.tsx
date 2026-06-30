@@ -85,9 +85,9 @@ describe('HostAlertsTable', () => {
 
   it('should render the table columns', () => {
     mockUseHostAlertsItemsReturn({ items: parsedVulnerableHostsAlertsResult });
-    const { getAllByRole } = renderComponent();
+    const { getAllByTestId } = renderComponent();
 
-    const columnHeaders = getAllByRole('columnheader');
+    const columnHeaders = getAllByTestId(/tableHeaderCell_/);
     expect(columnHeaders.at(0)).toHaveTextContent('Host name');
     expect(columnHeaders.at(1)).toHaveTextContent('Alerts');
     expect(columnHeaders.at(2)).toHaveTextContent('Critical');

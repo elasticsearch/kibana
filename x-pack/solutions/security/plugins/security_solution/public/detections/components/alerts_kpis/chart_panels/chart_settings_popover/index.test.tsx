@@ -5,10 +5,9 @@
  * 2.0.
  */
 
-import { render, screen } from '@testing-library/react';
+import { render } from '@testing-library/react';
 import React from 'react';
 
-import { CHART_SETTINGS_POPOVER_ARIA_LABEL } from './translations';
 import { ChartSettingsPopover } from '.';
 
 describe('ChartSettingsPopover', () => {
@@ -31,7 +30,7 @@ describe('ChartSettingsPopover', () => {
   ];
 
   it('renders the chart settings popover', () => {
-    render(
+    const { getByTestId } = render(
       <ChartSettingsPopover
         initialPanelId={initialPanelId}
         isPopoverOpen={false}
@@ -40,8 +39,6 @@ describe('ChartSettingsPopover', () => {
       />
     );
 
-    expect(
-      screen.getByRole('button', { name: CHART_SETTINGS_POPOVER_ARIA_LABEL })
-    ).toBeInTheDocument();
+    expect(getByTestId('chart-settings-popover-button')).toBeInTheDocument();
   });
 });

@@ -475,7 +475,7 @@ describe('document selection', () => {
 
           await userEvent.click(menuButton);
 
-          return screen.queryByRole('button', { name: /Compare/ });
+          return screen.queryByTestId('unifiedDataTableCompareSelectedDocuments');
         },
       };
     };

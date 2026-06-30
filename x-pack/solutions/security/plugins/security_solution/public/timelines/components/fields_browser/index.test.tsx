@@ -135,12 +135,12 @@ describe('useFieldBrowserOptions', () => {
     const { result } = await renderUpdatedUseFieldBrowserOptions();
 
     const CreateFieldButton = result!.current.createFieldButton!;
-    const { getByRole } = render(<CreateFieldButton onHide={mockOnHide} />, {
+    const { getByTestId } = render(<CreateFieldButton onHide={mockOnHide} />, {
       wrapper: TestProviders,
     });
 
-    expect(getByRole('button')).toBeInTheDocument();
-    getByRole('button').click();
+    expect(getByTestId('create-field')).toBeInTheDocument();
+    getByTestId('create-field').click();
     expect(mockOnHide).toHaveBeenCalled();
   });
 
@@ -174,11 +174,11 @@ describe('useFieldBrowserOptions', () => {
     const { result } = await renderUpdatedUseFieldBrowserOptions();
 
     const CreateFieldButton = result.current.createFieldButton!;
-    const { getByRole } = render(<CreateFieldButton onHide={mockOnHide} />, {
+    const { getByTestId } = render(<CreateFieldButton onHide={mockOnHide} />, {
       wrapper: TestProviders,
     });
 
-    getByRole('button').click();
+    getByTestId('create-field').click();
     expect(onSave).toBeDefined();
 
     const savedField = [{ name: 'newField' }] as DataViewField[];
@@ -272,13 +272,13 @@ describe('useFieldBrowserOptions', () => {
     const { result } = await renderUpdatedUseFieldBrowserOptions({ editorActionsRef });
 
     const CreateFieldButton = result!.current.createFieldButton!;
-    const { getByRole } = render(<CreateFieldButton onHide={mockOnHide} />, {
+    const { getByTestId } = render(<CreateFieldButton onHide={mockOnHide} />, {
       wrapper: TestProviders,
     });
 
     expect(editorActionsRef?.current).toBeNull();
 
-    getByRole('button').click();
+    getByTestId('create-field').click();
     await runAllPromises();
 
     expect(mockCloseEditor).not.toHaveBeenCalled();

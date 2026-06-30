@@ -11,7 +11,6 @@ import React from 'react';
 import { TestProviders } from '../../../../common/mock';
 import type { Props } from './field_selection';
 import { FieldSelection } from './field_selection';
-import { GROUP_BY_LABEL, GROUP_BY_TOP_LABEL } from './translations';
 
 jest.mock('react-router-dom', () => {
   const actual = jest.requireActual('react-router-dom');
@@ -34,7 +33,7 @@ describe('FieldSelection', () => {
       </TestProviders>
     );
 
-    expect(screen.getByRole('combobox', { name: GROUP_BY_LABEL })).toBeInTheDocument();
+    expect(screen.getByTestId('groupBy')).toBeInTheDocument();
   });
 
   test('it renders the (second) "Group by top" selection', () => {
@@ -44,7 +43,7 @@ describe('FieldSelection', () => {
       </TestProviders>
     );
 
-    expect(screen.getByRole('combobox', { name: GROUP_BY_TOP_LABEL })).toBeInTheDocument();
+    expect(screen.getByTestId('groupByTop')).toBeInTheDocument();
   });
 
   test('it renders the chart options context menu using the provided `uniqueQueryId`', () => {

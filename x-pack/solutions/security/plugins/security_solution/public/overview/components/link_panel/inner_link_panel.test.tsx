@@ -20,14 +20,14 @@ describe('InnerLinkPanel', () => {
   };
 
   it('renders expected children', () => {
-    render(
+    const { container } = render(
       <TestProviders>
         <InnerLinkPanel color="warning" {...defaultProps} />
       </TestProviders>
     );
 
     expect(screen.getByTestId('custom_test_subj')).toBeInTheDocument();
-    expect(screen.getByRole('button')).toBeInTheDocument();
+    expect(container.querySelector('button')).toBeInTheDocument();
     expect(screen.getByTestId('inner-link-panel-title')).toHaveTextContent(defaultProps.title);
   });
 

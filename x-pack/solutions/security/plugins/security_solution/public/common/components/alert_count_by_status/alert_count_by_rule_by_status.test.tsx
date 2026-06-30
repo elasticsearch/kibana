@@ -88,8 +88,8 @@ describe('AlertCountByRuleByStatus', () => {
   });
 
   it('should render the table columns', () => {
-    const { getAllByRole } = renderComponent();
-    const columnHeaders = getAllByRole('columnheader');
+    const { getAllByTestId } = renderComponent();
+    const columnHeaders = getAllByTestId(/tableHeaderCell/);
 
     expect(columnHeaders.at(0)).toHaveTextContent(COLUMN_HEADER_RULE_NAME);
     expect(columnHeaders.at(1)).toHaveTextContent(COLUMN_HEADER_COUNT);

@@ -33,14 +33,14 @@ describe('LinkPanel', () => {
   };
 
   it('renders expected children', () => {
-    render(
+    const { container } = render(
       <TestProviders>
         <LinkPanel {...defaultProps} />
       </TestProviders>
     );
 
     expect(screen.getByTestId('_custom_test_subj_')).toBeInTheDocument();
-    expect(screen.getByRole('table')).toBeInTheDocument();
+    expect(container.querySelector('.euiTable')).toBeInTheDocument();
     expect(screen.getByTestId('_test_button_')).toBeInTheDocument();
     expect(screen.getByTestId('_split_panel_')).toBeInTheDocument();
     expect(screen.getByTestId('_subtitle_')).toBeInTheDocument();

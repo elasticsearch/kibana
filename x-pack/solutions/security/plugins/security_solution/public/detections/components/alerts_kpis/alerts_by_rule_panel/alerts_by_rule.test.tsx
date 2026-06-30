@@ -33,28 +33,32 @@ describe('Alert by rule chart', () => {
   });
 
   test('should render the table correctly with data', () => {
-    const { queryAllByRole } = render(
+    const { container } = render(
       <TestProviders>
         <AlertsByRule data={parsedAlerts} isLoading={false} showCellActions={true} />
       </TestProviders>
     );
 
     parsedAlerts.forEach((_, i) => {
-      expect(queryAllByRole('row')[i + 1].textContent).toContain(parsedAlerts[i].rule);
-      expect(queryAllByRole('row')[i + 1].textContent).toContain(parsedAlerts[i].value.toString());
-      expect(queryAllByRole('row')[i + 1].children).toHaveLength(3);
+      expect(container.querySelectorAll('.euiTableRow')[i].textContent).toContain(
+        parsedAlerts[i].rule
+      );
+      expect(container.querySelectorAll('.euiTableRow')[i].textContent).toContain(
+        parsedAlerts[i].value.toString()
+      );
+      expect(container.querySelectorAll('.euiTableRow')[i].children).toHaveLength(3);
     });
   });
 
   test('should render the table without the third columns (for cell actions)', () => {
-    const { queryAllByRole } = render(
+    const { container } = render(
       <TestProviders>
         <AlertsByRule data={parsedAlerts} isLoading={false} showCellActions={false} />
       </TestProviders>
     );
 
     parsedAlerts.forEach((_, i) => {
-      expect(queryAllByRole('row')[i + 1].children).toHaveLength(2);
+      expect(container.querySelectorAll('.euiTableRow')[i].children).toHaveLength(2);
     });
   });
 });

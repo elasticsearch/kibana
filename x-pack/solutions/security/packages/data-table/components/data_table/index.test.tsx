@@ -256,7 +256,7 @@ describe('DataTable', () => {
     fireEvent.click(screen.getByTestId('dataGridColumnSelectorButton'));
 
     // `EuiDataGrid` renders switches for hiding in the `Columns` popover when `showColumnSelector.allowHide` is `true`
-    const switches = await screen.queryAllByRole('switch');
+    const switches = await screen.queryAllByTestId(/dataGridColumnSelectorToggleColumnVisibility-/);
 
     expect(switches.length).toBe(0); // no switches are rendered, because `allowHide` is `false`
   });

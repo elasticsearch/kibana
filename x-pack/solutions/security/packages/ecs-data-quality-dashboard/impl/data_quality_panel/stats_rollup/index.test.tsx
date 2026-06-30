@@ -125,9 +125,11 @@ describe('StatsRollup', () => {
         await userEvent.hover(screen.getByText(statLabelText));
 
         await waitFor(() =>
-          expect(screen.getByRole('tooltip')).toHaveTextContent(
-            patternTooltipText.replace('{pattern}', 'my-pattern')
-          )
+          expect(
+            screen
+              .getByText(patternTooltipText.replace('{pattern}', 'my-pattern'))
+              .closest('[role="tooltip"]')
+          ).toBeInTheDocument()
         );
       });
     });
@@ -151,7 +153,9 @@ describe('StatsRollup', () => {
         await userEvent.hover(screen.getByText(statLabelText));
 
         await waitFor(() =>
-          expect(screen.getByRole('tooltip')).toHaveTextContent(noPatternTooltipText)
+          expect(
+            screen.getByText(noPatternTooltipText).closest('[role="tooltip"]')
+          ).toBeInTheDocument()
         );
       });
     });

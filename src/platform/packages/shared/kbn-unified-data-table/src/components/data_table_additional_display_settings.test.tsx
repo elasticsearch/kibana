@@ -187,15 +187,17 @@ describe('UnifiedDataTableAdditionalDisplaySettings', () => {
         onChangeRowHeightLines: jest.fn(),
       });
 
-      expect(screen.getByLabelText('Body cell lines')).toBeVisible();
-      expect(screen.getByText('Custom')).toBeVisible();
-      expect(screen.getByText('Auto')).toBeVisible();
+      expect(screen.getByTestId('unifiedDataTableRowHeightSettings')).toBeVisible();
+      expect(
+        screen.getByTestId('unifiedDataTableRowHeightSettings_rowHeight_custom')
+      ).toBeVisible();
+      expect(screen.getByTestId('unifiedDataTableRowHeightSettings_rowHeight_auto')).toBeVisible();
     });
 
     it('should not render rowHeight if onChangeRowHeight and onChangeRowHeightLines are undefined', () => {
       renderDisplaySettings();
 
-      expect(screen.queryByLabelText('Body cell lines')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('unifiedDataTableRowHeightSettings')).not.toBeInTheDocument();
     });
 
     it('should call onChangeRowHeight and onChangeRowHeightLines when the rowHeight changes', async () => {
@@ -207,9 +209,9 @@ describe('UnifiedDataTableAdditionalDisplaySettings', () => {
         onChangeRowHeightLines,
       });
 
-      expect(screen.getByLabelText('Body cell lines')).toBeVisible();
+      expect(screen.getByTestId('unifiedDataTableRowHeightSettings')).toBeVisible();
 
-      const input = screen.getByRole('spinbutton');
+      const input = screen.getByTestId('unifiedDataTableRowHeightSettings_lineCountNumber');
 
       await userEvent.clear(input);
 
@@ -227,7 +229,7 @@ describe('UnifiedDataTableAdditionalDisplaySettings', () => {
 
       expect(onChangeRowHeightLines).toHaveBeenCalledWith(5, true);
 
-      await userEvent.click(screen.getByRole('button', { name: 'Auto' }));
+      await userEvent.click(screen.getByTestId('unifiedDataTableRowHeightSettings_rowHeight_auto'));
 
       expect(onChangeRowHeight).toHaveBeenCalledWith('auto');
     });
@@ -240,13 +242,15 @@ describe('UnifiedDataTableAdditionalDisplaySettings', () => {
         onChangeHeaderRowHeightLines: jest.fn(),
       });
 
-      expect(screen.getByLabelText('Max header cell lines')).toBeVisible();
+      expect(screen.getByTestId('unifiedDataTableHeaderRowHeightSettings')).toBeVisible();
     });
 
     it('should not render headerRowHeight if onChangeHeaderRowHeight and onChangeHeaderRowHeightLines are undefined', () => {
       renderDisplaySettings();
 
-      expect(screen.queryByLabelText('Max header cell lines')).not.toBeInTheDocument();
+      expect(
+        screen.queryByTestId('unifiedDataTableHeaderRowHeightSettings')
+      ).not.toBeInTheDocument();
     });
 
     it('should call onChangeHeaderRowHeight and onChangeHeaderRowHeightLines when the headerRowHeight changes', async () => {
@@ -258,9 +262,9 @@ describe('UnifiedDataTableAdditionalDisplaySettings', () => {
         onChangeHeaderRowHeightLines,
       });
 
-      expect(screen.getByLabelText('Max header cell lines')).toBeVisible();
+      expect(screen.getByTestId('unifiedDataTableHeaderRowHeightSettings')).toBeVisible();
 
-      const input = screen.getByRole('spinbutton');
+      const input = screen.getByTestId('unifiedDataTableHeaderRowHeightSettings_lineCountNumber');
       await userEvent.clear(input);
 
       rerender(
@@ -277,7 +281,9 @@ describe('UnifiedDataTableAdditionalDisplaySettings', () => {
 
       expect(onChangeHeaderRowHeightLines).toHaveBeenCalledWith(3, true);
 
-      await userEvent.click(screen.getByRole('button', { name: 'Auto' }));
+      await userEvent.click(
+        screen.getByTestId('unifiedDataTableHeaderRowHeightSettings_rowHeight_auto')
+      );
 
       expect(onChangeHeaderRowHeight).toHaveBeenCalledWith('auto');
     });

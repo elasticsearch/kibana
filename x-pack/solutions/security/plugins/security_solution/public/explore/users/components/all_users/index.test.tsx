@@ -38,7 +38,7 @@ describe('Users Table Component', () => {
   describe('rendering', () => {
     test('it renders the users table', () => {
       const userName = 'testUser';
-      const { getByTestId, getAllByRole, getByText } = render(
+      const { getByTestId, getAllByTestId, getByText } = render(
         <TestProviders>
           <UsersTable
             users={[
@@ -61,7 +61,7 @@ describe('Users Table Component', () => {
       );
 
       expect(getByTestId('table-allUsers-loading-false')).toBeInTheDocument();
-      expect(getAllByRole('columnheader').length).toBe(4);
+      expect(getAllByTestId(/tableHeaderCell_/).length).toBe(4);
       expect(getByText(userName)).toBeInTheDocument();
     });
 
@@ -92,7 +92,7 @@ describe('Users Table Component', () => {
     test('it renders "Host Risk classification" column when "isPlatinumOrTrialLicense" is truthy', () => {
       mockUseMlCapabilities.mockReturnValue({ isPlatinumOrTrialLicense: true });
 
-      const { getAllByRole, getByText } = render(
+      const { getAllByTestId, getByText } = render(
         <TestProviders>
           <UsersTable
             users={[
@@ -119,14 +119,14 @@ describe('Users Table Component', () => {
         </TestProviders>
       );
 
-      expect(getAllByRole('columnheader').length).toBe(5);
+      expect(getAllByTestId(/tableHeaderCell_/).length).toBe(5);
       expect(getByText('Critical')).toBeInTheDocument();
     });
 
     test("it doesn't renders 'Host Risk classfication' column when 'isPlatinumOrTrialLicense' is falsy", () => {
       mockUseMlCapabilities.mockReturnValue({ isPlatinumOrTrialLicense: false });
 
-      const { getAllByRole, queryByText } = render(
+      const { getAllByTestId, queryByText } = render(
         <TestProviders>
           <UsersTable
             users={[
@@ -153,7 +153,7 @@ describe('Users Table Component', () => {
         </TestProviders>
       );
 
-      expect(getAllByRole('columnheader').length).toBe(4);
+      expect(getAllByTestId(/tableHeaderCell_/).length).toBe(4);
       expect(queryByText('Critical')).not.toBeInTheDocument();
     });
 

@@ -64,7 +64,7 @@ describe('Dashboards table', () => {
   it('should filter two rows using the search box', () => {
     const result = renderDashboardTable();
 
-    const input = result.getByRole('searchbox');
+    const input = result.getByPlaceholderText('Search...');
     fireEvent.change(input, { target: { value: 'dashboard' } });
 
     expect(result.queryAllByTestId('dashboardTableTitleCell')).toHaveLength(2);
@@ -78,7 +78,7 @@ describe('Dashboards table', () => {
   it('should filter only one row using the search box', () => {
     const result = renderDashboardTable();
 
-    const input = result.getByRole('searchbox');
+    const input = result.getByPlaceholderText('Search...');
     fireEvent.change(input, { target: { value: DASHBOARD_TABLE_ITEMS[0].title } });
 
     expect(result.queryAllByTestId('dashboardTableTitleCell')).toHaveLength(1);
@@ -90,7 +90,7 @@ describe('Dashboards table', () => {
   it('should filter by description using the search box', () => {
     const result = renderDashboardTable();
 
-    const input = result.getByRole('searchbox');
+    const input = result.getByPlaceholderText('Search...');
     fireEvent.change(input, { target: { value: DASHBOARD_TABLE_ITEMS[0].description } });
 
     expect(result.queryAllByTestId('dashboardTableTitleCell')).toHaveLength(1);
@@ -101,7 +101,7 @@ describe('Dashboards table', () => {
   it('should filter with case insensitive text using the search box', () => {
     const result = renderDashboardTable();
 
-    const input = result.getByRole('searchbox');
+    const input = result.getByPlaceholderText('Search...');
     fireEvent.change(input, { target: { value: DASHBOARD_TABLE_ITEMS[0].title.toUpperCase() } });
 
     expect(result.queryAllByTestId('dashboardTableTitleCell')).toHaveLength(1);
@@ -112,7 +112,7 @@ describe('Dashboards table', () => {
   it('should filter out special characters except hyphens & underscores', () => {
     const result = renderDashboardTable();
 
-    const input = result.getByRole('searchbox');
+    const input = result.getByPlaceholderText('Search...');
     fireEvent.change(input, { target: { value: '"_title"' } });
 
     expect(result.queryAllByTestId('dashboardTableTitleCell')).toHaveLength(1);

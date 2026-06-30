@@ -91,7 +91,7 @@ describe('OnboardingCardPanel Component', () => {
   });
 
   it('displays the correct button icon based on isExpanded prop', () => {
-    const { rerender } = render(
+    const { container, rerender } = render(
       <OnboardingCardPanel {...defaultProps} isExpanded={false}>
         <div>{'Test Card Content'}</div>
       </OnboardingCardPanel>,
@@ -99,7 +99,9 @@ describe('OnboardingCardPanel Component', () => {
     );
 
     // Check the button icon when card is not expanded
-    const buttonIcon = screen.getByLabelText(EXPAND_CARD_BUTTON_LABEL('Test Card'));
+    const buttonIcon = container.querySelector(
+      `[aria-label='${EXPAND_CARD_BUTTON_LABEL('Test Card')}']`
+    );
     expect(buttonIcon).toHaveAttribute('aria-expanded', 'false');
     expect(buttonIcon).toHaveClass('euiButtonIcon'); // EuiButtonIcon should be rendered
 

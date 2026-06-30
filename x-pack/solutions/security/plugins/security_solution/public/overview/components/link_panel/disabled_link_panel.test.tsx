@@ -35,7 +35,10 @@ describe('DisabledLinkPanel', () => {
     expect(screen.getByTestId('_test_prefix_-enable-module-button')).toHaveTextContent(
       defaultProps.buttonCopy
     );
-    expect(screen.getByRole('link')).toHaveAttribute('href', defaultProps.docLink);
+    expect(screen.getByTestId('_test_prefix_-enable-module-button')).toHaveAttribute(
+      'href',
+      defaultProps.docLink
+    );
   });
 
   it('renders more buttons', () => {

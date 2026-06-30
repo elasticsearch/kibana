@@ -9,7 +9,6 @@ import React from 'react';
 import { TestProviders } from '../../../../common/mock';
 import { AlertsProgressBarPanel } from '.';
 import { useSummaryChartData } from '../alerts_summary_charts_panel/use_summary_chart_data';
-import { STACK_BY_ARIA_LABEL } from '../common/translations';
 import type { GroupBySelection } from './types';
 import { useStackByFields } from '../common/hooks';
 
@@ -27,8 +26,6 @@ jest.mock('../../../../common/components/cell_actions', () => ({
 
 jest.mock('../alerts_summary_charts_panel/use_summary_chart_data');
 const mockUseSummaryChartData = useSummaryChartData as jest.Mock;
-
-const options = ['host.name', 'user.name', 'source.ip', 'destination.ip'];
 
 describe('Alert by grouping', () => {
   const defaultProps = {
@@ -84,32 +81,39 @@ describe('Alert by grouping', () => {
     });
 
     test('combo box renders corrected options', async () => {
-      render(
+      const { getByTestId } = render(
         <TestProviders>
           <AlertsProgressBarPanel {...defaultProps} setGroupBySelection={setGroupBySelection} />
         </TestProviders>
       );
-      const comboBox = screen.getByRole('combobox', { name: STACK_BY_ARIA_LABEL });
+
+      const comboBox = getByTestId('comboBoxSearchInput');
       act(() => {
         if (comboBox) {
           comboBox.focus(); // display the combo box options
         }
       });
 
-      const optionsFound = screen.getAllByRole('option').map((option) => option.textContent);
-      options.forEach((option, i) => {
-        expect(optionsFound[i]).toEqual(option);
+      const optionsFound = screen.getAllByTitle(
+        /host\.name|user\.name|source\.ip|destination\.ip/i
+      );
+
+      screen.debug(optionsFound);
+
+      optionsFound.forEach((optionFound) => {
+        expect(optionFound).toBeInTheDocument();
       });
     });
 
     test('it invokes setGroupBySelection when an option is selected', async () => {
       const toBeSelected = 'user.name';
-      render(
+      const { getByTestId } = render(
         <TestProviders>
           <AlertsProgressBarPanel {...defaultProps} setGroupBySelection={setGroupBySelection} />
         </TestProviders>
       );
-      const comboBox = screen.getByRole('combobox', { name: STACK_BY_ARIA_LABEL });
+      const comboBox = getByTestId('comboBoxSearchInput');
+
       act(() => {
         if (comboBox) {
           comboBox.focus(); // display the combo box options

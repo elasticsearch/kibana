@@ -10,8 +10,6 @@ import React from 'react';
 
 import { useAlertsLocalStorage } from './alerts_local_storage';
 import type { Status } from '../../../../../common/api/detection_engine';
-import { RESET_GROUP_BY_FIELDS } from './chart_settings_popover/configurations/default/translations';
-import { CHART_SETTINGS_POPOVER_ARIA_LABEL } from './chart_settings_popover/translations';
 import { TestProviders } from '../../../../common/mock';
 import { ChartPanels } from '.';
 import { useQueryToggle } from '../../../../common/containers/query_toggle';
@@ -137,10 +135,10 @@ const defaultProps = {
 };
 
 const resetGroupByFields = () => {
-  const menuButton = screen.getByRole('button', { name: CHART_SETTINGS_POPOVER_ARIA_LABEL });
+  const menuButton = screen.getByTestId('chart-settings-popover-button');
   fireEvent.click(menuButton);
 
-  const resetMenuItem = screen.getByRole('menuitem', { name: RESET_GROUP_BY_FIELDS });
+  const resetMenuItem = screen.getByTestId('reset-group-by');
   fireEvent.click(resetMenuItem);
 };
 

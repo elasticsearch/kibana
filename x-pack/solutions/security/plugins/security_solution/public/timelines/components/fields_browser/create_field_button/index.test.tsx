@@ -48,22 +48,22 @@ describe('useCreateFieldButton', () => {
     const { result } = renderUseCreateFieldButton();
 
     const CreateFieldButton = result.current!;
-    const { getByRole } = render(<CreateFieldButton onHide={mockOnHide} />, {
+    const { getByTestId } = render(<CreateFieldButton onHide={mockOnHide} />, {
       wrapper: TestProviders,
     });
 
-    expect(getByRole('button')).toBeInTheDocument();
+    expect(getByTestId('create-field')).toBeInTheDocument();
   });
 
   it('should call openFieldEditor and hide the modal when button clicked', async () => {
     const { result } = renderUseCreateFieldButton();
 
     const CreateFieldButton = result.current!;
-    const { getByRole } = render(<CreateFieldButton onHide={mockOnHide} />, {
+    const { getByTestId } = render(<CreateFieldButton onHide={mockOnHide} />, {
       wrapper: TestProviders,
     });
 
-    getByRole('button').click();
+    getByTestId('create-field').click();
     expect(mockOpenFieldEditor).toHaveBeenCalled();
     expect(mockOnHide).toHaveBeenCalled();
   });

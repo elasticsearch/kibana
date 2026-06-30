@@ -121,7 +121,7 @@ describe('RuleAlertsTable', () => {
       </TestProviders>
     );
 
-    const columnHeaders = result.getAllByRole('columnheader');
+    const columnHeaders = result.getAllByTestId(/tableHeaderCell_/);
     expect(columnHeaders.at(0)).toHaveTextContent('Rule name');
     expect(columnHeaders.at(1)).toHaveTextContent('Last alert');
     expect(columnHeaders.at(2)).toHaveTextContent('Alert count');

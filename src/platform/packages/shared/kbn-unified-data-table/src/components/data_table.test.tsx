@@ -572,9 +572,7 @@ describe('UnifiedDataTable', () => {
     const sortByColumn = async (name: string) => {
       await userEvent.click(getColumnActions(name));
       await waitForEuiPopoverOpen();
-      // Column sort button incorrectly renders as "Sort " instead
-      // of "Sort Z-A" in Jest tests, so we need to find it by index
-      await userEvent.click(screen.getAllByRole('button', { name: /Sort/ })[2]);
+      await userEvent.click(screen.getByTitle(/Sort\s+Z-A/im).closest('button')!);
     };
 
     const copySelectedDocsAsText = async () => {

@@ -53,13 +53,13 @@ describe('ConnectorSetup', () => {
     expect(mockActionTypeRegistry.get).toHaveBeenCalledWith('testType1');
     expect(mockActionTypeRegistry.get).toHaveBeenCalledWith('testType2');
 
-    expect(screen.getByRole('button', { name: 'AI service provider' })).toBeInTheDocument();
+    expect(screen.getByTestId('createConnectorButton')).toBeInTheDocument();
   });
 
   it('opens the modal when the button is clicked', async () => {
     render(<ConnectorSetup actionTypes={mockActionTypes} onConnectorSaved={jest.fn()} />);
 
-    await userEvent.click(screen.getByRole('button', { name: 'AI service provider' }));
+    await userEvent.click(screen.getByTestId('createConnectorButton'));
 
     expect(screen.getByTestId('addConnectorModal')).toBeInTheDocument();
   });
@@ -69,7 +69,7 @@ describe('ConnectorSetup', () => {
     render(
       <ConnectorSetup actionTypes={mockActionTypes} onConnectorSaved={mockOnConnectorSaved} />
     );
-    await userEvent.click(screen.getByRole('button', { name: 'AI service provider' }));
+    await userEvent.click(screen.getByTestId('createConnectorButton'));
 
     mockOnConnectorSaved({ id: '1', name: 'New Connector' });
 

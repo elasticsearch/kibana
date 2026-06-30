@@ -32,7 +32,7 @@ describe('ExtraActionsPopOver', () => {
     const executeAction = jest.fn();
     const closePopOver = jest.fn();
     const action = { ...makeAction('test-action'), execute: executeAction };
-    const { getByLabelText } = render(
+    const { getByTestId } = render(
       <ExtraActionsPopOver
         {...defaultProps}
         isOpen={true}
@@ -42,7 +42,7 @@ describe('ExtraActionsPopOver', () => {
     );
 
     await act(async () => {
-      await fireEvent.click(getByLabelText('test-action'));
+      await fireEvent.click(getByTestId('actionItem-test-action'));
     });
 
     expect(executeAction).toHaveBeenCalled();
@@ -66,7 +66,7 @@ describe('ExtraActionsPopOverWithAnchor', () => {
     const executeAction = jest.fn();
     const closePopOver = jest.fn();
     const action = { ...makeAction('test-action'), execute: executeAction };
-    const { getByLabelText } = render(
+    const { getByTestId } = render(
       <ExtraActionsPopOverWithAnchor
         {...defaultProps}
         isOpen={true}
@@ -76,7 +76,7 @@ describe('ExtraActionsPopOverWithAnchor', () => {
       />
     );
 
-    fireEvent.click(getByLabelText('test-action'));
+    fireEvent.click(getByTestId('actionItem-test-action'));
 
     expect(executeAction).toHaveBeenCalled();
     expect(closePopOver).toHaveBeenCalled();

@@ -49,13 +49,13 @@ describe('AttackDiscoveryWidget', () => {
       data: null,
     });
 
-    render(
+    const { container } = render(
       <TestProviders>
         <AttackDiscoveryWidget alertId={'123'} />
       </TestProviders>
     );
 
-    expect(screen.getByRole('progressbar')).toBeInTheDocument();
+    expect(container.querySelector('[role="progressbar"]')).toBeInTheDocument();
   });
 
   it('should render no results message when no data is available', () => {

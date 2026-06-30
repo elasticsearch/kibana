@@ -51,7 +51,7 @@ describe('<IndicatorsBarChartWrapper />', () => {
 
   describe('when loading for the first time', () => {
     it('should render progress indicator', () => {
-      const { queryByRole, getByTestId } = render(
+      const { container, getByTestId } = render(
         <TestProvidersComponent>
           <ScreenReaderAnnouncementsProvider>
             <IndicatorsBarChartWrapper
@@ -67,7 +67,7 @@ describe('<IndicatorsBarChartWrapper />', () => {
         </TestProvidersComponent>
       );
 
-      expect(queryByRole('progressbar')).toBeInTheDocument();
+      expect(container.querySelector('[role="progressbar"]')).toBeInTheDocument();
       expect(getByTestId(LOADING_TEST_ID)).toBeInTheDocument();
     });
   });

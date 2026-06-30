@@ -59,7 +59,7 @@ const renderComparisonControls = ({
   };
   render(<Wrapper />);
   const getComparisonSettingsButton = () =>
-    screen.getByRole('button', { name: 'Comparison settings' });
+    screen.getByTestId('unifiedDataTableComparisonSettings');
   const getShowDiffSwitch = () => screen.getByTestId('unifiedDataTableShowDiffSwitch');
   const getDiffModeEntry = (mode: DocumentDiffMode) =>
     screen.getByTestId(`unifiedDataTableDiffMode-${mode}`);
@@ -80,19 +80,19 @@ const renderComparisonControls = ({
     clickShowDiffSwitch: async () =>
       await userEvent.click(getShowDiffSwitch(), { pointerEventsCheck: 0 }),
     clickDiffModeFullValueButton: async () =>
-      await userEvent.click(screen.getByRole('button', { name: 'Full value' }), {
+      await userEvent.click(getDiffModeEntry('basic'), {
         pointerEventsCheck: 0,
       }),
     clickDiffModeByCharacterButton: async () =>
-      await userEvent.click(screen.getByRole('button', { name: 'By character' }), {
+      await userEvent.click(getDiffModeEntry('chars'), {
         pointerEventsCheck: 0,
       }),
     clickDiffModeByWordButton: async () =>
-      await userEvent.click(screen.getByRole('button', { name: 'By word' }), {
+      await userEvent.click(getDiffModeEntry('words'), {
         pointerEventsCheck: 0,
       }),
     clickDiffModeByLineButton: async () =>
-      await userEvent.click(screen.getByRole('button', { name: 'By line' }), {
+      await userEvent.click(getDiffModeEntry('lines'), {
         pointerEventsCheck: 0,
       }),
     getDiffModeEntry,
@@ -111,7 +111,7 @@ const renderComparisonControls = ({
     getShowDiffDecorationsSwitch,
     clickShowDiffDecorationsSwitch: async () =>
       await userEvent.click(getShowDiffDecorationsSwitch(), { pointerEventsCheck: 0 }),
-    getExitComparisonButton: () => screen.getByRole('button', { name: 'Exit comparison mode' }),
+    getExitComparisonButton: () => screen.getByTestId('unifiedDataTableExitDocumentComparison'),
     isCompareActive: () => screen.queryByText('Comparison active') !== null,
   };
 };

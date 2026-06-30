@@ -87,6 +87,8 @@ const providerB: DataProvider = {
   },
 };
 
+const getButton = () => screen.getByTestId('add-to-timeline');
+
 describe('add to timeline', () => {
   beforeEach(() => {
     jest.resetAllMocks();
@@ -104,11 +106,11 @@ describe('add to timeline', () => {
     });
 
     test('it renders the button icon', () => {
-      expect(screen.getByRole('button')).toHaveClass('timelines__hoverActionButton');
+      expect(getButton()).toHaveClass('timelines__hoverActionButton');
     });
 
     test('it has the expected aria label', () => {
-      expect(screen.getByLabelText(i18n.ADD_TO_TIMELINE)).toBeInTheDocument();
+      expect(getButton()).toHaveAttribute('aria-label', i18n.ADD_TO_TIMELINE);
     });
   });
 
@@ -127,11 +129,11 @@ describe('add to timeline', () => {
     });
 
     test('it renders the component provided via the `Component` prop', () => {
-      expect(screen.getByRole('button')).toHaveClass('euiButtonEmpty');
+      expect(getButton()).toHaveClass('euiButtonEmpty');
     });
 
     test('it has the expected aria label', () => {
-      expect(screen.getByLabelText(i18n.ADD_TO_TIMELINE)).toBeInTheDocument();
+      expect(getButton()).toHaveAttribute('aria-label', i18n.ADD_TO_TIMELINE);
     });
   });
 
@@ -179,7 +181,7 @@ describe('add to timeline', () => {
         </TestProviders>
       );
 
-      fireEvent.click(screen.getByRole('button'));
+      fireEvent.click(getButton());
 
       expect(mockStartDragToTimeline).toBeCalled();
     });
@@ -191,7 +193,7 @@ describe('add to timeline', () => {
         </TestProviders>
       );
 
-      fireEvent.click(screen.getByRole('button'));
+      fireEvent.click(getButton());
 
       expect(mockStartDragToTimeline).not.toBeCalled();
     });
@@ -208,7 +210,7 @@ describe('add to timeline', () => {
         </TestProviders>
       );
 
-      fireEvent.click(screen.getByRole('button'));
+      fireEvent.click(getButton());
 
       expect(mockDispatch).toHaveBeenCalledTimes(1);
 
@@ -243,7 +245,7 @@ describe('add to timeline', () => {
         </TestProviders>
       );
 
-      fireEvent.click(screen.getByRole('button'));
+      fireEvent.click(getButton());
 
       expect(mockDispatch).toHaveBeenCalledTimes(2);
 
@@ -280,7 +282,7 @@ describe('add to timeline', () => {
         </TestProviders>
       );
 
-      fireEvent.click(screen.getByRole('button'));
+      fireEvent.click(getButton());
 
       expect(onClick).toBeCalled();
     });
@@ -437,7 +439,7 @@ describe('add to timeline', () => {
         </TestProviders>
       );
 
-      fireEvent.click(screen.getByRole('button'));
+      fireEvent.click(getButton());
 
       const message: SuccessMessageProps = {
         children: i18n.ADDED_TO_TIMELINE_OR_TEMPLATE_MESSAGE(providerA.name, true),
@@ -459,7 +461,7 @@ describe('add to timeline', () => {
         </TestProviders>
       );
 
-      fireEvent.click(screen.getByRole('button'));
+      fireEvent.click(getButton());
 
       const message: SuccessMessageProps = {
         children: i18n.ADDED_TO_TIMELINE_OR_TEMPLATE_MESSAGE(providerA.name, false),

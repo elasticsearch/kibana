@@ -47,7 +47,7 @@ describe('InlineActions', () => {
       makeAction('action-5'),
     ]);
     const getActions = () => getActionsPromise;
-    const { queryAllByRole } = render(
+    const { getAllByTestId } = render(
       <CellActionsProvider getTriggerCompatibleActions={getActions}>
         <InlineActions {...defaultProps} />
       </CellActionsProvider>
@@ -57,6 +57,6 @@ describe('InlineActions', () => {
       await getActionsPromise;
     });
 
-    expect(queryAllByRole('button').length).toBe(5);
+    expect(getAllByTestId(/actionItem-action-/).length).toBe(5);
   });
 });

@@ -155,7 +155,7 @@ describe('LegacyHistoricalCheckFields', () => {
 
         expect(wrapper).toBeInTheDocument();
 
-        const addToNewCase = screen.getByLabelText('Add to new case');
+        const addToNewCase = screen.getByTestId('addToNewCase');
         expect(addToNewCase).toBeInTheDocument();
         await act(async () => userEvent.click(addToNewCase));
         expect(openCreateCaseFlyout).toHaveBeenCalledWith({
@@ -163,7 +163,7 @@ describe('LegacyHistoricalCheckFields', () => {
           headerContent: expect.anything(),
         });
 
-        const copyToClipboardElement = screen.getByLabelText('Copy to clipboard');
+        const copyToClipboardElement = screen.getByTestId('copyToClipboard');
         expect(copyToClipboardElement).toBeInTheDocument();
         await act(async () => userEvent.click(copyToClipboardElement));
         expect(copyToClipboard).toHaveBeenCalledWith(markdownComments.join('\n'));

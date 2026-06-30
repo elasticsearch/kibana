@@ -258,10 +258,11 @@ describe('<HostDetails />', () => {
       });
       mockUseHasSecurityCapability.mockReturnValue(true);
 
-      const { queryAllByRole } = renderHostDetails(mockContextValue);
-      expect(queryAllByRole('columnheader').length).toBe(3);
-      expect(queryAllByRole('row')[1].textContent).toContain('test user');
-      expect(queryAllByRole('row')[1].textContent).toContain('Low');
+      const { container, queryAllByTestId } = renderHostDetails(mockContextValue);
+      expect(queryAllByTestId(/tableHeaderCell_/).length).toBe(3);
+      expect(container.querySelectorAll('.euiTableRow')[0].textContent).toContain('test user');
+      expect(container.querySelectorAll('.euiTableRow')[0].textContent).toContain('100.XXX.XXX');
+      expect(container.querySelectorAll('.euiTableRow')[0].textContent).toContain('Low');
     });
 
     it('should not render host risk score column when user has no entity-risk capability', () => {
@@ -271,13 +272,13 @@ describe('<HostDetails />', () => {
       });
       mockUseHasSecurityCapability.mockReturnValue(false);
 
-      const { queryAllByRole } = renderHostDetails(mockContextValue);
-      expect(queryAllByRole('columnheader').length).toBe(2);
+      const { queryAllByTestId } = renderHostDetails(mockContextValue);
+      expect(queryAllByTestId(/tableHeaderCell_/).length).toBe(2);
     });
 
     it('should not render host risk score column when license is not valid', () => {
-      const { queryAllByRole } = renderHostDetails(mockContextValue);
-      expect(queryAllByRole('columnheader').length).toBe(2);
+      const { queryAllByTestId } = renderHostDetails(mockContextValue);
+      expect(queryAllByTestId(/tableHeaderCell_/).length).toBe(2);
     });
 
     it('should render empty table if no related user is returned', () => {

@@ -40,7 +40,7 @@ describe('MoreReputationLinksContainer', () => {
       />
     );
 
-    expect(screen.getByRole('link')).toHaveTextContent('item6');
+    expect(screen.getByText('item6')).toBeInTheDocument();
   });
 
   test('it should render all the items when overflowIndexStart is zero', () => {
@@ -53,7 +53,7 @@ describe('MoreReputationLinksContainer', () => {
       />
     );
 
-    expect(screen.getAllByRole('link')).toHaveLength(6);
+    expect(screen.getAllByText(/item\d/)).toHaveLength(6);
   });
 
   test('it should have the eui-yScroll to enable scrolling', () => {
@@ -111,7 +111,7 @@ describe('ReputationLinksOverflow', () => {
       </TestProviders>
     );
 
-    expect(wrapper.getByRole('button')).toHaveTextContent('+1 More');
+    expect(wrapper.getByText('+1 More')).toBeInTheDocument();
     expect(wrapper.queryByTestId('more-container')).toBeNull();
   });
 
@@ -126,7 +126,7 @@ describe('ReputationLinksOverflow', () => {
         />
       </TestProviders>
     );
-    fireEvent.click(wrapper.getByRole('button'));
+    fireEvent.click(wrapper.getByText('+1 More'));
 
     expect(wrapper.queryByTestId('more-container')).toHaveTextContent('item6');
   });

@@ -57,8 +57,8 @@ describe('MapToolTipComponent', () => {
   });
 
   it('shows a loading spinner initially', () => {
-    renderComponent();
-    expect(screen.getByRole('progressbar')).toBeInTheDocument();
+    const { container } = renderComponent();
+    expect(container.querySelector('[role="progressbar"]')).toBeInTheDocument();
   });
 
   it('displays an error message when isError is true', async () => {
