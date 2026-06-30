@@ -18,6 +18,7 @@ import { CaseViewActivity } from './case_view_activity';
 import { CaseViewSimilarCases } from '../../../case_view/components/case_view_similar_cases';
 import { CaseViewAttachments } from '../../../case_view/components/case_view_attachments';
 import { CaseViewSidebar } from './case_view_sidebar';
+import { SidebarProvider, useSidebar } from './sidebar_context';
 import { SavedObjectInAppUrlsProvider } from '../../../attachments/common/saved_object/saved_object_in_app_urls_context';
 import type { OnUpdateFields } from '../../../case_view/types';
 
@@ -28,7 +29,17 @@ interface CaseViewTabContentProps {
   onUpdateField: (args: OnUpdateFields) => void;
 }
 
-export const CaseViewTabContent: FC<CaseViewTabContentProps> = ({
+export const CaseViewTabContent: FC<CaseViewTabContentProps> = (props) => {
+  return (
+    <SidebarProvider>
+      <CaseViewTabContentInner {...props} />
+    </SidebarProvider>
+  );
+};
+
+CaseViewTabContent.displayName = 'CaseViewTabContent';
+
+const CaseViewTabContentInner: FC<CaseViewTabContentProps> = ({
   caseData,
   searchTerm,
   onSearch,
@@ -44,14 +55,17 @@ export const CaseViewTabContent: FC<CaseViewTabContentProps> = ({
       ? rawTabId
       : CASE_VIEW_PAGE_TABS.ACTIVITY;
 
+  const { isSidebarOpen } = useSidebar();
+
   return (
     <SavedObjectInAppUrlsProvider caseData={caseData}>
       <CaseViewTabs caseData={caseData} activeTab={activeTabId} searchTerm={searchTerm} />
       <EuiFlexGroup data-test-subj={`case-view-tab-content-${activeTabId}`}>
         <EuiFlexItem
-          grow={6}
+          grow={isSidebarOpen ? 6 : true}
           css={css`
-            max-width: 75%;
+            max-width: ${isSidebarOpen ? '75%' : '100%'};
+            transition: max-width 300ms ease;
           `}
         >
           {activeTabId === CASE_VIEW_PAGE_TABS.ACTIVITY && <CaseViewActivity caseData={caseData} />}
@@ -67,10 +81,10 @@ export const CaseViewTabContent: FC<CaseViewTabContentProps> = ({
             <CaseViewSimilarCases caseData={caseData} />
           )}
         </EuiFlexItem>
-        <CaseViewSidebar caseData={caseData} />
+        {isSidebarOpen && <CaseViewSidebar caseData={caseData} />}
       </EuiFlexGroup>
     </SavedObjectInAppUrlsProvider>
   );
 };
 
-CaseViewTabContent.displayName = 'CaseViewTabContent';
+CaseViewTabContentInner.displayName = 'CaseViewTabContentInner';

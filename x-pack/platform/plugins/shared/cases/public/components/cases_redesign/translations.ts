@@ -58,3 +58,11 @@ export const EDIT_CASE_NAME_ARIA = i18n.translate(
     defaultMessage: 'Edit case name',
   }
 );
+
+export const SHOW_FIELDS = i18n.translate('xpack.cases.casesRedesign.details.showFields', {
+  defaultMessage: 'Show fields',
+});
+
+export const HIDE_FIELDS = i18n.translate('xpack.cases.casesRedesign.details.hideFields', {
+  defaultMessage: 'Hide fields',
+});

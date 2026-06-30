@@ -29,6 +29,9 @@ jest.mock('../../../case_view/components/case_view_similar_cases', () => ({
 jest.mock('./case_view_sidebar', () => ({
   CaseViewSidebar: () => <div data-test-subj="case-view-page-sidebar" />,
 }));
+jest.mock('./sidebar_toggle_button', () => ({
+  SidebarToggleButton: () => <div data-test-subj="case-view-sidebar-toggle" />,
+}));
 jest.mock('../../../case_view/case_view_tabs', () => ({
   CaseViewTabs: () => <div data-test-subj="case-view-tabs" />,
 }));
@@ -129,5 +132,14 @@ describe('CaseViewTabContent', () => {
 
     expect(await screen.findByTestId('case-view-attachments')).toBeInTheDocument();
     expect(screen.getByTestId('case-view-page-sidebar')).toBeInTheDocument();
+  });
+
+  it('hides the sidebar when localStorage has sidebarOpen set to false', async () => {
+    localStorage.setItem(`${basicCase.owner}.cases.caseView.sidebarOpen`, JSON.stringify(false));
+
+    renderWithTestingProviders(<CaseViewTabContent {...defaultProps} />);
+
+    await screen.findByTestId(`case-view-tab-content-${CASE_VIEW_PAGE_TABS.ACTIVITY}`);
+    expect(screen.queryByTestId('case-view-page-sidebar')).not.toBeInTheDocument();
   });
 });

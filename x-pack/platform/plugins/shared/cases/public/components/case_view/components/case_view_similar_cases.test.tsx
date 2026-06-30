@@ -14,6 +14,11 @@ import { alertCommentWithIndices, basicCase } from '../../../containers/mock';
 import { CaseViewSimilarCases } from './case_view_similar_cases';
 import { renderWithTestingProviders } from '../../../common/mock';
 
+jest.mock('../../../common/lib/kibana');
+jest.mock('../../cases_redesign/case_view/components/sidebar_toggle_button', () => ({
+  SidebarToggleButton: () => <div data-test-subj="case-view-sidebar-toggle" />,
+}));
+
 const caseData: CaseUI = {
   ...basicCase,
   comments: [...basicCase.comments, alertCommentWithIndices],
@@ -29,5 +34,23 @@ describe('Case View Page similar cases tab', () => {
     renderWithTestingProviders(<CaseViewSimilarCases caseData={caseData} />);
 
     expect(await screen.findByTestId('similar-cases-table')).toBeInTheDocument();
+  });
+
+  it('does not render the sidebar toggle button when redesign is disabled', async () => {
+    renderWithTestingProviders(<CaseViewSimilarCases caseData={caseData} />);
+
+    await screen.findByTestId('similar-cases-table');
+    expect(screen.queryByTestId('case-view-sidebar-toggle')).not.toBeInTheDocument();
+  });
+
+  it('renders the sidebar toggle button when redesign is enabled', async () => {
+    const { KibanaServices } = jest.requireMock('../../../common/lib/kibana') as {
+      KibanaServices: { getConfig: jest.Mock };
+    };
+    KibanaServices.getConfig.mockReturnValueOnce({ casesRedesign: { details: true } });
+
+    renderWithTestingProviders(<CaseViewSimilarCases caseData={caseData} />);
+
+    expect(await screen.findByTestId('case-view-sidebar-toggle')).toBeInTheDocument();
   });
 });

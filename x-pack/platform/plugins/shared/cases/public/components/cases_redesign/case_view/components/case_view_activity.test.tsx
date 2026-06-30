@@ -53,6 +53,9 @@ jest.mock('../../../../containers/use_post_push_to_service');
 jest.mock('../../../user_actions/timestamp', () => ({
   UserActionTimestamp: () => <></>,
 }));
+jest.mock('./sidebar_toggle_button', () => ({
+  SidebarToggleButton: () => <div data-test-subj="case-view-sidebar-toggle" />,
+}));
 jest.mock('../../../../common/navigation/hooks');
 jest.mock('../../../../containers/use_get_action_license');
 jest.mock('../../../../containers/use_get_tags');

@@ -24,7 +24,7 @@ import type {
   UserActivityParams,
   UserActivitySortOrder,
 } from '../../../user_actions_activity_bar/types';
-import { UserActionsActivityBar } from '../../../user_actions_activity_bar';
+import { ActivityFilterBar } from './activity_filter_bar';
 import { parseCaseUsers } from '../../../utils';
 import { useStatusAction } from '../../../actions/status/use_status_action';
 import { useRefreshCaseViewPage } from '../../../case_view/use_on_refresh_case_view_page';
@@ -115,18 +115,17 @@ export const CaseViewActivity = ({ caseData }: { caseData: CaseUI }) => {
   return (
     <>
       <EuiSpacer size="s" />
-      <Description
-        isLoadingDescription={isLoadingDescription}
-        caseData={caseData}
-        onUpdateField={onUpdateField}
-      />
-      <EuiSpacer size="l" />
-      <EuiFlexItem grow={false}>
-        <UserActionsActivityBar
-          onUserActionsActivityChanged={handleUserActionsActivityChanged}
+      <EuiFlexItem grow={6}>
+        <ActivityFilterBar
           params={userActivityQueryParams}
           userActionsStats={userActionsStats}
           isLoading={isLoadingUserActionsStats}
+          onUserActionsActivityChanged={handleUserActionsActivityChanged}
+        />
+        <Description
+          isLoadingDescription={isLoadingDescription}
+          caseData={caseData}
+          onUpdateField={onUpdateField}
         />
       </EuiFlexItem>
       <EuiSpacer size="l" />
