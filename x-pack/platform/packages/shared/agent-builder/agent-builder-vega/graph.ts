@@ -10,7 +10,8 @@ import type { EsqlEsqlColumnInfo } from '@elastic/elasticsearch/lib/api/types';
 import type { ModelProvider, ToolEventEmitter } from '@kbn/agent-builder-server';
 import type { Logger } from '@kbn/logging';
 import type { IScopedClusterClient } from '@kbn/core-elasticsearch-server';
-import { generateEsql, executeEsql, buildTimeRangeParams } from '@kbn/agent-builder-genai-utils';
+import { generateEsql, executeEsql } from '@kbn/agent-builder-genai-utils';
+import { buildTimeRangeParams } from '@kbn/agent-builder-genai-utils/tools/utils/esql';
 import { extractTextFromMessage, esqlAdditionalInstructions } from '@kbn/agent-builder-tools-base';
 import {
   normalizeVegaSpec,

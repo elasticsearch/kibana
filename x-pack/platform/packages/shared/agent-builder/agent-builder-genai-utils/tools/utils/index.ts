@@ -11,7 +11,6 @@ export {
   executeEsql,
   interpolateEsqlQuery,
   validateEsqlQuery,
-  buildTimeRangeParams,
 } from './esql';
 export { listDatasets, getDatasetFields, type DatasetInfo } from './datasets';
 export {
