@@ -18,3 +18,5 @@ export { OBSERVABILITY_GET_INDEX_INFO_TOOL_ID } from './get_index_info';
 export { OBSERVABILITY_GET_SERVICE_TOPOLOGY_TOOL_ID } from './get_service_topology/tool';
 export { OBSERVABILITY_GET_LOGS_TOOL_ID } from './get_logs/tool';
 export { OBSERVABILITY_GET_APM_CORRELATIONS_TOOL_ID } from './get_apm_correlations/tool';
+export { OBSERVABILITY_GET_APM_TIMESERIES_TOOL_ID } from './get_apm_timeseries/tool';
+export { OBSERVABILITY_GET_APM_METRICS_TOOL_ID } from './get_apm_metrics/tool';

@@ -6,3 +6,5 @@
  */
 
 export { registerServiceMapAttachment } from './register_service_map_attachment';
+export { registerApmMetricsAttachment } from './register_apm_metrics_attachment';
+export { registerApmTimeseriesAttachment } from './register_apm_timeseries_attachment';

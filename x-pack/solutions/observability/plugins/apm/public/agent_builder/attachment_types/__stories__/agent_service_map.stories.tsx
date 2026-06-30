@@ -122,6 +122,29 @@ const singleService: ServiceMapAttachmentData['connections'] = [
   },
 ];
 
+/** Service nodes with alert count and SLO status badges (via nodeMetadata) */
+const withBadgesConnections: ServiceMapAttachmentData['connections'] = [
+  {
+    source: { 'service.name': 'payment', 'agent.name': 'java' },
+    target: { 'service.name': 'checkout', 'agent.name': 'nodejs' },
+    metrics: { latencyMs: 450, errorRate: 0.12, throughputPerMin: 50 },
+  },
+  {
+    source: { 'service.name': 'checkout', 'agent.name': 'nodejs' },
+    target: {
+      'span.destination.service.resource': 'postgres:5432',
+      'span.type': 'db',
+      'span.subtype': 'postgresql',
+    },
+    metrics: { latencyMs: 25 },
+  },
+];
+
+const withBadgesNodeMetadata: ServiceMapAttachmentData['nodeMetadata'] = {
+  payment: { alertsCount: 3, sloStatus: 'violated', sloCount: 2 },
+  checkout: { alertsCount: 1, sloStatus: 'degrading', sloCount: 1 },
+};
+
 export const Basic: Story = {
   args: { connections: basicConnections },
 };
@@ -144,4 +167,9 @@ export const NoMetrics: Story = {
 
 export const SingleServiceWithExternalDependency: Story = {
   args: { connections: singleService },
+};
+
+/** Nodes with alert count and SLO violation/degrading badges (via nodeMetadata). */
+export const WithAlertAndSloBadges: Story = {
+  args: { connections: withBadgesConnections, nodeMetadata: withBadgesNodeMetadata },
 };

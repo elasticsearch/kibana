@@ -100,7 +100,7 @@ export function AlertDetails() {
     observabilityAgentBuilder,
   } = services;
 
-  const AlertAiInsight = observabilityAgentBuilder?.getAlertAIInsight();
+  const AlertAskAiAssistantButton = observabilityAgentBuilder?.getAlertAskAiAssistantButton();
 
   const { ObservabilityPageTemplate, config } = usePluginContext();
   const { alertId } = useParams<AlertDetailsPathParams>();
@@ -314,12 +314,6 @@ export function AlertDetails() {
           />
           <SourceBar alert={alertDetail.formatted} sources={sources} />
           <AlertDetailContextualInsights alert={alertDetail} />
-          {AlertAiInsight && (
-            <AlertAiInsight
-              alertId={alertDetail.formatted.fields['kibana.alert.uuid']}
-              alertTitle={ruleTypeBreached}
-            />
-          )}
           {rule && alertDetail.formatted && (
             <>
               <AlertDetailsAppSection
@@ -345,12 +339,6 @@ export function AlertDetails() {
         />
         <EuiSpacer size="l" />
         <AlertDetailContextualInsights alert={alertDetail} />
-        {AlertAiInsight && (
-          <AlertAiInsight
-            alertId={alertDetail.formatted.fields['kibana.alert.uuid']}
-            alertTitle={ruleTypeBreached}
-          />
-        )}
         <EuiSpacer size="l" />
         <AlertOverview alert={alertDetail.formatted} alertStatus={alertStatus} />
       </EuiPanel>
@@ -495,7 +483,14 @@ export function AlertDetails() {
             rule={rule}
             refetch={refetch}
           />,
-        ],
+          AlertAskAiAssistantButton && alertDetail ? (
+            <AlertAskAiAssistantButton
+              alertId={alertDetail.formatted.fields['kibana.alert.uuid']}
+              alertTitle={ruleTypeBreached}
+            />
+          ) : null,
+        ].filter(Boolean),
+        rightSideGroupProps: { gutterSize: 's' },
         bottomBorder: false,
         'data-test-subj': rule?.ruleTypeId || 'alertDetailsPageTitle',
       }}

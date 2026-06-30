@@ -46,13 +46,14 @@ Pass the topology data directly to `attachments.add`:
   "description": "Service topology map for checkout",
   "data": {
     "connections": <connections array from get_service_topology result>,
+    "nodeMetadata": <nodeMetadata object from get_service_topology result>,
     "serviceName": "checkout",
     "title": "Service Map — checkout"
   }
 }
 ```
 
-The `data.connections` field should contain the exact connections array returned by `get_service_topology`. Do NOT transform, restructure, or compute positions — the renderer handles layout and styling automatically.
+The `data.connections` field should contain the exact connections array returned by `get_service_topology`. The `data.nodeMetadata` field should contain the exact `nodeMetadata` object returned alongside it — it carries per-service `alertsCount`, `sloStatus`, and `sloCount`, which render as alert and SLO badges on the service nodes. Pass both through verbatim; do NOT transform, restructure, or compute positions — the renderer handles layout and styling automatically. If `get_service_topology` did not return `nodeMetadata`, omit the field.
 
 ### Step 3: Render the attachment
 

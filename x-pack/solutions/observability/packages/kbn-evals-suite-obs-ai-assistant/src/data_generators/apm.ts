@@ -158,3 +158,107 @@ export async function generateAIAssistantApmScenario({
       })
   );
 }
+
+/**
+ * Generates a realistic latency-spike scenario for Agent Builder attachment evaluations:
+ *
+ * - "eval-payment" service: normal latency (~100ms) for the first 30 minutes, then a
+ *   spike to ~800ms for the last 15 minutes. Error rate also jumps from ~1% to ~20%.
+ * - "eval-checkout" service: stable throughput/latency, used as a healthy comparison.
+ *
+ * This gives the agent meaningful before/after windows to diff for the apm-metrics
+ * comparison card and a clear latency trend for the apm-timeseries chart.
+ */
+export async function generateApmAttachmentEvalScenario({
+  apmSynthtraceEsClient,
+}: {
+  apmSynthtraceEsClient: SynthtraceFixture['apmSynthtraceEsClient'];
+}) {
+  const paymentService = apm.service('eval-payment', 'production', 'java').instance('payment-1');
+
+  const checkoutService = apm
+    .service('eval-checkout', 'production', 'nodejs')
+    .instance('checkout-1');
+
+  // Baseline window: 30–15 minutes ago — normal latency (~100ms), low error rate (~1%)
+  await apmSynthtraceEsClient.index(
+    timerange(moment().subtract(30, 'minutes'), moment().subtract(15, 'minutes'))
+      .interval('1m')
+      .rate(30)
+      .generator((timestamp) => [
+        paymentService
+          .transaction('POST /payments')
+          .timestamp(timestamp)
+          .duration(100)
+          .outcome('success'),
+        paymentService
+          .transaction('POST /payments')
+          .timestamp(timestamp)
+          .duration(105)
+          .failure()
+          .errors(
+            paymentService
+              .error({ message: 'Payment gateway timeout', type: 'GatewayTimeout' })
+              .timestamp(timestamp)
+          ),
+      ])
+  );
+
+  // Alert window: last 15 minutes — latency spike (~800ms), high error rate (~20%)
+  await apmSynthtraceEsClient.index(
+    timerange(moment().subtract(15, 'minutes'), moment())
+      .interval('1m')
+      .rate(30)
+      .generator((timestamp) => [
+        paymentService
+          .transaction('POST /payments')
+          .timestamp(timestamp)
+          .duration(800)
+          .outcome('success'),
+        paymentService
+          .transaction('POST /payments')
+          .timestamp(timestamp)
+          .duration(820)
+          .failure()
+          .errors(
+            paymentService
+              .error({ message: 'Payment service degraded', type: 'ServiceError' })
+              .timestamp(timestamp)
+          ),
+        paymentService
+          .transaction('POST /payments')
+          .timestamp(timestamp)
+          .duration(850)
+          .failure()
+          .errors(
+            paymentService
+              .error({ message: 'Payment service degraded', type: 'ServiceError' })
+              .timestamp(timestamp)
+          ),
+        paymentService
+          .transaction('POST /payments')
+          .timestamp(timestamp)
+          .duration(780)
+          .failure()
+          .errors(
+            paymentService
+              .error({ message: 'Payment service degraded', type: 'ServiceError' })
+              .timestamp(timestamp)
+          ),
+      ])
+  );
+
+  // Checkout: stable throughout — used as a healthy comparison
+  await apmSynthtraceEsClient.index(
+    timerange(moment().subtract(30, 'minutes'), moment())
+      .interval('1m')
+      .rate(20)
+      .generator((timestamp) =>
+        checkoutService
+          .transaction('GET /cart')
+          .timestamp(timestamp)
+          .duration(50)
+          .outcome('success')
+      )
+  );
+}

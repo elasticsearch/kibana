@@ -34,11 +34,16 @@ const nodeTypes: NodeTypes = {
 
 export interface AgentServiceMapProps {
   connections: ServiceMapAttachmentData['connections'];
+  nodeMetadata?: ServiceMapAttachmentData['nodeMetadata'];
 }
 
 type TopologyNode =
   | { 'service.name': string; 'agent.name'?: string }
-  | { 'span.destination.service.resource': string; 'span.type': string; 'span.subtype': string };
+  | {
+      'span.destination.service.resource': string;
+      'span.type'?: string;
+      'span.subtype'?: string;
+    };
 
 function isServiceNode(
   node: TopologyNode
@@ -81,7 +86,10 @@ export function formatEdgeLabel(
   return parts.length > 0 ? parts.join(' · ') : undefined;
 }
 
-function transformConnections(connections: ServiceMapAttachmentData['connections']): {
+function transformConnections(
+  connections: ServiceMapAttachmentData['connections'],
+  nodeMetadata?: ServiceMapAttachmentData['nodeMetadata']
+): {
   nodes: Node[];
   edges: Edge[];
 } {
@@ -93,6 +101,7 @@ function transformConnections(connections: ServiceMapAttachmentData['connections
       const id = getNodeId(node);
       if (!nodesMap.has(id)) {
         if (isServiceNode(node)) {
+          const meta = nodeMetadata?.[node['service.name']];
           nodesMap.set(id, {
             id,
             type: 'service',
@@ -102,6 +111,9 @@ function transformConnections(connections: ServiceMapAttachmentData['connections
               label: getNodeLabel(node),
               isService: true,
               agentName: node['agent.name'],
+              alertsCount: meta?.alertsCount,
+              sloStatus: meta?.sloStatus,
+              sloCount: meta?.sloCount,
             },
           });
         } else {
@@ -137,14 +149,14 @@ function transformConnections(connections: ServiceMapAttachmentData['connections
   return { nodes: [...nodesMap.values()], edges };
 }
 
-export function AgentServiceMap({ connections }: AgentServiceMapProps) {
+export function AgentServiceMap({ connections, nodeMetadata }: AgentServiceMapProps) {
   const { euiTheme, colorMode } = useEuiTheme();
 
   const { nodes, edges } = useMemo(() => {
-    const { nodes: rawNodes, edges: rawEdges } = transformConnections(connections);
+    const { nodes: rawNodes, edges: rawEdges } = transformConnections(connections, nodeMetadata);
     const layoutedNodes = applyDagreLayout(rawNodes, rawEdges);
     return { nodes: layoutedNodes, edges: rawEdges };
-  }, [connections]);
+  }, [connections, nodeMetadata]);
 
   return (
     <ReactFlowProvider>

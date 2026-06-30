@@ -59,6 +59,26 @@ function createConnections(
   return defaults;
 }
 
+// ─── Alert/SLO badge data ────────────────────────────────────────────────────
+
+function createConnectionsWithBadges(): {
+  connections: ServiceMapAttachmentData['connections'];
+  nodeMetadata: ServiceMapAttachmentData['nodeMetadata'];
+} {
+  return {
+    connections: [
+      {
+        source: { 'service.name': 'payment', 'agent.name': 'java' },
+        target: { 'service.name': 'database', 'agent.name': 'go' },
+        metrics: { latencyMs: 500 },
+      },
+    ],
+    nodeMetadata: {
+      payment: { alertsCount: 3, sloStatus: 'violated', sloCount: 2 },
+    },
+  };
+}
+
 describe('AgentServiceMap', () => {
   it('renders service nodes with labels', () => {
     render(<AgentServiceMap connections={createConnections()} />);
@@ -94,6 +114,34 @@ describe('AgentServiceMap', () => {
     render(<AgentServiceMap connections={connections} />);
     expect(screen.getByText('a')).toBeInTheDocument();
     expect(screen.getByText('b')).toBeInTheDocument();
+  });
+
+  it('renders alert badge when nodeMetadata provides alertsCount > 0', () => {
+    const { connections, nodeMetadata } = createConnectionsWithBadges();
+    render(<AgentServiceMap connections={connections} nodeMetadata={nodeMetadata} />);
+    // ServiceNode renders data-test-subj="serviceMapNodeAlertsBadge" for alert count
+    expect(screen.getByTestId('serviceMapNodeAlertsBadge')).toBeInTheDocument();
+  });
+
+  it('does not render alert badge when nodeMetadata is absent', () => {
+    render(<AgentServiceMap connections={createConnections()} />);
+    expect(screen.queryByTestId('serviceMapNodeAlertsBadge')).not.toBeInTheDocument();
+  });
+
+  it('shows alert badge count from nodeMetadata, not from connection node', () => {
+    const { connections, nodeMetadata } = createConnectionsWithBadges();
+    render(<AgentServiceMap connections={connections} nodeMetadata={nodeMetadata} />);
+    const badge = screen.getByTestId('serviceMapNodeAlertsBadge');
+    // The badge text is the count — "3" in our fixture
+    expect(badge).toHaveTextContent('3');
+  });
+
+  it('applies nodeMetadata to the correct service node when multiple services exist', () => {
+    const { connections, nodeMetadata } = createConnectionsWithBadges();
+    // "database" service has no metadata — should NOT get a badge
+    render(<AgentServiceMap connections={connections} nodeMetadata={nodeMetadata} />);
+    // Only one alert badge — for "payment", not for "database"
+    expect(screen.getAllByTestId('serviceMapNodeAlertsBadge')).toHaveLength(1);
   });
 });
 

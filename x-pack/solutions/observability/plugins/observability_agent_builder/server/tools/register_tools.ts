@@ -59,6 +59,14 @@ import {
   OBSERVABILITY_GET_APM_CORRELATIONS_TOOL_ID,
   createGetApmCorrelationsTool,
 } from './get_apm_correlations/tool';
+import {
+  OBSERVABILITY_GET_APM_TIMESERIES_TOOL_ID,
+  createGetApmTimeseriesTool,
+} from './get_apm_timeseries/tool';
+import {
+  OBSERVABILITY_GET_APM_METRICS_TOOL_ID,
+  createGetApmMetricsTool,
+} from './get_apm_metrics/tool';
 
 export const PLATFORM_TOOL_IDS = [
   platformCoreTools.listIndices,
@@ -85,6 +93,8 @@ export const OBSERVABILITY_TOOL_IDS = [
   OBSERVABILITY_GET_SERVICE_TOPOLOGY_TOOL_ID,
   OBSERVABILITY_GET_LOGS_TOOL_ID,
   OBSERVABILITY_GET_APM_CORRELATIONS_TOOL_ID,
+  OBSERVABILITY_GET_APM_TIMESERIES_TOOL_ID,
+  OBSERVABILITY_GET_APM_METRICS_TOOL_ID,
 ];
 
 export async function registerTools({
@@ -115,6 +125,8 @@ export async function registerTools({
     createGetServiceTopologyTool({ core, plugins, dataRegistry, logger }),
     createGetLogsTool({ core, logger }),
     createGetApmCorrelationsTool({ core, plugins, logger }),
+    createGetApmTimeseriesTool({ core, plugins, dataRegistry, logger }),
+    createGetApmMetricsTool({ core, plugins, dataRegistry, logger }),
   ];
 
   for (const tool of observabilityTools) {

@@ -432,9 +432,21 @@ export async function getToolHandler({
     const durationThresholdUs = durationPercentiles?.[percentileKey];
 
     if (durationThresholdUs == null || !Number.isFinite(durationThresholdUs)) {
-      throw new Error(
-        `Could not compute duration percentile (p${percentileThreshold}) for field "${TRANSACTION_DURATION}".`
-      );
+      // The matched documents carry no usable `transaction.duration.us` values
+      // (e.g. the filter resolved to non-transaction docs for a specific
+      // transaction name). Degrade gracefully to an empty result rather than
+      // throwing, so callers (e.g. the investigate-apm-alert skill) can continue.
+      return {
+        metric,
+        timeRange: { start, end },
+        kqlFilter: kqlFilterValue,
+        totalTransactions: overallTotalHits,
+        subset: {
+          totalTransactions: 0,
+          definition: { metric: 'latency', percentileThreshold, durationThresholdUs: undefined },
+        },
+        correlations: [],
+      };
     }
 
     subsetFilters = [

@@ -12,18 +12,20 @@ import { createKibanaReactContext } from '@kbn/kibana-react-plugin/public';
 import type { CoreStart } from '@kbn/core/public';
 import type { ObservabilityLogsAiInsightFeatureRenderDeps } from '@kbn/discover-shared-plugin/public';
 import type { ObservabilityAgentBuilderPluginStartDependencies } from '../../types';
-import type { AlertAiInsightProps } from './alert_ai_insight';
 import type { ErrorSampleAiInsightProps } from './error_sample_ai_insight';
 import type { LogAiInsightProps, LogAiInsightDocument } from './log_ai_insight';
+import type { AlertAskAiAssistantButtonProps } from './alert_ask_ai_assistant_button';
 
 const queryClient = new QueryClient();
 
-export type { AlertAiInsightProps } from './alert_ai_insight';
 export type { ErrorSampleAiInsightProps } from './error_sample_ai_insight';
 export type { LogAiInsightProps, LogAiInsightDocument } from './log_ai_insight';
+export type { AlertAskAiAssistantButtonProps } from './alert_ask_ai_assistant_button';
 
-const AlertAiInsightLazy = dynamic(() =>
-  import('./alert_ai_insight').then((m) => ({ default: m.AlertAiInsight }))
+const AlertAskAiAssistantButtonLazy = dynamic(() =>
+  import('./alert_ask_ai_assistant_button').then((m) => ({
+    default: m.AlertAskAiAssistantButton,
+  }))
 );
 
 const ErrorSampleAiInsightLazy = dynamic(() =>
@@ -33,24 +35,6 @@ const ErrorSampleAiInsightLazy = dynamic(() =>
 const LogAiInsightLazy = dynamic(() =>
   import('./log_ai_insight').then((m) => ({ default: m.LogAiInsight }))
 );
-
-export function createAlertAIInsight(
-  core: CoreStart,
-  plugins: ObservabilityAgentBuilderPluginStartDependencies
-) {
-  const { Provider: KibanaReactContextProvider } = createKibanaReactContext({
-    ...core,
-    ...plugins,
-  });
-
-  return (props: AlertAiInsightProps) => (
-    <QueryClientProvider client={queryClient}>
-      <KibanaReactContextProvider>
-        <AlertAiInsightLazy {...props} />
-      </KibanaReactContextProvider>
-    </QueryClientProvider>
-  );
-}
 
 export function createErrorSampleAIInsight(
   core: CoreStart,
@@ -83,6 +67,24 @@ export function createLogAIInsight(
     <QueryClientProvider client={queryClient}>
       <KibanaReactContextProvider>
         <LogAiInsightLazy {...props} />
+      </KibanaReactContextProvider>
+    </QueryClientProvider>
+  );
+}
+
+export function createAlertAskAiAssistantButton(
+  core: CoreStart,
+  plugins: ObservabilityAgentBuilderPluginStartDependencies
+) {
+  const { Provider: KibanaReactContextProvider } = createKibanaReactContext({
+    ...core,
+    ...plugins,
+  });
+
+  return (props: AlertAskAiAssistantButtonProps) => (
+    <QueryClientProvider client={queryClient}>
+      <KibanaReactContextProvider>
+        <AlertAskAiAssistantButtonLazy {...props} />
       </KibanaReactContextProvider>
     </QueryClientProvider>
   );
