@@ -5,8 +5,4 @@
  * 2.0.
  */
 
-export const SUPPORTED_FILE_TYPES = [
-  'text/csv',
-  'text/plain',
-  '.csv', // if windows can't recognise the file extension.
-];
+export { manageWatchlistsSkill } from './manage_watchlists_skill';

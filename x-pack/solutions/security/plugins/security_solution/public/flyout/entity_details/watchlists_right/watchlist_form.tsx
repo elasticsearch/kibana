@@ -33,7 +33,10 @@ import {
 import { RuleBasedSourceInput } from './rule_based_source_input';
 import { WatchlistCsvUpload } from './csv_upload';
 import { ManagedWatchlistSourceInput } from './managed_watchlist_source_input';
-import { MAX_WATCHLIST_DESCRIPTION_LENGTH, MAX_WATCHLIST_NAME_LENGTH } from './constants';
+import {
+  MAX_WATCHLIST_DESCRIPTION_LENGTH,
+  MAX_WATCHLIST_NAME_LENGTH,
+} from '../../../../common/entity_analytics/watchlists/constants';
 
 export interface WatchlistFormProps {
   watchlist: CreateWatchlistRequestBodyInput;

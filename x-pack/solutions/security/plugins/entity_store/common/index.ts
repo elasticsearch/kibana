@@ -110,7 +110,7 @@ export interface IdentitySourceFields {
 }
 
 export type { NonEcsTimelineDataRow } from './domain/euid/non_ecs_timeline_data';
-export type { AssetCriticalityLevel } from './domain/definitions/entity.gen';
+export type { AssetCriticalityLevel, EntityRiskLevels } from './domain/definitions/entity.gen';
 
 export {
   ENTITY_LATEST,

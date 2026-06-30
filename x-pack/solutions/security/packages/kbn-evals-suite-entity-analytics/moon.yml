@@ -30,6 +30,7 @@ dependsOn:
   - '@kbn/core-http-common'
   - '@kbn/ml-common-types'
   - '@kbn/entity-store'
+  - '@kbn/scout'
 tags:
   - functional-tests
   - package

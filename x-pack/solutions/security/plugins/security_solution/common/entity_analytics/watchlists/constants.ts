@@ -7,6 +7,9 @@
 
 import { i18n } from '@kbn/i18n';
 
+export const MAX_WATCHLIST_NAME_LENGTH = 256;
+export const MAX_WATCHLIST_DESCRIPTION_LENGTH = 1000;
+
 export const WATCHLISTS_URL = `/api/entity_analytics/watchlists` as const;
 
 /**

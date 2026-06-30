@@ -12,6 +12,7 @@ import type { EndpointAppContextService } from '../../endpoint/endpoint_app_cont
 import { createAutomaticTroubleshootingSkill } from './automatic_troubleshooting';
 import { getDetectionRuleEditSkill } from './detection_rule_edit';
 import { getEntityAnalyticsSkill } from './entity_analytics';
+import { manageWatchlistsSkill } from './manage_watchlists';
 import { pciComplianceSkill } from './pci_compliance';
 import { threatHuntingSkill } from './threat_hunting';
 import { alertAnalysisSkill } from './alert_analysis';
@@ -55,6 +56,10 @@ export const registerSkills = async ({
   await agentBuilder.skills.register(
     getEntityAnalyticsSkill({ getStartServices, isEntityStoreV2Enabled, kibanaVersion, logger })
   );
+
+  if (experimentalFeatures.entityAnalyticsWatchlistEnabled) {
+    agentBuilder.skills.register(manageWatchlistsSkill);
+  }
 
   agentBuilder.skills.register(getDetectionRuleEditSkill());
   if (experimentalFeatures.dexAiSkillRecommendPrebuiltRules) {

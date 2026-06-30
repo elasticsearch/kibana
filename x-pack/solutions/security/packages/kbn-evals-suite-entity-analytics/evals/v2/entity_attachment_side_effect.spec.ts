@@ -6,9 +6,12 @@
  */
 
 import { tags } from '@kbn/scout-security';
-import { getEntitiesAlias, ENTITY_LATEST } from '@kbn/entity-store/common';
-import { hashEuid } from '@kbn/entity-store/common/domain/euid';
 import { evaluate } from '../../src/evaluate';
+import {
+  bulkIndexEntities,
+  deleteEntityEngines,
+  installEntityStoreV2AndWait,
+} from '../../src/setup_helpers';
 
 /**
  * Entity Store V2 - attachment side-effect evals.
@@ -38,77 +41,19 @@ evaluate.describe(
     const aliceEuid = 'user:attach-alice';
     const bobEuid = 'user:attach-bob';
 
-    evaluate.beforeAll(async ({ log, esClient: es, supertest }) => {
-      log.info('[attachment-evals] beforeAll: POST /api/security/entity_store/install');
-      const installRes = await supertest
-        .post('/api/security/entity_store/install')
-        .set('kbn-xsrf', 'true')
-        .set('x-elastic-internal-origin', 'Kibana')
-        .set('elastic-api-version', '2023-10-31')
-        .send({ entityTypes: ['user', 'host'] });
-      log.info(
-        `[attachment-evals] beforeAll: install responded status=${
-          installRes.status
-        } body=${JSON.stringify(installRes.body)}`
-      );
-      if (installRes.status !== 200 && installRes.status !== 201) {
-        throw new Error(
-          `Entity Store V2 install failed (${installRes.status}): ${JSON.stringify(
-            installRes.body
-          )}`
-        );
-      }
-
-      // Wait until status=running so the latest alias exists before we bulk
-      // index into it. 120s ceiling aligns with `highlights_v2.ts`; normally
-      // completes in ~5–15s on dev hardware.
-      await waitForCondition(
-        async () => {
-          const res = await supertest
-            .get('/api/security/entity_store/status')
-            .set('elastic-api-version', '2023-10-31');
-          if (res.status !== 200) return false;
-          const status = (res.body as { status?: string }).status;
-          if (status === 'error') {
-            throw new Error(`Entity Store V2 is in error state: ${JSON.stringify(res.body)}`);
-          }
-          return status === 'running';
-        },
-        { label: 'entity store v2 status=running', timeoutMs: 120_000, log }
-      );
-
-      log.info('[attachment-evals] beforeAll: bulk indexing seeded entities into latest alias');
-      const latestAlias = getEntitiesAlias(ENTITY_LATEST, 'default');
-      const now = new Date().toISOString();
-      await es.bulk({
-        refresh: true,
-        operations: [
-          { index: { _index: latestAlias, _id: hashEuid(aliceEuid) } },
-          {
-            '@timestamp': now,
-            entity: { id: aliceEuid, EngineMetadata: { Type: 'user' } },
-            user: { name: 'attach-alice' },
-            asset: { criticality: 'high_impact' },
-          },
-          { index: { _index: latestAlias, _id: hashEuid(bobEuid) } },
-          {
-            '@timestamp': now,
-            entity: { id: bobEuid, EngineMetadata: { Type: 'user' } },
-            user: { name: 'attach-bob' },
-            asset: { criticality: 'medium_impact' },
-          },
+    evaluate.beforeAll(async ({ log, esClient, supertest }) => {
+      await installEntityStoreV2AndWait({ supertest, log });
+      await bulkIndexEntities({
+        esClient,
+        entities: [
+          { euid: aliceEuid, assetCriticality: 'high_impact' },
+          { euid: bobEuid, assetCriticality: 'medium_impact' },
         ],
       });
-
-      log.info('[attachment-evals] beforeAll: setup complete');
     });
 
     evaluate.afterAll(async ({ log, quickApiClient }) => {
-      try {
-        await quickApiClient.deleteEntityEngines({ query: { delete_data: true } });
-      } catch (err) {
-        log.warning(`deleteEntityEngines failed during teardown: ${(err as Error).message}`);
-      }
+      await deleteEntityEngines({ quickApiClient, log });
     });
 
     evaluate('entity store v2: attachment side-effects', async ({ evaluateDataset }) => {
@@ -212,33 +157,3 @@ evaluate.describe(
     });
   }
 );
-
-/**
- * Minimal polling helper. Pulled inline rather than dragging in a dependency
- * on FTR's `retry` service (not available in the evals fixture graph).
- */
-async function waitForCondition(
-  check: () => Promise<boolean>,
-  {
-    label,
-    timeoutMs,
-    intervalMs = 2000,
-    log,
-  }: {
-    label: string;
-    timeoutMs: number;
-    intervalMs?: number;
-    log: { warning: (m: string) => void };
-  }
-): Promise<void> {
-  const start = Date.now();
-  while (Date.now() - start < timeoutMs) {
-    try {
-      if (await check()) return;
-    } catch (err) {
-      log.warning(`${label} check threw: ${(err as Error).message}`);
-    }
-    await new Promise((r) => setTimeout(r, intervalMs));
-  }
-  throw new Error(`Timed out waiting for: ${label}`);
-}

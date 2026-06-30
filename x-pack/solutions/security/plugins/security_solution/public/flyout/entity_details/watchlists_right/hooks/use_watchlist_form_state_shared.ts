@@ -9,7 +9,10 @@ import { useEffect, useRef } from 'react';
 import type { CreateWatchlistRequestBodyInput } from '../../../../../common/api/entity_analytics/watchlists/management/create.gen';
 import { useStableExpandableFlyoutState } from '../../../shared/hooks/use_stable_expandable_flyout_state';
 import { WatchlistsFlyoutKey } from '../../shared/constants';
-import { MAX_WATCHLIST_DESCRIPTION_LENGTH, MAX_WATCHLIST_NAME_LENGTH } from '../constants';
+import {
+  MAX_WATCHLIST_DESCRIPTION_LENGTH,
+  MAX_WATCHLIST_NAME_LENGTH,
+} from '../../../../../common/entity_analytics/watchlists/constants';
 
 const WATCHLIST_RISK_MODIFIER_MIN = 0;
 const WATCHLIST_RISK_MODIFIER_MAX = 2;
