@@ -254,7 +254,7 @@ export const getExceptions = async ({
           items = [...items, ...response.data];
         };
 
-        await client.findExceptionListsItemPointInTimeFinder({
+        await client.findExceptionListItemsPointInTimeFinder({
           executeFunctionOnStream,
           listId: listIds,
           namespaceType: namespaceTypes,

@@ -517,6 +517,19 @@ export interface ExportExceptionListAndItemsOptions {
 }
 
 /**
+ * ExceptionListClient.exportExceptionListsAndItems
+ * {@link ExceptionListClient.exportExceptionListsAndItems}
+ */
+export interface ExportExceptionListsAndItemsOptions {
+  /** KQL filter on exported objects */
+  filter: FilterOrUndefined;
+  /** saved object namespace (single | agnostic) */
+  namespaceType: NamespaceType;
+  /** whether or not to include expired exceptions */
+  includeExpiredExceptions: boolean;
+}
+
+/**
  * Used to export list and items
  */
 export interface ExportExceptionListAndItemsReturn {
@@ -624,8 +637,8 @@ export interface FindExceptionListPointInTimeFinderOptions {
 }
 
 /**
- * ExceptionListClient.findExceptionListsItemPointInTimeFinder
- * {@link ExceptionListClient.findExceptionListsItemPointInTimeFinder}
+ * ExceptionListClient.findExceptionListItemsPointInTimeFinder
+ * {@link ExceptionListClient.findExceptionListItemsPointInTimeFinder}
  */
 export interface FindExceptionListItemsPointInTimeFinderOptions {
   /** The "list_id" to find against */

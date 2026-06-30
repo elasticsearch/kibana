@@ -33,11 +33,14 @@ export const getCreateExceptionListSchemaMock = (): CreateExceptionListSchema =>
 /**
  * Useful for end to end testing
  */
-export const getCreateExceptionListMinimalSchemaMock = (): CreateExceptionListSchema => ({
+export const getCreateExceptionListMinimalSchemaMock = (
+  overrides: Partial<CreateExceptionListSchema> = {}
+): CreateExceptionListSchema => ({
   description: DESCRIPTION,
   list_id: LIST_ID,
   name: NAME,
   type: ENDPOINT_TYPE,
+  ...overrides,
 });
 
 /**

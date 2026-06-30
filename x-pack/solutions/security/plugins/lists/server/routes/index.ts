@@ -20,6 +20,7 @@ export * from './list_item/delete_list_item_route';
 export * from './list/delete_list_route';
 export * from './duplicate_exception_list_route';
 export * from './export_exception_list_route';
+export * from './export_exception_lists_route';
 export * from './list_index/export_list_item_route';
 export * from './find_endpoint_list_item_route';
 export * from './find_exception_list_item_route';

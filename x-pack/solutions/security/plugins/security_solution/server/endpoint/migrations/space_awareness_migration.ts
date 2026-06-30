@@ -198,7 +198,7 @@ const migrateArtifactsToSpaceAware = async (
   });
 
   await exceptionsClient
-    .findExceptionListsItemPointInTimeFinder({
+    .findExceptionListItemsPointInTimeFinder({
       listId: listIds,
       namespaceType: listIds.map(() => 'agnostic'),
       filter: listIds.map(

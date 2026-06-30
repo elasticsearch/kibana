@@ -97,7 +97,7 @@ describe('Space awareness migration', () => {
         exceptionsGenerator.generateTrustedApp({ tags: [GLOBAL_ARTIFACT_TAG] }),
       ];
 
-      (exceptionsClient.findExceptionListsItemPointInTimeFinder as jest.Mock).mockImplementation(
+      (exceptionsClient.findExceptionListItemsPointInTimeFinder as jest.Mock).mockImplementation(
         async (options) => {
           const executeFunctionOnStream = options.executeFunctionOnStream;
 
@@ -131,7 +131,7 @@ describe('Space awareness migration', () => {
         migrateEndpointDataToSupportSpaces(endpointServiceMock)
       ).resolves.toBeUndefined();
       expect(
-        endpointServiceMock.getExceptionListsClient().findExceptionListsItemPointInTimeFinder
+        endpointServiceMock.getExceptionListsClient().findExceptionListItemsPointInTimeFinder
       ).toHaveBeenCalledWith(
         expect.objectContaining({
           executeFunctionOnStream: expect.any(Function),

@@ -13,7 +13,7 @@ import {
 } from '../../../common/schemas/response/exception_list_schema.mock';
 import { getExceptionListItemSchemaMock } from '../../../common/schemas/response/exception_list_item_schema.mock';
 
-import { findExceptionListsItemPointInTimeFinder } from './find_exception_list_items_point_in_time_finder';
+import { findExceptionListItemsPointInTimeFinder } from './find_exception_list_items_point_in_time_finder';
 import { duplicateExceptionListAndItems } from './duplicate_exception_list';
 import { getExceptionList } from './get_exception_list';
 import { createExceptionList } from './create_exception_list';
@@ -56,7 +56,7 @@ describe('duplicateExceptionListAndItems', () => {
       list_id: 'exception_list_id_dupe',
       name: 'Test [Duplicate]',
     });
-    (findExceptionListsItemPointInTimeFinder as jest.Mock).mockImplementationOnce(
+    (findExceptionListItemsPointInTimeFinder as jest.Mock).mockImplementationOnce(
       ({ executeFunctionOnStream }) => {
         executeFunctionOnStream({ data: [getExceptionListItemSchemaMock()] });
       }
@@ -70,7 +70,7 @@ describe('duplicateExceptionListAndItems', () => {
       user: 'test-user',
     });
 
-    expect(findExceptionListsItemPointInTimeFinder).toHaveBeenCalledWith({
+    expect(findExceptionListItemsPointInTimeFinder).toHaveBeenCalledWith({
       executeFunctionOnStream: expect.any(Function),
       filter: [],
       listId: ['exception_list_id'],
@@ -90,7 +90,7 @@ describe('duplicateExceptionListAndItems', () => {
       list_id: 'exception_list_id_dupe',
       name: 'Test [Duplicate]',
     });
-    (findExceptionListsItemPointInTimeFinder as jest.Mock).mockImplementationOnce(
+    (findExceptionListItemsPointInTimeFinder as jest.Mock).mockImplementationOnce(
       ({ executeFunctionOnStream }) => {
         executeFunctionOnStream({ data: [getExceptionListItemSchemaMock()] });
       }
@@ -104,7 +104,7 @@ describe('duplicateExceptionListAndItems', () => {
       user: 'test-user',
     });
 
-    expect(findExceptionListsItemPointInTimeFinder).toHaveBeenCalledWith({
+    expect(findExceptionListItemsPointInTimeFinder).toHaveBeenCalledWith({
       executeFunctionOnStream: expect.any(Function),
       filter: [
         '(exception-list.attributes.expire_time > "2023-02-01T10:20:30.000Z" OR NOT exception-list.attributes.expire_time: *)',

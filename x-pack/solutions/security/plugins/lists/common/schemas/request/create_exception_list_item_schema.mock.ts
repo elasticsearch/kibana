@@ -39,7 +39,9 @@ export const getCreateExceptionListItemSchemaMock = (): CreateExceptionListItemS
 /**
  * Useful for end to end testing
  */
-export const getCreateExceptionListItemMinimalSchemaMock = (): CreateExceptionListItemSchema => ({
+export const getCreateExceptionListItemMinimalSchemaMock = (
+  overrides: Partial<CreateExceptionListItemSchema> = {}
+): CreateExceptionListItemSchema => ({
   description: DESCRIPTION,
   entries: ENTRIES,
   item_id: ITEM_ID,
@@ -47,6 +49,7 @@ export const getCreateExceptionListItemMinimalSchemaMock = (): CreateExceptionLi
   name: NAME,
   os_types: OS_TYPES,
   type: ITEM_TYPE,
+  ...overrides,
 });
 
 /**

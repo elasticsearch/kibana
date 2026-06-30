@@ -1,0 +1,102 @@
+openapi: 3.0.0
+info:
+  title: Export exception lists API endpoint
+  version: '2023-10-31'
+paths:
+  /api/exception_lists/_bulk_export:
+    post:
+      x-labels: [serverless, ess]
+      x-state: Generally available; added in 9.5.0
+      operationId: ExportExceptionLists
+      x-codegen-enabled: true
+      summary: Export multiple exception lists
+      description: Returns a streaming NDJSON file with list records, item records, and a summary footer.
+      parameters:
+        - name: filter
+          in: query
+          required: false
+          description: Filters the returned results according to the KQL query string.
+          schema:
+            type: string
+            maxLength: 10000
+        - name: include_expired_exceptions
+          in: query
+          required: false
+          description: Determines whether to include expired exceptions in the exported list. The expiration date is defined by `expire_time`.
+          schema:
+            type: string
+            enum: ['true', 'false']
+            default: 'true'
+          example: true
+        - name: namespace_type
+          in: query
+          required: false
+          description: Determines whether the exception lists are in the default namespace (`single`) or in the global `agnostic` namespace. Defaults to `single` if not provided.
+          schema:
+            $ref: '../model/exception_list_common.schema.yaml#/components/schemas/ExceptionNamespaceType'
+      responses:
+        200:
+          description: Successful response
+          content:
+            application/ndjson:
+              schema:
+                type: string
+                format: binary
+                description: A `.ndjson` file containing the specified exception lists and their items
+              examples:
+                exportSavedObjectsResponse:
+                  value: |
+                    {"_version":"WzExNDU5LDFd","created_at":"2025-01-09T16:18:17.757Z","created_by":"elastic","description":"This is a sample detection type exception","id":"c86c2da0-2ab6-4343-b81c-216ef27e8d75","immutable":false,"list_id":"simple_list","name":"Sample Detection Exception List","namespace_type":"single","os_types":[],"tags":["user added string for a tag","malware"],"tie_breaker_id":"cf4a7b92-732d-47f0-a0d5-49a35a1736bf","type":"detection","updated_at":"2025-01-09T16:18:17.757Z","updated_by":"elastic","version":1}
+                    {"_version":"WzExNDYxLDFd","comments":[],"created_at":"2025-01-09T16:18:42.308Z","created_by":"elastic","description":"This is a sample detection type exception item","entries":[{"type":"exists","field":"actingProcess.file.signer","operator":"excluded"},{"type":"match_any","field":"host.name","value":["some host","another host"],"operator":"included"}],"id":"f37597ce-eaa7-4b64-9100-4301118f6806","item_id":"simple_list_item","list_id":"simple_list","name":"Sample Detection Exception List Item","namespace_type":"single","os_types":["linux"],"tags":["user added string for a tag","malware"],"tie_breaker_id":"4ca3ef3e-9721-42c0-8107-cf47e094d40f","type":"simple","updated_at":"2025-01-09T16:18:42.308Z","updated_by":"elastic"}
+                    {"_version":"WzExNDYzLDFd","created_at":"2025-01-09T16:20:01.412Z","created_by":"elastic","description":"Detection exceptions for known-good network indicators","id":"d2a5e9f2-8c1b-4f1e-9e62-2b8c4d9d3e10","immutable":false,"list_id":"network_indicators_list","name":"Network Indicators Exception List","namespace_type":"single","os_types":[],"tags":["network","known-good"],"tie_breaker_id":"a1b2c3d4-5e6f-7890-abcd-ef0123456789","type":"detection","updated_at":"2025-01-09T16:20:01.412Z","updated_by":"elastic","version":1}
+                    {"_version":"WzExNDY1LDFd","comments":[],"created_at":"2025-01-09T16:21:15.118Z","created_by":"elastic","description":"Allow traffic from a known corporate proxy","entries":[{"type":"match","field":"source.ip","value":"10.0.0.5","operator":"included"}],"id":"a4d3e1c2-1234-4567-89ab-cdef01234567","item_id":"network_indicators_list_item","list_id":"network_indicators_list","name":"Corporate Proxy","namespace_type":"single","os_types":[],"tags":["network","known-good"],"tie_breaker_id":"b5e4f3d2-1111-2222-3333-444455556666","type":"simple","updated_at":"2025-01-09T16:21:15.118Z","updated_by":"elastic"}
+                    {"exported_exception_list_count":2,"exported_exception_list_item_count":2}
+        400:
+          description: Invalid input data response
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '../../../../../../../src/platform/packages/shared/kbn-openapi-common/schemas/error_responses.schema.yaml#/components/schemas/PlatformErrorResponse'
+                  - $ref: '../../../../../../../src/platform/packages/shared/kbn-openapi-common/schemas/error_responses.schema.yaml#/components/schemas/SiemErrorResponse'
+              examples:
+                badRequest:
+                  value:
+                    statusCode: 400
+                    error: Bad Request
+                    message: '[request query]: include_expired_exceptions: Invalid option: expected one of "true"|"false"'
+        401:
+          description: Unsuccessful authentication response
+          content:
+            application/json:
+              schema:
+                $ref: '../../../../../../../src/platform/packages/shared/kbn-openapi-common/schemas/error_responses.schema.yaml#/components/schemas/PlatformErrorResponse'
+              examples:
+                unauthorized:
+                  value:
+                    statusCode: 401
+                    error: Unauthorized
+                    message: '[security_exception\n\tRoot causes:\n\t\tsecurity_exception: unable to authenticate user [elastic] for REST request [/_security/_authenticate]]: unable to authenticate user [elastic] for REST request [/_security/_authenticate]'
+        403:
+          description: Not enough privileges response
+          content:
+            application/json:
+              schema:
+                $ref: '../../../../../../../src/platform/packages/shared/kbn-openapi-common/schemas/error_responses.schema.yaml#/components/schemas/PlatformErrorResponse'
+              examples:
+                forbidden:
+                  value:
+                    statusCode: 403
+                    error: Forbidden
+                    message: 'API [POST /api/exception_lists/_bulk_export] is unauthorized for user, this action is granted by the Kibana privileges [lists-all]'
+        500:
+          description: Internal server error response
+          content:
+            application/json:
+              schema:
+                $ref: '../../../../../../../src/platform/packages/shared/kbn-openapi-common/schemas/error_responses.schema.yaml#/components/schemas/SiemErrorResponse'
+              examples:
+                serverError:
+                  value:
+                    message: Internal Server Error
+                    status_code: 500

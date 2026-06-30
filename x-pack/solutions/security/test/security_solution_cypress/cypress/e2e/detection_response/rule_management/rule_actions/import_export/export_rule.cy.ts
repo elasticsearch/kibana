@@ -12,11 +12,7 @@ import {
   deletePrebuiltRulesAssets,
 } from '../../../../../tasks/api_calls/common';
 import { getCustomQueryRuleParams } from '../../../../../objects/rule';
-import {
-  TOASTER_BODY,
-  TOASTER,
-  SUCCESS_TOASTER_BODY,
-} from '../../../../../screens/alerts_detection_rules';
+import { TOASTER_BODY, TOASTER } from '../../../../../screens/alerts_detection_rules';
 import {
   selectAllRules,
   waitForRuleExecution,
@@ -93,7 +89,7 @@ describe('Export rules', { tags: ['@ess', '@serverless', '@skipInServerlessMKI']
 
     cy.wait('@bulk_action').then(({ response }) => {
       expect(response?.statusCode).to.equal(200);
-      cy.get(SUCCESS_TOASTER_BODY).should('have.text', 'Successfully exported 1 of 1 rule.');
+      cy.get(TOASTER_BODY).should('have.text', 'Successfully exported 1 of 1 rule.');
     });
   });
 

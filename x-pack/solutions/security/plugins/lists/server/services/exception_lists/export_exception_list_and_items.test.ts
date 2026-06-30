@@ -93,5 +93,33 @@ describe('export_exception_list_and_items', () => {
         })
       );
     });
+
+    test.each`
+      namespaceType | expectedSortField
+      ${'single'}   | ${'exception-list.created_at'}
+      ${'agnostic'} | ${'exception-list-agnostic.created_at'}
+    `(
+      'it sorts items by the $namespaceType saved object type',
+      async ({ namespaceType, expectedSortField }) => {
+        (getExceptionList as jest.Mock).mockResolvedValue(getExceptionListSchemaMock());
+        (findExceptionListItemPointInTimeFinder as jest.Mock).mockImplementationOnce(
+          ({ executeFunctionOnStream }) => {
+            executeFunctionOnStream({ data: [getExceptionListItemSchemaMock()] });
+          }
+        );
+
+        await exportExceptionListAndItems({
+          id: '123',
+          includeExpiredExceptions: true,
+          listId: 'non-existent',
+          namespaceType,
+          savedObjectsClient: savedObjectsClientMock.create(),
+        });
+
+        expect(findExceptionListItemPointInTimeFinder).toHaveBeenCalledWith(
+          expect.objectContaining({ sortField: expectedSortField })
+        );
+      }
+    );
   });
 });

@@ -16,7 +16,7 @@ import type {
 import { ExceptionListTypeEnum } from '@kbn/securitysolution-io-ts-list-types';
 import { getSavedObjectType } from '@kbn/securitysolution-list-utils';
 
-import { findExceptionListsItemPointInTimeFinder } from './find_exception_list_items_point_in_time_finder';
+import { findExceptionListItemsPointInTimeFinder } from './find_exception_list_items_point_in_time_finder';
 import { bulkCreateExceptionListItems } from './bulk_create_exception_list_items';
 import { createExceptionList } from './create_exception_list';
 
@@ -92,7 +92,7 @@ export const duplicateExceptionListAndItems = async ({
     : [
         `(${savedObjectPrefix}.attributes.expire_time > "${new Date().toISOString()}" OR NOT ${savedObjectPrefix}.attributes.expire_time: *)`,
       ];
-  await findExceptionListsItemPointInTimeFinder({
+  await findExceptionListItemsPointInTimeFinder({
     executeFunctionOnStream,
     filter,
     listId: [list.list_id],

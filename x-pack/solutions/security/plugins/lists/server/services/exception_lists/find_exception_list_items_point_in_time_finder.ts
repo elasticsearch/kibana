@@ -52,7 +52,7 @@ interface FindExceptionListItemsPointInTimeFinderOptions {
  * const executeFunctionOnStream = (response: FoundExceptionListItemSchema) => {
  *   exceptionList = [...exceptionList, ...response.data];
  * }
- * await client.findExceptionListsItemPointInTimeFinder({
+ * await client.findExceptionListItemsPointInTimeFinder({
  *   filter,
  *   executeFunctionOnStream,
  *   namespaceType,
@@ -71,7 +71,7 @@ interface FindExceptionListItemsPointInTimeFinderOptions {
  * @param savedObjectsClient {Object} The saved object client
  * @param sortOrder "asc" | "desc" The order to sort against
  */
-export const findExceptionListsItemPointInTimeFinder = async ({
+export const findExceptionListItemsPointInTimeFinder = async ({
   listId,
   namespaceType,
   savedObjectsClient,

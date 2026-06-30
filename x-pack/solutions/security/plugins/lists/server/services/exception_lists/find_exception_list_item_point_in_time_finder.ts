@@ -17,7 +17,7 @@ import type {
   SortOrderOrUndefined,
 } from '@kbn/securitysolution-io-ts-list-types';
 
-import { findExceptionListsItemPointInTimeFinder } from './find_exception_list_items_point_in_time_finder';
+import { findExceptionListItemsPointInTimeFinder } from './find_exception_list_items_point_in_time_finder';
 
 interface FindExceptionListItemPointInTimeFinderOptions {
   listId: ListId;
@@ -75,7 +75,7 @@ export const findExceptionListItemPointInTimeFinder = async ({
   sortField,
   sortOrder,
 }: FindExceptionListItemPointInTimeFinderOptions): Promise<void> => {
-  return findExceptionListsItemPointInTimeFinder({
+  return findExceptionListItemsPointInTimeFinder({
     executeFunctionOnStream,
     filter: filter != null ? [filter] : [],
     listId: [listId],

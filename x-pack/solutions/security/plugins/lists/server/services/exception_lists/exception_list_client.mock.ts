@@ -68,7 +68,7 @@ export class ExceptionListClientMock extends ExceptionListClient {
       missing_exception_lists_count: 0,
     },
   });
-  public findExceptionListsItemPointInTimeFinder = jest.fn().mockReturnValue(Promise.resolve());
+  public findExceptionListItemsPointInTimeFinder = jest.fn().mockReturnValue(Promise.resolve());
 }
 
 export const getExceptionListClientMock = (

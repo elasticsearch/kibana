@@ -10,3 +10,4 @@ export * from './list/create_container_with_entries';
 export * from './list/create_container_with_endpoint_entries';
 
 export * from './item/create_exception_list_item';
+export * from './item/delete_exception_list_item';

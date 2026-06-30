@@ -15,6 +15,7 @@ export * from './delete_exception_list_item/delete_exception_list_item.gen';
 export * from './delete_exception_list/delete_exception_list.gen';
 export * from './duplicate_exception_list/duplicate_exception_list.gen';
 export * from './export_exception_list/export_exception_list.gen';
+export * from './export_exception_lists/export_exception_lists.gen';
 export * from './find_exception_list_items/find_exception_list_items.gen';
 export * from './find_exception_lists/find_exception_lists.gen';
 export * from './import_exceptions/import_exceptions.gen';

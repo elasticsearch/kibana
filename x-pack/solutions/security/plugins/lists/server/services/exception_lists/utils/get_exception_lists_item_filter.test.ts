@@ -101,4 +101,27 @@ describe('getExceptionListsItemFilter', () => {
       '((exception-list.attributes.list_type: item AND exception-list.attributes.list_id: "list-1") AND (exception-list.attributes.name: "Sample Endpoint Exception List 1")) OR ((exception-list-agnostic.attributes.list_type: item AND exception-list-agnostic.attributes.list_id: "list-2") AND (exception-list.attributes.name: "Sample Endpoint Exception List 2")) OR ((exception-list-agnostic.attributes.list_type: item AND exception-list-agnostic.attributes.list_id: "list-3") AND (exception-list.attributes.name: "Sample Endpoint Exception List 3"))'
     );
   });
+
+  test('It should apply a global filter to every list when provided', () => {
+    const filter = getExceptionListsItemFilter({
+      globalFilter: 'exception-list.attributes.name: "Sample Detection Exception List"',
+      listId: ['list-1', 'list-2'],
+      savedObjectType: ['exception-list', 'exception-list-agnostic'],
+    });
+    expect(filter).toEqual(
+      '((exception-list.attributes.list_type: item AND exception-list.attributes.list_id: "list-1") AND (exception-list.attributes.name: "Sample Detection Exception List")) OR ((exception-list-agnostic.attributes.list_type: item AND exception-list-agnostic.attributes.list_id: "list-2") AND (exception-list.attributes.name: "Sample Detection Exception List"))'
+    );
+  });
+
+  test('It should prefer a per-list filter over a global filter', () => {
+    const filter = getExceptionListsItemFilter({
+      filter: ['exception-list.attributes.name: "List One"'],
+      globalFilter: 'exception-list.attributes.name: "Global Filter"',
+      listId: ['list-1', 'list-2'],
+      savedObjectType: ['exception-list', 'exception-list-agnostic'],
+    });
+    expect(filter).toEqual(
+      '((exception-list.attributes.list_type: item AND exception-list.attributes.list_id: "list-1") AND (exception-list.attributes.name: "List One")) OR ((exception-list-agnostic.attributes.list_type: item AND exception-list-agnostic.attributes.list_id: "list-2") AND (exception-list.attributes.name: "Global Filter"))'
+    );
+  });
 });

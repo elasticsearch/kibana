@@ -45,6 +45,7 @@ import type {
   DeleteExceptionListOptions,
   DuplicateExceptionListOptions,
   ExportExceptionListAndItemsOptions,
+  ExportExceptionListsAndItemsOptions,
   FindEndpointListItemOptions,
   FindExceptionListItemOptions,
   FindExceptionListItemPointInTimeFinderOptions,
@@ -68,6 +69,8 @@ import type {
 import { getExceptionList } from './get_exception_list';
 import type { ExportExceptionListAndItemsReturn } from './export_exception_list_and_items';
 import { exportExceptionListAndItems } from './export_exception_list_and_items';
+import type { ExportExceptionListsAndItemsReturn } from './export_exception_lists_and_items';
+import { exportExceptionListsAndItems } from './export_exception_lists_and_items';
 import { getExceptionListSummary } from './get_exception_list_summary';
 import { createExceptionList } from './create_exception_list';
 import { getExceptionListItem } from './get_exception_list_item';
@@ -96,7 +99,7 @@ import { openPointInTime } from './open_point_in_time';
 import { closePointInTime } from './close_point_in_time';
 import { findExceptionListPointInTimeFinder } from './find_exception_list_point_in_time_finder';
 import { findValueListExceptionListItems } from './find_value_list_exception_list_items';
-import { findExceptionListsItemPointInTimeFinder } from './find_exception_list_items_point_in_time_finder';
+import { findExceptionListItemsPointInTimeFinder } from './find_exception_list_items_point_in_time_finder';
 import { findValueListExceptionListItemsPointInTimeFinder } from './find_value_list_exception_list_items_point_in_time_finder';
 import { findExceptionListItemPointInTimeFinder } from './find_exception_list_item_point_in_time_finder';
 import { duplicateExceptionListAndItems } from './duplicate_exception_list';
@@ -1175,6 +1178,24 @@ export class ExceptionListClient {
   };
 
   /**
+   * Export multiple exception lists and their items
+   * @param options
+   * @param options.namespaceType saved object namespace (single | agnostic)
+   * @returns the ndjson of the lists and items to export; an empty export with
+   * zero counts when nothing matches
+   */
+  public exportExceptionListsAndItems = async (
+    options: ExportExceptionListsAndItemsOptions
+  ): Promise<ExportExceptionListsAndItemsReturn> => {
+    const { savedObjectsClient } = this;
+
+    return exportExceptionListsAndItems({
+      ...options,
+      savedObjectsClient,
+    });
+  };
+
+  /**
    * Import exception lists parent containers and items as stream
    * @param options
    * @param options.exceptionsToImport ndjson stream of lists and items
@@ -1421,7 +1442,7 @@ export class ExceptionListClient {
    * const executeFunctionOnStream = (response: FoundExceptionListItemSchema) => {
    *   exceptionList = [...exceptionList, ...response.data];
    * }
-   * await client.findExceptionListsItemPointInTimeFinder({
+   * await client.findExceptionListItemsPointInTimeFinder({
    *   filter,
    *   executeFunctionOnStream,
    *   namespaceType,
@@ -1442,7 +1463,7 @@ export class ExceptionListClient {
    * @param options.sortOrder "asc" | "desc" The order to sort against, "undefined" if the order does not matter
    * @param options.executeFunctionOnStream The function to execute which will have the streamed results
    */
-  public findExceptionListsItemPointInTimeFinder = async ({
+  public findExceptionListItemsPointInTimeFinder = async ({
     listId,
     namespaceType,
     executeFunctionOnStream,
@@ -1453,7 +1474,7 @@ export class ExceptionListClient {
     sortOrder,
   }: FindExceptionListItemsPointInTimeFinderOptions): Promise<void> => {
     const { savedObjectsClient } = this;
-    return findExceptionListsItemPointInTimeFinder({
+    return findExceptionListItemsPointInTimeFinder({
       executeFunctionOnStream,
       filter,
       listId,

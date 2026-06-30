@@ -13,6 +13,7 @@ export default function ({ loadTestFile }: FtrProviderContext) {
     loadTestFile(require.resolve('./get_exception_filter'));
     loadTestFile(require.resolve('./import_exceptions'));
     loadTestFile(require.resolve('./export_exception_list'));
+    loadTestFile(require.resolve('./export_exception_lists'));
     loadTestFile(require.resolve('./create_exception_lists'));
     loadTestFile(require.resolve('./read_exception_lists'));
     loadTestFile(require.resolve('./update_exception_lists'));

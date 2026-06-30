@@ -80,7 +80,7 @@ export const getExceptionFilterRoute = (router: ListsPluginRouter): void => {
               items = [...items, ...responseBody.data];
             };
 
-            await exceptionListClient?.findExceptionListsItemPointInTimeFinder({
+            await exceptionListClient?.findExceptionListItemsPointInTimeFinder({
               executeFunctionOnStream,
               filter: [],
               listId: listIds,

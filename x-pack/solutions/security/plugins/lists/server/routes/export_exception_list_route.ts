@@ -15,7 +15,7 @@ import type { ListsPluginRouter } from '../types';
 
 import { buildSiemResponse, getExceptionListClient } from './utils';
 
-export const exportExceptionsRoute = (router: ListsPluginRouter): void => {
+export const exportExceptionListRoute = (router: ListsPluginRouter): void => {
   router.versioned
     .post({
       access: 'public',

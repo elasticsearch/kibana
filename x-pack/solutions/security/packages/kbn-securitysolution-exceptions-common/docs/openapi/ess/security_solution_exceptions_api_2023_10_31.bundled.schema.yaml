@@ -841,6 +841,116 @@ paths:
       summary: Update an exception list
       tags:
         - Security Exceptions API
+  /api/exception_lists/_bulk_export:
+    post:
+      description: Returns a streaming NDJSON file with list records, item records,
+        and a summary footer.
+      operationId: ExportExceptionLists
+      parameters:
+        - description: Filters the returned results according to the KQL query string.
+          in: query
+          name: filter
+          required: false
+          schema:
+            maxLength: 10000
+            type: string
+        - description: Determines whether to include expired exceptions in the exported
+            list. The expiration date is defined by `expire_time`.
+          example: true
+          in: query
+          name: include_expired_exceptions
+          required: false
+          schema:
+            default: 'true'
+            enum:
+              - 'true'
+              - 'false'
+            type: string
+        - description: Determines whether the exception lists are in the default namespace
+            (`single`) or in the global `agnostic` namespace. Defaults to
+            `single` if not provided.
+          in: query
+          name: namespace_type
+          required: false
+          schema:
+            $ref: '#/components/schemas/ExceptionNamespaceType'
+      responses:
+        '200':
+          content:
+            application/ndjson:
+              examples:
+                exportSavedObjectsResponse:
+                  value: |
+                    {"_version":"WzExNDU5LDFd","created_at":"2025-01-09T16:18:17.757Z","created_by":"elastic","description":"This is a sample detection type exception","id":"c86c2da0-2ab6-4343-b81c-216ef27e8d75","immutable":false,"list_id":"simple_list","name":"Sample Detection Exception List","namespace_type":"single","os_types":[],"tags":["user added string for a tag","malware"],"tie_breaker_id":"cf4a7b92-732d-47f0-a0d5-49a35a1736bf","type":"detection","updated_at":"2025-01-09T16:18:17.757Z","updated_by":"elastic","version":1}
+                    {"_version":"WzExNDYxLDFd","comments":[],"created_at":"2025-01-09T16:18:42.308Z","created_by":"elastic","description":"This is a sample detection type exception item","entries":[{"type":"exists","field":"actingProcess.file.signer","operator":"excluded"},{"type":"match_any","field":"host.name","value":["some host","another host"],"operator":"included"}],"id":"f37597ce-eaa7-4b64-9100-4301118f6806","item_id":"simple_list_item","list_id":"simple_list","name":"Sample Detection Exception List Item","namespace_type":"single","os_types":["linux"],"tags":["user added string for a tag","malware"],"tie_breaker_id":"4ca3ef3e-9721-42c0-8107-cf47e094d40f","type":"simple","updated_at":"2025-01-09T16:18:42.308Z","updated_by":"elastic"}
+                    {"_version":"WzExNDYzLDFd","created_at":"2025-01-09T16:20:01.412Z","created_by":"elastic","description":"Detection exceptions for known-good network indicators","id":"d2a5e9f2-8c1b-4f1e-9e62-2b8c4d9d3e10","immutable":false,"list_id":"network_indicators_list","name":"Network Indicators Exception List","namespace_type":"single","os_types":[],"tags":["network","known-good"],"tie_breaker_id":"a1b2c3d4-5e6f-7890-abcd-ef0123456789","type":"detection","updated_at":"2025-01-09T16:20:01.412Z","updated_by":"elastic","version":1}
+                    {"_version":"WzExNDY1LDFd","comments":[],"created_at":"2025-01-09T16:21:15.118Z","created_by":"elastic","description":"Allow traffic from a known corporate proxy","entries":[{"type":"match","field":"source.ip","value":"10.0.0.5","operator":"included"}],"id":"a4d3e1c2-1234-4567-89ab-cdef01234567","item_id":"network_indicators_list_item","list_id":"network_indicators_list","name":"Corporate Proxy","namespace_type":"single","os_types":[],"tags":["network","known-good"],"tie_breaker_id":"b5e4f3d2-1111-2222-3333-444455556666","type":"simple","updated_at":"2025-01-09T16:21:15.118Z","updated_by":"elastic"}
+                    {"exported_exception_list_count":2,"exported_exception_list_item_count":2}
+              schema:
+                description: A `.ndjson` file containing the specified exception lists and their
+                  items
+                format: binary
+                type: string
+          description: Successful response
+        '400':
+          content:
+            application/json:
+              examples:
+                badRequest:
+                  value:
+                    error: Bad Request
+                    message: '[request query]: include_expired_exceptions: Invalid option: expected
+                      one of "true"|"false"'
+                    statusCode: 400
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/PlatformErrorResponse'
+                  - $ref: '#/components/schemas/SiemErrorResponse'
+          description: Invalid input data response
+        '401':
+          content:
+            application/json:
+              examples:
+                unauthorized:
+                  value:
+                    error: Unauthorized
+                    message: '[security_exception\n\tRoot causes:\n\t\tsecurity_exception: unable to
+                      authenticate user [elastic] for REST request
+                      [/_security/_authenticate]]: unable to authenticate user
+                      [elastic] for REST request [/_security/_authenticate]'
+                    statusCode: 401
+              schema:
+                $ref: '#/components/schemas/PlatformErrorResponse'
+          description: Unsuccessful authentication response
+        '403':
+          content:
+            application/json:
+              examples:
+                forbidden:
+                  value:
+                    error: Forbidden
+                    message: API [POST /api/exception_lists/_bulk_export] is unauthorized for user,
+                      this action is granted by the Kibana privileges
+                      [lists-all]
+                    statusCode: 403
+              schema:
+                $ref: '#/components/schemas/PlatformErrorResponse'
+          description: Not enough privileges response
+        '500':
+          content:
+            application/json:
+              examples:
+                serverError:
+                  value:
+                    message: Internal Server Error
+                    status_code: 500
+              schema:
+                $ref: '#/components/schemas/SiemErrorResponse'
+          description: Internal server error response
+      summary: Export multiple exception lists
+      tags:
+        - Security Exceptions API
+      x-state: Generally available; added in 9.5.0
   /api/exception_lists/_duplicate:
     post:
       description: Duplicate an existing exception list.
