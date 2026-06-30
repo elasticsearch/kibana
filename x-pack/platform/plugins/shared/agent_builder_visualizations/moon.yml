@@ -42,7 +42,6 @@ tags:
   - jest-unit-tests
 fileGroups:
   src:
-    - common/**/*
     - public/**/*
     - server/**/*
     - '!target/**/*'
