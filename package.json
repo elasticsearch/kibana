@@ -110,6 +110,7 @@
     "@aws-sdk/client-bedrock-runtime": "3.994.0",
     "@aws-sdk/client-kendra": "3.994.0",
     "@aws-sdk/credential-provider-node": "3.972.10",
+    "@elastic/charts": "https://ech-e2e-ci--pr-2846-2mo7o6lf.web.app/packages/elastic-charts-v71.7.0-pr-2846.tgz",
     "@elastic/elasticsearch/@elastic/transport": "9.3.7",
     "@storybook/react-docgen-typescript-plugin": "1.0.6--canary.9.cd77847.0",
     "@types/react": "18.2.79",

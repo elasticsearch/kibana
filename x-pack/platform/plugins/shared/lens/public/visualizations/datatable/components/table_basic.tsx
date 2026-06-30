@@ -505,13 +505,16 @@ export const DatatableComponent = (props: DatatableRenderProps) => {
       DataContext,
       isDarkMode,
       getCellColor,
-      props.args.fitRowToContent
+      props.paletteService,
+      props.args.fitRowToContent,
+      props.args.density
     );
   }, [
     formatters,
     columnConfig,
     isDarkMode,
     props.args.fitRowToContent,
+    props.args.density,
     props.paletteService,
     palettes,
     sortedTable,

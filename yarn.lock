@@ -2205,10 +2205,9 @@
   dependencies:
     object-hash "^1.3.0"
 
-"@elastic/charts@71.7.0":
+"@elastic/charts@71.7.0", "@elastic/charts@https://ech-e2e-ci--pr-2846-2mo7o6lf.web.app/packages/elastic-charts-v71.7.0-pr-2846.tgz":
   version "71.7.0"
-  resolved "https://registry.yarnpkg.com/@elastic/charts/-/charts-71.7.0.tgz#9ff7c35d2bc93987a0267abdde2b967c181fdf7c"
-  integrity sha512-AH+WdEAlAaFY3YjWkLD5WofkH1J9dyDRkqX/GwJxVS7hiCSbKo2AFUIO1JBPnJ0xjMCSk100cFgIb8NDlUo5jw==
+  resolved "https://ech-e2e-ci--pr-2846-2mo7o6lf.web.app/packages/elastic-charts-v71.7.0-pr-2846.tgz#fd27486931dae78e99502191fc4441562777ed81"
   dependencies:
     "@popperjs/core" "^2.11.8"
     "@reduxjs/toolkit" "1.9.7"

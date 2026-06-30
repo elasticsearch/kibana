@@ -21,6 +21,7 @@ import {
   hasPaletteStops,
 } from '@kbn/coloring';
 import { VIS_EVENT_TO_TRIGGER } from '@kbn/visualizations-plugin/public';
+import type { AccessorConfig } from '@kbn/visualization-ui-components';
 import { IconChartDatatable } from '@kbn/chart-icons';
 import { getOriginalId } from '@kbn/transpose-utils';
 import { LayerTypes } from '@kbn/expression-xy-plugin/public';
@@ -76,6 +77,8 @@ import {
   getDataBoundsForAccessor,
   getColorDefaults,
   getColorByValuePalette,
+  isPaletteFillMode,
+  DEFAULT_PROGRESS_BAR_COLOR,
 } from './utils';
 
 const visualizationLabel = i18n.translate('xpack.lens.datatable.label', {
@@ -88,7 +91,20 @@ const visualizationLabel = i18n.translate('xpack.lens.datatable.label', {
  * When it already has a colorMapping, keep it and just drop the value-based palette.
  */
 function reconcileCategoricalColumn(column: ColumnState): ColumnState {
-  const { palette, colorMapping } = column;
+  const { palette, colorMapping, colorMode, fillStyle } = column;
+
+  // Progress bars are numeric-only; if the column became categorical, drop the
+  // progress decoration and fall back to a categorical color mapping.
+  if (colorMode === 'progress' || fillStyle != null) {
+    return {
+      ...column,
+      colorMode: 'cell',
+      fillStyle: undefined,
+      palette: undefined,
+      colorMapping: colorMapping ?? DEFAULT_COLOR_MAPPING_CONFIG,
+    };
+  }
+
   const hasValueBasedPalette = hasPaletteStops(palette);
   const needsTransition = hasValueBasedPalette || (palette != null && colorMapping != null);
   if (!needsTransition) return column;
@@ -221,8 +237,8 @@ export const getDatatableVisualization = ({
 
     // Normalize column color configuration when the underlying column type changes
     const columns = state.columns.map((column) => {
-      const { columnId, palette, colorMapping } = column;
-      const hasColorConfig = palette != null || colorMapping != null;
+      const { columnId, palette, colorMapping, fillStyle } = column;
+      const hasColorConfig = palette != null || colorMapping != null || fillStyle != null;
       if (!hasColorConfig) return column;
 
       const { isNumeric, isCategory: isCategorical } = getAccessorType(datasource, columnId);
@@ -376,6 +392,35 @@ export const getDatatableVisualization = ({
       );
     };
 
+    /**
+     * Builds the dimension-trigger color indicator for a column.
+     *
+     * Mirrors the metric chart's static/dynamic split: a single-fill progress
+     * decoration shows a solid swatch (`color`) with no palette gradient, while
+     * palette-driven coloring (cell/text/badge, or solid/gradient progress) shows
+     * the palette preview (`colorBy` + stops).
+     */
+    const getColorIndicator = (
+      accessor: string
+    ): Pick<AccessorConfig, 'triggerIconType' | 'palette' | 'color'> => {
+      const { colorMode = 'none', hidden, fillStyle } = columnMap[accessor] ?? {};
+
+      if (hidden) return { triggerIconType: 'invisible' };
+
+      if (colorMode === 'progress' && fillStyle && !isPaletteFillMode(fillStyle.fillMode)) {
+        return {
+          triggerIconType: 'color',
+          color: fillStyle.color ?? DEFAULT_PROGRESS_BAR_COLOR,
+        };
+      }
+
+      const stops = getResolvedDisplayColors(accessor);
+      const hasColoring = colorMode !== 'none' && stops.length > 0;
+      return hasColoring
+        ? { triggerIconType: 'colorBy', palette: stops }
+        : { triggerIconType: undefined };
+    };
+
     return {
       groups: [
         // In this group we get columns that are not transposed and are not on the metric dimension
@@ -405,21 +450,13 @@ export const getDatatableVisualization = ({
               return datasource!.getOperationForColumnId(c)?.isBucketed && !column?.isTransposed;
             })
             .map((accessor) => {
-              const { colorMode = 'none', hidden, collapseFn } = columnMap[accessor] ?? {};
-              const stops = getResolvedDisplayColors(accessor);
-              const hasColoring = colorMode !== 'none' && stops.length > 0;
-
-              return {
-                columnId: accessor,
-                triggerIconType: hidden
-                  ? 'invisible'
-                  : hasColoring
-                  ? 'colorBy'
-                  : collapseFn
-                  ? 'aggregate'
-                  : undefined,
-                palette: hasColoring ? stops : undefined,
-              };
+              const { collapseFn } = columnMap[accessor] ?? {};
+              const indicator = getColorIndicator(accessor);
+              // A collapsed row with no coloring shows the aggregate icon.
+              if (indicator.triggerIconType === undefined && collapseFn) {
+                return { columnId: accessor, triggerIconType: 'aggregate' as const };
+              }
+              return { columnId: accessor, ...indicator };
             }),
           supportsMoreColumns: true,
           filterOperations: (op) => op.isBucketed,
@@ -486,17 +523,7 @@ export const getDatatableVisualization = ({
               }
               return !operation?.isBucketed;
             })
-            .map((accessor) => {
-              const { colorMode = 'none', hidden } = columnMap[accessor] ?? {};
-              const stops = getResolvedDisplayColors(accessor);
-              const hasColoring = colorMode !== 'none' && stops.length > 0;
-
-              return {
-                columnId: accessor,
-                triggerIconType: hidden ? 'invisible' : hasColoring ? 'colorBy' : undefined,
-                palette: hasColoring ? stops : undefined,
-              };
-            }),
+            .map((accessor) => ({ columnId: accessor, ...getColorIndicator(accessor) })),
           supportsMoreColumns: true,
           filterOperations: (op) => !op.isBucketed,
           isMetricDimension: true,
@@ -692,6 +719,10 @@ export const getDatatableVisualization = ({
                       .toExpression(paletteParams),
               colorMapping:
                 canColor && column.colorMapping ? JSON.stringify(column.colorMapping) : undefined,
+              fillStyle:
+                canColor && column.colorMode === 'progress' && column.fillStyle
+                  ? JSON.stringify(column.fillStyle)
+                  : undefined,
               summaryRow: hasNoSummaryRow ? undefined : column.summaryRow!,
               summaryLabel: hasNoSummaryRow
                 ? undefined
@@ -883,7 +914,10 @@ export const getDatatableVisualization = ({
     const normalizedColumns = state.columns.map((column) => {
       const { colorMode, palette, colorMapping } = column;
 
-      if (!colorMode || colorMode === 'none') {
+      // 'progress' owns its own palette/range lifecycle (the solid/gradient range
+      // mirrors palette params), so it is excluded from the color-mismatch auto-fix
+      // to avoid rewriting the palette out from under the bar domain.
+      if (!colorMode || colorMode === 'none' || colorMode === 'progress') {
         return column;
       }
 

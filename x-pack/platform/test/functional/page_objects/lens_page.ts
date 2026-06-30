@@ -1395,9 +1395,21 @@ export function LensPageProvider({ getService, getPageObjects }: FtrProviderCont
       });
     },
 
-    async setTableDynamicColoring(coloringType: 'none' | 'cell' | 'text' | 'badge') {
-      const label = coloringType.charAt(0).toUpperCase() + coloringType.slice(1);
-      await this.selectOptionFromComboBox('lnsDatatable_dynamicColoring_groups', label);
+    async setTableDynamicColoring(coloringType: 'none' | 'cell' | 'text' | 'badge' | 'progress') {
+      // The "Cell decoration" combo box label diverges from the stored value
+      // (the `cell` value is surfaced as "Background"), so map explicitly rather
+      // than title-casing the stored value.
+      const labelByColoringType: Record<typeof coloringType, string> = {
+        none: 'None',
+        cell: 'Background',
+        text: 'Text',
+        badge: 'Badge',
+        progress: 'Progress bar',
+      };
+      await this.selectOptionFromComboBox(
+        'lnsDatatable_dynamicColoring_groups',
+        labelByColoringType[coloringType]
+      );
     },
 
     async openPalettePanel() {

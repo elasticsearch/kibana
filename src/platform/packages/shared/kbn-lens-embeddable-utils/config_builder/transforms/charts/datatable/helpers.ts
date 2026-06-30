@@ -27,9 +27,11 @@ const colorModeCompat = getReversibleMappings([
 
 type ApiColorTarget = 'value' | 'badge' | 'background';
 
-export const colorModeToApplyColorTo = (
-  mode: Exclude<NonNullable<ColumnState['colorMode']>, 'none'>
-): ApiColorTarget => colorModeCompat.toAPI(mode);
+// 'progress' is a numeric-only cell decoration with no as-code API surface yet.
+type ApiColorMode = Exclude<NonNullable<ColumnState['colorMode']>, 'none' | 'progress'>;
+
+export const colorModeToApplyColorTo = (mode: ApiColorMode): ApiColorTarget =>
+  colorModeCompat.toAPI(mode);
 
 export const applyColorToToColorMode = (
   target: ApiColorTarget

@@ -10,6 +10,7 @@ import { EuiThemeProvider } from '@elastic/eui';
 import { DataContext } from './table_basic';
 import { createGridCell } from './cell_value';
 import { getTransposeId } from '@kbn/transpose-utils';
+import { chartPluginMock } from '@kbn/charts-plugin/public/mocks';
 import type { FieldFormat } from '@kbn/field-formats-plugin/common';
 import { MISSING_TOKEN } from '@kbn/field-formats-common';
 import type { Datatable } from '@kbn/expressions-plugin/public';
@@ -21,6 +22,7 @@ import userEvent from '@testing-library/user-event';
 describe('datatable cell renderer', () => {
   const innerCellColorFnMock = jest.fn().mockReturnValue('blue');
   const cellColorFnMock = jest.fn().mockReturnValue(innerCellColorFnMock);
+  const paletteServiceMock = chartPluginMock.createPaletteRegistry();
   const setCellProps = jest.fn();
 
   const baseTable: Datatable = {
@@ -108,6 +110,7 @@ describe('datatable cell renderer', () => {
       DataContext,
       isDarkMode,
       cellColorFnMock,
+      paletteServiceMock,
       fitRowToContent
     );
 
@@ -740,6 +743,78 @@ describe('datatable cell renderer', () => {
       renderThemedCellRenderer(columnConfigNonCellColorMode, isDarkMode, backgroundColor);
       const linkColor = '#1750BA'; // Default EuiLink color for light mode
       expect(screen.getByRole('button')).toHaveStyle(`color: ${linkColor}`);
+    });
+  });
+
+  describe('progress bar', () => {
+    const progressColumnConfig = (fillStyle: object): ColumnConfig => ({
+      columns: [
+        {
+          columnId: 'a',
+          type: 'lens_datatable_column',
+          colorMode: 'progress',
+          fillStyle: JSON.stringify(fillStyle),
+        },
+      ],
+      sortingColumnId: '',
+      sortingDirection: 'none',
+    });
+
+    it('renders a Meter with the formatted value label for a numeric cell', () => {
+      const CellRenderer = makeCellRenderer({
+        columnConfig: progressColumnConfig({ fillMode: 'single', valueRange: { mode: 'auto' } }),
+      });
+      render(
+        <EuiThemeProvider>
+          <CellRenderer
+            rowIndex={0}
+            colIndex={0}
+            columnId="a"
+            setCellProps={setCellProps}
+            isExpandable={false}
+            isDetails={false}
+            isExpanded={false}
+          />
+        </EuiThemeProvider>,
+        {
+          wrapper: DataContextProviderWrapper({
+            table: baseTable,
+            minMaxByColumnId: defaultMinMaxByColumnId,
+          }),
+        }
+      );
+
+      expect(screen.getByTestId('lnsTableProgressBarLabel')).toHaveTextContent('formatted 123');
+      // The Meter renders with role="meter" carrying the cell value.
+      expect(screen.getByRole('meter')).toHaveAttribute('aria-valuenow', '123');
+    });
+
+    it('falls back to a formatted cell for empty/non-numeric values', () => {
+      const CellRenderer = makeCellRenderer({
+        columnConfig: progressColumnConfig({ fillMode: 'single', valueRange: { mode: 'auto' } }),
+      });
+      render(
+        <EuiThemeProvider>
+          <CellRenderer
+            rowIndex={0}
+            colIndex={0}
+            columnId="a"
+            setCellProps={setCellProps}
+            isExpandable={false}
+            isDetails={false}
+            isExpanded={false}
+          />
+        </EuiThemeProvider>,
+        {
+          wrapper: DataContextProviderWrapper({
+            table: makeTable([{ a: null }]),
+            minMaxByColumnId: defaultMinMaxByColumnId,
+          }),
+        }
+      );
+
+      expect(screen.queryByRole('meter')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('lnsTableProgressBarLabel')).not.toBeInTheDocument();
     });
   });
 });

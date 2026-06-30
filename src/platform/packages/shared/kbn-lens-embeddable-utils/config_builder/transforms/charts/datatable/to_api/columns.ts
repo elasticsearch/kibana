@@ -50,7 +50,8 @@ export function buildColorProps(
   column: ColumnState
 ): Partial<Pick<NonNullable<DatatableConfig['metrics']>[number], 'apply_color_to' | 'color'>> {
   const { colorMode, palette, colorMapping } = column;
-  if (!colorMode || colorMode === 'none') return {};
+  // 'progress' has no as-code API surface yet; skip it at the API boundary.
+  if (!colorMode || colorMode === 'none' || colorMode === 'progress') return {};
 
   const applyColorTo = colorModeToApplyColorTo(colorMode);
 
@@ -113,7 +114,7 @@ function buildRowsAPINoESQL(column: ColumnState): APIRowPropsNoESQL {
   const { colorMode, colorMapping, palette } = column;
   return {
     ...buildRowCommonProps(column),
-    ...(colorMode && colorMode !== 'none'
+    ...(colorMode && colorMode !== 'none' && colorMode !== 'progress'
       ? {
           apply_color_to: colorModeToApplyColorTo(colorMode),
           color:
