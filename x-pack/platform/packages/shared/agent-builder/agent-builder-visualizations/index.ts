@@ -7,6 +7,8 @@
 
 export { VisualizeLens } from './visualize_lens';
 export { VisualizeESQL } from './visualize_esql';
+export { VisualizeVega } from './visualize_vega';
+export { InlineVisualization, type InlineVisualizationProps } from './inline_visualization';
 export {
   getVisualizationDimensionsFromConfig,
   getVisualizationDimensionsFromChartType,

@@ -21,7 +21,7 @@ import {
   SavedObjectSaveModalDashboard,
   type SaveModalDashboardProps,
 } from '@kbn/presentation-util-plugin/public';
-import type { VegaVisualizationServices } from '../services';
+import type { VisualizationServices } from '../services';
 import {
   visualizationWrapperStyles,
   visualizationEmbeddableStyles,
@@ -69,7 +69,7 @@ export function VisualizeVega({
   timeRange,
   registerActionButtons,
 }: {
-  services: VegaVisualizationServices;
+  services: VisualizationServices;
   visualization: Record<string, unknown>;
   timeRange?: TimeRange;
   registerActionButtons?: InlineRenderCallbacks['registerActionButtons'];

@@ -141,5 +141,7 @@
     "@kbn/react-kibana-mount",
     "@kbn/user-profile-components",
     "@kbn/telemetry",
+    "@kbn/embeddable-plugin",
+    "@kbn/presentation-util-plugin",
   ]
 }

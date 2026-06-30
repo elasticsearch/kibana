@@ -18,6 +18,7 @@ project:
   sourceRoot: x-pack/platform/plugins/shared/agent_builder_visualizations
 dependsOn:
   - '@kbn/core'
+  - '@kbn/i18n'
   - '@kbn/agent-builder-server'
   - '@kbn/agent-builder-browser'
   - '@kbn/agent-builder-common'

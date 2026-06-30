@@ -19,7 +19,7 @@ import {
 } from '@kbn/agent-builder-common/tools/custom_rendering';
 import {
   VisualizeESQL,
-  VisualizeLens,
+  InlineVisualization,
   type VisualizationServices,
 } from '@kbn/agent-builder-visualizations';
 
@@ -57,6 +57,7 @@ export function createVisualizationRenderer({
     dataViews: startDependencies.dataViews,
     uiActions: startDependencies.uiActions,
     unifiedSearch: startDependencies.unifiedSearch,
+    embeddable: startDependencies.embeddable,
   };
 
   return (props: VisualizationElementAttributes) => {
@@ -96,20 +97,15 @@ export function createVisualizationRenderer({
       return <EuiText>Unable to find visualization for {ToolResultAttribute}.</EuiText>;
     }
 
-    // Handle visualization result. The chat markdown surface renders Lens only;
-    // Vega specs are rendered only in the visualization attachment.
+    // Handle visualization result (pre-built Lens config or Vega spec).
     if (toolResult.type === 'visualization') {
       const { data } = toolResult;
 
-      if (data.renderer === 'vega') {
-        // this should never happen
-        return <EuiText>Vega visualizations are not supported inline here.</EuiText>;
-      }
-
       return (
-        <VisualizeLens
+        <InlineVisualization
           services={services}
-          lensConfig={data.visualization}
+          renderer={data.renderer}
+          visualization={data.visualization}
           timeRange={data.time_range}
         />
       );
