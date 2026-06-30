@@ -25,12 +25,18 @@ import type {
   ChromeSetProjectBreadcrumbsParams,
   ChromeUserBanner,
   GlobalSearchConfig,
+<<<<<<< HEAD
   AppDeepLinkId,
   NavigationCustomization,
+=======
+>>>>>>> b1d836d30fda (define orchestration contract for navigation extension within chrome)
   NavigationTreeDefinition,
   NavigationTreeDefinitionUI,
   CloudURLs,
   SolutionId,
+  SlotDataSources,
+  NavTreeExtensionSlotDataSources,
+  NavExtensionDefinitionMap,
 } from '@kbn/core-chrome-browser';
 
 /** @internal */
@@ -94,13 +100,10 @@ export interface InternalChromeStart extends ChromeStart {
     setKibanaName(kibanaName: string): void;
 
     /** Initialise project navigation from a definition tree. */
-    initNavigation<
-      LinkId extends AppDeepLinkId = AppDeepLinkId,
-      Id extends string = string,
-      ChildrenId extends string = Id
-    >(
+    initNavigation<TTree extends NavigationTreeDefinition>(
       id: SolutionId,
-      navigationTree$: Observable<NavigationTreeDefinition<LinkId, Id, ChildrenId>>
+      navigationTree$: Observable<TTree>,
+      slotDataSources?: NavTreeExtensionSlotDataSources<TTree>
     ): void;
 
     /** Get an observable of the resolved project navigation tree and active nodes. */
@@ -145,6 +148,15 @@ export interface InternalChromeStart extends ChromeStart {
 
     /** Register the handler that opens the navigation customization modal. Called once by the navigation plugin. */
     registerCustomizeNavigationHandler(handler: () => void): void;
+    
+    /** Get the per-solution slot data-source map (keyed by `slotId`) for the active navigation. */
+    getActiveSlotDataSources$(): Observable<SlotDataSources | undefined>;
+
+    /** Push the global, declarative extension-definition registry (keyed by `extensionId`). */
+    setExtensionRegistry(registry: NavExtensionDefinitionMap): void;
+
+    /** Get the global extension-definition registry. */
+    getExtensionRegistry$(): Observable<NavExtensionDefinitionMap>;
   };
 
   /** @internal Extends public `next` with `get$` for Chrome layout components. */

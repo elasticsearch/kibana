@@ -7,6 +7,7 @@
 import type { NavigationTreeDefinition } from '@kbn/core-chrome-browser';
 import type { CoreStart } from '@kbn/core/public';
 import { i18n } from '@kbn/i18n';
+import { createRecentItemsData$ } from '@kbn/dashboard-plugin/public';
 import type { AddSolutionNavigationArg } from '@kbn/navigation-plugin/public';
 import { STACK_MANAGEMENT_NAV_ID, DATA_MANAGEMENT_NAV_ID } from '@kbn/deeplinks-management';
 import { combineLatest, map, of } from 'rxjs';
@@ -15,6 +16,8 @@ import { AI_CHAT_EXPERIENCE_TYPE } from '@kbn/management-settings-ids';
 import { getAlertingV2ManagementNavPanel } from '@kbn/alerting-v2-utils';
 import type { Location } from 'history';
 import type { ObservabilityPublicPluginsStart } from './plugin';
+
+export const RECENT_DASHBOARDS_SLOT_ID = 'recentDashboards';
 
 const title = i18n.translate(
   'xpack.observability.obltNav.headerSolutionSwitcher.obltSolutionTitle',
@@ -73,9 +76,22 @@ function createNavTree({
       {
         link: 'dashboards',
         icon: 'productDashboard',
+        renderAs: 'panelOpener',
         getIsActive: ({ pathNameSerialized, prepend, location }) =>
           pathNameSerialized.startsWith(prepend('/app/dashboards')) ||
           isEditingFromDashboard(location, pathNameSerialized, prepend),
+        children: [
+          {
+            id: 'recent-dashboards',
+            title: i18n.translate('xpack.observability.obltNav.dashboards.recentlyViewed', {
+              defaultMessage: 'Recently viewed',
+            }),
+            renderAs: 'extension',
+            slotId: RECENT_DASHBOARDS_SLOT_ID,
+            extensionId: 'recentlyAccessedDashboards',
+            popoverOnly: true,
+          },
+        ],
       },
       {
         link: 'workflows',
@@ -472,7 +488,6 @@ function createNavTree({
               description:
                 'The heading of a section in a navigation tree dedicated to data collection',
             }),
-            renderAs: 'panelOpener',
             children: [
               {
                 link: 'integrations',
@@ -498,7 +513,6 @@ function createNavTree({
               description:
                 'Heading in a nav tree dedicated to UIs for leveraging various Elasticsearch features for data management',
             }),
-            renderAs: 'panelOpener',
             children: [
               {
                 link: 'management:index_management',
@@ -534,7 +548,6 @@ function createNavTree({
           {
             id: 'stack_management_home',
             title: '',
-            renderAs: 'panelOpener',
             children: [
               {
                 // We include this link here to ensure that the settings icon does not land on Stack Monitoring by default
@@ -564,7 +577,6 @@ function createNavTree({
             title: i18n.translate('xpack.observability.obltNav.alertsAndInsights', {
               defaultMessage: 'Alerts and Insights',
             }),
-            renderAs: 'panelOpener',
             children: [
               {
                 link: 'management:triggersActions',
@@ -636,7 +648,6 @@ function createNavTree({
             title: i18n.translate('xpack.observability.obltNav.security', {
               defaultMessage: 'Security',
             }),
-            renderAs: 'panelOpener',
             children: [
               {
                 link: 'management:users',
@@ -657,7 +668,6 @@ function createNavTree({
             title: i18n.translate('xpack.observability.obltNav.data', {
               defaultMessage: 'Data',
             }),
-            renderAs: 'panelOpener',
             children: [
               {
                 link: 'management:cross_cluster_replication',
@@ -672,7 +682,6 @@ function createNavTree({
             title: i18n.translate('xpack.observability.obltNav.kibana', {
               defaultMessage: 'Kibana',
             }),
-            renderAs: 'panelOpener',
             children: [
               {
                 link: 'management:filesManagement',
@@ -727,4 +736,10 @@ export const createDefinition = (
       })
     )
   ),
+  slotDataSources: {
+    [RECENT_DASHBOARDS_SLOT_ID]: createRecentItemsData$(
+      coreStart.chrome.recentlyAccessed,
+      coreStart.http.basePath
+    ),
+  },
 });

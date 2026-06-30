@@ -24,7 +24,6 @@ describe('getAlertingV2ManagementNavPanel', () => {
     expect(result[0]).toEqual({
       id: 'alerting_v2_panel',
       title: 'Alerting V2 Preview',
-      renderAs: 'panelOpener',
       children: [
         { link: 'management:rules' },
         { link: 'management:episodes' },

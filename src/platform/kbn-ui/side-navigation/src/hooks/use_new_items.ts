@@ -21,7 +21,7 @@ const getPrimaryItemById = (items: MenuItem[], id: string) => items.find((item) 
 const getSecondaryItemById = (items: MenuItem[], id: string) => {
   for (const parentItem of items) {
     for (const section of parentItem.sections ?? []) {
-      const secondaryItem = section.items.find((sectionItem) => sectionItem.id === id);
+      const secondaryItem = section.items?.find((sectionItem) => sectionItem.id === id);
       if (secondaryItem) return { secondaryItem, parentItem };
     }
   }
@@ -33,7 +33,7 @@ const getNewItemsIds = (item: MenuItem) => {
 
   const secondaryNewIds: string[] = [];
   item.sections?.forEach((section) => {
-    section.items.forEach((subItem) => {
+    section.items?.forEach((subItem) => {
       if (isNew(subItem)) secondaryNewIds.push(subItem.id);
     });
   });

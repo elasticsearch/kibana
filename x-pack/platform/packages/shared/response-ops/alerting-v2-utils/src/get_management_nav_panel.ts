@@ -6,7 +6,7 @@
  */
 
 import type { CoreStart } from '@kbn/core-lifecycle-browser';
-import type { NodeDefinition } from '@kbn/core-chrome-browser';
+import type { StandardNodeDefinition } from '@kbn/core-chrome-browser';
 import { i18n } from '@kbn/i18n';
 import { ALERTING_V2_ENABLED_SETTING_ID } from '@kbn/alerting-v2-constants';
 
@@ -33,7 +33,7 @@ const PANEL_ID = 'alerting_v2_panel';
  * checks, etc.) can be added inside this helper without changing its
  * signature or touching any of the consumer files again.
  */
-export const getAlertingV2ManagementNavPanel = (core: CoreStart): NodeDefinition[] => {
+export const getAlertingV2ManagementNavPanel = (core: CoreStart): StandardNodeDefinition[] => {
   const enabled = core.settings.globalClient.get<boolean>(ALERTING_V2_ENABLED_SETTING_ID, false);
 
   if (!enabled) {
@@ -46,7 +46,6 @@ export const getAlertingV2ManagementNavPanel = (core: CoreStart): NodeDefinition
       title: i18n.translate('xpack.alertingV2.nav.title', {
         defaultMessage: 'Alerting V2 Preview',
       }),
-      renderAs: 'panelOpener',
       children: [
         { link: 'management:rules' },
         { link: 'management:episodes' },

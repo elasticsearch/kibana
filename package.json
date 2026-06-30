@@ -1143,6 +1143,7 @@
     "@kbn/shared-ux-link-redirect-app": "link:src/platform/packages/shared/shared-ux/link/redirect_app/impl",
     "@kbn/shared-ux-markdown": "link:src/platform/packages/shared/shared-ux/markdown/impl",
     "@kbn/shared-ux-markdown-types": "link:src/platform/packages/shared/shared-ux/markdown/types",
+    "@kbn/shared-ux-navigation-extension-templates": "link:src/platform/packages/shared/shared-ux/navigation-extension-templates",
     "@kbn/shared-ux-page-analytics-no-data": "link:src/platform/packages/shared/shared-ux/page/analytics_no_data/impl",
     "@kbn/shared-ux-page-analytics-no-data-types": "link:src/platform/packages/shared/shared-ux/page/analytics_no_data/types",
     "@kbn/shared-ux-page-kibana-no-data": "link:src/platform/packages/shared/shared-ux/page/kibana_no_data/impl",
