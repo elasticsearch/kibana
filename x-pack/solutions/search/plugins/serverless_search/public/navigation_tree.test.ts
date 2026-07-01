@@ -68,6 +68,19 @@ describe('Navigation Tree', () => {
     );
   });
 
+  it('includes Data Federation under Data management > Indices and data streams', () => {
+    const { body } = createNavigationTree(mockApplication);
+    const dataManagement = body.find((item: any) => item.title === 'Data management');
+    const indicesSection = dataManagement?.children?.find(
+      (item: any) => item.title === 'Indices and data streams'
+    );
+
+    expect(indicesSection).toBeDefined();
+    expect(indicesSection?.children).toContainEqual(
+      expect.objectContaining({ link: 'management:data_federation' })
+    );
+  });
+
   it('shows AI section with GenAI settings and AI Assistant when AI Assistant is enabled', () => {
     const { footer } = createNavigationTree(mockApplication);
 

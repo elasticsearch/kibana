@@ -93,6 +93,7 @@ export default function ({ getService }: FtrProviderContext) {
             maintenanceWindow: ['all', 'read', 'minimal_all', 'minimal_read'],
             streams: ['all', 'read', 'minimal_all', 'minimal_read'],
             dataQuality: ['all', 'read', 'minimal_all', 'minimal_read'],
+            data_sets: ['all', 'read', 'minimal_all', 'minimal_read'],
             manageReporting: ['all', 'read', 'minimal_all', 'minimal_read'],
           },
           global: ['all', 'read'],
@@ -537,6 +538,7 @@ export default function ({ getService }: FtrProviderContext) {
               'manage_rules',
               'manage_alerts',
             ],
+            data_sets: ['all', 'read', 'minimal_all', 'minimal_read'],
             manageReporting: ['all', 'read', 'minimal_all', 'minimal_read'],
             apm: ['all', 'read', 'minimal_all', 'minimal_read', 'settings_save'],
             discover: [

@@ -459,6 +459,7 @@ export const createNavigationTree = ({
               { link: 'management:snapshot_restore' },
               { link: 'management:transform' },
               { link: 'management:rollup_jobs' },
+              { link: 'management:data_federation' },
               { link: 'management:data_quality' },
               { link: 'management:data_usage' },
             ],

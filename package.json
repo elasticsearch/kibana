@@ -567,6 +567,7 @@
     "@kbn/dashboard-navigation-options-schema": "link:src/platform/packages/private/dashboard/dashboard-navigation-options-schema",
     "@kbn/dashboard-plugin": "link:src/platform/plugins/shared/dashboard",
     "@kbn/dashboards-selector": "link:src/platform/packages/shared/dashboards/dashboards-selector",
+    "@kbn/data-federation-plugin": "link:x-pack/platform/plugins/private/data_federation",
     "@kbn/data-forge": "link:x-pack/platform/packages/shared/kbn-data-forge",
     "@kbn/data-grid-in-table-search": "link:src/platform/packages/shared/kbn-data-grid-in-table-search",
     "@kbn/data-lifecycle-phases": "link:x-pack/platform/packages/shared/kbn-data-lifecycle-phases",

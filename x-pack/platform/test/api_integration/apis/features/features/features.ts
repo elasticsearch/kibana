@@ -98,6 +98,7 @@ export default function ({ getService }: FtrProviderContext) {
             'visualize_v2',
             'dashboard_v2',
             'dataQuality',
+            'data_sets',
             'dev_tools',
             'actions',
             'anonymization',

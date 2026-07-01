@@ -132,6 +132,23 @@ describe('Navigation Tree', () => {
     );
   });
 
+  it('includes Data Federation under Data management > Indices and data streams', () => {
+    const { footer } = createNavigationTree({ core });
+    const dataManagement = footer?.find((item: any) => item.title === 'Data management');
+    const indicesSection = dataManagement?.children?.find((item: any) => {
+      return (
+        item.title === 'Indices and data streams' &&
+        Array.isArray(item.children) &&
+        item.children.some((child: any) => child.link === 'management:data_federation')
+      );
+    });
+
+    expect(indicesSection).toBeDefined();
+    expect((indicesSection as any).children).toContainEqual(
+      expect.objectContaining({ link: 'management:data_federation' })
+    );
+  });
+
   describe('filterForFeatureAvailability', () => {
     it('should return empty array if feature flag is false', () => {
       const node = {

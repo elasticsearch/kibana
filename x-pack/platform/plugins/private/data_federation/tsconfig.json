@@ -1,0 +1,25 @@
+{
+  "extends": "@kbn/tsconfig-base/tsconfig.json",
+  "compilerOptions": {
+    "outDir": "target/types",
+  },
+  "include": [
+    "common/**/*",
+    "public/**/*",
+    "server/**/*",
+    "../../../../../typings/**/*"
+  ],
+  "kbn_references": [
+    "@kbn/config-schema",
+    "@kbn/core",
+    "@kbn/management-plugin",
+    "@kbn/i18n",
+    "@kbn/core-http-browser",
+    "@kbn/cloud-plugin",
+    "@kbn/shared-ux-router",
+    "@kbn/features-plugin"
+  ],
+  "exclude": [
+    "target/**/*",
+  ]
+}

@@ -229,6 +229,43 @@ export const buildOSSFeatures = ({
       },
     },
     {
+      id: 'data_sets',
+      name: i18n.translate('xpack.features.dataSetsFeatureName', {
+        defaultMessage: 'Data sets',
+      }),
+      order: 1601,
+      category: DEFAULT_APP_CATEGORIES.management,
+      app: ['kibana'],
+      catalogue: [],
+      management: {
+        kibana: ['data_sets'],
+      },
+      privileges: {
+        all: {
+          app: ['kibana'],
+          management: {
+            kibana: ['data_sets'],
+          },
+          savedObject: {
+            all: [],
+            read: [],
+          },
+          ui: [],
+        },
+        read: {
+          app: ['kibana'],
+          management: {
+            kibana: ['data_sets'],
+          },
+          savedObject: {
+            all: [],
+            read: [],
+          },
+          ui: [],
+        },
+      },
+    },
+    {
       id: 'filesSharedImage',
       name: i18n.translate('xpack.features.filesSharedImagesFeatureName', {
         defaultMessage: 'Shared images',

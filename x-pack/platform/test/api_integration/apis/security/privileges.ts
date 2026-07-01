@@ -408,6 +408,7 @@ export default function ({ getService }: FtrProviderContext) {
       infrastructure: ['all', 'read', 'minimal_all', 'minimal_read'],
       logs: ['all', 'read', 'minimal_all', 'minimal_read'],
       dataQuality: ['all', 'read', 'minimal_all', 'minimal_read', 'manage_rules', 'manage_alerts'],
+      data_sets: ['all', 'read', 'minimal_all', 'minimal_read'],
       manageReporting: ['all', 'read', 'minimal_all', 'minimal_read'],
       apm: ['all', 'read', 'minimal_all', 'minimal_read', 'settings_save'],
       discover: [

@@ -1,0 +1,28 @@
+{
+  "type": "plugin",
+  "id": "@kbn/data-federation-plugin",
+  "owner": [
+    "@elastic/kibana-management"
+  ],
+  "group": "platform",
+  "visibility": "private",
+  "description": "Data sets and data sources apis and management",
+  "plugin": {
+    "id": "dataFederation",
+    "browser": true,
+    "server": true,
+    "configPath": [
+      "xpack",
+      "dataFederation"
+    ],
+    "requiredPlugins": [
+      "management",
+      "features"
+    ],
+    "optionalPlugins": [
+      "cloud"
+    ],
+    "requiredBundles": [
+    ]
+  }
+}

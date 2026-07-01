@@ -60,6 +60,10 @@ export const createManagementFooterItemsTree = (
             },
             {
               breadcrumbStatus: 'hidden',
+              link: 'management:data_federation',
+            },
+            {
+              breadcrumbStatus: 'hidden',
               link: 'management:transform',
             },
             {

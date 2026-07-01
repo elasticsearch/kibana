@@ -516,6 +516,9 @@ function createNavTree({
                 link: 'management:rollup_jobs',
               },
               {
+                link: 'management:data_federation',
+              },
+              {
                 link: 'management:data_quality',
               },
             ],

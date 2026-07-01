@@ -92,6 +92,7 @@ test.describe(
           sectionLinks: [
             'index_management',
             'index_lifecycle_management',
+            'data_federation',
             'snapshot_restore',
             'rollup_jobs',
             'transform',
