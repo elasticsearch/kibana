@@ -65,7 +65,6 @@ describe('Row renderers', { tags: ['@ess', '@serverless'] }, () => {
     // The netflow renderer checkbox has id="netflow" per EuiCheckbox id={item.id}
     const NETFLOW_CHECKBOX = '[data-test-subj="row-renderers-modal"] #netflow';
 
-    // Ensure the row renders are not visible by default
     cy.get(TIMELINE_ROW_RENDERERS_WRAPPER).should('have.length', 0);
     enableAllRowRenderersWithSwitch();
     // Wait for at least one row renderer to appear before proceeding
@@ -110,8 +109,6 @@ describe('Row renderers', { tags: ['@ess', '@serverless'] }, () => {
   });
 
   it('Selected renderer can be disabled with one click', () => {
-    // Ensure these elements are visible before continuing since sometimes it takes a second for the modal to show up
-    // and it gives the click handlers a bit of time to be initialized as well to reduce chances of flake
     enableAllRowRenderersWithSwitch();
     cy.get(TIMELINE_SHOW_ROW_RENDERERS_GEAR).should('exist');
     cy.get(TIMELINE_SHOW_ROW_RENDERERS_GEAR).first().click();
@@ -133,8 +130,9 @@ describe('Row renderers', { tags: ['@ess', '@serverless'] }, () => {
   });
 
   describe('Suricata', () => {
-    // This test has become very flaky over time and was blocking a lot of PRs.
-    // A follw-up ticket to tackle this issue has been created.
+    // Skipped due to historical flakiness — see https://github.com/elastic/kibana/issues/126894.
+    // The parent suite skip from #250924 was removed, but this individual test remains skipped
+    // pending its own follow-up.
     it.skip('Signature tooltips do not overlap', () => {
       // Hover the signature to show the tooltips
       cy.get(TIMELINE_ROW_RENDERERS_SURICATA_SIGNATURE).parents('.euiPopover').realHover();
