@@ -66,14 +66,6 @@ export default ({ getService, loadTestFile, getPageObjects }: FtrProviderContext
       await kibanaServer.importExport.load(fixtureDirs.lensDefault);
     });
 
-    after(async () => {
-      await esNode.unload(esArchive);
-      await timePicker.resetDefaultAbsoluteRangeViaUiSettings();
-      await kibanaServer.importExport.unload(fixtureDirs.lensBasic);
-      await kibanaServer.importExport.unload(fixtureDirs.lensDefault);
-      await kibanaServer.savedObjects.cleanStandardList();
-    });
-
     loadTestFile(require.resolve('./legend_statistics'));
     loadTestFile(require.resolve('./lens_reporting'));
     loadTestFile(require.resolve('./rollup'));

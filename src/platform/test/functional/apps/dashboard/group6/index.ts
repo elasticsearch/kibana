@@ -23,15 +23,8 @@ export default function ({ getService, loadTestFile }: FtrProviderContext) {
     );
   }
 
-  async function unloadCurrentData() {
-    await esArchiver.unload(
-      'src/platform/test/functional/fixtures/es_archiver/dashboard/current/data'
-    );
-  }
-
   describe('dashboard app - group 6', function () {
     before(loadCurrentData);
-    after(unloadCurrentData);
 
     loadTestFile(require.resolve('./dashboard_grid'));
     loadTestFile(require.resolve('./view_edit'));

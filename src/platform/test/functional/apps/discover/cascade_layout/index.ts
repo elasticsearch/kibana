@@ -47,20 +47,6 @@ export default function ({ getService, getPageObjects, loadTestFile }: FtrProvid
       await discover.waitUntilTabIsLoaded();
     });
 
-    after(async () => {
-      await kibanaServer.importExport.unload(
-        'src/platform/test/functional/fixtures/kbn_archiver/discover'
-      );
-      await esArchiver.unload(
-        'src/platform/test/functional/fixtures/es_archiver/logstash_functional'
-      );
-      await esArchiver.unload(
-        'src/platform/test/functional/fixtures/es_archiver/index_pattern_without_timefield'
-      );
-      await kibanaServer.uiSettings.unset('defaultIndex');
-      await kibanaServer.savedObjects.cleanStandardList();
-    });
-
     loadTestFile(require.resolve('./_grouping_selection'));
     loadTestFile(require.resolve('./_data_fetching'));
     loadTestFile(require.resolve('./_state_restoration'));

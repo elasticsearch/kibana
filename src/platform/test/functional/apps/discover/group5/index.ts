@@ -10,18 +10,11 @@
 import type { FtrProviderContext } from '../ftr_provider_context';
 
 export default function ({ getService, loadTestFile }: FtrProviderContext) {
-  const esArchiver = getService('esArchiver');
   const browser = getService('browser');
 
   describe('discover/group5', function () {
     before(async function () {
       await browser.setWindowSize(1300, 800);
-    });
-
-    after(async function unloadMakelogs() {
-      await esArchiver.unload(
-        'src/platform/test/functional/fixtures/es_archiver/logstash_functional'
-      );
     });
 
     // `_no_data` is intentionally first: it expects a clean ES/Kibana state.

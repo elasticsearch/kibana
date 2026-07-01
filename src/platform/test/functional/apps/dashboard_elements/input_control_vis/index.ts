@@ -27,16 +27,6 @@ export default function ({ getService, loadTestFile }: FtrProviderContext) {
       );
     });
 
-    after(async () => {
-      await kibanaServer.savedObjects.cleanStandardList();
-      await esArchiver.unload(
-        'src/platform/test/functional/fixtures/es_archiver/logstash_functional'
-      );
-      await esArchiver.unload(
-        'src/platform/test/functional/fixtures/es_archiver/long_window_logstash'
-      );
-    });
-
     loadTestFile(require.resolve('./input_control_options'));
     loadTestFile(require.resolve('./dynamic_options'));
     loadTestFile(require.resolve('./chained_controls'));

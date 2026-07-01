@@ -23,15 +23,8 @@ export default function ({ getService, loadTestFile }: FtrProviderContext) {
     );
   }
 
-  async function unloadCurrentData() {
-    await esArchiver.unload(
-      'src/platform/test/functional/fixtures/es_archiver/dashboard/current/data'
-    );
-  }
-
   describe('dashboard app - group 1', function () {
     before(loadCurrentData);
-    after(unloadCurrentData);
 
     // This has to be first since the other tests create some embeddables as side affects and our counting assumes
     // a fresh index.

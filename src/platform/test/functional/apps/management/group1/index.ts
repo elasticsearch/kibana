@@ -20,10 +20,6 @@ export default function ({ getService, loadTestFile }: FtrProviderContext) {
       await esArchiver.loadIfNeeded('src/platform/test/functional/fixtures/es_archiver/makelogs');
     });
 
-    after(async () => {
-      await esArchiver.unload('src/platform/test/functional/fixtures/es_archiver/makelogs');
-    });
-
     loadTestFile(require.resolve('./_create_index_pattern_wizard'));
     loadTestFile(require.resolve('./_data_view_create_delete'));
     loadTestFile(require.resolve('./_index_pattern_results_sort'));

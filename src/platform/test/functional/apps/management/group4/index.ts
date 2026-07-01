@@ -20,10 +20,6 @@ export default function ({ getService, loadTestFile }: FtrProviderContext) {
       await esArchiver.loadIfNeeded('src/platform/test/functional/fixtures/es_archiver/makelogs');
     });
 
-    after(async () => {
-      await esArchiver.unload('src/platform/test/functional/fixtures/es_archiver/makelogs');
-    });
-
     loadTestFile(require.resolve('./_kibana_settings'));
     loadTestFile(require.resolve('./_data_view_relationships'));
     loadTestFile(require.resolve('./_edit_field'));

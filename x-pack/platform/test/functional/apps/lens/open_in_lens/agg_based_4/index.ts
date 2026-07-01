@@ -62,13 +62,6 @@ export default function ({ loadTestFile, getService, getPageObjects }: FtrProvid
       await kibanaServer.importExport.load(fixtureDirs.lensDefault);
     });
 
-    after(async () => {
-      await esArchiver.unload(esArchive);
-      await timePicker.resetDefaultAbsoluteRangeViaUiSettings();
-      await kibanaServer.importExport.unload(fixtureDirs.lensBasic);
-      await kibanaServer.importExport.unload(fixtureDirs.lensDefault);
-    });
-
     loadTestFile(require.resolve('./heatmap'));
     loadTestFile(require.resolve('./navigation'));
   });

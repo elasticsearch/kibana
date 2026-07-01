@@ -45,14 +45,6 @@ export default ({ getService, loadTestFile, getPageObjects }: FtrProviderContext
       await timePicker.setDefaultAbsoluteRangeViaUiSettings();
     });
 
-    after(async () => {
-      await esNode.unload(esArchive);
-      await kibanaServer.importExport.unload(fixtureDirs.lensBasic);
-      await kibanaServer.importExport.unload(fixtureDirs.lensDefault);
-      await kibanaServer.savedObjects.cleanStandardList();
-      await timePicker.resetDefaultAbsoluteRangeViaUiSettings();
-    });
-
     // total run time ~ 16m 20s
     loadTestFile(require.resolve('./partition')); // 1m 40s
     loadTestFile(require.resolve('./persistent_context')); // 1m

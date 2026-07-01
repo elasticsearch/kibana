@@ -10,18 +10,11 @@
 import type { FtrProviderContext } from '../ftr_provider_context';
 
 export default function ({ getService, loadTestFile }: FtrProviderContext) {
-  const esArchiver = getService('esArchiver');
   const browser = getService('browser');
 
   describe('discover/esql_4', function () {
     before(async function () {
       await browser.setWindowSize(1600, 1200);
-    });
-
-    after(async function unloadMakelogs() {
-      await esArchiver.unload(
-        'src/platform/test/functional/fixtures/es_archiver/logstash_functional'
-      );
     });
 
     loadTestFile(require.resolve('./_esql_controls'));

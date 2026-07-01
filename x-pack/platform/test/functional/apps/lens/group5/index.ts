@@ -63,14 +63,6 @@ export default ({ getService, loadTestFile, getPageObjects }: FtrProviderContext
       await kibanaServer.importExport.load(fixtureDirs.lensDefault);
     });
 
-    after(async () => {
-      await esArchiver.unload(esArchive);
-      await timePicker.resetDefaultAbsoluteRangeViaUiSettings();
-      await kibanaServer.importExport.unload(fixtureDirs.lensBasic);
-      await kibanaServer.importExport.unload(fixtureDirs.lensDefault);
-      await kibanaServer.savedObjects.cleanStandardList();
-    });
-
     // total run time ~ 16m
     loadTestFile(require.resolve('./drag_and_drop')); // 7m 40s
     loadTestFile(require.resolve('./geo_field')); // 26s

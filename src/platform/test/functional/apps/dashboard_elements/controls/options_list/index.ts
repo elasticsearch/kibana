@@ -35,17 +35,8 @@ export default function ({ loadTestFile, getService, getPageObjects }: FtrProvid
     await elasticChart.setNewChartUiDebugFlag();
   };
 
-  const teardown = async () => {
-    await esArchiver.unload(
-      'src/platform/test/functional/fixtures/es_archiver/dashboard/current/data'
-    );
-    await security.testUser.restoreDefaults();
-    await kibanaServer.savedObjects.cleanStandardList();
-  };
-
   describe('Options list control', () => {
     before(setup);
-    after(teardown);
 
     loadTestFile(require.resolve('./options_list_creation_and_editing'));
     loadTestFile(require.resolve('./options_list_dashboard_interaction'));

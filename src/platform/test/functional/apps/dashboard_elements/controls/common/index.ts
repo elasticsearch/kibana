@@ -33,17 +33,8 @@ export default function ({ loadTestFile, getService, getPageObjects }: FtrProvid
     await dashboard.preserveCrossAppState();
   }
 
-  async function teardown() {
-    await esArchiver.unload(
-      'src/platform/test/functional/fixtures/es_archiver/dashboard/current/data'
-    );
-    await security.testUser.restoreDefaults();
-    await kibanaServer.savedObjects.cleanStandardList();
-  }
-
   describe('Controls', function () {
     before(setup);
-    after(teardown);
     loadTestFile(require.resolve('./range_slider'));
     loadTestFile(require.resolve('./time_slider'));
     loadTestFile(require.resolve('./control_chaining'));
