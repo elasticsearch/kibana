@@ -5,7 +5,7 @@
  * 2.0.
  */
 
-import React, { createRef } from 'react';
+import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { useForm, FormProvider } from 'react-hook-form';
 import { __IntlProvider as IntlProvider } from '@kbn/i18n-react';
@@ -74,10 +74,7 @@ const renderFooter = ({
   const onNext = jest.fn();
   const onFinalSubmit = jest.fn();
   const onYamlSave = jest.fn();
-  const onRequestClose = jest.fn();
   const dispatch = jest.fn();
-  const closeSourceRef = createRef<'button' | 'eui'>() as React.MutableRefObject<'button' | 'eui'>;
-  closeSourceRef.current = 'eui';
 
   const props: ComposeDiscoverFooterProps = {
     uiState: createState({ queryCommitted: true, childOpen: false, ...stateOverrides }),
@@ -93,8 +90,6 @@ const renderFooter = ({
     onNext,
     onFinalSubmit,
     onYamlSave,
-    onRequestClose,
-    closeSourceRef,
     ...propsOverrides,
   };
 
@@ -104,7 +99,7 @@ const renderFooter = ({
     </Wrapper>
   );
 
-  return { onNext, onFinalSubmit, onYamlSave, onRequestClose, dispatch, closeSourceRef };
+  return { onNext, onFinalSubmit, onYamlSave, dispatch };
 };
 
 describe('ComposeDiscoverFooter', () => {
@@ -172,11 +167,9 @@ describe('ComposeDiscoverFooter', () => {
   });
 
   describe('Cancel button', () => {
-    it('sets closeSourceRef to "button" and calls onRequestClose', () => {
-      const { onRequestClose, closeSourceRef } = renderFooter();
-      fireEvent.click(screen.getByTestId('composeDiscoverCancel'));
-      expect(closeSourceRef.current).toBe('button');
-      expect(onRequestClose).toHaveBeenCalledTimes(1);
+    it('does not render a Cancel button', () => {
+      renderFooter();
+      expect(screen.queryByTestId('composeDiscoverCancel')).not.toBeInTheDocument();
     });
   });
 

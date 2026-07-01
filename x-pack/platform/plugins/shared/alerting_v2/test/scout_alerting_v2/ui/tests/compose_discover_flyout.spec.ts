@@ -266,20 +266,6 @@ test.describe(
       });
     });
 
-    test('cancel: closing flyout via Cancel button dismisses without saving', async ({
-      pageObjects,
-    }) => {
-      await test.step('open create flyout', async () => {
-        await pageObjects.composeDiscover.openCreateFlyout();
-        await expect(pageObjects.composeDiscover.flyout).toBeVisible();
-      });
-
-      await test.step('click Cancel — flyout closes without saving', async () => {
-        await pageObjects.composeDiscover.cancelButton.click();
-        await expect(pageObjects.composeDiscover.flyout).toBeHidden();
-      });
-    });
-
     test('sandbox: Apply commits query, closing without Apply discards changes', async ({
       pageObjects,
     }) => {

@@ -112,6 +112,11 @@ const YAML_ONLY_TOOLTIP = i18n.translate(
   }
 );
 
+const SANDBOX_OPEN_MODE_TOGGLE_TOOLTIP = i18n.translate(
+  'xpack.alertingV2.composeDiscover.editMode.sandboxOpenTooltip',
+  { defaultMessage: 'Close the query editor to switch views' }
+);
+
 const EDIT_MODE_OPTIONS = [
   { id: 'form', label: FORM_VIEW_LABEL, iconType: 'tableDensityNormal' },
   { id: 'yaml', label: YAML_VIEW_LABEL, iconType: 'editorCodeBlock' },
@@ -912,6 +917,17 @@ export function ComposeDiscoverFlyout({
     [dispatch, sandboxQuery, sandboxTabs]
   );
 
+  // Freeze the view toggle while the sandbox is open in FORM mode. In YAML mode the
+  // sandbox stays open by design, so the toggle remains enabled (#623 gating table).
+  const modeToggleSandboxLocked = uiState.childOpen && !uiState.yamlMode;
+  const modeToggleDisabled = forceYamlMode || modeToggleSandboxLocked;
+
+  const getModeToggleTooltip = (): string | undefined => {
+    if (forceYamlMode) return YAML_ONLY_TOOLTIP;
+    if (modeToggleSandboxLocked) return SANDBOX_OPEN_MODE_TOGGLE_TOOLTIP;
+    return undefined;
+  };
+
   return (
     <RuleFormProvider services={services} meta={{ layout: 'flyout' }}>
       <FormProvider {...methods}>
@@ -972,14 +988,14 @@ export function ComposeDiscoverFlyout({
                         </EuiFlexItem>
                       )}
                       <EuiFlexItem grow={false}>
-                        <EuiToolTip content={forceYamlMode ? YAML_ONLY_TOOLTIP : undefined}>
+                        <EuiToolTip content={getModeToggleTooltip()}>
                           <EuiButtonGroup
                             legend={EDIT_MODE_LEGEND}
                             options={EDIT_MODE_OPTIONS}
                             idSelected={uiState.yamlMode ? 'yaml' : 'form'}
                             onChange={(id) => handleToggleYamlMode(id === 'yaml')}
                             isIconOnly
-                            isDisabled={forceYamlMode}
+                            isDisabled={modeToggleDisabled}
                             buttonSize="compressed"
                             data-test-subj="composeDiscoverEditModeToggle"
                           />
@@ -1043,8 +1059,6 @@ export function ComposeDiscoverFlyout({
               onNext={handleNext}
               onFinalSubmit={handleFinalSubmit}
               onYamlSave={handleYamlSave}
-              onRequestClose={handleRequestClose}
-              closeSourceRef={closeSourceRef}
             />
 
             {uiState.childOpen && (

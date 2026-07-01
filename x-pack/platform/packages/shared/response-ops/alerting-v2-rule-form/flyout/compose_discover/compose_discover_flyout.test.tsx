@@ -237,6 +237,7 @@ describe('ComposeDiscoverFlyout', () => {
     it('does not render the stepper in YAML mode', () => {
       renderFlyout();
 
+      fireEvent.click(screen.getByTestId('composeDiscoverChildMockClose'));
       clickEditMode('yaml');
 
       expect(screen.queryByRole('group', { name: /Step \d+ of \d+/ })).not.toBeInTheDocument();
@@ -248,6 +249,7 @@ describe('ComposeDiscoverFlyout', () => {
 
       expect(screen.queryByTestId('composeDiscoverYamlQuerySandbox')).not.toBeInTheDocument();
 
+      fireEvent.click(screen.getByTestId('composeDiscoverChildMockClose'));
       clickEditMode('yaml');
 
       expect(screen.getByTestId('composeDiscoverYamlQuerySandbox')).toBeInTheDocument();
@@ -260,9 +262,43 @@ describe('ComposeDiscoverFlyout', () => {
       expect(screen.queryByTestId('composeDiscoverYamlQuerySandbox')).not.toBeInTheDocument();
     });
 
+    it('disables Form/YAML toggle while sandbox is open in form mode', () => {
+      renderFlyout();
+
+      // Sandbox is open in create mode — toggle must be disabled
+      const buttons = screen
+        .getByTestId('composeDiscoverEditModeToggle')
+        .querySelectorAll('button');
+      buttons.forEach((btn) => expect(btn).toBeDisabled());
+
+      // Close sandbox — toggle re-enables
+      fireEvent.click(screen.getByTestId('composeDiscoverChildMockClose'));
+
+      const buttonsAfter = screen
+        .getByTestId('composeDiscoverEditModeToggle')
+        .querySelectorAll('button');
+      buttonsAfter.forEach((btn) => expect(btn).not.toBeDisabled());
+    });
+
+    it('keeps Form/YAML toggle enabled while sandbox is open in YAML mode', () => {
+      renderFlyout();
+
+      // Close sandbox, switch to YAML (SET_YAML_MODE reopens sandbox)
+      fireEvent.click(screen.getByTestId('composeDiscoverChildMockClose'));
+      clickEditMode('yaml');
+
+      // Sandbox is now open in YAML mode — toggle must stay enabled
+      expect(screen.getByTestId('composeDiscoverChildMock')).toBeInTheDocument();
+      const buttons = screen
+        .getByTestId('composeDiscoverEditModeToggle')
+        .querySelectorAll('button');
+      buttons.forEach((btn) => expect(btn).not.toBeDisabled());
+    });
+
     it('reopens Query sandbox after manual close in YAML mode', () => {
       renderFlyout();
 
+      fireEvent.click(screen.getByTestId('composeDiscoverChildMockClose'));
       clickEditMode('yaml');
 
       expect(screen.getByTestId('composeDiscoverChildMock')).toBeInTheDocument();
@@ -345,14 +381,10 @@ describe('ComposeDiscoverFlyout', () => {
       expect(screen.queryByTestId('alertingV2ConfirmRuleCloseModal')).not.toBeInTheDocument();
     });
 
-    it('closes immediately when the form is pristine and Cancel is clicked', () => {
-      const onClose = jest.fn();
-      renderFlyout({ onClose });
+    it('does not render a Cancel button in the footer', () => {
+      renderFlyout({});
 
-      fireEvent.click(screen.getByTestId('composeDiscoverCancel'));
-
-      expect(onClose).toHaveBeenCalledTimes(1);
-      expect(screen.queryByTestId('alertingV2ConfirmRuleCloseModal')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('composeDiscoverCancel')).not.toBeInTheDocument();
     });
 
     it('shows the confirmation modal when the form is dirty and the X button is clicked', () => {
@@ -366,12 +398,12 @@ describe('ComposeDiscoverFlyout', () => {
       expect(screen.getByTestId('alertingV2ConfirmRuleCloseModal')).toBeInTheDocument();
     });
 
-    it('shows the confirmation modal when the form is dirty and Cancel is clicked', () => {
+    it('shows the confirmation modal when the form is dirty and the X button is clicked (second check)', () => {
       const onClose = jest.fn();
       renderFlyout({ onClose });
 
       fireEvent.click(screen.getByTestId('mockMakeDirty'));
-      fireEvent.click(screen.getByTestId('composeDiscoverCancel'));
+      fireEvent.click(screen.getByTestId('euiFlyoutCloseButton'));
 
       expect(onClose).not.toHaveBeenCalled();
       expect(screen.getByTestId('alertingV2ConfirmRuleCloseModal')).toBeInTheDocument();
@@ -405,6 +437,7 @@ describe('ComposeDiscoverFlyout', () => {
       const onClose = jest.fn();
       renderFlyout({ onClose });
 
+      fireEvent.click(screen.getByTestId('composeDiscoverChildMockClose'));
       clickEditMode('yaml');
 
       fireEvent.click(screen.getByTestId('mockMakeYamlDirty'));
@@ -443,6 +476,7 @@ describe('ComposeDiscoverFlyout', () => {
       const onClose = jest.fn();
       renderFlyout({ onClose });
 
+      fireEvent.click(screen.getByTestId('composeDiscoverChildMockClose'));
       clickEditMode('yaml');
 
       expect(screen.getByTestId('composeDiscoverChildMock')).toBeInTheDocument();
@@ -458,6 +492,7 @@ describe('ComposeDiscoverFlyout', () => {
       const onClose = jest.fn();
       renderFlyout({ onClose });
 
+      fireEvent.click(screen.getByTestId('composeDiscoverChildMockClose'));
       clickEditMode('yaml');
       fireEvent.click(screen.getByTestId('mockMakeYamlDirty'));
       clickEditMode('form');
@@ -484,6 +519,7 @@ describe('ComposeDiscoverFlyout', () => {
       expect(callout).toHaveTextContent('?window');
       expect(screen.getByTestId('composeDiscoverNext')).toBeDisabled();
 
+      fireEvent.click(screen.getByTestId('composeDiscoverChildMockClose'));
       clickEditMode('yaml');
 
       expect(screen.getByTestId('composeDiscoverYamlSubmit')).toBeDisabled();
@@ -586,6 +622,7 @@ describe('ComposeDiscoverFlyout', () => {
         initialQuery: 'FROM logs-* | WHERE count > 100',
       });
 
+      fireEvent.click(screen.getByTestId('composeDiscoverChildMockClose'));
       clickEditMode('yaml');
       mockParseYamlToFormValues = () => ({
         values: standaloneAlertYamlValues,
@@ -612,6 +649,7 @@ describe('ComposeDiscoverFlyout', () => {
         initialQuery: 'FROM logs-* | WHERE count > 100',
       });
 
+      fireEvent.click(screen.getByTestId('composeDiscoverChildMockClose'));
       clickEditMode('yaml');
 
       await act(async () => {

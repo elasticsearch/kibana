@@ -50,6 +50,7 @@ export const NameField = () => {
         >
           <EuiFieldText
             {...field}
+            autoFocus={layout === 'flyout'}
             value={field.value ?? ''}
             inputRef={ref}
             fullWidth

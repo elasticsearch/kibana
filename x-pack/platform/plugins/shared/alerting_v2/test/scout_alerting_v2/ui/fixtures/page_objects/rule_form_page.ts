@@ -18,7 +18,6 @@ export class RuleFormPage {
   public readonly flyoutSubmitButton: Locator;
   /** @deprecated Use {@link flyoutNextButton} or {@link flyoutSubmitButton}. */
   public readonly flyoutSaveButton: Locator;
-  public readonly cancelButton: Locator;
   /**
    * Inline field-level error shown below the rule name input when the name
    * field fails validation (empty or equals the default placeholder).
@@ -39,7 +38,6 @@ export class RuleFormPage {
     this.flyoutNextButton = this.page.testSubj.locator('composeDiscoverNext');
     this.flyoutSubmitButton = this.page.testSubj.locator('composeDiscoverSubmit');
     this.flyoutSaveButton = this.flyoutNextButton;
-    this.cancelButton = this.page.testSubj.locator('composeDiscoverCancel');
     // The ComposeDiscoverFlyout title ID.
     this.flyout = this.page.locator('[aria-labelledby="composeDiscoverFlyoutTitle"]');
     // EuiFormRow puts `id` on the label; the error text is a sibling, not a descendant.

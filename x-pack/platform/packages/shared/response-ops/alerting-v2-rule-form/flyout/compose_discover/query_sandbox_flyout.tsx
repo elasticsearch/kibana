@@ -5,7 +5,7 @@
  * 2.0.
  */
 
-import React, { useCallback, useMemo } from 'react';
+import React, { useCallback, useEffect, useMemo } from 'react';
 import {
   EuiFlyout,
   EuiFlyoutBody,
@@ -107,6 +107,13 @@ export const QuerySandboxFlyout: React.FC<QuerySandboxFlyoutProps> = ({
   }),
 }) => {
   const isReadOnly = !onQueryChange;
+
+  useEffect(() => {
+    const trigger = document.activeElement as HTMLElement;
+    return () => {
+      trigger.focus();
+    };
+  }, []);
 
   const queryFields = useMemo(
     () =>
