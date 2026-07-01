@@ -10,7 +10,10 @@ jobs:
     name: Trigger flaky test runner on /flaky comment
     if: |
       github.event.issue.pull_request
-      && contains(fromJSON('["MEMBER","OWNER"]'), github.event.comment.author_association)
+      && (
+        contains(fromJSON('["MEMBER","OWNER"]'), github.event.comment.author_association)
+        || github.event.comment.user.login == 'kibanamachine'
+      )
       && startsWith(github.event.comment.body, '/flaky ')
     runs-on: ubuntu-latest
     steps:
