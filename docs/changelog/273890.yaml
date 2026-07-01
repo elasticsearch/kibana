@@ -1,0 +1,10 @@
+prs:
+- https://github.com/elastic/kibana/pull/273890
+issues:
+- https://github.com/elastic/security-team/issues/17752
+type: bug-fix
+products:
+- product: cloud-serverless
+  target: 2026-06-30
+title: Fix entity maintainer tasks not stopping when entity store is toggled off
+description: Fix entity maintainer tasks (risk score, watchlist, relationship maintainers) continuing to run after the Entity Store is toggled off. Maintainers now stop when all engines stop and restart when engines are started again.

@@ -1,0 +1,8 @@
+prs:
+- https://github.com/elastic/kibana/pull/274133
+type: bug-fix
+products:
+- product: cloud-serverless
+  target: 2026-06-30
+title: Fix rule editing UI rejecting valid semver range constraints on related integrations
+description: The rule editing UI now accepts valid semver range version constraints (for example, `^8.2.0 || ^9.0.0`) on related integrations.

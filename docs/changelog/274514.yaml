@@ -1,0 +1,8 @@
+prs:
+- https://github.com/elastic/kibana/pull/274514
+type: bug-fix
+products:
+- product: cloud-serverless
+  target: 2026-06-30
+title: Fix Streams listing page crash with large numbers of streams
+description: Replaces thousands of per-stream ingestion doc count requests with a single batched server endpoint, preventing browser connection exhaustion and page crashes on large stream sets.

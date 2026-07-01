@@ -1,0 +1,10 @@
+prs:
+- https://github.com/elastic/kibana/pull/272423
+type: feature
+products:
+- product: cloud-serverless
+  target: 2026-06-30
+areas:
+- Alerting and reporting
+title: Add Discover session, dashboard, and map as case attachments
+description: Adds Discover session, dashboard, and map as new case attachment types when the feature flag is enabled.

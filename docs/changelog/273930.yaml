@@ -1,0 +1,10 @@
+prs:
+- https://github.com/elastic/kibana/pull/273930
+issues:
+- https://github.com/elastic/security-team/issues/17842
+type: bug-fix
+products:
+- product: cloud-serverless
+  target: 2026-06-30
+title: Fix YAML formatting loss in the workflow editor
+description: Toggling the workflow "Enabled" flag no longer re-formats the entire YAML in the Monaco editor. The custom indentation, quoting, blank lines, and folded block scalars are preserved.

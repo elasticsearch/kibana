@@ -1,0 +1,9 @@
+prs:
+- https://github.com/elastic/kibana/pull/274177
+issues:
+- https://github.com/elastic/kibana/issues/274169
+type: bug-fix
+products:
+- product: cloud-serverless
+  target: 2026-06-30
+title: Fix workflow executions list API error on large documents

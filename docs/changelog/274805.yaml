@@ -1,0 +1,10 @@
+prs:
+- https://github.com/elastic/kibana/pull/274805
+type: bug-fix
+products:
+- product: cloud-serverless
+  target: 2026-06-30
+areas:
+- Discover and ES|QL
+title: Fix warning regression in the ES|QL editor
+description: Restores correct ES|QL editor warning behavior on serverless, including parsing of warning messages that contain multiple colons.

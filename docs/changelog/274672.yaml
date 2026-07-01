@@ -1,0 +1,12 @@
+prs:
+- https://github.com/elastic/kibana/pull/274672
+issues:
+- https://github.com/elastic/search-team/issues/15015
+type: enhancement
+products:
+- product: cloud-serverless
+  target: 2026-06-30
+areas:
+- AI and machine Learning
+title: 'Add the ability for Agent Builder to pause and ask clarifying questions before acting'
+description: 'Instead of guessing your intent, the agent presents up to 5 focused multiple-choice questions then picks up exactly where it left off after you answer.'

@@ -1,0 +1,11 @@
+prs:
+- https://github.com/elastic/kibana/pull/270276
+issues:
+- https://github.com/elastic/kibana-team/issues/3059
+type: enhancement
+products:
+- product: cloud-serverless
+  target: 2026-06-30
+areas:
+- Kibana platform
+title: Enable customizable Solution navigation

@@ -1,0 +1,9 @@
+prs:
+- https://github.com/elastic/kibana/pull/275012
+issues:
+- https://github.com/elastic/ingest-dev/issues/8497
+type: enhancement
+products:
+- product: cloud-serverless
+  target: 2026-06-30
+title: Route Kubernetes tile directly to OTel flow

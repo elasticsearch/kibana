@@ -1,0 +1,12 @@
+prs:
+- https://github.com/elastic/kibana/pull/272907
+issues:
+- https://github.com/elastic/kibana/issues/188264
+type: bug-fix
+products:
+- product: cloud-serverless
+  target: 2026-06-30
+areas:
+- Search and data
+title: Fix autocomplete in filter context to use query DSL
+description: Fixed Dev Tools Console autocomplete in query filter context to suggest the query DSL instead of the obsolete Elasticsearch 1.x filter DSL.

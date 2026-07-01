@@ -1,0 +1,8 @@
+prs:
+- https://github.com/elastic/kibana/pull/271865
+type: feature
+products:
+- product: cloud-serverless
+  target: 2026-06-30
+title: Add recurrence-based scheduling for Osquery packs
+description: "Adds a recurrence-based scheduling option to Osquery pack forms and pack query flyouts. Pack authors can configure a pack to run on a daily or custom (specific weekdays with a repeat-every-N-weeks cadence) schedule with optional start date, stop-after date, and splay (max 12 hours). Individual queries can override the pack's schedule with the query flyout while staying in the same mode as the pack. (Behind the existing `rruleScheduling` experimental flag — default off.)"

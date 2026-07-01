@@ -1,0 +1,12 @@
+prs:
+- https://github.com/elastic/kibana/pull/274534
+issues:
+- https://github.com/elastic/kibana/issues/234597
+type: enhancement
+products:
+- product: cloud-serverless
+  target: 2026-06-30
+areas:
+- Discover and ES|QL
+title: Warn when `LOOKUP JOIN` references closed indices
+description: When a closed lookup index is referenced in a `LOOKUP JOIN` command, the ES|QL editor now shows a closed-indices warning instead of a misleading create lookup index tooltip.

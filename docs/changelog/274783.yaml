@@ -1,0 +1,8 @@
+prs:
+- https://github.com/elastic/kibana/pull/274783
+type: bug-fix
+products:
+- product: cloud-serverless
+  target: 2026-06-30
+title: Fix incorrect file kind returned from file blob download
+description: Ensures the file kind returned from a blob download matches the kind requested in the URL.

@@ -1,0 +1,10 @@
+prs:
+- https://github.com/elastic/kibana/pull/268267
+type: feature
+products:
+- product: cloud-serverless
+  target: 2026-06-30
+areas:
+- AI and machine Learning
+title: Add security_network ML jobs for DNS tunneling and rare DNS questions
+description: Moves prebuilt Packetbeat jobs for DNS tunneling and rare DNS questions into the `security_network` module.

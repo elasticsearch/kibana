@@ -1,0 +1,10 @@
+prs:
+- https://github.com/elastic/kibana/pull/274879
+issues:
+- https://github.com/elastic/kibana/issues/274831
+type: bug-fix
+products:
+- product: cloud-serverless
+  target: 2026-06-30
+title: Fix service map search controls error for missing fields
+description: Hides APM service map search controls backed by fields that are not in the data view instead of showing a `Could not locate field` error.

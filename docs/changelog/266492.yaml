@@ -1,0 +1,12 @@
+prs:
+- https://github.com/elastic/kibana/pull/266492
+issues:
+- https://github.com/elastic/kibana/issues/140112
+type: feature
+products:
+- product: cloud-serverless
+  target: 2026-06-30
+areas:
+- Dashboards and visualizations
+title: Add ES|QL prefiltering option for data controls
+description: For filter controls, you can now pre-filter the possible values that show up for selection by writing an ES|QL query. Use this to limit the number of options that show up in an options list, or constrain the minimum and maximum values in a range slider.

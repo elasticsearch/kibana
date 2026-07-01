@@ -1,0 +1,9 @@
+prs:
+- https://github.com/elastic/kibana/pull/274404
+issues:
+- https://github.com/elastic/kibana/issues/274387
+type: bug-fix
+products:
+- product: cloud-serverless
+  target: 2026-06-30
+title: Fix label deletion not persisting on monitor edit

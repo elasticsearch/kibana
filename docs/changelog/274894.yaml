@@ -1,0 +1,12 @@
+prs:
+- https://github.com/elastic/kibana/pull/274894
+issues:
+- https://github.com/elastic/kibana/issues/266715
+type: bug-fix
+products:
+- product: cloud-serverless
+  target: 2026-06-30
+areas:
+- Search and data
+title: Fix alerting assets space awareness
+description: Integration alerting assets management now works correctly in Kibana spaces other than the one where the integration was originally installed.

@@ -1,0 +1,7 @@
+prs:
+- https://github.com/elastic/kibana/pull/269617
+type: feature
+products:
+- product: cloud-serverless
+  target: 2026-06-30
+title: Add UI for rule changes history

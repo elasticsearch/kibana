@@ -1,0 +1,11 @@
+prs:
+- https://github.com/elastic/kibana/pull/272894
+type: breaking-change
+products:
+- product: cloud-serverless
+  target: 2026-06-30
+areas:
+- Search and data
+title: 'Add AgentlessPolicy response model and remove legacy fields from Agentless API'
+impact: 'Changes `POST /api/fleet/agentless_policies` to return a new dedicated `AgentlessPolicy` response model instead of the internal `PackagePolicy` shape. Removes the `format` query parameter. The following request body fields are no longer accepted: `description`, `var_group_selections`, `additional_datastreams_permissions`, and `condition`.'
+action: 'External API clients that consume `PackagePolicy` fields such as `policy_ids`, `revision`, `supports_agentless`, `secret_references`, `output_id`, `fleet_server_host_id`, or `enabled` from the response must migrate to the new model.'

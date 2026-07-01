@@ -1,0 +1,11 @@
+prs:
+- https://github.com/elastic/kibana/pull/274943
+issues:
+- https://github.com/elastic/kibana/issues/274909
+type: bug-fix
+products:
+- product: cloud-serverless
+  target: 2026-06-30
+areas:
+- Discover and ES|QL
+title: Fix false validation error for `ip` or `version` fields in `IN` operator

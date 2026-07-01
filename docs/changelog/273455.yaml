@@ -1,0 +1,11 @@
+prs:
+- https://github.com/elastic/kibana/pull/273455
+issues:
+- https://github.com/elastic/security-team/issues/17798
+type: feature
+products:
+- product: cloud-serverless
+  target: 2026-06-30
+areas:
+- Alerting and reporting
+title: Enable case observables extraction in automations and API

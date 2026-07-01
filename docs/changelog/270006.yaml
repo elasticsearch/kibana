@@ -1,0 +1,10 @@
+prs:
+- https://github.com/elastic/kibana/pull/270006
+issues:
+- https://github.com/elastic/security-team/issues/17303
+type: enhancement
+products:
+- product: cloud-serverless
+  target: 2026-06-30
+title: Add built-in JSON schema definitions for workflow inputs
+description: Introduces a registry of first-party JSON schema definitions for complex workflow inputs, referenced with `$ref` under `inputs.properties` and resolved at execution time.

@@ -1,0 +1,10 @@
+prs:
+- https://github.com/elastic/kibana/pull/274451
+type: bug-fix
+products:
+- product: cloud-serverless
+  target: 2026-06-30
+areas:
+- Alerting and reporting
+title: Fix repeated alert comments when pushing cases to external connectors
+description: All case attachments are now marked as pushed when you push a case to an external connector, preventing duplicate alert count comments on subsequent pushes.

@@ -1,0 +1,10 @@
+prs:
+- https://github.com/elastic/kibana/pull/274832
+type: bug-fix
+products:
+- product: cloud-serverless
+  target: 2026-06-30
+areas:
+- Search and data
+title: Fix adding content connectors from integrations view
+description: The agentless enrollment flyout for content connector integrations now shows a connector configuration link instead of waiting for incoming data that cannot arrive until the connector is set up.
