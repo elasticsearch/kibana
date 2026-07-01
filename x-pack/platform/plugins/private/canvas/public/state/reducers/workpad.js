@@ -51,6 +51,13 @@ export const workpadReducer = handleActions(
       return { ...workpadState, variables: payload };
     },
 
+    // Syncs the server-stamped modified time into state after a save. Kept separate
+    // from the edit reducers (which never touch `@timestamp`) so a changed
+    // `@timestamp` reliably signals a server (re)load rather than a local edit.
+    ['setWorkpadTimestamp']: (workpadState, { payload }) => {
+      return { ...workpadState, '@timestamp': payload };
+    },
+
     ['resetWorkpad']: () => ({ ...getDefaultWorkpad() }),
   },
   {}

@@ -6,11 +6,12 @@
  */
 
 import crypto from 'crypto';
-import { renderHook } from '@testing-library/react';
+import { renderHook, waitFor } from '@testing-library/react';
 import { useWorkpadPersist } from './use_workpad_persist';
 
 const mockGetState = jest.fn();
-const mockUpdateWorkpad = jest.fn(() => Promise.resolve(null));
+const mockDispatch = jest.fn();
+const mockUpdateWorkpad = jest.fn((): Promise<unknown> => Promise.resolve(null));
 const mockUpdateAssets = jest.fn();
 const mockUpdate = jest.fn();
 
@@ -18,7 +19,12 @@ const mockNotifyError = jest.fn();
 
 // Mock the hooks and actions used by the UseWorkpad hook
 jest.mock('react-redux', () => ({
+  useDispatch: () => mockDispatch,
   useSelector: (selector: any) => selector(mockGetState()),
+}));
+
+jest.mock('../../../state/actions/workpad', () => ({
+  setWorkpadTimestamp: (timestamp: string) => ({ type: 'setWorkpadTimestamp', payload: timestamp }),
 }));
 
 jest.mock('../../../services/canvas_workpad_service', () => ({
@@ -105,5 +111,102 @@ describe('useWorkpadPersist', () => {
     rerender();
 
     expect(mockUpdateWorkpad).not.toHaveBeenCalled();
+  });
+
+  test('does not persist a workpad reloaded from the server', () => {
+    const id = crypto.randomUUID();
+    mockGetState.mockReturnValue({
+      ...initialState,
+      persistent: { workpad: { id, '@timestamp': '2021-01-01T00:00:00.000Z', pages: [] } },
+    });
+
+    const { rerender } = renderHook(useWorkpadPersist);
+
+    // Auto-refresh reload: same workpad, but the server bumped @timestamp because
+    // it was edited elsewhere. This must not be echoed back to the server.
+    mockGetState.mockReturnValue({
+      ...initialState,
+      persistent: {
+        workpad: { id, '@timestamp': '2021-01-01T00:05:00.000Z', pages: [{ id: 'page-1' }] },
+      },
+    });
+    rerender();
+
+    expect(mockUpdateWorkpad).not.toHaveBeenCalled();
+  });
+
+  test('persists a local edit, which leaves @timestamp untouched', () => {
+    const id = crypto.randomUUID();
+    mockGetState.mockReturnValue({
+      ...initialState,
+      persistent: { workpad: { id, '@timestamp': '2021-01-01T00:00:00.000Z', pages: [] } },
+    });
+
+    const { rerender } = renderHook(useWorkpadPersist);
+
+    // Local edit: content changes but @timestamp is unchanged (only the server stamps it).
+    mockGetState.mockReturnValue({
+      ...initialState,
+      persistent: {
+        workpad: { id, '@timestamp': '2021-01-01T00:00:00.000Z', pages: [{ id: 'page-1' }] },
+      },
+    });
+    rerender();
+
+    expect(mockUpdateWorkpad).toHaveBeenCalled();
+  });
+
+  test('syncs the server @timestamp into state after a successful save', async () => {
+    const id = crypto.randomUUID();
+    const serverTimestamp = '2021-01-01T00:05:00.000Z';
+    mockUpdateWorkpad.mockResolvedValueOnce({ ok: true, '@timestamp': serverTimestamp });
+
+    mockGetState.mockReturnValue({
+      ...initialState,
+      persistent: { workpad: { id, '@timestamp': '2021-01-01T00:00:00.000Z', pages: [] } },
+    });
+    const { rerender } = renderHook(useWorkpadPersist);
+
+    // Local edit triggers a save; the server responds with a freshly stamped @timestamp.
+    mockGetState.mockReturnValue({
+      ...initialState,
+      persistent: {
+        workpad: { id, '@timestamp': '2021-01-01T00:00:00.000Z', pages: [{ id: 'page-1' }] },
+      },
+    });
+    rerender();
+
+    expect(mockUpdateWorkpad).toHaveBeenCalled();
+    await waitFor(() =>
+      expect(mockDispatch).toHaveBeenCalledWith({
+        type: 'setWorkpadTimestamp',
+        payload: serverTimestamp,
+      })
+    );
+  });
+
+  test('does not sync a timestamp when the save response omits one', async () => {
+    const id = crypto.randomUUID();
+    // Legacy/rolling-upgrade server that still returns a bare ok response.
+    mockUpdateWorkpad.mockResolvedValueOnce({ ok: true });
+
+    mockGetState.mockReturnValue({
+      ...initialState,
+      persistent: { workpad: { id, '@timestamp': '2021-01-01T00:00:00.000Z', pages: [] } },
+    });
+    const { rerender } = renderHook(useWorkpadPersist);
+
+    mockGetState.mockReturnValue({
+      ...initialState,
+      persistent: {
+        workpad: { id, '@timestamp': '2021-01-01T00:00:00.000Z', pages: [{ id: 'page-1' }] },
+      },
+    });
+    rerender();
+
+    expect(mockUpdateWorkpad).toHaveBeenCalled();
+    // Flush the resolved update promise, then assert no timestamp sync was dispatched.
+    await waitFor(() => expect(mockUpdateWorkpad).toHaveBeenCalled());
+    expect(mockDispatch).not.toHaveBeenCalled();
   });
 });

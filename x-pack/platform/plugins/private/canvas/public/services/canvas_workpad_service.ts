@@ -28,6 +28,13 @@ export interface TemplateFindResponse {
   templates: CanvasTemplate[];
 }
 
+export interface UpdateWorkpadResponse {
+  ok: boolean;
+  // The server re-stamps the modified time on every save and returns it so the
+  // client can sync it into state.
+  '@timestamp'?: string;
+}
+
 export interface ResolveWorkpadResponse {
   workpad: CanvasWorkpad;
   outcome: SavedObjectsResolveResponse['outcome'];
@@ -70,11 +77,18 @@ class CanvasWorkpadService {
   private apiPath = `${API_ROUTE_WORKPAD}`;
 
   public async get(id: string): Promise<CanvasWorkpad> {
-    const workpad = await coreServices.http.get<any>(buildPath(`${this.apiPath}/{id}`, { id }), {
-      version: '1',
-    });
+    const workpad = await coreServices.http.get<CanvasWorkpad>(
+      buildPath(`${this.apiPath}/{id}`, { id }),
+      {
+        version: '1',
+      }
+    );
 
-    return { css: DEFAULT_WORKPAD_CSS, variables: [], ...workpad };
+    return {
+      ...workpad,
+      css: workpad.css ?? DEFAULT_WORKPAD_CSS,
+      variables: workpad.variables ?? [],
+    };
   }
 
   public async export(id: string) {
@@ -171,11 +185,14 @@ class CanvasWorkpadService {
     });
   }
 
-  public async updateWorkpad(id: string, workpad: CanvasWorkpad) {
-    return await coreServices.http.put(buildPath(`${API_ROUTE_WORKPAD_STRUCTURES}/{id}`, { id }), {
-      body: JSON.stringify({ ...sanitizeWorkpad({ ...workpad }) }),
-      version: '1',
-    });
+  public async updateWorkpad(id: string, workpad: CanvasWorkpad): Promise<UpdateWorkpadResponse> {
+    return await coreServices.http.put<UpdateWorkpadResponse>(
+      buildPath(`${API_ROUTE_WORKPAD_STRUCTURES}/{id}`, { id }),
+      {
+        body: JSON.stringify({ ...sanitizeWorkpad({ ...workpad }) }),
+        version: '1',
+      }
+    );
   }
 
   public async updateAssets(id: string, assets: CanvasWorkpad['assets']) {

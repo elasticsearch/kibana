@@ -9,8 +9,7 @@ import { useEffect, useContext, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { WorkpadRoutingContext } from '../workpad_routing_context';
 import { getInFlight } from '../../../state/selectors/resolved_args';
-// @ts-expect-error untyped local
-import { fetchAllRenderables } from '../../../state/actions/elements';
+import { refreshWorkpad } from '../../../state/actions/workpad';
 import { forceReload } from '../../../components/hooks/use_canvas_api';
 
 export const useRefreshHelper = () => {
@@ -27,7 +26,9 @@ export const useRefreshHelper = () => {
     if (refreshInterval > 0 && !inFlight) {
       timer.current = window.setTimeout(() => {
         forceReload();
-        dispatch(fetchAllRenderables());
+        // Reloads the workpad if its source changed, otherwise just re-runs the
+        // existing elements. Either path re-fetches data on the interval.
+        dispatch(refreshWorkpad());
       }, refreshInterval);
     }
 

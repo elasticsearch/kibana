@@ -159,6 +159,45 @@ describe('useRestoreHistory', () => {
       expect(history.push).toBeCalledWith(history.location.pathname, encode(newState.persistent));
     });
 
+    test('does not push a history entry when only @timestamp changes', () => {
+      const baseWorkpad = {
+        id: 'workpad-1',
+        name: 'A',
+        page: 0,
+        pages: [],
+        '@timestamp': '2021-01-01T00:00:00.000Z',
+      };
+
+      const state = {
+        persistent: { schemaVersion: 1, workpad: { ...baseWorkpad } },
+      };
+
+      const history = {
+        location: {
+          state: encode(state.persistent),
+          pathname: 'somepath',
+        },
+        push: jest.fn(),
+        replace: jest.fn(),
+      };
+
+      mockGetState.mockReturnValue(state);
+      mockGetHistory.mockReturnValue(history);
+
+      const { rerender } = renderHook(() => useWorkpadHistory());
+
+      const newState = {
+        persistent: {
+          schemaVersion: 1,
+          workpad: { ...baseWorkpad, '@timestamp': '2021-01-01T00:05:00.000Z' },
+        },
+      };
+      mockGetState.mockReturnValue(newState);
+      rerender();
+
+      expect(history.push).not.toBeCalled();
+    });
+
     test('does nothing if new state matches location state', () => {
       const state = {
         persistent: { some: 'state' },

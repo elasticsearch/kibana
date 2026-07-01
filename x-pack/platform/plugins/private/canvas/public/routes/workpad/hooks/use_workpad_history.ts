@@ -8,10 +8,19 @@
 import { useEffect, useRef } from 'react';
 import { useSelector } from 'react-redux';
 import { useHistory } from 'react-router-dom';
-import { isEqual } from 'lodash';
+import { isEqual, omit } from 'lodash';
 import { createPath } from 'history';
 import { encode, decode } from '../route_state';
 import type { State } from '../../../../types';
+
+// `@timestamp` is server metadata: it's re-stamped on every save and synced back
+// into state afterwards. It is not user-editable content, so a change to it alone
+// must not create an undo/redo (browser history) entry — otherwise every edit
+// would need two undos: one for the timestamp sync and one for the edit itself.
+const withoutTimestamp = (persistentState: State['persistent']) =>
+  persistentState?.workpad
+    ? { ...persistentState, workpad: omit(persistentState.workpad, '@timestamp') }
+    : persistentState;
 
 export const useWorkpadHistory = () => {
   const history = useHistory<string>();
@@ -22,7 +31,10 @@ export const useWorkpadHistory = () => {
     const isInitialRun = !hasRun.current;
     const locationState = history.location.state;
     const decodedState = locationState ? decode(locationState) : {};
-    const doesStateMatchLocationState = isEqual(historyState, decodedState);
+    const doesStateMatchLocationState = isEqual(
+      withoutTimestamp(historyState),
+      withoutTimestamp(decodedState)
+    );
     const fullPath = createPath(history.location);
 
     hasRun.current = true;

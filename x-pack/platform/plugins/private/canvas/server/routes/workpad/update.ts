@@ -56,10 +56,16 @@ export function initializeUpdateWorkpadRoute(deps: RouteInitializerDeps) {
       },
       catchErrorHandler(async (context, request, response) => {
         const canvasContext = await context.canvas;
-        await canvasContext.workpad.update(request.params.id, request.body as CanvasWorkpad);
+        const updatedWorkpad = await canvasContext.workpad.update(
+          request.params.id,
+          request.body as CanvasWorkpad
+        );
 
         return response.ok({
-          body: okResponse,
+          // Return the server-stamped @timestamp so the client can sync it into
+          // state and avoid treating its own save as an external change on the
+          // next auto-refresh.
+          body: { ...okResponse, '@timestamp': updatedWorkpad.attributes['@timestamp'] },
         });
       })
     );
@@ -96,10 +102,16 @@ export function initializeUpdateWorkpadRoute(deps: RouteInitializerDeps) {
       },
       catchErrorHandler(async (context, request, response) => {
         const canvasContext = await context.canvas;
-        await canvasContext.workpad.update(request.params.id, request.body as CanvasWorkpad);
+        const updatedWorkpad = await canvasContext.workpad.update(
+          request.params.id,
+          request.body as CanvasWorkpad
+        );
 
         return response.ok({
-          body: okResponse,
+          // Return the server-stamped @timestamp so the client can sync it into
+          // state and avoid treating its own save as an external change on the
+          // next auto-refresh.
+          body: { ...okResponse, '@timestamp': updatedWorkpad.attributes['@timestamp'] },
         });
       })
     );

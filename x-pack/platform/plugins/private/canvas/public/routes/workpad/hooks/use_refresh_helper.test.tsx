@@ -14,15 +14,15 @@ import { WorkpadRoutingContext } from '../workpad_routing_context';
 
 const mockDispatch = jest.fn();
 const mockGetState = jest.fn();
-const refreshAction = { type: 'fetchAllRenderables' };
+const refreshAction = { type: 'refreshWorkpad' };
 
 jest.mock('react-redux', () => ({
   useDispatch: () => mockDispatch,
   useSelector: (selector: any) => selector(mockGetState()),
 }));
 
-jest.mock('../../../state/actions/elements', () => ({
-  fetchAllRenderables: () => refreshAction,
+jest.mock('../../../state/actions/workpad', () => ({
+  refreshWorkpad: () => refreshAction,
 }));
 
 const getMockedContext = (context: any) =>
