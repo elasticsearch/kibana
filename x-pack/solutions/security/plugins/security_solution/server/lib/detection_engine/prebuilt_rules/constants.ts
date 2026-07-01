@@ -30,3 +30,5 @@ export const PREBUILT_RULES_INSTALLATION_REVIEW_CONCURRENCY = 5;
 // Maximum number of prebuilt rules processed per iteration of the install
 // and upgrade loops.
 export const PREBUILT_RULE_BATCH_SIZE = 100;
+
+export const PREBUILT_RULES_BULK_CREATE_BATCH_SIZE = 500;

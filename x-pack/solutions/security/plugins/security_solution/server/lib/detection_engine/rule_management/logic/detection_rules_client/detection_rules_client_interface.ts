@@ -30,6 +30,9 @@ export interface IDetectionRulesClient {
   getRuleCustomizationStatus: () => PrebuiltRulesCustomizationStatus;
   createCustomRule: (args: CreateCustomRuleArgs) => Promise<RuleResponse>;
   createPrebuiltRule: (args: CreatePrebuiltRuleArgs) => Promise<RuleResponse>;
+  bulkCreatePrebuiltRules: (
+    args: BulkCreatePrebuiltRulesArgs
+  ) => Promise<BulkCreatePrebuiltRulesResult>;
   updateRule: (args: UpdateRuleArgs) => Promise<RuleResponse>;
   patchRule: (args: PatchRuleArgs) => Promise<RuleResponse>;
   deleteRule: (args: DeleteRuleArgs) => Promise<void>;
@@ -119,4 +122,19 @@ export interface RestoreRuleFromHistoryArgs {
    * It has to be omitted for restoring a deleted rule.
    */
   currentRuleRevision?: number;
+}
+
+export interface BulkCreatePrebuiltRulesArgs {
+  rules: PrebuiltRuleAsset[];
+}
+
+export interface BulkCreatePrebuiltRulesResultItem {
+  id: string;
+  rule_id: string;
+  version: number;
+}
+
+export interface BulkCreatePrebuiltRulesResult {
+  results: BulkCreatePrebuiltRulesResultItem[];
+  errors: Array<{ item: PrebuiltRuleAsset; error: Error }>;
 }

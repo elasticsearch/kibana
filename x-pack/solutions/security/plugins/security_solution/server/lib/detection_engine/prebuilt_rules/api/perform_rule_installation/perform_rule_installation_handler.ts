@@ -5,7 +5,6 @@
  * 2.0.
  */
 
-import { pick } from 'lodash';
 import { transformError } from '@kbn/securitysolution-es-utils';
 import type { Logger, KibanaRequest, KibanaResponseFactory } from '@kbn/core/server';
 import { SkipRuleInstallReason } from '../../../../../../common/api/detection_engine/prebuilt_rules';
@@ -20,8 +19,6 @@ import { buildSiemResponse } from '../../../routes/utils';
 import { aggregatePrebuiltRuleErrors } from '../../logic/aggregate_prebuilt_rule_errors';
 import { ensureLatestRulesPackageInstalled } from '../../logic/integrations/ensure_latest_rules_package_installed';
 import { createPrebuiltRuleAssetsClient } from '../../logic/rule_assets/prebuilt_rule_assets_client';
-import { PREBUILT_RULE_BATCH_SIZE } from '../../constants';
-import { createPrebuiltRules } from '../../logic/rule_objects/create_prebuilt_rules';
 import { createPrebuiltRuleObjectsClient } from '../../logic/rule_objects/prebuilt_rule_objects_client';
 import { performTimelinesInstallation } from '../../logic/perform_timelines_installation';
 import type { RuleSignatureId, RuleVersion } from '../../../../../../common/api/detection_engine';
@@ -111,30 +108,15 @@ export const performRuleInstallationHandler = async (
       ruleInstallQueue.push(...(await excludeLicenseRestrictedRules(allInstallableRules, mlAuthz)));
     }
 
-    const changeTracking = {
-      metadata: {
-        bulkCount: ruleInstallQueue.length,
-      },
-    };
-
-    while (ruleInstallQueue.length > 0) {
-      const rulesToInstall = ruleInstallQueue.splice(0, PREBUILT_RULE_BATCH_SIZE);
-      const { assets: ruleAssets } = await ruleAssetsClient.fetchAssetsByVersion(rulesToInstall);
-
-      const { results, errors } = await createPrebuiltRules(
-        detectionRulesClient,
-        ruleAssets,
-        changeTracking,
-        logger
-      );
-
-      const batchInstalledRules = results.map(({ result: rule }) =>
-        pick(rule, ['id', 'rule_id', 'version'])
-      );
-
-      installedRules.push(...batchInstalledRules);
-      ruleErrors.push(...errors);
-    }
+    const { assets: ruleAssets } = await ruleAssetsClient.fetchAssetsByVersion(ruleInstallQueue);
+    const { results, errors } = await detectionRulesClient.bulkCreatePrebuiltRules({
+      rules: ruleAssets,
+    });
+    installedRules.push(...results);
+    ruleErrors.push(...errors);
+    logger.debug(
+      `bulkCreatePrebuiltRules: ${results.length} created, ${errors.length} failed out of ${ruleAssets.length} total`
+    );
 
     const { error: timelineInstallationError } = await performTimelinesInstallation(
       ctx.securitySolution
