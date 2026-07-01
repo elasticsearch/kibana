@@ -514,6 +514,7 @@ exports[`DonutChart component passes correct props without errors for valid prop
               "minHeight": 64,
               "minValueFontSize": 12,
               "nonFiniteText": "N/A",
+              "spacing": "small",
               "textDarkColor": "#111C2C",
               "textExtraDarkColor": "#1D2A3E",
               "textExtraLightColor": "#CAD3E2",

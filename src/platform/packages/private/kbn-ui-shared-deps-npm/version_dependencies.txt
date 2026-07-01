@@ -14,7 +14,7 @@
 @babel/types@7.29.0
 @base2/pretty-print-object@1.0.1
 @elastic/apm-rum-core@5.25.2
-@elastic/charts@71.7.0
+@elastic/charts@71.8.0
 @elastic/esql@4.4.0
 @elastic/eui-theme-borealis@8.0.0
 @elastic/eui-theme-common@10.0.0

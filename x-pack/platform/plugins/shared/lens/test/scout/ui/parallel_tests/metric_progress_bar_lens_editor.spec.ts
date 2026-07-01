@@ -18,7 +18,10 @@ const DYNAMIC_PROGRESS_BAR_FILL_COLOR = 'rgb(36, 194, 146)';
 const STATIC_PROGRESS_BAR_FILL_COLOR = 'rgb(0, 0, 0)';
 
 function progressBarLocator(page: ScoutPage) {
-  return page.locator('.echSingleMetricProgressBar');
+  // `@elastic/charts` v71.8.0 reworked the metric progress bar to render on top of the
+  // shared `Meter` component. The fill color now lives on the `echMeterFillPaint` element,
+  // which replaces the previous `echSingleMetricProgressBar` element.
+  return page.locator('.echMeterFillPaint');
 }
 
 async function configureStaticMaxValueForProgressBar(

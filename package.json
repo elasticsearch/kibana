@@ -134,7 +134,7 @@
     "@elastic/apm-rum": "5.17.4",
     "@elastic/apm-rum-core": "5.25.2",
     "@elastic/apm-rum-react": "2.0.10",
-    "@elastic/charts": "71.7.0",
+    "@elastic/charts": "71.8.0",
     "@elastic/datemath": "5.0.3",
     "@elastic/ebt": "1.4.1",
     "@elastic/ecs": "9.3.0",
