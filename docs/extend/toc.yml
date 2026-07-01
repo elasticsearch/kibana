@@ -184,4 +184,5 @@ toc:
       - file: ftr.md
   - file: plugin-list.md
   - file: kbn-ui-feedback.md
+  - file: kbn-ui-callout.md
   - file: dependencies-versions.md

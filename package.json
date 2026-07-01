@@ -1228,6 +1228,7 @@
     "@kbn/typed-react-router-config": "link:src/platform/packages/shared/kbn-typed-react-router-config",
     "@kbn/ui-actions-browser": "link:src/platform/packages/shared/kbn-ui-actions-browser",
     "@kbn/ui-actions-plugin": "link:src/platform/plugins/shared/ui_actions",
+    "@kbn/ui-callout": "link:src/platform/kbn-ui/callout",
     "@kbn/ui-chrome-layout": "link:src/platform/kbn-ui/chrome-layout",
     "@kbn/ui-chrome-layout-constants": "link:src/platform/kbn-ui/chrome-layout-constants",
     "@kbn/ui-chrome-layout-utils": "link:src/platform/kbn-ui/chrome-layout-utils",

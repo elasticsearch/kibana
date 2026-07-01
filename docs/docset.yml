@@ -15,7 +15,7 @@ storybook:
   # TEMPORARY (revert before merge): point at this PR's own preview registry so the
   # `:::{storybook}` embeds resolve before the stories land on `main`. The canonical
   # value is the `main` registry, defined on the storybook-to-docs branch (#272927).
-  registry: https://ci-artifacts.kibana.dev/storybooks/pr-272934/storybook-docs/docs_registry.json
+  registry: http://127.0.0.1:6007/storybook-docs/docs_registry.json
 toc:
   - toc: reference
   - toc: release-notes

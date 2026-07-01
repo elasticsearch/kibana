@@ -1,0 +1,7 @@
+{
+  "type": "shared-browser",
+  "id": "@kbn/ui-callout",
+  "owner": ["@elastic/appex-sharedux", "@elastic/eui-team"],
+  "group": "platform",
+  "visibility": "shared"
+}

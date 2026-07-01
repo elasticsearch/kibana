@@ -2640,6 +2640,8 @@
       "@kbn/ui-actions-browser/*": ["src/platform/packages/shared/kbn-ui-actions-browser/*"],
       "@kbn/ui-actions-plugin": ["src/platform/plugins/shared/ui_actions"],
       "@kbn/ui-actions-plugin/*": ["src/platform/plugins/shared/ui_actions/*"],
+      "@kbn/ui-callout": ["src/platform/kbn-ui/callout"],
+      "@kbn/ui-callout/*": ["src/platform/kbn-ui/callout/*"],
       "@kbn/ui-chrome-layout": ["src/platform/kbn-ui/chrome-layout"],
       "@kbn/ui-chrome-layout/*": ["src/platform/kbn-ui/chrome-layout/*"],
       "@kbn/ui-chrome-layout-constants": ["src/platform/kbn-ui/chrome-layout-constants"],
