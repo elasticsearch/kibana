@@ -21,3 +21,24 @@ export type { TimelineApiService } from './timeline';
 
 export { getAttackDiscoveryApiService } from './attack_discovery';
 export type { AttackDiscoveryApiService } from './attack_discovery';
+
+export { getThreatIntelligenceApiService } from './threat_intelligence';
+export type { ThreatIntelligenceApiService } from './threat_intelligence';
+
+export { getCorrelationsApiService } from './correlations';
+export type { CorrelationsApiService } from './correlations';
+
+export { getPrevalenceApiService } from './prevalence';
+export type { PrevalenceApiService } from './prevalence';
+
+export { getAnalyzerApiService } from './analyzer';
+export type { AnalyzerApiService } from './analyzer';
+
+export { getNetworkApiService } from './network';
+export type { NetworkApiService } from './network';
+
+export { getHostApiService } from './host';
+export type { HostApiService } from './host';
+
+export { getResponseActionsApiService } from './response_actions';
+export type { ResponseActionsApiService } from './response_actions';

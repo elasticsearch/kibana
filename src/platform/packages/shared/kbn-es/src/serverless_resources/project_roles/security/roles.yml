@@ -824,6 +824,7 @@ platform_engineer:
         - .lists*
         - .items*
         - .alerts-security*
+        - .internal.alerts-security.alerts-*
         - .siem-signals-*
         - .preview.alerts-security*
         - .internal.preview.alerts-security*

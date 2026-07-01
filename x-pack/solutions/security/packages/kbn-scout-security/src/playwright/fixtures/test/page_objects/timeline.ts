@@ -31,9 +31,11 @@ export class TimelinePage {
   readonly kqlTextarea: Locator;
   readonly saveButtonTooltipAnchor: Locator;
   readonly timelineRows: Locator;
+  readonly providerBadge: Locator;
 
   constructor(private readonly page: ScoutPage) {
     this.panel = this.page.testSubj.locator('timeline-modal-header-panel');
+    this.providerBadge = this.page.testSubj.locator('providerBadge');
     this.queryInput = this.page.testSubj.locator('timelineQueryInput');
     this.saveStatus = this.panel.locator('[data-test-subj="timeline-save-status"]');
     this.saveButton = this.page.testSubj.locator('timeline-modal-save-timeline');

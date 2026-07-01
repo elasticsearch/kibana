@@ -15,6 +15,13 @@ export {
   getCloudConnectorApiService,
   getTimelineApiService,
   getAttackDiscoveryApiService,
+  getThreatIntelligenceApiService,
+  getCorrelationsApiService,
+  getPrevalenceApiService,
+  getAnalyzerApiService,
+  getNetworkApiService,
+  getHostApiService,
+  getResponseActionsApiService,
 } from './apis';
 export type {
   DetectionRuleApiService,
@@ -23,4 +30,11 @@ export type {
   CloudConnectorApiService,
   TimelineApiService,
   AttackDiscoveryApiService,
+  ThreatIntelligenceApiService,
+  CorrelationsApiService,
+  PrevalenceApiService,
+  AnalyzerApiService,
+  NetworkApiService,
+  HostApiService,
+  ResponseActionsApiService,
 } from './apis';

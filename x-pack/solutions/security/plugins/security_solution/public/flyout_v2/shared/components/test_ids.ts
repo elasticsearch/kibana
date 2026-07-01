@@ -39,6 +39,7 @@ export const NOTES_LOADING_TEST_ID = `${PREFIX}HeaderNotesLoading` as const;
 
 export const TOOLS_FLYOUT_HEADER_TEST_ID = `${PREFIX}ToolsFlyoutHeader` as const;
 export const TOOLS_FLYOUT_HEADER_TITLE_TEST_ID = `${PREFIX}ToolsFlyoutHeaderTitle` as const;
+export const CHILD_DOCUMENT_FLYOUT_TEST_ID = `${PREFIX}ChildDocumentFlyout` as const;
 
 export const OPEN_FLYOUT_LINK_TEST_ID = `${PREFIX}OpenFlyoutLink` as const;
 

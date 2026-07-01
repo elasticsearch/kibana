@@ -10,6 +10,24 @@ export { test, spaceTest } from './src/playwright';
 
 // Security-specific test constants
 export { CUSTOM_QUERY_RULE } from './src/playwright/constants/detection_rules';
+export { PREVALENCE_SOURCE_IP } from './src/playwright/fixtures/worker/apis/prevalence';
+export { ANALYZER_ORIGIN_PROCESS_NAME } from './src/playwright/fixtures/worker/apis/analyzer';
+export { NETWORK_SOURCE_IP } from './src/playwright/fixtures/worker/apis/network';
+export { HOST_NAME } from './src/playwright/fixtures/worker/apis/host';
+export { THREAT_FEED_NAME } from './src/playwright/fixtures/worker/apis/threat_intelligence';
+export {
+  CURRENT_USER_PROFILE_API_PATH,
+  AlertWorkflowStatus,
+  ALERT_CLOSE_MENU_ITEM_TEST_SUBJ,
+  ClosingReasonOption,
+  closedAlertsToastText,
+  addedToTimelineToastText,
+} from './src/playwright/constants/alert_workflows';
+export {
+  ADD_TO_NEW_CASE_TEST_SUBJ,
+  ALERT_TAGS_MENU_ITEM_TEST_SUBJ,
+  INVESTIGATE_IN_TIMELINE_MENU_ITEM_TEST_SUBJ,
+} from './src/playwright/constants/take_action';
 
 // re-exported test framework from @kbn/scout
 export { lighthouseTest, apiTest, globalSetupHook, globalTeardownHook, tags } from '@kbn/scout';

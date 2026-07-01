@@ -25,6 +25,7 @@ import { useDefaultDocumentFlyoutProperties } from './use_default_flyout_propert
 import { documentFlyoutHistoryKey } from '../constants/flyout_history';
 import { DocumentSeverity } from '../../document/main/components/severity';
 import { Timestamp } from '../components/timestamp';
+import { CHILD_DOCUMENT_FLYOUT_TEST_ID } from '../components/test_ids';
 
 export interface UseDocumentFlyoutTitleOptions {
   /** The source document to derive display values from. */
@@ -85,7 +86,12 @@ export const useDocumentFlyoutTitle = ({
           />
         ),
       }),
-      { ...defaultFlyoutProperties, historyKey, session: 'inherit' }
+      {
+        ...defaultFlyoutProperties,
+        historyKey,
+        session: 'inherit',
+        'data-test-subj': CHILD_DOCUMENT_FLYOUT_TEST_ID,
+      }
     );
   }, [
     defaultFlyoutProperties,

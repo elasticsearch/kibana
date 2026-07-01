@@ -16,6 +16,7 @@ export interface CustomQueryRule {
   type: 'query';
   query: string;
   from: string;
+  investigation_fields?: { field_names: string[] };
 }
 
 export const DEFAULT_SECURITY_SOLUTION_INDEXES = [

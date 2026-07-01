@@ -45,6 +45,7 @@ export const ToolsFlyoutTitle: FC<ToolsFlyoutTitleProps> = memo(
           type={iconType}
           size="m"
           aria-hidden={true}
+          data-test-subj={`${TOOLS_FLYOUT_HEADER_TITLE_TEST_ID}Icon`}
           css={{ marginRight: euiTheme.size.xs }}
         />
         {label}

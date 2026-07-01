@@ -54,10 +54,21 @@ const ClosingReasonPanelComponent: React.FC<ClosingReasonPanelProps> = ({
 
   return (
     <>
-      <EuiSelectable options={options} onChange={setOptions} singleSelection="always">
+      <EuiSelectable
+        options={options}
+        onChange={setOptions}
+        singleSelection="always"
+        data-test-subj="alert-closing-reason-selectable"
+      >
         {(list) => list}
       </EuiSelectable>
-      <EuiButton fullWidth size="s" disabled={!selectedOption} onClick={onSubmitHandler}>
+      <EuiButton
+        fullWidth
+        size="s"
+        disabled={!selectedOption}
+        onClick={onSubmitHandler}
+        data-test-subj="alert-closing-reason-submit-button"
+      >
         {buttonLabel ?? i18n.CLOSING_REASON_BUTTON_MESSAGE}
       </EuiButton>
     </>
