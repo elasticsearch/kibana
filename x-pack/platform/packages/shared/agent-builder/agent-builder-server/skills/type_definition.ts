@@ -28,6 +28,7 @@ export type SkillsDirectoryStructure = Directory<{
     platform: FileDirectory<{
       'agent-builder': FileDirectory;
       alerting: FileDirectory;
+      cases: FileDirectory;
       dashboard: FileDirectory;
       discover: FileDirectory;
       streams: FileDirectory;

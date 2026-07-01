@@ -14,7 +14,6 @@ import type {
   PluginSetupDependencies,
   PluginStartDependencies,
 } from '../types';
-import { casesTool } from './cases/cases';
 import { getDocumentByIdTool } from './get_document_by_id';
 import { getIndexMappingsTool } from './get_index_mapping';
 import { listIndicesTool } from './list_indices';
@@ -44,7 +43,6 @@ export const registerTools = ({
     createVisualizationTool(),
     productDocumentationTool(coreSetup),
     integrationKnowledgeTool(coreSetup),
-    casesTool(coreSetup),
   ];
 
   tools.forEach((tool) => {

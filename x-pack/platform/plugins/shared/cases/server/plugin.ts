@@ -64,6 +64,7 @@ import {
 } from './cases_analytics_v2';
 import { CasesEventBus } from './events/event_bus';
 import { registerCaseWorkflowSteps } from './workflows';
+import { registerCasesAgentBuilderTools } from './agent_builder';
 import { registerCaseWorkflowTriggers } from './workflows/triggers';
 import { registerCasesWorkflowEventBridge } from './workflows/triggers/event_bridge';
 import { initUiSettings } from './ui_settings';
@@ -261,6 +262,10 @@ export class CasePlugin
 
     registerCaseWorkflowSteps(plugins.workflowsExtensions, getCasesClient);
     registerCaseWorkflowTriggers(plugins.workflowsExtensions);
+
+    if (plugins.agentBuilder) {
+      registerCasesAgentBuilderTools(plugins.agentBuilder, getCasesClient, core);
+    }
 
     return {
       attachmentFramework: {

@@ -14,7 +14,11 @@ import { CasesStepCaseIdSchema, CasesStepSingleCaseOutputSchema } from './shared
 export const GetCaseStepTypeId = 'cases.getCase';
 
 const InputSchema = CasesStepCaseIdSchema.extend({
-  include_comments: z.boolean().optional().default(false),
+  include_comments: z
+    .boolean()
+    .optional()
+    .default(false)
+    .describe('Include case comments in the response. Default: false.'),
 });
 
 const OutputSchema = CasesStepSingleCaseOutputSchema;

@@ -31,6 +31,10 @@ interface RouteInfo {
   label: string;
   iconType: string;
   appRoute: string;
+  /** Kibana-registered base path for the app (what `getUrlForApp(appId)` prepends). */
+  appBasePath: string;
+  /** Path within the app where the cases section lives, passed as `path` to `getUrlForApp`. */
+  casesBasePath: string;
   validRuleConsumers?: readonly AlertConsumers[];
   serverlessProjectType?: ServerlessProjectType;
 }
@@ -42,6 +46,8 @@ export const OWNER_INFO: Record<Owner, RouteInfo> = {
     label: 'Security',
     iconType: 'logoSecurity',
     appRoute: '/app/security',
+    appBasePath: '/app/security',
+    casesBasePath: '/cases',
     validRuleConsumers: [AlertConsumers.SIEM],
     serverlessProjectType: SECURITY_PROJECT_TYPE_ID,
   },
@@ -51,6 +57,8 @@ export const OWNER_INFO: Record<Owner, RouteInfo> = {
     label: 'Observability',
     iconType: 'logoObservability',
     appRoute: '/app/observability',
+    appBasePath: '/app/observability',
+    casesBasePath: '/cases',
     validRuleConsumers: [
       // only valid in serverless
       AlertConsumers.OBSERVABILITY,
@@ -70,6 +78,8 @@ export const OWNER_INFO: Record<Owner, RouteInfo> = {
     label: 'Management',
     iconType: 'managementApp',
     appRoute: '/app/management/insightsAndAlerting',
+    appBasePath: '/app/management',
+    casesBasePath: '/insightsAndAlerting/cases',
     validRuleConsumers: [
       AlertConsumers.ML,
       AlertConsumers.STACK_ALERTS,

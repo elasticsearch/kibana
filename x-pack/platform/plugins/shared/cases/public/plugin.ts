@@ -180,6 +180,17 @@ export class CasesUiPlugin
       }
     );
 
+    if (plugins.agentBuilder) {
+      void import('./agent_builder').then(({ registerCasesAgentBuilderAttachments }) => {
+        if (plugins.agentBuilder) {
+          registerCasesAgentBuilderAttachments({
+            attachments: plugins.agentBuilder.attachments,
+            application: core.application,
+          });
+        }
+      });
+    }
+
     return {
       config: {
         templatesEnabled: config?.templates?.enabled ?? false,

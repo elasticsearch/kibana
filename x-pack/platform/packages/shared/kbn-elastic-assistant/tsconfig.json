@@ -23,7 +23,6 @@
     "@kbn/stack-connectors-plugin",
     "@kbn/triggers-actions-ui-plugin",
     "@kbn/core-http-browser-mocks",
-    "@kbn/cases-plugin",
     "@kbn/actions-plugin",
     "@kbn/core-notifications-browser",
     "@kbn/i18n-react",

@@ -46,23 +46,40 @@ const FindCasesSearchFieldArraySchema = z.union([
 const CustomFieldValueSchema = z.union([z.string(), z.boolean(), z.number(), z.null()]);
 
 export const InputSchema = z.object({
-  assignees: z.union([String, StringArray]).optional(),
+  assignees: z
+    .union([String, StringArray])
+    .optional()
+    .describe('Filter by assignee user profile UIDs (not usernames).'),
   category: z.union([CaseCategory, CaseCategories]).optional(),
   customFields: z.record(z.string(), z.array(CustomFieldValueSchema)).optional(),
   defaultSearchOperator: FindCasesDefaultSearchOperatorSchema.optional(),
-  from: z.string().optional(),
-  owner: z.union([Owner, Owners]).optional(),
+  from: z
+    .string()
+    .optional()
+    .describe('ISO 8601 datetime start (inclusive). Example: "2025-01-15T00:00:00Z".'),
+  owner: z
+    .union([Owner, Owners])
+    .optional()
+    .describe(
+      'Filter by owner app. Values: "cases" (Stack Management), "observability", "securitySolution".'
+    ),
   page: z.number().int().positive().optional().default(1),
   perPage: z.number().int().positive().max(MAX_CASES_PER_PAGE).optional().default(20),
   reporters: z.union([String, StringArray]).optional(),
-  search: z.string().optional(),
+  search: z
+    .string()
+    .optional()
+    .describe('Elasticsearch simple_query_string applied to case title and description.'),
   searchFields: z.union([FindCasesSearchFieldSchema, FindCasesSearchFieldArraySchema]).optional(),
   severity: z.union([CaseSeverity, z.array(CaseSeverity)]).optional(),
   sortField: FindCasesSortFieldSchema.optional(),
   sortOrder: z.enum(['asc', 'desc']).optional(),
   status: z.union([CaseStatus, z.array(CaseStatus)]).optional(),
   tags: z.union([String, StringArray]).optional(),
-  to: z.string().optional(),
+  to: z
+    .string()
+    .optional()
+    .describe('ISO 8601 datetime end (exclusive). Example: "2025-01-22T00:00:00Z".'),
 });
 
 export const OutputSchema = z.object({

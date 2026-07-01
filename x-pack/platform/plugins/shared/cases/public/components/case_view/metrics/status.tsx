@@ -30,6 +30,7 @@ import {
 import { getMaybeDate } from '../../formatted_date/maybe_date';
 import { FormattedRelativePreferenceDate } from '../../formatted_date';
 import { getEmptyCellValue } from '../../empty_value';
+import { CreationDate } from '../../creation_date';
 
 export const CaseStatusMetrics = React.memo(
   ({ metrics, features }: { metrics: SingleCaseMetrics; features: SingleCaseMetricsFeature[] }) => {
@@ -121,22 +122,6 @@ const useGetLifespanMetrics = (
     return lifespan;
   }, [features, metrics]);
 };
-
-const CreationDate: React.FC<{ date: string }> = React.memo(({ date }) => {
-  const creationDate = getMaybeDate(date);
-  if (!creationDate.isValid()) {
-    return getEmptyCellValue();
-  }
-
-  return (
-    <FormattedRelativePreferenceDate
-      data-test-subj={'case-metrics-lifespan-creation-date'}
-      value={date}
-      stripMs={true}
-    />
-  );
-});
-CreationDate.displayName = 'CreationDate';
 
 const getInProgressDuration = (duration: number) => {
   if (duration <= 0) {
