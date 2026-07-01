@@ -75,3 +75,28 @@ export function getAnomalyDetectionSetupState({
 
   return AnomalyDetectionSetupState.NoJobs;
 }
+
+export function getIsAnomalyDetectionConfigured(setupState: AnomalyDetectionSetupState) {
+  switch (setupState) {
+    case AnomalyDetectionSetupState.UpToDate:
+    case AnomalyDetectionSetupState.UpgradeableJobs:
+    case AnomalyDetectionSetupState.LegacyJobs:
+    case AnomalyDetectionSetupState.NoJobsForEnvironment:
+      return true;
+    default:
+      return false;
+  }
+}
+
+export function getIsAnomalyDetectionConfiguredForEnvironment(
+  setupState: AnomalyDetectionSetupState
+) {
+  switch (setupState) {
+    case AnomalyDetectionSetupState.UpToDate:
+    case AnomalyDetectionSetupState.UpgradeableJobs:
+    case AnomalyDetectionSetupState.LegacyJobs:
+      return true;
+    default:
+      return false;
+  }
+}

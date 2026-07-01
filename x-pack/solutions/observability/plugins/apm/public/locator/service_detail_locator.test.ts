@@ -56,7 +56,7 @@ describe('APMLocatorDefinition', () => {
     });
 
     expect(location.path).toBe(
-      '/services/example-app/overview?comparisonEnabled=false&environment=development&kuery=&latencyAggregationType=avg&rangeFrom=now-15m&rangeTo=now&serviceGroup='
+      '/services/example-app/overview?anomalyThreshold=major&comparisonEnabled=false&environment=development&kuery=&latencyAggregationType=avg&rangeFrom=now-15m&rangeTo=now&serviceGroup='
     );
   });
 
@@ -78,7 +78,7 @@ describe('APMLocatorDefinition', () => {
     });
 
     expect(location.path).toBe(
-      '/services/example-app/transactions?comparisonEnabled=false&environment=prod&kuery=&latencyAggregationType=avg&rangeFrom=now-15m&rangeTo=now&serviceGroup='
+      '/services/example-app/transactions?anomalyThreshold=major&comparisonEnabled=false&environment=prod&kuery=&latencyAggregationType=avg&rangeFrom=now-15m&rangeTo=now&serviceGroup='
     );
   });
 
@@ -93,7 +93,7 @@ describe('APMLocatorDefinition', () => {
     });
 
     expect(location.path).toBe(
-      '/services/example-app/errors/group-1?comparisonEnabled=false&environment=prod&kuery=&latencyAggregationType=avg&rangeFrom=now-15m&rangeTo=now&serviceGroup='
+      '/services/example-app/errors/group-1?anomalyThreshold=major&comparisonEnabled=false&environment=prod&kuery=&latencyAggregationType=avg&rangeFrom=now-15m&rangeTo=now&serviceGroup='
     );
   });
 
@@ -107,7 +107,7 @@ describe('APMLocatorDefinition', () => {
     });
 
     expect(location.path).toBe(
-      '/services/example-app/errors?comparisonEnabled=false&environment=prod&kuery=&latencyAggregationType=avg&rangeFrom=now-15m&rangeTo=now&serviceGroup='
+      '/services/example-app/errors?anomalyThreshold=major&comparisonEnabled=false&environment=prod&kuery=&latencyAggregationType=avg&rangeFrom=now-15m&rangeTo=now&serviceGroup='
     );
   });
 });

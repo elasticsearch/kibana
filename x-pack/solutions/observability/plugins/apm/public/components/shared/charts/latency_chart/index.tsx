@@ -10,6 +10,8 @@ import { i18n } from '@kbn/i18n';
 import React, { useEffect } from 'react';
 import { useHistory } from 'react-router-dom';
 
+import { useShouldShowAnomalyUi } from '../../../../hooks/use_should_show_anomaly_ui';
+import { useAnomalyThreshold } from '../../../../hooks/use_anomaly_threshold';
 import { isTimeComparison } from '../../time_comparison/get_comparison_options';
 import { getLatencyAggregationType } from '../../../../../common/latency_aggregation_types';
 import { getDurationFormatter } from '../../../../../common/utils/formatters';
@@ -29,7 +31,6 @@ import { getLatencyChartScreenContext } from './get_latency_chart_screen_context
 import { LatencyAggregationTypeSelect } from './latency_aggregation_type_select';
 import { OpenInDiscover } from '../../links/discover_links/open_in_discover';
 import { APM_CHART_EBT_ELEMENTS } from '../ebt_constants';
-import { useLicenseContext } from '../../../../context/license/use_license_context';
 
 interface Props {
   height?: number;
@@ -46,7 +47,6 @@ export function LatencyChart({ height, kuery }: Props) {
   const history = useHistory();
 
   const comparisonChartTheme = getComparisonChartTheme();
-  const license = useLicenseContext();
 
   const {
     query: { comparisonEnabled, latencyAggregationType, offset, rangeFrom, rangeTo },
@@ -76,6 +76,8 @@ export function LatencyChart({ height, kuery }: Props) {
 
   const { currentPeriod, previousPeriod } = latencyChartsData;
 
+  const shouldShowAnomalyUi = useShouldShowAnomalyUi();
+  const { anomalyThreshold } = useAnomalyThreshold();
   const preferredAnomalyTimeseries = usePreferredServiceAnomalyTimeseries(
     AnomalyDetectorType.txLatency
   );
@@ -146,7 +148,6 @@ export function LatencyChart({ height, kuery }: Props) {
               <EuiFlexItem grow={false}>
                 <OpenAnomalies
                   dataTestSubj="apmLatencyChartOpenAnomalies"
-                  hasValidMlLicense={license?.getFeature('ml').isAvailable}
                   mlJobId={preferredAnomalyTimeseries?.jobId}
                   detectorType={AnomalyDetectorType.txLatency}
                 />
@@ -187,13 +188,14 @@ export function LatencyChart({ height, kuery }: Props) {
           timeseries={timeseries}
           yLabelFormat={getResponseTimeTickFormatter(latencyFormatter)}
           anomalyTimeseries={
-            preferredAnomalyTimeseries
+            shouldShowAnomalyUi && !!preferredAnomalyTimeseries
               ? {
                   ...preferredAnomalyTimeseries,
                   color: anomalyTimeseriesColor,
                 }
               : undefined
           }
+          anomalyThreshold={anomalyThreshold}
         />
       </EuiFlexItem>
     </EuiFlexGroup>

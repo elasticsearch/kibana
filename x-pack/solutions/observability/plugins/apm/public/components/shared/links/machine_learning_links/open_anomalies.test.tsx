@@ -20,6 +20,11 @@ jest.mock('../../../../hooks/use_apm_params', () => ({
   useAnyOfApmParams: () => mockUseAnyOfApmParams(),
 }));
 
+const mockUseShouldShowAnomalyUi = jest.fn();
+jest.mock('../../../../hooks/use_should_show_anomaly_ui', () => ({
+  useShouldShowAnomalyUi: () => mockUseShouldShowAnomalyUi(),
+}));
+
 jest.mock('./mlsingle_metric_link', () => ({
   MLSingleMetricLink: ({
     children,
@@ -48,33 +53,36 @@ describe('OpenAnomalies', () => {
       transactionType: 'request',
     });
     mockUseAnyOfApmParams.mockReturnValue({ query: { kuery: '' } });
+    mockUseShouldShowAnomalyUi.mockReturnValue(true);
   });
 
-  it('renders nothing when no license or jobId', () => {
-    const { container: noLicense } = render(
-      <OpenAnomalies
-        detectorType={AnomalyDetectorType.txLatency}
-        hasValidMlLicense={false}
-        mlJobId="job"
-      />
+  it('does not render when shouldShowAnomalyUi is false', () => {
+    mockUseShouldShowAnomalyUi.mockReturnValue(false);
+    const { container } = render(
+      <OpenAnomalies detectorType={AnomalyDetectorType.txLatency} mlJobId="job" />
     );
-    expect(noLicense.firstChild).toBeNull();
+    expect(container.firstChild).toBeNull();
+  });
 
-    const { container: noJob } = render(
-      <OpenAnomalies
-        detectorType={AnomalyDetectorType.txLatency}
-        hasValidMlLicense={true}
-        mlJobId={undefined}
-      />
+  it('does not render when a kuery is set', () => {
+    mockUseAnyOfApmParams.mockReturnValue({ query: { kuery: 'service.name: test' } });
+    const { container } = render(
+      <OpenAnomalies detectorType={AnomalyDetectorType.txLatency} mlJobId="job" />
     );
-    expect(noJob.firstChild).toBeNull();
+    expect(container.firstChild).toBeNull();
+  });
+
+  it('does not render when mlJobId is not provided', () => {
+    const { container } = render(
+      <OpenAnomalies detectorType={AnomalyDetectorType.txLatency} mlJobId={undefined} />
+    );
+    expect(container.firstChild).toBeNull();
   });
 
   it('renders a link to ML with accessible name and custom data-test-subj wrapper', () => {
     render(
       <OpenAnomalies
         detectorType={AnomalyDetectorType.txThroughput}
-        hasValidMlLicense={true}
         mlJobId="job-id"
         dataTestSubj="testOpenAnomalies"
       />

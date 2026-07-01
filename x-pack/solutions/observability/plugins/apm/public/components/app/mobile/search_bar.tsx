@@ -8,19 +8,23 @@
 import type { EuiFlexGroupProps } from '@elastic/eui';
 import { EuiFlexGroup, EuiFlexItem, EuiSpacer } from '@elastic/eui';
 import React from 'react';
+import { css } from '@emotion/react';
 import { useBreakpoints } from '../../../hooks/use_breakpoints';
+import { ApmEnvironmentFilter } from '../../shared/environment_filter';
 import { TimeComparison } from '../../shared/time_comparison';
 import { MobileFilters } from './service_overview/filters';
 import { UnifiedSearchBar } from '../../shared/unified_search_bar';
+import { AnomalyThresholdSelect } from '../../shared/anomaly_threshold_select';
 
 interface Props {
   hidden?: boolean;
   showUnifiedSearchBar?: boolean;
   showFilterBar?: boolean;
   showTimeComparison?: boolean;
-  showTransactionTypeSelector?: boolean;
+  showEnvironmentFilter?: boolean;
   showQueryInput?: boolean;
   showMobileFilters?: boolean;
+  showAnomalyThresholdSelector?: boolean;
   searchBarPlaceholder?: string;
 }
 
@@ -29,9 +33,10 @@ export function MobileSearchBar({
   showUnifiedSearchBar = true,
   showFilterBar = false,
   showTimeComparison = false,
-  showTransactionTypeSelector = false,
+  showEnvironmentFilter = false,
   showQueryInput = true,
   showMobileFilters = false,
+  showAnomalyThresholdSelector = false,
   searchBarPlaceholder,
 }: Props) {
   const { isSmall, isMedium, isLarge, isXl, isXXXL } = useBreakpoints();
@@ -42,6 +47,10 @@ export function MobileSearchBar({
 
   const searchBarDirection: EuiFlexGroupProps['direction'] =
     isXXXL || (!isXl && !showTimeComparison) ? 'row' : 'column';
+
+  const filterControlCss = css`
+    width: ${isSmall ? '100%' : '225px'};
+  `;
 
   return (
     <>
@@ -64,22 +73,35 @@ export function MobileSearchBar({
       </EuiFlexGroup>
       <EuiSpacer size="s" />
       <EuiFlexGroup
-        justifyContent="spaceBetween"
         gutterSize={isMedium ? 's' : 'm'}
         direction={isLarge || isMedium ? 'column' : 'row'}
       >
-        {showTimeComparison && (
+        {showEnvironmentFilter && (
           <EuiFlexItem grow={isSmall}>
-            <TimeComparison />
+            <ApmEnvironmentFilter
+              fullWidth
+              compressed
+              cssOverride={isLarge ? {} : filterControlCss}
+            />
           </EuiFlexItem>
         )}
-        {showMobileFilters && (
-          <EuiFlexItem style={{ minWidth: 300 }}>
-            <MobileFilters />
+        {showTimeComparison && (
+          <EuiFlexItem grow={isSmall} css={filterControlCss}>
+            <TimeComparison fullWidth compressed />
+          </EuiFlexItem>
+        )}
+        {showAnomalyThresholdSelector && (
+          <EuiFlexItem grow={isSmall} css={filterControlCss}>
+            <AnomalyThresholdSelect compressed fullWidth />
           </EuiFlexItem>
         )}
       </EuiFlexGroup>
-      <EuiSpacer size="m" />
+      {showMobileFilters && (
+        <>
+          <EuiSpacer size="s" />
+          <MobileFilters />
+        </>
+      )}
     </>
   );
 }

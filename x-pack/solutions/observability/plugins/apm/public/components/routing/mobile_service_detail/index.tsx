@@ -19,6 +19,10 @@ import {
   latencyAggregationTypeRt,
 } from '../../../../common/latency_aggregation_types';
 import {
+  DEFAULT_ANOMALY_THRESHOLD,
+  anomalyThresholdRt,
+} from '../../../../common/anomaly_detection/anomaly_threshold';
+import {
   AlertsOverview,
   AlertsSearchBarContextProvider,
   AlertsHeaderSearchBar,
@@ -106,6 +110,7 @@ export const mobileServiceDetailRoute = {
           }),
           t.partial({
             latencyAggregationType: latencyAggregationTypeRt,
+            anomalyThreshold: anomalyThresholdRt,
             transactionType: t.string,
             refreshPaused: t.union([t.literal('true'), t.literal('false')]),
             refreshInterval: t.string,
@@ -120,6 +125,7 @@ export const mobileServiceDetailRoute = {
         environment: ENVIRONMENT_ALL.value,
         serviceGroup: '',
         latencyAggregationType: LatencyAggregationType.avg,
+        anomalyThreshold: DEFAULT_ANOMALY_THRESHOLD,
       },
     },
     children: {
@@ -131,7 +137,6 @@ export const mobileServiceDetailRoute = {
             defaultMessage: 'Overview',
           }),
           searchBarOptions: {
-            showTransactionTypeSelector: true,
             showTimeComparison: true,
             showMobileFilters: true,
           },
@@ -157,7 +162,6 @@ export const mobileServiceDetailRoute = {
           }),
           element: <Outlet />,
           searchBarOptions: {
-            showTransactionTypeSelector: true,
             showTimeComparison: true,
             showMobileFilters: true,
           },
@@ -302,7 +306,9 @@ export const mobileServiceDetailRoute = {
           }),
           element: <AlertsOverview />,
           searchBarOptions: {
-            hidden: true,
+            showUnifiedSearchBar: false,
+            showTimeComparison: false,
+            showMobileFilters: false,
           },
           bottomHeaderContent: AlertsHeaderSearchBar,
           contentWrapper: AlertsSearchBarContextProvider,

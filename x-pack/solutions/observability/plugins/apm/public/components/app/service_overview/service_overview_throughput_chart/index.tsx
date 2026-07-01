@@ -9,6 +9,7 @@ import { EuiPanel, EuiTitle, EuiIconTip, EuiFlexItem, EuiFlexGroup } from '@elas
 import { i18n } from '@kbn/i18n';
 import React, { useEffect } from 'react';
 
+import { useShouldShowAnomalyUi } from '../../../../hooks/use_should_show_anomaly_ui';
 import { usePreviousPeriodLabel } from '../../../../hooks/use_previous_period_text';
 import { isTimeComparison } from '../../../shared/time_comparison/get_comparison_options';
 import { AnomalyDetectorType } from '../../../../../common/anomaly_detection/apm_ml_detectors';
@@ -28,8 +29,8 @@ import { useApmPluginContext } from '../../../../context/apm_plugin/use_apm_plug
 import { getThroughputScreenContext } from './get_throughput_screen_context';
 import { OpenInDiscover } from '../../../shared/links/discover_links/open_in_discover';
 import { APM_CHART_EBT_ELEMENTS } from '../../../shared/charts/ebt_constants';
-import { useLicenseContext } from '../../../../context/license/use_license_context';
 import { OpenAnomalies } from '../../../shared/links/machine_learning_links/open_anomalies';
+import { useAnomalyThreshold } from '../../../../hooks/use_anomaly_threshold';
 
 const INITIAL_STATE = {
   currentPeriod: [],
@@ -45,13 +46,14 @@ export function ServiceOverviewThroughputChart({
   kuery: string;
   transactionName?: string;
 }) {
-  const license = useLicenseContext();
   const {
     query: { rangeFrom, rangeTo, comparisonEnabled, offset },
   } = useAnyOfApmParams('/services/{serviceName}', '/mobile-services/{serviceName}');
 
   const { environment } = useEnvironmentsContext();
 
+  const shouldShowAnomalyUi = useShouldShowAnomalyUi();
+  const { anomalyThreshold } = useAnomalyThreshold();
   const preferredAnomalyTimeseries = usePreferredServiceAnomalyTimeseries(
     AnomalyDetectorType.txThroughput
   );
@@ -193,7 +195,6 @@ export function ServiceOverviewThroughputChart({
             <EuiFlexItem grow={false}>
               <OpenAnomalies
                 dataTestSubj="apmServiceOverviewThroughputChartOpenAnomalies"
-                hasValidMlLicense={license?.getFeature('ml').isAvailable}
                 mlJobId={preferredAnomalyTimeseries?.jobId}
                 detectorType={AnomalyDetectorType.txThroughput}
               />
@@ -237,13 +238,14 @@ export function ServiceOverviewThroughputChart({
         yLabelFormat={asExactTransactionRate}
         customTheme={comparisonChartTheme}
         anomalyTimeseries={
-          preferredAnomalyTimeseries
+          shouldShowAnomalyUi && !!preferredAnomalyTimeseries
             ? {
                 ...preferredAnomalyTimeseries,
                 color: previousPeriodColor,
               }
             : undefined
         }
+        anomalyThreshold={anomalyThreshold}
       />
     </EuiPanel>
   );

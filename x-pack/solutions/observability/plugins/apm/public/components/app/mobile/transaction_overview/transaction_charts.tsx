@@ -14,6 +14,7 @@ import { SessionsChart } from '../charts/sessions_chart';
 import { HttpRequestsChart } from '../charts/http_requests_chart';
 import { LatencyChart } from '../../../shared/charts/latency_chart';
 import { FailedTransactionRateChart } from '../../../shared/charts/failed_transaction_rate_chart';
+import { AnomaliesAutomaticEnvironmentSelectionCallout } from '../../../shared/anomalies_automatic_environment_selection_callout';
 
 export function MobileTransactionCharts({
   serviceName,
@@ -68,6 +69,10 @@ export function MobileTransactionCharts({
             />
           </EuiFlexItem>
         </EuiFlexGrid>
+
+        <EuiSpacer size="s" />
+
+        <AnomaliesAutomaticEnvironmentSelectionCallout />
 
         <EuiSpacer size="s" />
 

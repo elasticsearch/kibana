@@ -22,6 +22,7 @@ import { EuiFlexGroup, EuiFlexItem } from '@elastic/eui';
 import type { CPSPluginStart } from '@kbn/cps/public';
 import { KibanaEnvironmentContextProvider } from '../../../context/kibana_environment_context/kibana_environment_context';
 import { AnomalyDetectionJobsContextProvider } from '../../../context/anomaly_detection_jobs/anomaly_detection_jobs_context';
+import { EnvironmentsContextProvider } from '../../../context/environments_context/environments_context';
 import type { ApmPluginContextValue } from '../../../context/apm_plugin/apm_plugin_context';
 import { ApmPluginContext } from '../../../context/apm_plugin/apm_plugin_context';
 import { useApmPluginContext } from '../../../context/apm_plugin/use_apm_plugin_context';
@@ -82,13 +83,15 @@ export function ApmAppRoot({
                                     <BreadcrumbsContextProvider>
                                       <UrlParamsProvider>
                                         <LicenseProvider>
-                                          <AnomalyDetectionJobsContextProvider>
-                                            <InspectorContextProvider>
-                                              <MountApmHeaderActionMenu />
-                                              <Route component={ScrollToTopOnPathChange} />
-                                              <RouteRenderer />
-                                            </InspectorContextProvider>
-                                          </AnomalyDetectionJobsContextProvider>
+                                          <EnvironmentsContextProvider>
+                                            <AnomalyDetectionJobsContextProvider>
+                                              <InspectorContextProvider>
+                                                <MountApmHeaderActionMenu />
+                                                <Route component={ScrollToTopOnPathChange} />
+                                                <RouteRenderer />
+                                              </InspectorContextProvider>
+                                            </AnomalyDetectionJobsContextProvider>
+                                          </EnvironmentsContextProvider>
                                         </LicenseProvider>
                                       </UrlParamsProvider>
                                     </BreadcrumbsContextProvider>

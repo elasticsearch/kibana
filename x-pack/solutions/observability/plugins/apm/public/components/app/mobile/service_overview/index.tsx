@@ -29,6 +29,7 @@ import { getKueryWithMobileFilters } from '../../../../../common/utils/get_kuery
 import { MobileStats } from './stats/stats';
 import { MobileLocationStats } from './stats/location_stats';
 import { useAdHocApmDataView } from '../../../../hooks/use_adhoc_apm_data_view';
+import { AnomaliesAutomaticEnvironmentSelectionCallout } from '../../../shared/anomalies_automatic_environment_selection_callout';
 /**
  * The height a chart should be if it's next to a table with 5 rows and a title.
  * Add the height of the pagination row.
@@ -156,6 +157,10 @@ export function MobileServiceOverview() {
                 />
               </EuiFlexItem>
             </EuiPanel>
+          </EuiFlexItem>
+
+          <EuiFlexItem>
+            <AnomaliesAutomaticEnvironmentSelectionCallout />
           </EuiFlexItem>
 
           <EuiFlexItem>

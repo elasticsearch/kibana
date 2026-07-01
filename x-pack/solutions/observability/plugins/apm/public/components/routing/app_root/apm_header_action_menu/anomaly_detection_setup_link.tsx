@@ -9,20 +9,15 @@ import type { IconType } from '@elastic/eui';
 import { EuiHeaderLink, EuiToolTip } from '@elastic/eui';
 import { i18n } from '@kbn/i18n';
 import React from 'react';
+import { useEnvironmentsContext } from '../../../../context/environments_context/use_environments_context';
 import { AnomalyDetectionSetupState } from '../../../../../common/anomaly_detection/get_anomaly_detection_setup_state';
-import {
-  ENVIRONMENT_ALL,
-  getEnvironmentLabel,
-} from '../../../../../common/environment_filter_values';
+import { getEnvironmentLabel } from '../../../../../common/environment_filter_values';
 import { useAnomalyDetectionJobsContext } from '../../../../context/anomaly_detection_jobs/use_anomaly_detection_jobs_context';
 import { useApmPluginContext } from '../../../../context/apm_plugin/use_apm_plugin_context';
-import { useApmParams } from '../../../../hooks/use_apm_params';
 import { getLegacyApmHref } from '../../../shared/links/apm/apm_link_hooks';
 
 export function AnomalyDetectionSetupLink() {
-  const { query } = useApmParams('/*');
-
-  const environment = ('environment' in query && query.environment) || ENVIRONMENT_ALL.value;
+  const { preferredEnvironment } = useEnvironmentsContext();
 
   const { core } = useApmPluginContext();
 
@@ -45,7 +40,7 @@ export function AnomalyDetectionSetupLink() {
     anomalyDetectionSetupState === AnomalyDetectionSetupState.NoJobsForEnvironment
   ) {
     color = 'warning';
-    tooltipText = getNoJobsMessage(anomalyDetectionSetupState, environment);
+    tooltipText = getNoJobsMessage(anomalyDetectionSetupState, preferredEnvironment);
     icon = 'machineLearningApp';
   } else if (anomalyDetectionSetupState === AnomalyDetectionSetupState.UpgradeableJobs) {
     color = 'success';
@@ -58,7 +53,7 @@ export function AnomalyDetectionSetupLink() {
   const element = (
     <EuiHeaderLink
       color={color}
-      iconType={icon ? icon : undefined}
+      iconType={icon}
       isLoading={anomalyDetectionSetupState === AnomalyDetectionSetupState.Loading}
       href={getLegacyApmHref({ basePath, path: '/settings/anomaly-detection' })}
       data-test-subj="apmAnomalyDetectionHeaderLink"

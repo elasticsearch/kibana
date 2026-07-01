@@ -34,6 +34,7 @@ export type * from './src/focused_trace_waterfall';
 export type * from './src/full_trace_waterfall';
 export * from './src/ilm_types';
 export * from './src/instances';
+export * from './src/anomaly_threshold';
 export * from './src/latency_aggregation_types';
 export type * from './src/latency_distribution';
 export * from './src/latency_distribution_chart_types';

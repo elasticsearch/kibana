@@ -12,26 +12,20 @@
  * surfaces anomaly badges in the APM UI that exercise the multi-detector /
  * multi-environment anomaly badge behaviour. Every service exists in MULTIPLE
  * ENVIRONMENTS (production + development), and each environment is anomalous at a
- * DIFFERENT time, so the "all environments" combined chart shows two distinct
- * anomaly clusters (each tagged with its environment in the tooltip):
+ * DIFFERENT time:
  *
  *   1. Highest score ACROSS DETECTORS (latency vs throughput vs failure rate):
  *      `synth-anomaly-detectors` (production) gets a CRITICAL failure-rate
- *      anomaly together with only a MINOR latency bump in the same window. The
- *      badge must show the failure-rate (critical) score, not the latency one.
+ *      anomaly together with only a MINOR latency bump in the same window.
  *
  *   2. Highest score ACROSS ENVIRONMENTS (when env selector = "all"):
  *      every service has a CRITICAL anomaly in `production` (earlier sub-window)
- *      and a smaller MAJOR anomaly in `development` (later sub-window). Both
- *      render in the combined chart at different times, but the badge / open
- *      anomalies link must still surface the production (highest) score.
+ *      and a smaller MAJOR anomaly in `development` (later sub-window).
  *
  *   2b. Identical anomalies side by side (same value across environments):
  *      `synth-anomaly-side-by-side` gets the SAME critical latency spike in both
  *      `production` and `development`, optionally offset in time by
- *      `sideBySideOffsetMinutes`. In the combined "all environments" view this
- *      renders two identical anomalies next to each other, exercising the tooltip
- *      when side-by-side values are the same.
+ *      `sideBySideOffsetMinutes`.
  *
  *   3. Detector coverage across environments:
  *      a dedicated service trips each detector (latency, throughput, failure
@@ -43,8 +37,7 @@
  *      but with intentional OVERLAPS and different intensities (failure rate ramps
  *      from major to critical). The two environments use shifted windows, so some
  *      anomalous times line up across environments and others do not. Some buckets
- *      are anomalous on two or three detectors at once, so the badge must surface
- *      the highest-scoring detector.
+ *      are anomalous on two or three detectors at once.
  *
  * ANOMALY WINDOWS
  * ---------------
@@ -112,6 +105,12 @@
  *                                           the SAME anomaly, so the combined view
  *                                           shows identical anomalies side by side
  *                                           (0 = exact same time bucket).
+ * --scenarioOpts.singleEnv=false            When true, generate data ONLY for the
+ *                                           `production` environment (no development
+ *                                           data). Services still trip their production
+ *                                           detectors; the cross-environment behaviors
+ *                                           (side-by-side, "all environments") collapse
+ *                                           to single anomalies.
  *
  * VALIDATE + ML SETUP
  * -------------------
@@ -125,7 +124,7 @@
 import type { ApmFields, Instance } from '@kbn/synthtrace-client';
 import { apm } from '@kbn/synthtrace-client';
 import type { Scenario } from '@kbn/synthtrace';
-import { withClient } from '@kbn/synthtrace';
+import { getBooleanOpt, withClient } from '@kbn/synthtrace';
 
 const TRANSACTION_NAME = 'GET /api/orders';
 
@@ -164,6 +163,7 @@ const scenario: Scenario<ApmFields> = async (runOptions) => {
     ...DEFAULT_SCENARIO_OPTS,
     ...(runOptions.scenarioOpts || {}),
   };
+  const singleEnv = getBooleanOpt(runOptions.scenarioOpts, 'singleEnv', false);
 
   // Split the trailing anomaly span into two non-overlapping sub-windows so each
   // environment is anomalous at a DIFFERENT time. Production takes the earlier
@@ -413,12 +413,17 @@ const scenario: Scenario<ApmFields> = async (runOptions) => {
         ),
       ];
 
+      // In single-environment mode, keep only the production stream of each
+      // [production, development] pair (production is always the first entry).
+      const selectEnvironments = <T>(streams: T[]): T[] =>
+        singleEnv ? streams.slice(0, 1) : streams;
+
       return withClient(apmEsClient, [
-        ...detectorsEvents,
-        ...environmentsEvents,
-        ...sideBySideEvents,
-        ...throughputEventsByEnv,
-        ...allMetricsEventsByEnv,
+        ...selectEnvironments(detectorsEvents),
+        ...selectEnvironments(environmentsEvents),
+        ...selectEnvironments(sideBySideEvents),
+        ...selectEnvironments(throughputEventsByEnv),
+        ...selectEnvironments(allMetricsEventsByEnv),
       ]);
     },
   };

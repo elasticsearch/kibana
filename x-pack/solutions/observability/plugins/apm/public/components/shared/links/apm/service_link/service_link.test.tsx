@@ -13,7 +13,7 @@ import * as stories from './service_link.stories';
 const { Example, AndroidAgent, IOSAgent } = composeStories(stories);
 
 const params =
-  'comparisonEnabled=false&environment=ENVIRONMENT_ALL&kuery=&latencyAggregationType=avg&rangeFrom=now-15m&rangeTo=now&serviceGroup=';
+  'anomalyThreshold=major&comparisonEnabled=false&environment=ENVIRONMENT_ALL&kuery=&latencyAggregationType=avg&rangeFrom=now-15m&rangeTo=now&serviceGroup=';
 describe('ServiceLink', () => {
   it('links to service details', async () => {
     expect(() => render(<Example />)).not.toThrowError();

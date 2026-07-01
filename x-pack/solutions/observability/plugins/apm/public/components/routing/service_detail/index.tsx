@@ -20,6 +20,10 @@ import {
   LatencyAggregationType,
   latencyAggregationTypeRt,
 } from '../../../../common/latency_aggregation_types';
+import {
+  DEFAULT_ANOMALY_THRESHOLD,
+  anomalyThresholdRt,
+} from '../../../../common/anomaly_detection/anomaly_threshold';
 import { ApmTimeRangeMetadataContextProvider } from '../../../context/time_range_metadata/time_range_metadata_context';
 import { useApmParams } from '../../../hooks/use_apm_params';
 import {
@@ -158,6 +162,7 @@ export const serviceDetailRoute = {
           }),
           t.partial({
             latencyAggregationType: latencyAggregationTypeRt,
+            anomalyThreshold: anomalyThresholdRt,
             transactionType: t.string,
             refreshPaused: t.union([t.literal('true'), t.literal('false')]),
             refreshInterval: t.string,
@@ -172,6 +177,7 @@ export const serviceDetailRoute = {
         environment: ENVIRONMENT_ALL.value,
         serviceGroup: '',
         latencyAggregationType: LatencyAggregationType.avg,
+        anomalyThreshold: DEFAULT_ANOMALY_THRESHOLD,
       },
     },
     children: {

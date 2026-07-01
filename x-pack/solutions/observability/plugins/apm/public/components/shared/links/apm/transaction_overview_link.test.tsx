@@ -50,7 +50,7 @@ describe('Transactions overview link', () => {
         </Wrapper>
       );
       expect(getHref(container)).toEqual(
-        'http://localhost/basepath/app/apm/services/foo/transactions?comparisonEnabled=false&environment=production&kuery=&latencyAggregationType=avg&rangeFrom=now-15m&rangeTo=now&serviceGroup=&transactionType=request'
+        'http://localhost/basepath/app/apm/services/foo/transactions?anomalyThreshold=major&comparisonEnabled=false&environment=production&kuery=&latencyAggregationType=avg&rangeFrom=now-15m&rangeTo=now&serviceGroup=&transactionType=request'
       );
     });
     it('returns transaction link with persisted without transaction type', () => {
@@ -74,7 +74,7 @@ describe('Transactions overview link', () => {
         </Wrapper>
       );
       expect(getHref(container)).toEqual(
-        'http://localhost/basepath/app/apm/services/foo/transactions?comparisonEnabled=false&environment=production&kuery=&latencyAggregationType=avg&rangeFrom=now-15m&rangeTo=now&serviceGroup='
+        'http://localhost/basepath/app/apm/services/foo/transactions?anomalyThreshold=major&comparisonEnabled=false&environment=production&kuery=&latencyAggregationType=avg&rangeFrom=now-15m&rangeTo=now&serviceGroup='
       );
     });
     it('returns transaction link with persisted query with transaction type', () => {
@@ -99,7 +99,7 @@ describe('Transactions overview link', () => {
         </Wrapper>
       );
       expect(getHref(container)).toEqual(
-        'http://localhost/basepath/app/apm/services/foo/transactions?comparisonEnabled=false&environment=production&kuery=&latencyAggregationType=avg&rangeFrom=now-15m&rangeTo=now&serviceGroup=&transactionType=request'
+        'http://localhost/basepath/app/apm/services/foo/transactions?anomalyThreshold=major&comparisonEnabled=false&environment=production&kuery=&latencyAggregationType=avg&rangeFrom=now-15m&rangeTo=now&serviceGroup=&transactionType=request'
       );
     });
   });

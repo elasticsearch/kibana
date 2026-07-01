@@ -36,6 +36,7 @@ import { ServiceOverviewThroughputChart } from '../service_overview_throughput_c
 import { SloCallout } from '../../../shared/slo_callout';
 import { useLocalStorage } from '../../../../hooks/use_local_storage';
 import { FETCH_STATUS } from '../../../../hooks/use_fetcher';
+import { AnomaliesAutomaticEnvironmentSelectionCallout } from '../../../shared/anomalies_automatic_environment_selection_callout';
 
 const latencyChartHeight = 200;
 
@@ -128,6 +129,7 @@ export function ApmOverview() {
           <EuiSpacer />
         </>
       )}
+      <AnomaliesAutomaticEnvironmentSelectionCallout />
       {fallbackToTransactions && (
         <EuiFlexItem>
           <AggregatedTransactionsBadge />

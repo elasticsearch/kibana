@@ -16,6 +16,7 @@ import * as hooks from '../../../../context/anomaly_detection_jobs/use_anomaly_d
 import { MockApmPluginContextWrapper } from '../../../../context/apm_plugin/mock_apm_plugin_context';
 import { FETCH_STATUS } from '../../../../hooks/use_fetcher';
 import { AnomalyDetectionSetupLink } from './anomaly_detection_setup_link';
+import * as environmentHooks from '../../../../context/environments_context/use_environments_context';
 
 async function renderTooltipAnchor({
   jobs,
@@ -38,6 +39,13 @@ async function renderTooltipAnchor({
       isAuthorized: true,
       jobs,
     }),
+  });
+
+  jest.spyOn(environmentHooks, 'useEnvironmentsContext').mockReturnValue({
+    environment: environment ?? ENVIRONMENT_ALL.value,
+    preferredEnvironment: environment ?? ENVIRONMENT_ALL.value,
+    environments: environment ? [environment] : [],
+    status: FETCH_STATUS.SUCCESS,
   });
 
   const history = createMemoryHistory({

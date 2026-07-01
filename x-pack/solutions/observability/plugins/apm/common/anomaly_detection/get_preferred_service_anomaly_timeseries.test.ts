@@ -85,19 +85,16 @@ describe('getPreferredServiceAnomalyTimeseries', () => {
       describe('and all being selected', () => {
         const preferredEnvironment = ENVIRONMENT_ALL.value;
 
-        it('returns a combined series across all environments', () => {
-          const series = getPreferredServiceAnomalyTimeseries({
-            allAnomalyTimeseries,
-            detectorType: AnomalyDetectorType.txLatency,
-            preferredEnvironment,
-            fallbackToTransactions: false,
-          });
+        it('returns no series', () => {
+          expect(
+            getPreferredServiceAnomalyTimeseries({
+              allAnomalyTimeseries,
+              detectorType: AnomalyDetectorType.txLatency,
+              preferredEnvironment,
+              fallbackToTransactions: false,
+            })
+          ).toBeUndefined();
 
-          expect(series).toBeDefined();
-          expect(series?.environment).toBe(ENVIRONMENT_ALL.value);
-        });
-
-        it('returns undefined when no matching series exist', () => {
           expect(
             getPreferredServiceAnomalyTimeseries({
               allAnomalyTimeseries,
@@ -164,61 +161,6 @@ describe('getPreferredServiceAnomalyTimeseries', () => {
       });
 
       expect(series?.version).toBe(2);
-    });
-  });
-
-  describe('combined view when all environments are selected', () => {
-    const allAnomalyTimeseries = [
-      createMockAnomalyTimeseries({
-        type: AnomalyDetectorType.txLatency,
-        environment: PROD,
-        jobId: 'prod-job',
-        anomalies: [{ x: 1, y: 80, actual: 10 }],
-      }),
-      createMockAnomalyTimeseries({
-        type: AnomalyDetectorType.txLatency,
-        environment: DEV,
-        jobId: 'dev-job',
-        anomalies: [{ x: 1, y: 95, actual: 20 }],
-      }),
-    ];
-
-    const preferredEnvironment = ENVIRONMENT_ALL.value;
-
-    it('merges anomalies from all environments and tags each with its environment', () => {
-      const series = getPreferredServiceAnomalyTimeseries({
-        allAnomalyTimeseries,
-        detectorType: AnomalyDetectorType.txLatency,
-        preferredEnvironment,
-        fallbackToTransactions: false,
-      });
-
-      expect(series?.anomalies).toEqual([
-        { x: 1, y: 80, actual: 10, environment: PROD },
-        { x: 1, y: 95, actual: 20, environment: DEV },
-      ]);
-    });
-
-    it('uses the jobId of the highest scored anomaly', () => {
-      const series = getPreferredServiceAnomalyTimeseries({
-        allAnomalyTimeseries,
-        detectorType: AnomalyDetectorType.txLatency,
-        preferredEnvironment,
-        fallbackToTransactions: false,
-      });
-
-      expect(series?.jobId).toBe('dev-job');
-    });
-
-    it('does not include expected bounds in the combined series', () => {
-      const series = getPreferredServiceAnomalyTimeseries({
-        allAnomalyTimeseries,
-        detectorType: AnomalyDetectorType.txLatency,
-        preferredEnvironment,
-        fallbackToTransactions: false,
-      });
-
-      expect(series?.bounds).toEqual([]);
     });
   });
 });

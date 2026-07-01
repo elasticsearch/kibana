@@ -17,7 +17,7 @@ function getExpectedTimesAndComparisons({
   rangeTo: string;
 }) {
   const { start, end } = getDateRange({ rangeFrom, rangeTo });
-  const comparisons = getComparisonOptions({ start, end });
+  const comparisons = getComparisonOptions({ start, end, showSelectedBoundsOption: false });
 
   return {
     start,
