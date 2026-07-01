@@ -27,6 +27,7 @@ describe('ConcurrencyManager', () => {
 
     mockWorkflowExecutionRepository = {
       getRunningExecutionsByConcurrencyGroup: jest.fn(),
+      countExecutionsByConcurrencyGroupAndStatuses: jest.fn(),
       bulkUpdateWorkflowExecutions: jest.fn().mockResolvedValue(undefined),
       updateWorkflowExecution: jest.fn(),
     } as unknown as jest.Mocked<WorkflowExecutionRepository>;
@@ -600,6 +601,75 @@ describe('ConcurrencyManager', () => {
         'default'
       );
       expect(result2).toBe(true); // Should proceed (within limit for group2)
+    });
+
+    describe('queue strategy', () => {
+      it('allows execution when concurrency slots below max', async () => {
+        const settings: ConcurrencySettings = { key: 'g1', strategy: 'queue', max: 2 };
+        mockWorkflowExecutionRepository.countExecutionsByConcurrencyGroupAndStatuses.mockResolvedValueOnce(
+          1
+        );
+        const result = await concurrencyManager.checkConcurrency(
+          settings,
+          'g1',
+          'exec-new',
+          'default'
+        );
+        expect(result).toBe(true);
+        expect(
+          mockWorkflowExecutionRepository.countExecutionsByConcurrencyGroupAndStatuses
+        ).toHaveBeenCalled();
+        expect(mockWorkflowExecutionRepository.updateWorkflowExecution).not.toHaveBeenCalled();
+      });
+
+      it('queues new execution when all concurrency slots are taken', async () => {
+        const settings: ConcurrencySettings = { key: 'g1', strategy: 'queue', max: 1 };
+        mockWorkflowExecutionRepository.countExecutionsByConcurrencyGroupAndStatuses
+          .mockResolvedValueOnce(1)
+          .mockResolvedValueOnce(3);
+
+        const result = await concurrencyManager.checkConcurrency(
+          settings,
+          'g1',
+          'exec-new',
+          'default'
+        );
+
+        expect(result).toBe(false);
+        expect(mockWorkflowExecutionRepository.updateWorkflowExecution).toHaveBeenCalledWith({
+          id: 'exec-new',
+          status: ExecutionStatus.QUEUED,
+        });
+      });
+
+      it('marks SKIPPED when queue backlog is full (explicit queue-size)', async () => {
+        const settings: ConcurrencySettings = {
+          key: 'g1',
+          strategy: 'queue',
+          max: 1,
+          'queue-size': 2,
+        };
+        mockWorkflowExecutionRepository.countExecutionsByConcurrencyGroupAndStatuses
+          .mockResolvedValueOnce(1)
+          .mockResolvedValueOnce(2);
+
+        const result = await concurrencyManager.checkConcurrency(
+          settings,
+          'g1',
+          'exec-new',
+          'default'
+        );
+
+        expect(result).toBe(false);
+        expect(mockWorkflowExecutionRepository.updateWorkflowExecution).toHaveBeenCalledWith({
+          id: 'exec-new',
+          status: ExecutionStatus.SKIPPED,
+          cancelRequested: true,
+          cancellationReason: 'Queue full (queue-size: 2)',
+          cancelledAt: expect.any(String),
+          cancelledBy: 'system',
+        });
+      });
     });
 
     describe('error handling', () => {

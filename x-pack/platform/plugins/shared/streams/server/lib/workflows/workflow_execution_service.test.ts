@@ -42,6 +42,7 @@ describe('WorkflowExecutionService', () => {
   describe('classifyExecutionStatus', () => {
     it.each([
       [ExecutionStatus.PENDING, SignificantEventsWorkflowStatus.InProgress],
+      [ExecutionStatus.QUEUED, SignificantEventsWorkflowStatus.InProgress],
       [ExecutionStatus.RUNNING, SignificantEventsWorkflowStatus.InProgress],
       [ExecutionStatus.WAITING, SignificantEventsWorkflowStatus.InProgress],
       [ExecutionStatus.WAITING_FOR_INPUT, SignificantEventsWorkflowStatus.InProgress],

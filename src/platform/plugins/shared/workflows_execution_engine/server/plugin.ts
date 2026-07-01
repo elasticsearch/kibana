@@ -33,6 +33,10 @@ import {
 } from '@kbn/workflows/common/errors';
 import { readWorkflowVersioningEnabled } from '@kbn/workflows/server';
 import { ConcurrencyManager } from './concurrency/concurrency_manager';
+import {
+  drainConcurrencyQueueSlots,
+  maybeDrainConcurrencyQueueAfterTerminal,
+} from './concurrency/concurrency_queue_drainer';
 import type { WorkflowsExecutionEngineConfig } from './config';
 import {
   cancelWorkflow,
@@ -249,6 +253,14 @@ export class WorkflowsExecutionEnginePlugin
               });
 
               if (interruptedOutcome === 'task_complete') {
+                await maybeDrainConcurrencyQueueAfterTerminal({
+                  workflowExecutionRepository,
+                  taskManager: pluginsStart.taskManager,
+                  logger,
+                  workflowRunId,
+                  spaceId,
+                  fakeRequest,
+                });
                 return;
               }
 
@@ -564,6 +576,31 @@ export class WorkflowsExecutionEnginePlugin
                 };
               }
 
+              const scheduledConcurrency = workflow.definition?.settings?.concurrency;
+              if (
+                scheduledConcurrency?.strategy === 'queue' &&
+                workflowExecution.concurrencyGroupKey &&
+                workflowExecution.spaceId
+              ) {
+                try {
+                  await drainConcurrencyQueueSlots({
+                    workflowExecutionRepository,
+                    taskManager: pluginsStart.taskManager,
+                    logger,
+                    spaceId: workflowExecution.spaceId,
+                    concurrencyGroupKey: workflowExecution.concurrencyGroupKey,
+                    concurrencySettings: scheduledConcurrency,
+                    request: fakeRequest,
+                  });
+                } catch (drainErr) {
+                  logger.debug(
+                    `Scheduled workflow concurrency queue drain failed: ${
+                      drainErr instanceof Error ? drainErr.message : String(drainErr)
+                    }`
+                  );
+                }
+              }
+
               // Use refresh: 'wait_for' to ensure the execution is immediately searchable
               // for deduplication checks by subsequent scheduled tasks
               await workflowExecutionRepository.createWorkflowExecution(workflowExecution, {
@@ -712,6 +749,31 @@ export class WorkflowsExecutionEnginePlugin
         authenticatedUser,
         now: new Date(),
       });
+
+      const prePersistConcurrency = workflow.definition?.settings?.concurrency;
+      if (
+        prePersistConcurrency?.strategy === 'queue' &&
+        workflowExecution.concurrencyGroupKey &&
+        workflowExecution.spaceId
+      ) {
+        try {
+          await drainConcurrencyQueueSlots({
+            workflowExecutionRepository,
+            taskManager: plugins.taskManager,
+            logger: this.logger,
+            spaceId: workflowExecution.spaceId,
+            concurrencyGroupKey: workflowExecution.concurrencyGroupKey,
+            concurrencySettings: prePersistConcurrency,
+            request,
+          });
+        } catch (drainErr) {
+          this.logger.debug(
+            `Concurrency queue drain before enqueue failed: ${
+              drainErr instanceof Error ? drainErr.message : String(drainErr)
+            }`
+          );
+        }
+      }
 
       // Only pay the refresh cost when the concurrency check will actually run.
       // Without a concurrencyGroupKey there is no check, so refresh:false is fine.
@@ -1022,6 +1084,30 @@ export class WorkflowsExecutionEnginePlugin
         ...keylessItems.map(runCheck),
         ...Array.from(bucketsByGroup.values()).map(async (bucket) => {
           for (const p of bucket) {
+            const bulkConc = p.workflowExecution.workflowDefinition?.settings?.concurrency;
+            if (
+              bulkConc?.strategy === 'queue' &&
+              p.workflowExecution.concurrencyGroupKey &&
+              p.workflowExecution.spaceId
+            ) {
+              try {
+                await drainConcurrencyQueueSlots({
+                  workflowExecutionRepository,
+                  taskManager: plugins.taskManager,
+                  logger: this.logger,
+                  spaceId: p.workflowExecution.spaceId,
+                  concurrencyGroupKey: p.workflowExecution.concurrencyGroupKey,
+                  concurrencySettings: bulkConc,
+                  request,
+                });
+              } catch (drainErr) {
+                this.logger.debug(
+                  `Bulk concurrency queue drain failed: ${
+                    drainErr instanceof Error ? drainErr.message : String(drainErr)
+                  }`
+                );
+              }
+            }
             await runCheck(p);
           }
         }),
@@ -1120,6 +1206,8 @@ export class WorkflowsExecutionEnginePlugin
         schedulingRequest,
         workflowExecutionRepository,
         workflowTaskManager,
+        taskManager: plugins.taskManager,
+        logger: this.logger,
       });
     };
 
@@ -1251,7 +1339,10 @@ export class WorkflowsExecutionEnginePlugin
         });
 
       // Same idea as cancel: nudge TM so the resume task runs as soon as possible
-      await workflowTaskManager.forceRunIdleTasks(executionId);
+      await workflowTaskManager.forceRunIdleTasks(executionId, {
+        spaceId,
+        fakeRequest: request,
+      });
     };
 
     this.internalResumeWorkflowExecutionHandler = internalResumeWorkflowExecution;
@@ -1409,7 +1500,7 @@ export class WorkflowsExecutionEnginePlugin
 
       if (!canProceed) {
         this.logger.debug(
-          `Dropped workflow execution ${workflowExecution.id} (group: ${workflowExecution.concurrencyGroupKey}) due to concurrency limit`
+          `Workflow execution ${workflowExecution.id} (group: ${workflowExecution.concurrencyGroupKey}) deferred or skipped per concurrency settings`
         );
       }
 

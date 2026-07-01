@@ -12,6 +12,7 @@ import type {
   EsWorkflowStepExecution,
   WorkflowTokenUsage,
 } from '@kbn/workflows';
+import { isTerminalStatus } from '@kbn/workflows';
 import type { WorkflowExecutionRepository } from '../repositories/workflow_execution_repository';
 import { sumTokenUsage } from '../utils';
 
@@ -259,10 +260,20 @@ export class WorkflowExecutionState {
     const changes = this.workflowDocumentChanges;
     this.workflowDocumentChanges = undefined;
 
-    await this.workflowExecutionRepository.updateWorkflowExecution({
-      ...changes,
-      id: this.workflowExecution.id,
-    });
+    const queueConcurrencyStrategy =
+      this.workflowExecution.workflowDefinition?.settings?.concurrency?.strategy === 'queue';
+    const refreshForQueueDrainAfterTerminal =
+      Boolean(this.workflowExecution.concurrencyGroupKey) &&
+      queueConcurrencyStrategy &&
+      isTerminalStatus(this.workflowExecution.status);
+
+    await this.workflowExecutionRepository.updateWorkflowExecution(
+      {
+        ...changes,
+        id: this.workflowExecution.id,
+      },
+      refreshForQueueDrainAfterTerminal ? { refresh: 'wait_for' } : {}
+    );
   }
 
   private createStep(step: CreateStepInput) {

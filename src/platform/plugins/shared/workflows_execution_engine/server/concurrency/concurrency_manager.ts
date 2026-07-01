@@ -8,7 +8,11 @@
  */
 
 import type { ConcurrencySettings, LiquidSettings, WorkflowContext } from '@kbn/workflows';
-import { ExecutionStatus } from '@kbn/workflows';
+import {
+  ConcurrencySlotOccupyingExecutionStatuses,
+  DEFAULT_CONCURRENCY_QUEUE_SIZE,
+  ExecutionStatus,
+} from '@kbn/workflows';
 import type { WorkflowExecutionRepository } from '../repositories/workflow_execution_repository';
 import { WorkflowTemplatingEngine } from '../templating_engine';
 import type { WorkflowTaskManager } from '../workflow_task_manager/workflow_task_manager';
@@ -19,7 +23,7 @@ import type { WorkflowTaskManager } from '../workflow_task_manager/workflow_task
  * Scope:
  * - Evaluating concurrency group keys from static strings or template expressions
  * - Enforcing concurrency limits per group
- * - Implementing collision strategies (drop, cancel-in-progress)
+ * - Implementing collision strategies (drop, cancel-in-progress, queue)
  */
 export class ConcurrencyManager {
   private readonly workflowTaskManager: WorkflowTaskManager;
@@ -71,14 +75,17 @@ export class ConcurrencyManager {
    * Checks concurrency limits and applies the collision strategy if needed.
    *
    * For 'cancel-in-progress' strategy:
-   * - Queries for non-terminal executions with the same concurrency group key
+   * - Queries slot-occupying executions with the same concurrency group key (excludes backlog `queued`)
    * - If limit is exceeded, cancels the oldest execution(s) to make room
    * - Returns true if the new execution can proceed, false otherwise
    *
    * For 'drop' strategy:
-   * - Queries for non-terminal executions with the same concurrency group key
-   * - If limit is exceeded, marks the new execution as SKIPPED and returns false
-   * - Returns true if the new execution can proceed, false otherwise
+   * - Same slot count as cancel-in-progress; if limit exceeded, SKIPPED new execution (false).
+   *
+   * For `queue`:
+   * - If concurrency slots below max → proceed.
+   * - Else enqueues newest as `queued` unless queue depth exceeds `queue-size`
+   *   (`DEFAULT_CONCURRENCY_QUEUE_SIZE` when omitted), then SKIPPED explicitly.
    *
    * @param concurrencySettings - The concurrency settings from workflow definition
    * @param concurrencyGroupKey - The evaluated concurrency group key
@@ -100,7 +107,49 @@ export class ConcurrencyManager {
     const strategy = concurrencySettings.strategy;
     const maxConcurrency = concurrencySettings.max ?? 1;
 
-    // Query for non-terminal execution IDs in the same concurrency group
+    if (strategy === 'queue') {
+      const othersOccupyingSlots =
+        await this.workflowExecutionRepository.countExecutionsByConcurrencyGroupAndStatuses(
+          concurrencyGroupKey,
+          spaceId,
+          ConcurrencySlotOccupyingExecutionStatuses,
+          currentExecutionId
+        );
+
+      if (othersOccupyingSlots < maxConcurrency) {
+        return true;
+      }
+
+      const queuedCount =
+        await this.workflowExecutionRepository.countExecutionsByConcurrencyGroupAndStatuses(
+          concurrencyGroupKey,
+          spaceId,
+          [ExecutionStatus.QUEUED]
+        );
+
+      const queueMax = concurrencySettings['queue-size'] ?? DEFAULT_CONCURRENCY_QUEUE_SIZE;
+
+      if (queuedCount >= queueMax) {
+        const skipTimestamp = new Date().toISOString();
+        await this.workflowExecutionRepository.updateWorkflowExecution({
+          id: currentExecutionId,
+          status: ExecutionStatus.SKIPPED,
+          cancelRequested: true,
+          cancellationReason: `Queue full (queue-size: ${queueMax})`,
+          cancelledAt: skipTimestamp,
+          cancelledBy: 'system',
+        });
+        return false;
+      }
+
+      await this.workflowExecutionRepository.updateWorkflowExecution({
+        id: currentExecutionId,
+        status: ExecutionStatus.QUEUED,
+      });
+      return false;
+    }
+
+    // Slot-occupying execution IDs (excludes concurrency backlog `queued`).
     const runningExecutionIds =
       await this.workflowExecutionRepository.getRunningExecutionsByConcurrencyGroup(
         concurrencyGroupKey,

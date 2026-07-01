@@ -7,7 +7,9 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
-import type { KibanaRequest } from '@kbn/core/server';
+import type { KibanaRequest, Logger } from '@kbn/core/server';
+import { loggingSystemMock } from '@kbn/core/server/mocks';
+import type { TaskManagerStartContract } from '@kbn/task-manager-plugin/server';
 import type { EsWorkflowExecution } from '@kbn/workflows';
 import {
   ExecutionStatus,
@@ -41,6 +43,25 @@ const buildTaskManager = (): jest.Mocked<Pick<WorkflowTaskManager, 'forceRunIdle
   forceRunIdleTasks: jest.fn().mockResolvedValue(undefined),
 });
 
+const buildCancelParams = ({
+  workflowExecutionRepository,
+  workflowTaskManager,
+}: {
+  workflowExecutionRepository: ReturnType<typeof buildRepository>;
+  workflowTaskManager: ReturnType<typeof buildTaskManager>;
+}) => ({
+  workflowExecutionId: 'exec-1',
+  spaceId: 'default',
+  schedulingRequest: { headers: {} } as KibanaRequest,
+  workflowExecutionRepository:
+    workflowExecutionRepository as unknown as WorkflowExecutionRepository,
+  workflowTaskManager: workflowTaskManager as unknown as WorkflowTaskManager,
+  taskManager: {
+    schedule: jest.fn().mockResolvedValue(undefined),
+  } as unknown as TaskManagerStartContract,
+  logger: loggingSystemMock.create().get() as Logger,
+});
+
 describe('cancelWorkflow', () => {
   const workflowExecutionId = 'exec-1';
   const spaceId = 'default';
@@ -59,14 +80,7 @@ describe('cancelWorkflow', () => {
     const workflowTaskManager = buildTaskManager();
 
     await expect(
-      cancelWorkflow({
-        workflowExecutionId,
-        spaceId,
-        schedulingRequest,
-        workflowExecutionRepository:
-          workflowExecutionRepository as unknown as WorkflowExecutionRepository,
-        workflowTaskManager: workflowTaskManager as unknown as WorkflowTaskManager,
-      })
+      cancelWorkflow(buildCancelParams({ workflowExecutionRepository, workflowTaskManager }))
     ).rejects.toBeInstanceOf(WorkflowExecutionNotFoundError);
 
     expect(workflowExecutionRepository.getWorkflowExecutionById).toHaveBeenCalledWith(
@@ -83,14 +97,7 @@ describe('cancelWorkflow', () => {
       const workflowExecutionRepository = buildRepository(buildExecution({ status }));
       const workflowTaskManager = buildTaskManager();
 
-      await cancelWorkflow({
-        workflowExecutionId,
-        spaceId,
-        schedulingRequest,
-        workflowExecutionRepository:
-          workflowExecutionRepository as unknown as WorkflowExecutionRepository,
-        workflowTaskManager: workflowTaskManager as unknown as WorkflowTaskManager,
-      });
+      await cancelWorkflow(buildCancelParams({ workflowExecutionRepository, workflowTaskManager }));
 
       expect(workflowExecutionRepository.updateWorkflowExecution).not.toHaveBeenCalled();
       expect(workflowTaskManager.forceRunIdleTasks).not.toHaveBeenCalled();
@@ -103,14 +110,7 @@ describe('cancelWorkflow', () => {
       const workflowExecutionRepository = buildRepository(buildExecution({ status }));
       const workflowTaskManager = buildTaskManager();
 
-      await cancelWorkflow({
-        workflowExecutionId,
-        spaceId,
-        schedulingRequest,
-        workflowExecutionRepository:
-          workflowExecutionRepository as unknown as WorkflowExecutionRepository,
-        workflowTaskManager: workflowTaskManager as unknown as WorkflowTaskManager,
-      });
+      await cancelWorkflow(buildCancelParams({ workflowExecutionRepository, workflowTaskManager }));
 
       expect(workflowExecutionRepository.updateWorkflowExecution).toHaveBeenCalledTimes(1);
       const updateArg = workflowExecutionRepository.updateWorkflowExecution.mock.calls[0][0];
@@ -125,9 +125,9 @@ describe('cancelWorkflow', () => {
         })
       );
 
-      // Only PENDING flips to CANCELLED synchronously; everything else lets the execution
+      // PENDING and QUEUED flip to CANCELLED synchronously; everything else lets the execution
       // loop finalise the status via cancelWorkflowIfRequested.
-      if (status === ExecutionStatus.PENDING) {
+      if (status === ExecutionStatus.PENDING || status === ExecutionStatus.QUEUED) {
         expect(updateArg.status).toBe(ExecutionStatus.CANCELLED);
       } else {
         expect(updateArg).not.toHaveProperty('status');
@@ -147,14 +147,7 @@ describe('cancelWorkflow', () => {
     );
     const workflowTaskManager = buildTaskManager();
 
-    await cancelWorkflow({
-      workflowExecutionId,
-      spaceId,
-      schedulingRequest,
-      workflowExecutionRepository:
-        workflowExecutionRepository as unknown as WorkflowExecutionRepository,
-      workflowTaskManager: workflowTaskManager as unknown as WorkflowTaskManager,
-    });
+    await cancelWorkflow(buildCancelParams({ workflowExecutionRepository, workflowTaskManager }));
 
     const updateArg = workflowExecutionRepository.updateWorkflowExecution.mock.calls[0][0];
     expect(updateArg).not.toHaveProperty('status');
@@ -174,14 +167,7 @@ describe('cancelWorkflow', () => {
     workflowTaskManager.forceRunIdleTasks.mockRejectedValueOnce(new Error('TM unavailable'));
 
     await expect(
-      cancelWorkflow({
-        workflowExecutionId,
-        spaceId,
-        schedulingRequest,
-        workflowExecutionRepository:
-          workflowExecutionRepository as unknown as WorkflowExecutionRepository,
-        workflowTaskManager: workflowTaskManager as unknown as WorkflowTaskManager,
-      })
+      cancelWorkflow(buildCancelParams({ workflowExecutionRepository, workflowTaskManager }))
     ).rejects.toThrow('TM unavailable');
 
     expect(workflowExecutionRepository.updateWorkflowExecution).toHaveBeenCalledTimes(1);
@@ -194,17 +180,73 @@ describe('cancelWorkflow', () => {
     const workflowTaskManager = buildTaskManager();
 
     await cancelWorkflow({
-      workflowExecutionId,
-      spaceId,
+      ...buildCancelParams({ workflowExecutionRepository, workflowTaskManager }),
       schedulingRequest: undefined,
-      workflowExecutionRepository:
-        workflowExecutionRepository as unknown as WorkflowExecutionRepository,
-      workflowTaskManager: workflowTaskManager as unknown as WorkflowTaskManager,
     });
 
     expect(workflowTaskManager.forceRunIdleTasks).toHaveBeenCalledWith(workflowExecutionId, {
       spaceId,
       fakeRequest: undefined,
     });
+  });
+
+  it('drains the concurrency queue when cancelling a queued execution under queue concurrency', async () => {
+    const workflowExecutionRepository = {
+      ...buildRepository(
+        buildExecution({
+          status: ExecutionStatus.QUEUED,
+          concurrencyGroupKey: 'group-a',
+          workflowDefinition: {
+            name: 'wf',
+            enabled: true,
+            version: '1',
+            triggers: [],
+            steps: [],
+            settings: { concurrency: { key: 'group-a', strategy: 'queue', max: 1 } },
+          },
+        })
+      ),
+      countExecutionsByConcurrencyGroupAndStatuses: jest.fn().mockResolvedValue(0),
+      getOldestQueuedExecutionIdByConcurrencyGroup: jest.fn().mockResolvedValue(null),
+    };
+    const workflowTaskManager = buildTaskManager();
+
+    await cancelWorkflow(buildCancelParams({ workflowExecutionRepository, workflowTaskManager }));
+
+    expect(workflowExecutionRepository.updateWorkflowExecution).toHaveBeenCalledWith(
+      expect.objectContaining({ id: workflowExecutionId, status: ExecutionStatus.CANCELLED }),
+      { refresh: 'wait_for' }
+    );
+    expect(
+      workflowExecutionRepository.countExecutionsByConcurrencyGroupAndStatuses
+    ).toHaveBeenCalled();
+  });
+
+  it('does not refresh when cancelling queued execution without schedulingRequest', async () => {
+    const workflowExecutionRepository = buildRepository(
+      buildExecution({
+        status: ExecutionStatus.QUEUED,
+        concurrencyGroupKey: 'group-a',
+        workflowDefinition: {
+          name: 'wf',
+          enabled: true,
+          version: '1',
+          triggers: [],
+          steps: [],
+          settings: { concurrency: { key: 'group-a', strategy: 'queue', max: 1 } },
+        },
+      })
+    );
+    const workflowTaskManager = buildTaskManager();
+
+    await cancelWorkflow({
+      ...buildCancelParams({ workflowExecutionRepository, workflowTaskManager }),
+      schedulingRequest: undefined,
+    });
+
+    expect(workflowExecutionRepository.updateWorkflowExecution).toHaveBeenCalledWith(
+      expect.objectContaining({ id: workflowExecutionId, status: ExecutionStatus.CANCELLED }),
+      {}
+    );
   });
 });

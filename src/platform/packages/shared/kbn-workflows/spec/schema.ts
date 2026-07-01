@@ -80,13 +80,17 @@ export function getOnFailureStepSchema(stepSchema: z.ZodType, loose: boolean = f
   return schema;
 }
 
-export const CollisionStrategySchema = z.enum(['cancel-in-progress', 'drop']);
+export const CollisionStrategySchema = z.enum(['cancel-in-progress', 'drop', 'queue']);
 export type CollisionStrategy = z.infer<typeof CollisionStrategySchema>;
+
+export const DEFAULT_CONCURRENCY_QUEUE_SIZE = 100;
 
 export const ConcurrencySettingsSchema = z.object({
   key: z.string().optional(), // Concurrency group identifier e.g., '{{ event.host.name }}'
-  strategy: CollisionStrategySchema.optional(), // 'drop' or 'cancel-in-progress'
+  strategy: CollisionStrategySchema.optional(), // 'drop' | 'cancel-in-progress' | 'queue'
   max: z.number().int().min(1).optional(), // Max concurrent runs per concurrency group
+  /** Max backlog when strategy is `queue` (default applied at runtime if omitted). */
+  'queue-size': z.number().int().min(1).optional(),
 });
 export type ConcurrencySettings = z.infer<typeof ConcurrencySettingsSchema>;
 

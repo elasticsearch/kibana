@@ -56,6 +56,7 @@ export function isInProgressStatus(status: ExecutionStatus) {
   return (
     status === ExecutionStatus.RUNNING ||
     status === ExecutionStatus.PENDING ||
+    status === ExecutionStatus.QUEUED ||
     status === ExecutionStatus.WAITING ||
     status === ExecutionStatus.WAITING_FOR_INPUT ||
     status === ExecutionStatus.WAITING_FOR_CHILD

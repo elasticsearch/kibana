@@ -9,7 +9,11 @@
 
 import type { estypes } from '@elastic/elasticsearch';
 import type { EsWorkflowExecution } from '@kbn/workflows';
-import { TerminalExecutionStatuses } from '@kbn/workflows';
+import {
+  ConcurrencySlotOccupyingExecutionStatuses,
+  ExecutionStatus,
+  TerminalExecutionStatuses,
+} from '@kbn/workflows';
 import type { WorkflowExecutionRepository as WorkflowExecutionRepositoryType } from '../../server/repositories/workflow_execution_repository';
 
 export class WorkflowExecutionRepositoryMock implements Required<WorkflowExecutionRepositoryType> {
@@ -55,7 +59,10 @@ export class WorkflowExecutionRepositoryMock implements Required<WorkflowExecuti
     });
   }
 
-  public updateWorkflowExecution(workflowExecution: Partial<EsWorkflowExecution>): Promise<void> {
+  public updateWorkflowExecution(
+    workflowExecution: Partial<EsWorkflowExecution>,
+    _options?: { refresh?: boolean | 'wait_for' }
+  ): Promise<void> {
     if (!workflowExecution.id) {
       throw new Error('Workflow execution ID is required for update');
     }
@@ -230,18 +237,70 @@ export class WorkflowExecutionRepositoryMock implements Required<WorkflowExecuti
         (exec) =>
           exec.concurrencyGroupKey === concurrencyGroupKey &&
           exec.spaceId === spaceId &&
-          !TerminalExecutionStatuses.includes(exec.status) &&
+          ConcurrencySlotOccupyingExecutionStatuses.includes(exec.status) &&
           (!excludeExecutionId || exec.id !== excludeExecutionId)
       )
       .sort((a, b) => {
         const aTime = new Date(a.createdAt).getTime();
         const bTime = new Date(b.createdAt).getTime();
-        return aTime - bTime; // Oldest first
+        return aTime - bTime !== 0 ? aTime - bTime : a.id.localeCompare(b.id);
       })
       .map((exec) => exec.id)
       .slice(0, Math.min(size, 10000)); // Cap at ES default max_result_window
 
     return results;
+  }
+
+  public async countExecutionsByConcurrencyGroupAndStatuses(
+    concurrencyGroupKey: string,
+    spaceId: string,
+    statuses: readonly ExecutionStatus[],
+    excludeExecutionId?: string
+  ): Promise<number> {
+    return Array.from(this.workflowExecutions.values()).filter(
+      (exec) =>
+        exec.concurrencyGroupKey === concurrencyGroupKey &&
+        exec.spaceId === spaceId &&
+        statuses.includes(exec.status) &&
+        (!excludeExecutionId || exec.id !== excludeExecutionId)
+    ).length;
+  }
+
+  public async getOldestQueuedExecutionIdByConcurrencyGroup(
+    concurrencyGroupKey: string,
+    spaceId: string
+  ): Promise<string | null> {
+    const sorted = Array.from(this.workflowExecutions.values())
+      .filter(
+        (exec) =>
+          exec.concurrencyGroupKey === concurrencyGroupKey &&
+          exec.spaceId === spaceId &&
+          exec.status === ExecutionStatus.QUEUED
+      )
+      .sort((a, b) => {
+        const byCreated = a.createdAt.localeCompare(b.createdAt);
+        return byCreated !== 0 ? byCreated : a.id.localeCompare(b.id);
+      });
+    return sorted[0]?.id ?? null;
+  }
+
+  public async tryCasPromoteQueuedWorkflowExecutionToPending(params: {
+    workflowExecutionId: string;
+    spaceId: string;
+  }): Promise<boolean> {
+    const existing = this.workflowExecutions.get(params.workflowExecutionId);
+    if (
+      !existing ||
+      existing.spaceId !== params.spaceId ||
+      existing.status !== ExecutionStatus.QUEUED
+    ) {
+      return false;
+    }
+    this.workflowExecutions.set(params.workflowExecutionId, {
+      ...existing,
+      status: ExecutionStatus.PENDING,
+    });
+    return true;
   }
 
   public async bulkUpdateWorkflowExecutions(

@@ -47,6 +47,10 @@ describe('shouldFailOnWorkflowRunRetry', () => {
     expect(shouldFailOnWorkflowRunRetry(base(ExecutionStatus.WAITING_FOR_INPUT))).toBe(false);
   });
 
+  it('returns false for queued concurrency backlog', () => {
+    expect(shouldFailOnWorkflowRunRetry(base(ExecutionStatus.QUEUED))).toBe(false);
+  });
+
   it('returns true for running', () => {
     expect(shouldFailOnWorkflowRunRetry(base(ExecutionStatus.RUNNING))).toBe(true);
   });

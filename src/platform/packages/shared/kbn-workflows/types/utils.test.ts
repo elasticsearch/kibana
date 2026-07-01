@@ -31,7 +31,7 @@ import {
   isWhileStep,
   transformWorkflowYamlJsontoEsWorkflow,
 } from './utils';
-import { ExecutionStatus } from './v1';
+import { ConcurrencySlotOccupyingExecutionStatuses, ExecutionStatus } from './v1';
 import type { ConnectorContractUnion, WorkflowStepExecutionDto } from './v1';
 import type { Step, WorkflowYaml } from '../spec/schema';
 
@@ -94,6 +94,7 @@ describe('types/utils', () => {
       const inProgress = new Set([
         ExecutionStatus.RUNNING,
         ExecutionStatus.PENDING,
+        ExecutionStatus.QUEUED,
         ExecutionStatus.WAITING,
         ExecutionStatus.WAITING_FOR_INPUT,
         ExecutionStatus.WAITING_FOR_CHILD,
@@ -109,6 +110,18 @@ describe('types/utils', () => {
 
       it.each(allStatuses)('returns %s for status "%s"', (status) => {
         expect(isDangerousStatus(status)).toBe(dangerous.has(status));
+      });
+    });
+
+    describe('ConcurrencySlotOccupyingExecutionStatuses', () => {
+      it('includes idle non-terminal waits that still own the execution, but not queued backlog', () => {
+        expect(ConcurrencySlotOccupyingExecutionStatuses).toEqual(
+          expect.arrayContaining([
+            ExecutionStatus.WAITING_FOR_INPUT,
+            ExecutionStatus.WAITING_FOR_CHILD,
+          ])
+        );
+        expect(ConcurrencySlotOccupyingExecutionStatuses).not.toContain(ExecutionStatus.QUEUED);
       });
     });
 

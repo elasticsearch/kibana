@@ -53,6 +53,11 @@ const getExecutionStatusColorsMap = (
       backgroundColor: euiTheme.colors.backgroundBaseSubdued,
       tokenColor: 'gray' as const,
     },
+    [ExecutionStatus.QUEUED]: {
+      color: euiTheme.colors.textSubdued,
+      backgroundColor: euiTheme.colors.backgroundBaseWarning,
+      tokenColor: 'euiColorVis9' as const,
+    },
     [ExecutionStatus.RUNNING]: {
       color: euiTheme.colors.textSubdued,
       backgroundColor: euiTheme.colors.backgroundLightNeutral,
@@ -110,6 +115,7 @@ const ExecutionStatusIconTypeMap: Record<ExecutionStatus, EuiIconType> = {
   [ExecutionStatus.FAILED]: 'errorFill',
   [ExecutionStatus.TIMED_OUT]: 'errorFill',
   [ExecutionStatus.PENDING]: 'clock',
+  [ExecutionStatus.QUEUED]: 'sortUp',
   [ExecutionStatus.RUNNING]: 'play',
   [ExecutionStatus.WAITING]: 'clock',
   [ExecutionStatus.WAITING_FOR_INPUT]: 'hourglass',

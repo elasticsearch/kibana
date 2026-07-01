@@ -395,7 +395,7 @@ describe('ConcurrencySettingsSchema', () => {
 
   describe('strategy', () => {
     it('should accept valid strategy values', () => {
-      const strategies = ['cancel-in-progress', 'drop'] as const;
+      const strategies = ['cancel-in-progress', 'drop', 'queue'] as const;
       strategies.forEach((strategy) => {
         const result = ConcurrencySettingsSchema.safeParse({
           strategy,
@@ -471,6 +471,35 @@ describe('ConcurrencySettingsSchema', () => {
       if (result.success) {
         expect(result.data.max).toBeUndefined();
       }
+    });
+  });
+
+  describe('queue-size', () => {
+    it('should accept optional queue-size when strategy is queue', () => {
+      const result = ConcurrencySettingsSchema.safeParse({
+        strategy: 'queue',
+        'queue-size': 10,
+      });
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data['queue-size']).toBe(10);
+      }
+    });
+
+    it('should allow queue-size to be omitted', () => {
+      const result = ConcurrencySettingsSchema.safeParse({ strategy: 'queue' });
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data['queue-size']).toBeUndefined();
+      }
+    });
+
+    it('should reject queue-size less than 1', () => {
+      const result = ConcurrencySettingsSchema.safeParse({
+        strategy: 'queue',
+        'queue-size': 0,
+      });
+      expect(result.success).toBe(false);
     });
   });
 
@@ -591,7 +620,7 @@ describe('WorkflowSettingsSchema', () => {
     it('should accept all valid strategy values', () => {
       expect(CollisionStrategySchema.safeParse('cancel-in-progress').success).toBe(true);
       expect(CollisionStrategySchema.safeParse('drop').success).toBe(true);
-      expect(CollisionStrategySchema.safeParse('queue').success).toBe(false);
+      expect(CollisionStrategySchema.safeParse('queue').success).toBe(true);
     });
 
     it('should reject invalid strategy values', () => {
@@ -602,7 +631,7 @@ describe('WorkflowSettingsSchema', () => {
 
     it('should export CollisionStrategy type that matches valid values', () => {
       // Verify the type can be used and matches the schema values
-      const validStrategies: CollisionStrategy[] = ['cancel-in-progress', 'drop'];
+      const validStrategies: CollisionStrategy[] = ['cancel-in-progress', 'drop', 'queue'];
       validStrategies.forEach((strategy) => {
         const result = CollisionStrategySchema.safeParse(strategy);
         expect(result.success).toBe(true);
