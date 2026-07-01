@@ -126,7 +126,7 @@ const getRulesSubRoutes = (
           exact: true,
         },
         {
-          path: '/rules/add_rules',
+          path: '/rules/add_rules/:ruleId?',
           main: withSecurityRoutePageWrapper(AddRulesPage, SecurityPageName.rulesAdd, {
             omitSpyRoute: true,
           }),

@@ -52,7 +52,10 @@ import {
   closePrebuiltRuleInstallFlyout,
   openPrebuiltRuleInstallFlyoutFor,
 } from '../../../../../tasks/prebuilt_rules_preview';
-import { visitAddRulesPage } from '../../../../../tasks/rules_management';
+import {
+  visitAddRulesPage,
+  visitAddRulesPageWithRuleId,
+} from '../../../../../tasks/rules_management';
 import {
   deleteAlertsAndRules,
   deleteDataView,
@@ -98,6 +101,22 @@ describe(
 
         closePrebuiltRuleInstallFlyout();
         cy.contains(INSTALL_PREBUILT_RULE_PREVIEW, PREBUILT_RULE_NAME).should('not.exist');
+      });
+
+      it('auto-opens the install flyout from a rule_id deep link and clears it from the URL on close', () => {
+        const ruleId = PREBUILT_RULE_ASSET['security-rule'].rule_id;
+        installPrebuiltRuleAssets([PREBUILT_RULE_ASSET, ANOTHER_PREBUILT_RULE_ASSET]);
+
+        // Navigate straight to the rule's deep link (e.g. from a chat recommendation).
+        visitAddRulesPageWithRuleId(ruleId);
+
+        // The preview flyout opens automatically for the deep-linked rule.
+        cy.contains(INSTALL_PREBUILT_RULE_PREVIEW, PREBUILT_RULE_NAME).should('be.visible');
+        cy.url().should('include', ruleId);
+
+        // Closing the flyout strips the rule_id back out of the URL.
+        closePrebuiltRuleInstallFlyout();
+        cy.url().should('not.contain', ruleId);
       });
 
       it('installs a prebuilt rule after previewing', () => {

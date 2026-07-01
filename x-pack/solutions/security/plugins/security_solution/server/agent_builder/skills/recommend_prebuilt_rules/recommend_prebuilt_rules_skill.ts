@@ -46,7 +46,7 @@ The backing search only ever sees rules that are **not yet installed** — the \
 
 ## Read-Only
 
-This skill **does not install, enable, edit, or delete rules.** Installation is handled by the Detection Rules install flyout in the UI. When a user asks to install, run the search and present the recommended rules by name so they can find and install them from the UI. Never claim you have installed anything.
+This skill **does not install, enable, edit, or delete rules.** Installation is handled by the Detection Rules install flyout in the UI. When a user asks to install, run the search and present each recommended rule as a clickable install-flyout link (see Rule Links) so they can open it directly. Never claim you have installed anything.
 
 ## Tailor to the Customer
 
@@ -86,7 +86,7 @@ The goal is to surface rules that are **worth installing here.** Four factors ma
 
 | Tool | When to use | Returns |
 |---|---|---|
-| \`security.find_prebuilt_rules\` | The workhorse — search installable rules by structured filters | Triage rows (rule_id, name, severity, risk_score, tags, MITRE tactics, related_integrations) + total |
+| \`security.find_prebuilt_rules\` | The workhorse — search installable rules by structured filters | Triage rows (rule_id, name, severity, risk_score, tags, MITRE tactics, related_integrations.package) + total |
 | \`security.get_user_data_inventory\` | Learn which Fleet integrations exist, for data-source reasoning + integration coverage | \`{ integrations: [{ package }] }\` |
 | \`security.get_installable_catalog_overview\` | Enumerate valid tag values + size the catalog | \`{ total_installable_count, tags: [{ value, count }] }\` |
 | \`security.get_installed_rules_mitre_coverage\` | What MITRE tactics/techniques the installed rules already cover | \`total_installed_rules\`, \`total_with_mitre_mapping\`, and per-tactic + per-technique counts |
@@ -210,11 +210,24 @@ When the user refines a previous recommendation ("now just the network ones", "d
 
 Do **not** re-call \`security.get_user_data_inventory\`, \`security.get_installable_catalog_overview\`, or \`security.get_installed_rules_mitre_coverage\` on refinement turns — they are session-cached; reuse the earlier results. (The only reason to call the catalog overview again is if a *new* \`tags\` filter is being introduced and you have not fetched the overview at all this conversation.)
 
+## Rule Links
+
+Every rule you name — in tables, recommendation lists, refinements, and follow-up answers — MUST be a Markdown link that opens that rule's install flyout:
+
+\`[<Rule Name>](/app/security/rules/add_rules/<rule_id>)\`
+
+- \`<rule_id>\` is the rule's \`rule_id\` from a \`security.find_prebuilt_rules\` result — copy it verbatim; never URL-encode, alter, or invent it.
+- Emit the path exactly as shown — a plain root-relative \`/app/...\` path. Do **not** prepend a space segment (\`/s/<id>\`) or base path; the UI resolves the user's active space and base path automatically, so adding one yourself produces a broken, doubled path.
+- This holds on **every** turn, including follow-ups and refinements. A bare bold or plain-text rule name is not acceptable — it breaks the user's path to install. If you are about to emit a rule name without a link, stop and add the link.
+
+Correct: \`- **[Suspicious PowerShell Invocation](/app/security/rules/add_rules/abc-123)** — high; relies on the endpoint integration, which you have installed (so likely has data)\`
+Wrong: \`- **Suspicious PowerShell Invocation** — high\` (no link)
+
 ## Rendering
 
 - **Always open with one sentence stating the exact filters you searched**, before any results — e.g. "I searched installable rules for the Credential Access tactic." This lets the user catch a wrong filter immediately.
 - **Keep lists short so they stay scannable.** A single flat list of rules: show **at most 10**. A list broken into categories (e.g. by MITRE tactic, data source, or integration status): show **at most 5 per category** — the total across categories may exceed 10. When more rules match than you show, say so and offer to narrow the filter (or to show more); never dump a long list.
-- Default to a **small table**: **Name | Severity | Type | Integration**. The **Integration** column shows whether the integrations the rule relies on are installed (installed / missing \`<pkg>\` / none listed) — a likely-has-data signal, not a guarantee. Add columns (risk score, MITRE) only when relevant to the question. Apply the list-length limits above; if \`total\` exceeds what you show, say more matches exist and narrow the filter rather than raising \`perPage\`.
+- Default to a **small table**: **Name | Severity | Type | Integration**. The Name cell is the rule's install link (see Rule Links). The **Integration** column shows whether the integrations the rule relies on are installed (installed / missing \`<pkg>\` / none listed) — a likely-has-data signal, not a guarantee. Add columns (risk score, MITRE) only when relevant to the question. Apply the list-length limits above; if \`total\` exceeds what you show, say more matches exist and narrow the filter rather than raising \`perPage\`.
 - In browse responses, **state the integration-coverage breakdown** ("N rely on integrations you have, M need other integrations, K list none"), framed as a likelihood — not "N runnable."
 - For **install recommendations**, justify each recommended rule in a few words (why it fits the user's data or coverage gap), and group "related integration installed" vs "needs another integration" — at most 5 rules per group.
 - After a deepen pass, append a compact **Selection notes** block (kept vs dropped after drill-down, one-line reason each) — see Precision: Narrow, Then Deepen. It is a short transparency aid; keep it brief and don't let it overshadow the recommendation.
@@ -239,7 +252,9 @@ Each maps a user request to the tool call(s). These are patterns for you, not sc
 
 ## No Actions
 
-This skill is read-only — never claim to have installed, enabled, edited, or deleted a rule. If the user asks you to install ("install these", "enable rule X"), say plainly that you can't, then tell them how to do it themselves: open the **Add Elastic Rules** page in the Detection Rules UI (Security → Rules → Add Elastic Rules) and install the rules you recommended from there.
+This skill is read-only — never claim to have installed, enabled, edited, or deleted a rule. If the user asks you to install ("install these", "enable rule X"), say plainly that you can't, then offer the two ways they can do it themselves:
+1. **Click any rule's install link** in your response (see Rule Links) — it opens that rule's install flyout directly.
+2. **Open the Add Elastic Rules page** at \`/app/security/rules/add_rules\` and install from the UI. Emit it as that plain root-relative path; the UI resolves the active space and base path.
 
 Do not invent other install commands, API endpoints, or CLI flows.`;
 

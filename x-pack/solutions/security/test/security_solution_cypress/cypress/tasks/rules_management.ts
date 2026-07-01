@@ -29,6 +29,10 @@ export function visitAddRulesPage(): void {
   visit(INSTALL_PREBUILT_RULES_URL);
 }
 
+export function visitAddRulesPageWithRuleId(ruleId: string): void {
+  visit(`${INSTALL_PREBUILT_RULES_URL}/${ruleId}`);
+}
+
 export function visitRulesUpgradeTable(): void {
   visit(RULES_UPGRADE_URL);
   cy.url().should('include', RULES_UPGRADE_URL);

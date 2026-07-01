@@ -76,6 +76,10 @@ const GET_CATALOG_OVERVIEW_TOOL_ID = 'security.get_installable_catalog_overview'
 // otherwise look green. A real bundled catalog has far more than this for TA0005.
 const MIN_EXPECTED_RULES = 3;
 
+// A mean over too few rules isn't meaningful, and an
+// empty recommendation (no install links) must fail.
+const MIN_RECOMMENDED_RULES = 3;
+
 // Integration used for the recommendation-scoping test. Okta is the skill's own worked example,
 // is identity-domain, and has many installable rules carrying `okta` in their related_integrations.
 const INTEGRATION_PACKAGE = 'okta';
@@ -97,7 +101,9 @@ interface ToolCallStep {
 }
 
 interface CatalogRule {
+  rule_id?: string;
   name?: string;
+  risk_score?: number;
   threat?: Array<{ tactic?: { id?: string; name?: string } }>;
   related_integrations?: Array<{ package?: string }>;
 }
@@ -214,6 +220,28 @@ const relatedIntegrationsFromFilter = (step: ToolCallStep): string[] => {
 const relatesToIntegration = (rule: CatalogRule, pkg: string): boolean =>
   Array.isArray(rule?.related_integrations) &&
   rule.related_integrations.some((integration) => integration?.package === pkg);
+
+const RULE_INSTALL_LINK_RE = /\/app\/security\/rules\/add_rules\/([^)\s"'<>]+)/g;
+
+const recommendedRuleIdsFromMessage = (message: string): string[] => {
+  const ruleIds = new Set<string>();
+  for (const match of message.matchAll(RULE_INSTALL_LINK_RE)) {
+    if (match[1]) ruleIds.add(match[1]);
+  }
+  return [...ruleIds];
+};
+
+const riskScoreByRuleId = (steps: ToolCallStep[]): Map<string, number> => {
+  const byRuleId = new Map<string, number>();
+  for (const step of getFindPrebuiltRulesCalls(steps)) {
+    for (const rule of rulesFromStep(step)) {
+      if (typeof rule.rule_id === 'string' && typeof rule.risk_score === 'number') {
+        byRuleId.set(rule.rule_id, rule.risk_score);
+      }
+    }
+  }
+  return byRuleId;
+};
 
 evaluate.describe(
   'Security Skills - Recommend Prebuilt Rules',
@@ -362,6 +390,43 @@ evaluate.describe(
           .filter((rule) => !relatesToIntegration(rule, INTEGRATION_PACKAGE))
           .map((rule) => rule?.name ?? '<unknown>');
         expect(unrelated).toEqual([]);
+      }
+    );
+
+    evaluate(
+      'recommendation skews to higher-risk rules (mean risk_score > 70)',
+      async ({ chatClient }) => {
+        const response = await chatClient.converse({
+          messages: [
+            {
+              message:
+                'What are the most important prebuilt detection rules I should install first?',
+            },
+          ],
+        });
+
+        expect(response.errors).toEqual([]);
+
+        const steps = (response.steps ?? []) as ToolCallStep[];
+
+        // The skill must search the installable catalog at least once.
+        expect(getFindPrebuiltRulesCalls(steps).length).toBeGreaterThan(0);
+
+        const finalMessage = response.messages[response.messages.length - 1]?.message ?? '';
+        const recommendedRuleIds = recommendedRuleIdsFromMessage(finalMessage);
+
+        const riskByRuleId = riskScoreByRuleId(steps);
+        const recommendedRiskScores = recommendedRuleIds
+          .map((ruleId) => riskByRuleId.get(ruleId))
+          .filter((score): score is number => typeof score === 'number');
+
+        expect(recommendedRiskScores.length).toBeGreaterThanOrEqual(MIN_RECOMMENDED_RULES);
+
+        const meanRiskScore =
+          recommendedRiskScores.reduce((sum, score) => sum + score, 0) /
+          recommendedRiskScores.length;
+
+        expect(meanRiskScore).toBeGreaterThan(70);
       }
     );
   }

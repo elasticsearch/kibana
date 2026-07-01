@@ -45,6 +45,7 @@ import {
 import { useStepsFromPrevRounds } from '../../../../hooks/use_conversation';
 import { useConversationContext } from '../../../../context/conversation/conversation_context';
 import { ExternalLinkModal } from './external_link_modal';
+import { normalizeHref } from './normalize_href';
 
 interface Props {
   content: string;
@@ -152,17 +153,21 @@ export function ChatMessageText({
 
     rehypeToReactOptions.components = {
       ...rehypeToReactOptions.components,
-      a: (props) => (
-        <EuiLink
-          {...props}
-          target="_blank"
-          rel="noreferrer"
-          external={false}
-          onClick={(e: React.MouseEvent<HTMLAnchorElement>) => {
-            if (props.href) handleLinkClick(props.href, e);
-          }}
-        />
-      ),
+      a: (props) => {
+        const normalizedHref = props.href ? normalizeHref(props.href, http?.basePath) : props.href;
+        return (
+          <EuiLink
+            {...props}
+            href={normalizedHref}
+            target="_blank"
+            rel="noreferrer"
+            external={false}
+            onClick={(e: React.MouseEvent<HTMLAnchorElement>) => {
+              if (normalizedHref) handleLinkClick(normalizedHref, e);
+            }}
+          />
+        );
+      },
       cursor: Cursor,
       codeBlock: (props) => {
         return (
@@ -231,7 +236,7 @@ export function ChatMessageText({
       ],
       processingPluginList: processingPlugins,
     };
-  }, [visualizationRenderer, renderAttachmentRenderer, handleLinkClick]);
+  }, [visualizationRenderer, renderAttachmentRenderer, handleLinkClick, http]);
 
   return (
     <>

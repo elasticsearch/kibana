@@ -5,10 +5,12 @@
  * 2.0.
  */
 
-import { EuiButton, EuiFlexGroup, EuiFlexItem } from '@elastic/eui';
+import { EuiButton, EuiFlexGroup, EuiFlexItem, EuiToolTip } from '@elastic/eui';
 import { useIsMutating } from '@kbn/react-query';
 import type { Dispatch, SetStateAction } from 'react';
-import React, { createContext, useCallback, useContext, useMemo, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { useHistory, useParams } from 'react-router-dom';
+import { RULES_ADD_PATH } from '../../../../../../common/constants';
 import type { RuleSignatureId } from '../../../../../../common/api/detection_engine';
 import type { RuleResponse } from '../../../../../../common/api/detection_engine/model/rule_schema';
 import { invariant } from '../../../../../../common/utils/invariant';
@@ -22,6 +24,7 @@ import {
 import { usePrebuiltRulesInstallReview } from '../../../../rule_management/logic/prebuilt_rules/use_prebuilt_rules_install_review';
 import { useIsInitializingPrebuiltRulesPackage } from '../../../../rule_management/logic/prebuilt_rules/use_is_initializing_prebuilt_rules_package';
 import { useRulePreviewFlyout } from '../use_rule_preview_flyout';
+import { useDeepLinkedPrebuiltRule } from './use_deep_linked_prebuilt_rule';
 import { isUpgradeReviewRequestEnabled } from './add_prebuilt_rules_utils';
 import * as i18n from './translations';
 import { useUserPrivileges } from '../../../../../common/components/user_privileges';
@@ -131,6 +134,9 @@ const PREBUILT_RULE_INSTALL_FLYOUT_ANCHOR = 'installPrebuiltRulePreview';
 export const AddPrebuiltRulesTableContextProvider = ({
   children,
 }: AddPrebuiltRulesTableContextProviderProps) => {
+  const history = useHistory();
+  const { ruleId: ruleIdFromUrl } = useParams<{ ruleId?: string }>();
+
   const [loadingRules, setLoadingRules] = useState<RuleSignatureId[]>([]);
   const [selectedRules, setSelectedRules] = useState<RuleResponse[]>([]);
 
@@ -198,6 +204,18 @@ export const AddPrebuiltRulesTableContextProvider = ({
 
   const rules = useMemo(() => reviewResponse?.rules ?? [], [reviewResponse]);
 
+  // If page URL contains a rule_id, we fetch the rule for this rule_id.
+  const { deepLinkedRule, isDeepLinkedRuleInstalled, isDeepLinkedRuleResolved } =
+    useDeepLinkedPrebuiltRule({ ruleId: ruleIdFromUrl, currentPageRules: rules });
+
+  const flyoutRules = useMemo(() => {
+    // Not adding a deep-linked rule if it's already there.
+    if (!deepLinkedRule || rules.some((rule) => rule.rule_id === deepLinkedRule.rule_id)) {
+      return rules;
+    }
+    return [...rules, deepLinkedRule];
+  }, [rules, deepLinkedRule]);
+
   const rulesMatchingFilterCount = reviewResponse?.total ?? 0;
   const installableRulesCount = reviewResponse?.stats.num_rules_to_install ?? 0;
 
@@ -210,7 +228,7 @@ export const AddPrebuiltRulesTableContextProvider = ({
 
   const installOneRule = useCallback(
     async (ruleId: RuleSignatureId, enable?: boolean) => {
-      const rule = rules.find((r) => r.rule_id === ruleId);
+      const rule = flyoutRules.find((r) => r.rule_id === ruleId);
       invariant(rule, `Rule with id ${ruleId} not found`);
 
       setLoadingRules((prev) => [...prev, ruleId]);
@@ -225,7 +243,7 @@ export const AddPrebuiltRulesTableContextProvider = ({
         setLoadingRules((prev) => prev.filter((id) => id !== ruleId));
       }
     },
-    [installSpecificRulesRequest, rules]
+    [installSpecificRulesRequest, flyoutRules]
   );
 
   const installSelectedRules = useCallback(
@@ -265,51 +283,107 @@ export const AddPrebuiltRulesTableContextProvider = ({
   const ruleActionsFactory = useCallback(
     (rule: RuleResponse, closeRulePreview: () => void) => {
       const isPreviewRuleLoading = loadingRules.includes(rule.rule_id);
+
+      const isPreviewRuleAlreadyInstalled =
+        isDeepLinkedRuleInstalled && deepLinkedRule?.rule_id === rule.rule_id;
+
       const canPreviewedRuleBeInstalled =
         canEditRules &&
+        !isPreviewRuleAlreadyInstalled &&
         !(isPreviewRuleLoading || isRefetching || isInitializingPrebuiltRulesPackage);
+
+      const installButton = (
+        <EuiButton
+          disabled={!canPreviewedRuleBeInstalled}
+          onClick={() => {
+            installOneRule(rule.rule_id);
+            closeRulePreview();
+          }}
+          data-test-subj="installPrebuiltRuleFromFlyoutButton"
+        >
+          {i18n.INSTALL_WITHOUT_ENABLING_BUTTON_LABEL}
+        </EuiButton>
+      );
+      const installAndEnableButton = (
+        <EuiButton
+          disabled={!canPreviewedRuleBeInstalled}
+          onClick={() => {
+            installOneRule(rule.rule_id, true);
+            closeRulePreview();
+          }}
+          fill
+          data-test-subj="installAndEnablePrebuiltRuleFromFlyoutButton"
+        >
+          {i18n.INSTALL_AND_ENABLE_BUTTON_LABEL}
+        </EuiButton>
+      );
 
       return (
         <EuiFlexGroup>
           <EuiFlexItem>
-            <EuiButton
-              disabled={!canPreviewedRuleBeInstalled}
-              onClick={() => {
-                installOneRule(rule.rule_id);
-                closeRulePreview();
-              }}
-              data-test-subj="installPrebuiltRuleFromFlyoutButton"
-            >
-              {i18n.INSTALL_WITHOUT_ENABLING_BUTTON_LABEL}
-            </EuiButton>
+            {isPreviewRuleAlreadyInstalled ? (
+              <EuiToolTip content={i18n.RULE_ALREADY_INSTALLED_TOOLTIP}>{installButton}</EuiToolTip>
+            ) : (
+              installButton
+            )}
           </EuiFlexItem>
           <EuiFlexItem>
-            <EuiButton
-              disabled={!canPreviewedRuleBeInstalled}
-              onClick={() => {
-                installOneRule(rule.rule_id, true);
-                closeRulePreview();
-              }}
-              fill
-              data-test-subj="installAndEnablePrebuiltRuleFromFlyoutButton"
-            >
-              {i18n.INSTALL_AND_ENABLE_BUTTON_LABEL}
-            </EuiButton>
+            {isPreviewRuleAlreadyInstalled ? (
+              <EuiToolTip content={i18n.RULE_ALREADY_INSTALLED_TOOLTIP}>
+                {installAndEnableButton}
+              </EuiToolTip>
+            ) : (
+              installAndEnableButton
+            )}
           </EuiFlexItem>
         </EuiFlexGroup>
       );
     },
-    [loadingRules, canEditRules, isRefetching, isInitializingPrebuiltRulesPackage, installOneRule]
+    [
+      isDeepLinkedRuleInstalled,
+      deepLinkedRule,
+      loadingRules,
+      canEditRules,
+      isRefetching,
+      isInitializingPrebuiltRulesPackage,
+      installOneRule,
+    ]
   );
 
+  // On close, remove the :ruleId path segment so the URL reflects "flyout closed".
+  const closeRulePreviewAction = useCallback(() => {
+    if (ruleIdFromUrl) {
+      history.replace(RULES_ADD_PATH);
+    }
+  }, [history, ruleIdFromUrl]);
+
   const { rulePreviewFlyout, openRulePreview } = useRulePreviewFlyout({
-    rules,
+    rules: flyoutRules,
     ruleActionsFactory,
+    closeRulePreviewAction,
     flyoutProps: {
       id: PREBUILT_RULE_INSTALL_FLYOUT_ANCHOR,
       dataTestSubj: PREBUILT_RULE_INSTALL_FLYOUT_ANCHOR,
     },
   });
+
+  // Auto-open the preview flyout when a rule_id is present in the URL path
+  useEffect(() => {
+    if (!ruleIdFromUrl || !isFetched || isFetching || !isDeepLinkedRuleResolved) {
+      // Do not open the flyout until all the required data is fetched.
+      return;
+    }
+    if (deepLinkedRule) {
+      openRulePreview(ruleIdFromUrl);
+    }
+  }, [
+    ruleIdFromUrl,
+    isFetched,
+    isFetching,
+    isDeepLinkedRuleResolved,
+    deepLinkedRule,
+    openRulePreview,
+  ]);
 
   const actions = useMemo(
     () => ({

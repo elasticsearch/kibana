@@ -25,13 +25,14 @@ interface UsePrebuiltRulesInstallReviewParams {
   page: number;
   perPage: number;
   filterOptions?: AddPrebuiltRulesTableFilterOptions;
-
+  ruleIds?: string[];
   sortingOptions?: PrebuiltRuleAssetsSortItem;
   aggregations?: PrebuiltRuleAssetsAggregations;
   fields?: string[];
 }
 
 const ASSET_TAGS_FIELD = 'security-rule.tags';
+const ASSET_RULE_ID_FIELD = 'security-rule.rule_id';
 
 /**
  * A wrapper around useQuery provides default values to the underlying query,
@@ -54,7 +55,10 @@ export const usePrebuiltRulesInstallReview = (
     {
       page: requestParameters.page,
       per_page: requestParameters.perPage,
-      filter: buildInstallReviewKqlFilter(requestParameters.filterOptions),
+      filter: buildInstallReviewKqlFilter(
+        requestParameters.filterOptions,
+        requestParameters.ruleIds
+      ),
       search,
       sort: requestParameters.sortingOptions ? [requestParameters.sortingOptions] : undefined,
       aggregations: requestParameters.aggregations,
@@ -75,20 +79,32 @@ const buildTagsClause = (tags: string[]): string => {
   return `${ASSET_TAGS_FIELD}:(${nonEmptyTags.map(prepareKQLStringParam).join(' AND ')})`;
 };
 
+const buildRuleIdsClause = (ruleIds: string[]): string => {
+  const nonEmptyIds = ruleIds.filter((id) => id.length > 0);
+  if (nonEmptyIds.length === 0) {
+    return '';
+  }
+  return `${ASSET_RULE_ID_FIELD}:(${nonEmptyIds.map(prepareKQLStringParam).join(' OR ')})`;
+};
+
 /**
  * Converts filter options from a simplified UI format to a format expected by the API.
  */
 export const buildInstallReviewKqlFilter = (
-  filterOptions: AddPrebuiltRulesTableFilterOptions | undefined
+  filterOptions: AddPrebuiltRulesTableFilterOptions | undefined,
+  ruleIds?: string[]
 ): GranularRulesFilter | undefined => {
-  if (!filterOptions) {
-    return undefined;
-  }
-
   const parts: string[] = [];
 
-  if (filterOptions.tags.length) {
+  if (filterOptions?.tags.length) {
     const clause = buildTagsClause(filterOptions.tags);
+    if (clause) {
+      parts.push(clause);
+    }
+  }
+
+  if (ruleIds?.length) {
+    const clause = buildRuleIdsClause(ruleIds);
     if (clause) {
       parts.push(clause);
     }
