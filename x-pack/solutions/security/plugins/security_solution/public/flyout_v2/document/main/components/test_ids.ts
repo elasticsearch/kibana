@@ -178,6 +178,10 @@ export const RESPONSE_SECTION_HEADER_TEST_ID = `${RESPONSE_SECTION_TEST_ID}Heade
 export const RESPONSE_SECTION_CONTENT_TEST_ID = `${RESPONSE_SECTION_TEST_ID}Content` as const;
 export const RESPONSE_BUTTON_TEST_ID = `${RESPONSE_TEST_ID}Button` as const;
 
+/* AI summary section */
+
+export const AI_SUMMARY_SECTION_TEST_ID = `${PREFIX}AISummarySection` as const;
+
 /* Footer */
 
 export const FLYOUT_FOOTER_DROPDOWN_BUTTON_TEST_ID = `${PREFIX}FooterDropdownButton` as const;
