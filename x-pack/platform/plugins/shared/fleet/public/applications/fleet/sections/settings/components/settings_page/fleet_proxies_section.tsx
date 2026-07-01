@@ -6,20 +6,14 @@
  */
 
 import React from 'react';
-import {
-  EuiTitle,
-  EuiText,
-  EuiSpacer,
-  EuiButtonEmpty,
-  EuiFlexGroup,
-  EuiFlexItem,
-  EuiLink,
-} from '@elastic/eui';
+import { EuiSpacer, EuiButtonEmpty, EuiLink } from '@elastic/eui';
 import { FormattedMessage } from '@kbn/i18n-react';
 
 import { useAuthz, useLink, useStartServices } from '../../../../hooks';
 import type { FleetProxy } from '../../../../types';
 import { FleetProxiesTable } from '../fleet_proxies_table';
+
+import { SettingsSectionPanel } from './settings_section_panel';
 
 export interface FleetProxiesSectionProps {
   proxies: FleetProxy[];
@@ -35,20 +29,14 @@ export const FleetProxiesSection: React.FunctionComponent<FleetProxiesSectionPro
   const { docLinks } = useStartServices();
 
   return (
-    <>
-      <EuiFlexGroup gutterSize="xs">
-        <EuiFlexItem grow={false}>
-          <EuiTitle size="s">
-            <h4>
-              <FormattedMessage
-                id="xpack.fleet.settings.fleetProxiesSection.title"
-                defaultMessage="Proxies"
-              />
-            </h4>
-          </EuiTitle>
-        </EuiFlexItem>
-      </EuiFlexGroup>
-      <EuiText color="subdued" size="m">
+    <SettingsSectionPanel
+      title={
+        <FormattedMessage
+          id="xpack.fleet.settings.fleetProxiesSection.title"
+          defaultMessage="Proxies"
+        />
+      }
+      description={
         <FormattedMessage
           id="xpack.fleet.settings.fleetProxiesSection.subtitle"
           defaultMessage="Specify any proxy URLs to be used in Fleet servers, Outputs or Agent binary download sources. For more information see our {docLink}."
@@ -63,8 +51,8 @@ export const FleetProxiesSection: React.FunctionComponent<FleetProxiesSectionPro
             ),
           }}
         />
-      </EuiText>
-      <EuiSpacer size="m" />
+      }
+    >
       <FleetProxiesTable proxies={proxies} deleteFleetProxy={deleteFleetProxy} />
       {authz.fleet.allSettings && (
         <>
@@ -81,6 +69,6 @@ export const FleetProxiesSection: React.FunctionComponent<FleetProxiesSectionPro
           </EuiButtonEmpty>
         </>
       )}
-    </>
+    </SettingsSectionPanel>
   );
 };

@@ -7,12 +7,14 @@
 
 import React from 'react';
 
-import { EuiTitle, EuiLink, EuiText, EuiSpacer, EuiButtonEmpty } from '@elastic/eui';
+import { EuiLink, EuiSpacer, EuiButtonEmpty } from '@elastic/eui';
 import { FormattedMessage } from '@kbn/i18n-react';
 
 import type { FleetServerHost } from '../../../../types';
 import { useAuthz, useLink, useStartServices } from '../../../../hooks';
 import { FleetServerHostsTable } from '../fleet_server_hosts_table';
+
+import { SettingsSectionPanel } from './settings_section_panel';
 
 export interface FleetServerHostsSectionProps {
   fleetServerHosts: FleetServerHost[];
@@ -28,17 +30,15 @@ export const FleetServerHostsSection: React.FunctionComponent<FleetServerHostsSe
   const { getHref } = useLink();
 
   return (
-    <>
-      <EuiTitle size="s">
-        <h4 data-test-subj="fleetServerHostHeader">
-          <FormattedMessage
-            id="xpack.fleet.settings.fleetServerHostSectionTitle"
-            defaultMessage="Fleet server hosts"
-          />
-        </h4>
-      </EuiTitle>
-      <EuiSpacer size="xs" />
-      <EuiText color="subdued" size="m">
+    <SettingsSectionPanel
+      data-test-subj="fleetServerHostHeader"
+      title={
+        <FormattedMessage
+          id="xpack.fleet.settings.fleetServerHostSectionTitle"
+          defaultMessage="Fleet server hosts"
+        />
+      }
+      description={
         <FormattedMessage
           id="xpack.fleet.settings.fleetServerHostSectionSubtitle"
           defaultMessage="Specify the URLs that your agents will use to connect to a Fleet Server. If multiple URLs exist, Fleet will show the first provided URL for enrollment purposes. For more information, see the {guideLink} ."
@@ -53,8 +53,8 @@ export const FleetServerHostsSection: React.FunctionComponent<FleetServerHostsSe
             ),
           }}
         />
-      </EuiText>
-      <EuiSpacer size="m" />
+      }
+    >
       <FleetServerHostsTable
         fleetServerHosts={fleetServerHosts}
         deleteFleetServerHost={deleteFleetServerHost}
@@ -74,7 +74,6 @@ export const FleetServerHostsSection: React.FunctionComponent<FleetServerHostsSe
           </EuiButtonEmpty>
         </>
       ) : null}
-      <EuiSpacer size="m" />
-    </>
+    </SettingsSectionPanel>
   );
 };

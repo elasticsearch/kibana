@@ -6,12 +6,14 @@
  */
 
 import React from 'react';
-import { EuiTitle, EuiText, EuiSpacer, EuiButtonEmpty } from '@elastic/eui';
+import { EuiSpacer, EuiButtonEmpty } from '@elastic/eui';
 import { FormattedMessage } from '@kbn/i18n-react';
 
 import { useAuthz, useLink } from '../../../../hooks';
 import type { DownloadSource } from '../../../../types';
 import { DownloadSourceTable } from '../download_source_table';
+
+import { SettingsSectionPanel } from './settings_section_panel';
 
 export interface AgentBinarySectionProps {
   downloadSources: DownloadSource[];
@@ -27,23 +29,20 @@ export const AgentBinarySection: React.FunctionComponent<AgentBinarySectionProps
   const hasAllSettingsPrivileges = authz.fleet.allSettings;
 
   return (
-    <>
-      <EuiTitle size="s">
-        <h4>
-          <FormattedMessage
-            id="xpack.fleet.settings.downloadSourcesSection.Title"
-            defaultMessage="Agent Binary Download"
-          />
-        </h4>
-      </EuiTitle>
-      <EuiSpacer size="xs" />
-      <EuiText color="subdued" size="m">
+    <SettingsSectionPanel
+      title={
+        <FormattedMessage
+          id="xpack.fleet.settings.downloadSourcesSection.Title"
+          defaultMessage="Agent Binary Download"
+        />
+      }
+      description={
         <FormattedMessage
           id="xpack.fleet.settings.downloadSourcesSection.Subtitle"
           defaultMessage="List of sources used by Elastic agents to download their binaries. The default source applies to all agent policies that don't have a specific binary source specified."
         />
-      </EuiText>
-      <EuiSpacer size="m" />
+      }
+    >
       <DownloadSourceTable
         downloadSources={downloadSources}
         deleteDownloadSource={deleteDownloadSource}
@@ -64,6 +63,6 @@ export const AgentBinarySection: React.FunctionComponent<AgentBinarySectionProps
           </EuiButtonEmpty>
         </>
       )}
-    </>
+    </SettingsSectionPanel>
   );
 };

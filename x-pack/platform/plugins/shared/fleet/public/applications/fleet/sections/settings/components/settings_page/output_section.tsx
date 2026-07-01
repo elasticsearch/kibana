@@ -6,12 +6,14 @@
  */
 
 import React from 'react';
-import { EuiTitle, EuiText, EuiSpacer, EuiButtonEmpty, EuiLink } from '@elastic/eui';
+import { EuiSpacer, EuiButtonEmpty, EuiLink } from '@elastic/eui';
 import { FormattedMessage } from '@kbn/i18n-react';
 
 import { useAuthz, useLink, useStartServices } from '../../../../hooks';
 import type { Output } from '../../../../types';
 import { OutputsTable } from '../outputs_table';
+
+import { SettingsSectionPanel } from './settings_section_panel';
 
 export interface OutputSectionProps {
   outputs: Output[];
@@ -27,22 +29,19 @@ export const OutputSection: React.FunctionComponent<OutputSectionProps> = ({
   const { docLinks } = useStartServices();
 
   return (
-    <>
-      <EuiTitle size="s">
-        <h4>
-          <FormattedMessage id="xpack.fleet.settings.outputSectionTitle" defaultMessage="Outputs" />
-        </h4>
-      </EuiTitle>
-      <EuiSpacer size="xs" />
-      <EuiText color="subdued" size="m">
+    <SettingsSectionPanel
+      title={
+        <FormattedMessage id="xpack.fleet.settings.outputSectionTitle" defaultMessage="Outputs" />
+      }
+      description={
         <EuiLink href={docLinks.links.fleet.settings} external target="_blank">
           <FormattedMessage
             id="xpack.fleet.settings.outputSectionSubtitle"
             defaultMessage="Specify where agents will send data."
           />
         </EuiLink>
-      </EuiText>
-      <EuiSpacer size="m" />
+      }
+    >
       <OutputsTable outputs={outputs} deleteOutput={deleteOutput} />
       {authz.fleet.allSettings && (
         <>
@@ -59,6 +58,6 @@ export const OutputSection: React.FunctionComponent<OutputSectionProps> = ({
           </EuiButtonEmpty>
         </>
       )}
-    </>
+    </SettingsSectionPanel>
   );
 };

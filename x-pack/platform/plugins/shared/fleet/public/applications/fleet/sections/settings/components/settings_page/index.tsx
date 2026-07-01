@@ -6,7 +6,8 @@
  */
 
 import React from 'react';
-import { EuiSpacer } from '@elastic/eui';
+import { css } from '@emotion/react';
+import { EuiFlexGroup, EuiFlexItem, EuiSpacer } from '@elastic/eui';
 
 import type { Output, DownloadSource, FleetServerHost, FleetProxy } from '../../../../types';
 
@@ -15,6 +16,15 @@ import { OutputSection } from './output_section';
 import { AgentBinarySection } from './agent_binary_section';
 import { FleetProxiesSection } from './fleet_proxies_section';
 import { AdvancedSection } from './advanced_section';
+
+// EUI's default restricted page width is 1200px (PAGE_MAX_WIDTH), but it is not
+// exported publicly. Named const for reuse within this file.
+const PAGE_CONTENT_MAX_WIDTH = 1200;
+
+const settingsPageContentWrapperCss = css`
+  max-width: ${PAGE_CONTENT_MAX_WIDTH}px;
+  margin-inline: auto;
+`;
 
 export interface SettingsPageProps {
   outputs: Output[];
@@ -38,23 +48,31 @@ export const SettingsPage: React.FunctionComponent<SettingsPageProps> = ({
   deleteFleetProxy,
 }) => {
   return (
-    <>
-      <EuiSpacer size="m" />
-      <FleetServerHostsSection
-        fleetServerHosts={fleetServerHosts}
-        deleteFleetServerHost={deleteFleetServerHost}
-      />
-      <EuiSpacer size="m" />
-      <OutputSection outputs={outputs} deleteOutput={deleteOutput} />
-      <EuiSpacer size="m" />
-      <AgentBinarySection
-        downloadSources={downloadSources}
-        deleteDownloadSource={deleteDownloadSource}
-      />
-      <EuiSpacer size="m" />
-      <FleetProxiesSection proxies={proxies} deleteFleetProxy={deleteFleetProxy} />
-      <EuiSpacer size="m" />
-      <AdvancedSection />
-    </>
+    <div css={settingsPageContentWrapperCss}>
+      <EuiFlexGroup direction="column" gutterSize="m">
+        <EuiFlexItem grow={false}>
+          <FleetServerHostsSection
+            fleetServerHosts={fleetServerHosts}
+            deleteFleetServerHost={deleteFleetServerHost}
+          />
+        </EuiFlexItem>
+        <EuiFlexItem grow={false}>
+          <OutputSection outputs={outputs} deleteOutput={deleteOutput} />
+        </EuiFlexItem>
+        <EuiFlexItem grow={false}>
+          <AgentBinarySection
+            downloadSources={downloadSources}
+            deleteDownloadSource={deleteDownloadSource}
+          />
+        </EuiFlexItem>
+        <EuiFlexItem grow={false}>
+          <FleetProxiesSection proxies={proxies} deleteFleetProxy={deleteFleetProxy} />
+        </EuiFlexItem>
+        <EuiFlexItem grow={false}>
+          <AdvancedSection />
+        </EuiFlexItem>
+      </EuiFlexGroup>
+      <EuiSpacer />
+    </div>
   );
 };
