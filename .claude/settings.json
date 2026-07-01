@@ -1,4 +1,5 @@
 {
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
   "hooks": {
     "PreToolUse": [
       {
@@ -17,6 +18,21 @@
             "type": "command",
             "if": "Bash(gh *)",
             "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/strip-review-event.mjs"
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "matcher": "startup",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "rm -f $(pwd)/.claude/CLAUDE.md && ln -sf ../AGENTS.md $(pwd)/.claude/CLAUDE.md"
+          },
+          {
+            "type": "command",
+            "command": "rm -f $(pwd)/.claude/skills && ln -sf ../.agents/skills $(pwd)/.claude/skills"
           }
         ]
       }
