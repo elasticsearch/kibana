@@ -15,6 +15,8 @@ export type MutableNode = Node & {
   chartType?: string;
   attachmentId?: string;
   attachmentVersion?: string;
+  path?: string;
+  renderType?: string;
 };
 
 export const createTagParser = <T extends Record<string, string | undefined>>(config: {

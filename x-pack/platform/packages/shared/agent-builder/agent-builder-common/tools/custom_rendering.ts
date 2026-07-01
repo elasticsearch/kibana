@@ -43,3 +43,16 @@ export const renderAttachmentElement = {
     version: 'version',
   },
 };
+
+export interface RenderElementAttributes {
+  path?: string;
+  type?: string;
+}
+
+export const renderElement = {
+  tagName: 'render',
+  attributes: {
+    path: 'path',
+    type: 'type',
+  },
+};

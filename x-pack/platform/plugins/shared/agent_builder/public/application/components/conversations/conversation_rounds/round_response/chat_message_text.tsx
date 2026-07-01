@@ -41,6 +41,7 @@ import {
   visualizationTagParser,
   renderAttachmentTagParser,
   createRenderAttachmentRenderer,
+  renderTagParser,
 } from './markdown_plugins';
 import { useStepsFromPrevRounds } from '../../../../hooks/use_conversation';
 import { useConversationContext } from '../../../../context/conversation/conversation_context';
@@ -227,6 +228,7 @@ export function ChatMessageText({
         esqlLanguagePlugin,
         visualizationTagParser,
         renderAttachmentTagParser,
+        renderTagParser,
         ...parsingPlugins,
       ],
       processingPluginList: processingPlugins,

@@ -11,5 +11,6 @@ export {
   renderAttachmentTagParser,
   createRenderAttachmentRenderer,
 } from './render_attachment_plugin';
+export { renderTagParser } from './render_plugin';
 export { loadingCursorPlugin, Cursor } from './cursor_plugin';
 export { esqlLanguagePlugin } from './esql_plugin';
