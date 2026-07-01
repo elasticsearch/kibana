@@ -7,6 +7,7 @@
 
 import { schema } from '@kbn/config-schema';
 import { alertDeleteCategoryIds } from '../../../constants';
+import { MAX_SPACE_IDS, MAX_ID_LENGTH } from '../../../constants';
 
 const MAX_ALERT_DELETE_THRESHOLD_DAYS = 3 * 365; // 3 years
 const MIN_ALERT_DELETE_THRESHOLD_DAYS = 1;
@@ -68,8 +69,9 @@ export const alertDeleteScheduleQuerySchema = schema.object(
   {
     ...alertDeleteSettingsSchema,
     space_ids: schema.maybe(
-      schema.arrayOf(schema.string(), {
+      schema.arrayOf(schema.string({ maxLength: MAX_ID_LENGTH }), {
         minSize: 1,
+        maxSize: MAX_SPACE_IDS,
         meta: {
           description: 'Kibana space IDs to delete alerts from',
         },

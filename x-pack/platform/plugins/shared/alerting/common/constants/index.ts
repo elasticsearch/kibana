@@ -12,6 +12,7 @@ export {
   MAX_SCHEDULE_BACKFILL_LOOKBACK_WINDOW_DAYS,
   MAX_SCHEDULE_BACKFILL_LOOKBACK_WINDOW_MS,
 } from './backfill';
+export * from './limits';
 export { PLUGIN } from './plugin';
 export const PROVISION_UIAM_API_KEYS_FEATURE_FLAG = 'alerting.rules.provisionUiamApiKeys';
 export { gapStatus, gapFillStatus } from './gap_status';

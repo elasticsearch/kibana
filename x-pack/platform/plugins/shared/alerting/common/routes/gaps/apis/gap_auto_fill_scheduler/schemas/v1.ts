@@ -9,6 +9,12 @@ import dateMath from '@kbn/datemath';
 import {
   MAX_SCHEDULE_BACKFILL_LOOKBACK_WINDOW_DAYS,
   gapAutoFillSchedulerLimits,
+  MAX_ID_LENGTH,
+  MAX_NAME_LENGTH,
+  MAX_ARRAY_FIELDS,
+  MAX_FIELD_NAME_LENGTH,
+  MAX_DURATION_STRING_LENGTH,
+  ISO_DATE_MAX_LENGTH,
 } from '../../../../../constants';
 import { parseDuration } from '../../../../../parse_duration';
 import { optionalExcludedGapReasonsSchema } from '../../../../../schemas';
@@ -57,26 +63,32 @@ const validateGapAutoFillSchedulerPayload = (
 };
 
 export const getGapAutoFillSchedulerParamsSchema = schema.object({
-  id: schema.string(),
+  id: schema.string({ maxLength: MAX_ID_LENGTH }),
 });
 
 export const gapAutoFillSchedulerBodySchema = schema.object(
   {
-    id: schema.maybe(schema.string()),
-    name: schema.string({ defaultValue: '' }),
+    id: schema.maybe(schema.string({ maxLength: MAX_ID_LENGTH })),
+    name: schema.string({ defaultValue: '', maxLength: MAX_NAME_LENGTH }),
     enabled: schema.boolean({ defaultValue: true }),
     max_backfills: schema.number(maxBackfills),
     num_retries: schema.number(numRetries),
-    gap_fill_range: schema.string({ defaultValue: 'now-90d' }),
-    schedule: schema.object({
-      interval: schema.string(),
+    gap_fill_range: schema.string({
+      defaultValue: 'now-90d',
+      maxLength: MAX_DURATION_STRING_LENGTH,
     }),
-    scope: schema.arrayOf(schema.string()),
+    schedule: schema.object({
+      interval: schema.string({ maxLength: MAX_DURATION_STRING_LENGTH }),
+    }),
+    scope: schema.arrayOf(schema.string({ maxLength: MAX_ID_LENGTH }), {
+      maxSize: MAX_ARRAY_FIELDS,
+    }),
     rule_types: schema.arrayOf(
       schema.object({
-        type: schema.string(),
-        consumer: schema.string(),
-      })
+        type: schema.string({ maxLength: MAX_FIELD_NAME_LENGTH }),
+        consumer: schema.string({ maxLength: MAX_NAME_LENGTH }),
+      }),
+      { maxSize: MAX_ARRAY_FIELDS }
     ),
     excluded_reasons: optionalExcludedGapReasonsSchema,
   },
@@ -93,20 +105,23 @@ export const gapAutoFillSchedulerBodySchema = schema.object(
 
 export const gapAutoFillSchedulerUpdateBodySchema = schema.object(
   {
-    name: schema.string(),
+    name: schema.string({ maxLength: MAX_NAME_LENGTH }),
     enabled: schema.boolean(),
-    gap_fill_range: schema.string(),
+    gap_fill_range: schema.string({ maxLength: MAX_DURATION_STRING_LENGTH }),
     max_backfills: schema.number(maxBackfills),
     num_retries: schema.number(numRetries),
     schedule: schema.object({
-      interval: schema.string(),
+      interval: schema.string({ maxLength: MAX_DURATION_STRING_LENGTH }),
     }),
-    scope: schema.arrayOf(schema.string()),
+    scope: schema.arrayOf(schema.string({ maxLength: MAX_ID_LENGTH }), {
+      maxSize: MAX_ARRAY_FIELDS,
+    }),
     rule_types: schema.arrayOf(
       schema.object({
-        type: schema.string(),
-        consumer: schema.string(),
-      })
+        type: schema.string({ maxLength: MAX_FIELD_NAME_LENGTH }),
+        consumer: schema.string({ maxLength: MAX_NAME_LENGTH }),
+      }),
+      { maxSize: MAX_ARRAY_FIELDS }
     ),
     excluded_reasons: optionalExcludedGapReasonsSchema,
   },
@@ -147,8 +162,8 @@ export const gapAutoFillSchedulerResponseSchema = schema.object({
 
 export const gapAutoFillSchedulerLogsRequestQuerySchema = schema.object(
   {
-    start: schema.string(),
-    end: schema.string(),
+    start: schema.string({ maxLength: ISO_DATE_MAX_LENGTH }),
+    end: schema.string({ maxLength: ISO_DATE_MAX_LENGTH }),
     page: schema.number({ defaultValue: 1, min: 1 }),
     per_page: schema.number({ defaultValue: 50, min: 1, max: 1000 }),
     sort_field: schema.oneOf([schema.literal('@timestamp')], { defaultValue: '@timestamp' }),
@@ -162,7 +177,8 @@ export const gapAutoFillSchedulerLogsRequestQuerySchema = schema.object(
           schema.literal('error'),
           schema.literal('skipped'),
           schema.literal('no_gaps'),
-        ])
+        ]),
+        { maxSize: 4 }
       )
     ),
   },
@@ -206,5 +222,5 @@ export const gapAutoFillSchedulerLogsResponseSchema = schema.object({
 });
 
 export const findGapAutoFillSchedulerLogsParamsSchema = schema.object({
-  id: schema.string(),
+  id: schema.string({ maxLength: MAX_ID_LENGTH }),
 });

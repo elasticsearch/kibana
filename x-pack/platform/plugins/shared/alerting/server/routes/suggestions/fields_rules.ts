@@ -22,6 +22,7 @@ import { verifyAccessAndContext } from '../lib';
 import type { ILicenseState } from '../../lib';
 import type { AlertingRequestHandlerContext } from '../../types';
 import { DEFAULT_ALERTING_ROUTE_SECURITY } from '../constants';
+import { MAX_ARRAY_FIELDS, MAX_SUGGESTION_TEXT_LENGTH } from '../../../common/constants';
 
 export function registerFieldsRoute(
   router: IRouter<AlertingRequestHandlerContext>,
@@ -36,7 +37,14 @@ export function registerFieldsRoute(
       validate: {
         body: schema.nullable(
           schema.object({
-            fields: schema.maybe(schema.oneOf([schema.string(), schema.arrayOf(schema.string())])),
+            fields: schema.maybe(
+              schema.oneOf([
+                schema.string({ maxLength: MAX_SUGGESTION_TEXT_LENGTH }),
+                schema.arrayOf(schema.string({ maxLength: MAX_SUGGESTION_TEXT_LENGTH }), {
+                  maxSize: MAX_ARRAY_FIELDS,
+                }),
+              ])
+            ),
           })
         ),
       },

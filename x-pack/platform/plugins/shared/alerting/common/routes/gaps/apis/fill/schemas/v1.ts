@@ -5,8 +5,9 @@
  * 2.0.
  */
 import { schema } from '@kbn/config-schema';
+import { MAX_ID_LENGTH } from '../../../../../constants';
 
 export const fillGapByIdQuerySchema = schema.object({
-  rule_id: schema.string(),
-  gap_id: schema.string(),
+  rule_id: schema.string({ maxLength: MAX_ID_LENGTH }),
+  gap_id: schema.string({ maxLength: MAX_ID_LENGTH }),
 });

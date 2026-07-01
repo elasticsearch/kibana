@@ -6,27 +6,45 @@
  */
 
 import { schema } from '@kbn/config-schema';
+import {
+  MAX_KQL_FILTER_LENGTH,
+  MAX_ID_LENGTH,
+  MAX_FIELD_NAME_LENGTH,
+  MAX_NAME_LENGTH,
+  MAX_SAVED_OBJECT_TYPE_LENGTH,
+  MAX_ARRAY_FIELDS,
+} from '../../../../../constants';
 
 export const aggregateRulesRequestBodySchema = schema.object(
   {
-    search: schema.maybe(schema.string()),
+    search: schema.maybe(schema.string({ maxLength: MAX_KQL_FILTER_LENGTH })),
     default_search_operator: schema.oneOf([schema.literal('OR'), schema.literal('AND')], {
       defaultValue: 'OR',
     }),
-    search_fields: schema.maybe(schema.arrayOf(schema.string())),
+    search_fields: schema.maybe(
+      schema.arrayOf(schema.string({ maxLength: MAX_FIELD_NAME_LENGTH }), {
+        maxSize: MAX_ARRAY_FIELDS,
+      })
+    ),
     has_reference: schema.maybe(
       // use nullable as maybe is currently broken
       // in config-schema
       schema.nullable(
         schema.object({
-          type: schema.string(),
-          id: schema.string(),
+          type: schema.string({ maxLength: MAX_SAVED_OBJECT_TYPE_LENGTH }),
+          id: schema.string({ maxLength: MAX_ID_LENGTH }),
         })
       )
     ),
-    filter: schema.maybe(schema.string()),
-    rule_type_ids: schema.maybe(schema.arrayOf(schema.string())),
-    consumers: schema.maybe(schema.arrayOf(schema.string())),
+    filter: schema.maybe(schema.string({ maxLength: MAX_KQL_FILTER_LENGTH })),
+    rule_type_ids: schema.maybe(
+      schema.arrayOf(schema.string({ maxLength: MAX_ID_LENGTH }), { maxSize: MAX_ARRAY_FIELDS })
+    ),
+    consumers: schema.maybe(
+      schema.arrayOf(schema.string({ maxLength: MAX_NAME_LENGTH }), {
+        maxSize: MAX_ARRAY_FIELDS,
+      })
+    ),
   },
   { meta: { id: 'aggregate_rules_request' } }
 );

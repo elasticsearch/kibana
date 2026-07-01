@@ -6,7 +6,8 @@
  */
 
 import { schema } from '@kbn/config-schema';
+import { MAX_ID_LENGTH } from '../../../../../constants';
 
 export const resolveParamsSchema = schema.object({
-  id: schema.string(),
+  id: schema.string({ maxLength: MAX_ID_LENGTH }),
 });

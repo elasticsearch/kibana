@@ -6,7 +6,12 @@
  */
 
 import { schema } from '@kbn/config-schema';
-import { stringOrStringArraySchema } from '../../../../../schemas';
+import {
+  MAX_KQL_FILTER_LENGTH,
+  MAX_ID_LENGTH,
+  MAX_TAG_LENGTH,
+  MAX_ARRAY_FIELDS,
+} from '../../../../../constants';
 
 export const findRuleTemplatesRequestQuerySchema = schema.object({
   per_page: schema.number({
@@ -26,6 +31,7 @@ export const findRuleTemplatesRequestQuerySchema = schema.object({
   }),
   search: schema.maybe(
     schema.string({
+      maxLength: MAX_KQL_FILTER_LENGTH,
       meta: {
         description:
           'An Elasticsearch simple_query_string query that filters the objects in the response.',
@@ -58,14 +64,21 @@ export const findRuleTemplatesRequestQuerySchema = schema.object({
   ),
   rule_type_id: schema.maybe(
     schema.string({
+      maxLength: MAX_ID_LENGTH,
       meta: {
         description: 'Filters the rule templates by rule type identifier.',
       },
     })
   ),
   tags: schema.maybe(
-    stringOrStringArraySchema({
-      meta: { description: 'Filters the rule templates by tags.' },
-    })
+    schema.oneOf(
+      [
+        schema.arrayOf(schema.string({ maxLength: MAX_TAG_LENGTH }), {
+          maxSize: MAX_ARRAY_FIELDS,
+        }),
+        schema.string({ maxLength: MAX_TAG_LENGTH }),
+      ],
+      { meta: { description: 'Filters the rule templates by tags.' } }
+    )
   ),
 });

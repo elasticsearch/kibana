@@ -13,9 +13,10 @@ import { verifyAccessAndContext } from './lib';
 import type { AlertingRequestHandlerContext, RuleTaskState } from '../types';
 import { INTERNAL_BASE_ALERTING_API_PATH } from '../types';
 import { DEFAULT_ALERTING_ROUTE_SECURITY } from './constants';
+import { MAX_ID_LENGTH } from '../../common/constants';
 
 const paramSchema = schema.object({
-  id: schema.string(),
+  id: schema.string({ maxLength: MAX_ID_LENGTH }),
 });
 
 const rewriteBodyRes: RewriteResponseCase<RuleTaskState> = ({

@@ -6,9 +6,11 @@
  */
 
 import { schema } from '@kbn/config-schema';
+import { MAX_ID_LENGTH } from '../../../../../constants';
 
 export const getRuleTemplateRequestParamsSchema = schema.object({
   id: schema.string({
+    maxLength: MAX_ID_LENGTH,
     meta: {
       description: 'The identifier for the rule template.',
     },

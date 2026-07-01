@@ -13,15 +13,20 @@ import { verifyAccessAndContext } from './lib';
 import type { GetRuleExecutionKPIParams } from '../rules_client';
 import type { ILicenseState } from '../lib';
 import { DEFAULT_ALERTING_ROUTE_SECURITY } from './constants';
+import {
+  MAX_EXECUTION_FILTER_LENGTH,
+  MAX_ID_LENGTH,
+  ISO_DATE_MAX_LENGTH,
+} from '../../common/constants';
 
 const paramSchema = schema.object({
-  id: schema.string(),
+  id: schema.string({ maxLength: MAX_ID_LENGTH }),
 });
 
 const querySchema = schema.object({
-  date_start: schema.string(),
-  date_end: schema.maybe(schema.string()),
-  filter: schema.maybe(schema.string()),
+  date_start: schema.string({ maxLength: ISO_DATE_MAX_LENGTH }),
+  date_end: schema.maybe(schema.string({ maxLength: ISO_DATE_MAX_LENGTH })),
+  filter: schema.maybe(schema.string({ maxLength: MAX_EXECUTION_FILTER_LENGTH })),
 });
 
 const rewriteReq: RewriteRequestCase<GetRuleExecutionKPIParams> = ({

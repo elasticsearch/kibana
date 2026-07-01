@@ -7,9 +7,11 @@
 
 import { schema } from '@kbn/config-schema';
 import { ruleResponseInternalSchema } from '../../../../response/schemas/v1';
+import { MAX_ID_LENGTH } from '../../../../../../constants';
 
 export const getInternalRuleRequestParamsSchema = schema.object({
   id: schema.string({
+    maxLength: MAX_ID_LENGTH,
     meta: {
       description: 'The identifier for the rule.',
     },

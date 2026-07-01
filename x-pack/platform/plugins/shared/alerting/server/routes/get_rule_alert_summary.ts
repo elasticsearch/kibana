@@ -14,14 +14,19 @@ import { verifyAccessAndContext } from './lib';
 import type { AlertingRequestHandlerContext, AlertSummary } from '../types';
 import { INTERNAL_BASE_ALERTING_API_PATH } from '../types';
 import { DEFAULT_ALERTING_ROUTE_SECURITY } from './constants';
+import {
+  MAX_ID_LENGTH,
+  MAX_NUMBER_OF_EXECUTIONS,
+  ISO_DATE_MAX_LENGTH,
+} from '../../common/constants';
 
 const paramSchema = schema.object({
-  id: schema.string(),
+  id: schema.string({ maxLength: MAX_ID_LENGTH }),
 });
 
 const querySchema = schema.object({
-  date_start: schema.maybe(schema.string()),
-  number_of_executions: schema.maybe(schema.number()),
+  date_start: schema.maybe(schema.string({ maxLength: ISO_DATE_MAX_LENGTH })),
+  number_of_executions: schema.maybe(schema.number({ min: 1, max: MAX_NUMBER_OF_EXECUTIONS })),
 });
 
 const rewriteReq: RewriteRequestCase<GetAlertSummaryParams> = ({

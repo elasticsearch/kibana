@@ -6,9 +6,10 @@
  */
 
 import { schema } from '@kbn/config-schema';
+import { MAX_ID_LENGTH } from '../../../../../constants';
 
 export const runSoonRequestParamsSchema = schema.object({
-  id: schema.string(),
+  id: schema.string({ maxLength: MAX_ID_LENGTH }),
 });
 
 export const runSoonRequestQuerySchema = schema.maybe(

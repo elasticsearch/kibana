@@ -14,9 +14,16 @@ import { verifyAccessAndContext } from './lib';
 import type { AlertingRequestHandlerContext } from '../types';
 import { INTERNAL_BASE_ALERTING_API_PATH } from '../types';
 import { DEFAULT_ALERTING_ROUTE_SECURITY } from './constants';
+import {
+  MAX_PER_PAGE_LOGS,
+  MAX_EXECUTION_FILTER_LENGTH,
+  MAX_ID_LENGTH,
+  MAX_SORT_FIELDS,
+  ISO_DATE_MAX_LENGTH,
+} from '../../common/constants';
 
 const paramSchema = schema.object({
-  id: schema.string(),
+  id: schema.string({ maxLength: MAX_ID_LENGTH }),
 });
 
 const sortOrderSchema = schema.oneOf([schema.literal('asc'), schema.literal('desc')]);
@@ -36,13 +43,14 @@ const sortFieldSchema = schema.oneOf([
 
 const sortFieldsSchema = schema.arrayOf(sortFieldSchema, {
   defaultValue: [{ timestamp: { order: 'desc' } }],
+  maxSize: MAX_SORT_FIELDS,
 });
 
 const querySchema = schema.object({
-  date_start: schema.string(),
-  date_end: schema.maybe(schema.string()),
-  filter: schema.maybe(schema.string()),
-  per_page: schema.number({ defaultValue: 10, min: 1 }),
+  date_start: schema.string({ maxLength: ISO_DATE_MAX_LENGTH }),
+  date_end: schema.maybe(schema.string({ maxLength: ISO_DATE_MAX_LENGTH })),
+  filter: schema.maybe(schema.string({ maxLength: MAX_EXECUTION_FILTER_LENGTH })),
+  per_page: schema.number({ defaultValue: 10, min: 1, max: MAX_PER_PAGE_LOGS }),
   page: schema.number({ defaultValue: 1, min: 1 }),
   sort: sortFieldsSchema,
 });

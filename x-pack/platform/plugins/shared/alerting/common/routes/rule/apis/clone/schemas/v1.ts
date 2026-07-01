@@ -6,8 +6,9 @@
  */
 
 import { schema } from '@kbn/config-schema';
+import { MAX_ID_LENGTH } from '../../../../../constants';
 
 export const cloneRuleRequestParamsSchema = schema.object({
-  id: schema.string(),
-  newId: schema.maybe(schema.string()),
+  id: schema.string({ maxLength: MAX_ID_LENGTH }),
+  newId: schema.maybe(schema.string({ maxLength: MAX_ID_LENGTH })),
 });

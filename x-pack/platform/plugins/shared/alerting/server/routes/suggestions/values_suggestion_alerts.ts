@@ -23,6 +23,7 @@ import { AlertingAuthorizationEntity, AlertingAuthorizationFilterType } from '..
 import type { AlertingRequestHandlerContext } from '../../types';
 import type { GetAlertIndicesAlias, ILicenseState } from '../../lib';
 import { DEFAULT_ALERTING_ROUTE_SECURITY } from '../constants';
+import { MAX_SUGGESTION_TEXT_LENGTH } from '../../../common/constants';
 
 const alertingAuthorizationFilterOpts: AlertingAuthorizationFilterOpts = {
   type: AlertingAuthorizationFilterType.ESDSL,
@@ -31,8 +32,8 @@ const alertingAuthorizationFilterOpts: AlertingAuthorizationFilterOpts = {
 
 export const AlertsSuggestionsSchema = {
   body: schema.object({
-    field: schema.string(),
-    query: schema.string(),
+    field: schema.string({ maxLength: MAX_SUGGESTION_TEXT_LENGTH }),
+    query: schema.string({ maxLength: MAX_SUGGESTION_TEXT_LENGTH }),
     filters: schema.maybe(schema.any()),
     fieldMeta: schema.maybe(schema.any()),
   }),

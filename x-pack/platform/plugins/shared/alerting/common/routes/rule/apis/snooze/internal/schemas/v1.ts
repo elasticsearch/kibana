@@ -7,9 +7,10 @@
 
 import { schema } from '@kbn/config-schema';
 import { ruleSnoozeScheduleSchemaV1 } from '../../../../request';
+import { MAX_ID_LENGTH } from '../../../../../../constants';
 
 export const snoozeParamsInternalSchema = schema.object({
-  id: schema.string(),
+  id: schema.string({ maxLength: MAX_ID_LENGTH }),
 });
 
 export const snoozeBodyInternalSchema = schema.object({
