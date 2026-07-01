@@ -39,6 +39,16 @@ interface ConverseResponse {
   traceId?: string;
 }
 
+interface MultiTurnConverseParams {
+  turns: Array<{ message: string; attachments?: Attachment[] }>;
+  agentId?: string;
+}
+
+export interface MultiTurnConverseResponse extends ConverseResponse {
+  /** Per-turn breakdown so specs can score tool-call budgets and recovery turns. */
+  turnResponses: ConverseResponse[];
+}
+
 interface VersionedAttachmentData {
   id: string;
   type: string;
@@ -146,5 +156,63 @@ export class WorkflowsEvalsChatClient {
         ],
       };
     }
+  };
+
+  /**
+   * Run a sequence of user turns inside one conversation, threading the
+   * server-side conversationId between calls.  Each turn is one converse call;
+   * the API stores history server-side, so we only send the new user message
+   * (plus optional new attachments) on each turn.
+   *
+   * Returns an aggregated response (full message history, accumulated steps,
+   * accumulated errors) plus a per-turn breakdown for fine-grained scoring.
+   */
+  converseMultiTurn = async ({
+    turns,
+    agentId,
+  }: MultiTurnConverseParams): Promise<MultiTurnConverseResponse> => {
+    if (turns.length === 0) {
+      throw new Error('turns array cannot be empty');
+    }
+
+    const turnResponses: ConverseResponse[] = [];
+    const allMessages: Array<{ message: string }> = [];
+    const allSteps: ConverseResponse['steps'] = [];
+    const allErrors: unknown[] = [];
+    let conversationId: string | undefined;
+
+    for (const turn of turns) {
+      const resp = await this.converse({
+        messages: [{ message: turn.message }],
+        conversationId,
+        agentId,
+        attachments: turn.attachments,
+      });
+
+      conversationId = resp.conversationId ?? conversationId;
+      turnResponses.push(resp);
+
+      allMessages.push({ message: turn.message });
+      const assistantResponse = resp.messages[resp.messages.length - 1];
+      if (assistantResponse) {
+        allMessages.push(assistantResponse);
+      }
+      if (resp.steps) allSteps.push(...resp.steps);
+      if (resp.errors.length) allErrors.push(...resp.errors);
+
+      // Stop early on infra errors — there's nothing useful to be learned
+      // from continuing to fire turns at a broken backend.
+      if (resp.errors.length > 0) {
+        break;
+      }
+    }
+
+    return {
+      conversationId,
+      messages: allMessages,
+      steps: allSteps,
+      errors: allErrors,
+      turnResponses,
+    };
   };
 }

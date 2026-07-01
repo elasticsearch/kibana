@@ -20,14 +20,18 @@ import {
   createCriteriaEvaluator,
   createStructuralCorrectnessEvaluator,
   createEditPreservationEvaluator,
+  createLiquidCorrectnessEvaluator,
   createEfficiencyEvaluator,
   createToolTrajectoryEvaluator,
   createLatencyEvaluator,
+  skipCompositeMode,
   skipInfraErrors,
   skipNegativeCases,
   extractResultYaml,
   extractYamlFromAttachments,
 } from '../src/evaluators';
+
+const liquid = skipInfraErrors(skipNegativeCases(createLiquidCorrectnessEvaluator()));
 
 const WORKFLOW_YAML_ATTACHMENT_TYPE = 'workflow.yaml';
 
@@ -110,13 +114,14 @@ const evaluate = base.extend<
           },
           selectEvaluators<WorkflowEditExample, WorkflowTaskOutput>([
             skip(createNoErrorsEvaluator()),
-            skip(createEditSuccessEvaluator()),
+            skip(skipCompositeMode(createEditSuccessEvaluator())),
             skip(createValidationPassEvaluator()),
-            skip(createToolUsageEvaluator()),
+            skip(skipCompositeMode(createToolUsageEvaluator())),
             skip(createStructuralCorrectnessEvaluator()),
             skip(createEditPreservationEvaluator()),
-            skip(createEfficiencyEvaluator()),
-            skip(createToolTrajectoryEvaluator()),
+            liquid,
+            skip(skipCompositeMode(createEfficiencyEvaluator())),
+            skip(skipCompositeMode(createToolTrajectoryEvaluator())),
             skip(createLatencyEvaluator()),
             skipInfraErrors(createCriteriaEvaluator({ evaluators })),
           ])
@@ -505,7 +510,7 @@ evaluate.describe(
                 ],
                 expectedToolIds: ['platform.core.generate_workflow'],
                 expectedStepCount: 3,
-                expectedStepTypes: ['cases.addComment|kibana.addCaseComment|kibana.request'],
+                expectedStepTypes: ['kibana.addCaseComment'],
                 preservedStepNames: ['create_case', 'log_case_id'],
                 expectedMaxToolCalls: 4,
                 expectedToolSequence: ['platform.core.generate_workflow'],
@@ -674,5 +679,78 @@ evaluate.describe(
         },
       });
     });
+  }
+);
+
+// ---------------------------------------------------------------------------
+// Conditional indexing — "only index when fetch succeeded" requires an actual
+// `if` that references the prior step's result, not just an empty no-op gate
+// or a hard-coded `true`. Captured from a dogfood conversation where the
+// agent flipped between step-level `if:` and an `if`-step-type, and the chosen
+// KQL silently matched nothing.
+// ---------------------------------------------------------------------------
+
+const fetchAndIndexYaml = `version: '1'
+name: Fetch and Index
+description: Fetch records then write them to an index
+enabled: true
+tags:
+  - test
+
+triggers:
+  - type: manual
+
+steps:
+  - name: fetch_records
+    type: http
+    with:
+      method: GET
+      url: "https://api.example.com/records"
+  - name: index_records
+    type: elasticsearch.index
+    with:
+      index: my-records
+      document: "{{ steps.fetch_records.output.body }}"
+`;
+
+evaluate.describe(
+  'Conditional gating: only act when the prior step actually produced data',
+  { tag: tags.serverless.observability.complete },
+  () => {
+    evaluate(
+      'index_records only runs when fetch_records succeeded',
+      async ({ evaluateEditDataset }) => {
+        await evaluateEditDataset({
+          dataset: {
+            name: 'workflow-editing: conditional-indexing-on-fetch-success',
+            description:
+              'A step-level `if:` referencing the prior step result — empty gates or hard-coded `true` should not pass.',
+            examples: [
+              {
+                input: {
+                  instruction:
+                    'Only run the index_records step when the fetch_records step succeeded — if the API call failed or returned an empty body, skip indexing.',
+                  initialYaml: fetchAndIndexYaml,
+                },
+                output: {
+                  criteria: [
+                    'The index_records step now has an `if:` (or equivalent conditional gating) that prevents it from running on a failed fetch.',
+                    'The condition explicitly references the fetch_records step — either its status, error, output, or body — not a hard-coded literal like `true`, an empty string, or a constant Liquid expression that always resolves true.',
+                    'The condition is correct: when fetch_records errors OR returns no/empty body, index_records is skipped; when fetch_records succeeds with a body, index_records runs.',
+                    'The fetch_records step itself is preserved unchanged.',
+                  ],
+                  expectedStepCount: { min: 2, max: 4 },
+                  preservedStepNames: ['fetch_records', 'index_records'],
+                  expectedLiquidChains: [{ ref: 'steps.fetch_records', resolvesTo: 'step-output' }],
+                  expectedMaxToolCalls: 4,
+                  expectedToolSequence: ['platform.core.generate_workflow'],
+                },
+                metadata: { category: 'conditional-edit' },
+              },
+            ],
+          },
+        });
+      }
+    );
   }
 );

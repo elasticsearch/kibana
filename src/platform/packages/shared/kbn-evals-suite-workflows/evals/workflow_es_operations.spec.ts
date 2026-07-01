@@ -49,6 +49,7 @@ import {
   createNoErrorsEvaluator,
   createCriteriaEvaluator,
   createStructuralCorrectnessEvaluator,
+  createBulkOperationsShapeEvaluator,
   createEfficiencyEvaluator,
   createToolTrajectoryEvaluator,
   createLatencyEvaluator,
@@ -108,6 +109,7 @@ const evaluate = base.extend<
             skip(createEditSuccessEvaluator()),
             skip(createValidationPassEvaluator()),
             skip(createStructuralCorrectnessEvaluator()),
+            skip(createBulkOperationsShapeEvaluator()),
             skip(createEfficiencyEvaluator()),
             skip(createToolTrajectoryEvaluator()),
             skip(createLatencyEvaluator()),
@@ -490,7 +492,12 @@ evaluate.describe(
                   expectedStepTypes: ['http'],
                   expectedStepCount: { min: 2, max: 4 },
                   expectedMaxToolCalls: 8,
-                  expectedToolSequence: ['platform.core.generate_workflow'],
+                  // bulk + bulk-via-_bulk are rare step shapes — require the agent
+                  // to consult the step schema before shipping a guessed
+                  // `operations` array. The `load_skill` filter in trajectory
+                  // doesn't apply here.
+                  expectedToolSequence: ['get_step_definitions', 'platform.core.generate_workflow'],
+                  expectsBulkOperationShape: true,
                 },
                 metadata: { category: 'es-ops-correctness' },
               },
@@ -511,7 +518,12 @@ evaluate.describe(
                   expectedStepTypes: ['http'],
                   expectedStepCount: { min: 2, max: 4 },
                   expectedMaxToolCalls: 8,
-                  expectedToolSequence: ['platform.core.generate_workflow'],
+                  // bulk + bulk-via-_bulk are rare step shapes — require the agent
+                  // to consult the step schema before shipping a guessed
+                  // `operations` array. The `load_skill` filter in trajectory
+                  // doesn't apply here.
+                  expectedToolSequence: ['get_step_definitions', 'platform.core.generate_workflow'],
+                  expectsBulkOperationShape: true,
                 },
                 metadata: { category: 'es-ops-correctness' },
               },
@@ -532,7 +544,85 @@ evaluate.describe(
                   expectedStepTypes: ['http'],
                   expectedStepCount: { min: 2, max: 4 },
                   expectedMaxToolCalls: 8,
-                  expectedToolSequence: ['platform.core.generate_workflow'],
+                  // bulk + bulk-via-_bulk are rare step shapes — require the agent
+                  // to consult the step schema before shipping a guessed
+                  // `operations` array. The `load_skill` filter in trajectory
+                  // doesn't apply here.
+                  expectedToolSequence: ['get_step_definitions', 'platform.core.generate_workflow'],
+                  expectsBulkOperationShape: true,
+                },
+                metadata: { category: 'es-ops-correctness' },
+              },
+            ],
+          },
+        });
+      }
+    );
+  }
+);
+
+// ---------------------------------------------------------------------------
+// Store-with-index-create — the "create the index if it's not there yet"
+// reflex that real-world agents skip until prompted. Modeled on a live
+// dogfood conversation where the agent reported success while its target
+// index didn't exist and no documents had landed.
+// ---------------------------------------------------------------------------
+
+evaluate.describe(
+  'ES index bootstrapping: create-if-missing before indexing',
+  { tag: tags.serverless.observability.complete },
+  () => {
+    evaluate(
+      'workflow creates the target index with mappings before writing to it',
+      async ({ evaluateEsOpsDataset }) => {
+        await evaluateEsOpsDataset({
+          dataset: {
+            name: 'workflow-es-ops: store-with-index-create',
+            description:
+              'Indexing into a fresh index should be paired with an indices.create step — agents that skip this report success while the data goes nowhere.',
+            examples: [
+              {
+                input: {
+                  instruction:
+                    'Create a "Weather Logger" workflow that runs every 30 minutes, fetches the current temperature from https://api.example.com/weather, stores the result in the weather-readings index, and creates that index with a numeric `temperature` mapping on first run if it does not exist.',
+                },
+                output: {
+                  criteria: [
+                    'A new workflow named "Weather Logger" was created with a scheduled trigger every 30 minutes.',
+                    'There is an HTTP step that fetches from https://api.example.com/weather.',
+                    'There is an elasticsearch.indices.create step targeting the weather-readings index.',
+                    'The create-index step declares a mapping for the temperature field (number / float / double / long type).',
+                    'The create-index step is guarded so it only runs when the index is missing (either via on-failure: continue, an if: condition that checks index existence, or by tolerating the resource_already_exists_exception).',
+                    'There is an elasticsearch.index (or elasticsearch.bulk) step that writes the fetched temperature into the weather-readings index AFTER the create-index step in workflow order.',
+                  ],
+                  expectedStepTypes: [
+                    'http',
+                    'elasticsearch.indices.create',
+                    'elasticsearch.index',
+                  ],
+                  expectedStepCount: { min: 3, max: 5 },
+                  expectedMaxToolCalls: 6,
+                  expectedToolSequence: ['get_step_definitions', 'platform.core.generate_workflow'],
+                },
+                metadata: { category: 'es-ops-correctness' },
+              },
+              {
+                input: {
+                  instruction:
+                    'I want a workflow that pulls user events from https://api.example.com/events on a manual trigger and stores each event in the user-events index — create that index with proper mappings if it is not there yet.',
+                },
+                output: {
+                  criteria: [
+                    'The workflow has a manual trigger.',
+                    'There is an HTTP step that fetches from https://api.example.com/events.',
+                    'There is an elasticsearch.indices.create step targeting the user-events index, with at least one declared field mapping.',
+                    'The create step is gated so a re-run does not error on resource_already_exists_exception (uses on-failure: continue, an if-check, or an idempotent path).',
+                    'There is a step that writes the fetched events into user-events AFTER the create-index step.',
+                  ],
+                  expectedStepTypes: ['http', 'elasticsearch.indices.create'],
+                  expectedStepCount: { min: 3, max: 6 },
+                  expectedMaxToolCalls: 6,
+                  expectedToolSequence: ['get_step_definitions', 'platform.core.generate_workflow'],
                 },
                 metadata: { category: 'es-ops-correctness' },
               },

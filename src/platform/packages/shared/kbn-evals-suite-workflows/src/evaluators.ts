@@ -16,12 +16,20 @@ import type { Step, WorkflowYaml } from '@kbn/workflows';
 import type {
   WorkflowEditExample,
   WorkflowCreateExample,
+  NegativeWorkflowExample,
+  MultiTurnWorkflowEditExample,
+  SelfCorrectionExample,
   WorkflowTaskOutput,
   StructuralExpectations,
   EfficiencyExpectations,
 } from './types';
 
-type WorkflowExample = WorkflowEditExample | WorkflowCreateExample;
+type WorkflowExample =
+  | WorkflowEditExample
+  | WorkflowCreateExample
+  | NegativeWorkflowExample
+  | MultiTurnWorkflowEditExample
+  | SelfCorrectionExample;
 
 const INFRA_ERROR_NA = {
   score: null as null,
@@ -36,7 +44,7 @@ const NEGATIVE_CASE_NA = {
 };
 
 const INFRA_ERROR_PATTERN =
-  /timeout|ECONNREFUSED|503|502|500|401|ENOTFOUND|socket hang up|ERR_BAD_RESPONSE/i;
+  /timeout|ECONNREFUSED|503|502|500|401|ENOTFOUND|socket hang up|ERR_BAD_RESPONSE|fetch failed|ran out of retries|request failed/i;
 
 /**
  * Wraps an evaluator so it returns N/A when the conversation encountered an
@@ -75,6 +83,47 @@ export function skipNegativeCases<TExample extends Example>(
       const metadata = args.metadata as WorkflowExample['metadata'] | undefined;
       if (metadata?.category === 'negative') {
         return NEGATIVE_CASE_NA;
+      }
+      return evaluator.evaluate(args);
+    },
+  };
+}
+
+const COMPOSITE_MODE_NA = {
+  score: null as null,
+  label: 'N/A' as const,
+  explanation:
+    'Not applicable: trajectory-style evaluator skipped in composite authoring mode (KBN_EVAL_AUTHORING_MODE=composite)',
+};
+
+/**
+ * True when the suite is being run against the new composite `generate_workflow`
+ * agent (vs. the current root-level toolset). Read at evaluate-time so a single
+ * factory call can serve both modes across a process lifetime.
+ */
+export const isCompositeAuthoringMode = (): boolean =>
+  process.env.KBN_EVAL_AUTHORING_MODE === 'composite';
+
+/**
+ * Wraps a trajectory-style evaluator (one that measures the multi-tool path
+ * the agent took) so it returns N/A when the run targets the composite agent.
+ *
+ * The composite `generate_workflow` tool produces the workflow in a single
+ * call, so per-step trajectory / tool-budget metrics are meaningless and
+ * should not skew averages in the comparison report. Artifact-scoring
+ * evaluators (`Criteria`, `ValidationPass`, `StructuralCorrectness`,
+ * `LiquidCorrectness`, `Rejection`, `SelfCorrection`, ...) keep running.
+ *
+ * See security-team#17399 for the broader comparison + gating plan.
+ */
+export function skipCompositeMode<TExample extends Example>(
+  evaluator: Evaluator<TExample, WorkflowTaskOutput>
+): Evaluator<TExample, WorkflowTaskOutput> {
+  return {
+    ...evaluator,
+    evaluate: async (args) => {
+      if (isCompositeAuthoringMode()) {
+        return COMPOSITE_MODE_NA;
       }
       return evaluator.evaluate(args);
     },
@@ -232,14 +281,25 @@ export function createValidationPassEvaluator() {
         | { valid: boolean; errors?: string[] }
         | undefined;
 
-      if (!validation) {
-        return { score: 0, metadata: { reason: 'No validation result returned' } };
+      if (validation) {
+        return {
+          score: validation.valid ? 1 : 0,
+          metadata: { validation },
+        };
       }
 
-      return {
-        score: validation.valid ? 1 : 0,
-        metadata: { validation },
-      };
+      // Newer tool shape (platform.core.generate_workflow) doesn't return a
+      // `validation` field — it returns `success: true` only when the produced
+      // YAML parses & validates server-side. Treat that as the pass signal.
+      const success = (lastEditResult as { success?: boolean }).success;
+      if (typeof success === 'boolean') {
+        return {
+          score: success ? 1 : 0,
+          metadata: { reason: 'derived from tool success flag', success },
+        };
+      }
+
+      return { score: 0, metadata: { reason: 'No validation result returned' } };
     },
   };
 }
@@ -267,22 +327,43 @@ export function createRejectionEvaluator() {
     name: 'Rejection',
     kind: 'CODE' as const,
     evaluate: async ({
+      input,
       output,
+      expected,
       metadata,
     }: {
+      input: WorkflowExample['input'];
       output: WorkflowTaskOutput;
+      expected: WorkflowExample['output'];
       metadata: WorkflowExample['metadata'];
     }) => {
       if (metadata?.category !== 'negative') {
         return { score: null, label: 'N/A' as const, explanation: 'Not a negative case' };
       }
-      const refused = !output.resultYaml;
+      const expectedRefusalReason =
+        (expected as NegativeWorkflowExample['output']).expectedRefusalReason ?? null;
+
+      // For edit-context negatives the seeded `initialYaml` echoes back through
+      // the conversation attachment store unchanged when the agent refuses, so
+      // `output.resultYaml` would otherwise look like the agent produced a
+      // workflow. Treat a byte-identical (up to surrounding whitespace) echo as
+      // "no new content".
+      const initialYaml = (input as NegativeWorkflowExample['input']).initialYaml;
+      const echoedSeed =
+        !!initialYaml && !!output.resultYaml && output.resultYaml.trim() === initialYaml.trim();
+      const refused = !output.resultYaml || echoedSeed;
+
+      const reasonSuffix = expectedRefusalReason
+        ? ` (expected reason: ${expectedRefusalReason})`
+        : '';
+      const echoSuffix = echoedSeed ? ' — agent returned the seeded YAML unchanged' : '';
       return {
         score: refused ? 1 : 0,
         label: refused ? ('PASS' as const) : ('FAIL' as const),
         explanation: refused
-          ? 'Model correctly refused to generate a workflow'
-          : 'Model incorrectly generated a workflow for a request it should have rejected',
+          ? `Model correctly refused to generate a workflow${reasonSuffix}${echoSuffix}`
+          : `Model incorrectly generated a workflow for a request it should have rejected${reasonSuffix}`,
+        metadata: { expectedRefusalReason, echoedSeed },
       };
     },
   };
@@ -370,10 +451,15 @@ export function createStructuralCorrectnessEvaluator() {
       if (expectedStepTypes && expectedStepTypes.length > 0) {
         const actualTypes = new Set(workflow.steps.map((s) => s.type).filter(Boolean));
         for (const requiredType of expectedStepTypes) {
-          const alternatives = requiredType.split('|');
-          const pass = alternatives.some((alt) => actualTypes.has(alt));
+          // Strict equality — `|`-alternatives are deprecated. Pinning one
+          // exact step type per assertion forces case authors to commit to
+          // the correct connector / step shape, otherwise the suite can
+          // hide ambiguity behind a forgiving regex-of-alternatives.
+          // Lingering "a|b" strings still resolve as one literal type — they
+          // will fail-loud and need to be split into one assertion per case.
+          const pass = actualTypes.has(requiredType);
           checks.push({
-            name: `stepType:${alternatives[0]}`,
+            name: `stepType:${requiredType}`,
             pass,
             detail: pass ? 'present' : `missing (found: ${[...actualTypes].join(', ')})`,
           });
@@ -401,6 +487,148 @@ export function createStructuralCorrectnessEvaluator() {
   };
 }
 
+/**
+ * Asserts the produced YAML's bulk-indexing step has a valid `operations` shape.
+ *
+ * Real-world failure mode this catches: agents producing
+ * `elasticsearch.bulk` with `operations:` set to a flat array of documents
+ * (causing `operations.every is not a function` at runtime) or
+ * `elasticsearch.request` to `_bulk` with a stringified JSON body instead of
+ * the NDJSON action+document pair format the API actually requires.
+ *
+ * Opt-in per case via `expectsBulkOperationShape: true`.
+ */
+export function createBulkOperationsShapeEvaluator() {
+  return {
+    name: 'BulkOperationsShape',
+    kind: 'CODE' as const,
+    evaluate: async ({
+      output,
+      expected,
+    }: {
+      output: WorkflowTaskOutput;
+      expected: StructuralExpectations;
+    }) => {
+      if (!expected.expectsBulkOperationShape) {
+        return {
+          score: null,
+          label: 'N/A' as const,
+          explanation: 'Case did not opt in to BulkOperationsShape',
+        };
+      }
+      if (!output.resultYaml) {
+        return { score: 0, metadata: { reason: 'No result YAML to check bulk shape on' } };
+      }
+      const workflow = parseWorkflowYaml(output.resultYaml);
+      if (!workflow) {
+        return { score: 0, metadata: { reason: 'Failed to parse result YAML' } };
+      }
+
+      const bulkSteps = workflow.steps.filter((s) => s.type === 'elasticsearch.bulk');
+      const bulkRequestSteps = workflow.steps.filter((s) => {
+        if (s.type !== 'elasticsearch.request') return false;
+        const params =
+          (s as { with?: Record<string, unknown>; params?: Record<string, unknown> }).with ??
+          (s as { params?: Record<string, unknown> }).params;
+        const path = params?.path;
+        return typeof path === 'string' && /\/_bulk\b/.test(path);
+      });
+
+      if (bulkSteps.length === 0 && bulkRequestSteps.length === 0) {
+        return {
+          score: 0,
+          label: 'FAIL' as const,
+          explanation:
+            'Case expected a bulk-indexing step (elasticsearch.bulk or elasticsearch.request → _bulk) but none was found.',
+          metadata: { foundBulk: 0 },
+        };
+      }
+
+      const issues: string[] = [];
+
+      for (const step of bulkSteps) {
+        const params =
+          (step as { with?: Record<string, unknown>; params?: Record<string, unknown> }).with ??
+          (step as { params?: Record<string, unknown> }).params;
+        const ops = params?.operations;
+        if (ops === undefined) {
+          issues.push(`elasticsearch.bulk step "${step.name ?? '?'}" missing operations field`);
+          continue;
+        }
+        // Liquid reference resolving at runtime is fine — `{{ steps.x.output.y }}`
+        if (typeof ops === 'string') {
+          if (!/{{.+}}/.test(ops)) {
+            issues.push(
+              `elasticsearch.bulk step "${
+                step.name ?? '?'
+              }" has operations as a plain string (must be an array or Liquid reference)`
+            );
+          }
+          continue;
+        }
+        if (!Array.isArray(ops)) {
+          issues.push(
+            `elasticsearch.bulk step "${
+              step.name ?? '?'
+            }" has operations of type ${typeof ops} (expected array)`
+          );
+        }
+        // Array is acceptable — the step handles NDJSON serialization. We do NOT
+        // require the agent to manually interleave action+doc pairs here.
+      }
+
+      for (const step of bulkRequestSteps) {
+        const params =
+          (step as { with?: Record<string, unknown>; params?: Record<string, unknown> }).with ??
+          (step as { params?: Record<string, unknown> }).params;
+        const body = params?.body;
+        if (body === undefined) {
+          issues.push(`elasticsearch.request → _bulk step "${step.name ?? '?'}" missing body`);
+          continue;
+        }
+        // Either NDJSON string with action+doc lines, or Liquid template that resolves to one.
+        if (typeof body === 'string') {
+          const lines = body.split('\n').filter((l) => l.trim().length > 0);
+          if (lines.length < 2 && !/{{.+}}/.test(body)) {
+            issues.push(
+              `elasticsearch.request → _bulk step "${
+                step.name ?? '?'
+              }" body is not NDJSON-shaped (need ≥2 lines of action+document pairs)`
+            );
+          }
+        } else if (Array.isArray(body)) {
+          issues.push(
+            `elasticsearch.request → _bulk step "${
+              step.name ?? '?'
+            }" body is an array — must be an NDJSON string`
+          );
+        } else {
+          issues.push(
+            `elasticsearch.request → _bulk step "${
+              step.name ?? '?'
+            }" body is of type ${typeof body} (expected NDJSON string or Liquid reference)`
+          );
+        }
+      }
+
+      const totalSteps = bulkSteps.length + bulkRequestSteps.length;
+      const failingSteps = issues.length;
+      const passingSteps = totalSteps - failingSteps;
+      const score = totalSteps === 0 ? 0 : passingSteps / totalSteps;
+
+      return {
+        score,
+        label: score === 1 ? ('PASS' as const) : ('FAIL' as const),
+        explanation:
+          issues.length === 0
+            ? `All ${totalSteps} bulk step(s) have a valid operations/body shape.`
+            : issues.join(' | '),
+        metadata: { totalBulkSteps: totalSteps, issues },
+      };
+    },
+  };
+}
+
 export function createEditPreservationEvaluator() {
   return {
     name: 'EditPreservation',
@@ -410,9 +638,9 @@ export function createEditPreservationEvaluator() {
       output,
       expected,
     }: {
-      input: WorkflowEditExample['input'];
+      input: WorkflowEditExample['input'] | MultiTurnWorkflowEditExample['input'];
       output: WorkflowTaskOutput;
-      expected: WorkflowEditExample['output'];
+      expected: WorkflowEditExample['output'] | MultiTurnWorkflowEditExample['output'];
     }) => {
       const preservedStepNames = expected.preservedStepNames;
       if (!preservedStepNames || preservedStepNames.length === 0) {
@@ -469,6 +697,304 @@ export function createEditPreservationEvaluator() {
   };
 }
 
+// ---------------------------------------------------------------------------
+// Liquid templating correctness
+// ---------------------------------------------------------------------------
+
+/**
+ * Matches both standard Liquid `{{ ... }}` and the workflow-specific control-flow
+ * `${{ ... }}` form. The inner capture is the raw expression body.
+ */
+const LIQUID_EXPRESSION_RE = /\$?\{\{\s*([\s\S]+?)\s*\}\}/g;
+
+/** Drops Liquid filters (` | json`, ` | date: "..."`) and operator tails. */
+const extractReferenceHead = (rawExpr: string): string | undefined => {
+  const beforeFilter = rawExpr.split('|')[0].trim();
+  // Take the first whitespace- or operator-delimited token: `steps.x.output != empty` → `steps.x.output`.
+  const head = beforeFilter.split(/[\s=!<>+]/)[0];
+  if (!head) return undefined;
+  // Skip pure literals (strings / numbers) — they are not references to validate.
+  if (/^["'`]/.test(head) || /^\d/.test(head)) return undefined;
+  return head;
+};
+
+interface LiquidValidationContext {
+  stepNames: Set<string>;
+  triggerTypes: Set<string>;
+  consts: Set<string>;
+  /** Stack of enclosing foreach step names. Non-empty ⇒ `foreach.*` references are legal. */
+  foreachStack: string[];
+}
+
+interface LiquidValidationFailure {
+  ref: string;
+  reason: string;
+  /** Step name where the bad reference appears, if known. */
+  inStep?: string;
+}
+
+const TRIGGER_EVENT_TYPES = new Set(['alert', 'detection-rule', 'webhook']);
+
+const validateLiquidReference = (
+  ref: string,
+  ctx: LiquidValidationContext
+): { valid: true } | { valid: false; reason: string } => {
+  const [root, second] = ref.split('.');
+  switch (root) {
+    case 'steps': {
+      if (!second) return { valid: false, reason: 'steps reference missing step name' };
+      // Step name may be followed by `[0]` etc — strip subscript before matching.
+      const stepName = second.replace(/\[.*$/, '');
+      if (!ctx.stepNames.has(stepName)) {
+        return { valid: false, reason: `references unknown step "${stepName}"` };
+      }
+      return { valid: true };
+    }
+    case 'foreach': {
+      if (ctx.foreachStack.length === 0) {
+        return { valid: false, reason: 'foreach.* used outside any foreach' };
+      }
+      return { valid: true };
+    }
+    case 'event': {
+      const hasEventTrigger = [...ctx.triggerTypes].some((t) => TRIGGER_EVENT_TYPES.has(t));
+      if (!hasEventTrigger) {
+        return {
+          valid: false,
+          reason: `event.* requires alert / detection-rule / webhook trigger; declared triggers: ${
+            [...ctx.triggerTypes].join(', ') || '(none)'
+          }`,
+        };
+      }
+      return { valid: true };
+    }
+    case 'consts': {
+      if (!second) return { valid: false, reason: 'consts reference missing key' };
+      if (!ctx.consts.has(second)) {
+        return { valid: false, reason: `references undeclared consts key "${second}"` };
+      }
+      return { valid: true };
+    }
+    default:
+      // Anything else (helpers, literals, filter-only forms like `"now" | date`) is not validated here.
+      return { valid: true };
+  }
+};
+
+const collectStringsFromValue = (value: unknown, acc: string[]): void => {
+  if (typeof value === 'string') {
+    acc.push(value);
+  } else if (Array.isArray(value)) {
+    for (const item of value) collectStringsFromValue(item, acc);
+  } else if (value && typeof value === 'object') {
+    for (const v of Object.values(value as Record<string, unknown>)) {
+      collectStringsFromValue(v, acc);
+    }
+  }
+};
+
+interface RawStep {
+  name?: string;
+  type?: string;
+  foreach?: unknown;
+  condition?: unknown;
+  steps?: RawStep[];
+  with?: unknown;
+  [key: string]: unknown;
+}
+
+const walkStepsForLiquid = (
+  steps: RawStep[],
+  ctx: LiquidValidationContext,
+  visit: (refs: Array<{ ref: string; inStep?: string }>, ctx: LiquidValidationContext) => void
+): void => {
+  for (const step of steps) {
+    const strings: string[] = [];
+    // Pull strings from everything except the nested `steps` array.
+    for (const [key, value] of Object.entries(step)) {
+      if (key === 'steps') continue;
+      collectStringsFromValue(value, strings);
+    }
+
+    const refs: Array<{ ref: string; inStep?: string }> = [];
+    for (const str of strings) {
+      LIQUID_EXPRESSION_RE.lastIndex = 0;
+      let match: RegExpExecArray | null;
+
+      while ((match = LIQUID_EXPRESSION_RE.exec(str)) !== null) {
+        const head = extractReferenceHead(match[1]);
+        if (head) refs.push({ ref: head, inStep: step.name });
+      }
+    }
+    if (refs.length > 0) visit(refs, ctx);
+
+    if (Array.isArray(step.steps) && step.steps.length > 0) {
+      const isForeach = step.type === 'foreach';
+      const nextCtx: LiquidValidationContext = isForeach
+        ? { ...ctx, foreachStack: [...ctx.foreachStack, step.name ?? 'foreach'] }
+        : ctx;
+      walkStepsForLiquid(step.steps, nextCtx, visit);
+    }
+  }
+};
+
+interface LiquidCorrectnessResult {
+  score: number | null;
+  label?: 'PASS' | 'FAIL' | 'N/A';
+  explanation?: string;
+  metadata?: {
+    total: number;
+    correct: number;
+    failures: LiquidValidationFailure[];
+  };
+}
+
+/**
+ * Score Liquid expressions in the produced YAML for *correctness* (the reference
+ * resolves to a real step / foreach context / trigger field / consts key), not
+ * merely *presence*.
+ *
+ * Returns score = correct / total. Returns N/A when no expressions are found
+ * (skip — nothing to evaluate) or when the YAML fails to parse.
+ */
+export function createLiquidCorrectnessEvaluator() {
+  return {
+    name: 'LiquidCorrectness',
+    kind: 'CODE' as const,
+    evaluate: async ({
+      output,
+    }: {
+      output: WorkflowTaskOutput;
+    }): Promise<LiquidCorrectnessResult> => {
+      if (!output.resultYaml) {
+        return {
+          score: null,
+          label: 'N/A',
+          explanation: 'No result YAML to evaluate Liquid expressions on',
+        };
+      }
+
+      let parsed: unknown;
+      try {
+        parsed = parseYaml(output.resultYaml);
+      } catch {
+        return { score: null, label: 'N/A', explanation: 'YAML parse failed' };
+      }
+      if (!parsed || typeof parsed !== 'object') {
+        return { score: null, label: 'N/A', explanation: 'YAML root is not an object' };
+      }
+
+      const workflow = parsed as {
+        steps?: RawStep[];
+        triggers?: Array<{ type?: string }>;
+        consts?: Record<string, unknown>;
+      };
+      const rawSteps = Array.isArray(workflow.steps) ? workflow.steps : [];
+      const flatSteps = collectAllSteps(rawSteps as unknown as WorkflowYaml['steps']);
+
+      const ctx: LiquidValidationContext = {
+        stepNames: new Set(flatSteps.map((s) => s.name).filter((n): n is string => !!n)),
+        triggerTypes: new Set(
+          (workflow.triggers ?? []).map((t) => t?.type).filter((t): t is string => !!t)
+        ),
+        consts: new Set(workflow.consts ? Object.keys(workflow.consts) : []),
+        foreachStack: [],
+      };
+
+      const failures: LiquidValidationFailure[] = [];
+      let total = 0;
+      let correct = 0;
+
+      walkStepsForLiquid(rawSteps, ctx, (refs, currentCtx) => {
+        for (const { ref, inStep } of refs) {
+          total += 1;
+          const result = validateLiquidReference(ref, currentCtx);
+          if (result.valid) {
+            correct += 1;
+          } else {
+            failures.push({ ref, reason: result.reason, inStep });
+          }
+        }
+      });
+
+      if (total === 0) {
+        return {
+          score: null,
+          label: 'N/A',
+          explanation: 'No Liquid expressions found in the workflow',
+        };
+      }
+
+      const score = correct / total;
+      return {
+        score,
+        label: score === 1 ? 'PASS' : 'FAIL',
+        explanation:
+          failures.length === 0
+            ? `All ${total} Liquid references resolved correctly.`
+            : `${correct}/${total} references valid. First failure: ${failures[0].ref} — ${failures[0].reason}`,
+        metadata: { total, correct, failures },
+      };
+    },
+  };
+}
+
+/**
+ * Asserts that each `expectedLiquidChains[].ref` declared in the example
+ * appears verbatim somewhere in the produced YAML. Complements
+ * {@link createLiquidCorrectnessEvaluator} (which scores whatever refs the
+ * agent did produce) by catching the failure mode where the agent skips a
+ * required reference entirely.
+ *
+ * Returns N/A when the example does not declare expected chains or when no
+ * YAML was produced.
+ */
+export function createLiquidPresenceEvaluator() {
+  return {
+    name: 'LiquidPresence',
+    kind: 'CODE' as const,
+    evaluate: async ({
+      output,
+      expected,
+    }: {
+      output: WorkflowTaskOutput;
+      expected: WorkflowExample['output'];
+    }) => {
+      const expectedChains = (expected as Partial<StructuralExpectations>).expectedLiquidChains;
+      if (!expectedChains || expectedChains.length === 0) {
+        return {
+          score: null,
+          label: 'N/A' as const,
+          explanation: 'No expected Liquid chains declared',
+        };
+      }
+      if (!output.resultYaml) {
+        return {
+          score: null,
+          label: 'N/A' as const,
+          explanation: 'No result YAML to check Liquid presence on',
+        };
+      }
+      const missing: string[] = [];
+      for (const chain of expectedChains) {
+        if (!output.resultYaml.includes(chain.ref)) missing.push(chain.ref);
+      }
+      const total = expectedChains.length;
+      const present = total - missing.length;
+      const score = present / total;
+      return {
+        score,
+        label: score === 1 ? ('PASS' as const) : ('FAIL' as const),
+        explanation:
+          missing.length === 0
+            ? `All ${total} expected Liquid references appear in the produced YAML.`
+            : `${present}/${total} expected references present. Missing: ${missing.join(', ')}`,
+        metadata: { total, present, missing },
+      };
+    },
+  };
+}
+
 const LOOKUP_TOOL_PATTERNS = [
   'get_step_definitions',
   'get_connectors',
@@ -480,21 +1006,17 @@ const isLookupCall = (toolId: string | undefined): boolean =>
   LOOKUP_TOOL_PATTERNS.some((p) => toolId?.includes(p));
 
 /**
- * Budget-based efficiency: tiered penalty when total tool calls exceed the budget.
- * Mirrors the approach used by kbn-evals-suite-streams's stepEfficiency.
+ * Linear budget penalty: full marks at or under budget, then decays as
+ * `budget / actualCalls` so a 2× overshoot already drops to 0.5 and a 5×
+ * overshoot to 0.2. No plateau — earlier tier-based scoring let chatty
+ * agents (e.g. the 47-call indexing-loop seen in real conversations) stay
+ * around 0.7 instead of clearly tanking.
  */
 const calculateBudgetScore = (totalCalls: number, budget: number): number => {
   if (totalCalls <= budget) {
     return 1.0;
   }
-  const overshoot = totalCalls / budget;
-  if (overshoot <= 1.5) {
-    return 0.7;
-  }
-  if (overshoot <= 2.0) {
-    return 0.4;
-  }
-  return 0.1;
+  return Math.max(0, budget / totalCalls);
 };
 
 /**
@@ -523,11 +1045,14 @@ const calculateRedundantLookupScore = (
   return { score, redundantCount, uniqueLookups };
 };
 
-const FAILED_CALL_WEIGHT = 0.4;
-const BUDGET_WEIGHT = 0.35;
-const REDUNDANT_LOOKUP_WEIGHT = 0.25;
+const FAILED_CALL_WEIGHT = 0.3;
+const BUDGET_WEIGHT = 0.5;
+const REDUNDANT_LOOKUP_WEIGHT = 0.2;
 
-const DEFAULT_TOOL_CALL_BUDGET = 6;
+// Tightened from 6 → 4. A well-trajectoried single-workflow generation needs
+// at most: get_step_definitions → get_connectors → generate_workflow → (optional
+// re-attempt). Cases that legitimately need more must declare expectedMaxToolCalls.
+const DEFAULT_TOOL_CALL_BUDGET = 4;
 
 export function createEfficiencyEvaluator() {
   return {
@@ -588,11 +1113,18 @@ export function createEfficiencyEvaluator() {
   };
 }
 
+// Infrastructural tool calls the agent makes regardless of task — filter so
+// trajectory scoring reflects task-relevant tool selection, not boilerplate.
+const INFRASTRUCTURAL_TOOLS = new Set(['load_skill']);
+
 export function createToolTrajectoryEvaluator() {
   const inner = createTrajectoryEvaluator({
     extractToolCalls: (output) => {
       const steps = (output as WorkflowTaskOutput).steps ?? [];
-      return steps.filter((s) => s.type === 'tool_call' && s.tool_id).map((s) => s.tool_id!);
+      return steps
+        .filter((s) => s.type === 'tool_call' && s.tool_id)
+        .map((s) => s.tool_id!)
+        .filter((id) => !INFRASTRUCTURAL_TOOLS.has(id));
     },
     goldenPathExtractor: (expected) => {
       const exp = expected as EfficiencyExpectations;
@@ -657,10 +1189,10 @@ export function createCriteriaEvaluator({ evaluators }: { evaluators: DefaultEva
       expected,
       metadata,
     }: {
-      input: WorkflowEditExample['input'] | WorkflowCreateExample['input'];
+      input: WorkflowExample['input'];
       output: WorkflowTaskOutput;
-      expected: WorkflowEditExample['output'] | WorkflowCreateExample['output'];
-      metadata: WorkflowEditExample['metadata'] | WorkflowCreateExample['metadata'];
+      expected: WorkflowExample['output'];
+      metadata: WorkflowExample['metadata'];
     }) => {
       const { criteria } = expected;
       if (!criteria || criteria.length === 0) {
@@ -668,17 +1200,47 @@ export function createCriteriaEvaluator({ evaluators }: { evaluators: DefaultEva
       }
 
       const cleanInput: Record<string, string> = {
-        instruction: input.instruction,
+        instruction:
+          'instruction' in input
+            ? input.instruction
+            : input.turns.map((t, i) => `Turn ${i + 1}: ${t.instruction}`).join('\n'),
       };
-      if ('initialYaml' in input) {
+      if ('initialYaml' in input && input.initialYaml != null) {
         cleanInput.initialYaml = input.initialYaml;
       }
 
       const isNegativeCase = metadata?.category === 'negative';
+      const responseText = output.messages?.map((m) => m.message).join('\n') ?? '';
+
+      // Normalize WeightedCriterion entries into the shared evaluator's
+      // EvaluationCriterion shape. Strings are weight-1; structured entries
+      // get an auto id (the shared evaluator requires `id` on structured
+      // criteria but case authors shouldn't have to invent one).
+      const normalizedCriteria = criteria.map((c, i) =>
+        typeof c === 'string' ? c : { id: `c${i}`, text: c.text, score: c.score }
+      );
+
+      // Judge LLM calls can fail with transient infra errors (malformed
+      // streaming chunks, fetch failed, 5xx). Convert those to N/A so a
+      // single judge blip doesn't fail the whole Playwright shard.
+      const judge = evaluators.criteria(normalizedCriteria);
+      const evaluateWithCriteria = async (judgeInput: Parameters<typeof judge.evaluate>[0]) => {
+        try {
+          return await judge.evaluate(judgeInput);
+        } catch (error) {
+          const message = error instanceof Error ? error.message : String(error);
+          if (INFRA_ERROR_PATTERN.test(message)) {
+            return {
+              ...INFRA_ERROR_NA,
+              explanation: `${INFRA_ERROR_NA.explanation} (judge call: ${message.slice(0, 200)})`,
+            };
+          }
+          throw error;
+        }
+      };
 
       if (isNegativeCase) {
-        const responseText = output.messages?.map((m) => m.message).join('\n') ?? '';
-        return evaluators.criteria(criteria).evaluate({
+        return evaluateWithCriteria({
           input: cleanInput,
           expected,
           output: { response: responseText },
@@ -694,12 +1256,84 @@ export function createCriteriaEvaluator({ evaluators }: { evaluators: DefaultEva
         };
       }
 
-      return evaluators.criteria(criteria).evaluate({
+      // Forward both the final YAML and the assistant transcript so chat-dependent
+      // criteria (e.g. "the agent diagnosed the indent issue before fixing it",
+      // "acknowledged the conflict between turn 2 and turn 3") can actually be
+      // scored — without this, the judge sees only the YAML and has to guess.
+      const judgeResult = await evaluateWithCriteria({
         input: cleanInput,
         expected,
-        output: { resultYaml: output.resultYaml },
+        output: { resultYaml: output.resultYaml, response: responseText },
         metadata: undefined,
       });
+      return applyNearPerfectPenalty(judgeResult);
+    },
+  };
+}
+
+/**
+ * Discourage "almost-right" outputs from coasting at 0.85–0.95 by clipping any
+ * non-perfect Criteria score by a flat 0.15. Tracks the observation that
+ * top-tier models cluster at 0.90 on the current rubric: most of those 0.90s
+ * are a single failing criterion out of many, which is still a real defect on
+ * a workflow that has to run for real.
+ *
+ * Net effect on the matrix (Sonnet/Opus/Gemini Pro currently ~0.90) lands them
+ * around 0.75 — the band requested for the GA hardening pass. Perfect runs
+ * (`score === 1`) stay at 1.0; infra-error N/A pass-through stays untouched.
+ */
+function applyNearPerfectPenalty<R extends { score?: number | null }>(result: R): R {
+  if (result.score == null) return result;
+  if (result.score >= 1) return result;
+  return { ...result, score: Math.max(0, result.score - 0.15) };
+}
+
+/**
+ * Scores the agent's ability to recover from broken-input YAML across multiple
+ * conversational turns. The spec's task loop sets `output.turnsToRecovery` to
+ * the 1-based turn index at which valid YAML was produced, or `null` if the
+ * loop exhausted maxTurns without recovery.
+ *
+ * Score: 1.0 if recovered on turn 1, linearly decaying to 0.5 if recovered on
+ * the last allowed turn, 0.0 if never recovered.
+ */
+export function createSelfCorrectionEvaluator() {
+  return {
+    name: 'SelfCorrection',
+    kind: 'CODE' as const,
+    evaluate: async ({
+      input,
+      output,
+      expected,
+    }: {
+      input?: SelfCorrectionExample['input'];
+      output: WorkflowTaskOutput;
+      expected: SelfCorrectionExample['output'];
+    }) => {
+      const { turnsToRecovery } = output;
+      const maxTurns = Math.max(1, expected.maxTurns);
+      const brokenKind = input?.brokenKind ?? null;
+
+      if (turnsToRecovery == null) {
+        return {
+          score: 0,
+          label: 'FAIL' as const,
+          explanation: `Agent did not produce valid YAML within ${maxTurns} turns`,
+          metadata: { turnsToRecovery: null, maxTurns, brokenKind },
+        };
+      }
+
+      const clamped = Math.min(turnsToRecovery, maxTurns);
+      // Linearly decay from 1.0 (turn 1) to 0.5 (turn maxTurns).
+      const score = maxTurns === 1 ? 1 : 1 - 0.5 * ((clamped - 1) / (maxTurns - 1));
+      const rounded = Math.round(score * 1000) / 1000;
+
+      return {
+        score: rounded,
+        label: rounded >= 0.75 ? ('PASS' as const) : ('FAIL' as const),
+        explanation: `Recovered on turn ${clamped} of ${maxTurns}`,
+        metadata: { turnsToRecovery: clamped, maxTurns, brokenKind },
+      };
     },
   };
 }
