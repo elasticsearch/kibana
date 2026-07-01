@@ -28,13 +28,13 @@ describe('resolveEarsUrl', () => {
 
   it('throws when earsBaseUrl is undefined', () => {
     expect(() => resolveEarsUrl('/github/oauth/token', undefined)).toThrow(
-      'EARS base URL is not configured'
+      'EARS base URL not configured. Please set xpack.actions.auth.ears.url in kibana.yml'
     );
   });
 
   it('throws when earsBaseUrl is an empty string', () => {
     expect(() => resolveEarsUrl('/github/oauth/token', '')).toThrow(
-      'EARS base URL is not configured'
+      'EARS base URL not configured. Please set xpack.actions.auth.ears.url in kibana.yml'
     );
   });
 });

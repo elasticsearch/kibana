@@ -11,7 +11,9 @@ const EARS_API_VERSION = 'v1';
 
 export function resolveEarsUrl(urlPath: string, earsBaseUrl: string | undefined): string {
   if (!earsBaseUrl) {
-    throw new Error('EARS base URL is not configured');
+    throw new Error(
+      'EARS base URL not configured. Please set xpack.actions.auth.ears.url in kibana.yml'
+    );
   }
 
   const base = earsBaseUrl.replace(/\/$/, ''); // strip trailing slash if any present
