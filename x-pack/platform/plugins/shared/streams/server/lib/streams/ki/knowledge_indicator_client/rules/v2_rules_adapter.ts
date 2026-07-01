@@ -5,12 +5,13 @@
  * 2.0.
  */
 
-/* eslint-disable max-classes-per-file -- V2RulesNotInstalledAdapter is the no-plugin stub paired with V2RulesAdapter */
+/* eslint-disable max-classes-per-file -- RulesNotInstalledAdapterV2 is the no-plugin stub paired with RulesAdapterV2 */
 
 import { isBoom } from '@hapi/boom';
 import type { Logger } from '@kbn/core/server';
 import type { RulesClientApi } from '@kbn/alerting-v2-plugin/server';
-import { stripMetadata } from '@kbn/streams-schema';
+import { stripMetadata, deriveQueryType } from '@kbn/streams-schema';
+import { QUERY_TYPE_STATS } from '@kbn/significant-events-schema';
 import { MATCH_LOOKBACK_MINUTES } from '../../../../significant_events/rules/esql/common';
 import {
   STREAMS_RULE_CONSUMER,
@@ -31,7 +32,7 @@ const V2_MATCH_LOOKBACK = `${MATCH_LOOKBACK_MINUTES}m` as const;
  * Space context: the caller must obtain the client with the intended space
  * (SigEvents uses default space), matching the former HTTP client behavior.
  */
-export class V2RulesAdapter implements IRulesManagementClient {
+export class RulesAdapterV2 implements IRulesManagementClient {
   constructor(private readonly rulesClient: RulesClientApi) {}
 
   async createRule(id: string, body: CreateRuleBody): Promise<void> {
@@ -86,7 +87,7 @@ export class V2RulesAdapter implements IRulesManagementClient {
  * Used when the alerting v2 plugin is not installed: `DualCleanupRulesAdapter` still needs
  * a secondary client reference shape; v2 cleanup becomes a no-op.
  */
-export class V2RulesNotInstalledAdapter implements IRulesManagementClient {
+export class RulesNotInstalledAdapterV2 implements IRulesManagementClient {
   constructor(private readonly logger: Logger) {}
 
   async createRule(): Promise<void> {
@@ -133,12 +134,26 @@ const V2_MATCH_GROUPING_FIELDS = ['_id'] as const;
 
 const V2_QUERY_METADATA_TO_STRIP = ['_source'];
 
+function assertMatchQuery(esqlQuery: string): void {
+  if (deriveQueryType(esqlQuery) === QUERY_TYPE_STATS) {
+    throw new Error(
+      'STATS queries cannot be installed as v2 signal rules until rule-on-rule provisioning (#265778).'
+    );
+  }
+}
+
+function toV2BreachQuery(esqlQuery: string): string {
+  assertMatchQuery(esqlQuery);
+  return stripMetadata(esqlQuery, V2_QUERY_METADATA_TO_STRIP);
+}
+
 /**
  * `body.enabled` is intentionally not forwarded: the v2 create schema doesn't accept it
  * and `RulesClient.createRule` hardcodes `enabled: true` server-side. Callers that want a
  * disabled rule must call `disableRule` after creation.
  */
 function toV2CreateBody(body: CreateRuleBody) {
+  const esqlQuery = body.params.query;
   return {
     kind: 'signal' as const,
     metadata: {
@@ -150,12 +165,13 @@ function toV2CreateBody(body: CreateRuleBody) {
     grouping: { fields: [...V2_MATCH_GROUPING_FIELDS] },
     query: {
       format: 'standalone' as const,
-      breach: { query: stripMetadata(body.params.query, V2_QUERY_METADATA_TO_STRIP) },
+      breach: { query: toV2BreachQuery(esqlQuery) },
     },
   };
 }
 
 function toV2UpdateBody(body: UpdateRuleBody) {
+  const esqlQuery = body.params.query;
   return {
     metadata: {
       name: body.name,
@@ -166,7 +182,7 @@ function toV2UpdateBody(body: UpdateRuleBody) {
     grouping: { fields: [...V2_MATCH_GROUPING_FIELDS] },
     query: {
       format: 'standalone' as const,
-      breach: { query: stripMetadata(body.params.query, V2_QUERY_METADATA_TO_STRIP) },
+      breach: { query: toV2BreachQuery(esqlQuery) },
     },
   };
 }

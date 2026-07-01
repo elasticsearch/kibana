@@ -8,7 +8,7 @@
 import Boom from '@hapi/boom';
 import { loggerMock } from '@kbn/logging-mocks';
 import type { RulesClientApi } from '@kbn/alerting-v2-plugin/server';
-import { V2RulesAdapter, V2RulesNotInstalledAdapter } from './v2_rules_adapter';
+import { RulesAdapterV2, RulesNotInstalledAdapterV2 } from './v2_rules_adapter';
 import type { CreateRuleBody, UpdateRuleBody } from './rules_management_client';
 import { STREAMS_RULE_CONSUMER, STREAMS_ESQL_RULE_TYPE_ID } from './rules_management_client';
 
@@ -21,7 +21,7 @@ function makeRulesClientMock() {
 }
 
 function makeAdapter(mock: ReturnType<typeof makeRulesClientMock>) {
-  return new V2RulesAdapter(mock as unknown as RulesClientApi);
+  return new RulesAdapterV2(mock as unknown as RulesClientApi);
 }
 
 function lastCreateCall(mock: ReturnType<typeof makeRulesClientMock>) {
@@ -59,7 +59,7 @@ const updateBody: UpdateRuleBody = {
   schedule: { interval: '1m' },
 };
 
-describe('V2RulesAdapter', () => {
+describe('RulesAdapterV2', () => {
   beforeEach(() => {
     jest.clearAllMocks();
   });
@@ -106,6 +106,22 @@ describe('V2RulesAdapter', () => {
 
       const data = lastCreateCall(mock).data as { grouping: { fields: string[] } };
       expect(data.grouping).toEqual({ fields: ['_id'] });
+    });
+
+    it('rejects STATS queries until rule-on-rule provisioning', async () => {
+      const mock = makeRulesClientMock();
+      const adapter = makeAdapter(mock);
+      const statsQuery =
+        'FROM logs-* | STATS count = COUNT(*) BY bucket = BUCKET(@timestamp, 5 minutes) | WHERE count > 0';
+
+      await expect(
+        adapter.createRule('rule-stats', {
+          ...createBody,
+          params: { ...createBody.params, query: statsQuery },
+        })
+      ).rejects.toThrow('STATS queries cannot be installed as v2 signal rules');
+
+      expect(mock.createRule).not.toHaveBeenCalled();
     });
 
     it('maps updateRule body to v2 partial shape (no kind)', async () => {
@@ -334,9 +350,9 @@ describe('V2RulesAdapter', () => {
   });
 });
 
-describe('V2RulesNotInstalledAdapter', () => {
+describe('RulesNotInstalledAdapterV2', () => {
   it('bulkDeleteRules is a no-op', async () => {
-    const adapter = new V2RulesNotInstalledAdapter(loggerMock.create());
+    const adapter = new RulesNotInstalledAdapterV2(loggerMock.create());
     await expect(adapter.bulkDeleteRules(['a'])).resolves.toBeUndefined();
   });
 });

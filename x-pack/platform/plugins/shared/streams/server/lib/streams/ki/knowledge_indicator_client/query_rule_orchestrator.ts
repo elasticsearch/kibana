@@ -18,6 +18,7 @@ import type { KIBulkOperation } from './types';
 import type { IRulesManagementClient } from './rules/rules_management_client';
 import type { IndicatorWriter } from './indicator_writer';
 import type { IndicatorReader } from './indicator_reader';
+import { canQueryBeRuleBacked } from '../../../significant_events/alerting/significant_events_alerting_context';
 
 export class QueryRuleOrchestrator {
   constructor(
@@ -53,29 +54,35 @@ export class QueryRuleOrchestrator {
 
     for (const query of queries) {
       const current = currentByQueryId.get(query.id);
-      const isStats = deriveQueryType(query.esql.query) === QUERY_TYPE_STATS;
+      const queryType = deriveQueryType(query.esql.query);
+      const isStats = queryType === QUERY_TYPE_STATS;
       const ruleId = computeRuleId(stream, query.id, query.esql.query);
+      const ruleBacked = canQueryBeRuleBacked(queryType);
       if (!current) {
-        const ruleBacked = !isStats;
         const link: QueryLink = {
           stream_name: stream,
           rule_backed: ruleBacked,
           rule_id: ruleId,
-          query: { ...query, type: deriveQueryType(query.esql.query) },
+          query: { ...query, type: queryType },
         };
         if (ruleBacked) toCreate.push(link);
         allNext.push({ query: link.query, rule_backed: ruleBacked, rule_id: ruleId });
-      } else if (!current.rule_backed || isStats) {
-        if (current.rule_backed && isStats) {
-          demotedToStats.push(current);
-        }
+      } else if (!current.rule_backed) {
+        // Preserve intentionally unbacked queries; promotion is explicit via promoteQueries.
+        allNext.push({
+          query: { ...query, type: queryType },
+          rule_backed: false,
+          rule_id: current.rule_id,
+        });
+      } else if (isStats && !canQueryBeRuleBacked(queryType)) {
+        demotedToStats.push(current);
         allNext.push({ query, rule_backed: false, rule_id: current.rule_id });
       } else if (!hasSameEsql(current.query.esql.query, query.esql.query)) {
         const link: QueryLink = {
           stream_name: stream,
           rule_backed: true,
           rule_id: ruleId,
-          query: { ...query, type: deriveQueryType(query.esql.query) },
+          query: { ...query, type: queryType },
         };
         toCreate.push(link); // breaking change → recreate
         allNext.push({ query: link.query, rule_backed: true, rule_id: ruleId });
@@ -94,7 +101,7 @@ export class QueryRuleOrchestrator {
     );
 
     try {
-      await installQueries(this.rulesManagementClient, toCreate, toUpdate, definition);
+      await installQueries(this.rulesManagementClient, toCreate, toUpdate);
     } catch (installError) {
       this.logger.error(
         `installQueries failed during syncQueries for stream "${stream}". Compensating by uninstalling created rules.`
@@ -238,15 +245,15 @@ export class QueryRuleOrchestrator {
     const idSet = new Set(queryIds);
     const candidates = links.filter((link) => idSet.has(link.query.id) && !link.rule_backed);
 
-    const skippedStats = candidates.filter((link) => link.query.type === QUERY_TYPE_STATS);
+    const skippedStats = candidates.filter((link) => !canQueryBeRuleBacked(link.query.type));
     if (skippedStats.length > 0) {
       this.logger.info(
-        `Skipping ${skippedStats.length} STATS queries from promotion for stream "${streamName}" (not yet supported as rules).`
+        `Skipping ${skippedStats.length} STATS queries from promotion for stream "${streamName}" (STATS rule backing is not supported yet).`
       );
     }
 
     const toPromote = candidates
-      .filter((link) => link.query.type !== QUERY_TYPE_STATS)
+      .filter((link) => canQueryBeRuleBacked(link.query.type))
       .map((link) => ({
         ...link,
         rule_backed: true,
@@ -257,7 +264,7 @@ export class QueryRuleOrchestrator {
       return { promoted: 0, skipped_stats: skippedStats.length };
     }
 
-    await installQueries(this.rulesManagementClient, toPromote, [], definition);
+    await installQueries(this.rulesManagementClient, toPromote, []);
 
     try {
       await this.writer.bulk(

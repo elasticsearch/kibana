@@ -7,7 +7,7 @@
 
 import Boom from '@hapi/boom';
 import type { RulesClient } from '@kbn/alerting-plugin/server';
-import { V1RulesAdapter } from './v1_rules_adapter';
+import { RulesAdapterV1 } from './v1_rules_adapter';
 import {
   STREAMS_RULE_CONSUMER,
   STREAMS_ESQL_RULE_TYPE_ID,
@@ -44,11 +44,11 @@ const updateBody: UpdateRuleBody = {
   schedule: { interval: '1m' },
 };
 
-describe('V1RulesAdapter', () => {
+describe('RulesAdapterV1', () => {
   describe('createRule', () => {
     it('calls rulesClient.create with the correct params', async () => {
       const rc = makeRulesClient();
-      const adapter = new V1RulesAdapter(rc as unknown as RulesClient);
+      const adapter = new RulesAdapterV1(rc as unknown as RulesClient);
 
       await adapter.createRule('rule-id-1', createBody);
 
@@ -61,7 +61,7 @@ describe('V1RulesAdapter', () => {
     it('falls back to update on 409 Boom conflict', async () => {
       const rc = makeRulesClient();
       rc.create.mockRejectedValueOnce(Boom.conflict('already exists'));
-      const adapter = new V1RulesAdapter(rc as unknown as RulesClient);
+      const adapter = new RulesAdapterV1(rc as unknown as RulesClient);
 
       await adapter.createRule('rule-id-1', createBody);
 
@@ -73,7 +73,7 @@ describe('V1RulesAdapter', () => {
     it('rethrows non-409 errors', async () => {
       const rc = makeRulesClient();
       rc.create.mockRejectedValueOnce(new Error('server error'));
-      const adapter = new V1RulesAdapter(rc as unknown as RulesClient);
+      const adapter = new RulesAdapterV1(rc as unknown as RulesClient);
 
       await expect(adapter.createRule('rule-id-1', createBody)).rejects.toThrow('server error');
       expect(rc.update).not.toHaveBeenCalled();
@@ -82,7 +82,7 @@ describe('V1RulesAdapter', () => {
     it('rethrows 500 Boom errors', async () => {
       const rc = makeRulesClient();
       rc.create.mockRejectedValueOnce(Boom.internal('unexpected'));
-      const adapter = new V1RulesAdapter(rc as unknown as RulesClient);
+      const adapter = new RulesAdapterV1(rc as unknown as RulesClient);
 
       await expect(adapter.createRule('rule-id-1', createBody)).rejects.toThrow('unexpected');
       expect(rc.update).not.toHaveBeenCalled();
@@ -92,7 +92,7 @@ describe('V1RulesAdapter', () => {
   describe('updateRule', () => {
     it('calls rulesClient.update with the correct params', async () => {
       const rc = makeRulesClient();
-      const adapter = new V1RulesAdapter(rc as unknown as RulesClient);
+      const adapter = new RulesAdapterV1(rc as unknown as RulesClient);
 
       await adapter.updateRule('rule-id-2', updateBody);
 
@@ -102,7 +102,7 @@ describe('V1RulesAdapter', () => {
     it('falls back to create on 404 Boom not found', async () => {
       const rc = makeRulesClient();
       rc.update.mockRejectedValueOnce(Boom.notFound('not found'));
-      const adapter = new V1RulesAdapter(rc as unknown as RulesClient);
+      const adapter = new RulesAdapterV1(rc as unknown as RulesClient);
 
       await adapter.updateRule('rule-id-2', updateBody);
 
@@ -126,7 +126,7 @@ describe('V1RulesAdapter', () => {
     it('rethrows non-404 errors', async () => {
       const rc = makeRulesClient();
       rc.update.mockRejectedValueOnce(new Error('update exploded'));
-      const adapter = new V1RulesAdapter(rc as unknown as RulesClient);
+      const adapter = new RulesAdapterV1(rc as unknown as RulesClient);
 
       await expect(adapter.updateRule('rule-id-2', updateBody)).rejects.toThrow('update exploded');
       expect(rc.create).not.toHaveBeenCalled();
@@ -136,7 +136,7 @@ describe('V1RulesAdapter', () => {
   describe('bulkDeleteRules', () => {
     it('calls rulesClient.bulkDeleteRules with the correct params', async () => {
       const rc = makeRulesClient();
-      const adapter = new V1RulesAdapter(rc as unknown as RulesClient);
+      const adapter = new RulesAdapterV1(rc as unknown as RulesClient);
 
       await adapter.bulkDeleteRules(['id-1', 'id-2']);
 
@@ -148,7 +148,7 @@ describe('V1RulesAdapter', () => {
 
     it('is a no-op for an empty array', async () => {
       const rc = makeRulesClient();
-      const adapter = new V1RulesAdapter(rc as unknown as RulesClient);
+      const adapter = new RulesAdapterV1(rc as unknown as RulesClient);
 
       await adapter.bulkDeleteRules([]);
 
@@ -158,7 +158,7 @@ describe('V1RulesAdapter', () => {
     it('swallows 400 Boom errors', async () => {
       const rc = makeRulesClient();
       rc.bulkDeleteRules.mockRejectedValueOnce(Boom.badRequest('bad ids'));
-      const adapter = new V1RulesAdapter(rc as unknown as RulesClient);
+      const adapter = new RulesAdapterV1(rc as unknown as RulesClient);
 
       await expect(adapter.bulkDeleteRules(['id-1'])).resolves.toBeUndefined();
     });
@@ -166,7 +166,7 @@ describe('V1RulesAdapter', () => {
     it('rethrows non-400 errors', async () => {
       const rc = makeRulesClient();
       rc.bulkDeleteRules.mockRejectedValueOnce(new Error('storage failure'));
-      const adapter = new V1RulesAdapter(rc as unknown as RulesClient);
+      const adapter = new RulesAdapterV1(rc as unknown as RulesClient);
 
       await expect(adapter.bulkDeleteRules(['id-1'])).rejects.toThrow('storage failure');
     });

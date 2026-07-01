@@ -115,17 +115,20 @@ export function createQueryKnowledgeIndicatorTool({
       let streamType: StreamType | 'unknown' = 'unknown';
 
       try {
-        const { streamsClient, getKnowledgeIndicatorClient, licensing, uiSettingsClient } =
-          await getScopedClients({
-            request,
-          });
+        const scopedClients = await getScopedClients({
+          request,
+        });
 
-        await assertSignificantEventsAccess({ server, licensing, uiSettingsClient });
+        await assertSignificantEventsAccess({
+          server,
+          licensing: scopedClients.licensing,
+          uiSettingsClient: scopedClients.uiSettingsClient,
+        });
 
-        const definition = await streamsClient.getStream(streamName);
+        const definition = await scopedClients.streamsClient.getStream(streamName);
         streamType = getStreamTypeFromDefinition(definition);
 
-        const kiClient = await getKnowledgeIndicatorClient();
+        const kiClient = await scopedClients.getKnowledgeIndicatorClient();
         const { id } = await createQueryKnowledgeIndicatorToolHandler({
           kiClient,
           definition,

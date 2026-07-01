@@ -6,7 +6,6 @@
  */
 
 import type { QueryLink } from '@kbn/significant-events-schema';
-import type { Streams } from '@kbn/streams-schema';
 import pLimit from 'p-limit';
 import {
   STREAMS_RULE_CONSUMER,
@@ -21,10 +20,7 @@ const RULE_INSTALL_CONCURRENCY = 10;
 const RULE_TAG = 'streams';
 const RULE_SCHEDULE_INTERVAL = '1m';
 
-export function toCreateRuleBody(
-  queryLink: QueryLink,
-  definition: Streams.all.Definition
-): CreateRuleBody {
+export function toCreateRuleBody(queryLink: QueryLink): CreateRuleBody {
   const { query } = queryLink;
   return {
     name: query.title,
@@ -36,17 +32,14 @@ export function toCreateRuleBody(
       query: query.esql.query,
     },
     enabled: true,
-    tags: [RULE_TAG, definition.name],
+    tags: [RULE_TAG, queryLink.stream_name],
     schedule: {
       interval: RULE_SCHEDULE_INTERVAL,
     },
   };
 }
 
-export function toUpdateRuleBody(
-  queryLink: QueryLink,
-  definition: Streams.all.Definition
-): UpdateRuleBody {
+export function toUpdateRuleBody(queryLink: QueryLink): UpdateRuleBody {
   const { query } = queryLink;
   return {
     name: query.title,
@@ -55,7 +48,7 @@ export function toUpdateRuleBody(
       timestampField: TIMESTAMP,
       query: query.esql.query,
     },
-    tags: [RULE_TAG, definition.name],
+    tags: [RULE_TAG, queryLink.stream_name],
     schedule: {
       interval: RULE_SCHEDULE_INTERVAL,
     },
@@ -65,17 +58,16 @@ export function toUpdateRuleBody(
 export async function installQueries(
   client: IRulesManagementClient,
   queriesToCreate: QueryLink[],
-  queriesToUpdate: QueryLink[],
-  definition: Streams.all.Definition
+  queriesToUpdate: QueryLink[]
 ) {
   const limiter = pLimit(RULE_INSTALL_CONCURRENCY);
 
   await Promise.all([
     ...queriesToCreate.map((queryLink) =>
-      limiter(() => client.createRule(queryLink.rule_id, toCreateRuleBody(queryLink, definition)))
+      limiter(() => client.createRule(queryLink.rule_id, toCreateRuleBody(queryLink)))
     ),
     ...queriesToUpdate.map((queryLink) =>
-      limiter(() => client.updateRule(queryLink.rule_id, toUpdateRuleBody(queryLink, definition)))
+      limiter(() => client.updateRule(queryLink.rule_id, toUpdateRuleBody(queryLink)))
     ),
   ]);
 }

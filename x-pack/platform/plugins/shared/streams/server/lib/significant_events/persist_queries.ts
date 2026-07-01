@@ -7,12 +7,12 @@
 
 import type { GeneratedSignificantEventQuery } from '@kbn/significant-events-schema';
 import { normalizeEsqlSafe } from '@kbn/streams-schema';
-import { QUERY_TYPE_STATS } from '@kbn/significant-events-schema';
 import { HIGH_SEVERITY_THRESHOLD } from '@kbn/significant-events-schema';
 import { v4 } from 'uuid';
 import type { KnowledgeIndicatorClient, KIBulkOperation } from '../streams/ki';
 import { queryFromLink } from '../streams/ki/knowledge_indicator_client/serializers';
 import type { StreamsClient } from '../streams/client';
+import { canQueryBeRuleBacked } from './alerting/significant_events_alerting_context';
 
 type PersistedQuery = GeneratedSignificantEventQuery & { id: string };
 
@@ -22,7 +22,7 @@ export interface PersistQueriesResult {
 }
 
 function isRuleEligible(query: GeneratedSignificantEventQuery): boolean {
-  return query.type !== QUERY_TYPE_STATS && query.severity_score >= HIGH_SEVERITY_THRESHOLD;
+  return canQueryBeRuleBacked(query.type) && query.severity_score >= HIGH_SEVERITY_THRESHOLD;
 }
 
 export async function persistQueries(

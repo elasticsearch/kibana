@@ -12,8 +12,8 @@ export const STREAMS_ESQL_RULE_TYPE_ID = 'streams.rules.esql' as const;
  * Narrow interface that decouples QueryClient from the concrete alerting framework.
  *
  * Two implementations ship today:
- * - V1RulesAdapter — wraps the @kbn/alerting-plugin RulesClient (default path)
- * - V2RulesAdapter — wraps @kbn/alerting-v2-plugin RulesClientApi (flag ON path)
+ * - RulesAdapterV1 — wraps the @kbn/alerting-plugin RulesClient (default path)
+ * - RulesAdapterV2 — wraps @kbn/alerting-v2-plugin RulesClientApi (flag ON path)
  */
 export interface IRulesManagementClient {
   /** Idempotent create: implementations should handle 409 by updating in place. */

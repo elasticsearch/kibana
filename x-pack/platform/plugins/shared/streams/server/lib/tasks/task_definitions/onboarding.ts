@@ -83,13 +83,13 @@ export function createStreamsOnboardingTask(taskContext: TaskContext) {
               const { streamName, from, to, steps, connectors, _task } = runContext.taskInstance
                 .params as TaskParams<OnboardingTaskParams>;
 
-              const { taskClient, getKnowledgeIndicatorClient, streamsClient } =
-                await taskContext.getScopedClients({
-                  request: fakeRequest,
-                  rulesClientOptions: { cloneApiKeysOnCreate: true },
-                });
+              const scopedClients = await taskContext.getScopedClients({
+                request: fakeRequest,
+                rulesClientOptions: { cloneApiKeysOnCreate: true },
+              });
+              const { taskClient, streamsClient } = scopedClients;
 
-              const kiClient = await getKnowledgeIndicatorClient();
+              const kiClient = await scopedClients.getKnowledgeIndicatorClient();
 
               try {
                 let featuresTaskResult: TaskResult<IdentifyFeaturesResult> | undefined;

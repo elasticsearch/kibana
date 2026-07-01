@@ -20,7 +20,13 @@ jest.mock('uuid', () => ({ v4: () => 'generated-uuid' }));
 const definition = { name: 'logs.test' } as Streams.all.Definition;
 
 const makeLink = (
-  overrides: { id?: string; esql?: string; ruleBacked?: boolean; expiresAt?: string } = {}
+  overrides: {
+    id?: string;
+    esql?: string;
+    ruleBacked?: boolean;
+    expiresAt?: string;
+    severity_score?: number;
+  } = {}
 ): QueryLink => ({
   query: {
     id: overrides.id ?? 'q1',
@@ -28,7 +34,7 @@ const makeLink = (
     title: 'Test query',
     description: 'desc',
     esql: { query: overrides.esql ?? 'FROM logs | WHERE body.text:"error"' },
-    severity_score: 60,
+    severity_score: overrides.severity_score ?? 60,
   },
   stream_name: 'logs.test',
   rule_backed: overrides.ruleBacked ?? false,
@@ -73,10 +79,18 @@ const createMocks = (existingLinks: QueryLink[] = []) => {
   return { kiClient, streamsClient };
 };
 
+const persistDeps = (
+  kiClient: jest.Mocked<KnowledgeIndicatorClient>,
+  streamsClient: jest.Mocked<StreamsClient>
+) => ({
+  kiClient,
+  streamsClient,
+});
+
 describe('persistQueries', () => {
   it('does nothing when queries array is empty', async () => {
     const { kiClient, streamsClient } = createMocks();
-    await persistQueries('logs.test', [], { kiClient, streamsClient });
+    await persistQueries('logs.test', [], persistDeps(kiClient, streamsClient));
 
     expect(streamsClient.getStream).not.toHaveBeenCalled();
     expect(kiClient.bulk).not.toHaveBeenCalled();
@@ -87,7 +101,7 @@ describe('persistQueries', () => {
     const { kiClient, streamsClient } = createMocks();
     const query = makeGeneratedQuery();
 
-    await persistQueries('logs.test', [query], { kiClient, streamsClient });
+    await persistQueries('logs.test', [query], persistDeps(kiClient, streamsClient));
 
     expect(kiClient.bulk).toHaveBeenCalledTimes(1);
     expect(kiClient.bulk).toHaveBeenCalledWith('logs.test', [
@@ -108,7 +122,7 @@ describe('persistQueries', () => {
       esql: { query: 'FROM  logs  |  WHERE  body.text:"error"' },
     });
 
-    await persistQueries('logs.test', [duplicate], { kiClient, streamsClient });
+    await persistQueries('logs.test', [duplicate], persistDeps(kiClient, streamsClient));
 
     expect(kiClient.bulk).not.toHaveBeenCalled();
     expect(kiClient.syncQueries).not.toHaveBeenCalled();
@@ -126,7 +140,7 @@ describe('persistQueries', () => {
       esql: { query: 'FROM logs | WHERE body.text:"timeout"' },
     });
 
-    await persistQueries('logs.test', [q1, q2], { kiClient, streamsClient });
+    await persistQueries('logs.test', [q1, q2], persistDeps(kiClient, streamsClient));
 
     expect(kiClient.bulk).toHaveBeenCalledTimes(1);
     const ops = (kiClient.bulk as jest.Mock).mock.calls[0][1];
@@ -145,7 +159,7 @@ describe('persistQueries', () => {
       esql: { query: 'FROM logs | WHERE body.text:"connection" AND body.text:"timeout"' },
     });
 
-    await persistQueries('logs.test', [reordered], { kiClient, streamsClient });
+    await persistQueries('logs.test', [reordered], persistDeps(kiClient, streamsClient));
 
     expect(kiClient.bulk).not.toHaveBeenCalled();
     expect(kiClient.syncQueries).not.toHaveBeenCalled();
@@ -160,7 +174,7 @@ describe('persistQueries', () => {
       esql: { query: 'FROM logs | WHERE body.text:"new-error"' },
     });
 
-    await persistQueries('logs.test', [replacement], { kiClient, streamsClient });
+    await persistQueries('logs.test', [replacement], persistDeps(kiClient, streamsClient));
 
     expect(kiClient.bulk).toHaveBeenCalledTimes(1);
     expect(kiClient.bulk).toHaveBeenCalledWith('logs.test', [
@@ -182,7 +196,7 @@ describe('persistQueries', () => {
       esql: { query: 'FROM logs | WHERE body.text:"updated-error"' },
     });
 
-    await persistQueries('logs.test', [replacement], { kiClient, streamsClient });
+    await persistQueries('logs.test', [replacement], persistDeps(kiClient, streamsClient));
 
     expect(kiClient.bulk).not.toHaveBeenCalled();
     expect(kiClient.syncQueries).toHaveBeenCalledTimes(1);
@@ -200,7 +214,7 @@ describe('persistQueries', () => {
       esql: { query: 'FROM logs | WHERE body.text:"fallback"' },
     });
 
-    await persistQueries('logs.test', [query], { kiClient, streamsClient });
+    await persistQueries('logs.test', [query], persistDeps(kiClient, streamsClient));
 
     expect(kiClient.bulk).toHaveBeenCalledTimes(1);
     const ops = (kiClient.bulk as jest.Mock).mock.calls[0][1];
@@ -219,7 +233,7 @@ describe('persistQueries', () => {
       esql: { query: 'FROM logs | WHERE body.text:"error"' },
     });
 
-    await persistQueries('logs.test', [noOpReplace], { kiClient, streamsClient });
+    await persistQueries('logs.test', [noOpReplace], persistDeps(kiClient, streamsClient));
 
     expect(kiClient.bulk).not.toHaveBeenCalled();
     expect(kiClient.syncQueries).not.toHaveBeenCalled();
@@ -278,7 +292,7 @@ describe('persistQueries', () => {
       const { kiClient, streamsClient } = createMocks();
       const query = makeGeneratedQuery({ severity_score: 75, type: 'match' });
 
-      await persistQueries('logs.test', [query], { kiClient, streamsClient });
+      await persistQueries('logs.test', [query], persistDeps(kiClient, streamsClient));
 
       expect(kiClient.syncQueries).toHaveBeenCalledTimes(1);
       expect(kiClient.bulk).not.toHaveBeenCalled();
@@ -291,7 +305,7 @@ describe('persistQueries', () => {
       const { kiClient, streamsClient } = createMocks();
       const query = makeGeneratedQuery({ severity_score: 90, type: 'stats' });
 
-      await persistQueries('logs.test', [query], { kiClient, streamsClient });
+      await persistQueries('logs.test', [query], persistDeps(kiClient, streamsClient));
 
       expect(kiClient.bulk).toHaveBeenCalledTimes(1);
       expect(kiClient.syncQueries).not.toHaveBeenCalled();
@@ -303,7 +317,7 @@ describe('persistQueries', () => {
       const { kiClient, streamsClient } = createMocks();
       const query = makeGeneratedQuery({ severity_score: 60, type: 'match' });
 
-      await persistQueries('logs.test', [query], { kiClient, streamsClient });
+      await persistQueries('logs.test', [query], persistDeps(kiClient, streamsClient));
 
       expect(kiClient.syncQueries).toHaveBeenCalledTimes(1);
       expect(kiClient.bulk).not.toHaveBeenCalled();
@@ -332,10 +346,11 @@ describe('persistQueries', () => {
         esql: { query: 'FROM logs | WHERE body.text:"replaced"' },
       });
 
-      await persistQueries('logs.test', [lowSevNew, highSevNew, replaceRuleBacked], {
-        kiClient,
-        streamsClient,
-      });
+      await persistQueries(
+        'logs.test',
+        [lowSevNew, highSevNew, replaceRuleBacked],
+        persistDeps(kiClient, streamsClient)
+      );
 
       expect(kiClient.bulk).toHaveBeenCalledTimes(1);
       const bulkOps = (kiClient.bulk as jest.Mock).mock.calls[0][1];
@@ -344,6 +359,33 @@ describe('persistQueries', () => {
       expect(kiClient.syncQueries).toHaveBeenCalledTimes(1);
       const syncQueries = (kiClient.syncQueries as jest.Mock).mock.calls[0][1];
       expect(syncQueries).toHaveLength(2);
+    });
+
+    it('passes existing unbacked low-severity queries to syncQueries alongside new high-severity queries', async () => {
+      const existingLow = makeLink({
+        id: 'low-existing',
+        severity_score: 25,
+        esql: 'FROM logs | WHERE body.text:"startup"',
+        ruleBacked: false,
+      });
+      const { kiClient, streamsClient } = createMocks([existingLow]);
+
+      const highSevNew = makeGeneratedQuery({
+        title: 'High sev',
+        severity_score: 80,
+        esql: { query: 'FROM logs | WHERE body.text:"oom"' },
+      });
+
+      await persistQueries('logs.test', [highSevNew], persistDeps(kiClient, streamsClient));
+
+      expect(kiClient.bulk).not.toHaveBeenCalled();
+      expect(kiClient.syncQueries).toHaveBeenCalledTimes(1);
+      const syncQueries = (kiClient.syncQueries as jest.Mock).mock.calls[0][1];
+      expect(syncQueries).toHaveLength(2);
+      expect(syncQueries.map((q: StreamQuery) => q.id).sort()).toEqual([
+        'generated-uuid',
+        'low-existing',
+      ]);
     });
   });
 });

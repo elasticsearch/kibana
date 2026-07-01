@@ -5,10 +5,8 @@
  * 2.0.
  */
 
-import { esql } from '@elastic/esql';
 import type { EsqlQueryResponse } from '@elastic/elasticsearch/lib/api/types';
 import type { IScopedClusterClient } from '@kbn/core/server';
-import { ALERT_RULE_UUID } from '@kbn/rule-data-utils';
 import type {
   SignificantEventsGetResponse,
   SignificantEventsResponse,
@@ -22,8 +20,8 @@ import type { KnowledgeIndicatorClient } from '../streams/ki';
 import type { RuleUnbackedFilter } from '../streams/ki';
 import { parseError } from '../streams/errors/parse_error';
 import { SecurityError } from '../streams/errors/security_error';
-import { getColumnIndex, toEsqlRequest } from '../streams/helpers/esql';
-import { ALERTS_DATA_STREAM } from './alerts_data_stream';
+import { getColumnIndex } from '../streams/helpers/esql';
+import { type ISignificantEventsAlertsReader, ALERTS_READER_V1 } from './alerting/alerts_reader';
 import { ESQL_UNITS, MAX_FILL_BUCKETS, parseBucketSize } from './helpers/fill_bucket_gaps';
 
 export interface SparseBucket {
@@ -37,11 +35,6 @@ interface TimeBucket {
   date: string;
 }
 
-export const V1_ALERTS_SOURCE = 'v1' as const;
-export const V2_ALERTS_SOURCE = 'v2' as const;
-
-export type AlertsSource = typeof V1_ALERTS_SOURCE | typeof V2_ALERTS_SOURCE;
-
 export interface SignificantEventsParams {
   streamNames?: string[];
   from: Date;
@@ -50,7 +43,7 @@ export interface SignificantEventsParams {
   query?: string;
   filters?: { ruleUnbacked?: RuleUnbackedFilter; queryIds?: string[]; minSeverityScore?: number };
   searchMode?: SearchMode;
-  alertsSource?: AlertsSource;
+  alertsReader?: ISignificantEventsAlertsReader;
 }
 
 export interface SignificantEventsDependencies {
@@ -115,34 +108,15 @@ function fillTimeline({
   return timeline.map(({ ms, date }) => ({ date, count: countByMs.get(ms) ?? 0 }));
 }
 
-/** Builds the rule-uuid-filtered, time-bucketed COUNT(*) ES|QL request. */
-function buildOccurrencesEsqlRequest({
-  ruleIds,
-  value,
-  esqlUnit,
-  limit,
-}: {
-  ruleIds: string[];
-  value: number;
-  esqlUnit: string;
-  limit: number;
-}) {
-  // ES|QL `IN (?param)` does not expand array params — emit one literal per value.
-  const ruleIdLiterals = ruleIds.map((id) => esql.str(id));
-  const ruleUuidCol = esql.col(ALERT_RULE_UUID.split('.'));
-  return toEsqlRequest(
-    esql.from([ALERTS_DATA_STREAM]).where`${ruleUuidCol} IN (${ruleIdLiterals})`
-      .pipe`STATS count = COUNT(*) BY rule_uuid = ${ruleUuidCol}, bucket = BUCKET(@timestamp, ${esql.num(
-      value
-    )} ${esql.kwd(esqlUnit)})`.pipe`SORT bucket ASC`.pipe`LIMIT ${esql.num(limit)}`
-  );
-}
-
 export async function fetchQueryLinks(
-  params: SignificantEventsParams,
+  {
+    streamNames = [],
+    query,
+    filters,
+    searchMode,
+  }: Pick<SignificantEventsParams, 'streamNames' | 'query' | 'filters' | 'searchMode'>,
   kiClient: KnowledgeIndicatorClient
 ): Promise<QueryLink[]> {
-  const { streamNames = [], query, filters, searchMode } = params;
   return query
     ? kiClient.findQueries(streamNames, query, filters, searchMode)
     : kiClient.getQueryLinks(streamNames, filters);
@@ -158,11 +132,13 @@ export async function computeOccurrences(
     from,
     to,
     bucketSize,
+    alertsReader = ALERTS_READER_V1,
   }: {
     ruleIds: string[];
     from: Date;
     to: Date;
     bucketSize: string;
+    alertsReader?: ISignificantEventsAlertsReader;
   },
   { scopedClusterClient }: { scopedClusterClient: IScopedClusterClient }
 ): Promise<ComputeOccurrencesResult> {
@@ -180,6 +156,7 @@ export async function computeOccurrences(
   const { value, unit } = parseBucketSize(bucketSize);
   const esqlUnit = ESQL_UNITS[unit] ?? unit;
   const intervalMs = value * (MS_PER_UNIT[unit] ?? 1000);
+  const ruleIdColumn = alertsReader.ruleIdColumn;
 
   // Build the grid once; reused by lazy per-rule fill and the aggregate.
   // `buckets` is capped at MAX_FILL_BUCKETS, so for ranges wider than the cap
@@ -203,7 +180,7 @@ export async function computeOccurrences(
   const runBatch = async (batchRuleIds: string[]): Promise<EsqlQueryResponse | null> => {
     try {
       return await scopedClusterClient.asCurrentUser.esql.query({
-        ...buildOccurrencesEsqlRequest({
+        ...alertsReader.buildOccurrencesEsqlRequest({
           ruleIds: batchRuleIds,
           value,
           esqlUnit,
@@ -242,7 +219,7 @@ export async function computeOccurrences(
   for (const response of responses) {
     if (!response) continue;
     const countIdx = getColumnIndex(response, 'count');
-    const ruleIdx = getColumnIndex(response, 'rule_uuid');
+    const ruleIdx = getColumnIndex(response, ruleIdColumn);
     const bucketIdx = getColumnIndex(response, 'bucket');
     if (countIdx === -1 || ruleIdx === -1 || bucketIdx === -1) continue;
     hasData = true;
@@ -279,7 +256,7 @@ export async function getQueryOccurrences(
   dependencies: SignificantEventsDependencies
 ): Promise<QueryOccurrences> {
   const { kiClient, scopedClusterClient } = dependencies;
-  const { from, to, bucketSize } = params;
+  const { from, to, bucketSize, alertsReader = ALERTS_READER_V1 } = params;
 
   const queryLinks = await fetchQueryLinks(params, kiClient);
   if (isEmpty(queryLinks)) {
@@ -293,7 +270,7 @@ export async function getQueryOccurrences(
 
   const ruleIds = [...new Set(queryLinks.map((queryLink) => queryLink.rule_id))];
   const occurrences = await computeOccurrences(
-    { ruleIds, from, to, bucketSize },
+    { ruleIds, from, to, bucketSize, alertsReader },
     { scopedClusterClient }
   );
   return { queryLinks, ...occurrences };

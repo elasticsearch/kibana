@@ -65,16 +65,16 @@ const identifyInferredFeaturesRoute = createServerRoute({
       .optional(),
   }),
   handler: async ({ params, request, getScopedClients, server, logger, telemetry }) => {
+    const scopedClients = await getScopedClients({ request });
     const {
       scopedClusterClient,
-      getKnowledgeIndicatorClient,
       streamsClient,
       inferenceClient,
       soClient,
       tuningConfig,
       licensing,
       uiSettingsClient,
-    } = await getScopedClients({ request });
+    } = scopedClients;
 
     await assertSignificantEventsAccess({ server, licensing, uiSettingsClient });
 
@@ -106,7 +106,7 @@ const identifyInferredFeaturesRoute = createServerRoute({
             request,
           }),
       streamsClient.getStream(streamName),
-      getKnowledgeIndicatorClient(),
+      scopedClients.getKnowledgeIndicatorClient(),
     ]);
 
     const streamType = getStreamTypeFromDefinition(stream);
@@ -215,13 +215,8 @@ const identifyComputedFeaturesRoute = createServerRoute({
       .optional(),
   }),
   handler: async ({ params, request, getScopedClients, server, logger, telemetry }) => {
-    const {
-      scopedClusterClient,
-      getKnowledgeIndicatorClient,
-      streamsClient,
-      licensing,
-      uiSettingsClient,
-    } = await getScopedClients({ request });
+    const scopedClients = await getScopedClients({ request });
+    const { scopedClusterClient, streamsClient, licensing, uiSettingsClient } = scopedClients;
 
     await assertSignificantEventsAccess({ server, licensing, uiSettingsClient });
 
@@ -231,7 +226,7 @@ const identifyComputedFeaturesRoute = createServerRoute({
     const { start = now - MS_PER_DAY, end = now, runId = uuidv4() } = params.body ?? {};
 
     const [kiClient, stream] = await Promise.all([
-      getKnowledgeIndicatorClient(),
+      scopedClients.getKnowledgeIndicatorClient(),
       streamsClient.getStream(streamName),
     ]);
 
@@ -294,13 +289,12 @@ const shouldIdentifyRoute = createServerRoute({
     }),
   }),
   handler: async ({ params, request, getScopedClients, server }) => {
-    const { getKnowledgeIndicatorClient, licensing, uiSettingsClient } = await getScopedClients({
-      request,
-    });
+    const scopedClients = await getScopedClients({ request });
+    const { licensing, uiSettingsClient } = scopedClients;
 
     await assertSignificantEventsAccess({ server, licensing, uiSettingsClient });
 
-    const kiClient = await getKnowledgeIndicatorClient();
+    const kiClient = await scopedClients.getKnowledgeIndicatorClient();
     return shouldIdentifyFeatures({
       kiClient,
       streamName: params.path.streamName,

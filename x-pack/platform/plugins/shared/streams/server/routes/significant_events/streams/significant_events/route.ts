@@ -9,7 +9,6 @@ import { z } from '@kbn/zod/v4';
 import { STREAMS_API_PRIVILEGES } from '../../../../../common/constants';
 import { BUCKET_SIZE_PATTERN } from '../../../../lib/significant_events/helpers/fill_bucket_gaps';
 import { fetchQueryOccurrencesFromAlerts } from '../../../../lib/significant_events/fetch_query_occurrences_from_alerts';
-import { resolveAlertsSource } from '../../../utils/resolve_alerts_source';
 import { getSignificantEventsResponse } from '../../../../oas_examples';
 import { createServerRoute } from '../../../create_server_route';
 import { assertSignificantEventsAccess } from '../../../utils/assert_significant_events_access';
@@ -92,27 +91,18 @@ const readStreamSignificantEventsRoute = createServerRoute({
     getScopedClients,
     server,
   }): Promise<SignificantEventsGetResponse> => {
-    const {
-      streamsClient,
-      getKnowledgeIndicatorClient,
-      getAlertingV2RulesClient,
-      scopedClusterClient,
-      licensing,
-      uiSettingsClient,
-    } = await getScopedClients({
-      request,
-    });
+    const scopedClients = await getScopedClients({ request });
+    const { streamsClient, scopedClusterClient, licensing, uiSettingsClient } = scopedClients;
     await assertSignificantEventsAccess({ server, licensing, uiSettingsClient });
     await streamsClient.ensureStream(params.path.name);
 
     const { name } = params.path;
     const { from, to, bucketSize, query, searchMode } = params.query;
 
-    const alertsSource = await resolveAlertsSource({
-      uiSettingsClient,
-      alertingV2RulesClient: await getAlertingV2RulesClient(),
-    });
-    const kiClient = await getKnowledgeIndicatorClient();
+    const [kiClient, { alertsReader }] = await Promise.all([
+      scopedClients.getKnowledgeIndicatorClient(),
+      scopedClients.getSignificantEventsAlertingContext(),
+    ]);
     return fetchQueryOccurrencesFromAlerts(
       {
         streamNames: [name],
@@ -121,7 +111,7 @@ const readStreamSignificantEventsRoute = createServerRoute({
         bucketSize,
         query,
         searchMode,
-        alertsSource,
+        alertsReader,
       },
       { kiClient, scopedClusterClient }
     );

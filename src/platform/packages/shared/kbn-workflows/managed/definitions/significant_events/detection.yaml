@@ -39,7 +39,6 @@ triggers:
 consts:
   ACTIVITY_HISTORY_LOOKBACK: "now-1h"
   ACTIVITY_WINDOW_INTERVAL: "30m"
-  ALERTS_INDEX: ".alerts-streams.alerts-default"
   BOOTSTRAP_MIN_ALERT_COUNT: 20
   CP_TYPE_INDETERMINABLE: "indeterminable"
   CP_TYPE_STATIONARY: "stationary"
@@ -64,21 +63,14 @@ steps:
   # Pre-pass: Early exit — skip when no alerts and no active detections.
   # -----------------------------------------------------------------------
   - name: count_alerts_in_lookback
-    type: elasticsearch.request
+    type: kibana.request
     with:
       method: POST
-      path: '/{{ consts.ALERTS_INDEX }}/_count?ignore_unavailable=true'
+      path: "/s/{{ variables.spaceId }}/internal/significant_events/detections/workflow/_count_alerts"
+      headers:
+        x-elastic-internal-origin: "kibana"
       body:
-        query:
-          bool:
-            filter:
-              - terms:
-                  kibana.space_ids:
-                    - "{{ variables.spaceId }}"
-                    - "*"
-              - range:
-                  "@timestamp":
-                    gte: '{{ inputs.lookback }}'
+        lookback: '{{ inputs.lookback }}'
     on-failure:
       continue: true
 
@@ -217,23 +209,15 @@ steps:
 
       - name: check_recent_alerts_for_stale
         if: "${{ foreach.item._source.kind == consts.KIND_DETECTION and steps.compute_stale_candidate.output.is_not_fresh }}"
-        type: elasticsearch.request
+        type: kibana.request
         with:
           method: POST
-          path: '/{{ consts.ALERTS_INDEX }}/_count?ignore_unavailable=true'
+          path: "/s/{{ variables.spaceId }}/internal/significant_events/detections/workflow/_count_alerts"
+          headers:
+            x-elastic-internal-origin: "kibana"
           body:
-            query:
-              bool:
-                filter:
-                  - terms:
-                      kibana.space_ids:
-                        - "{{ variables.spaceId }}"
-                        - "*"
-                  - term:
-                      kibana.alert.rule.uuid: "${{ foreach.item._source.rule_uuid }}"
-                  - range:
-                      "@timestamp":
-                        gte: "now-{{ foreach.item._source.resolution_lookback_minutes | default: 30 }}m"
+            lookback: "now-{{ foreach.item._source.resolution_lookback_minutes | default: 30 }}m"
+            ruleUuid: "${{ foreach.item._source.rule_uuid }}"
         on-failure:
           continue: true
 
@@ -270,61 +254,15 @@ steps:
   # Step 1: Per-rule change_point over the main lookback.
   # -----------------------------------------------------------------------
   - name: run_change_point_aggregation
-    type: elasticsearch.request
+    type: kibana.request
     with:
       method: POST
-      path: '/{{ consts.ALERTS_INDEX }}/_search?filter_path=-aggregations.by_rule.buckets.over_time&ignore_unavailable=true'
+      path: "/s/{{ variables.spaceId }}/internal/significant_events/detections/workflow/_change_point_scan"
+      headers:
+        x-elastic-internal-origin: "kibana"
       body:
-        size: 0
-        query:
-          bool:
-            filter:
-              - terms:
-                  kibana.space_ids:
-                    - "{{ variables.spaceId }}"
-                    - "*"
-              - range:
-                  "@timestamp":
-                    gte: '{{ inputs.lookback }}'
-        aggs:
-          by_rule:
-            terms:
-              field: kibana.alert.rule.uuid
-              size: "${{ consts.RULES_BUCKET_SIZE }}"
-            aggs:
-              rule_name:
-                top_metrics:
-                  metrics:
-                    - field: kibana.alert.rule.name
-                  sort:
-                    "@timestamp": desc
-                  size: 1
-              stream:
-                terms:
-                  field: kibana.alert.rule.tags
-                  exclude: "streams"
-                  size: 1
-              over_time:
-                date_histogram:
-                  field: "@timestamp"
-                  fixed_interval: '{{ inputs.bucketInterval }}'
-                  min_doc_count: 0
-                  extended_bounds:
-                    min: '{{ inputs.lookback }}'
-                    max: "now-{{ inputs.bucketInterval }}"
-              last_5m:
-                filter:
-                  range:
-                    "@timestamp":
-                      gte: "now-{{ consts.RECENT_ACTIVITY_MINUTES }}m"
-              last_floor_window:
-                filter:
-                  range:
-                    "@timestamp":
-                      gte: "now-{{ consts.LOOKBACK_MINUTES_FLOOR }}m"
-              change_points:
-                change_point:
-                  buckets_path: "over_time>_count"
+        lookback: '{{ inputs.lookback }}'
+        bucketInterval: '{{ inputs.bucketInterval }}'
 
   # -----------------------------------------------------------------------
   # Step 2: Foreach rule bucket — detect, recover, resolve.
@@ -477,36 +415,16 @@ steps:
         condition: "${{ steps.compute_rule_state.output.latest_is_detection and foreach.item.last_5m.doc_count == 0 }}"
         steps:
           - name: get_quick_recovery_change_point
-            type: elasticsearch.request
+            type: kibana.request
             with:
               method: POST
-              path: '/{{ consts.ALERTS_INDEX }}/_search?ignore_unavailable=true'
+              path: "/s/{{ variables.spaceId }}/internal/significant_events/detections/workflow/_rule_change_point"
+              headers:
+                x-elastic-internal-origin: "kibana"
               body:
-                size: 0
-                query:
-                  bool:
-                    filter:
-                      - terms:
-                          kibana.space_ids:
-                            - "{{ variables.spaceId }}"
-                            - "*"
-                      - range:
-                          "@timestamp":
-                            gte: '{{ inputs.quickRecoveryLookback }}'
-                      - term:
-                          kibana.alert.rule.uuid: "{{ foreach.item.key }}"
-                aggs:
-                  over_time:
-                    date_histogram:
-                      field: "@timestamp"
-                      fixed_interval: '{{ inputs.bucketInterval }}'
-                      min_doc_count: 0
-                      extended_bounds:
-                        min: '{{ inputs.quickRecoveryLookback }}'
-                        max: "now"
-                  change_points:
-                    change_point:
-                      buckets_path: "over_time>_count"
+                ruleUuid: "{{ foreach.item.key }}"
+                lookback: '{{ inputs.quickRecoveryLookback }}'
+                bucketInterval: '{{ inputs.bucketInterval }}'
             on-failure:
               continue: true
 
@@ -516,33 +434,17 @@ steps:
               quick_recovery_type: "${{ steps.get_quick_recovery_change_point.output.aggregations.change_points.type | entries | map: 'key' | first | default: consts.CP_TYPE_INDETERMINABLE }}"
 
           - name: get_quick_recovery_day_over_day
-            type: elasticsearch.request
+            type: kibana.request
             with:
               method: POST
-              path: '/{{ consts.ALERTS_INDEX }}/_search?ignore_unavailable=true'
+              path: "/s/{{ variables.spaceId }}/internal/significant_events/detections/workflow/_rule_alert_windows"
+              headers:
+                x-elastic-internal-origin: "kibana"
               body:
-                size: 0
-                query:
-                  bool:
-                    filter:
-                      - terms:
-                          kibana.space_ids:
-                            - "{{ variables.spaceId }}"
-                            - "*"
-                      - term:
-                          kibana.alert.rule.uuid: "{{ foreach.item.key }}"
-                aggs:
-                  current_window:
-                    filter:
-                      range:
-                        "@timestamp":
-                          gte: '{{ inputs.quickRecoveryLookback }}'
-                  reference_window:
-                    filter:
-                      range:
-                        "@timestamp":
-                          gte: "now-1d{{ inputs.quickRecoveryLookback | remove: 'now' }}"
-                          lt: "now-1d"
+                ruleUuid: "{{ foreach.item.key }}"
+                currentLookback: '{{ inputs.quickRecoveryLookback }}'
+                referenceLookbackGte: "now-1d{{ inputs.quickRecoveryLookback | remove: 'now' }}"
+                referenceLookbackLt: "now-1d"
             on-failure:
               continue: true
 
@@ -578,33 +480,16 @@ steps:
 
       # Phase 3: Gather activity metrics
       - name: get_rule_activity
-        type: elasticsearch.request
+        type: kibana.request
         with:
           method: POST
-          path: '/{{ consts.ALERTS_INDEX }}/_search?ignore_unavailable=true'
+          path: "/s/{{ variables.spaceId }}/internal/significant_events/detections/workflow/_rule_activity"
+          headers:
+            x-elastic-internal-origin: "kibana"
           body:
-            size: 0
-            query:
-              bool:
-                filter:
-                  - terms:
-                      kibana.space_ids:
-                        - "{{ variables.spaceId }}"
-                        - "*"
-                  - term:
-                      kibana.alert.rule.uuid: "{{ foreach.item.key }}"
-                  - range:
-                      "@timestamp":
-                        gte: '{{ consts.ACTIVITY_HISTORY_LOOKBACK }}'
-            aggs:
-              activity_windows:
-                date_histogram:
-                  field: "@timestamp"
-                  fixed_interval: '{{ consts.ACTIVITY_WINDOW_INTERVAL }}'
-                  min_doc_count: 0
-              peak:
-                max_bucket:
-                  buckets_path: "activity_windows._count"
+            ruleUuid: "{{ foreach.item.key }}"
+            lookback: '{{ consts.ACTIVITY_HISTORY_LOOKBACK }}'
+            windowInterval: '{{ consts.ACTIVITY_WINDOW_INTERVAL }}'
         on-failure:
           continue: true
 
@@ -665,7 +550,7 @@ steps:
                 - "{{ variables.spaceId }}"
             kind: '{{ consts.KIND_DETECTION }}'
             alert_count: "${{ foreach.item.doc_count }}"
-            alert_index: "{{ consts.ALERTS_INDEX }}"
+            alert_index: "{{ steps.run_change_point_aggregation.output.alertIndex }}"
             detection_evidence:
               change_point_type: "{{ steps.compute_rule_context.output.change_point_type }}"
               p_value: "${{ steps.compute_change_point_type.output.detection_p_value }}"
@@ -695,7 +580,7 @@ steps:
               space_ids:
                 - "{{ variables.spaceId }}"
             kind: '{{ consts.KIND_QUIET }}'
-            alert_index: "{{ consts.ALERTS_INDEX }}"
+            alert_index: "{{ steps.run_change_point_aggregation.output.alertIndex }}"
             detection_evidence:
               change_point_type: '{{ consts.CP_TYPE_STATIONARY }}'
               p_value: "${{ steps.compute_write_ids.output.quiet_p_value }}"

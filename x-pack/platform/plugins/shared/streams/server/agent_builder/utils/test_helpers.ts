@@ -31,6 +31,7 @@ type ToolScopedClients = Pick<
   | 'streamsClient'
   | 'scopedClusterClient'
   | 'getKnowledgeIndicatorClient'
+  | 'uiSettingsClient'
   | 'attachmentClient'
   | 'taskClient'
   | 'uiSettingsClient'
@@ -112,9 +113,9 @@ export const createMockGetScopedClients = () => {
     streamsClient,
     scopedClusterClient,
     getKnowledgeIndicatorClient,
+    uiSettingsClient,
     attachmentClient,
     taskClient,
-    uiSettingsClient,
   };
 
   const getScopedClients = jest

@@ -85,20 +85,21 @@ async function runFeaturesIdentification(
 
   const runId = uuid();
 
+  const scopedClients = await taskContext.getScopedClients({ request: fakeRequest });
+
   const {
     taskClient,
     scopedClusterClient,
-    getKnowledgeIndicatorClient,
     streamsClient,
     inferenceClient,
     soClient,
     tuningConfig,
-  } = await taskContext.getScopedClients({ request: fakeRequest });
+  } = scopedClients;
 
   const taskLogger = taskContext.logger.get('features_identification', streamName);
 
   const [kiClient, connectorId] = await Promise.all([
-    getKnowledgeIndicatorClient(),
+    scopedClients.getKnowledgeIndicatorClient(),
     connectorIdOverride
       ? Promise.resolve(connectorIdOverride)
       : resolveConnectorForFeature({

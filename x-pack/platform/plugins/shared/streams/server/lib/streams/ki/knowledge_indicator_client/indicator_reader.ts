@@ -202,6 +202,18 @@ export class IndicatorReader {
     return this.getQueryLinks([stream], { queryIds: ids, ruleUnbacked: 'include' });
   }
 
+  async getRuleBackedQueryLinks(): Promise<QueryLink[]> {
+    const where = inPredicate(TYPE, [KI_TYPE_QUERY]);
+
+    const postGroupingWhere = combineWhere(
+      IS_NOT_DELETED,
+      esql.exp`${esql.col(QUERY_RULE_BACKED)} == true`
+    );
+
+    const docs = await this.revisionReader.fetchLatestRevisions(where, postGroupingWhere);
+    return docs.filter(isStoredQueryKnowledgeIndicator).map(fromStoredQuery);
+  }
+
   /**
    * Returns all unbacked, non-STATS queries across streams. Filtering by
    * `query.query_type != stats` happens via the post-grouping WHERE so the

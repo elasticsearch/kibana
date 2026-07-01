@@ -56,15 +56,13 @@ export const upsertFeatureRoute = createServerRoute({
     getScopedClients,
     server,
   }): Promise<{ acknowledged: boolean }> => {
-    const { getKnowledgeIndicatorClient, licensing, uiSettingsClient, streamsClient } =
-      await getScopedClients({
-        request,
-      });
+    const scopedClients = await getScopedClients({ request });
+    const { licensing, uiSettingsClient, streamsClient } = scopedClients;
 
     await assertSignificantEventsAccess({ server, licensing, uiSettingsClient });
     await streamsClient.ensureStream(params.path.name);
 
-    const kiClient = await getKnowledgeIndicatorClient();
+    const kiClient = await scopedClients.getKnowledgeIndicatorClient();
     const { id, expires_at, ...baseBody } = params.body;
 
     if (id) {
@@ -119,15 +117,13 @@ export const deleteFeatureRoute = createServerRoute({
     getScopedClients,
     server,
   }): Promise<{ acknowledged: boolean }> => {
-    const { getKnowledgeIndicatorClient, licensing, uiSettingsClient, streamsClient } =
-      await getScopedClients({
-        request,
-      });
+    const scopedClients = await getScopedClients({ request });
+    const { licensing, uiSettingsClient, streamsClient } = scopedClients;
 
     await assertSignificantEventsAccess({ server, licensing, uiSettingsClient });
     await streamsClient.ensureStream(params.path.name);
 
-    const kiClient = await getKnowledgeIndicatorClient();
+    const kiClient = await scopedClients.getKnowledgeIndicatorClient();
     await kiClient.bulk(params.path.name, [{ delete: { type: 'feature', id: params.path.id } }]);
 
     return { acknowledged: true };
@@ -162,15 +158,13 @@ export const listFeaturesRoute = createServerRoute({
     getScopedClients,
     server,
   }): Promise<{ features: Feature[] }> => {
-    const { getKnowledgeIndicatorClient, licensing, uiSettingsClient, streamsClient } =
-      await getScopedClients({
-        request,
-      });
+    const scopedClients = await getScopedClients({ request });
+    const { licensing, uiSettingsClient, streamsClient } = scopedClients;
 
     await assertSignificantEventsAccess({ server, licensing, uiSettingsClient });
     await streamsClient.ensureStream(params.path.name);
 
-    const kiClient = await getKnowledgeIndicatorClient();
+    const kiClient = await scopedClients.getKnowledgeIndicatorClient();
     const {
       query,
       search_mode: searchMode,
@@ -211,17 +205,20 @@ export const listAllFeaturesRoute = createServerRoute({
     getScopedClients,
     server,
   }): Promise<{ features: Feature[] }> => {
-    const { getKnowledgeIndicatorClient, licensing, uiSettingsClient, streamsClient } =
-      await getScopedClients({
-        request,
-      });
+    const scopedClients = await getScopedClients({
+      request,
+    });
 
-    await assertSignificantEventsAccess({ server, licensing, uiSettingsClient });
+    await assertSignificantEventsAccess({
+      server,
+      licensing: scopedClients.licensing,
+      uiSettingsClient: scopedClients.uiSettingsClient,
+    });
 
-    const streams = await streamsClient.listStreams();
+    const streams = await scopedClients.streamsClient.listStreams();
     const streamNames = streams.map((stream) => stream.name);
 
-    const kiClient = await getKnowledgeIndicatorClient();
+    const kiClient = await scopedClients.getKnowledgeIndicatorClient();
     const {
       query,
       search_mode: searchMode,
@@ -282,10 +279,10 @@ export const bulkFeaturesRoute = createServerRoute({
     getScopedClients,
     server,
   }): Promise<{ acknowledged: boolean }> => {
-    const { getKnowledgeIndicatorClient, streamsClient, licensing, uiSettingsClient } =
-      await getScopedClients({
-        request,
-      });
+    const scopedClients = await getScopedClients({
+      request,
+    });
+    const { streamsClient, licensing, uiSettingsClient } = scopedClients;
 
     await assertSignificantEventsAccess({ server, licensing, uiSettingsClient });
 
@@ -296,7 +293,7 @@ export const bulkFeaturesRoute = createServerRoute({
 
     await streamsClient.ensureStream(name);
 
-    const kiClient = await getKnowledgeIndicatorClient();
+    const kiClient = await scopedClients.getKnowledgeIndicatorClient();
     const kiOps: KIBulkOperation[] = operations.map((op) =>
       'delete' in op ? { delete: { type: 'feature' as const, id: op.delete.id } } : op
     );
@@ -339,13 +336,14 @@ export const bulkFeaturesAcrossStreamsRoute = createServerRoute({
     server,
     logger,
   }): Promise<{ succeeded: number; failed: number; skipped: number }> => {
-    const { getKnowledgeIndicatorClient, licensing, uiSettingsClient } = await getScopedClients({
+    const scopedClients = await getScopedClients({
       request,
     });
+    const { licensing, uiSettingsClient } = scopedClients;
 
     await assertSignificantEventsAccess({ server, licensing, uiSettingsClient });
 
-    const kiClient = await getKnowledgeIndicatorClient();
+    const kiClient = await scopedClients.getKnowledgeIndicatorClient();
 
     // Resolve UUID → stream_name server-side. UUIDs not found in storage are
     // idempotent no-ops counted as `skipped` (matching the queries endpoint

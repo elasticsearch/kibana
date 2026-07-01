@@ -24,7 +24,7 @@ import {
  * 404 on update → create instead (idempotent update).
  * 400 on bulk delete → swallowed (rules may not have existed yet).
  */
-export class V1RulesAdapter implements IRulesManagementClient {
+export class RulesAdapterV1 implements IRulesManagementClient {
   constructor(private readonly rulesClient: RulesClient) {}
 
   async createRule(id: string, body: CreateRuleBody): Promise<void> {
