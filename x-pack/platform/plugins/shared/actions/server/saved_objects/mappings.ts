@@ -107,6 +107,9 @@ export const userConnectorTokenMappings: SavedObjectsTypeMappingDefinition = {
     profileUid: {
       type: 'keyword',
     },
+    userCloudId: {
+      type: 'keyword',
+    },
     connectorId: {
       type: 'keyword',
     },

@@ -62,6 +62,7 @@
     "@kbn/encrypted-saved-objects-shared",
     "@kbn/usage-api-plugin",
     "@kbn/core-security-server",
+    "@kbn/core-test-helpers-model-versions",
   ],
   "exclude": [
     "target/**/*",

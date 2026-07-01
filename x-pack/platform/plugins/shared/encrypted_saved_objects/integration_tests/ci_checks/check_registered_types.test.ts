@@ -86,7 +86,7 @@ describe('checking changes on all registered encrypted SO types', () => {
         "synthetics-param": "747ba9d1b7addf5b131713abe7868bd767af6ce0cf8b6b0f335f4ef34b280c7e",
         "task": "d6cc30871dc78caf3f451de1275a3803879ec9935b4a2e34076dee56878c228f",
         "uptime-synthetics-api-key": "5ca81f180763e85397fa8c6508adcd60efd0f916e29bac6dcd5b4564f1db7375",
-        "user_connector_token": "b443b022b46b79c0ff9fa674aecc64176a5fcbd09c2db2d9f050a6a88435732e",
+        "user_connector_token": "7f818fe3827daa31d23b874e480176d105e629cf5da88f5f4e56033e78c3acca",
         "watchlist-entity-source": "9e6445feba401a9b6d44c412d8fe9a069e051ea2483570c03ef17b5cf5e718d7",
       }
     `);
@@ -171,6 +171,7 @@ describe('checking changes on all registered encrypted SO types', () => {
         "task|11",
         "task|10",
         "task|1",
+        "user_connector_token|2",
         "user_connector_token|1",
         "watchlist-entity-source|3",
         "watchlist-entity-source|2",
