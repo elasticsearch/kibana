@@ -258,6 +258,14 @@ export function createEvaluateDataset({
   }: EvaluateDatasetOpts) {
     const dataset = { name, description, examples } satisfies EvaluationDataset;
 
+    // Observability (trace-based, zero per-example LLM cost): baseline latency /
+    // token-usage signals derived from OTel spans for this task's trace.id.
+    // NOTE: the framework fixture's `toolCalls` trace evaluator is intentionally
+    // NOT wired here — this suite already defines a richer LLM-judged
+    // `ToolCalls` evaluator (asserting against `expected.toolCalls`), and the
+    // two share the same name, which would collide in the report.
+    const { inputTokens, outputTokens, cachedTokens, latency } = evaluators.traceBasedEvaluators;
+
     await executorClient.runExperiment(
       {
         datasets: [dataset],
@@ -318,6 +326,11 @@ export function createEvaluateDataset({
             // ground truth text, so quantitative correctness comparison produces noise (low scores).
           ),
         ]),
+        // Observability (trace-based, zero per-example LLM cost)
+        latency as Evaluator<DatasetExample, ChatTaskOutput>,
+        inputTokens as Evaluator<DatasetExample, ChatTaskOutput>,
+        outputTokens as Evaluator<DatasetExample, ChatTaskOutput>,
+        cachedTokens as Evaluator<DatasetExample, ChatTaskOutput>,
       ]
     );
   };

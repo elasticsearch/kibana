@@ -11,6 +11,7 @@
   ],
   "exclude": ["target/**/*"],
   "kbn_references": [
+    "@kbn/agent-builder-common",
     "@kbn/evals",
     "@kbn/tooling-log",
     "@kbn/core",

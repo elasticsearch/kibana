@@ -13,8 +13,13 @@ import type {
   Evaluator,
   EvalsExecutorClient,
   Example,
+  TaskOutput,
 } from '@kbn/evals';
-import { createSkillInvocationEvaluator } from '@kbn/evals';
+import {
+  createSkillInvocationEvaluator,
+  createTrajectoryEvaluator,
+  getToolCallSteps,
+} from '@kbn/evals';
 import type { PciEvalChatClient } from './chat_client';
 
 export interface PciDatasetExample extends Example {
@@ -23,6 +28,13 @@ export interface PciDatasetExample extends Example {
   };
   output: {
     criteria: string[];
+    /**
+     * Optional golden tool-call sequence. When present, the trajectory
+     * evaluator scores the agent's actual tool path (order + coverage)
+     * against it. Examples without an annotation report N/A so partial
+     * datasets don't dilute averages. Authored per-example in follow-up work.
+     */
+    expectedToolSequence?: string[];
   };
 }
 
@@ -70,6 +82,44 @@ export function createPciCriteriaEvaluator({
   };
 }
 
+/**
+ * Trajectory evaluator wrapper. Scores the agent's tool-call sequence against a
+ * per-example `expectedToolSequence` annotation using LCS (order) + set
+ * intersection (coverage). Returns N/A when an example has no annotation so
+ * partial-coverage datasets aren't penalised. Mirrors the alerts-rag suite's
+ * `createAlertsRagTrajectoryEvaluator`. Annotations are authored per-example in
+ * follow-up work; until then every example reports N/A (the infra is in place
+ * to start scoring the moment golden paths land).
+ */
+export function createPciTrajectoryEvaluator(): Evaluator {
+  const inner = createTrajectoryEvaluator({
+    extractToolCalls: (output) =>
+      getToolCallSteps(output as TaskOutput)
+        .map((step) => step.tool_id)
+        .filter((id): id is string => Boolean(id)),
+    goldenPathExtractor: (expected) =>
+      (expected as PciDatasetExample['output'] | undefined)?.expectedToolSequence ?? [],
+    orderWeight: 0.4,
+    coverageWeight: 0.6,
+  });
+
+  return {
+    ...inner,
+    name: 'Trajectory',
+    evaluate: async (args) => {
+      const seq = (args.expected as PciDatasetExample['output'] | undefined)?.expectedToolSequence;
+      if (!seq || seq.length === 0) {
+        return {
+          score: null,
+          label: 'N/A',
+          explanation: 'No expectedToolSequence annotation — skipping trajectory evaluation.',
+        };
+      }
+      return inner.evaluate(args);
+    },
+  };
+}
+
 export function createEvaluatePciDataset({
   evaluators,
   executorClient,
@@ -98,6 +148,14 @@ export function createEvaluatePciDataset({
       examples,
     } satisfies EvaluationDataset;
 
+    // Observability (trace-based, zero per-example LLM cost): baseline signals
+    // derived from OTel spans for this task's trace.id. Tracks regressions in
+    // latency / token usage / tool-call counts over time without paying for
+    // additional LLM judging. Sourced from the framework fixture so the queries
+    // stay consistent across suites.
+    const { inputTokens, outputTokens, cachedTokens, toolCalls, latency } =
+      evaluators.traceBasedEvaluators;
+
     await executorClient.runExperiment(
       {
         datasets: [dataset],
@@ -119,6 +177,12 @@ export function createEvaluatePciDataset({
           log,
           skillName: 'pci-compliance',
         }),
+        createPciTrajectoryEvaluator(),
+        toolCalls,
+        latency,
+        inputTokens,
+        outputTokens,
+        cachedTokens,
       ]
     );
   };

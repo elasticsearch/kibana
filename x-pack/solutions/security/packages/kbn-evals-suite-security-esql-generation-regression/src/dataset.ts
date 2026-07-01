@@ -15,7 +15,21 @@ import type { Example } from '@kbn/evals';
  * entry to this array; tests in `dataset.test.ts` pin the example count and
  * basic shape so accidental drops are caught.
  */
-export const esqlGenerationDataset: Array<Example<{ question: string }, { query: string }>> = [
+export const esqlGenerationDataset: Array<
+  Example<
+    { question: string },
+    {
+      query: string;
+      /**
+       * Optional golden tool-call sequence. When present, the trajectory
+       * evaluator scores the agent's actual tool path (order + coverage)
+       * against it. Examples without an annotation report N/A so partial
+       * datasets don't dilute averages. Authored per-example in follow-up work.
+       */
+      expectedToolSequence?: string[];
+    }
+  >
+> = [
   {
     input: {
       question: `I want to see an ES|QL query that does the following: extract the query duration from the message field in postgres-logs*, and calculate the avg`,

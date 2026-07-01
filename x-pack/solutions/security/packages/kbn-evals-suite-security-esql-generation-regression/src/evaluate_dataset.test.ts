@@ -79,7 +79,7 @@ describe('createEvaluateEsqlGenerationDataset', () => {
 
     expect(deps.runExperiment).toHaveBeenCalledTimes(1);
     const [, evaluatorArray] = deps.runExperiment.mock.calls[0];
-    expect(evaluatorArray).toHaveLength(9);
+    expect(evaluatorArray).toHaveLength(10);
 
     expect(evaluatorArray[0].name).toBe('ES|QL Functional Equivalence');
     expect(evaluatorArray[0].kind).toBe('LLM');
@@ -93,12 +93,15 @@ describe('createEvaluateEsqlGenerationDataset', () => {
     expect(evaluatorArray[3].name).toBe('ES|QL Result Equivalence');
     expect(evaluatorArray[3].kind).toBe('CODE');
 
+    // Trajectory — scores the agent's tool-call path (LLM-free).
+    expect(evaluatorArray[4].name).toBe('Trajectory');
+
     // Observability tier — trace-based evaluators sourced from the framework.
-    expect(evaluatorArray[4].name).toBe('Tool calls');
-    expect(evaluatorArray[5].name).toBe('Latency');
-    expect(evaluatorArray[6].name).toBe('Input tokens');
-    expect(evaluatorArray[7].name).toBe('Output tokens');
-    expect(evaluatorArray[8].name).toBe('Cached tokens');
+    expect(evaluatorArray[5].name).toBe('Tool calls');
+    expect(evaluatorArray[6].name).toBe('Latency');
+    expect(evaluatorArray[7].name).toBe('Input tokens');
+    expect(evaluatorArray[8].name).toBe('Output tokens');
+    expect(evaluatorArray[9].name).toBe('Cached tokens');
   });
 
   it('drives the agent builder converse client for each example', async () => {

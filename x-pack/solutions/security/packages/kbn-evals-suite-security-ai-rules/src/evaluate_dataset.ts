@@ -11,8 +11,13 @@ import type {
   EvaluationDataset,
   Example,
   EvalsExecutorClient,
+  TaskOutput,
 } from '@kbn/evals';
-import { createEsqlEquivalenceEvaluator } from '@kbn/evals';
+import {
+  createEsqlEquivalenceEvaluator,
+  createTrajectoryEvaluator,
+  getToolCallSteps,
+} from '@kbn/evals';
 import type { BoundInferenceClient } from '@kbn/inference-common';
 import type { ToolingLog } from '@kbn/tooling-log';
 import type { ReferenceRule } from '../datasets/sample_rules';
@@ -32,6 +37,13 @@ import {
 export interface RuleGenerationTaskOutput {
   generatedRule?: Partial<ReferenceRule>;
   error?: string;
+  /**
+   * Tool-call steps from the converse response, threaded through so the
+   * trajectory evaluator can score the agent's tool path. Present on the
+   * success path; absent on negative/refusal cases (which the trajectory
+   * evaluator reports N/A for anyway).
+   */
+  steps?: Array<{ type: string; tool_id?: string }>;
 }
 
 // ---------------------------------------------------------------------------
@@ -436,6 +448,49 @@ export function createRuleDescriptionEvaluator(
 }
 
 // ---------------------------------------------------------------------------
+// Trajectory evaluator — scores the agent's tool-call path (LLM-free)
+// ---------------------------------------------------------------------------
+
+/**
+ * Trajectory evaluator wrapper. Scores the agent's tool-call sequence against a
+ * per-example `expectedToolSequence` annotation (carried on the reference rule)
+ * using LCS (order) + set intersection (coverage). Returns N/A when an example
+ * has no annotation so partial-coverage datasets aren't penalised. Mirrors the
+ * pci-compliance suite's `createPciTrajectoryEvaluator`.
+ */
+export function createAiRulesTrajectoryEvaluator(): Evaluator<
+  RuleExample,
+  RuleGenerationTaskOutput
+> {
+  const inner = createTrajectoryEvaluator({
+    extractToolCalls: (output) =>
+      getToolCallSteps(output as TaskOutput)
+        .map((step) => step.tool_id)
+        .filter((id): id is string => Boolean(id)),
+    goldenPathExtractor: (expected) =>
+      (expected as Partial<ReferenceRule> | undefined)?.expectedToolSequence ?? [],
+    orderWeight: 0.4,
+    coverageWeight: 0.6,
+  });
+
+  return {
+    ...inner,
+    name: 'Trajectory',
+    evaluate: async (args) => {
+      const seq = (args.expected as Partial<ReferenceRule> | undefined)?.expectedToolSequence;
+      if (!seq || seq.length === 0) {
+        return {
+          score: null,
+          label: 'N/A',
+          explanation: 'No expectedToolSequence annotation — skipping trajectory evaluation.',
+        };
+      }
+      return inner.evaluate(args);
+    },
+  } as Evaluator<RuleExample, RuleGenerationTaskOutput>;
+}
+
+// ---------------------------------------------------------------------------
 // Factory — mirrors the agent-builder createEvaluateDataset pattern
 // ---------------------------------------------------------------------------
 
@@ -466,6 +521,14 @@ export function createEvaluateDataset({
   const skip = (e: Evaluator<RuleExample, RuleGenerationTaskOutput>) =>
     skipAgentErrors(skipMissingIndexFailures(e));
 
+  // Observability (trace-based, zero per-example LLM cost): baseline latency /
+  // token-usage / tool-call signals derived from OTel spans for each task's
+  // trace.id. Sourced from the framework fixture so query shape stays
+  // consistent across suites. These are unconditional (no skip wrapper) because
+  // they measure cost/efficiency of the run regardless of functional outcome.
+  const { inputTokens, outputTokens, cachedTokens, toolCalls, latency } =
+    evaluators.traceBasedEvaluators;
+
   const allEvaluators: Array<Evaluator<RuleExample, RuleGenerationTaskOutput>> = [
     // CODE — deterministic
     skip(skipNegativeCases(createQuerySyntaxValidityEvaluator())),
@@ -486,6 +549,16 @@ export function createEvaluateDataset({
     // skip(skipNegativeCases(createRuleDescriptionEvaluator(evaluators))),
     // Rejection — scores 1 when model correctly refuses a negative case, N/A otherwise
     skip(createRejectionEvaluator()),
+    // Observability (trace-based, zero per-example LLM cost)
+    toolCalls as Evaluator<RuleExample, RuleGenerationTaskOutput>,
+    latency as Evaluator<RuleExample, RuleGenerationTaskOutput>,
+    inputTokens as Evaluator<RuleExample, RuleGenerationTaskOutput>,
+    outputTokens as Evaluator<RuleExample, RuleGenerationTaskOutput>,
+    cachedTokens as Evaluator<RuleExample, RuleGenerationTaskOutput>,
+    // Trajectory (LLM-free): scores the agent's tool-call path against a
+    // per-example golden sequence. Added raw (no skip wrapper) so it reports
+    // N/A on its own for unannotated examples. Reports N/A until annotations land.
+    createAiRulesTrajectoryEvaluator(),
   ];
 
   return async function evaluateDataset({

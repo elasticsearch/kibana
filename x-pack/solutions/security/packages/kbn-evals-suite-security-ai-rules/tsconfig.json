@@ -10,6 +10,7 @@
     "target/**/*"
   ],
   "kbn_references": [
+    "@kbn/agent-builder-common",
     "@kbn/evals",
     "@kbn/inference-common",
     "@kbn/scout",

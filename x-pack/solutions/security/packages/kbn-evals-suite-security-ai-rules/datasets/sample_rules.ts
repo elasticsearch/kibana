@@ -31,6 +31,13 @@ export interface ReferenceRule {
   interval?: string;
   /** Native ES|QL translation of the original query (for non-ES|QL rules) */
   esqlQuery?: string;
+  /**
+   * Optional golden tool-call sequence. When present, the trajectory
+   * evaluator scores the agent's actual tool path (order + coverage)
+   * against it. Examples without an annotation report N/A so partial
+   * datasets don't dilute averages. Authored per-example in follow-up work.
+   */
+  expectedToolSequence?: string[];
 }
 
 /**

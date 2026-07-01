@@ -5,12 +5,20 @@
  * 2.0.
  */
 
+import { agentBuilderDefaultAgentId } from '@kbn/agent-builder-common';
 import type { ReferenceRule } from '../datasets/sample_rules';
 
 // These string literals mirror the constants defined in security_solution/common/constants.
 // They are inlined here to avoid a package→plugin import boundary violation.
-const THREAT_HUNTING_AGENT_ID = 'security.agent';
 const SECURITY_RULE_ATTACHMENT_TYPE = 'security.rule';
+
+// Drive the default Agent Builder agent (`elastic-ai-agent`). The detection-rule
+// creation tool (`security.create_detection_rule`) is registered globally via
+// `agentBuilder.tools.register(...)` in
+// `security_solution/server/agent_builder/tools/register_tools.ts`, so it is
+// available to the default agent — there is no separately-registered
+// `security.agent`. Allow an explicit override for deliberate custom-agent runs.
+const RULE_GENERATION_AGENT_ID = process.env.AGENT_BUILDER_AGENT_ID ?? agentBuilderDefaultAgentId;
 
 const AGENT_BUILDER_CONVERSE_API_PATH = '/api/agent_builder/converse';
 const SECURITY_CREATE_DETECTION_RULE_TOOL_ID = 'security.create_detection_rule';
@@ -46,9 +54,10 @@ export class SecurityRuleGenerationClient {
   public async generateRule(prompt: string): Promise<{
     generatedRule?: Partial<ReferenceRule>;
     error?: string;
+    steps?: RuleToolStep[];
   }> {
     const payload = {
-      agent_id: THREAT_HUNTING_AGENT_ID,
+      agent_id: RULE_GENERATION_AGENT_ID,
       input: `Create a detection rule based on the following user_query using the dedicated detection rule creation tool. Do not perform any other actions after creating the rule. user_query: ${prompt}`,
       connector_id: this.connectorId,
       capabilities: { visualizations: true },
@@ -74,6 +83,7 @@ export class SecurityRuleGenerationClient {
     if (extracted.ruleData) {
       return {
         generatedRule: mapGeneratedRule(extracted.ruleData),
+        steps: syncResponse.steps,
       };
     }
 
@@ -84,6 +94,7 @@ export class SecurityRuleGenerationClient {
     );
     return {
       error: extracted.error || 'No rule returned from agent',
+      steps: syncResponse.steps,
     };
   }
 }

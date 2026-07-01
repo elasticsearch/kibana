@@ -6,8 +6,8 @@
  */
 
 import type { Client as EsClient } from '@elastic/elasticsearch';
-import type { DefaultEvaluators, Evaluator, EvalsExecutorClient } from '@kbn/evals';
-import { withEvaluatorSpan } from '@kbn/evals';
+import type { DefaultEvaluators, Evaluator, EvalsExecutorClient, TaskOutput } from '@kbn/evals';
+import { createTrajectoryEvaluator, getToolCallSteps, withEvaluatorSpan } from '@kbn/evals';
 import type { BoundInferenceClient } from '@kbn/inference-common';
 import type { ToolingLog } from '@kbn/tooling-log';
 import type { EsqlRegressionAgentBuilderChatClient } from './chat_client';
@@ -66,6 +66,52 @@ function sliceDataset<T>(examples: readonly T[]): T[] {
 }
 
 export type EvaluateEsqlGenerationDataset = () => Promise<void>;
+
+/**
+ * Ground-truth shape carried by each dataset example's `output`. `query` is the
+ * canonical ES|QL the quality evaluators compare against; `expectedToolSequence`
+ * is the optional golden tool path the trajectory evaluator scores against.
+ */
+interface EsqlExpectedOutput {
+  query: string;
+  expectedToolSequence?: string[];
+}
+
+/**
+ * Trajectory evaluator wrapper. Scores the agent's tool-call sequence against a
+ * per-example `expectedToolSequence` annotation using LCS (order) + set
+ * intersection (coverage). Returns N/A when an example has no annotation so
+ * partial-coverage datasets aren't penalised. Mirrors the pci-compliance suite's
+ * `createPciTrajectoryEvaluator`.
+ */
+export function createEsqlTrajectoryEvaluator(): Evaluator {
+  const inner = createTrajectoryEvaluator({
+    extractToolCalls: (output) =>
+      getToolCallSteps(output as TaskOutput)
+        .map((step) => step.tool_id)
+        .filter((id): id is string => Boolean(id)),
+    goldenPathExtractor: (expected) =>
+      (expected as EsqlExpectedOutput | undefined)?.expectedToolSequence ?? [],
+    orderWeight: 0.4,
+    coverageWeight: 0.6,
+  });
+
+  return {
+    ...inner,
+    name: 'Trajectory',
+    evaluate: async (args) => {
+      const seq = (args.expected as EsqlExpectedOutput | undefined)?.expectedToolSequence;
+      if (!seq || seq.length === 0) {
+        return {
+          score: null,
+          label: 'N/A',
+          explanation: 'No expectedToolSequence annotation — skipping trajectory evaluation.',
+        };
+      }
+      return inner.evaluate(args);
+    },
+  };
+}
 
 export function createEvaluateEsqlGenerationDataset({
   chatClient,
@@ -186,6 +232,9 @@ export function createEvaluateEsqlGenerationDataset({
         esqlValidityEvaluator,
         esqlExecutionEvaluator,
         esqlResultEquivalenceEvaluator,
+        // Trajectory (LLM-free): scores the agent's tool-call path against a
+        // per-example golden sequence. Reports N/A until annotations land.
+        createEsqlTrajectoryEvaluator(),
         // Observability (trace-based, zero per-example LLM cost): baseline
         // signals derived from OTel spans for this task's trace.id. Used to
         // track regressions in latency / token usage / tool-call counts over

@@ -7,7 +7,15 @@
 
 import type { ToolingLog } from '@kbn/tooling-log';
 import type { HttpHandler } from '@kbn/core/public';
+import { agentBuilderDefaultAgentId } from '@kbn/agent-builder-common';
 import pRetry from 'p-retry';
+
+// Drive the default Agent Builder agent (`elastic-ai-agent`) explicitly. The
+// entity-analytics skills/tools are registered globally, so the default agent
+// can route to them. An explicit `agent_id` (rather than relying on the server
+// default) keeps the suite stable if the server-side default ever changes, and
+// allows a deliberate custom-agent override via `AGENT_BUILDER_AGENT_ID`.
+const ENTITY_ANALYTICS_AGENT_ID = process.env.AGENT_BUILDER_AGENT_ID ?? agentBuilderDefaultAgentId;
 
 export type Messages = { message: string }[];
 
@@ -99,6 +107,7 @@ export class EvaluationChatClient {
         method: 'POST',
         version: '2023-10-31',
         body: JSON.stringify({
+          agent_id: ENTITY_ANALYTICS_AGENT_ID,
           connector_id: this.connectorId,
           conversation_id: conversationId,
           input: messages[messages.length - 1].message,
