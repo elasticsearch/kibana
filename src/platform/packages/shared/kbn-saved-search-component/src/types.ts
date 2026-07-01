@@ -57,5 +57,11 @@ export interface SavedSearchComponentProps extends SavedSearchTableConfig {
   height?: CSSProperties['height'];
   displayOptions?: NonPersistedDisplayOptions;
   onTableConfigChange?: (config: SavedSearchTableConfig) => void;
+  /**
+   * Called synchronously when the embeddable column state changes.
+   * Return column names to substitute Discover default/Summary columns; return
+   * undefined to keep the emitted columns.
+   */
+  resolveColumnsOnChange?: (columns: string[] | undefined) => string[] | undefined;
   executionContext?: KibanaExecutionContext;
 }

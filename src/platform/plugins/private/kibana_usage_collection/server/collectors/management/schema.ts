@@ -500,6 +500,16 @@ export const stackManagementSchema: MakeSchemaFrom<UsageStats> = {
     type: 'boolean',
     _meta: { description: 'Non-default value of setting.' },
   },
+  'observability:apmTraceLogsDefaultColumns': {
+    type: 'array',
+    items: {
+      type: 'keyword',
+      _meta: {
+        description:
+          'Field names configured as default columns for the Logs tab in APM trace samples.',
+      },
+    },
+  },
   'observability:apmAWSLambdaPriceFactor': {
     type: 'text',
     _meta: { description: 'Non-default value of setting.' },

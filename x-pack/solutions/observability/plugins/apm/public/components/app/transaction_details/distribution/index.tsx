@@ -27,6 +27,7 @@ import { fromQuery, push, toQuery } from '../../../shared/links/url_helpers';
 import type { TransactionTab } from '../waterfall_with_summary/transaction_tabs';
 import { useTransactionDistributionChartData } from './use_transaction_distribution_chart_data';
 import type { TraceSamplesFetchResult } from '../../../../hooks/use_transaction_trace_samples_fetcher';
+import { isDiscoverDefaultLogColumns } from './get_trace_logs_columns';
 
 interface TransactionDistributionProps {
   onChartSelection: (event: XYBrushEvent) => void;
@@ -153,23 +154,26 @@ export function TransactionDistribution({
         : config.grid;
 
       // Only include logs params with actual values to keep URLs clean
-      const hasColumns = config.columns && config.columns.length > 0;
+      const hasColumns = config.columns && !isDiscoverDefaultLogColumns(config.columns);
       const hasSort = cleanedSort && cleanedSort.length > 0;
       const hasGrid = cleanedGrid && Object.keys(cleanedGrid).length > 0;
 
-      history.replace({
-        ...history.location,
-        search: fromQuery({
-          ...currentQuery,
-          // Only include params that have meaningful values
-          logsColumns: hasColumns ? JSON.stringify(config.columns) : undefined,
-          logsSort: hasSort ? JSON.stringify(cleanedSort) : undefined,
-          logsGrid: hasGrid ? JSON.stringify(cleanedGrid) : undefined,
-          logsRowHeight: config.rowHeight,
-          logsRowsPerPage: config.rowsPerPage,
-          logsDensity: config.density,
-        }),
+      const nextSearch = fromQuery({
+        ...currentQuery,
+        logsColumns: hasColumns ? JSON.stringify(config.columns) : undefined,
+        logsSort: hasSort ? JSON.stringify(cleanedSort) : undefined,
+        logsGrid: hasGrid ? JSON.stringify(cleanedGrid) : undefined,
+        logsRowHeight: config.rowHeight,
+        logsRowsPerPage: config.rowsPerPage,
+        logsDensity: config.density,
       });
+
+      if (nextSearch !== history.location.search.slice(1)) {
+        history.replace({
+          ...history.location,
+          search: nextSearch,
+        });
+      }
     },
     [history]
   );

@@ -142,6 +142,8 @@ export const OBSERVABILITY_MAX_SUGGESTIONS_ID = 'observability:maxSuggestions';
 export const OBSERVABILITY_APM_ENABLE_TABLE_SEARCH_BAR = 'observability:apmEnableTableSearchBar';
 export const OBSERVABILITY_APM_ENABLE_SERVICE_INVENTORY_TABLE_SEARCH_BAR =
   'observability:apmEnableServiceInventoryTableSearchBar';
+export const OBSERVABILITY_APM_TRACE_LOGS_DEFAULT_COLUMNS_ID =
+  'observability:apmTraceLogsDefaultColumns';
 export const OBSERVABILITY_LOGS_SHARED_NEW_LOGS_OVERVIEW_ID = 'observability:newLogsOverview';
 export const OBSERVABILITY_LOGS_DATA_ACCESS_LOG_SOURCES_ID = 'observability:logSources';
 export const OBSERVABILITY_AI_ASSISTANT_SIMULATED_FUNCTION_CALLING =

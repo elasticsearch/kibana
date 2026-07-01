@@ -32,6 +32,7 @@ import {
   apmEnableTransactionProfiling,
   enableInfrastructureAssetCustomDashboards,
   apmEnableServiceInventoryTableSearchBar,
+  apmTraceLogsDefaultColumns,
   searchExcludedDataTiers,
   enableDiagnosticMode,
 } from '../common/ui_settings_keys';
@@ -204,6 +205,22 @@ export const uiSettings: Record<string, UiSettingsParams<boolean | number | stri
     value: true,
     requiresPageReload: true,
     type: 'boolean',
+    solutionViews: ['classic', 'oblt'],
+    technicalPreview: true,
+  },
+  [apmTraceLogsDefaultColumns]: {
+    category: [observabilityFeatureId],
+    name: i18n.translate('xpack.observability.apmTraceLogsDefaultColumns', {
+      defaultMessage: 'APM trace logs default columns',
+    }),
+    description: i18n.translate('xpack.observability.apmTraceLogsDefaultColumnsDescription', {
+      defaultMessage:
+        'Default columns for the Logs tab in APM trace samples. Specify field names (e.g. message, log.level). Leave empty to use the Summary column. @timestamp is always shown.',
+    }),
+    value: [],
+    schema: schema.arrayOf(schema.string()),
+    type: 'array',
+    requiresPageReload: false,
     solutionViews: ['classic', 'oblt'],
     technicalPreview: true,
   },

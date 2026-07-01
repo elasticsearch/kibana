@@ -7,7 +7,8 @@
 
 import { EuiSpacer, EuiTab, EuiTabs, EuiSkeletonText } from '@elastic/eui';
 import { i18n } from '@kbn/i18n';
-import React, { useMemo } from 'react';
+import { apmTraceLogsDefaultColumns } from '@kbn/observability-plugin/common';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import useAsync from 'react-use/lib/useAsync';
 import { LazySavedSearchComponent, type SavedSearchTableConfig } from '@kbn/saved-search-component';
 import { getTimestampUs } from '../../../../../common/utils/get_timestamp_us';
@@ -18,6 +19,13 @@ import { useDiscoverHref } from '../../../shared/links/discover_links/use_discov
 import { TransactionMetadata } from '../../../shared/metadata_table/transaction_metadata';
 import { UnifiedWaterfallContainer } from './waterfall_container/unified_waterfall_container';
 import { type UnifiedWaterfallFetcherResult } from '../use_unified_waterfall_fetcher';
+import {
+  getTraceLogsColumns,
+  isDiscoverDefaultLogColumns,
+  shouldPersistTraceLogsColumnsToUrl,
+} from '../distribution/get_trace_logs_columns';
+
+const EMPTY_TRACE_LOGS_DEFAULT_COLUMNS: string[] = [];
 
 export enum TransactionTab {
   timeline = 'timeline',
@@ -215,10 +223,73 @@ function LogsTabContent({
       data: {
         search: { searchSource },
       },
+      settings,
     },
   } = useKibana();
 
   const logSources = useAsync(logSourcesService.getFlattenedLogSources);
+
+  const settingsClient = settings.client;
+
+  const [defaultColumns, setDefaultColumns] = useState<string[]>(
+    () =>
+      settingsClient.get<string[]>(apmTraceLogsDefaultColumns, EMPTY_TRACE_LOGS_DEFAULT_COLUMNS) ??
+      EMPTY_TRACE_LOGS_DEFAULT_COLUMNS
+  );
+
+  useEffect(() => {
+    const subscription = settingsClient
+      .get$(apmTraceLogsDefaultColumns, EMPTY_TRACE_LOGS_DEFAULT_COLUMNS)
+      .subscribe((value) => {
+        setDefaultColumns(Array.isArray(value) ? value : EMPTY_TRACE_LOGS_DEFAULT_COLUMNS);
+      });
+
+    return () => subscription.unsubscribe();
+  }, [settingsClient]);
+
+  const columns = useMemo(
+    () =>
+      getTraceLogsColumns({
+        urlColumns: logsTableConfig?.columns,
+        defaultColumns,
+      }),
+    [defaultColumns, logsTableConfig?.columns]
+  );
+
+  const resolveColumnsOnChange = useCallback(
+    (emittedColumns: string[] | undefined) => {
+      if (!isDiscoverDefaultLogColumns(emittedColumns)) {
+        return undefined;
+      }
+
+      return getTraceLogsColumns({
+        urlColumns: undefined,
+        defaultColumns,
+      });
+    },
+    [defaultColumns]
+  );
+
+  const handleLogsTableConfigChange = useCallback(
+    (config: SavedSearchTableConfig) => {
+      if (!onLogsTableConfigChange) {
+        return;
+      }
+
+      const columnsForUrl = shouldPersistTraceLogsColumnsToUrl({
+        emittedColumns: config.columns,
+        defaultColumns,
+      })
+        ? config.columns
+        : undefined;
+
+      onLogsTableConfigChange({
+        ...config,
+        columns: columnsForUrl,
+      });
+    },
+    [defaultColumns, onLogsTableConfigChange]
+  );
 
   const startTimestamp = Math.floor(timestamp / 1000);
   const endTimestamp = Math.ceil(startTimestamp + duration / 1000);
@@ -248,7 +319,7 @@ function LogsTabContent({
       index={logSources.value}
       timeRange={timeRange}
       query={query}
-      columns={logsTableConfig?.columns}
+      columns={columns}
       sort={logsTableConfig?.sort}
       grid={logsTableConfig?.grid}
       rowHeight={logsTableConfig?.rowHeight}
@@ -260,7 +331,8 @@ function LogsTabContent({
         enableDocumentViewer: true,
         enableFilters: false,
       }}
-      onTableConfigChange={onLogsTableConfigChange}
+      onTableConfigChange={handleLogsTableConfigChange}
+      resolveColumnsOnChange={resolveColumnsOnChange}
     />
   ) : null;
 }
