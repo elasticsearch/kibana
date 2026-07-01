@@ -1,0 +1,111 @@
+openapi: 3.0.0
+info:
+  title: Set attacks tags API endpoint
+  version: '2023-10-31'
+paths:
+  /api/detection_engine/attacks/tags:
+    post:
+      x-labels: [serverless, ess]
+      x-internal: true
+      operationId: SetAttacksTags
+      x-codegen-enabled: true
+      summary: Add and remove attack discovery alert tags
+      description: Add tags to attack discovery alerts, and remove them from alerts, by attack IDs in a single request. Optionally cascade tag changes to related detection alerts.
+      tags:
+        - Attacks API
+      requestBody:
+        description: An object containing tags to add or remove and attack ids the changes will be applied to
+        required: true
+        content:
+          application/json:
+            schema:
+              description: Set attacks tags by IDs request
+              $ref: '#/components/schemas/SetAttacksTagsByIds'
+            examples:
+              add:
+                value:
+                  ids: ['80e1383f856e67c1b7f7a1634744fa6d66b6e2ef7aa26d226e57afb5a7b2b4a1']
+                  tags:
+                    tags_to_add: ['investigation']
+                    tags_to_remove: []
+              remove:
+                value:
+                  ids: ['80e1383f856e67c1b7f7a1634744fa6d66b6e2ef7aa26d226e57afb5a7b2b4a1']
+                  tags:
+                    tags_to_add: []
+                    tags_to_remove: ['investigation']
+              withRelatedAlerts:
+                value:
+                  ids: ['80e1383f856e67c1b7f7a1634744fa6d66b6e2ef7aa26d226e57afb5a7b2b4a1']
+                  tags:
+                    tags_to_add: ['investigation']
+                    tags_to_remove: []
+                  update_related_alerts: true
+      responses:
+        200:
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+                description: Elasticsearch update by query response
+              examples:
+                success:
+                  value:
+                    took: 68
+                    timed_out: false
+                    total: 1
+                    updated: 1
+                    deleted: 0
+                    batches: 1
+                    version_conflicts: 0
+                    noops: 0
+                    retries:
+                      bulk: 0
+                      search: 0
+                    throttled_millis: 0
+                    requests_per_second: -1
+                    throttled_until_millis: 0
+                    failures: []
+        400:
+          description: Invalid input data response
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '../../../model/error_responses.schema.yaml#/components/schemas/PlatformErrorResponse'
+                  - $ref: '../../../model/error_responses.schema.yaml#/components/schemas/SiemErrorResponse'
+              examples:
+                badRequest:
+                  value:
+                    message:
+                      - 'Duplicate tags ["duplicate"] were found in the tags_to_add and tags_to_remove parameters.'
+                    status_code: 400
+        401:
+          description: Unsuccessful authentication response
+          content:
+            application/json:
+              schema:
+                $ref: '../../../model/error_responses.schema.yaml#/components/schemas/PlatformErrorResponse'
+        500:
+          description: Internal server error response
+          content:
+            application/json:
+              schema:
+                $ref: '../../../model/error_responses.schema.yaml#/components/schemas/SiemErrorResponse'
+
+components:
+  schemas:
+    SetAttacksTagsByIds:
+      type: object
+      properties:
+        ids:
+          $ref: '../../../model/alert.schema.yaml#/components/schemas/AlertIds'
+        tags:
+          $ref: '../../model/set_alert_tags_body.schema.yaml#/components/schemas/SetAlertTags'
+        update_related_alerts:
+          $ref: '../common/attacks.schema.yaml#/components/schemas/UpdateRelatedAlerts'
+      required:
+        - ids
+        - tags

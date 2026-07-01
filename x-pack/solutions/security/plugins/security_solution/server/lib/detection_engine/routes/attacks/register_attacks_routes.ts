@@ -19,6 +19,6 @@ export const registerAttacksRoutes = (
 ) => {
   searchAttacksRoute(router);
   setAttacksStatusRoute(router, ruleDataClient);
-  setAttacksTagsRoute(router);
+  setAttacksTagsRoute(router, ruleDataClient);
   setAttacksAssigneesRoute(router, ruleDataClient);
 };

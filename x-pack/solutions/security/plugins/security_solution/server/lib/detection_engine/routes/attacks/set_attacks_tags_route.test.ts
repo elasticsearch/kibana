@@ -14,15 +14,17 @@ import {
 import { ruleRegistryMocks } from '@kbn/rule-registry-plugin/server/mocks';
 import type { RuleDataClientMock } from '@kbn/rule-registry-plugin/server/rule_data_client/rule_data_client.mock';
 
-import { DETECTION_ENGINE_ATTACKS_STATUS_URL } from '../../../../../common/constants';
+import { DETECTION_ENGINE_ATTACKS_TAGS_URL } from '../../../../../common/constants';
 import { getSuccessfulSignalUpdateResponse } from '../__mocks__/request_responses';
 import type { SecuritySolutionRequestHandlerContextMock } from '../__mocks__/request_context';
 import { requestContextMock, serverMock, requestMock } from '../__mocks__';
-import { setAttacksStatusRoute } from './set_attacks_status_route';
+import { setAttacksTagsRoute } from './set_attacks_tags_route';
 
 const SCHEDULED_INDEX = `${ATTACK_DISCOVERY_ALERTS_COMMON_INDEX_PREFIX}-default`;
 const ADHOC_INDEX = `${ATTACK_DISCOVERY_ADHOC_ALERTS_COMMON_INDEX_PREFIX}-default`;
 const DETECTION_ALERTS_INDEX = '.alerts-security.alerts-default';
+
+const defaultTags = { tags_to_add: ['investigation'], tags_to_remove: [] };
 
 const getSearchResponse = (
   hits: Array<{ _id: string; alertIds?: string[] }>
@@ -44,13 +46,13 @@ const getSearchResponse = (
 const getRequest = (body: Record<string, unknown>) =>
   requestMock.create({
     method: 'post',
-    path: DETECTION_ENGINE_ATTACKS_STATUS_URL,
+    path: DETECTION_ENGINE_ATTACKS_TAGS_URL,
     body,
   });
 
-const defaultBody = { ids: ['attack1', 'attack2'], status: 'acknowledged' };
+const defaultBody = { ids: ['attack1', 'attack2'], tags: defaultTags };
 
-describe('set attacks workflow status', () => {
+describe('set attacks tags', () => {
   let server: ReturnType<typeof serverMock.create>;
   let context: SecuritySolutionRequestHandlerContextMock;
   let ruleDataClient: RuleDataClientMock;
@@ -59,13 +61,12 @@ describe('set attacks workflow status', () => {
     jest.clearAllMocks();
     server = serverMock.create();
     ({ context } = requestContextMock.createTools());
-    context.core.uiSettings.client.get.mockResolvedValue([]);
     context.core.elasticsearch.client.asCurrentUser.updateByQuery.mockResponse(
       getSuccessfulSignalUpdateResponse()
     );
     ruleDataClient = ruleRegistryMocks.createRuleDataClient('.alerts-security.alerts');
 
-    setAttacksStatusRoute(server.router, ruleDataClient);
+    setAttacksTagsRoute(server.router, ruleDataClient);
   });
 
   afterEach(() => {
@@ -159,7 +160,7 @@ describe('set attacks workflow status', () => {
       await server.inject(
         getRequest({
           ids: ['attack1', 'unknown'],
-          status: 'acknowledged',
+          tags: defaultTags,
           update_related_alerts: true,
         }),
         requestContextMock.convertContext(context)
@@ -190,34 +191,35 @@ describe('set attacks workflow status', () => {
     });
   });
 
-  describe('closing reason validation', () => {
-    test('returns 400 when the closing reason is invalid', async () => {
+  describe('tag validation', () => {
+    test('returns 400 when the same tag is in both add and remove arrays', async () => {
       const response = await server.inject(
-        getRequest({ ids: ['attack1'], status: 'closed', reason: 'invalid_reason' }),
+        getRequest({
+          ids: ['attack1'],
+          tags: { tags_to_add: ['duplicate'], tags_to_remove: ['duplicate'] },
+        }),
         requestContextMock.convertContext(context)
       );
 
       expect(response.status).toEqual(400);
+      expect(response.body).toEqual({
+        message: [
+          'Duplicate tags ["duplicate"] were found in the tags_to_add and tags_to_remove parameters.',
+        ],
+        status_code: 400,
+      });
     });
 
-    test('does not update when the closing reason is invalid', async () => {
+    test('does not update when tag validation fails', async () => {
       await server.inject(
-        getRequest({ ids: ['attack1'], status: 'closed', reason: 'invalid_reason' }),
+        getRequest({
+          ids: ['attack1'],
+          tags: { tags_to_add: ['duplicate'], tags_to_remove: ['duplicate'] },
+        }),
         requestContextMock.convertContext(context)
       );
 
       expect(context.core.elasticsearch.client.asCurrentUser.updateByQuery).not.toHaveBeenCalled();
-    });
-
-    test('returns 200 when the closing reason is a configured custom reason', async () => {
-      context.core.uiSettings.client.get.mockResolvedValue(['configured_custom_reason']);
-
-      const response = await server.inject(
-        getRequest({ ids: ['attack1'], status: 'closed', reason: 'configured_custom_reason' }),
-        requestContextMock.convertContext(context)
-      );
-
-      expect(response.status).toEqual(200);
     });
   });
 
@@ -237,19 +239,19 @@ describe('set attacks workflow status', () => {
   });
 
   describe('request validation', () => {
-    test('allows ids and status', async () => {
+    test('allows ids and tags', async () => {
       const result = server.validate(getRequest(defaultBody));
 
       expect(result.ok).toHaveBeenCalled();
     });
 
     test('rejects an empty ids array', async () => {
-      const result = server.validate(getRequest({ ids: [], status: 'open' }));
+      const result = server.validate(getRequest({ ids: [], tags: defaultTags }));
 
       expect(result.badRequest).toHaveBeenCalled();
     });
 
-    test('rejects a request without status', async () => {
+    test('rejects a request without tags', async () => {
       const result = server.validate(getRequest({ ids: ['attack1'] }));
 
       expect(result.badRequest).toHaveBeenCalled();

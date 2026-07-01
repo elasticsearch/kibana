@@ -68,6 +68,7 @@ import type { SetAlertsStatusRequestBodyInput } from '@kbn/security-solution-plu
 import type { SetAlertTagsRequestBodyInput } from '@kbn/security-solution-plugin/common/api/detection_engine/alert_tags/set_alert_tags/set_alert_tags.gen';
 import type { SetAttacksAssigneesRequestBodyInput } from '@kbn/security-solution-plugin/common/api/detection_engine/attacks/set_assignees/set_assignees_route.gen';
 import type { SetAttacksStatusRequestBodyInput } from '@kbn/security-solution-plugin/common/api/detection_engine/attacks/set_workflow_status/set_workflow_status_route.gen';
+import type { SetAttacksTagsRequestBodyInput } from '@kbn/security-solution-plugin/common/api/detection_engine/attacks/set_tags/set_attacks_tags_route.gen';
 import type { SetUnifiedAlertsAssigneesRequestBodyInput } from '@kbn/security-solution-plugin/common/api/detection_engine/unified_alerts/set_alert_assignees/set_alert_assignees_route.gen';
 import type { SetUnifiedAlertsTagsRequestBodyInput } from '@kbn/security-solution-plugin/common/api/detection_engine/unified_alerts/set_alert_tags/set_alert_tags_route.gen';
 import type { SetUnifiedAlertsWorkflowStatusRequestBodyInput } from '@kbn/security-solution-plugin/common/api/detection_engine/unified_alerts/set_workflow_status/set_workflow_status_route.gen';
@@ -659,6 +660,17 @@ Optionally cascade the change to related detection alerts via `kibana.alert.atta
       .send(props.body as object);
   },
   /**
+   * Add tags to attack discovery alerts, and remove them from alerts, by attack IDs in a single request. Optionally cascade tag changes to related detection alerts.
+   */
+  setAttacksTags(props: SetAttacksTagsProps, kibanaSpace: string = 'default') {
+    return supertest
+      .post(getRouteUrlForSpace('/api/detection_engine/attacks/tags', kibanaSpace))
+      .set('kbn-xsrf', 'true')
+      .set(ELASTIC_HTTP_VERSION_HEADER, '2023-10-31')
+      .set(X_ELASTIC_INTERNAL_ORIGIN_REQUEST, 'kibana')
+      .send(props.body as object);
+  },
+  /**
       * Assign users to detection and attack alerts, and unassign them from alerts.
 > info
 > You cannot add and remove the same assignee in the same request.
@@ -841,6 +853,9 @@ export interface SetAttacksAssigneesProps {
 }
 export interface SetAttacksStatusProps {
   body: SetAttacksStatusRequestBodyInput;
+}
+export interface SetAttacksTagsProps {
+  body: SetAttacksTagsRequestBodyInput;
 }
 export interface SetUnifiedAlertsAssigneesProps {
   body: SetUnifiedAlertsAssigneesRequestBodyInput;

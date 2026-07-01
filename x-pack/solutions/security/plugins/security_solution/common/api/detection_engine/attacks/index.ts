@@ -7,5 +7,6 @@
 
 export * from './common/attacks.gen';
 export * from './search/search_route.gen';
+export * from './set_tags/set_attacks_tags_route.gen';
 export * from './set_assignees/set_assignees_route.gen';
 export * from './set_workflow_status/set_workflow_status_route.gen';
