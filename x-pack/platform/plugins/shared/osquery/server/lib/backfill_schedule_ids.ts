@@ -5,12 +5,10 @@
  * 2.0.
  */
 
-import moment from 'moment-timezone';
-import { v4 as uuidv4 } from 'uuid';
 import { set } from '@kbn/safer-lodash-set';
-import { unset } from 'lodash';
+import { get, isEqual, unset } from 'lodash';
 import { produce } from 'immer';
-import type { CoreStart, Logger } from '@kbn/core/server';
+import type { CoreStart, Logger, SavedObjectsFindResult } from '@kbn/core/server';
 import type { PackagePolicy } from '@kbn/fleet-plugin/common';
 import {
   LEGACY_AGENT_POLICY_SAVED_OBJECT_TYPE,
@@ -33,11 +31,21 @@ import {
 } from '../routes/pack/utils';
 
 /**
- * One-time migration that assigns stable `schedule_id` + `start_date` to every
- * pack query that doesn't already have them. The task marks itself as completed
- * after the first successful run; subsequent executions are no-ops.
+ * One-shot, idempotent reconciler that projects each enabled pack's
+ * Saved-Object `schedule_id` values onto its Fleet package-policy wire, so the
+ * Elastic Agent emits result documents carrying `schedule_id` (the modern
+ * scheduled-history join key).
+ *
+ * This is NOT a backfill: minting `schedule_id` is owned by the pack SO
+ * `data_backfill` model version (V4). By the time this runs, the SO carries
+ * `schedule_id` on every query, so the reconciler reads it as the source of
+ * truth and never mints — making it idempotent (no per-run uuid drift). Writing
+ * the cross-SO Fleet package policy is the one job a model version cannot do.
+ *
+ * It writes ONLY the osquery pack block of the package policy; all other
+ * policy state is preserved.
  */
-export const backfillScheduleIds = async ({
+export const reconcileScheduleIdsToWire = async ({
   coreStart,
   osqueryContext,
   logger,
@@ -52,32 +60,58 @@ export const backfillScheduleIds = async ({
 }): Promise<{ hadFailures: boolean }> => {
   const internalClient = await getInternalSavedObjectsClient(coreStart);
 
-  const allPacks = await internalClient.find<PackSavedObject>({
-    type: packSavedObjectType,
-    perPage: 1000,
-    namespaces: ['*'],
-  });
+  // Page through every pack across all spaces — a deployment can have >1000
+  // packs, and a single missed page leaves those packs' `schedule_id` never
+  // projected onto the wire.
+  const PER_PAGE = 1000;
+  const allPackSavedObjects: Array<SavedObjectsFindResult<PackSavedObject>> = [];
+  let page = 1;
+  let total = Infinity;
+  do {
+    const response = await internalClient.find<PackSavedObject>({
+      type: packSavedObjectType,
+      perPage: PER_PAGE,
+      page,
+      namespaces: ['*'],
+    });
+    allPackSavedObjects.push(...response.saved_objects);
+    total = response.total;
+    page += 1;
+  } while (allPackSavedObjects.length < total);
 
-  const packsToBackfill = allPacks.saved_objects.filter((pack) =>
-    pack.attributes.queries?.some((q) => !q.schedule_id)
+  // Only enabled packs reach the Fleet wire. A pack whose SO carries
+  // `schedule_id` values (guaranteed post-V4 for every query) is a reconcile
+  // candidate; the per-policy wire-vs-SO diff gate below decides whether a
+  // write is actually needed, so an already-in-sync pack is skipped.
+  const packsToReconcile = allPackSavedObjects.filter(
+    (pack) => pack.attributes.enabled && pack.attributes.queries?.length
   );
 
-  if (!packsToBackfill.length) {
-    logger.debug('backfillScheduleIds: all packs already have schedule_id values');
+  if (!packsToReconcile.length) {
+    logger.debug('reconcileScheduleIdsToWire: no enabled packs to reconcile');
 
     return { hadFailures: false };
   }
 
-  logger.info(`backfillScheduleIds: ${packsToBackfill.length} pack(s) need schedule_id backfill`);
+  logger.info(
+    `reconcileScheduleIdsToWire: ${packsToReconcile.length} enabled pack(s) to reconcile onto the Fleet wire`
+  );
 
   const packagePolicyService = osqueryContext.getPackagePolicyService();
   const esClient = coreStart.elasticsearch.client.asInternalUser;
-  const now = moment().toISOString();
   let hadFailures = false;
 
-  for (const packSO of packsToBackfill) {
+  if (!packagePolicyService) {
+    logger.warn('reconcileScheduleIdsToWire: package policy service unavailable, will retry');
+
+    return { hadFailures: true };
+  }
+
+  for (const packSO of packsToReconcile) {
     if (abortController?.signal.aborted) {
-      logger.info('backfillScheduleIds: aborted by task manager, will retry remaining packs');
+      logger.info(
+        'reconcileScheduleIdsToWire: aborted by task manager, will retry remaining packs'
+      );
 
       return { hadFailures: true };
     }
@@ -86,85 +120,112 @@ export const backfillScheduleIds = async ({
       const spaceId = packSO.namespaces?.[0] ?? 'default';
       const spaceClient = getInternalSavedObjectsClientForSpaceId(coreStart, spaceId);
 
-      const updatedQueries = (packSO.attributes.queries ?? []).map((q) => ({
-        ...q,
-        schedule_id: q.schedule_id ?? uuidv4(),
-        start_date: q.start_date ?? now,
-      }));
+      const policyRefs =
+        packSO.references
+          ?.filter((r) => r.type === LEGACY_AGENT_POLICY_SAVED_OBJECT_TYPE)
+          .map((r) => r.id) ?? [];
 
-      await spaceClient.update(packSavedObjectType, packSO.id, {
-        queries: updatedQueries,
-      });
+      if (!policyRefs.length) {
+        continue;
+      }
 
-      if (packSO.attributes.enabled && packagePolicyService) {
-        const policyRefs =
-          packSO.references
-            ?.filter((r) => r.type === LEGACY_AGENT_POLICY_SAVED_OBJECT_TYPE)
-            .map((r) => r.id) ?? [];
+      // Page through every osquery package policy in the space — a single
+      // space can hold >1000, and a missed page leaves that policy's wire
+      // unreconciled with no signal.
+      const packagePolicies: PackagePolicy[] = [];
+      let policyPage = 1;
+      let policyTotal = Infinity;
+      do {
+        const result = (await packagePolicyService.list(spaceClient, {
+          kuery: `${PACKAGE_POLICY_SAVED_OBJECT_TYPE}.package.name:${OSQUERY_INTEGRATION_NAME}`,
+          perPage: PER_PAGE,
+          page: policyPage,
+        })) ?? { items: [], total: 0 };
+        packagePolicies.push(...result.items);
+        policyTotal = result.total ?? result.items.length;
+        policyPage += 1;
+      } while (packagePolicies.length < policyTotal);
 
-        if (policyRefs.length) {
-          const { items: packagePolicies } = (await packagePolicyService.list(spaceClient, {
-            kuery: `${PACKAGE_POLICY_SAVED_OBJECT_TYPE}.package.name:${OSQUERY_INTEGRATION_NAME}`,
-            perPage: 1000,
-            page: 1,
-          })) ?? { items: [] };
+      for (const pp of packagePolicies) {
+        if (policyHasPack(pp, packSO.attributes.name, spaceId)) {
+          const packPath = `inputs[0].config.osquery.value.packs.${makePackKey(
+            packSO.attributes.name,
+            spaceId
+          )}`;
 
-          for (const pp of packagePolicies) {
-            if (policyHasPack(pp, packSO.attributes.name, spaceId)) {
-              const packPath = `inputs[0].config.osquery.value.packs.${makePackKey(
-                packSO.attributes.name,
-                spaceId
-              )}`;
-              await packagePolicyService.update(
-                spaceClient,
-                esClient,
-                pp.id,
-                produce<PackagePolicy>(pp, (draft) => {
-                  unset(draft, 'id');
-                  removePackFromPolicy(draft, packSO.attributes.name, spaceId);
-                  const { queries: builtQueries, ...packDefaults } = convertSOQueriesToPackConfig(
-                    updatedQueries,
-                    {
-                      spaceId,
-                      packSchedule: {
-                        schedule_type: packSO.attributes.schedule_type,
-                        interval: packSO.attributes.interval,
-                        rrule_schedule: packSO.attributes.rrule_schedule,
-                      },
-                      isRruleFeatureEnabled,
-                    }
-                  );
-                  set(draft, `${packPath}.pack_id`, packSO.id);
-                  for (const [k, v] of Object.entries(packDefaults)) {
-                    set(draft, `${packPath}.${k}`, v);
-                  }
-
-                  set(draft, `${packPath}.queries`, builtQueries);
-
-                  return draft;
-                })
-              );
+          const { queries: builtQueries, ...packDefaults } = convertSOQueriesToPackConfig(
+            packSO.attributes.queries ?? [],
+            {
+              spaceId,
+              packSchedule: {
+                schedule_type: packSO.attributes.schedule_type,
+                interval: packSO.attributes.interval,
+                rrule_schedule: packSO.attributes.rrule_schedule,
+              },
+              isRruleFeatureEnabled,
             }
+          );
+
+          const existingPackBlock = get(pp, packPath) as Record<string, unknown> | undefined;
+
+          const legacyPackBlock = get(
+            pp,
+            `inputs[0].config.osquery.value.packs.${packSO.attributes.name}`
+          ) as Record<string, unknown> | undefined;
+          const existingShard = existingPackBlock?.shard ?? legacyPackBlock?.shard;
+
+          // The exact block the write below re-sets, so it IS the post-write
+          // state — used as the diff gate against the current wire.
+          const intendedPackBlock = {
+            ...(existingShard !== undefined ? { shard: existingShard } : {}),
+            pack_id: packSO.id,
+            ...packDefaults,
+            queries: builtQueries,
+          };
+
+          if (isEqual(existingPackBlock, intendedPackBlock)) {
+            logger.debug(
+              `reconcileScheduleIdsToWire: pack ${packSO.id} already in sync on policy ${pp.id}, skipping write`
+            );
+            continue;
           }
+
+          await packagePolicyService.update(
+            spaceClient,
+            esClient,
+            pp.id,
+            produce<PackagePolicy>(pp, (draft) => {
+              unset(draft, 'id');
+              removePackFromPolicy(draft, packSO.attributes.name, spaceId);
+              set(draft, packPath, intendedPackBlock);
+
+              return draft;
+            })
+          );
         }
       }
 
-      logger.debug(`backfillScheduleIds: backfilled pack ${packSO.id} in space ${spaceId}`);
+      logger.debug(`reconcileScheduleIdsToWire: reconciled pack ${packSO.id} in space ${spaceId}`);
     } catch (err) {
       const error = err as Error & { statusCode?: number };
       if (error.statusCode === 409) {
-        logger.debug(`backfillScheduleIds: version conflict for pack ${packSO.id}, skipping`);
+        logger.debug(
+          `reconcileScheduleIdsToWire: version conflict for pack ${packSO.id}, will retry`
+        );
+        hadFailures = true;
       } else {
-        logger.warn(`backfillScheduleIds: failed to backfill pack ${packSO.id}: ${error.message}`);
+        logger.warn(
+          `reconcileScheduleIdsToWire: failed to reconcile pack ${packSO.id}: ${error.message}`
+        );
         hadFailures = true;
       }
     }
   }
 
   if (hadFailures) {
-    logger.warn('backfillScheduleIds: backfill finished with partial failures, will retry');
+    logger.warn('reconcileScheduleIdsToWire: reconcile finished with partial failures, will retry');
   } else {
-    logger.info('backfillScheduleIds: backfill complete');
+    logger.info('reconcileScheduleIdsToWire: reconcile complete');
   }
 
   return { hadFailures };

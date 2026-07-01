@@ -48,11 +48,14 @@ import { createDataViews } from './create_data_views';
 import { registerFeatures } from './utils/register_features';
 import { osqueryUnifiedAttachment } from './cases/attachments';
 import { createActionService } from './handlers/action/create_action_service';
-import { backfillScheduleIds } from './lib/backfill_schedule_ids';
+import { reconcileScheduleIdsToWire } from './lib/backfill_schedule_ids';
+import {
+  RECONCILE_TASK_TYPE,
+  buildReconcileTaskSchedule,
+  buildReconcileRunResult,
+} from './lib/reconcile_schedule_ids_task';
 import { checkResponseActionAuthz } from './lib/check_response_action_authz';
 import { SchemaService } from './lib/schema_service';
-
-const BACKFILL_TASK_TYPE = 'osquery:backfillScheduleIds';
 
 export class OsqueryPlugin implements Plugin<OsqueryPluginSetup, OsqueryPluginStart> {
   private readonly logger: Logger;
@@ -118,23 +121,17 @@ export class OsqueryPlugin implements Plugin<OsqueryPluginSetup, OsqueryPluginSt
     this.telemetryEventsSender.setup(this.telemetryReceiver, plugins.taskManager, core.analytics);
 
     plugins.taskManager?.registerTaskDefinitions({
-      [BACKFILL_TASK_TYPE]: {
-        title: 'Backfill schedule IDs for osquery pack queries',
+      [RECONCILE_TASK_TYPE]: {
+        title: 'Reconcile osquery pack schedule IDs onto the Fleet wire',
         timeout: '5m',
         maxAttempts: 3,
-        createTaskRunner: ({ taskInstance, abortController }) => ({
+        createTaskRunner: ({ abortController }) => ({
           run: async () => {
-            if (taskInstance.state?.completed) {
-              this.logger.debug('backfillScheduleIds task: already completed, skipping');
-
-              return { state: { completed: true } };
-            }
-
             if (!this.coreStart) {
               throw new Error('Core not started');
             }
 
-            const { hadFailures } = await backfillScheduleIds({
+            const { hadFailures } = await reconcileScheduleIdsToWire({
               coreStart: this.coreStart,
               osqueryContext: this.osqueryAppContextService,
               logger: this.logger,
@@ -142,7 +139,7 @@ export class OsqueryPlugin implements Plugin<OsqueryPluginSetup, OsqueryPluginSt
               isRruleFeatureEnabled: this.rruleSchedulingEnabled,
             });
 
-            return { state: { completed: !hadFailures } };
+            return buildReconcileRunResult(hadFailures, new Date());
           },
         }),
       },
@@ -204,16 +201,9 @@ export class OsqueryPlugin implements Plugin<OsqueryPluginSetup, OsqueryPluginSt
         });
 
         plugins.taskManager
-          ?.ensureScheduled({
-            id: BACKFILL_TASK_TYPE,
-            taskType: BACKFILL_TASK_TYPE,
-            scope: ['osquery'],
-            schedule: { interval: '24h' },
-            params: {},
-            state: {},
-          })
+          ?.ensureScheduled(buildReconcileTaskSchedule(new Date()))
           .catch((err) => {
-            this.logger.warn(`Failed to schedule backfillScheduleIds task: ${err.message}`);
+            this.logger.warn(`Failed to schedule reconcileScheduleIdsToWire task: ${err.message}`);
           });
 
         if (registerIngestCallback) {

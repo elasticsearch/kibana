@@ -57,12 +57,13 @@ import {
   buildScheduleResponseSlice,
   stripPerQueryRruleFields,
   stripPriorModePerQueryFields,
+  resolvePreservedQueries,
 } from './utils';
 
 import { convertShardsToArray, convertShardsToObject } from '../utils';
 import type { PackSavedObject } from '../../common/types';
 import type { PackResponseData } from './types';
-import type { PackQueryInput } from './utils';
+import type { PackQueryInput, PreservableQueryFields } from './utils';
 import { updatePacksRequestBodySchema, updatePacksRequestParamsSchema } from '../../../common/api';
 import { getUserInfo } from '../../lib/get_user_info';
 import { escapeFilterValue } from '../utils/generate_copy_name';
@@ -176,22 +177,15 @@ export const updatePackRoute = (router: IRouter, osqueryContext: OsqueryAppConte
           throw err;
         }
 
-        const existingScheduleIds = keyBy(
-          (currentPackSO.attributes.queries ?? []).filter(
-            (existingQuery: { id: string; schedule_id?: string }) => existingQuery.schedule_id
-          ),
-          'id'
-        );
+        // Index of every current SO query by its stored `id`, carrying the
+        // fields we must preserve across an edit-save: the per-query
+        // `schedule_id` (the modern scheduled-history join key) and
+        // `start_date`, plus the existing `rrule_schedule` used to merge
+        // partial per-query rrule payloads on same-mode override edits.
 
-        // Broader index of every current SO query (regardless of
-        // `schedule_id` presence) — used to merge partial per-query
-        // `rrule_schedule` payloads against the existing per-query rrule
-        // on same-mode override edits. Without this, sending only
-        // `{ rrule_schedule: { rrule: '...' } }` on one query would
-        // overwrite its `start_date` / `splay` on the SO.
         const existingQueriesById = keyBy(currentPackSO.attributes.queries ?? [], 'id') as Record<
           string,
-          { rrule_schedule?: PackQueryInput['rrule_schedule'] }
+          PreservableQueryFields
         >;
 
         const resolved = resolvePackScheduleForUpdate({
@@ -230,9 +224,16 @@ export const updatePackRoute = (router: IRouter, osqueryContext: OsqueryAppConte
               >)
             : undefined);
 
+        // Map each outgoing query to the stored query it preserves
+        // `schedule_id` / `start_date` from, guaranteeing no two queries share a
+        // stored row (see `resolvePreservedQueries`).
+        const resolvedExistingByKey = baseQueries
+          ? resolvePreservedQueries(baseQueries, existingQueriesById)
+          : {};
+
         const queries = baseQueries
           ? (mapValues(baseQueries, (queryData, queryId) => {
-              const existing = existingScheduleIds[queryId];
+              const existing = resolvedExistingByKey[queryId];
               const carried = resolved.transitioned
                 ? stripPriorModePerQueryFields(queryData, resolved.scheduleType)
                 : queryData;
@@ -244,7 +245,7 @@ export const updatePackRoute = (router: IRouter, osqueryContext: OsqueryAppConte
               // change just `splay` (or `rrule`) without restating the
               // rest. Mode transitions skip the merge — they already had
               // their prior-mode fields stripped by `carried`.
-              const existingRrule = existingQueriesById[queryId]?.rrule_schedule;
+              const existingRrule = existing?.rrule_schedule;
               const merged =
                 !resolved.transitioned &&
                 resolved.scheduleType === 'rrule' &&

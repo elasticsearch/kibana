@@ -5,8 +5,18 @@
  * 2.0.
  */
 
-import type { SavedObjectsModelVersion } from '@kbn/core-saved-objects-server';
-import { savedQuerySchemaV2, packSchemaV2, packSchemaV3 } from './schemas';
+import type {
+  SavedObjectModelDataBackfillFn,
+  SavedObjectsModelVersion,
+} from '@kbn/core-saved-objects-server';
+import { v4 as uuidv4 } from 'uuid';
+import {
+  savedQuerySchemaV2,
+  packSchemaV2,
+  packSchemaV3,
+  packSchemaV3ForwardCompat,
+  packSchemaV4,
+} from './schemas';
 
 export const savedQueryModelVersion1: SavedObjectsModelVersion = {
   changes: [
@@ -88,14 +98,54 @@ export const packSavedObjectModelVersion3: SavedObjectsModelVersion = {
     },
   ],
   schemas: {
-    forwardCompatibility: packSchemaV3.extends({}, { unknowns: 'ignore' }),
+    forwardCompatibility: packSchemaV3ForwardCompat.extends({}, { unknowns: 'ignore' }),
     // `create` is required for new model versions per #240919 (rollback support
     // soft-enforced 2025-11-05). The pack SO root is NOT `dynamic: false`,
     // so the SO-types lint requires every mapping field be declared here.
     // Reuse `packSchemaV3` (which already declares V1+V2+V3 fields) and accept
     // unknown sub-keys so per-query RRULE overrides / unknown rrule parts
-    // round-trip. See `design.md` D35.
+    // round-trip.
     create: packSchemaV3.extends({}, { unknowns: 'allow' }),
+  },
+};
+
+/**
+ * V4 deterministically backfills a stable per-query `schedule_id` onto every
+ * pack-query that lacks one. Unlike the best-effort Task
+ * Manager backfill it replaces, a `data_backfill` model version runs exactly
+ * once per Saved Object on EVERY upgrade / rollback / Serverless path, which is
+ * the only mechanism that gives upgrade-path determinism.
+ */
+const backfillScheduleIdFn: SavedObjectModelDataBackfillFn<
+  { queries?: Array<{ schedule_id?: string }> },
+  { queries?: Array<{ schedule_id?: string }> }
+> = ({ attributes }) => {
+  const queries = attributes.queries;
+  if (!queries?.length) {
+    // `data_backfill` requires an `attributes` object; an empty patch is the no-op.
+    return { attributes: {} };
+  }
+
+  return {
+    attributes: {
+      queries: queries.map((query) => ({
+        ...query,
+        schedule_id: query.schedule_id ?? uuidv4(),
+      })),
+    },
+  };
+};
+
+export const packSavedObjectModelVersion4: SavedObjectsModelVersion = {
+  changes: [
+    {
+      type: 'data_backfill',
+      backfillFn: backfillScheduleIdFn,
+    },
+  ],
+  schemas: {
+    forwardCompatibility: packSchemaV4.extends({}, { unknowns: 'ignore' }),
+    create: packSchemaV4.extends({}, { unknowns: 'allow' }),
   },
 };
 

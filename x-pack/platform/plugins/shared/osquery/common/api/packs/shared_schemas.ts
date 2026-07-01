@@ -108,6 +108,10 @@ export const packQueryRecordPartialRt = t.record(
     }),
     t.partial({
       ...basePackQueryFields,
+      // The query's existing stored `id`. Lets a rename edit (where the map key
+      // changes) carry the original id so the route preserves the query's
+      // `schedule_id` instead of minting a new one and severing its history.
+      id: t.string,
       rrule_schedule: rruleScheduleConfigPartialRt,
     }),
   ])

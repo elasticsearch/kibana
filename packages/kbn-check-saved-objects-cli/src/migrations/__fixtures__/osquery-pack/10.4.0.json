@@ -1,0 +1,41 @@
+{
+  "10.3.0": [
+    {
+      "name": "test-pack-1",
+      "description": "A test pack",
+      "queries": [
+        {
+          "id": "query1",
+          "query": "select * from processes;",
+          "interval": 3600,
+          "timeout": 300
+        }
+      ],
+      "enabled": true,
+      "created_at": "2024-01-01T00:00:00.000Z",
+      "created_by": "elastic",
+      "updated_at": "2024-01-01T00:00:00.000Z",
+      "updated_by": "elastic"
+    }
+  ],
+  "10.4.0": [
+    {
+      "name": "test-pack-1",
+      "description": "A test pack",
+      "queries": [
+        {
+          "id": "query1",
+          "query": "select * from processes;",
+          "interval": 3600,
+          "timeout": 300,
+          "schedule_id": { "$match": "uuid" }
+        }
+      ],
+      "enabled": true,
+      "created_at": "2024-01-01T00:00:00.000Z",
+      "created_by": "elastic",
+      "updated_at": "2024-01-01T00:00:00.000Z",
+      "updated_by": "elastic"
+    }
+  ]
+}

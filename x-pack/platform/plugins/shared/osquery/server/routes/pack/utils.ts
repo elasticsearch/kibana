@@ -41,6 +41,12 @@ import {
 import { safeDerivePeriodSeconds } from '../../../common/utils/rrule_period';
 
 export interface PackQueryInput {
+  /**
+   * The query's existing stored `id`, optionally sent on an update body so a
+   * rename edit (changed map key) can still resolve the original query and
+   * preserve its `schedule_id`. Not used on create (id derives from the key).
+   */
+  id?: string;
   name?: string;
   query: string;
   interval?: number;
@@ -155,6 +161,67 @@ export const convertSOQueriesToPack = (queries: SOPackQuery[] | Record<string, P
     },
     {} as Record<string, PackQueryInput>
   );
+
+/** Per-query fields preserved across an edit-save (keyed by stored query id). */
+export interface PreservableQueryFields {
+  schedule_id?: string;
+  start_date?: string;
+  rrule_schedule?: PackQueryInput['rrule_schedule'];
+}
+
+/**
+ * Resolve which stored query each outgoing query preserves its `schedule_id` /
+ * `start_date` / `rrule_schedule` from, returning a map keyed by the outgoing
+ * query's map key.
+ *
+ * Hard invariant: a stored query is consumed at most once. Otherwise a stale or
+ * duplicate client-supplied per-query `id` (two outgoing queries claiming the
+ * same stored `id`) would let both inherit the same `schedule_id`, collapsing
+ * two queries onto one scheduled-history join key.
+ *
+ * Two passes make the result independent of object key order:
+ *  1. Reserve a stored row for the outgoing query that matches by its own map
+ *     key (the normal case — stored key === query id). This guarantees a query
+ *     never loses its own `schedule_id` to an impostor that claimed its id.
+ *  2. Match the remainder by the client-supplied `id` (re-pairs a renamed query
+ *     whose map key changed) against rows not already reserved.
+ *
+ * An outgoing query with no resolved match is absent from the result; the caller
+ * mints a fresh `schedule_id` for it.
+ */
+export const resolvePreservedQueries = (
+  outgoingQueries: Record<string, PackQueryInput>,
+  existingQueriesById: Record<string, PreservableQueryFields>
+): Record<string, PreservableQueryFields> => {
+  const consumedExistingIds = new Set<string>();
+
+  const claim = (
+    acc: Record<string, PreservableQueryFields>,
+    queryKey: string,
+    existingId: string | undefined
+  ) => {
+    if (existingId && !consumedExistingIds.has(existingId) && existingQueriesById[existingId]) {
+      consumedExistingIds.add(existingId);
+      acc[queryKey] = existingQueriesById[existingId];
+    }
+
+    return acc;
+  };
+
+  // Pass 1: queries matching by their own map key.
+  const byMapKey = Object.keys(outgoingQueries).reduce<Record<string, PreservableQueryFields>>(
+    (acc, queryKey) => claim(acc, queryKey, queryKey),
+    {}
+  );
+
+  // Pass 2: remaining queries matched by the client-supplied `id` (rename).
+  return Object.entries(outgoingQueries)
+    .filter(([queryKey]) => !byMapKey[queryKey])
+    .reduce<Record<string, PreservableQueryFields>>(
+      (acc, [queryKey, queryData]) => claim(acc, queryKey, queryData.id),
+      byMapKey
+    );
+};
 
 /**
  * Pack-level schedule descriptor passed by route handlers (drawn from the
@@ -340,6 +407,7 @@ export const convertSOQueriesToPackConfig = (
         schedule_type: querySchedType,
         rrule_schedule: queryRrule,
         start_date: legacyStartDate,
+        schedule_id: scheduleId,
         ...rest
       }: SOPackQuery,
       key: number
@@ -400,6 +468,7 @@ export const convertSOQueriesToPackConfig = (
       queriesOut[index] = omitBy(
         {
           ...rest,
+          schedule_id: scheduleId,
           ...startDateField,
           ...scheduleFields,
           query: removeMultilines(query),

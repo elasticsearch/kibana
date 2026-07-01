@@ -53,7 +53,7 @@ export const savedQuerySchemaV2 = savedQuerySchemaV1.extends({
 // without an explicit `queries.properties` mapping addition because the pack
 // SO's `queries` field is `dynamic: false` and this schema accepts unknown
 // keys at read time. Tightening to `forbid` silently breaks flag-on customers
-// with per-query RRULE overrides. See `design.md` D35.
+// with per-query RRULE overrides.
 const packQuerySchema = schema.object(
   {
     id: schema.maybe(schema.string()),
@@ -79,7 +79,7 @@ const packSchemaV1 = schema.object({
     ])
   ),
   // Pack-asset version (prebuilt-pack version number). Name is taken — a future
-  // V4 / D29 "min osquery version" field MUST use a different name (e.g.
+  // V4 "min osquery version" field MUST use a different name (e.g.
   // `min_osquery_version`) to avoid type collision with this number field.
   version: schema.maybe(schema.number()),
   enabled: schema.maybe(schema.boolean()),
@@ -114,7 +114,7 @@ const rruleScheduleConfigSchema = schema.object(
 
 export const packSchemaV3 = packSchemaV2.extends({
   // Nullable so update routes can clear the prior-mode pack-level field on a
-  // schedule_type transition (D14) — the SO mapping accepts null and the
+  // schedule_type transition — the SO mapping accepts null and the
   // discriminated read/find responses then drop the slot entirely.
   schedule_type: schema.maybe(
     schema.nullable(schema.oneOf([schema.literal('interval'), schema.literal('rrule')]))
@@ -122,3 +122,42 @@ export const packSchemaV3 = packSchemaV2.extends({
   interval: schema.maybe(schema.nullable(schema.number())),
   rrule_schedule: schema.maybe(schema.nullable(rruleScheduleConfigSchema)),
 });
+
+const packQuerySchemaV3ForwardCompat = schema.object(
+  {
+    id: schema.maybe(schema.string()),
+    query: schema.maybe(schema.string()),
+    interval: schema.maybe(schema.oneOf([schema.string(), schema.number()])),
+    timeout: schema.maybe(schema.number()),
+    platform: schema.maybe(schema.string()),
+    version: schema.maybe(schema.string()),
+    ecs_mapping: schema.maybe(ecsMappingSchema),
+    snapshot: schema.maybe(schema.boolean()),
+    removed: schema.maybe(schema.boolean()),
+    name: schema.maybe(schema.string()),
+    start_date: schema.maybe(schema.string()),
+    schedule_type: schema.maybe(
+      schema.nullable(schema.oneOf([schema.literal('interval'), schema.literal('rrule')]))
+    ),
+    rrule_schedule: schema.maybe(schema.nullable(rruleScheduleConfigSchema)),
+  },
+  { unknowns: 'ignore' }
+);
+
+export const packSchemaV3ForwardCompat = packSchemaV3.extends({
+  queries: schema.maybe(
+    schema.oneOf([
+      schema.recordOf(schema.string(), packQuerySchemaV3ForwardCompat),
+      schema.arrayOf(packQuerySchemaV3ForwardCompat, { maxSize: 1000 }),
+    ])
+  ),
+});
+
+// V4 is the deterministic `schedule_id` backfill model version.
+// It adds NO new top-level pack field: the backfilled
+// per-query `schedule_id` lives inside `queries`, which is `dynamic: false`,
+// and `packQuerySchema` already accepts unknown per-query keys
+// (`unknowns: 'allow'`), so `schedule_id` round-trips without an explicit
+// mapping. `packSchemaV4` therefore mirrors `packSchemaV3` and exists to be
+// the forward-compat / create schema bound to model version 4.
+export const packSchemaV4 = packSchemaV3.extends({});

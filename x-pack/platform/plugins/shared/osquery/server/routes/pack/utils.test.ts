@@ -15,6 +15,7 @@ import {
   resolvePackScheduleForUpdate,
   stripPerQueryRruleFields,
   stripPriorModePerQueryFields,
+  resolvePreservedQueries,
 } from './utils';
 
 const getTestQueries = (additionalFields?: Record<string, unknown>, packName = 'default') => ({
@@ -44,7 +45,8 @@ const getTestQueries = (additionalFields?: Record<string, unknown>, packName = '
 const getOneLiner = (additionParams: Record<string, unknown>) => ({
   default: {
     interval: 3600,
-    query: `select u.username, p.pid, p.name, pos.local_address, pos.local_port, p.path, p.cmdline, pos.remote_address, pos.remote_port from processes as p join users as u on u.uid=p.uid join process_open_sockets as pos on pos.pid=p.pid where pos.remote_port !='0' limit 1000;`,
+    query:
+      "select u.username, p.pid, p.name, pos.local_address, pos.local_port, p.path, p.cmdline, pos.remote_address, pos.remote_port from processes as p join users as u on u.uid=p.uid join process_open_sockets as pos on pos.pid=p.pid where pos.remote_port !='0' limit 1000;",
     ...additionParams,
   },
 });
@@ -123,8 +125,8 @@ describe('Pack utils', () => {
     });
   });
 
-  // 3.1.5 — fan-out behavior under the new signature + wire-boundary gate.
-  describe('convertSOQueriesToPackConfig — fan-out (PR C)', () => {
+  // Fan-out behavior under the new signature + wire-boundary gate.
+  describe('convertSOQueriesToPackConfig — fan-out', () => {
     const rrule = {
       rrule: 'FREQ=DAILY',
       start_date: '2024-01-01T00:00:00.000Z',
@@ -479,6 +481,62 @@ describe('Pack utils', () => {
         'start_date',
         'timeout',
       ]);
+    });
+  });
+
+  describe('convertSOQueriesToPackConfig — schedule_id reaches the wire explicitly', () => {
+    test('emits schedule_id with the RRULE flag OFF (backport-critical path)', () => {
+      const out = convertSOQueriesToPackConfig(
+        [{ id: 'q1', name: 'q1', query: 'SELECT 1', interval: 60, schedule_id: 'sched-1' }],
+        { isRruleFeatureEnabled: false }
+      );
+
+      expect(out.queries.q1.schedule_id).toBe('sched-1');
+    });
+
+    test('emits schedule_id with the RRULE flag ON', () => {
+      const out = convertSOQueriesToPackConfig(
+        [{ id: 'q1', name: 'q1', query: 'SELECT 1', interval: 60, schedule_id: 'sched-1' }],
+        { isRruleFeatureEnabled: true }
+      );
+
+      expect(out.queries.q1.schedule_id).toBe('sched-1');
+    });
+
+    test('emits schedule_id for every query (multi-query, flag off)', () => {
+      const out = convertSOQueriesToPackConfig(
+        [
+          { id: 'q1', name: 'q1', query: 'SELECT 1', interval: 60, schedule_id: 'sched-1' },
+          { id: 'q2', name: 'q2', query: 'SELECT 2', interval: 120, schedule_id: 'sched-2' },
+        ],
+        { isRruleFeatureEnabled: false }
+      );
+
+      expect(out.queries.q1.schedule_id).toBe('sched-1');
+      expect(out.queries.q2.schedule_id).toBe('sched-2');
+    });
+
+    test('omits schedule_id when the stored query has none (no empty key leaked)', () => {
+      const out = convertSOQueriesToPackConfig(
+        [{ id: 'q1', name: 'q1', query: 'SELECT 1', interval: 60 }],
+        { isRruleFeatureEnabled: false }
+      );
+
+      expect(out.queries.q1).not.toHaveProperty('schedule_id');
+    });
+
+    test('does not regress other field shapes when schedule_id is present (flag off)', () => {
+      const out = convertSOQueriesToPackConfig(
+        [{ id: 'q1', name: 'q1', query: 'SELECT 1', interval: 60, schedule_id: 'sched-1' }],
+        { isRruleFeatureEnabled: false }
+      );
+
+      expect(out.queries.q1).toEqual({
+        name: 'q1',
+        query: 'SELECT 1',
+        interval: 60,
+        schedule_id: 'sched-1',
+      });
     });
   });
 
@@ -1303,5 +1361,68 @@ describe('Pack utils', () => {
         transitioned: false,
       });
     });
+  });
+});
+
+describe('resolvePreservedQueries', () => {
+  const existing = {
+    q1: { schedule_id: 'sid-q1', start_date: 'd1' },
+    q2: { schedule_id: 'sid-q2', start_date: 'd2' },
+  };
+
+  it('matches each query to its own stored row by map key', () => {
+    const result = resolvePreservedQueries(
+      { q1: { id: 'q1', query: 'a' }, q2: { id: 'q2', query: 'b' } },
+      existing
+    );
+    expect(result).toEqual({
+      q1: { schedule_id: 'sid-q1', start_date: 'd1' },
+      q2: { schedule_id: 'sid-q2', start_date: 'd2' },
+    });
+  });
+
+  it('re-pairs a renamed query (changed map key) via the incoming `id`', () => {
+    const result = resolvePreservedQueries({ q1_renamed: { id: 'q1', query: 'a' } }, existing);
+    expect(result.q1_renamed).toEqual({ schedule_id: 'sid-q1', start_date: 'd1' });
+  });
+
+  it('consumes each stored row at most once — a stale duplicate `id` does not collide', () => {
+    // q2 lies that its id is q1, but q2 also owns a stored row `q2`. Pass 1
+    // matches BOTH queries by their own map key (q1→q1, q2→q2), so the stale
+    // `id: q1` claim never fires and the two keep distinct schedule_ids.
+    const result = resolvePreservedQueries(
+      { q1: { id: 'q1', query: 'a' }, q2: { id: 'q1', query: 'b' } },
+      existing
+    );
+    expect(result.q1).toEqual({ schedule_id: 'sid-q1', start_date: 'd1' });
+    expect(result.q2).toEqual({ schedule_id: 'sid-q2', start_date: 'd2' });
+    expect(result.q1).not.toEqual(result.q2);
+  });
+
+  it('a stale `id` only matters when the claiming query has no stored row of its own', () => {
+    // `extra` has no stored row by its own key and claims q1. But q1 (present
+    // in the outgoing set) reserves its own row in pass 1, so `extra` finds q1
+    // already consumed and is left unmatched (caller mints fresh) — no collision.
+    const result = resolvePreservedQueries(
+      { q1: { id: 'q1', query: 'a' }, extra: { id: 'q1', query: 'b' } },
+      existing
+    );
+    expect(result.q1).toEqual({ schedule_id: 'sid-q1', start_date: 'd1' });
+    expect(result.extra).toBeUndefined();
+  });
+
+  it('is independent of key order — the real owner keeps its row even if the impostor comes first', () => {
+    const result = resolvePreservedQueries(
+      { other: { id: 'q1', query: 'b' }, q1: { id: 'q1', query: 'a' } },
+      existing
+    );
+    // Pass 1 reserves q1 for the query whose map key is q1; the impostor misses.
+    expect(result.q1).toEqual({ schedule_id: 'sid-q1', start_date: 'd1' });
+    expect(result.other).toBeUndefined();
+  });
+
+  it('leaves a brand-new query unmatched', () => {
+    const result = resolvePreservedQueries({ fresh: { query: 'x' } }, existing);
+    expect(result.fresh).toBeUndefined();
   });
 });

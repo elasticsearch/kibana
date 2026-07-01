@@ -12,6 +12,8 @@ import { API_VERSIONS } from '../../../common/constants';
 import type { OsqueryAppContext } from '../../lib/osquery_app_context_services';
 import type { PackSavedObject } from '../../common/types';
 import { updatePackRoute } from './update_pack_route';
+import { updatePacksRequestBodySchema } from '../../../common/api/packs/update_packs_route';
+import { buildRouteValidation } from '../../utils/build_validation/route_validation';
 import { createInternalSavedObjectsClientForSpaceId } from '../../utils/get_internal_saved_object_client';
 import { getUserInfo } from '../../lib/get_user_info';
 
@@ -118,7 +120,7 @@ describe('updatePackRoute', () => {
   });
 
   describe('schedule_type transition', () => {
-    it('B11 — interval → rrule: returns 200, writes rrule_schedule and nulls interval on SO', async () => {
+    it('interval → rrule: returns 200, writes rrule_schedule and nulls interval on SO', async () => {
       const rruleValue = { rrule: 'FREQ=DAILY', start_date: '2026-01-01T00:00:00Z' };
       const currentSO = {
         ...basePackSO,
@@ -160,7 +162,7 @@ describe('updatePackRoute', () => {
       expect(patchedAttributes.rrule_schedule).toEqual(rruleValue);
     });
 
-    it('B12 — rrule → interval: returns 200, writes interval and nulls rrule_schedule on SO', async () => {
+    it('rrule → interval: returns 200, writes interval and nulls rrule_schedule on SO', async () => {
       const rruleValue = { rrule: 'FREQ=DAILY', start_date: '2026-01-01T00:00:00Z' };
       const currentSO = {
         ...basePackSO,
@@ -736,7 +738,7 @@ describe('updatePackRoute', () => {
       expect(secondGetResult.attributes.rrule_schedule._unknown_subfield).toBe('preserved-value');
     });
 
-    it('partial same-mode rrule update — body sends only `rrule`, merge preserves start_date and splay (regression for PR#270639 r3313372939)', async () => {
+    it('partial same-mode rrule update — body sends only `rrule`, merge preserves start_date and splay (regression for PR#270639)', async () => {
       // A client editing one knob of an existing pack-level RRULE
       // (e.g. bumping `INTERVAL=2 → INTERVAL=3`) must be able to PATCH
       // just `rrule_schedule.rrule` without restating `start_date` /
@@ -1086,7 +1088,7 @@ describe('updatePackRoute', () => {
     });
   });
 
-  describe('schedule-validation error response shape (6.8 / design D4)', () => {
+  describe('schedule-validation error response shape (6.8)', () => {
     it('returns a 400 whose body.message carries the human-readable validator string', async () => {
       // A same-mode rrule pack (no transition → no per-query strip) whose query
       // override carries both `interval` and `rrule_schedule` is a mixed payload
@@ -1147,7 +1149,7 @@ describe('updatePackRoute', () => {
   });
 
   describe('response contract (PUT/GET parity)', () => {
-    // Regression for CodeRabbit PR#270639 r4381326725 — buildResponseData was
+    // Regression for PR#270639 — buildResponseData was
     // pulling `policy_ids` from `attrs.policy_ids` (always undefined: the route
     // writes policies to `references`, not attributes) and emitting `shards` in
     // the SO array form instead of the public object map. These tests pin the
@@ -1315,6 +1317,280 @@ describe('updatePackRoute', () => {
       const responseBody = mockResponse.ok.mock.calls[0][0]?.body as any;
       expect(responseBody.data.policy_ids).toEqual([]);
       expect(responseBody.data.shards).toEqual({});
+    });
+  });
+
+  // The preserve-guard must never regenerate an existing per-query
+  // `schedule_id` on edit-save, and must mint one only for a query that
+  // genuinely lacks it.
+  describe('schedule_id preserve-guard', () => {
+    const getWrittenQueries = (mockClient: ReturnType<typeof buildMockSavedObjectsClient>) =>
+      mockClient.update.mock.calls[0][2].queries as Array<Record<string, unknown>>;
+
+    it('preserves an existing schedule_id on a policy-only edit', async () => {
+      const currentSO = {
+        ...basePackSO,
+        attributes: {
+          ...basePackSO.attributes,
+          queries: [
+            {
+              id: 'q1',
+              name: 'q1',
+              query: 'SELECT 1',
+              interval: 60,
+              schedule_id: 'existing-sched-1',
+              start_date: '2025-01-01T00:00:00.000Z',
+            },
+          ],
+        },
+      };
+      const mockClient = buildMockSavedObjectsClient(currentSO);
+      (createInternalSavedObjectsClientForSpaceId as jest.Mock).mockResolvedValue(mockClient);
+
+      setupRoute(true);
+
+      // A policy-only edit: the body restates the queries (as the UI does)
+      // without touching schedule_id, plus a policy_ids change.
+      const mockRequest = httpServerMock.createKibanaRequest({
+        params: { id: 'pack-id' },
+        body: {
+          queries: { q1: { query: 'SELECT 1', interval: 60 } },
+          policy_ids: [],
+        },
+      });
+      const mockResponse = httpServerMock.createResponseFactory();
+
+      await routeHandler(buildMockContext() as any, mockRequest, mockResponse);
+
+      expect(mockResponse.badRequest).not.toHaveBeenCalled();
+      const q1 = getWrittenQueries(mockClient).find((q) => q.id === 'q1')!;
+      expect(q1.schedule_id).toBe('existing-sched-1');
+    });
+
+    it('legacy query without schedule_id gets one, and a second edit preserves it', async () => {
+      const legacySO = {
+        ...basePackSO,
+        attributes: {
+          ...basePackSO.attributes,
+          queries: [{ id: 'q1', name: 'q1', query: 'SELECT 1', interval: 60 }],
+        },
+      };
+      const firstClient = buildMockSavedObjectsClient(legacySO);
+      (createInternalSavedObjectsClientForSpaceId as jest.Mock).mockResolvedValue(firstClient);
+
+      setupRoute(true);
+
+      const firstRequest = httpServerMock.createKibanaRequest({
+        params: { id: 'pack-id' },
+        body: { queries: { q1: { query: 'SELECT 1', interval: 60 } } },
+      });
+      const firstResponse = httpServerMock.createResponseFactory();
+      await routeHandler(buildMockContext() as any, firstRequest, firstResponse);
+
+      expect(firstResponse.badRequest).not.toHaveBeenCalled();
+      const mintedQuery = getWrittenQueries(firstClient).find((q) => q.id === 'q1')!;
+      const mintedScheduleId = mintedQuery.schedule_id as string;
+      expect(mintedScheduleId).toEqual(expect.any(String));
+      expect(mintedScheduleId.length).toBeGreaterThan(0);
+
+      // Second edit: the SO now carries the minted schedule_id. A subsequent
+      // save must preserve it byte-for-byte.
+      const secondSO = {
+        ...basePackSO,
+        attributes: {
+          ...basePackSO.attributes,
+          queries: getWrittenQueries(firstClient) as PackSavedObject['queries'],
+        },
+      };
+      const secondClient = buildMockSavedObjectsClient(secondSO);
+      (createInternalSavedObjectsClientForSpaceId as jest.Mock).mockResolvedValue(secondClient);
+
+      setupRoute(true);
+
+      const secondRequest = httpServerMock.createKibanaRequest({
+        params: { id: 'pack-id' },
+        body: { queries: { q1: { query: 'SELECT 1', interval: 60 } } },
+      });
+      const secondResponse = httpServerMock.createResponseFactory();
+      await routeHandler(buildMockContext() as any, secondRequest, secondResponse);
+
+      expect(secondResponse.badRequest).not.toHaveBeenCalled();
+      const preservedQuery = getWrittenQueries(secondClient).find((q) => q.id === 'q1')!;
+      expect(preservedQuery.schedule_id).toBe(mintedScheduleId);
+    });
+
+    it('preserves schedule_id across a query rename via the incoming `id`', async () => {
+      // The stored query id is `old-name`. The edit renames it (new map key
+      // `new-name`) but carries the original `id` in the payload so the guard
+      // resolves the stored query and preserves its schedule_id instead of
+      // minting a fresh one and severing the query's scheduled history.
+      const currentSO = {
+        ...basePackSO,
+        attributes: {
+          ...basePackSO.attributes,
+          queries: [
+            {
+              id: 'old-name',
+              name: 'old-name',
+              query: 'SELECT 1',
+              interval: 60,
+              schedule_id: 'sched-to-preserve',
+              start_date: '2025-01-01T00:00:00.000Z',
+            },
+          ],
+        },
+      };
+      const mockClient = buildMockSavedObjectsClient(currentSO);
+      (createInternalSavedObjectsClientForSpaceId as jest.Mock).mockResolvedValue(mockClient);
+
+      setupRoute(true);
+
+      const mockRequest = httpServerMock.createKibanaRequest({
+        params: { id: 'pack-id' },
+        body: {
+          queries: {
+            'new-name': { id: 'old-name', query: 'SELECT 1', interval: 60 },
+          },
+        },
+      });
+      const mockResponse = httpServerMock.createResponseFactory();
+
+      await routeHandler(buildMockContext() as any, mockRequest, mockResponse);
+
+      expect(mockResponse.badRequest).not.toHaveBeenCalled();
+      const written = getWrittenQueries(mockClient);
+      // The query is written under its new id (rebuilt from the map key)...
+      const renamed = written.find((q) => q.id === 'new-name')!;
+      expect(renamed).toBeDefined();
+      // ...and the original schedule_id survives the rename.
+      expect(renamed.schedule_id).toBe('sched-to-preserve');
+      // No stale `id` from the payload is persisted onto the query value.
+      expect(renamed.id).toBe('new-name');
+    });
+
+    it('route validation accepts a per-query `id` on the update body', () => {
+      // The rename-preservation path above relies on the request body being
+      // allowed to carry a per-query `id`. This pins that the real route
+      // validation (io-ts decode + exactCheck) accepts it rather than 400ing.
+      const validate = buildRouteValidation(updatePacksRequestBodySchema);
+      const ok = jest.fn((value) => ({ value }));
+      const badRequest = jest.fn((error) => ({ error }));
+
+      validate({ queries: { 'new-name': { id: 'old-name', query: 'SELECT 1', interval: 60 } } }, {
+        ok,
+        badRequest,
+      } as never);
+
+      expect(badRequest).not.toHaveBeenCalled();
+      expect(ok).toHaveBeenCalledTimes(1);
+    });
+
+    it('does not let two queries collide on one schedule_id when a stale `id` is reused', async () => {
+      // Konrad review #3: a stale/duplicate client-supplied `id` (here `q2`
+      // lies that its id is `q1`) must not make both queries inherit the same
+      // stored `schedule_id`. Each stored row is consumable once: `q1` keeps
+      // its own id (matched by map key first), and the impostor `q2` mints a
+      // fresh schedule_id instead of stealing `q1`'s.
+      const currentSO = {
+        ...basePackSO,
+        attributes: {
+          ...basePackSO.attributes,
+          queries: [
+            {
+              id: 'q1',
+              name: 'q1',
+              query: 'SELECT 1',
+              interval: 60,
+              schedule_id: 'sid-q1',
+              start_date: '2025-01-01T00:00:00.000Z',
+            },
+            {
+              id: 'q2',
+              name: 'q2',
+              query: 'SELECT 2',
+              interval: 60,
+              schedule_id: 'sid-q2',
+              start_date: '2025-01-01T00:00:00.000Z',
+            },
+          ],
+        },
+      };
+      const mockClient = buildMockSavedObjectsClient(currentSO);
+      (createInternalSavedObjectsClientForSpaceId as jest.Mock).mockResolvedValue(mockClient);
+
+      setupRoute(true);
+
+      const mockRequest = httpServerMock.createKibanaRequest({
+        params: { id: 'pack-id' },
+        body: {
+          queries: {
+            q1: { id: 'q1', query: 'SELECT 1', interval: 60 },
+            q2: { id: 'q1', query: 'SELECT 2', interval: 60 }, // <-- stale/wrong id
+          },
+        },
+      });
+      const mockResponse = httpServerMock.createResponseFactory();
+
+      await routeHandler(buildMockContext() as any, mockRequest, mockResponse);
+
+      expect(mockResponse.badRequest).not.toHaveBeenCalled();
+      const written = getWrittenQueries(mockClient);
+      const q1 = written.find((q) => q.id === 'q1')!;
+      const q2 = written.find((q) => q.id === 'q2')!;
+      // q1 keeps its own stored schedule_id.
+      expect(q1.schedule_id).toBe('sid-q1');
+      // q2's stale id claim is rejected: it does NOT inherit sid-q1.
+      expect(q2.schedule_id).not.toBe('sid-q1');
+      // No two queries share a schedule_id.
+      expect(q1.schedule_id).not.toBe(q2.schedule_id);
+    });
+
+    it('reserves a query`s own id before honoring another query`s rename claim on it', async () => {
+      // Order-independence: even if the impostor (`other`, claiming id `q1`)
+      // is processed, the real `q1` must not lose its schedule_id. Pass 1
+      // reserves `q1` for the query whose own map key is `q1`; the rename
+      // claimant only gets unreserved rows.
+      const currentSO = {
+        ...basePackSO,
+        attributes: {
+          ...basePackSO.attributes,
+          queries: [
+            {
+              id: 'q1',
+              name: 'q1',
+              query: 'SELECT 1',
+              interval: 60,
+              schedule_id: 'sid-q1',
+              start_date: '2025-01-01T00:00:00.000Z',
+            },
+          ],
+        },
+      };
+      const mockClient = buildMockSavedObjectsClient(currentSO);
+      (createInternalSavedObjectsClientForSpaceId as jest.Mock).mockResolvedValue(mockClient);
+
+      setupRoute(true);
+
+      const mockRequest = httpServerMock.createKibanaRequest({
+        params: { id: 'pack-id' },
+        body: {
+          queries: {
+            other: { id: 'q1', query: 'SELECT 2', interval: 60 }, // claims q1's id
+            q1: { id: 'q1', query: 'SELECT 1', interval: 60 }, // the real q1
+          },
+        },
+      });
+      const mockResponse = httpServerMock.createResponseFactory();
+
+      await routeHandler(buildMockContext() as any, mockRequest, mockResponse);
+
+      expect(mockResponse.badRequest).not.toHaveBeenCalled();
+      const written = getWrittenQueries(mockClient);
+      const realQ1 = written.find((q) => q.id === 'q1')!;
+      const other = written.find((q) => q.id === 'other')!;
+      // The real q1 keeps its schedule_id; the impostor does not steal it.
+      expect(realQ1.schedule_id).toBe('sid-q1');
+      expect(other.schedule_id).not.toBe('sid-q1');
     });
   });
 });
