@@ -548,6 +548,55 @@ const detectGapsRoute = createWorkflowTriggerRoute(
   'Trigger gap detection for memory'
 );
 
+const getGapsOverviewRoute = createServerRoute({
+  endpoint: 'GET /internal/streams/memory/_gaps_overview',
+  options: {
+    access: 'internal',
+    summary: 'Get the gaps overview for the Nightshift page',
+  },
+  security: {
+    authz: {
+      requiredPrivileges: [STREAMS_API_PRIVILEGES.read],
+    },
+  },
+  params: z.object({}),
+  handler: async ({
+    request,
+    server,
+    logger,
+    getScopedClients,
+  }): Promise<
+    | { available: false }
+    | { available: true; data: { title: string; content: string; updated_at: string } }
+  > => {
+    try {
+      const { licensing, uiSettingsClient, scopedClusterClient } = await getScopedClients({
+        request,
+      });
+      await assertMemoryEnabled({ server, licensing, uiSettingsClient });
+      const memory = createMemoryService(scopedClusterClient.asCurrentUser, logger);
+      const entry = await memory.getByName({ name: '_gaps/overview' });
+      if (!entry) {
+        return { available: false };
+      }
+      const content = entry.content.trim();
+      if (!content) {
+        return { available: false };
+      }
+      return {
+        available: true,
+        data: {
+          title: entry.title,
+          content,
+          updated_at: entry.updated_at,
+        },
+      };
+    } catch {
+      return { available: false };
+    }
+  },
+});
+
 export const internalMemoryRoutes = {
   ...createEntryRoute,
   ...getEntryRoute,
@@ -564,4 +613,5 @@ export const internalMemoryRoutes = {
   ...consolidateMemoryRoute,
   ...synthesizeMemoryRoute,
   ...detectGapsRoute,
+  ...getGapsOverviewRoute,
 };

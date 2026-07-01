@@ -44,7 +44,8 @@ triggers:
       additionalProperties: false
 
 steps:
-  - name: investigate
+
+  - name: platform_streams_investigation_rca
     type: ai.agent
     agent-id: platform.streams.investigation
     connector-id: '{{ inputs.connector_id }}'
@@ -95,6 +96,15 @@ steps:
                 - reason
           gaps_found:
             type: array
+            description: >
+              Actionable knowledge gaps discovered during this investigation — data sources that were
+              missing or inaccessible and would have helped diagnose the issue. Each item must be a
+              concrete, actionable statement of missing data that could reasonably be provided, such as:
+              "No traces available for the cart service", "Infrastructure metrics absent for host X",
+              "No code repository access for service Y".
+              Do NOT include incident-specific observations (e.g. "the pod crashed", "no logs during the
+              outage window") — those are incident facts, not actionable knowledge gaps. Reduce the
+              finding to what data source is missing and why it matters, not what happened during the incident.
             items:
               type: string
         required:

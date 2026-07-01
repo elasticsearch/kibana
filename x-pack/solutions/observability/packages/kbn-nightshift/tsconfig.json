@@ -8,6 +8,8 @@
   "exclude": ["target/**/*"],
   "kbn_references": [
     "@kbn/i18n",
+    "@kbn/i18n-react",
+    "@kbn/connector-specs",
     "@kbn/storybook",
     "@kbn/kibana-react-plugin"
   ]
