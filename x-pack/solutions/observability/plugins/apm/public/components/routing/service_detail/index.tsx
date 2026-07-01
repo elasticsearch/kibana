@@ -341,10 +341,10 @@ export const serviceDetailRoute = {
             element: <RedirectNodesToMetrics />,
             params: t.partial({
               query: t.partial({
-                sortDirection: t.string,
+                sortDirection: t.union([t.literal('asc'), t.literal('desc')]),
                 sortField: t.string,
-                pageSize: t.string,
-                page: t.string,
+                pageSize: toNumberRt,
+                page: toNumberRt,
               }),
             }),
           },

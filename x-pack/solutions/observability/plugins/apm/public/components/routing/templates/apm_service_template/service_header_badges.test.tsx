@@ -50,6 +50,8 @@ const defaultProps = {
   end: '2026-01-02T00:00:00.000Z',
   onSloClick: jest.fn(),
   alertsTabHref: '/services/test-service/alerts',
+  overviewTabHref: '/services/test-service/overview',
+  selectedTab: 'transactions',
 };
 
 function renderBadges(props = defaultProps) {
@@ -242,6 +244,45 @@ describe('ServiceHeaderBadges', () => {
 
     expect(screen.getByTestId('serviceHeaderAnomaliesBadge')).toBeInTheDocument();
     expect(screen.getByText(/Critical \(82\)/)).toBeInTheDocument();
+  });
+
+  it('navigates to the overview tab when the anomalies badge is clicked from another tab', () => {
+    setupMocks({
+      canReadMlJobs: true,
+      alertsCount: 0,
+      anomalyScore: 82,
+      mostCriticalSloStatus: { status: 'noSLOs', count: 0 },
+      sloFetchStatus: FETCH_STATUS.NOT_INITIATED,
+    });
+    renderBadges({ ...defaultProps, selectedTab: 'transactions' });
+
+    const badge = screen.getByTestId('apmAnomaliesBadge');
+    fireEvent.click(badge);
+    expect(mockNavigateToUrl).toHaveBeenCalledWith('/services/test-service/overview');
+  });
+
+  it('renders the anomalies badge as non-interactive when already on the overview tab', () => {
+    setupMocks({
+      canReadMlJobs: true,
+      alertsCount: 0,
+      anomalyScore: 82,
+      mostCriticalSloStatus: { status: 'noSLOs', count: 0 },
+      sloFetchStatus: FETCH_STATUS.NOT_INITIATED,
+    });
+    renderBadges({ ...defaultProps, selectedTab: 'overview' });
+
+    const badge = screen.getByTestId('apmAnomaliesBadge');
+    fireEvent.click(badge);
+    expect(mockNavigateToUrl).not.toHaveBeenCalled();
+  });
+
+  it('renders the alerts badge as non-interactive when already on the alerts tab', () => {
+    setupMocks({ alertsCount: 3 });
+    renderBadges({ ...defaultProps, selectedTab: 'alerts' });
+
+    const badge = screen.getByTestId('serviceHeaderAlertsBadge');
+    fireEvent.click(badge);
+    expect(mockNavigateToUrl).not.toHaveBeenCalled();
   });
 
   it('hides anomalies badge when ML jobs cannot be read even if anomaly score data is present', () => {

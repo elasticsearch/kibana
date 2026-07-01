@@ -9,6 +9,7 @@ import { i18n } from '@kbn/i18n';
 import { getSeverityType } from '@kbn/ml-anomaly-utils/get_severity_type';
 import { getSeverityColor as mlGetSeverityColor } from '@kbn/ml-anomaly-utils/get_severity_color';
 import { ML_ANOMALY_SEVERITY } from '@kbn/ml-anomaly-utils/anomaly_severity';
+import { AnomalyDetectorType } from './apm_ml_detectors';
 export type { ServiceAnomalyStats } from '@kbn/apm-types';
 
 export function getSeverity(score: number | undefined) {
@@ -21,6 +22,28 @@ export function getSeverity(score: number | undefined) {
 
 export function getSeverityColor(score: number) {
   return mlGetSeverityColor(score);
+}
+
+/**
+ * Human-readable label for the APM ML detector that produced an anomaly, so
+ * consumers can tell users which signal (latency, throughput, failure rate) is
+ * anomalous.
+ */
+export function getApmMlDetectorLabel(detectorType: AnomalyDetectorType): string {
+  switch (detectorType) {
+    case AnomalyDetectorType.txLatency:
+      return i18n.translate('xpack.apm.anomalyDetection.detectorLabel.latency', {
+        defaultMessage: 'Latency',
+      });
+    case AnomalyDetectorType.txThroughput:
+      return i18n.translate('xpack.apm.anomalyDetection.detectorLabel.throughput', {
+        defaultMessage: 'Throughput',
+      });
+    case AnomalyDetectorType.txFailureRate:
+      return i18n.translate('xpack.apm.anomalyDetection.detectorLabel.failedTransactionRate', {
+        defaultMessage: 'Failed transaction rate',
+      });
+  }
 }
 
 export const ML_ERRORS = {

@@ -204,8 +204,17 @@ export function getServiceColumns({
             width: '6.5em',
             minWidth: '6.5em',
             sortable: true,
-            render: (_, { anomalyScore }) => {
-              return <AnomaliesBadge score={anomalyScore} />;
+            render: (_, { serviceName, transactionType, anomalyScore, detectorType }) => {
+              return (
+                <AnomaliesBadge
+                  score={anomalyScore}
+                  detectorType={detectorType}
+                  href={link('/services/{serviceName}/overview', {
+                    path: { serviceName },
+                    query: { ...query, transactionType },
+                  })}
+                />
+              );
             },
           } as ITableColumn<ServiceListItem>,
         ]

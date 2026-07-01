@@ -13,14 +13,16 @@ import type { ServiceNodeData } from '../../../../common/service_map';
 import { SloStatusBadge } from '../../shared/slo_status_badge';
 import { useServiceMapSloFlyout } from '../../shared/service_map/service_map_slo_flyout_context';
 import { useServiceMapAlertsTabNavigate } from './use_service_map_alerts_tab_href';
+import { useServiceMapTabNavigate } from './use_service_map_tab_href';
+import { AnomaliesBadge } from '../service_inventory/service_list/anomalies_badge';
 
 interface Props {
   nodeData: ServiceNodeData;
 }
 
 /**
- * Alert and SLO badges next to the service map popover title — same behaviour as
- * {@link ServiceNode} badges on the map.
+ * Alert, SLO and anomaly badges next to the service map popover title — same
+ * behaviour as {@link ServiceNode} badges on the map.
  */
 export function ServiceMapPopoverTitleBadges({ nodeData }: Props) {
   const { core } = useApmPluginContext();
@@ -29,12 +31,18 @@ export function ServiceMapPopoverTitleBadges({ nodeData }: Props) {
 
   const serviceName = nodeData.label;
   const navigateToAlertsTab = useServiceMapAlertsTabNavigate(serviceName);
+  // Reuses the alerts redirection logic (map-context resolution + `kuery`
+  // stripping) but targets the overview tab, where anomalies are highlighted.
+  const navigateToAnomaliesOverview = useServiceMapTabNavigate('overview', serviceName);
+
+  const { serviceAnomalyStats } = nodeData;
 
   const showAlertsBadge = nodeData.alertsCount !== undefined && nodeData.alertsCount > 0;
   const showSloBadge =
     canReadSlos && (nodeData.sloStatus === 'violated' || nodeData.sloStatus === 'degrading');
+  const showAnomaliesBadge = serviceAnomalyStats !== undefined;
 
-  if (!showAlertsBadge && !showSloBadge) {
+  if (!showAlertsBadge && !showSloBadge && !showAnomaliesBadge) {
     return null;
   }
 
@@ -80,6 +88,17 @@ export function ServiceMapPopoverTitleBadges({ nodeData }: Props) {
                     },
                   }
                 : { hideTooltip: true })}
+            />
+          </span>
+        </EuiFlexItem>
+      )}
+      {serviceAnomalyStats && (
+        <EuiFlexItem grow={false}>
+          <span onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
+            <AnomaliesBadge
+              score={serviceAnomalyStats.anomalyScore}
+              detectorType={serviceAnomalyStats.detectorType}
+              onClick={navigateToAnomaliesOverview}
             />
           </span>
         </EuiFlexItem>

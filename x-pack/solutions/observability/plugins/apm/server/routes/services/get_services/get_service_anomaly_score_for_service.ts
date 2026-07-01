@@ -5,11 +5,13 @@
  * 2.0.
  */
 
+import type { AnomalyDetectorType } from '@kbn/apm-types';
 import type { MlClient } from '../../../lib/helpers/get_ml_client';
 import { getServiceAnomalies } from '../../service_map/get_service_anomalies';
 
 export interface ServiceAnomalyScoreResponse {
   anomalyScore?: number;
+  detectorType?: AnomalyDetectorType;
 }
 
 /**
@@ -42,5 +44,5 @@ export async function getServiceAnomalyScoreForService({
     return {};
   }
 
-  return { anomalyScore: row.anomalyScore };
+  return { anomalyScore: row.anomalyScore, detectorType: row.detectorType };
 }

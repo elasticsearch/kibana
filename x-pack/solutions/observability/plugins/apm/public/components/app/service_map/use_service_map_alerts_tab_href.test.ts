@@ -69,84 +69,20 @@ describe('useServiceMapAlertsTabHref', () => {
     mockedUseAnyOfApmParams.mockReturnValue({ query: serviceMapQuery } as unknown as ReturnType<
       typeof useAnyOfApmParams
     >);
+    mockedUseApmRoutePath.mockReturnValue(
+      '/service-map' as unknown as ReturnType<typeof useApmRoutePath>
+    );
   });
 
-  describe('from the global service map (/service-map)', () => {
-    it('builds a link to /services/{serviceName}/alerts and resets the map kuery', () => {
-      mockedUseApmRoutePath.mockReturnValue(
-        '/service-map' as unknown as ReturnType<typeof useApmRoutePath>
-      );
+  // The shared map-context resolution, param pass-through and kuery stripping
+  // are covered in `use_service_map_tab_href.test.ts`; this only guards that
+  // the alerts wrapper targets the `alerts` tab.
+  it('builds a link to the alerts tab and resets the map kuery', () => {
+    const { result } = renderHook(() => useServiceMapAlertsTabHref('opbeans-node'));
 
-      const { result } = renderHook(() => useServiceMapAlertsTabHref('opbeans-node'));
-
-      expect(result.current).toContain('/app/apm/services/opbeans-node/alerts');
-      const search = new URL(`http://x${result.current}`).searchParams;
-      expect(search.get('kuery')).toBe('');
-    });
-
-    it('carries environment, rangeFrom and rangeTo through to the alerts tab URL', () => {
-      mockedUseApmRoutePath.mockReturnValue(
-        '/service-map' as unknown as ReturnType<typeof useApmRoutePath>
-      );
-
-      const { result } = renderHook(() => useServiceMapAlertsTabHref('opbeans-node'));
-
-      const search = new URL(`http://x${result.current}`).searchParams;
-      expect(search.get('environment')).toBe('production');
-      expect(search.get('rangeFrom')).toBe('now-15m');
-      expect(search.get('rangeTo')).toBe('now');
-    });
-
-    it('passes `kuery: ""` to the router while preserving env / time / comparison', () => {
-      mockedUseApmRoutePath.mockReturnValue(
-        '/service-map' as unknown as ReturnType<typeof useApmRoutePath>
-      );
-
-      renderHook(() => useServiceMapAlertsTabHref('opbeans-node'));
-
-      expect(mockedLink).toHaveBeenCalledTimes(1);
-      const [, args] = mockedLink.mock.calls[0];
-      expect(args.query).toMatchObject({
-        kuery: '',
-        environment: 'production',
-        rangeFrom: 'now-15m',
-        rangeTo: 'now',
-        comparisonEnabled: false,
-        offset: '15m',
-      });
-    });
-  });
-
-  describe('from a service-scoped service map (/services/{serviceName}/service-map)', () => {
-    it('still links to /services/{serviceName}/alerts and resets kuery', () => {
-      mockedUseApmRoutePath.mockReturnValue(
-        '/services/{serviceName}/service-map' as unknown as ReturnType<typeof useApmRoutePath>
-      );
-
-      const { result } = renderHook(() => useServiceMapAlertsTabHref('opbeans-node'));
-
-      expect(result.current).toContain('/app/apm/services/opbeans-node/alerts');
-      const search = new URL(`http://x${result.current}`).searchParams;
-      expect(search.get('kuery')).toBe('');
-      expect(search.get('environment')).toBe('production');
-    });
-  });
-
-  describe('from the mobile service map (/mobile-services/{serviceName}/service-map)', () => {
-    it('links to /mobile-services/{serviceName}/alerts and resets kuery', () => {
-      mockedUseApmRoutePath.mockReturnValue(
-        '/mobile-services/{serviceName}/service-map' as unknown as ReturnType<
-          typeof useApmRoutePath
-        >
-      );
-
-      const { result } = renderHook(() => useServiceMapAlertsTabHref('opbeans-rum'));
-
-      expect(result.current).toContain('/app/apm/mobile-services/opbeans-rum/alerts');
-      const search = new URL(`http://x${result.current}`).searchParams;
-      expect(search.get('kuery')).toBe('');
-      expect(search.get('environment')).toBe('production');
-    });
+    expect(result.current).toContain('/app/apm/services/opbeans-node/alerts');
+    const search = new URL(`http://x${result.current}`).searchParams;
+    expect(search.get('kuery')).toBe('');
   });
 });
 

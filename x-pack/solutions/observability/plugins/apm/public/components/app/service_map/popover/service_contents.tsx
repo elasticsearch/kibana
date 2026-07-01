@@ -7,7 +7,7 @@
 
 /* eslint-disable @elastic/eui/href-or-on-click */
 
-import { EuiButton, EuiFlexItem, EuiHorizontalRule, EuiSpacer } from '@elastic/eui';
+import { EuiButton, EuiFlexItem, EuiSpacer } from '@elastic/eui';
 import { i18n } from '@kbn/i18n';
 import React, { useCallback } from 'react';
 import { useKibana } from '@kbn/kibana-react-plugin/public';
@@ -19,7 +19,6 @@ import type { ContentsProps } from './popover_content';
 import { isServiceNodeData, type ServiceNodeData } from '../../../../../common/service_map';
 import { useApmRouter } from '../../../../hooks/use_apm_router';
 import { FETCH_STATUS, useFetcher } from '../../../../hooks/use_fetcher';
-import { AnomalyDetection } from './anomaly_detection';
 import { StatsList } from './stats_list';
 import { useTimeRange } from '../../../../hooks/use_time_range';
 import type { APIReturnType } from '../../../../services/rest/create_call_apm_api';
@@ -124,17 +123,9 @@ export function ServiceContents({
     },
   });
 
-  const { serviceAnomalyStats } = nodeData;
-
   return (
     <>
       <EuiFlexItem>
-        {serviceAnomalyStats && (
-          <>
-            <AnomalyDetection serviceName={serviceName} serviceAnomalyStats={serviceAnomalyStats} />
-            <EuiHorizontalRule margin="xs" />
-          </>
-        )}
         <StatsList data={data} isLoading={isLoading} />
       </EuiFlexItem>
       <EuiSpacer size="s" />

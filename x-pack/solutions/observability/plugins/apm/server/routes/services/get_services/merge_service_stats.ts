@@ -4,6 +4,7 @@
  * 2.0; you may not use this file except in compliance with the Elastic License
  * 2.0.
  */
+import type { AnomalyDetectorType } from '@kbn/apm-types';
 import { asMutableArray } from '../../../../common/utils/as_mutable_array';
 import { joinByKey } from '../../../../common/utils/join_by_key';
 import type { SloStatus } from '../../../../common/service_inventory';
@@ -22,6 +23,7 @@ export interface MergedServiceStat {
   transactionErrorRate?: number;
   throughput?: number;
   anomalyScore?: number;
+  detectorType?: AnomalyDetectorType;
   alertsCount?: number;
   sloStatus?: SloStatus;
   sloCount?: number;

@@ -59,10 +59,6 @@ jest.mock('../../../../hooks/use_fetcher', () => ({
   }),
 }));
 
-jest.mock('./anomaly_detection', () => ({
-  AnomalyDetection: () => null,
-}));
-
 jest.mock('./stats_list', () => ({
   StatsList: () => <div data-testid="stats-list" />,
 }));
