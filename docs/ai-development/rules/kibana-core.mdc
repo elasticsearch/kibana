@@ -1,0 +1,31 @@
+---
+description: Kibana TypeScript conventions, import patterns, and project structure
+globs: ["**/*.ts", "**/*.tsx"]
+---
+
+# Kibana core conventions
+
+Apply when generating or editing TypeScript/JavaScript in the Kibana repo.
+
+## TypeScript
+
+- Use **strict** TypeScript. Prefer explicit return types on exported and public API functions.
+- Use **type-only imports** when a symbol is only used in type position: `import type { Foo } from '...'`.
+- Prefer **interfaces** for object shapes; use **type** for unions, intersections, and mapped types.
+- Use Kibana utility types where they exist (e.g. from `@kbn/utility-types` or package-specific); avoid `any`; use `unknown` and narrow when needed.
+
+## Imports
+
+- **Plugin boundaries:** When importing from another plugin, use only its **public API**. Never import from another plugin’s internal paths (e.g. `plugin/server/lib/...` or `plugin/public/components/...`). Use the plugin’s contract: `import ... from 'plugin/public'` or `'plugin/server'`.
+- **Packages:** Prefer `@kbn/` package imports (e.g. `@kbn/core/public`, `@kbn/ui-actions`) over relative paths that cross package boundaries.
+- **Order:** Group imports: external (node_modules), then `@kbn/`, then relative. Sort within groups (e.g. alphabetically or by path length) if the project style does.
+
+## Error handling
+
+- Use Kibana’s error types and serialization where applicable (e.g. `Boom` or the repo’s standard error class) so errors are reported correctly in HTTP and logs.
+- In route handlers, catch errors, log appropriately, and return a proper HTTP status and body.
+
+## Project structure
+
+- New code belongs in **plugins** or **packages**. Do not add feature code under `src/` legacy roots unless the team explicitly follows that pattern.
+- Follow the existing package/plugin naming: kebab-case for directories and package names under `@kbn/`.

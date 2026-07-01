@@ -1,0 +1,41 @@
+---
+description: Kibana saved object types — schema, modelVersions, migrations, registration, CRUD
+globs: ["**/server/**/*saved_object*.ts", "**/common/**/*saved_object*.ts"]
+---
+
+# Kibana saved objects
+
+Apply when creating or modifying saved object types, migrations, or code that uses the Saved Objects client.
+
+## Type definition
+
+- **SavedObjectsType** — Define in server code (e.g. `server/saved_objects/my_type.ts`). Include: `name`, `namespaceType` (`'single'`, `'multiple'`, or `'multiple-isolated'`), `mappings` (Elasticsearch field mapping for the type), and **modelVersions** (preferred) or **migrations** for schema evolution.
+- **modelVersions** — Preferred for new types. Each version has `changes` (array of change descriptions) and `schemas` with `create` and optionally `forwardCompatibility` (e.g. Zod or `@kbn/config-schema`). Use for additive or backward-compatible changes.
+- **migrations** — Legacy approach; use for existing types that already use migrations. Export a function `(doc) => doc` that transforms documents to the next version.
+- **mappings** — Must match the attributes you store. Use `dynamic: false` and explicit `properties` for known fields. Use `keyword` or `text` with `fields.keyword` as appropriate for search and aggregation.
+
+## Schema and validation
+
+- Define attribute validation with `@kbn/config-schema` (or Zod if the plugin already uses it). Export the schema and use it in `modelVersions.X.schemas.create` and optionally `forwardCompatibility`.
+- Keep the schema in a versioned folder (e.g. `schema/v1/v1.ts`) so future model versions can extend or change it.
+
+## Registration
+
+- Register the type in the plugin’s **setup** phase: `core.savedObjects.registerType(myType)`. Do not register in start.
+- Use the type name constant from `common/` so public and server stay in sync (e.g. `MY_PLUGIN_SAVED_OBJECT_TYPE`).
+
+## CRUD and access
+
+- Use **SavedObjectsClient** (or **SavedObjectsRepository** for internal code) from the request context or from `core.savedObjects.getScopedClient(request)`. Do not access the Elasticsearch index directly for saved object data.
+- For create/update, pass the attributes that match your schema; the client handles namespace and type. Use `overwrite: true` for upsert-style updates when appropriate.
+- Handle **conflict** errors (409) when creating or updating; advise the user to refresh or retry.
+
+## Index and namespace
+
+- Prefer using the standard Kibana saved object index (or solution index like `SEARCH_SOLUTION_SAVED_OBJECT_INDEX`) unless the type is solution-specific and the repo defines a custom index. Set `indexPattern` on the type if required.
+- **hidden** — Set `hidden: true` for types that are not user-facing (e.g. internal config); they are excluded from default listing and export.
+
+## Testing
+
+- Unit-test migrations or model version transforms with sample documents. Use the repo’s saved object test helpers (e.g. `createTypeRegistry`) where available.
+- For integration tests, use FTR and the savedObjects API or supertest to create/update/delete and assert; clean up in afterEach so tests are repeatable.

@@ -1,0 +1,39 @@
+---
+description: Kibana plugin boundaries, lifecycle, dependency injection, cross-plugin communication
+globs: ["**/plugin.ts", "**/plugin.tsx", "**/server/**/*.ts", "**/public/**/*.ts", "**/common/**/*.ts"]
+---
+
+# Kibana plugin architecture
+
+Apply when creating or modifying plugins and their public/server/common boundaries.
+
+## Plugin layout
+
+- **`public/`** — Browser-only code (React components, client-side state, public plugin API). No Node-only APIs.
+- **`server/`** — Node.js code (HTTP routes, saved objects, server plugin API, Elasticsearch client usage). No browser globals or React.
+- **`common/`** — Types, constants, and utilities shared by both public and server. No imports from `public/` or `server/` that would create a circular dependency.
+
+## Lifecycle
+
+- **Constructor** — Lightweight; avoid heavy work.
+- **`setup(core, plugins)`** — Register routes, saved object types, and expose contracts that other plugins can depend on. Return the **setup contract**.
+- **`start(core, plugins)`** — Use other plugins’ start contracts, hold references to services, and return the **start contract**.
+- Do **not** rely on module-level side effects for initialization. All registration and startup must happen inside `setup()` and `start()`.
+
+## Dependency injection
+
+- Plugins declare **required** and **optional** dependencies in `kibana.jsonc`. Access them via the `plugins` argument in `setup()` and `start()`.
+- Depend only on **contracts** (the returned types from setup/start), not on internal modules of another plugin.
+- Cross-plugin communication is through these contracts (e.g. `plugins.data.search.search()`), not direct imports into the other plugin’s internals.
+
+## Cross-plugin communication
+
+- To use another plugin’s capability: add it as a required (or optional) dependency and use its **start** or **setup** contract in your `start()` or `setup()`.
+- Never import from another plugin’s `server/lib`, `public/lib`, or similar internal paths. If the capability is not exposed on the contract, the owning plugin should expose it via its public or server API.
+
+## New plugin checklist
+
+- Create `public/`, `server/`, `common/` and a root `plugin.ts` (or split public/server plugin files).
+- Add `kibana.jsonc` with id, version, and requiredPlugins/optionalPlugins.
+- Implement `setup()` and `start()` and return the appropriate contracts.
+- Register routes, saved object types, and other extensions inside `setup()` (or `start()` where the API requires it).

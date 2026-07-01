@@ -1,0 +1,35 @@
+---
+description: React functional components, EUI usage, data-test-subj, accessibility in Kibana
+globs: ["**/public/**/*.tsx", "**/public/**/*.ts"]
+---
+
+# Kibana React and EUI patterns
+
+Apply when writing or editing UI code in plugin `public/` directories.
+
+## React style
+
+- Use **functional components** and **hooks**. No class components for new code.
+- Prefer **named exports** for components used elsewhere. Use default export only when the file is the single public component (e.g. a page).
+- Keep components focused: extract subcomponents and hooks when a file grows large or logic is reused.
+
+## EUI (Elastic UI)
+
+- Use **EUI components** from `@elastic/eui` instead of raw HTML for buttons, forms, layout, and feedback (e.g. `EuiButton`, `EuiForm`, `EuiFlexGroup`, `EuiPageTemplate`, `EuiCallOut`).
+- Follow EUI’s composition patterns (e.g. `EuiFormRow` + `EuiFieldText`) and use the recommended props for accessibility (e.g. `aria-label`, `aria-describedby` where EUI doesn’t provide them).
+- Theming: Use the Kibana theme (e.g. `useEuiTheme()` or the theme provider already in place). Do not hard-code colors that conflict with light/dark mode.
+
+## Testability
+
+- Add **`data-test-subj`** to interactive elements and key containers so tests can target them reliably. Use a consistent naming scheme (e.g. `pluginName-componentName-action`).
+- Avoid relying on CSS classes or DOM structure for test selectors; prefer `data-test-subj`.
+
+## Accessibility
+
+- Use semantic HTML and ARIA where needed (e.g. labels for form controls, `role` and `aria-*` for custom widgets). EUI components already handle many of these; ensure custom UI is also accessible.
+- Support **keyboard navigation** where the interaction is keyboard-appropriate (e.g. modals, menus, tabs).
+- Ensure **focus** is managed in modals and after dynamic content changes (e.g. focus trap in modal, focus moved to new content when appropriate).
+
+## i18n
+
+- All user-visible strings must be localized. Use `i18n.translate()` for JS and `<FormattedMessage>` (or the project’s standard) in JSX. Do not hard-code English (or any language) in the UI.

@@ -1,0 +1,40 @@
+---
+description: Kibana testing patterns — Jest, FTR API/UI tests, Scout (API/UI), mocks
+globs: ["**/*.test.ts", "**/*.test.tsx", "**/test/**/*.ts", "**/__tests__/**/*.ts", "**/test/scout*/**/*.spec.ts"]
+---
+
+# Kibana testing conventions
+
+Apply when writing or modifying unit and integration tests.
+
+## FTR vs Scout
+
+Kibana uses **FTR** (Functional Test Runner, mocha) and **Scout** (Playwright-based API and UI tests). **Use FTR only for already existing tests** — when adding to or modifying tests under an existing FTR config/suite. **For new test configs** (new suite, new module, or new plugin), **default to Scout**: create Scout scaffold (`node scripts/scout.js generate --path <moduleRoot> --type api` or `ui`/`both`) and write Scout API/UI tests. When the repo has **`.agent/skills/`** (e.g. `ftr-testing`, `scout-api-testing`, `scout-ui-testing`, `scout-migrate-from-ftr`, `scout-create-scaffold`), follow those skills for structure, paths, auth, and run commands. For migrating existing FTR tests to Scout, use the **scout-migrate-from-ftr** skill.
+
+## Jest (unit tests)
+
+- **Structure:** Use `describe('ModuleOrComponentName', () => { ... })` and `it('does something specific', () => { ... })`. Descriptions should be clear and start with a verb.
+- **Setup/teardown:** Use `beforeEach` for common setup; ensure mocks are cleared (e.g. `jest.clearAllMocks()`) to avoid leakage between tests.
+- **Mocks:** Use `jest.mock()` for modules; prefer `jest.spyOn()` when you need to restore. Follow existing patterns in the same package for mocking `@kbn/` and core services.
+- **File placement:** Co-locate with the module (e.g. `foo.test.ts` next to `foo.ts`) or in a `__tests__/` directory as the package already does.
+- **Assertions:** Use `expect()` with the matchers that match Kibana's Jest setup (e.g. toEqual, toHaveBeenCalledWith). Avoid snapshot sprawl; prefer explicit assertions for behavior.
+
+## FTR — API integration tests (or Scout API)
+
+- **FTR:** Config: `test/api_integration/config.js`. Start the test server and runner as documented in the repo.
+- **Services:** Use FTR's service injection (e.g. `getService('supertest')`) rather than hard-coding URLs. Acquire clients and cleanup in `beforeEach`/`afterEach` as needed.
+- **Structure:** `describe` for the API surface or plugin; `it` for each request/response scenario. Clean up created data (e.g. saved objects, indices) so runs are repeatable.
+- **Scout API:** When the module uses Scout, put specs under `test/scout*/api/tests/**/*.spec.ts`; use `apiTest`, `apiClient`, `requestAuth`/`samlAuth`, `apiServices`; `expect` from `@kbn/scout/api` (or module Scout package). See `.agent/skills/scout-api-testing/SKILL.md` if present.
+
+## FTR — Functional (UI) tests (or Scout UI)
+
+- **Page objects:** Prefer page objects or shared helpers for UI interaction so tests are stable and readable.
+- **Selectors:** Use `data-test-subj` attributes to target elements; avoid brittle CSS or XPath. Ensure the app under test adds `data-test-subj` where tests need to click or assert.
+- **Retries and waits:** Use the FTR retry/wait utilities for async UI; avoid raw `setTimeout`. Prefer waiting for specific conditions (e.g. element visible, request finished) over fixed delays.
+- **Flakiness:** If a test is flaky, add appropriate waits, narrow the scope, or isolate the cause (e.g. animation, timing) and fix the test or the app.
+- **Scout UI:** When the module uses Scout, put specs under `test/scout*/ui/tests/` or `ui/parallel_tests/`; use `test`/`spaceTest` from local fixtures, **tags required**, `browserAuth`, page objects; `expect` from `@kbn/scout/ui`. See `.agent/skills/scout-ui-testing/SKILL.md` if present.
+
+## Test naming and scope
+
+- One logical behavior per `it`. Keep tests independent and order-agnostic.
+- Name files and describe blocks so that failures are easy to locate (e.g. by feature or API path).
