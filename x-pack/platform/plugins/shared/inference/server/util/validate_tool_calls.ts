@@ -35,12 +35,18 @@ export function validateToolCalls({
     );
   }
 
-  return toolCalls.map((toolCall) => {
-    const tool = tools?.[toolCall.function.name];
+  // toolChoice === `object` is a proxy check for `CustomToolChoice`
+  // since only `CustomToolChoice` is an object.
+  const forcedToolName =
+    toolChoice && typeof toolChoice === 'object' ? toolChoice.function : undefined;
 
-    if (!tool) {
+  return toolCalls.map((toolCall) => {
+    const name = toolCall.function.name || forcedToolName;
+    const tool = name ? tools?.[name] : undefined;
+
+    if (!name || !tool) {
       throw createToolNotFoundError({
-        name: toolCall.function.name,
+        name: name ?? '',
         args: toolCall.function.arguments,
       });
     }
@@ -52,8 +58,8 @@ export function validateToolCalls({
     try {
       serializedArguments = JSON.parse(toolCall.function.arguments);
     } catch (error) {
-      throw createToolValidationError(`Failed parsing arguments for ${toolCall.function.name}`, {
-        name: toolCall.function.name,
+      throw createToolValidationError(`Failed parsing arguments for ${name}`, {
+        name,
         arguments: toolCall.function.arguments,
         toolCalls: [toolCall],
       });
@@ -75,9 +81,9 @@ export function validateToolCalls({
           : 'Unknown validation error';
 
       throw createToolValidationError(
-        `Tool call arguments for ${toolCall.function.name} (${toolCall.toolCallId}) were invalid`,
+        `Tool call arguments for ${name} (${toolCall.toolCallId}) were invalid`,
         {
-          name: toolCall.function.name,
+          name,
           errorsText: errorMessage,
           arguments: toolCall.function.arguments,
           toolCalls,
@@ -88,7 +94,7 @@ export function validateToolCalls({
     return {
       toolCallId: toolCall.toolCallId,
       function: {
-        name: toolCall.function.name,
+        name,
         arguments: serializedArguments,
       },
     };

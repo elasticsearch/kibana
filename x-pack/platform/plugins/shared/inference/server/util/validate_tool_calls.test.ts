@@ -137,6 +137,49 @@ describe('validateToolCalls', () => {
     }
   });
 
+  it('backfills an empty tool name from a forced single-tool toolChoice', () => {
+    const validated = validateToolCalls({
+      toolCalls: [
+        {
+          function: {
+            // EIS can stream a single-shot tool call with an empty name.
+            name: '',
+            arguments: '{ "foo": "bar" }',
+          },
+          toolCallId: '1',
+        },
+      ],
+
+      toolChoice: { function: 'analyze' },
+      tools: {
+        analyze: {
+          description: 'description',
+          schema: {
+            type: 'object',
+            properties: {
+              foo: {
+                type: 'string',
+              },
+            },
+            required: ['foo'],
+          },
+        },
+      },
+    });
+
+    expect(validated).toEqual([
+      {
+        function: {
+          name: 'analyze',
+          arguments: {
+            foo: 'bar',
+          },
+        },
+        toolCallId: '1',
+      },
+    ]);
+  });
+
   it('successfully validates and parses a valid tool call', () => {
     function runValidation() {
       return validateToolCalls({

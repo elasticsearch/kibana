@@ -418,24 +418,55 @@ describe('mergeChunks', () => {
     });
   });
 
-  it('throws an error when a tool call has no toolCallId and no previous chunk set it for that index', async () => {
-    expect(() => {
-      mergeChunks([
-        {
-          content: '',
-          type: ChatCompletionEventType.ChatCompletionChunk,
-          tool_calls: [
-            {
-              function: {
-                name: 'myFunction',
-                arguments: '{ "foo": "bar" }',
-              },
-              index: 0,
-              toolCallId: '', // Empty toolCallId without a previous chunk setting it
+  it('synthesizes a per-index key when a tool call has no toolCallId and no previous chunk set it', async () => {
+    const message = mergeChunks([
+      {
+        content: '',
+        type: ChatCompletionEventType.ChatCompletionChunk,
+        tool_calls: [
+          {
+            function: {
+              name: 'myFunction',
+              arguments: '{ "foo": "bar" }',
             },
-          ],
+            index: 0,
+            toolCallId: '', // Empty toolCallId without a previous chunk setting it
+          },
+        ],
+      },
+    ]);
+
+    expect(message.tool_calls).toEqual([
+      {
+        function: {
+          name: 'myFunction',
+          arguments: '{ "foo": "bar" }',
         },
-      ]);
-    }).toThrow('Tool call key is missing for index 0');
+        toolCallId: '_generated_0',
+      },
+    ]);
+  });
+
+  it('merges a single-chunk tool call with empty toolCallId and empty name (EIS single-shot)', async () => {
+    const message = mergeChunks([
+      {
+        content: '',
+        type: ChatCompletionEventType.ChatCompletionChunk,
+        tool_calls: [
+          {
+            function: { name: '', arguments: '{"criteria":[1]}' },
+            index: 0,
+            toolCallId: '',
+          },
+        ],
+      },
+    ]);
+
+    expect(message.tool_calls).toEqual([
+      {
+        function: { name: '', arguments: '{"criteria":[1]}' },
+        toolCallId: '_generated_0',
+      },
+    ]);
   });
 });

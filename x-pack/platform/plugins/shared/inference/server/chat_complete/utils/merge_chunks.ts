@@ -34,11 +34,12 @@ const mergeToolCalls = (chunks: ChatCompletionChunkEvent[]): UnvalidatedToolCall
         indexToToolCallId.set(toolCall.index, toolCall.toolCallId);
       }
 
-      const key = toolCall.toolCallId || indexToToolCallId.get(toolCall.index);
+      let key = toolCall.toolCallId || indexToToolCallId.get(toolCall.index);
       if (!key) {
-        throw new Error(
-          `Tool call key is missing for index ${toolCall.index} in chunk ${JSON.stringify(chunk)}`
-        );
+        // Some providers omit toolCallId in the first chunk for single tool calls.
+        // Generate a synthetic key based on the index to avoid dropping the tool call.
+        key = `_generated_${toolCall.index}`;
+        indexToToolCallId.set(toolCall.index, key);
       }
 
       const existingToolCall = toolCallsMap.get(key);
@@ -47,7 +48,7 @@ const mergeToolCalls = (chunks: ChatCompletionChunkEvent[]): UnvalidatedToolCall
           name: toolCall.function.name || existingToolCall?.function.name || '',
           arguments: (existingToolCall?.function.arguments || '') + toolCall.function.arguments,
         },
-        toolCallId: toolCall.toolCallId || existingToolCall?.toolCallId || '',
+        toolCallId: toolCall.toolCallId || existingToolCall?.toolCallId || key,
       };
 
       toolCallsMap.set(key, updatedToolCall);
