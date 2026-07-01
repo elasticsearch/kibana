@@ -19,7 +19,7 @@ import { mockSourcererScope } from '../../../../../sourcerer/containers/mocks';
 import * as timelineActions from '../../../../store/actions';
 import { defaultUdtHeaders } from '../../body/column_headers/default_headers';
 import { fieldFormatsMock } from '@kbn/field-formats-plugin/common/mocks';
-import { useIsExperimentalFeatureEnabled } from '../../../../../common/hooks/use_experimental_features';
+import { ENABLE_NEW_FLYOUT_SETTING } from '../../../../../../common/constants';
 
 jest.mock('react-router-dom', () => ({
   ...jest.requireActual('react-router-dom'),
@@ -35,6 +35,7 @@ const onFetchMoreRecordsMock = jest.fn();
 
 const openFlyoutMock = jest.fn();
 const mockOpenSystemFlyout = jest.fn();
+const mockUiSettingsGet = jest.fn().mockReturnValue(false);
 const mockDocumentFlyoutWrapper = jest.fn((_props?: unknown) => (
   <div>{'MockDocumentFlyoutWrapper'}</div>
 ));
@@ -45,9 +46,6 @@ const mockAttackFlyoutWrapper = jest.fn((_props?: unknown) => (
 const updateSampleSizeSpy = jest.spyOn(timelineActions, 'updateSampleSize');
 
 jest.mock('@kbn/expandable-flyout');
-jest.mock('../../../../../common/hooks/use_experimental_features', () => ({
-  useIsExperimentalFeatureEnabled: jest.fn(),
-}));
 jest.mock('../../../../../flyout_v2/shared/components/flyout_provider', () => ({
   flyoutProviders: ({ children }: { children: React.ReactNode }) => children,
 }));
@@ -69,6 +67,10 @@ jest.mock('../../../../../common/lib/kibana', () => {
         overlays: {
           ...original.useKibana().services.overlays,
           openSystemFlyout: mockOpenSystemFlyout,
+        },
+        uiSettings: {
+          ...original.useKibana().services.uiSettings,
+          get: mockUiSettingsGet,
         },
       },
     }),
@@ -153,7 +155,7 @@ describe('unified data table', () => {
       openFlyout: openFlyoutMock,
       closeFlyout: jest.fn(),
     });
-    jest.mocked(useIsExperimentalFeatureEnabled).mockReturnValue(false);
+    mockUiSettingsGet.mockReturnValue(false);
   });
   afterEach(() => {
     updateSampleSizeSpy.mockClear();
@@ -193,9 +195,11 @@ describe('unified data table', () => {
   );
 
   it(
-    'opens DocumentFlyoutWrapper via system flyout when newFlyoutSystemEnabled is enabled and row is not an attack',
+    'opens DocumentFlyoutWrapper via system flyout when enableNewFlyout setting is enabled and row is not an attack',
     async () => {
-      jest.mocked(useIsExperimentalFeatureEnabled).mockReturnValue(true);
+      mockUiSettingsGet.mockImplementation((key: string) =>
+        key === ENABLE_NEW_FLYOUT_SETTING ? true : false
+      );
 
       render(<TestComponent />);
       expect(await screen.findByTestId('discoverDocTable')).toBeVisible();
@@ -215,9 +219,11 @@ describe('unified data table', () => {
   );
 
   it(
-    'opens AttackFlyoutWrapper via system flyout when newFlyoutSystemEnabled is enabled and row is an attack discovery alert',
+    'opens AttackFlyoutWrapper via system flyout when enableNewFlyout setting is enabled and row is an attack discovery alert',
     async () => {
-      jest.mocked(useIsExperimentalFeatureEnabled).mockReturnValue(true);
+      mockUiSettingsGet.mockImplementation((key: string) =>
+        key === ENABLE_NEW_FLYOUT_SETTING ? true : false
+      );
 
       render(<TestComponent events={mockAttackTimelineData} />);
       expect(await screen.findByTestId('discoverDocTable')).toBeVisible();

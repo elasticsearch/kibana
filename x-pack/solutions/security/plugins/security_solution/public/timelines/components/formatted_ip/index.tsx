@@ -15,8 +15,8 @@ import { useStore } from 'react-redux';
 import { StatefulEventContext } from '../../../common/components/events_viewer/stateful_event_context';
 import { FlowTargetSourceDest } from '../../../../common/search_strategy/security_solution/network';
 import { getOrEmptyTagFromValue } from '../../../common/components/empty_value';
-import { useIsExperimentalFeatureEnabled } from '../../../common/hooks/use_experimental_features';
 import { useKibana } from '../../../common/lib/kibana';
+import { ENABLE_NEW_FLYOUT_SETTING } from '../../../../common/constants';
 import { NetworkDetailsLink } from '../../../common/components/links';
 import { NetworkPanelKey } from '../../../flyout/network_details';
 import { FlyoutLink } from '../../../flyout/shared/components/flyout_link';
@@ -63,10 +63,10 @@ const AddressLinksItemComponent: React.FC<AddressLinksItemProps> = ({
 }) => {
   const { openFlyout } = useExpandableFlyoutApi();
   const { services } = useKibana();
-  const { overlays } = services;
+  const { overlays, uiSettings } = services;
   const store = useStore();
   const history = useHistory();
-  const newFlyoutSystemEnabled = useIsExperimentalFeatureEnabled('newFlyoutSystemEnabled');
+  const enableNewFlyout = uiSettings.get(ENABLE_NEW_FLYOUT_SETTING, false);
   const defaultDocumentFlyoutProperties = useDefaultDocumentFlyoutProperties();
 
   const eventContext = useContext(StatefulEventContext);
@@ -81,7 +81,7 @@ const AddressLinksItemComponent: React.FC<AddressLinksItemProps> = ({
         ? FlowTargetSourceDest.destination
         : FlowTargetSourceDest.source;
 
-      if (newFlyoutSystemEnabled) {
+      if (enableNewFlyout) {
         overlays.openSystemFlyout(
           flyoutProviders({
             services,
@@ -112,7 +112,7 @@ const AddressLinksItemComponent: React.FC<AddressLinksItemProps> = ({
       eventContext,
       fieldName,
       openFlyout,
-      newFlyoutSystemEnabled,
+      enableNewFlyout,
       defaultDocumentFlyoutProperties,
       overlays,
       services,
@@ -133,7 +133,7 @@ const AddressLinksItemComponent: React.FC<AddressLinksItemProps> = ({
           onClick={openNetworkDetailsSidePanel}
           title={title}
         />
-      ) : newFlyoutSystemEnabled ? (
+      ) : enableNewFlyout ? (
         <OpenFlyoutLink
           field={fieldName}
           value={address}
@@ -157,7 +157,7 @@ const AddressLinksItemComponent: React.FC<AddressLinksItemProps> = ({
       title,
       eventContext?.timelineID,
       fieldName,
-      newFlyoutSystemEnabled,
+      enableNewFlyout,
     ]
   );
 

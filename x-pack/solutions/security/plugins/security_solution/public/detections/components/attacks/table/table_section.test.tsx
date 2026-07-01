@@ -31,7 +31,7 @@ import { useGroupStats } from './grouping_settings/use_group_stats';
 import { useKibana } from '../../../../common/lib/kibana';
 import { AttacksEventTypes } from '../../../../common/lib/telemetry';
 import { useLocalStorage } from '../../../../common/components/local_storage';
-import { useIsExperimentalFeatureEnabled } from '../../../../common/hooks/use_experimental_features';
+import { ENABLE_NEW_FLYOUT_SETTING } from '../../../../../common/constants';
 import { useDefaultDocumentFlyoutProperties } from '../../../../flyout_v2/shared/hooks/use_default_flyout_properties';
 
 jest.mock('../../../../common/components/local_storage', () => ({
@@ -77,7 +77,6 @@ jest.mock('./attacks_view_options_popover', () => ({
   ),
 }));
 jest.mock('./grouping_settings/use_group_stats');
-jest.mock('../../../../common/hooks/use_experimental_features');
 jest.mock('../../../../flyout_v2/shared/hooks/use_default_flyout_properties');
 jest.mock('../../../../flyout_v2/shared/components/flyout_provider', () => ({
   flyoutProviders: jest.fn(({ children }: { children: React.ReactNode }) => (
@@ -111,6 +110,7 @@ const mockUseGroupStats = useGroupStats as jest.Mock;
 
 const reportEvent = jest.fn();
 const mockOpenSystemFlyout = jest.fn();
+const mockUiSettingsGet = jest.fn().mockReturnValue(false);
 
 const defaultProps: Parameters<typeof TableSection>[0] = {
   assignees: [],
@@ -129,6 +129,7 @@ describe('<TableSection />', () => {
       jest.fn(),
     ]);
 
+    mockUiSettingsGet.mockReturnValue(false);
     (useKibana as jest.Mock).mockReturnValue({
       services: {
         telemetry: {
@@ -137,9 +138,11 @@ describe('<TableSection />', () => {
         overlays: {
           openSystemFlyout: mockOpenSystemFlyout,
         },
+        uiSettings: {
+          get: mockUiSettingsGet,
+        },
       },
     });
-    (useIsExperimentalFeatureEnabled as jest.Mock).mockReturnValue(false);
     (useDefaultDocumentFlyoutProperties as jest.Mock).mockReturnValue({
       maxWidth: 1200,
       minWidth: 400,
@@ -243,7 +246,7 @@ describe('<TableSection />', () => {
     });
   });
 
-  it('should call openFlyout (legacy) when newFlyoutSystemEnabled is false', async () => {
+  it('should call openFlyout (legacy) when enableNewFlyout is false', async () => {
     const mockOpenFlyout = jest.fn();
     mockUseExpandableFlyoutApi.mockReturnValue({ openFlyout: mockOpenFlyout });
     mockUseAttackGroupHandler.mockReturnValue({
@@ -276,8 +279,10 @@ describe('<TableSection />', () => {
     expect(mockOpenSystemFlyout).not.toHaveBeenCalled();
   });
 
-  it('should call openSystemFlyout with AttackFlyoutWrapper when newFlyoutSystemEnabled is true', async () => {
-    (useIsExperimentalFeatureEnabled as jest.Mock).mockReturnValue(true);
+  it('should call openSystemFlyout with AttackFlyoutWrapper when enableNewFlyout is true', async () => {
+    mockUiSettingsGet.mockImplementation((key: string) =>
+      key === ENABLE_NEW_FLYOUT_SETTING ? true : false
+    );
     mockUseAttackGroupHandler.mockReturnValue({
       getAttack: jest.fn().mockReturnValue({ id: 'attack-1' }),
       isLoading: false,

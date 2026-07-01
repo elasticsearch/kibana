@@ -14,7 +14,7 @@ import { useAttacksListData } from './use_attacks_list_data';
 import { AttackDetailsRightPanelKey } from '../../../../../flyout/attack_details/constants/panel_keys';
 import { useKibana } from '../../../../../common/lib/kibana';
 import { AttacksEventTypes } from '../../../../../common/lib/telemetry';
-import { useIsExperimentalFeatureEnabled } from '../../../../../common/hooks/use_experimental_features';
+import { ENABLE_NEW_FLYOUT_SETTING } from '../../../../../../common/constants';
 import { useDefaultDocumentFlyoutProperties } from '../../../../../flyout_v2/shared/hooks/use_default_flyout_properties';
 
 jest.mock('../../../../../common/lib/kibana');
@@ -23,7 +23,6 @@ jest.mock('@kbn/expandable-flyout');
 jest.mock('../../../../../entity_analytics/components/severity/severity_bar', () => ({
   SeverityBar: () => <div data-test-subj="severity-bar" />,
 }));
-jest.mock('../../../../../common/hooks/use_experimental_features');
 jest.mock('../../../../../flyout_v2/shared/hooks/use_default_flyout_properties');
 jest.mock('../../../../../flyout_v2/shared/components/flyout_provider', () => ({
   flyoutProviders: jest.fn(({ children }: { children: React.ReactNode }) => (
@@ -53,8 +52,11 @@ describe('AttacksListPanel', () => {
   const mockOpenFlyout = jest.fn();
   const mockOpenSystemFlyout = jest.fn();
   const reportEvent = jest.fn();
+  const mockUiSettingsGet = jest.fn().mockReturnValue(false);
 
   beforeEach(() => {
+    jest.clearAllMocks();
+    mockUiSettingsGet.mockReturnValue(false);
     (useExpandableFlyoutApi as jest.Mock).mockReturnValue({
       openFlyout: mockOpenFlyout,
     });
@@ -66,9 +68,11 @@ describe('AttacksListPanel', () => {
         overlays: {
           openSystemFlyout: mockOpenSystemFlyout,
         },
+        uiSettings: {
+          get: mockUiSettingsGet,
+        },
       },
     });
-    (useIsExperimentalFeatureEnabled as jest.Mock).mockReturnValue(false);
     (useDefaultDocumentFlyoutProperties as jest.Mock).mockReturnValue({
       maxWidth: 1200,
       minWidth: 400,
@@ -77,10 +81,6 @@ describe('AttacksListPanel', () => {
       resizable: true,
       size: 's',
     });
-  });
-
-  afterEach(() => {
-    jest.clearAllMocks();
   });
 
   it('renders loading state correctly', () => {
@@ -171,11 +171,13 @@ describe('AttacksListPanel', () => {
     });
   });
 
-  it('calls openSystemFlyout with AttackFlyoutWrapper when flag is on', () => {
+  it('calls openSystemFlyout with AttackFlyoutWrapper when enableNewFlyout setting is on', () => {
+    mockUiSettingsGet.mockImplementation((key: string) =>
+      key === ENABLE_NEW_FLYOUT_SETTING ? true : false
+    );
     const mockRefetch = jest.fn();
     const mockItems = [{ id: 'attack-1', name: 'Attack 1', alertsCount: 5, severityCount: {} }];
 
-    (useIsExperimentalFeatureEnabled as jest.Mock).mockReturnValue(true);
     (useAttacksListData as jest.Mock).mockReturnValue({
       items: mockItems,
       isLoading: false,

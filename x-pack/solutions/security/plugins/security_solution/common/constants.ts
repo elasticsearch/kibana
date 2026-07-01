@@ -278,6 +278,9 @@ export const ENABLE_ASSET_INVENTORY_SETTING = 'securitySolution:enableAssetInven
 /** This Kibana Advanced Setting allows users to enable/disable the Cloud Connector Feature */
 export const ENABLE_CLOUD_CONNECTOR_SETTING = 'securitySolution:enableCloudConnector' as const;
 
+/** This Kibana Advanced Setting allows users to enable/disable the new EUI-based flyout system */
+export const ENABLE_NEW_FLYOUT_SETTING = 'securitySolution:enableNewFlyout' as const;
+
 /**
  * Id for the notifications alerting type
  * @deprecated Once we are confident all rules relying on side-car actions SO's have been migrated to SO references we should remove this function

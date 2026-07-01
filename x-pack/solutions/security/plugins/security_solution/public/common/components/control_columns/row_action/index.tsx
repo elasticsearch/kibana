@@ -17,7 +17,7 @@ import { cellActionRenderer } from '../../../../flyout_v2/shared/components/cell
 import { DocumentFlyoutWrapper } from '../../../../flyout_v2/document/main/document_flyout_wrapper';
 import { LeftPanelNotesTab } from '../../../../flyout/document_details/left';
 import { useKibana } from '../../../lib/kibana';
-import { useIsExperimentalFeatureEnabled } from '../../../hooks/use_experimental_features';
+import { ENABLE_NEW_FLYOUT_SETTING } from '../../../../../common/constants';
 import {
   DocumentDetailsLeftPanelKey,
   DocumentDetailsRightPanelKey,
@@ -86,12 +86,12 @@ const RowActionComponent = ({
   );
 
   const { services } = useKibana();
-  const { telemetry, overlays } = services;
+  const { telemetry, overlays, uiSettings } = services;
   const store = useStore();
   const history = useHistory();
 
   const { openFlyout } = useExpandableFlyoutApi();
-  const newFlyoutSystemEnabled = useIsExperimentalFeatureEnabled('newFlyoutSystemEnabled');
+  const enableNewFlyout = uiSettings.get(ENABLE_NEW_FLYOUT_SETTING, false);
   const defaultFlyoutProperties = useDefaultDocumentFlyoutProperties();
 
   const columnValues = useMemo(
@@ -120,7 +120,7 @@ const RowActionComponent = ({
   }, [refetch]);
 
   const handleOnEventDetailPanelOpened = useCallback(() => {
-    if (newFlyoutSystemEnabled && hit) {
+    if (enableNewFlyout && hit) {
       overlays.openSystemFlyout(
         flyoutProviders({
           services,
@@ -159,7 +159,7 @@ const RowActionComponent = ({
     }
   }, [
     defaultFlyoutProperties,
-    newFlyoutSystemEnabled,
+    enableNewFlyout,
     hit,
     overlays,
     services,

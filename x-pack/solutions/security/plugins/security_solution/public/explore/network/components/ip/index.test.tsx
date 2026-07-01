@@ -21,6 +21,9 @@ jest.mock('../../../../common/lib/kibana', () => {
     useKibana: () => ({
       services: {
         telemetry: mockedTelemetry,
+        uiSettings: {
+          get: jest.fn().mockReturnValue(false),
+        },
       },
     }),
     useUiSetting: () => false,

@@ -116,9 +116,7 @@ describe('<AnalyzeGraph />', () => {
     mockUiSettingsGet.mockReturnValue(true);
     mockUseWhichFlyout.mockReturnValue(FLYOUT_KEY);
     jest.mocked(useExpandableFlyoutApi).mockReturnValue(mockFlyoutApi);
-    mockExperimentalFeatureFlags({
-      newFlyoutSystemEnabled: false,
-    });
+    mockExperimentalFeatureFlags({});
     (useSelectedPatterns as jest.Mock).mockReturnValue(['index']);
     (useIsAnalyzerEnabled as jest.Mock).mockReturnValue(true);
     (useDataView as jest.Mock).mockReturnValue({

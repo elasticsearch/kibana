@@ -24,8 +24,7 @@ import { useHistory } from 'react-router-dom';
 import { SECURITY_CELL_ACTIONS_DEFAULT } from '@kbn/ui-actions-plugin/common/trigger_ids';
 import { documentFlyoutHistoryKey } from '../../../../../flyout_v2/shared/constants/flyout_history';
 import { cellActionRenderer } from '../../../../../flyout_v2/shared/components/cell_actions';
-import { useIsExperimentalFeatureEnabled } from '../../../../../common/hooks/use_experimental_features';
-import { JEST_ENVIRONMENT } from '../../../../../../common/constants';
+import { JEST_ENVIRONMENT, ENABLE_NEW_FLYOUT_SETTING } from '../../../../../../common/constants';
 import { useOnExpandableFlyoutClose } from '../../../../../flyout/shared/hooks/use_on_expandable_flyout_close';
 import { DocumentDetailsRightPanelKey } from '../../../../../flyout/document_details/shared/constants/panel_keys';
 import { AttackDetailsRightPanelKey } from '../../../../../flyout/attack_details/constants/panel_keys';
@@ -123,7 +122,6 @@ export const TimelineDataTableComponent: React.FC<DataTableProps> = memo(
     leadingControlColumns,
     onUpdatePageIndex,
   }) {
-    const newFlyoutSystemEnabled = useIsExperimentalFeatureEnabled('newFlyoutSystemEnabled');
     const dispatch = useDispatch();
     const store = useStore();
     const history = useHistory();
@@ -149,6 +147,8 @@ export const TimelineDataTableComponent: React.FC<DataTableProps> = memo(
       data: dataPluginContract,
       overlays,
     } = services;
+
+    const enableNewFlyout = uiSettings.get(ENABLE_NEW_FLYOUT_SETTING, false);
 
     const [expandedDoc, setExpandedDoc] = useState<DataTableRecord & TimelineItem>();
 
@@ -188,7 +188,7 @@ export const TimelineDataTableComponent: React.FC<DataTableProps> = memo(
 
     const handleOnEventDetailPanelOpened = useCallback(
       (eventData: DataTableRecord & TimelineItem) => {
-        if (newFlyoutSystemEnabled) {
+        if (enableNewFlyout) {
           const isAttackRow = isAttackDiscoveryRow(eventData);
           overlays.openSystemFlyout(
             flyoutProviders({
@@ -246,7 +246,7 @@ export const TimelineDataTableComponent: React.FC<DataTableProps> = memo(
       },
       [
         defaultFlyoutProperties,
-        newFlyoutSystemEnabled,
+        enableNewFlyout,
         overlays,
         services,
         store,

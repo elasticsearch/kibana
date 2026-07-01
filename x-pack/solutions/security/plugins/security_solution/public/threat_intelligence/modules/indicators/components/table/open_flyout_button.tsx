@@ -13,7 +13,7 @@ import { useStore } from 'react-redux';
 import type { DataTableRecord } from '@kbn/discover-utils';
 import type { Indicator } from '../../../../../../common/threat_intelligence/types/indicator';
 import { IOCRightPanelKey } from '../../../../../flyout/ioc_details/constants/panel_keys';
-import { useIsExperimentalFeatureEnabled } from '../../../../../common/hooks/use_experimental_features';
+import { ENABLE_NEW_FLYOUT_SETTING } from '../../../../../../common/constants';
 import { useKibana } from '../../../../../common/lib/kibana';
 import { flyoutProviders } from '../../../../../flyout_v2/shared/components/flyout_provider';
 import { useDefaultDocumentFlyoutProperties } from '../../../../../flyout_v2/shared/hooks/use_default_flyout_properties';
@@ -35,9 +35,9 @@ export interface OpenIndicatorFlyoutButtonProps {
  */
 export const OpenIndicatorFlyoutButton = memo(({ indicator }: OpenIndicatorFlyoutButtonProps) => {
   const { openFlyout } = useExpandableFlyoutApi();
-  const newFlyoutSystemEnabled = useIsExperimentalFeatureEnabled('newFlyoutSystemEnabled');
   const { services } = useKibana();
-  const { overlays } = services;
+  const { overlays, uiSettings } = services;
+  const enableNewFlyout = uiSettings.get(ENABLE_NEW_FLYOUT_SETTING, false);
   const store = useStore();
   const history = useHistory();
   const defaultFlyoutProperties = useDefaultDocumentFlyoutProperties();
@@ -52,7 +52,7 @@ export const OpenIndicatorFlyoutButton = memo(({ indicator }: OpenIndicatorFlyou
   );
 
   const open = useCallback(() => {
-    if (newFlyoutSystemEnabled) {
+    if (enableNewFlyout) {
       overlays.openSystemFlyout(
         flyoutProviders({
           services,
@@ -77,7 +77,7 @@ export const OpenIndicatorFlyoutButton = memo(({ indicator }: OpenIndicatorFlyou
       });
     }
   }, [
-    newFlyoutSystemEnabled,
+    enableNewFlyout,
     overlays,
     services,
     store,

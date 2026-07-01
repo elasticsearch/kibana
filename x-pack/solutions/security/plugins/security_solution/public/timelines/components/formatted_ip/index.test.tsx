@@ -32,6 +32,9 @@ jest.mock('../../../common/lib/kibana/kibana_react', () => ({
         getUrlForApp: jest.fn(),
         navigateToApp: jest.fn(),
       },
+      uiSettings: {
+        get: jest.fn().mockReturnValue(false),
+      },
     },
   }),
 }));
