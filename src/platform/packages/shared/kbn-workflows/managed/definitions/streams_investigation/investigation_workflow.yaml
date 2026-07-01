@@ -27,6 +27,10 @@ triggers:
           type: string
           default: '.anthropic-claude-4.6-sonnet-chat_completion'
           description: Connector ID for the investigation agent.
+        gaps_connector_id:
+          type: string
+          default: '.anthropic-claude-4.5-haiku-chat_completion'
+          description: Connector ID for the gaps consolidation step. Defaults to a cheap model.
         stream_names:
           type: array
           items:
@@ -95,6 +99,15 @@ steps:
                 - reason
           gaps_found:
             type: array
+            description: >
+              Actionable knowledge gaps discovered during this investigation — data sources that were
+              missing or inaccessible and would have helped diagnose the issue. Each item must be a
+              concrete, actionable statement of missing data that could reasonably be provided, such as:
+              "No traces available for the cart service", "Infrastructure metrics absent for host X",
+              "No code repository access for service Y".
+              Do NOT include incident-specific observations (e.g. "the pod crashed", "no logs during the
+              outage window") — those are incident facts, not actionable knowledge gaps. Reduce the
+              finding to what data source is missing and why it matters, not what happened during the incident.
             items:
               type: string
         required:
@@ -105,3 +118,24 @@ steps:
           - alternatives_ruled_out
     on-failure:
       continue: false
+
+  # Reconcile the gaps this investigation surfaced into the _gaps/overview memory
+  # page. Deliberately minimal: a cheap model, memory read/write only, no auditing.
+  - name: merge_investigation_gaps
+    type: ai.agent
+    connector-id: '{{ inputs.gaps_connector_id }}'
+    create-conversation: false
+    with:
+      timeout: 120s
+      message: |
+        Call load_skill with path skills/platform/streams/significant-events-memory to get the memory tools.
+
+        The following knowledge gaps were identified during an investigation:
+
+        {{ steps.investigate.output.structured_output.gaps_found | json }}
+
+        Keep only gaps that are actionable structural deficiencies — a data source or access that is missing and could reasonably be provided (e.g. "No traces for the cart service", "No infrastructure metrics for host X", "No code repository access for service Y"). Discard incident-specific observations that just describe what happened during the outage (e.g. "the pod crashed", "no logs during the failure window").
+
+        Read the current _gaps/overview page with platform_streams_memory_read. Compare the filtered gaps against it. If every gap is already reflected there, stop and write nothing. If there are genuinely new gaps, weave them into the existing sections (do not add a separate section) and save the page with platform_streams_memory_write using categories ["_system/gaps"].
+    on-failure:
+      continue: true
