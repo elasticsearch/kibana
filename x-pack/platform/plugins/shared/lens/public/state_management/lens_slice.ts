@@ -1123,6 +1123,10 @@ export const makeLensReducer = (storeDeps: LensStoreDeps) => {
             targetLayerDimensionGroups: groups,
             dropType,
             indexPatterns: framePublicAPI.dataViews.indexPatterns,
+            activeVisualizationTypeId: activeVisualization.getVisualizationTypeId?.(
+              state.visualization.state,
+              target.layerId
+            ),
           });
           if (!newDatasourceState) {
             return;
@@ -1307,6 +1311,10 @@ function addInitialValueIfAvailable({
                 frame: framePublicAPI,
                 state: activeVisualizationState,
               }).groups,
+              activeVisualizationTypeId: activeVisualization.getVisualizationTypeId?.(
+                activeVisualizationState,
+                layerId
+              ),
             }
           ),
           activeVisualizationState,

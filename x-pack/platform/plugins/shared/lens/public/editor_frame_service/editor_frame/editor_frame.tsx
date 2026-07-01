@@ -14,6 +14,7 @@ import type { ReactExpressionRendererType } from '@kbn/expressions-plugin/public
 import type { DragDropIdentifier } from '@kbn/dom-drag-drop';
 import { type DragDropAction, RootDragDropProvider } from '@kbn/dom-drag-drop';
 import type {
+  FormBasedPrivateState,
   FramePublicAPI,
   Suggestion,
   UserMessagesGetter,
@@ -50,6 +51,7 @@ import { getLongMessage } from '../../user_messages_utils';
 import { useEditorFrameService } from '../editor_frame_service_context';
 import { VisualizationToolbarWrapper } from './visualization_toolbar';
 import { LayerTabsWrapper } from '../../app_plugin/shared/edit_on_the_fly/layer_tabs';
+import { applyVizTypeDatasourceDefaults } from '../../datasources/form_based/viz_type_defaults';
 
 export interface EditorFrameProps {
   ExpressionRenderer: ReactExpressionRendererType;
@@ -113,10 +115,36 @@ export function EditorFrame(props: EditorFrameProps) {
       const suggestion = getSuggestionForField.current!(field);
       if (suggestion) {
         trackUiCounterEvents('drop_onto_workspace');
-        switchToSuggestion(dispatchLens, suggestion, { clearStagedPreview: true });
+        const { datasourceId: suggestionDatasourceId } = suggestion;
+        const targetVisualization = suggestionDatasourceId
+          ? visualizationMap[suggestion.visualizationId]
+          : undefined;
+        // Intentional `as FormBasedPrivateState` type assertion as suggestions carry datasource state opaquely (`unknown`); `applyVizTypeDatasourceDefaults` re-checks `datasourceId === formBased` before touching it.
+        const suggestionDatasourceState = suggestion.datasourceState as
+          | FormBasedPrivateState
+          | undefined;
+        const adjustedSuggestion =
+          targetVisualization && suggestionDatasourceId && suggestionDatasourceState
+            ? {
+                ...suggestion,
+                datasourceState: applyVizTypeDatasourceDefaults({
+                  kind: 'suggestion',
+                  datasourceId: suggestionDatasourceId,
+                  datasourceState: suggestionDatasourceState,
+                  // Intentional `as FormBasedPrivateState` type assertion as the redux store carries datasource state opaquely (`unknown`);
+                  previousDatasourceState: datasourceStates[suggestionDatasourceId]?.state as
+                    | FormBasedPrivateState
+                    | undefined,
+                  targetVisualizationTypeId: targetVisualization.getVisualizationTypeId(
+                    suggestion.visualizationState
+                  ),
+                }),
+              }
+            : suggestion;
+        switchToSuggestion(dispatchLens, adjustedSuggestion, { clearStagedPreview: true });
       }
     },
-    [getSuggestionForField, dispatchLens]
+    [getSuggestionForField, dispatchLens, visualizationMap, datasourceStates]
   );
 
   const onError = useCallback((error: Error) => {

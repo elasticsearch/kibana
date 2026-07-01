@@ -23,7 +23,12 @@ export default function ({ getService, getPageObjects }: FtrProviderContext) {
         dimension: 'lnsXY_xDimensionPanel > lns-empty-dimension',
         operation: 'date_histogram',
         field: '@timestamp',
+        keepOpen: true,
       });
+      // Bar charts default "Include empty rows" off; keep the empty buckets so this
+      // pagination check still has two full pages of rows to page through.
+      await testSubjects.setEuiSwitch('indexPattern-include-empty-rows', 'check');
+      await lens.closeDimensionEditor();
 
       await lens.configureDimension({
         dimension: 'lnsXY_yDimensionPanel > lns-empty-dimension',

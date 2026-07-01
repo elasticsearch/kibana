@@ -14,6 +14,26 @@ export default function ({ getService, getPageObjects }: FtrProviderContext) {
   const listingTable = getService('listingTable');
   const esArchiver = getService('esArchiver');
   const kibanaServer = getService('kibanaServer');
+  const testSubjects = getService('testSubjects');
+
+  // Switching the xy chart (whose x-axis is a `@timestamp` date histogram) to a
+  // datatable re-applies the datatable's empty-rows default, which inserts empty
+  // boundary buckets and shifts the first data row. Turn the option back off so
+  // the single populated bucket stays at row 0 for the assertions below.
+  const disableEmptyRowsOnDateHistogramRow = async () => {
+    const triggerTexts = await lens.getDimensionTriggersTexts('lnsDatatable_rows');
+    const dateHistogramIndex = triggerTexts.findIndex((text) => text.includes('@timestamp'));
+    if (dateHistogramIndex === -1) {
+      return;
+    }
+    await lens.openDimensionEditor(
+      'lnsDatatable_rows > lns-dimensionTrigger',
+      0,
+      dateHistogramIndex
+    );
+    await testSubjects.setEuiSwitch('indexPattern-include-empty-rows', 'uncheck');
+    await lens.closeDimensionEditor();
+  };
 
   describe('lens rollup tests', () => {
     before(async () => {
@@ -69,6 +89,7 @@ export default function ({ getService, getPageObjects }: FtrProviderContext) {
       await lens.switchToVisualization('lnsLegacyMetric');
       await lens.assertLegacyMetric('Sum of bytes', '16,788');
       await lens.switchToVisualization('lnsDatatable');
+      await disableEmptyRowsOnDateHistogramRow();
       expect(await lens.getDatatableHeaderText()).to.eql('Sum of bytes');
       expect(await lens.getDatatableCellText(0, 0)).to.eql('16,788');
     });

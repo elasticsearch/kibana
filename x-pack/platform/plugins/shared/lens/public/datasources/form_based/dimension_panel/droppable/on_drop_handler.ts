@@ -32,6 +32,7 @@ import { mergeLayer, mergeLayers } from '../../state_helpers';
 import { getNewOperation, getField } from './get_drop_props';
 import type { DataViewDragDropOperation } from '../../types';
 import { removeColumn } from '../../form_based';
+import { getColumnParamsForNewBucket } from '../../include_empty_rows_defaults';
 
 interface DropHandlerProps<T = DataViewDragDropOperation> {
   state: FormBasedPrivateState;
@@ -40,6 +41,7 @@ interface DropHandlerProps<T = DataViewDragDropOperation> {
   source: T;
   target: DataViewDragDropOperation;
   indexPatterns: IndexPatternMap;
+  activeVisualizationTypeId?: string;
 }
 
 export function onDrop(props: DatasourceDimensionDropHandlerProps<FormBasedPrivateState>) {
@@ -121,7 +123,14 @@ const isFieldDropType = (dropType: DropType) =>
   ['field_add', 'field_replace', 'field_combine'].includes(dropType);
 
 function onFieldDrop(props: DropHandlerProps<DraggedField>, shouldAddField?: boolean) {
-  const { state, source, target, targetLayerDimensionGroups, indexPatterns } = props;
+  const {
+    state,
+    source,
+    target,
+    targetLayerDimensionGroups,
+    indexPatterns,
+    activeVisualizationTypeId,
+  } = props;
 
   const prioritizedOperation = targetLayerDimensionGroups.find(
     (g) => g.groupId === target.groupId
@@ -177,6 +186,7 @@ function onFieldDrop(props: DropHandlerProps<DraggedField>, shouldAddField?: boo
     targetGroup: target.groupId,
     shouldCombineField: shouldAddField,
     initialParams,
+    columnParams: getColumnParamsForNewBucket(newOperation, activeVisualizationTypeId),
   });
   return mergeLayer({ state, layerId: target.layerId, newLayer });
 }

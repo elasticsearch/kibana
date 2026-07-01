@@ -21,6 +21,7 @@ import type { SystemPaletteExpressionFunctionDefinition } from '@kbn/charts-plug
 import useObservable from 'react-use/lib/useObservable';
 import { getKbnPalettes } from '@kbn/palettes';
 import type { FormatFactory } from '@kbn/visualization-ui-components';
+import { LENS_TAGCLOUD_ID } from '@kbn/lens-common';
 import type { OperationMetadata, Visualization } from '../..';
 import { getColorMappingDefaults } from '../../utils';
 import type { TagcloudState } from './types';
@@ -44,14 +45,14 @@ export const getTagcloudVisualization = ({
   kibanaTheme: ThemeServiceStart;
   formatFactory: FormatFactory;
 }): Visualization<TagcloudState> => ({
-  id: 'lnsTagcloud',
+  id: LENS_TAGCLOUD_ID,
 
   getVisualizationTypeId() {
     return this.id;
   },
   visualizationTypes: [
     {
-      id: 'lnsTagcloud',
+      id: LENS_TAGCLOUD_ID,
       icon: IconChartTagcloud,
       label: TAGCLOUD_LABEL,
       sortPriority: 12,

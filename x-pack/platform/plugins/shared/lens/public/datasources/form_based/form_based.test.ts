@@ -11,6 +11,14 @@ import React from 'react';
 import type { Reference } from '@kbn/content-management-utils';
 import { coreMock } from '@kbn/core/public/mocks';
 import type { IStorageWrapper } from '@kbn/kibana-utils-plugin/public';
+import {
+  LENS_DATATABLE_ID,
+  LENS_HEATMAP_CHART_SHAPES,
+  LENS_METRIC_ID,
+  LENS_TAGCLOUD_ID,
+  PARTITION_CHART_TYPES,
+  SeriesTypes,
+} from '@kbn/lens-common';
 import type {
   FormBasedPersistedState,
   FormBasedPrivateState,
@@ -3990,6 +3998,81 @@ describe('IndexPattern Data Source', () => {
           },
         },
       });
+    });
+
+    describe('per-visualization includeEmptyRows default for autoTimeField', () => {
+      const buildAutoTimeFieldState = (): FormBasedPrivateState =>
+        ({
+          currentIndexPatternId: '1',
+          layers: {
+            first: {
+              indexPatternId: '1',
+              columnOrder: ['metric'],
+              columns: {
+                metric: {
+                  label: 'Count of records',
+                  dataType: 'number',
+                  isBucketed: false,
+                  sourceField: '___records___',
+                  operationType: 'count',
+                },
+              },
+            },
+          },
+        } as FormBasedPrivateState);
+
+      it.each([
+        [SeriesTypes.BAR, false],
+        [LENS_HEATMAP_CHART_SHAPES.HEATMAP, false],
+        [PARTITION_CHART_TYPES.PIE, false],
+        [PARTITION_CHART_TYPES.TREEMAP, false],
+        [PARTITION_CHART_TYPES.MOSAIC, false],
+        [PARTITION_CHART_TYPES.WAFFLE, false],
+        [LENS_METRIC_ID, false],
+        [LENS_TAGCLOUD_ID, false],
+      ])(
+        'defaults includeEmptyRows to false for visualization type "%s"',
+        (visualizationTypeId, expected) => {
+          const next = FormBasedDatasource.initializeDimension!(
+            buildAutoTimeFieldState(),
+            'first',
+            indexPatterns,
+            {
+              columnId: 'newTime',
+              groupId: 'a',
+              autoTimeField: true,
+              visualizationGroups: [],
+              activeVisualizationTypeId: visualizationTypeId,
+            }
+          );
+          expect(next.layers.first.columns.newTime).toMatchObject({
+            operationType: 'date_histogram',
+            params: { includeEmptyRows: expected },
+          });
+        }
+      );
+
+      it.each([[LENS_DATATABLE_ID], [SeriesTypes.LINE], [SeriesTypes.AREA], ['mixed']])(
+        'keeps includeEmptyRows on for visualization type "%s"',
+        (visualizationTypeId) => {
+          const next = FormBasedDatasource.initializeDimension!(
+            buildAutoTimeFieldState(),
+            'first',
+            indexPatterns,
+            {
+              columnId: 'newTime',
+              groupId: 'a',
+              autoTimeField: true,
+              visualizationGroups: [],
+              activeVisualizationTypeId: visualizationTypeId,
+            }
+          );
+          expect(next.layers.first.columns.newTime).toMatchObject({
+            operationType: 'date_histogram',
+            params: { includeEmptyRows: true },
+          });
+        }
+      );
     });
   });
 

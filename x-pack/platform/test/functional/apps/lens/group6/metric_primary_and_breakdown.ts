@@ -6,7 +6,6 @@
  */
 
 import expect from '@kbn/expect';
-import { NULL_LABEL } from '@kbn/field-formats-common';
 import type { FtrProviderContext } from '../../../ftr_provider_context';
 
 export default function ({ getService, getPageObjects }: FtrProviderContext) {
@@ -16,13 +15,9 @@ export default function ({ getService, getPageObjects }: FtrProviderContext) {
   const retry = getService('retry');
   const inspector = getService('inspector');
 
+  // Metric defaults "Include empty rows" off, so the trendline's date histogram
+  // drops the empty leading buckets and starts at the first populated bucket.
   const inspectorTrendlineData = [
-    ['2015-09-19 06:00', NULL_LABEL],
-    ['2015-09-19 09:00', NULL_LABEL],
-    ['2015-09-19 12:00', NULL_LABEL],
-    ['2015-09-19 15:00', NULL_LABEL],
-    ['2015-09-19 18:00', NULL_LABEL],
-    ['2015-09-19 21:00', NULL_LABEL],
     ['2015-09-20 00:00', '6,011.351'],
     ['2015-09-20 03:00', '5,849.901'],
     ['2015-09-20 06:00', '5,722.622'],
@@ -37,29 +32,37 @@ export default function ({ getService, getPageObjects }: FtrProviderContext) {
     ['2015-09-21 09:00', '5,863.661'],
     ['2015-09-21 12:00', '5,657.531'],
     ['2015-09-21 15:00', '5,841.935'],
+    ['2015-09-21 18:00', '5,819.48'],
+    ['2015-09-21 21:00', '5,279.963'],
+    ['2015-09-22 00:00', '6,482.313'],
+    ['2015-09-22 03:00', '5,181.295'],
+    ['2015-09-22 06:00', '5,676.816'],
+    ['2015-09-22 09:00', '5,659.477'],
   ];
 
+  // Metric defaults "Include empty rows" off, so each breakdown series' trendline
+  // drops its empty buckets and the table lists the populated buckets per series.
   const inspectorExpectedTrenlineDataWithBreakdown = [
-    ['97.220.3.248', '2015-09-19 06:00', NULL_LABEL],
-    ['97.220.3.248', '2015-09-19 09:00', NULL_LABEL],
-    ['97.220.3.248', '2015-09-19 12:00', NULL_LABEL],
-    ['97.220.3.248', '2015-09-19 15:00', NULL_LABEL],
-    ['97.220.3.248', '2015-09-19 18:00', NULL_LABEL],
-    ['97.220.3.248', '2015-09-19 21:00', NULL_LABEL],
-    ['97.220.3.248', '2015-09-20 00:00', NULL_LABEL],
-    ['97.220.3.248', '2015-09-20 03:00', NULL_LABEL],
-    ['97.220.3.248', '2015-09-20 06:00', NULL_LABEL],
-    ['97.220.3.248', '2015-09-20 09:00', NULL_LABEL],
-    ['97.220.3.248', '2015-09-20 12:00', NULL_LABEL],
-    ['97.220.3.248', '2015-09-20 15:00', NULL_LABEL],
-    ['97.220.3.248', '2015-09-20 18:00', NULL_LABEL],
-    ['97.220.3.248', '2015-09-20 21:00', NULL_LABEL],
-    ['97.220.3.248', '2015-09-21 00:00', NULL_LABEL],
-    ['97.220.3.248', '2015-09-21 03:00', NULL_LABEL],
-    ['97.220.3.248', '2015-09-21 06:00', NULL_LABEL],
     ['97.220.3.248', '2015-09-21 09:00', '19,755'],
-    ['97.220.3.248', '2015-09-21 12:00', NULL_LABEL],
-    ['97.220.3.248', '2015-09-21 15:00', NULL_LABEL],
+    ['169.228.188.120', '2015-09-21 15:00', '18,994'],
+    ['78.83.247.30', '2015-09-20 12:00', '17,246'],
+    ['226.82.228.233', '2015-09-22 06:00', '15,553'],
+    ['226.82.228.233', '2015-09-22 12:00', '15,821'],
+    ['93.28.27.24', '2015-09-22 09:00', '18,449'],
+    ['93.28.27.24', '2015-09-22 12:00', '14,197'],
+    ['Other', '2015-09-20 00:00', '6,011.351'],
+    ['Other', '2015-09-20 03:00', '5,849.901'],
+    ['Other', '2015-09-20 06:00', '5,727.865'],
+    ['Other', '2015-09-20 09:00', '5,771.405'],
+    ['Other', '2015-09-20 12:00', '5,733.496'],
+    ['Other', '2015-09-20 15:00', '5,518.007'],
+    ['Other', '2015-09-20 18:00', '5,182.457'],
+    ['Other', '2015-09-20 21:00', '6,656.581'],
+    ['Other', '2015-09-21 00:00', '5,139.357'],
+    ['Other', '2015-09-21 03:00', '5,884.891'],
+    ['Other', '2015-09-21 06:00', '5,693.842'],
+    ['Other', '2015-09-21 09:00', '5,851.031'],
+    ['Other', '2015-09-21 12:00', '5,643.665'],
   ];
 
   const clickMetric = async (title: string) => {
@@ -324,6 +327,15 @@ export default function ({ getService, getPageObjects }: FtrProviderContext) {
         operation: 'date_histogram',
         field: '@timestamp',
         keepOpen: true,
+      });
+
+      // Metric defaults "Include empty rows" off; keep the empty buckets so the
+      // breakdown produces enough tiles to make the visualization scrollable.
+      await retry.try(async () => {
+        await testSubjects.setEuiSwitch('indexPattern-include-empty-rows', 'check');
+        expect(await testSubjects.isEuiSwitchChecked('indexPattern-include-empty-rows')).to.be(
+          true
+        );
       });
 
       await testSubjects.setValue('lnsMetric_max_cols', '1');

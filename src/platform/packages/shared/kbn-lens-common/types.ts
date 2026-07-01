@@ -700,6 +700,8 @@ export interface Datasource<T = unknown, P = unknown, Q = Query | AggregateQuery
       visualizationGroups: VisualizationDimensionGroupConfig[];
       staticValue?: unknown;
       autoTimeField?: boolean;
+      /** Subtype-aware type id of the active visualization being initialized. */
+      activeVisualizationTypeId?: string;
     }
   ) => T;
 
@@ -986,6 +988,8 @@ export type DatasourceDimensionEditorProps<T = unknown> = DatasourceDimensionPro
       forceRender?: boolean;
     }
   >;
+  /** Subtype-aware type id of the visualization that owns this dimension. */
+  activeVisualizationTypeId?: string;
   core: Pick<
     CoreStart,
     | 'http'
@@ -1044,6 +1048,8 @@ export interface DatasourceDimensionDropHandlerProps<T> {
   source: DragDropIdentifier;
   dropType: DropType;
   indexPatterns: IndexPatternMap;
+  /** Subtype-aware type id of the active visualization receiving the drop. */
+  activeVisualizationTypeId?: string;
 }
 
 export interface VisualizationConfigProps<T = unknown> {

@@ -15,12 +15,30 @@ export default function ({ getService, getPageObjects }: FtrProviderContext) {
   const retry = getService('retry');
   const testSubjects = getService('testSubjects');
 
+  // Switching `lnsXYvis` to a datatable re-applies the datatable's empty-rows
+  // default to its `@timestamp` row, which inserts empty boundary buckets and
+  // shifts every later row/cell assertion in this shared-state suite. Turn the
+  // option back off so the table matches the populated-only layout the
+  // assertions below were written against.
+  const disableEmptyRowsOnDateHistogramRow = async () => {
+    const triggerTexts = await lens.getDimensionTriggersTexts('lnsDatatable_rows');
+    const dateHistogramIndex = triggerTexts.findIndex((text) => text.includes('@timestamp'));
+    await lens.openDimensionEditor(
+      'lnsDatatable_rows > lns-dimensionTrigger',
+      0,
+      dateHistogramIndex
+    );
+    await testSubjects.setEuiSwitch('indexPattern-include-empty-rows', 'uncheck');
+    await lens.closeDimensionEditor();
+  };
+
   describe('lens datatable', () => {
     it('should able to sort a table by a column', async () => {
       await visualize.gotoVisualizationLandingPage();
       await listingTable.searchForItemWithName('lnsXYvis');
       await lens.clickVisualizeListItemTitle('lnsXYvis');
       await lens.switchToVisualization('lnsDatatable');
+      await disableEmptyRowsOnDateHistogramRow();
       // Sort by number
       await lens.changeTableSortingBy(2, 'ascending');
       await lens.waitForVisualization();

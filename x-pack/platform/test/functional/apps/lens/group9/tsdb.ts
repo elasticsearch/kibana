@@ -417,7 +417,12 @@ export default function ({ getService, getPageObjects }: FtrProviderContext) {
               dimension: 'lnsXY_xDimensionPanel > lns-empty-dimension',
               operation: 'date_histogram',
               field: '@timestamp',
+              keepOpen: true,
             });
+            // Bar charts default "Include empty rows" off; keep the empty buckets so
+            // the first/last bars still cover the whole time range as asserted below.
+            await testSubjects.setEuiSwitch('indexPattern-include-empty-rows', 'check');
+            await lens.closeDimensionEditor();
 
             // check the counter field works
             await lens.configureDimension({

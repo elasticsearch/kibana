@@ -241,6 +241,7 @@ describe('ConfigPanel', () => {
           groupId: 'a',
           columnId: 'newId',
           staticValue: 100,
+          activeVisualizationTypeId: 'testVis',
           visualizationGroups: [
             expect.objectContaining({
               accessors: [],

@@ -164,7 +164,12 @@ export default function ({ getService, getPageObjects }: FtrProviderContext) {
               dimension: 'lnsXY_xDimensionPanel > lns-empty-dimension',
               operation: 'date_histogram',
               field: '@timestamp',
+              keepOpen: true,
             });
+            // Bar charts default "Include empty rows" off; keep the empty buckets so
+            // the before/after-downgrade halves still span the whole time range.
+            await testSubjects.setEuiSwitch('indexPattern-include-empty-rows', 'check');
+            await lens.closeDimensionEditor();
             // just check the data is shown
             await lens.configureDimension({
               dimension: 'lnsXY_yDimensionPanel > lns-empty-dimension',

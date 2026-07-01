@@ -8,6 +8,8 @@
  */
 import type { $Values } from '@kbn/utility-types';
 
+export const LENS_TAGCLOUD_ID = 'lnsTagcloud';
+
 export const TAGCLOUD_ORIENTATION = {
   SINGLE: 'single',
   RIGHT_ANGLED: 'right angled',

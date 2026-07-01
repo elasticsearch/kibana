@@ -878,6 +878,10 @@ export function LayerPanel(props: LayerPanelProps) {
                 columnId: openColumnId,
                 groupId: openColumnGroup.groupId,
                 hideGrouping: openColumnGroup.hideGrouping,
+                activeVisualizationTypeId: activeVisualization?.getVisualizationTypeId?.(
+                  visualizationState,
+                  layerId
+                ),
                 filterOperations: openColumnGroup.filterOperations,
                 isMetricDimension: openColumnGroup?.isMetricDimension,
                 dimensionGroups,

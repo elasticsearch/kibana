@@ -11,7 +11,20 @@ import type { FtrProviderContext } from '../../../ftr_provider_context';
 export default function ({ getService, getPageObjects }: FtrProviderContext) {
   const { lens, visualize, dashboard } = getPageObjects(['lens', 'visualize', 'dashboard']);
   const listingTable = getService('listingTable');
+  const testSubjects = getService('testSubjects');
   const retry = getService('retry');
+
+  const disableEmptyRowsOnDateHistogramRow = async () => {
+    const triggerTexts = await lens.getDimensionTriggersTexts('lnsDatatable_rows');
+    const dateHistogramIndex = triggerTexts.findIndex((text) => text.includes('@timestamp'));
+    await lens.openDimensionEditor(
+      'lnsDatatable_rows > lns-dimensionTrigger',
+      0,
+      dateHistogramIndex
+    );
+    await testSubjects.setEuiSwitch('indexPattern-include-empty-rows', 'uncheck');
+    await lens.closeDimensionEditor();
+  };
 
   const checkTableSorting = async () => {
     // Sort by number
@@ -41,6 +54,13 @@ export default function ({ getService, getPageObjects }: FtrProviderContext) {
       await lens.clickVisualizeListItemTitle('lnsXYvis');
       await lens.goToTimeRange();
       await lens.switchToVisualization('lnsDatatable');
+
+      // Switching chart type re-applies the target type's empty-rows default, so
+      // the datatable turns "Include empty rows" back on for its date histogram
+      // row. Turn it off again so the sorting checks below only see populated
+      // buckets and no leading empty row.
+      await disableEmptyRowsOnDateHistogramRow();
+
       await lens.save('New Table', true, false, false, 'new');
       await dashboard.waitForRenderComplete();
 

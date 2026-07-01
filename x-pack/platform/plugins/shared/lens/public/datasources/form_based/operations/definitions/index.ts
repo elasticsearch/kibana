@@ -195,6 +195,8 @@ export interface FieldInputProps<C> {
   operationSupportMatrix: OperationSupportMatrix;
   helpMessage?: React.ReactNode;
   operationDefinitionMap: Record<string, GenericOperationDefinition>;
+  /** Active visualization type id, used to derive new-column defaults. */
+  activeVisualizationTypeId?: string;
 }
 
 export interface HelpProps<C> {

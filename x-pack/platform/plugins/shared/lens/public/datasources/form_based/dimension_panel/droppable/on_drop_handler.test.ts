@@ -7,6 +7,14 @@
 
 import type { DropType } from '@kbn/dom-drag-drop';
 import { onDrop } from './on_drop_handler';
+import {
+  LENS_DATATABLE_ID,
+  LENS_HEATMAP_CHART_SHAPES,
+  LENS_METRIC_ID,
+  LENS_TAGCLOUD_ID,
+  PARTITION_CHART_TYPES,
+  SeriesTypes,
+} from '@kbn/lens-common';
 import type {
   FormBasedPrivateState,
   OperationMetadata,
@@ -2210,6 +2218,81 @@ describe('FormBasedDimensionEditorPanel: onDrop', () => {
             },
           });
         });
+      });
+    });
+  });
+
+  describe('per-visualization includeEmptyRows default on field drop', () => {
+    const dateField = {
+      field: { type: 'date', name: 'timestamp', aggregatable: true },
+      indexPatternId: 'first',
+      id: 'timestamp-drag',
+      humanData: { label: 'timestampLabel' },
+    };
+
+    const baseBucketTarget: DatasourceDimensionDropHandlerProps<FormBasedPrivateState>['target'] = {
+      layerId: 'first',
+      groupId: 'a',
+      columnId: 'newDateHistogram',
+      filterOperations: (op: OperationMetadata) => op.isBucketed,
+      indexPatternId: 'first',
+    };
+
+    const dropDateFieldOntoBucket = (activeVisualizationTypeId?: string) => {
+      const emptyState: FormBasedPrivateState = {
+        ...state,
+        layers: {
+          ...state.layers,
+          first: { ...state.layers.first, columnOrder: [], columns: {} },
+        },
+      };
+      return onDrop({
+        ...defaultProps,
+        state: emptyState,
+        source: dateField,
+        dropType: 'field_add' as DropType,
+        target: baseBucketTarget,
+        targetLayerDimensionGroups: dimensionGroups,
+        activeVisualizationTypeId,
+      });
+    };
+
+    it.each([
+      [SeriesTypes.BAR, false],
+      [LENS_HEATMAP_CHART_SHAPES.HEATMAP, false],
+      [PARTITION_CHART_TYPES.PIE, false],
+      [PARTITION_CHART_TYPES.TREEMAP, false],
+      [PARTITION_CHART_TYPES.MOSAIC, false],
+      [PARTITION_CHART_TYPES.WAFFLE, false],
+      [LENS_METRIC_ID, false],
+      [LENS_TAGCLOUD_ID, false],
+    ])(
+      'creates date_histogram with includeEmptyRows=false for visualization type "%s"',
+      (visualizationTypeId, expected) => {
+        const newState = dropDateFieldOntoBucket(visualizationTypeId);
+        expect(newState?.layers.first.columns.newDateHistogram).toMatchObject({
+          operationType: 'date_histogram',
+          params: { includeEmptyRows: expected },
+        });
+      }
+    );
+
+    it.each([[LENS_DATATABLE_ID], [SeriesTypes.LINE], [SeriesTypes.AREA], ['mixed']])(
+      'creates date_histogram with includeEmptyRows=true for visualization type "%s"',
+      (visualizationTypeId) => {
+        const newState = dropDateFieldOntoBucket(visualizationTypeId);
+        expect(newState?.layers.first.columns.newDateHistogram).toMatchObject({
+          operationType: 'date_histogram',
+          params: { includeEmptyRows: true },
+        });
+      }
+    );
+
+    it('falls back to includeEmptyRows=true when no activeVisualizationTypeId is provided', () => {
+      const newState = dropDateFieldOntoBucket(undefined);
+      expect(newState?.layers.first.columns.newDateHistogram).toMatchObject({
+        operationType: 'date_histogram',
+        params: { includeEmptyRows: true },
       });
     });
   });

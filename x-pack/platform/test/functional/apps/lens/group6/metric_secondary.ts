@@ -14,6 +14,7 @@ export default function ({ getService, getPageObjects }: FtrProviderContext) {
   const testSubjects = getService('testSubjects');
   const find = getService('find');
   const log = getService('log');
+  const retry = getService('retry');
 
   describe('lens metric secondary', () => {
     const BASE_METRIC_ID = 'metric-secondary-base';
@@ -102,9 +103,20 @@ export default function ({ getService, getPageObjects }: FtrProviderContext) {
         field: '@timestamp',
         keepOpen: true,
       });
+      // Metric defaults "Include empty rows" off; keep the empty buckets so the
+      // breakdown still yields one tile per interval across the whole time range.
+      await retry.try(async () => {
+        await testSubjects.setEuiSwitch('indexPattern-include-empty-rows', 'check');
+        expect(await testSubjects.isEuiSwitchChecked('indexPattern-include-empty-rows')).to.be(
+          true
+        );
+      });
+      await lens.waitForVisualization('mtrVis');
 
       // test that there are 39 tiles now
-      expect(await lens.getMetricTiles()).to.have.length(N_TILES);
+      await retry.try(async () => {
+        expect(await lens.getMetricTiles()).to.have.length(N_TILES);
+      });
 
       await find.clickByCssSelector(
         'select[data-test-subj="indexPattern-collapse-by"] > option[value="sum"]'

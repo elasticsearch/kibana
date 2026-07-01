@@ -22,8 +22,11 @@ import type {
   DatasourcePublicAPI,
   SuggestionRequest,
   DatasourceSuggestion,
+  LensDocument,
+  VisualizationMap,
 } from '@kbn/lens-common';
 import type { ChartSwitchProps } from './chart_switch';
+import { getPersistedLayerVisualizationTypeId } from './chart_switch';
 import { ChartSwitchPopover } from './chart_switch_popover';
 import { applyChanges } from '../../../../state_management';
 import { faker } from '@faker-js/faker';
@@ -761,5 +764,57 @@ describe('chart_switch', () => {
         },
       });
     });
+  });
+});
+
+describe('getPersistedLayerVisualizationTypeId', () => {
+  const buildPersistedDoc = (visualizationType: string): LensDocument =>
+    ({
+      visualizationType,
+      state: { visualization: { some: 'state' } },
+    } as unknown as LensDocument);
+
+  const buildVisualizationMap = (id: string): VisualizationMap =>
+    ({ [id]: createMockVisualization(id) } as unknown as VisualizationMap);
+
+  it('returns undefined when there is no persisted document', () => {
+    expect(
+      getPersistedLayerVisualizationTypeId(undefined, buildVisualizationMap('lnsXY'), 'layer1')
+    ).toBeUndefined();
+  });
+
+  it('returns undefined when the persisted visualization is not in the map', () => {
+    expect(
+      getPersistedLayerVisualizationTypeId(
+        buildPersistedDoc('lnsXY'),
+        buildVisualizationMap('lnsDatatable'),
+        'layer1'
+      )
+    ).toBeUndefined();
+  });
+
+  it('resolves the persisted visualization type id from the matching visualization', () => {
+    expect(
+      getPersistedLayerVisualizationTypeId(
+        buildPersistedDoc('lnsDatatable'),
+        buildVisualizationMap('lnsDatatable'),
+        'layer1'
+      )
+    ).toBe('lnsDatatable');
+  });
+
+  it('delegates resolution to the visualization, passing the persisted state and layer id', () => {
+    const visualization = createMockVisualization('lnsXY');
+    visualization.getVisualizationTypeId.mockImplementation((_state, layerId) => `bar-${layerId}`);
+    const visualizationMap = { lnsXY: visualization } as unknown as VisualizationMap;
+    const persistedDoc = buildPersistedDoc('lnsXY');
+
+    const result = getPersistedLayerVisualizationTypeId(persistedDoc, visualizationMap, 'layer1');
+
+    expect(result).toBe('bar-layer1');
+    expect(visualization.getVisualizationTypeId).toHaveBeenCalledWith(
+      persistedDoc.state.visualization,
+      'layer1'
+    );
   });
 });

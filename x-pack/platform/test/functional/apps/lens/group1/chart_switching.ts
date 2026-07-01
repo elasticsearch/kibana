@@ -11,6 +11,7 @@ import { LENS_BASIC_FIXTURE_IDS } from '../../../fixtures/kbn_archives/lens/ids'
 
 export default function ({ getService, getPageObjects }: FtrProviderContext) {
   const { visualize, lens } = getPageObjects(['visualize', 'lens']);
+  const testSubjects = getService('testSubjects');
 
   // Add tests here when the main behavior is switching one visualization type
   // to another and verifying that Lens preserves or maps the configuration.
@@ -99,6 +100,13 @@ export default function ({ getService, getPageObjects }: FtrProviderContext) {
 
       expect(await lens.hasChartSwitchWarning('lnsDatatable')).to.eql(false);
       await lens.switchToVisualization('lnsDatatable');
+
+      // Switching chart type re-applies the target type's empty-rows default, so
+      // the datatable turns "Include empty rows" back on. Turn it off again to
+      // assert the populated buckets only.
+      await lens.openDimensionEditor('lnsDatatable_rows > lns-dimensionTrigger');
+      await testSubjects.setEuiSwitch('indexPattern-include-empty-rows', 'uncheck');
+      await lens.closeDimensionEditor();
 
       expect(await lens.getDatatableHeaderText()).to.eql('@timestamp per 3 hours');
       expect(await lens.getDatatableCellText(0, 0)).to.eql('2015-09-20 00:00');

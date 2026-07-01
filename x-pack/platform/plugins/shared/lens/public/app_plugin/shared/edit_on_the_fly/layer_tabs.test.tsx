@@ -362,6 +362,7 @@ describe('LayerTabs', () => {
           columnId: 'myColumn',
           groupId: 'testGroup',
           staticValue: 100,
+          activeVisualizationTypeId: 'testVis',
           visualizationGroups: [
             expect.objectContaining({
               accessors: [],

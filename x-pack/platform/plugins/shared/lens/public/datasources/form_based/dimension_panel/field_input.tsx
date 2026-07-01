@@ -13,6 +13,7 @@ import { insertOrReplaceColumn } from '../operations/layer_helpers';
 import { FieldSelect } from './field_select';
 import type { FieldInputProps, OperationType } from '../operations/definitions';
 import { shouldShowTimeSeriesOption } from '../pure_utils';
+import { getColumnParamsForNewBucket } from '../include_empty_rows_defaults';
 
 export function FieldInput({
   layer,
@@ -30,6 +31,7 @@ export function FieldInput({
   groupId,
   dimensionGroups,
   operationDefinitionMap,
+  activeVisualizationTypeId,
 }: FieldInputProps<FieldBasedIndexPatternColumn>) {
   const selectedOperationDefinition =
     selectedColumn && operationDefinitionMap[selectedColumn.operationType];
@@ -78,6 +80,10 @@ export function FieldInput({
               visualizationGroups: dimensionGroups,
               targetGroup: groupId,
               incompleteParams,
+              columnParams: getColumnParamsForNewBucket(
+                choice.operationType,
+                activeVisualizationTypeId
+              ),
             })
           );
         }}

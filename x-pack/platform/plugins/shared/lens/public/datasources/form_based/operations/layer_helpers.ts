@@ -584,6 +584,7 @@ export function replaceColumn({
   initialParams,
   shouldResetLabel,
   shouldCombineField,
+  columnParams,
 }: ColumnChange): FormBasedLayer {
   const previousColumn = layer.columns[columnId];
   if (!previousColumn) {
@@ -736,7 +737,10 @@ export function replaceColumn({
     }
 
     if (operationDefinition.input === 'none') {
-      let newColumn = operationDefinition.buildColumn({ ...baseOptions, layer: tempLayer });
+      let newColumn = operationDefinition.buildColumn(
+        { ...baseOptions, layer: tempLayer },
+        columnParams
+      );
       newColumn = copyCustomLabel(newColumn, previousColumn);
       tempLayer = removeOrphanedColumns(
         previousDefinition,
@@ -802,7 +806,10 @@ export function replaceColumn({
 
     tempLayer = removeOrphanedColumns(previousDefinition, previousColumn, tempLayer, indexPattern);
 
-    let newColumn = operationDefinition.buildColumn({ ...baseOptions, layer: tempLayer, field });
+    let newColumn = operationDefinition.buildColumn(
+      { ...baseOptions, layer: tempLayer, field },
+      columnParams
+    );
     if (!shouldResetLabel) {
       newColumn = copyCustomLabel(newColumn, previousColumn);
     }
