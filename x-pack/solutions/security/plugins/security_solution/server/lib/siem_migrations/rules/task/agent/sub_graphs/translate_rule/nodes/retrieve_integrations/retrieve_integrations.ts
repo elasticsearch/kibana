@@ -55,7 +55,7 @@ export const getRetrieveIntegrationsNode = ({
     }));
     const ruleToMatch = {
       title: state.original_rule.title,
-      description: `state.original_rule.description \n ${
+      description: `${state.original_rule.description} ${
         state.nl_query ? `\n Additional context: ${state.nl_query}` : ''
       }`,
     };

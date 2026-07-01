@@ -6,9 +6,8 @@
  */
 
 import { JsonOutputParser } from '@langchain/core/output_parsers';
-import type { ChatPromptTemplate } from '@langchain/core/prompts';
 import type { GraphNode, MigrateRuleGraphParams } from '../../types';
-import { CREATE_SPLUNK_SEMANTIC_QUERY_PROMPT, QRADAR_SEMANTIC_QUERY_PROMPT } from './prompts';
+import { CREATE_SEMANTIC_QUERY_PROMPT } from './prompts';
 
 interface GetCreateSemanticQueryNodeParams {
   model: MigrateRuleGraphParams['model'];
@@ -23,32 +22,19 @@ export const getCreateSemanticQueryNode = ({
 }: GetCreateSemanticQueryNodeParams): GraphNode => {
   const jsonParser = new JsonOutputParser();
   return async (state) => {
-    const modelWithTools = model;
-    const query = state.original_rule.query;
-    let promptTemplate: Awaited<ReturnType<ChatPromptTemplate['formatMessages']>>;
-    if (state.original_rule.vendor === 'qradar') {
-      const qRadarQuery =
-        state.nl_query || `${state.original_rule.title} \n ${state.original_rule.description}`;
-      promptTemplate = await QRADAR_SEMANTIC_QUERY_PROMPT.formatMessages({
-        nlQuery: qRadarQuery,
-      });
-    } else {
-      promptTemplate = await CREATE_SPLUNK_SEMANTIC_QUERY_PROMPT.formatMessages({
-        title: state.original_rule.title,
-        description: state.original_rule.description,
-        query,
-      });
-    }
+    const ruleContext =
+      state.nl_query ||
+      `Title: ${state.original_rule.title}\nDescription: ${state.original_rule.description}\nQuery: ${state.original_rule.query}`;
 
-    const semanticQueryChain = modelWithTools.pipe(jsonParser);
+    const promptTemplate = await CREATE_SEMANTIC_QUERY_PROMPT.formatMessages({
+      ruleContext,
+    });
+
+    const semanticQueryChain = model.pipe(jsonParser);
 
     const integrationQuery = (await semanticQueryChain.invoke([
       ...promptTemplate,
     ])) as unknown as GetSemanticQueryResponse;
-
-    if (!integrationQuery.semantic_query) {
-      return { semantic_query: integrationQuery.semantic_query };
-    }
 
     return { semantic_query: integrationQuery.semantic_query };
   };

@@ -138,6 +138,7 @@ new relevance scores. `FUSE` enables hybrid search to combine and score results 
         URL_ENCODE: URL-encodes the input
         URL_ENCODE_COMPONENT: URL-encodes the input
         URL_DECODE: URL-decodes the input, or returns null and adds a warning header to the response if the input cannot be decoded.
+        JSON_EXTRACT: Extracts a value from a JSON string using a subset of JSONPath syntax.
     </string-functions>
 
     <ip-functions>

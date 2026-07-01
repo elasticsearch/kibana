@@ -22,15 +22,9 @@ export const getInlineQueryNode = (params: InlineQueryNodeParams): GraphNode => 
   const { telemetryClient, ...inlineParams } = params;
   const inlineSplQuery = getInlineSplQuery(inlineParams);
   return async (state) => {
-    if (state.original_rule.vendor === OriginalRuleVendorEnum['microsoft-sentinel']) {
-      // For Sentinel rules, the KQL query is already in a translatable form — pass it through as-is.
-      return {
-        inline_query: state.original_rule.query,
-      };
-    }
     if (state.original_rule.vendor !== OriginalRuleVendorEnum.splunk) {
-      // For other non-Splunk vendors (e.g. QRadar), inline query substitution is not applicable.
-      // The nl_query from the resolveDependencies node is used instead.
+      // For non-Splunk vendors (QRadar, Sentinel), inline query substitution is not applicable.
+      // The nl_query from the sourceRuleToNaturalLanguage node is used instead.
       return {
         inline_query: undefined,
       };

@@ -36,8 +36,8 @@ export function getTranslateRuleGraph({
   const fixQueryErrorsNode = getFixQueryErrorsNode({ esqlKnowledgeBase, logger });
   const retrieveIntegrationsNode = getRetrieveIntegrationsNode({
     model,
-    ruleMigrationsRetriever,
     telemetryClient,
+    ruleMigrationsRetriever,
   });
   const ecsMappingNode = getEcsMappingNode({ esqlKnowledgeBase, logger });
 
@@ -73,11 +73,13 @@ export function getTranslateRuleGraph({
 }
 
 const translatableRouter = (state: TranslateRuleState) => {
+  if (state.original_rule.vendor === 'splunk' && !state.inline_query) {
+    return 'translationResult';
+  }
   if (
-    ((state.original_rule.vendor === 'splunk' ||
+    (state.original_rule.vendor === 'qradar' ||
       state.original_rule.vendor === 'microsoft-sentinel') &&
-      !state.inline_query) ||
-    (state.original_rule.vendor === 'qradar' && !state.nl_query)
+    !state.nl_query
   ) {
     return 'translationResult';
   }
@@ -88,8 +90,10 @@ const validationRouter = (state: TranslateRuleState) => {
   if (state.validation_errors.retries_left > 0 && !isEmpty(state.validation_errors?.esql_errors)) {
     return 'fixQueryErrors';
   }
-  if (state.original_rule.vendor === 'qradar') {
-    // we do not need ecs mapping for qradar rules
+  if (
+    state.original_rule.vendor === 'qradar' ||
+    state.original_rule.vendor === 'microsoft-sentinel'
+  ) {
     return 'translationResult';
   }
 

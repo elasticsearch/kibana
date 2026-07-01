@@ -1,0 +1,65 @@
+# JSON_EXTRACT
+
+Extracts a value from a JSON string using a subset of JSONPath syntax. Paths can use dot notation (`user.address.city`), bracket notation (`['user']['address']['city']`), or a mix of both. Bracket notation is required for keys that contain dots or special characters, for empty string keys, and for array indices. The extracted value is returned as a `keyword` string. Returns `null` if either parameter is `null`, the input is not valid JSON, the path is malformed, or the path does not exist.
+
+## Syntax
+
+`JSON_EXTRACT(string, path)`
+
+### Parameters
+
+#### string
+
+A string containing valid JSON, or the `_source` field. If `null`, the function returns `null`.
+
+#### path
+
+A path expression identifying the value to extract, using a subset of JSONPath syntax. Supports dot notation (`user.name`), bracket notation for array indices (`items[0]`), and quoted brackets for keys with special characters (`['user.name']`). The `$` prefix is optional. If `null`, the function returns `null`.
+
+## Examples
+
+Extracts the `severity` field from a JSON string:
+
+```esql
+ROW log = """{"severity":"ERROR","body":"Payment processing failed"}"""
+| EVAL severity = JSON_EXTRACT(log, "severity")
+```
+
+To extract a deeply nested value, use dot notation:
+
+```esql
+ROW log = """{"resource":{"service":{"name":"order-service"}}}"""
+| EVAL svc = JSON_EXTRACT(log, "resource.service.name")
+```
+
+Keys that contain dots require quoted bracket notation:
+
+```esql
+FROM json_logs
+| EVAL svc = JSON_EXTRACT(payload, "resource['service.name']")
+| KEEP @timestamp, source, svc
+| SORT @timestamp
+| LIMIT 3
+```
+
+Array indices can be combined with dot notation to navigate arrays of objects:
+
+```esql
+ROW log = """{"spans":[{"name":"auth","duration":12},{"name":"db-query","duration":45}]}"""
+| EVAL span = JSON_EXTRACT(log, "spans[1].name")
+```
+
+When the extracted value is an object or array, it is returned as a JSON string:
+
+```esql
+ROW log = """{"resource":{"service.name":"api-gateway","host.name":"api-server-03"},"severity":"INFO"}"""
+| EVAL resource = JSON_EXTRACT(log, "resource")
+```
+
+To extract from a top-level JSON array, use a bracket index:
+
+```esql
+ROW json = """["a","b","c"]"""
+| EVAL val = JSON_EXTRACT(json, "$[1]")
+| KEEP val
+```

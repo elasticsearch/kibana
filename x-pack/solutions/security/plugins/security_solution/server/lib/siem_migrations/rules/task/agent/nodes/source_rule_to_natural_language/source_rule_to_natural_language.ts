@@ -5,24 +5,40 @@
  * 2.0.
  */
 
+import { ChatPromptTemplate } from '@langchain/core/prompts';
 import {
   hasUnsupportedFunctions,
   UNSUPPORTED_FUNCTIONS,
 } from '../../../../../common/task/util/has_unsupported_function';
 import { cleanMarkdown, generateAssistantComment } from '../../../../../common/task/util/comments';
 import type { GraphNode, ModelWithTools } from '../../types';
-import { QRADAR_DEPENDENCIES_RESOLVE_PROMPT } from './prompts';
+import { GENERAL_INTERPRET_INSTRUCTIONS, USER_MESSAGE, VENDOR_INSTRUCTIONS } from './prompts';
 
-interface GetCreateResolveDepsNodeParams {
+interface GetSourceRuleToNaturalLanguageNodeParams {
   model: ModelWithTools;
 }
 
-export const getResolveDepsNode = ({ model }: GetCreateResolveDepsNodeParams): GraphNode => {
+export const getSourceRuleToNaturalLanguageNode = ({
+  model,
+}: GetSourceRuleToNaturalLanguageNodeParams): GraphNode => {
   return async (state) => {
-    const modelWithTools = model;
+    const { vendor } = state.original_rule;
     const query = state.original_rule.query;
-    const currentMessages = state.messages;
+    const vendorInstructions = VENDOR_INSTRUCTIONS[vendor] ?? '';
 
+    const prompt = ChatPromptTemplate.fromMessages([
+      ['system', `${GENERAL_INTERPRET_INSTRUCTIONS}\n${vendorInstructions}`],
+      ['human', USER_MESSAGE],
+    ]);
+
+    const formattedPrompt = await prompt.formatMessages({
+      title: state.original_rule.title,
+      description: state.original_rule.description,
+      query,
+      resources: JSON.stringify(state.resources?.lookup ?? []),
+    });
+
+    const currentMessages = state.messages ?? [];
     const isUnsupported = hasUnsupportedFunctions([query, ...currentMessages].join('\n'));
 
     if (isUnsupported) {
@@ -36,16 +52,7 @@ export const getResolveDepsNode = ({ model }: GetCreateResolveDepsNodeParams): G
       };
     }
 
-    const resolveMessage = await QRADAR_DEPENDENCIES_RESOLVE_PROMPT.formatMessages({
-      title: state.original_rule.title,
-      description: state.original_rule.description,
-      query,
-      resources: {
-        lookups: state.resources.lookup,
-      },
-    });
-
-    const response = await modelWithTools.invoke([...resolveMessage, ...(state.messages ?? [])]);
+    const response = await model.invoke([...formattedPrompt, ...currentMessages]);
 
     const hasToolCall =
       'tool_calls' in response && response?.tool_calls && response?.tool_calls?.length > 0;
@@ -54,8 +61,8 @@ export const getResolveDepsNode = ({ model }: GetCreateResolveDepsNodeParams): G
       // we don't generate comments for tool calls but only the final response
       return { messages: [response], comments: [] };
     }
-    const comments = [generateAssistantComment(cleanMarkdown(response.text))];
 
+    const comments = [generateAssistantComment(cleanMarkdown(response.text))];
     return { messages: [response], nl_query: response.text, comments };
   };
 };

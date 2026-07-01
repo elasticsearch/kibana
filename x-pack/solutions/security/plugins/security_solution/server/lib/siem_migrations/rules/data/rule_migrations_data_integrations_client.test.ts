@@ -425,7 +425,18 @@ describe('RuleMigrationsDataIntegrationsClient', () => {
             query: {
               bool: {
                 must: { semantic: { query, field: 'elser_embedding' } },
-                must_not: { ids: { values: ['splunk', 'elastic_security', 'ibm_qradar'] } },
+                must_not: {
+                  ids: {
+                    values: [
+                      'splunk',
+                      'elastic_security',
+                      'ibm_qradar',
+                      'microsoft_sentinel',
+                      'sentinel_one',
+                      'sentinel_one_cloud_funnel',
+                    ],
+                  },
+                },
                 filter: { exists: { field: 'data_streams' } },
               },
             },

@@ -33,7 +33,7 @@ export const getTranslateRuleNode = (params: GetTranslateSplToEsqlParams): Graph
     let esqlQuery: string | undefined;
     let comments: MigrationComments = [];
 
-    if (vendor === 'qradar') {
+    if (vendor === 'qradar' || vendor === 'microsoft-sentinel') {
       params.logger.debug(
         `Translating rule "${state.original_rule.title}" using NL to ESQL for vendor: ${vendor}`
       );
