@@ -9,8 +9,8 @@ import React, { useCallback } from 'react';
 import { EuiCallOut, EuiSpacer } from '@elastic/eui';
 import { i18n } from '@kbn/i18n';
 import { CodeEditor } from '@kbn/code-editor';
-import type { SignificantEventsTuningConfig } from '@kbn/streams-plugin/common';
-import { validateSignificantEventsTuningConfig } from './validate_significant_events_tuning_config';
+import type { SignificantEventsTuningConfig } from '@kbn/streams-schema';
+import { validateSignificantEventsTuningConfig } from '@kbn/streams-schema';
 
 /**
  * Converts a SignificantEventsTuningConfig to an annotated YAML string with section headers
@@ -47,7 +47,7 @@ export function configToAnnotatedYaml(config: SignificantEventsTuningConfig): st
     '',
     '# ── Search & Relevance ──',
     '',
-    '# Minimum ELSER score for semantic search results (0-100)',
+    '# Minimum ELSER score for semantic search results (0-1)',
     `semantic_min_score: ${config.semantic_min_score}`,
     '',
     '# RRF rank constant for hybrid search (1-100, ES default=60)',

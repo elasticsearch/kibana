@@ -5,15 +5,36 @@
  * 2.0.
  */
 
-import type { SignificantEventsTuningConfig } from '@kbn/streams-plugin/common';
+import { z } from '@kbn/zod/v4';
 
-interface FieldBounds {
+export interface TuningConfigFieldBounds {
   min: number;
   max?: number;
+  /** UI hint: field should be a whole number. config-schema's schema.number() does not enforce this. */
   integer?: boolean;
 }
 
-const FIELD_BOUNDS: Record<keyof SignificantEventsTuningConfig, FieldBounds> = {
+// Shape-only schema — no bounds or cross-field checks. Bounds and validation
+// logic live exclusively in SIGNIFICANT_EVENTS_TUNING_FIELD_BOUNDS and
+// validateSignificantEventsTuningConfig to avoid drift between two sources.
+export const significantEventsTuningConfigSchema = z.object({
+  sample_size: z.number(),
+  max_iterations: z.number(),
+  feature_ttl_days: z.number(),
+  entity_filtered_ratio: z.number(),
+  diverse_ratio: z.number(),
+  max_excluded_features_in_prompt: z.number(),
+  max_entity_filters: z.number(),
+  semantic_min_score: z.number(),
+  rrf_rank_constant: z.number(),
+});
+
+export type SignificantEventsTuningConfig = z.infer<typeof significantEventsTuningConfigSchema>;
+
+export const SIGNIFICANT_EVENTS_TUNING_FIELD_BOUNDS: Record<
+  keyof SignificantEventsTuningConfig,
+  TuningConfigFieldBounds
+> = {
   sample_size: { min: 1, max: 100, integer: true },
   max_iterations: { min: 1, max: 20, integer: true },
   feature_ttl_days: { min: 1, integer: true },
@@ -25,21 +46,35 @@ const FIELD_BOUNDS: Record<keyof SignificantEventsTuningConfig, FieldBounds> = {
   rrf_rank_constant: { min: 1, max: 100, integer: true },
 };
 
+export const DEFAULT_SIGNIFICANT_EVENTS_TUNING_CONFIG: SignificantEventsTuningConfig = {
+  sample_size: 20,
+  max_iterations: 5,
+  feature_ttl_days: 30,
+  entity_filtered_ratio: 0.4,
+  diverse_ratio: 0.4,
+  max_excluded_features_in_prompt: 10,
+  max_entity_filters: 10,
+  semantic_min_score: 0.15,
+  rrf_rank_constant: 20,
+};
+
+/**
+ * Validates a partial config object and returns user-facing error strings.
+ * Missing keys are allowed and fall back to defaults at runtime.
+ */
 export function validateSignificantEventsTuningConfig(parsed: Record<string, unknown>): string[] {
   const errors: string[] = [];
 
-  // Check for unknown keys
-  const knownKeys = new Set(Object.keys(FIELD_BOUNDS));
+  const knownKeys = new Set(Object.keys(SIGNIFICANT_EVENTS_TUNING_FIELD_BOUNDS));
   for (const key of Object.keys(parsed)) {
     if (!knownKeys.has(key)) {
       errors.push(`Unknown key: "${key}"`);
     }
   }
 
-  // Validate each known field
-  for (const [key, bounds] of Object.entries(FIELD_BOUNDS)) {
+  for (const [key, bounds] of Object.entries(SIGNIFICANT_EVENTS_TUNING_FIELD_BOUNDS)) {
     const value = parsed[key];
-    if (value === undefined) continue; // Missing keys use defaults
+    if (value === undefined) continue;
 
     if (typeof value !== 'number') {
       errors.push(`"${key}" must be a number, got ${typeof value}`);
@@ -61,10 +96,14 @@ export function validateSignificantEventsTuningConfig(parsed: Record<string, unk
     }
   }
 
-  // Cross-field validation
   const entityRatio =
-    typeof parsed.entity_filtered_ratio === 'number' ? parsed.entity_filtered_ratio : 0.4;
-  const diverseRatio = typeof parsed.diverse_ratio === 'number' ? parsed.diverse_ratio : 0.4;
+    typeof parsed.entity_filtered_ratio === 'number'
+      ? parsed.entity_filtered_ratio
+      : DEFAULT_SIGNIFICANT_EVENTS_TUNING_CONFIG.entity_filtered_ratio;
+  const diverseRatio =
+    typeof parsed.diverse_ratio === 'number'
+      ? parsed.diverse_ratio
+      : DEFAULT_SIGNIFICANT_EVENTS_TUNING_CONFIG.diverse_ratio;
   if (entityRatio + diverseRatio > 1.0) {
     errors.push(
       `entity_filtered_ratio (${entityRatio}) + diverse_ratio (${diverseRatio}) must be <= 1.0 ` +

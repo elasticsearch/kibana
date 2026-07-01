@@ -5,7 +5,7 @@
  * 2.0.
  */
 
-import { validateSignificantEventsTuningConfig } from './validate_significant_events_tuning_config';
+import { validateSignificantEventsTuningConfig } from './tuning_config';
 
 describe('validateSignificantEventsTuningConfig', () => {
   it('returns no errors for a valid config', () => {

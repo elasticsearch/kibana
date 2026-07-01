@@ -10,8 +10,10 @@ import type { Logger } from '@kbn/logging';
 import { OBSERVABILITY_STREAMS_SIGNIFICANT_EVENTS_TUNING_CONFIG } from '@kbn/management-settings-ids';
 import {
   DEFAULT_SIGNIFICANT_EVENTS_TUNING_CONFIG,
+  SIGNIFICANT_EVENTS_TUNING_FIELD_BOUNDS,
+  validateSignificantEventsTuningConfig,
   type SignificantEventsTuningConfig,
-} from '../../../../common/significant_events_tuning_config';
+} from '@kbn/streams-schema';
 
 /**
  * Reads the tuning config from global uiSettings, merging with defaults
@@ -37,7 +39,14 @@ export async function getSignificantEventsTuningConfig(
     return { ...DEFAULT_SIGNIFICANT_EVENTS_TUNING_CONFIG };
   }
 
-  const merged = { ...DEFAULT_SIGNIFICANT_EVENTS_TUNING_CONFIG, ...stored };
+  // Silently drop unknown keys from stored config (e.g. renamed fields from a
+  // previous version) so they don't trigger a full reset via validateSignificantEventsTuningConfig.
+  const knownKeys = new Set(Object.keys(SIGNIFICANT_EVENTS_TUNING_FIELD_BOUNDS));
+  const safeStored = Object.fromEntries(
+    Object.entries(stored).filter(([key]) => knownKeys.has(key))
+  ) as Partial<SignificantEventsTuningConfig>;
+
+  const merged = { ...DEFAULT_SIGNIFICANT_EVENTS_TUNING_CONFIG, ...safeStored };
 
   // semantic_min_score changed from a raw model-specific scale (0-100) to a
   // minmax-normalized scale (0-1). Override any persisted out-of-range value.
@@ -50,12 +59,10 @@ export async function getSignificantEventsTuningConfig(
     merged.semantic_min_score = DEFAULT_SIGNIFICANT_EVENTS_TUNING_CONFIG.semantic_min_score;
   }
 
-  // Detect corruption -- don't fix, log and fall back to full defaults
-  if (merged.entity_filtered_ratio + merged.diverse_ratio > 1.0) {
+  const errors = validateSignificantEventsTuningConfig(merged as Record<string, unknown>);
+  if (errors.length > 0) {
     logger.warn(
-      `Significant Events tuning config has invalid sampling ratios ` +
-        `(entity_filtered_ratio=${merged.entity_filtered_ratio}, ` +
-        `diverse_ratio=${merged.diverse_ratio}, sum > 1.0). ` +
+      `Significant Events tuning config is invalid (${errors.join(', ')}). ` +
         `Falling back to default config. Fix the config in the Settings page.`
     );
     return { ...DEFAULT_SIGNIFICANT_EVENTS_TUNING_CONFIG };

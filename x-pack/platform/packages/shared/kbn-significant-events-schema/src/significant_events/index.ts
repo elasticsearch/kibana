@@ -21,3 +21,11 @@ export {
   MAX_TITLE_LENGTH,
   MAX_TEXT_LENGTH,
 } from './constants';
+export {
+  significantEventsTuningConfigSchema,
+  type SignificantEventsTuningConfig,
+  SIGNIFICANT_EVENTS_TUNING_FIELD_BOUNDS,
+  type TuningConfigFieldBounds,
+  DEFAULT_SIGNIFICANT_EVENTS_TUNING_CONFIG,
+  validateSignificantEventsTuningConfig,
+} from './tuning_config';
