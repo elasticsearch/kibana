@@ -211,4 +211,116 @@ describe('getConnectorList', () => {
     const endpoint = result.find((c) => c.isInferenceEndpoint);
     expect(endpoint?.name).toBe('Display Name Takes Priority');
   });
+
+  describe('preconfigured connector config enrichment', () => {
+    // The actions plugin strips `config` from preconfigured connector responses
+    // unless the user opts into `exposeConfig: true`. The inference plugin
+    // needs that config server-side for capability detection (e.g. detecting
+    // Azure-hosted gpt-5 deployments). We re-attach it from the in-memory
+    // connector registry without requiring an opt-in.
+
+    const azureGpt5RawConnector = {
+      id: 'gpt5Azure',
+      actionTypeId: InferenceConnectorType.OpenAI,
+      name: 'GPT-5',
+      isPreconfigured: true,
+      isSystemAction: false,
+      isDeprecated: false,
+      referencedByCount: 0,
+      isMissingSecrets: false,
+      // `config` intentionally omitted — that's what the actions API returns
+      // for preconfigured connectors without `exposeConfig: true`.
+    };
+
+    const azureGpt5InMemory = {
+      id: 'gpt5Azure',
+      actionTypeId: InferenceConnectorType.OpenAI,
+      name: 'GPT-5',
+      isPreconfigured: true,
+      isSystemAction: false,
+      isDeprecated: false,
+      config: {
+        apiProvider: 'Azure OpenAI',
+        apiUrl:
+          'https://example.cognitiveservices.azure.com/openai/deployments/gpt-5/chat/completions?api-version=2025-04-01-preview',
+      },
+      secrets: { apiKey: '[redacted]' },
+    };
+
+    it('enriches preconfigured connectors with config from inMemoryConnectors', async () => {
+      actionsClient.getAll.mockResolvedValue([azureGpt5RawConnector] as any);
+      actions.inMemoryConnectors = [azureGpt5InMemory] as any;
+
+      const result = await getConnectorList({ actions, request, esClient, logger });
+
+      expect(result).toHaveLength(1);
+      expect(result[0].config).toEqual({
+        apiProvider: 'Azure OpenAI',
+        apiUrl:
+          'https://example.cognitiveservices.azure.com/openai/deployments/gpt-5/chat/completions?api-version=2025-04-01-preview',
+      });
+    });
+
+    it('does not overwrite a preconfigured connector that already has config (exposeConfig: true)', async () => {
+      const exposed = {
+        ...azureGpt5RawConnector,
+        // Simulate `exposeConfig: true` — the API surfaced the real config.
+        config: { apiProvider: 'Azure OpenAI', apiUrl: 'https://surfaced.example.com/v1' },
+      };
+      actionsClient.getAll.mockResolvedValue([exposed] as any);
+      // Even with a different in-memory entry, the API-provided config wins.
+      actions.inMemoryConnectors = [
+        {
+          ...azureGpt5InMemory,
+          config: { apiProvider: 'Azure OpenAI', apiUrl: 'https://different.example.com/v1' },
+        },
+      ] as any;
+
+      const result = await getConnectorList({ actions, request, esClient, logger });
+
+      expect(result[0].config).toMatchObject({ apiUrl: 'https://surfaced.example.com/v1' });
+    });
+
+    it('leaves non-preconfigured connectors untouched', async () => {
+      const userConnector = {
+        ...azureGpt5RawConnector,
+        isPreconfigured: false,
+        config: { apiProvider: 'OpenAI' },
+      };
+      actionsClient.getAll.mockResolvedValue([userConnector] as any);
+      actions.inMemoryConnectors = [azureGpt5InMemory] as any;
+
+      const result = await getConnectorList({ actions, request, esClient, logger });
+
+      // User-created connector's config is what the API returned — no merge.
+      expect(result[0].config).toEqual({ apiProvider: 'OpenAI' });
+    });
+
+    it('falls back gracefully when actions provider lacks inMemoryConnectors', async () => {
+      actionsClient.getAll.mockResolvedValue([azureGpt5RawConnector] as any);
+      // Simulate older mocks/code paths without the new field.
+      actions.inMemoryConnectors = undefined as any;
+
+      const result = await getConnectorList({ actions, request, esClient, logger });
+
+      // Connector is still returned, just with empty config (the previous behavior).
+      expect(result).toHaveLength(1);
+      expect(result[0].connectorId).toBe('gpt5Azure');
+      expect(result[0].config).toEqual({});
+    });
+
+    it('only enriches connectors whose IDs match', async () => {
+      const otherInMemory = {
+        ...azureGpt5InMemory,
+        id: 'someOtherConnector',
+      };
+      actionsClient.getAll.mockResolvedValue([azureGpt5RawConnector] as any);
+      actions.inMemoryConnectors = [otherInMemory] as any;
+
+      const result = await getConnectorList({ actions, request, esClient, logger });
+
+      // No matching in-memory entry for `gpt5Azure` → config stays empty.
+      expect(result[0].config).toEqual({});
+    });
+  });
 });

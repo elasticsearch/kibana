@@ -6,9 +6,9 @@
  */
 
 import type { KibanaRequest, ElasticsearchClient, Logger } from '@kbn/core/server';
-import type { ActionsClient } from '@kbn/actions-plugin/server';
+import type { ActionsClient, InMemoryConnector } from '@kbn/actions-plugin/server';
 import type { PublicMethodsOf } from '@kbn/utility-types';
-import type { InferenceConnector } from '@kbn/inference-common';
+import type { InferenceConnector, RawConnector } from '@kbn/inference-common';
 import {
   isSupportedConnector,
   connectorToInference,
@@ -118,6 +118,45 @@ export const getConnectorList = async (
   return [...filteredConnectors, ...inferenceEndpointConnectors];
 };
 
+/**
+ * Returns the list of in-memory (preconfigured + dynamic) connectors known to
+ * the actions plugin, when accessible. The actions plugin only exposes
+ * `inMemoryConnectors` on the full `PluginStartContract`, so request-bound
+ * paths (`actionsClient`-only) won't have them — in that case we just return
+ * an empty list and accept the API-level config stripping. The check is
+ * defensive (`'inMemoryConnectors' in options`) so test mocks of
+ * {@link ActionsClientProvider} that don't supply the field continue to work.
+ */
+const getInMemoryConnectorList = (options: GetConnectorListOptions): InMemoryConnector[] => {
+  if ('actions' in options && options.actions.inMemoryConnectors) {
+    return options.actions.inMemoryConnectors;
+  }
+  return [];
+};
+
+/**
+ * Preconfigured connectors strip their `config` from `actionsClient.getAll()`
+ * unless the user opts in via `exposeConfig: true` in `kibana.yml`. The
+ * inference plugin needs that config server-side for capability detection
+ * (e.g. spotting Azure-hosted gpt-5 / o1 / o3 deployments that must omit
+ * `temperature`). We re-attach the missing config from the in-memory
+ * connector registry, which is server-only state — this never crosses the
+ * HTTP boundary unless a downstream caller chooses to surface it.
+ *
+ * Non-preconfigured connectors and connectors that already have a populated
+ * `config` are left untouched.
+ */
+const enrichPreconfiguredConfig = (
+  connector: RawConnector,
+  inMemoryById: Map<string, InMemoryConnector>
+): RawConnector => {
+  if (!connector.isPreconfigured) return connector;
+  if (connector.config && Object.keys(connector.config).length > 0) return connector;
+  const inMemory = inMemoryById.get(connector.id);
+  if (!inMemory?.config) return connector;
+  return { ...connector, config: inMemory.config };
+};
+
 const getStackConnectors = async (
   options: GetConnectorListOptions
 ): Promise<InferenceConnector[]> => {
@@ -127,7 +166,11 @@ const getStackConnectors = async (
     includeSystemActions: false,
   });
 
+  const inMemoryConnectors = getInMemoryConnectorList(options);
+  const inMemoryById = new Map(inMemoryConnectors.map((c) => [c.id, c]));
+
   return allConnectors
     .filter((connector) => isSupportedConnector(connector))
+    .map((connector) => enrichPreconfiguredConfig(connector, inMemoryById))
     .map(connectorToInference);
 };

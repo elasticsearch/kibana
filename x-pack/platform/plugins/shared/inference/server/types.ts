@@ -10,6 +10,7 @@ import type {
   PluginSetupContract as ActionsPluginSetup,
   ActionsClient,
 } from '@kbn/actions-plugin/server';
+import type { InMemoryConnector } from '@kbn/actions-plugin/server';
 import type { InferenceTaskType } from '@elastic/elasticsearch/lib/api/types';
 import type { KibanaRequest } from '@kbn/core-http-server';
 import type { ElasticsearchClient } from '@kbn/core/server';
@@ -17,11 +18,23 @@ import type { PublicMethodsOf } from '@kbn/utility-types';
 
 /**
  * Narrow interface for the actions plugin dependency used internally by the
- * inference plugin. Only the `getActionsClientWithRequest` method is needed,
- * so consumers don't have to depend on the full {@link ActionsPluginStart}.
+ * inference plugin.
+ *
+ * - `getActionsClientWithRequest` produces the request-scoped client used for
+ *   most operations.
+ * - `inMemoryConnectors` is exposed because preconfigured connectors strip
+ *   their `config` from API responses unless `exposeConfig: true` is set
+ *   (see `actions/server/application/connector/methods/get_all/get_all.ts`).
+ *   The inference plugin needs the full config server-side for capability
+ *   detection (e.g. spotting Azure-hosted gpt-5 / o1 / o3 deployments that
+ *   reject `temperature: 0`). Reading `inMemoryConnectors` directly bypasses
+ *   the API stripping without forcing every preconfigured `.gen-ai` connector
+ *   to opt into `exposeConfig`. It is optional so existing test mocks of
+ *   `ActionsClientProvider` keep compiling.
  */
 export interface ActionsClientProvider {
   getActionsClientWithRequest(request: KibanaRequest): Promise<PublicMethodsOf<ActionsClient>>;
+  inMemoryConnectors?: InMemoryConnector[];
 }
 import type {
   BoundInferenceClient,

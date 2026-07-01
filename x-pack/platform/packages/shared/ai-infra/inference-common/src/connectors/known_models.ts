@@ -137,32 +137,52 @@ export const knownModels: ModelDefinition[] = [
     family: ModelFamily.Claude,
     contextWindow: 200000,
   },
+  // Claude 4+ entries use the `<role>-<version>` order that matches the
+  // real Bedrock model IDs (e.g. `us.anthropic.claude-sonnet-4-5-20250929-v1:0`,
+  // `us.anthropic.claude-opus-4-7`). The earlier `<version>-<role>` form (e.g.
+  // `claude-4.6-sonnet`) does not appear in any real provider id and would
+  // never match via the substring lookup in `getModelDefinition`.
+  // More-specific entries come first so `.find` resolves them before the
+  // base-version fallback (e.g. `claude-opus-4` would otherwise swallow
+  // `us.anthropic.claude-opus-4-7`).
   {
-    id: 'claude-4-sonnet',
-    provider: ModelProvider.Anthropic,
-    family: ModelFamily.Claude,
-    contextWindow: 1000000,
-  },
-  {
-    id: 'claude-4-opus',
+    id: 'claude-opus-4.7',
     provider: ModelProvider.Anthropic,
     family: ModelFamily.Claude,
     contextWindow: 200000,
   },
   {
-    id: 'claude-4.5-sonnet',
+    id: 'claude-opus-4.6',
+    provider: ModelProvider.Anthropic,
+    family: ModelFamily.Claude,
+    contextWindow: 200000,
+  },
+  {
+    id: 'claude-opus-4',
+    provider: ModelProvider.Anthropic,
+    family: ModelFamily.Claude,
+    contextWindow: 200000,
+  },
+  {
+    id: 'claude-sonnet-4.6',
     provider: ModelProvider.Anthropic,
     family: ModelFamily.Claude,
     contextWindow: 1000000,
   },
   {
-    id: 'claude-4.6-sonnet',
+    id: 'claude-sonnet-4.5',
     provider: ModelProvider.Anthropic,
     family: ModelFamily.Claude,
     contextWindow: 1000000,
   },
   {
-    id: 'claude-4.6-opus',
+    id: 'claude-sonnet-4',
+    provider: ModelProvider.Anthropic,
+    family: ModelFamily.Claude,
+    contextWindow: 1000000,
+  },
+  {
+    id: 'claude-haiku-4.5',
     provider: ModelProvider.Anthropic,
     family: ModelFamily.Claude,
     contextWindow: 200000,

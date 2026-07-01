@@ -1,3 +1,10 @@
 # Cursor already respects .gitignore.
 # We tried adding .cursorignore rules for binary files (e.g. images, zip archives, fonts);
 # index size was unchanged, so this file is left without those rules.
+
+# Treadmill / Cursor / agent worktrees. Each `ao-job-*` is a full kibana
+# checkout (~70k files); without this exclusion the ripgrep / file
+# watcher / Cursor index sweep pulls in 8x the repo content and the IDE
+# turns to soup. NOT in .gitignore on purpose -- we WANT git to manage
+# linked worktrees, but we DON'T want Cursor crawling them.
+.worktrees/
