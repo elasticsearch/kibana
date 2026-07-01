@@ -1,0 +1,33 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`OWNS_INTEGRATION_RELATIONSHIP_CONFIGS golden snapshots entityanalytics_okta: targets-per-actor ES|QL is locked (no watermark) 1`] = `
+"SET unmapped_fields=\\"nullify\\";
+FROM .entities.v2.latest.security___namespace__-*
+| WHERE (entity.relationships.owns.raw_identifiers.host.id IS NOT NULL)
+    AND entity.source == \\"entityanalytics_okta\\"
+| EVAL actorUserId = entity.id
+| EVAL rawKey0 = entity.relationships.owns.raw_identifiers.host.id
+| MV_EXPAND rawKey0
+| EVAL t0 = CONCAT(\\"host:\\", rawKey0)
+| EVAL targetEntityId = t0
+| WHERE COALESCE(targetEntityId, \\"\\") != \\"\\" AND targetEntityId RLIKE \\".+:.+\\"
+| STATS owns = VALUES(targetEntityId) BY actorUserId
+| WHERE COALESCE(actorUserId, \\"\\") != \\"\\"
+| LIMIT 3500"
+`;
+
+exports[`OWNS_INTEGRATION_RELATIONSHIP_CONFIGS golden snapshots entityanalytics_okta: targets-per-actor ES|QL with watermark is locked 1`] = `
+"FROM .entities.v2.latest.security___namespace__-*
+| WHERE (entity.relationships.owns.raw_identifiers.host.id IS NOT NULL)
+    AND entity.source == \\"entityanalytics_okta\\"
+    AND entity.lifecycle.last_seen > \\"2026-06-01T00:00:00.000Z\\"
+| EVAL actorUserId = entity.id
+| EVAL rawKey0 = entity.relationships.owns.raw_identifiers.host.id
+| MV_EXPAND rawKey0
+| EVAL t0 = CONCAT(\\"host:\\", rawKey0)
+| EVAL targetEntityId = t0
+| WHERE COALESCE(targetEntityId, \\"\\") != \\"\\" AND targetEntityId RLIKE \\".+:.+\\"
+| STATS owns = VALUES(targetEntityId) BY actorUserId
+| WHERE COALESCE(actorUserId, \\"\\") != \\"\\"
+| LIMIT 3500"
+`;

@@ -1,0 +1,73 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`SUPERVISES_INTEGRATION_RELATIONSHIP_CONFIGS golden snapshots entityanalytics_entra_id: targets-per-actor ES|QL is locked (no watermark) 1`] = `
+"SET unmapped_fields=\\"nullify\\";
+FROM .entities.v2.latest.security___namespace__-*
+| WHERE (entity.relationships.supervises.raw_identifiers.user.email IS NOT NULL OR entity.relationships.supervises.raw_identifiers.user.id IS NOT NULL OR entity.relationships.supervises.raw_identifiers.user.name IS NOT NULL)
+    AND entity.source IN (\\"entityanalytics_entra_id\\", \\"entityanalytics_entra_id.user\\")
+| EVAL actorUserId = entity.id
+| EVAL rawTargetKey = CASE(entity.relationships.supervises.raw_identifiers.user.email IS NULL, entity.relationships.supervises.raw_identifiers.user.id, entity.relationships.supervises.raw_identifiers.user.id IS NULL, entity.relationships.supervises.raw_identifiers.user.email, MV_APPEND(entity.relationships.supervises.raw_identifiers.user.email, entity.relationships.supervises.raw_identifiers.user.id))
+| EVAL rawTargetKey = CASE(entity.relationships.supervises.raw_identifiers.user.name IS NULL, rawTargetKey, rawTargetKey IS NULL, entity.relationships.supervises.raw_identifiers.user.name, MV_APPEND(rawTargetKey, entity.relationships.supervises.raw_identifiers.user.name))
+| MV_EXPAND rawTargetKey
+| EVAL targetEntityId = CONCAT(\\"user:\\", rawTargetKey, \\"@entra_id\\")
+| WHERE COALESCE(targetEntityId, \\"\\") != \\"\\"
+    AND targetEntityId != \\"user:@entra_id\\"
+    AND targetEntityId RLIKE \\".+:.+@.+\\"
+| STATS supervises = VALUES(targetEntityId) BY actorUserId
+| WHERE COALESCE(actorUserId, \\"\\") != \\"\\"
+| LIMIT 3500"
+`;
+
+exports[`SUPERVISES_INTEGRATION_RELATIONSHIP_CONFIGS golden snapshots entityanalytics_entra_id: targets-per-actor ES|QL with watermark is locked 1`] = `
+"FROM .entities.v2.latest.security___namespace__-*
+| WHERE (entity.relationships.supervises.raw_identifiers.user.email IS NOT NULL OR entity.relationships.supervises.raw_identifiers.user.id IS NOT NULL OR entity.relationships.supervises.raw_identifiers.user.name IS NOT NULL)
+    AND entity.source IN (\\"entityanalytics_entra_id\\", \\"entityanalytics_entra_id.user\\")
+    AND entity.lifecycle.last_seen > \\"2026-06-01T00:00:00.000Z\\"
+| EVAL actorUserId = entity.id
+| EVAL rawTargetKey = CASE(entity.relationships.supervises.raw_identifiers.user.email IS NULL, entity.relationships.supervises.raw_identifiers.user.id, entity.relationships.supervises.raw_identifiers.user.id IS NULL, entity.relationships.supervises.raw_identifiers.user.email, MV_APPEND(entity.relationships.supervises.raw_identifiers.user.email, entity.relationships.supervises.raw_identifiers.user.id))
+| EVAL rawTargetKey = CASE(entity.relationships.supervises.raw_identifiers.user.name IS NULL, rawTargetKey, rawTargetKey IS NULL, entity.relationships.supervises.raw_identifiers.user.name, MV_APPEND(rawTargetKey, entity.relationships.supervises.raw_identifiers.user.name))
+| MV_EXPAND rawTargetKey
+| EVAL targetEntityId = CONCAT(\\"user:\\", rawTargetKey, \\"@entra_id\\")
+| WHERE COALESCE(targetEntityId, \\"\\") != \\"\\"
+    AND targetEntityId != \\"user:@entra_id\\"
+    AND targetEntityId RLIKE \\".+:.+@.+\\"
+| STATS supervises = VALUES(targetEntityId) BY actorUserId
+| WHERE COALESCE(actorUserId, \\"\\") != \\"\\"
+| LIMIT 3500"
+`;
+
+exports[`SUPERVISES_INTEGRATION_RELATIONSHIP_CONFIGS golden snapshots entityanalytics_okta: targets-per-actor ES|QL is locked (no watermark) 1`] = `
+"SET unmapped_fields=\\"nullify\\";
+FROM .entities.v2.latest.security___namespace__-*
+| WHERE (entity.relationships.supervises.raw_identifiers.user.email IS NOT NULL OR entity.relationships.supervises.raw_identifiers.user.id IS NOT NULL OR entity.relationships.supervises.raw_identifiers.user.name IS NOT NULL)
+    AND entity.source IN (\\"entityanalytics_okta\\", \\"entityanalytics_okta.user\\")
+| EVAL actorUserId = entity.id
+| EVAL rawTargetKey = CASE(entity.relationships.supervises.raw_identifiers.user.email IS NULL, entity.relationships.supervises.raw_identifiers.user.id, entity.relationships.supervises.raw_identifiers.user.id IS NULL, entity.relationships.supervises.raw_identifiers.user.email, MV_APPEND(entity.relationships.supervises.raw_identifiers.user.email, entity.relationships.supervises.raw_identifiers.user.id))
+| EVAL rawTargetKey = CASE(entity.relationships.supervises.raw_identifiers.user.name IS NULL, rawTargetKey, rawTargetKey IS NULL, entity.relationships.supervises.raw_identifiers.user.name, MV_APPEND(rawTargetKey, entity.relationships.supervises.raw_identifiers.user.name))
+| MV_EXPAND rawTargetKey
+| EVAL targetEntityId = CONCAT(\\"user:\\", rawTargetKey, \\"@okta\\")
+| WHERE COALESCE(targetEntityId, \\"\\") != \\"\\"
+    AND targetEntityId != \\"user:@okta\\"
+    AND targetEntityId RLIKE \\".+:.+@.+\\"
+| STATS supervises = VALUES(targetEntityId) BY actorUserId
+| WHERE COALESCE(actorUserId, \\"\\") != \\"\\"
+| LIMIT 3500"
+`;
+
+exports[`SUPERVISES_INTEGRATION_RELATIONSHIP_CONFIGS golden snapshots entityanalytics_okta: targets-per-actor ES|QL with watermark is locked 1`] = `
+"FROM .entities.v2.latest.security___namespace__-*
+| WHERE (entity.relationships.supervises.raw_identifiers.user.email IS NOT NULL OR entity.relationships.supervises.raw_identifiers.user.id IS NOT NULL OR entity.relationships.supervises.raw_identifiers.user.name IS NOT NULL)
+    AND entity.source IN (\\"entityanalytics_okta\\", \\"entityanalytics_okta.user\\")
+    AND entity.lifecycle.last_seen > \\"2026-06-01T00:00:00.000Z\\"
+| EVAL actorUserId = entity.id
+| EVAL rawTargetKey = CASE(entity.relationships.supervises.raw_identifiers.user.email IS NULL, entity.relationships.supervises.raw_identifiers.user.id, entity.relationships.supervises.raw_identifiers.user.id IS NULL, entity.relationships.supervises.raw_identifiers.user.email, MV_APPEND(entity.relationships.supervises.raw_identifiers.user.email, entity.relationships.supervises.raw_identifiers.user.id))
+| EVAL rawTargetKey = CASE(entity.relationships.supervises.raw_identifiers.user.name IS NULL, rawTargetKey, rawTargetKey IS NULL, entity.relationships.supervises.raw_identifiers.user.name, MV_APPEND(rawTargetKey, entity.relationships.supervises.raw_identifiers.user.name))
+| MV_EXPAND rawTargetKey
+| EVAL targetEntityId = CONCAT(\\"user:\\", rawTargetKey, \\"@okta\\")
+| WHERE COALESCE(targetEntityId, \\"\\") != \\"\\"
+    AND targetEntityId != \\"user:@okta\\"
+    AND targetEntityId RLIKE \\".+:.+@.+\\"
+| STATS supervises = VALUES(targetEntityId) BY actorUserId
+| WHERE COALESCE(actorUserId, \\"\\") != \\"\\"
+| LIMIT 3500"
+`;

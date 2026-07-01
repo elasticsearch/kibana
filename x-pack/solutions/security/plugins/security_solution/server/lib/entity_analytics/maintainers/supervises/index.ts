@@ -9,13 +9,12 @@ import type { RegisterEntityMaintainerConfig } from '@kbn/entity-store/server';
 
 import { runRelationshipMaintainer } from '../engine/run_relationship_maintainer';
 import type { RelationshipMaintainerTelemetryCollector } from '../types';
-import { buildAdministersConfigs } from './configs';
+import { buildSupervisesConfigs } from './configs';
 
-export const administersMaintainer: RegisterEntityMaintainerConfig = {
-  id: 'administers',
+export const supervisesMaintainer: RegisterEntityMaintainerConfig = {
+  id: 'supervises',
   description:
-    'Resolves administers relationships from raw_identifiers on entity documents ' +
-    '(Active Directory: user → host and host → host via managedObjects)',
+    'Resolves supervises (user → user) relationships from raw_identifiers on entity documents',
   interval: '1d',
   timeout: '1h',
   initialState: {},
@@ -36,10 +35,10 @@ export const administersMaintainer: RegisterEntityMaintainerConfig = {
 
     if (lastProcessedTimestamp) {
       logger.info(
-        `Starting administers maintainer run (incremental from ${lastProcessedTimestamp})`
+        `Starting supervises maintainer run (incremental from ${lastProcessedTimestamp})`
       );
     } else {
-      logger.info('Starting administers maintainer run (full scan — first run)');
+      logger.info('Starting supervises maintainer run (full scan — first run)');
     }
 
     const collector: RelationshipMaintainerTelemetryCollector = {
@@ -53,7 +52,7 @@ export const administersMaintainer: RegisterEntityMaintainerConfig = {
       namespace,
       crudClient,
       entityMetadataClient,
-      integrations: buildAdministersConfigs(lastProcessedTimestamp),
+      integrations: buildSupervisesConfigs(lastProcessedTimestamp),
       abortController,
       telemetryCollector: collector,
     });
@@ -64,7 +63,7 @@ export const administersMaintainer: RegisterEntityMaintainerConfig = {
       funnel: {
         scanned: result.totalBuckets,
         qualified: result.totalRecords,
-        proposed: result.totalRecords, // engine has no distinct proposal phase; echo qualified
+        proposed: result.totalRecords,
         applied: result.totalWritten,
         droppedNotInStore: result.totalNotFound,
         failed: result.totalWriteErrors,

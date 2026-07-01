@@ -7,7 +7,6 @@
 
 import { apiTest } from '@kbn/scout-security';
 import { expect } from '@kbn/scout-security/api';
-import { FF_ENABLE_ENTITY_STORE_V2 } from '@kbn/entity-store/common';
 import {
   PUBLIC_HEADERS,
   INTERNAL_HEADERS,
@@ -20,6 +19,7 @@ import {
 import {
   clearEntityStoreIndices,
   seedHostEntity,
+  seedUserEntity,
   triggerMaintainerRun,
   waitForRelationshipIds,
   waitForEntityStoreRunning,
@@ -28,12 +28,22 @@ import {
 } from '../../fixtures/maintainers/helpers';
 
 /**
- * Config describing one raw_identifiers-based relationship maintainer under test.
- * Generic over the relationship key so the same suite covers `administers`,
- * `depends_on`, `supervises`, and any future maintainer that resolves
- * `entity.relationships.<key>.raw_identifiers.host.name` into `<key>.ids`.
+ * Config describing one host-TARGET raw_identifiers-based relationship
+ * maintainer under test. Generic over the relationship key so the same suite
+ * covers `administers`, `depends_on`, and any future maintainer that resolves
+ * `entity.relationships.<key>.raw_identifiers.host.name` into `<key>.ids` as a
+ * namespace-less `host:<name>` EUID.
+ *
+ * The actor may be a host OR a user (administers' AD `managedObjects` applies to
+ * both). The default tests seed a host actor; set `userActorNamespace` to also
+ * exercise a user actor pointing at a host target. The defining axis here is the
+ * TARGET shape (host), not the actor type — the engine derives the actor type
+ * from its `entity.id` prefix.
+ *
+ * User → user maintainers (e.g. `supervises`) resolve to namespace-suffixed
+ * `user:<id>@<ns>` EUIDs — see `user_target_raw_identifiers_maintainer_suite.spec.ts`.
  */
-export interface RawIdentifiersMaintainerSuiteConfig {
+export interface HostTargetRawIdentifiersMaintainerSuiteConfig {
   /** Maintainer id used by the run route, e.g. 'administers'. */
   maintainerId: string;
   /** Relationship key written under entity.relationships.<key>, e.g. 'administers'. */
@@ -47,6 +57,12 @@ export interface RawIdentifiersMaintainerSuiteConfig {
    * (e.g. 'entityanalytics_ad' for the administers maintainer).
    */
   requiredEntitySource?: string;
+  /**
+   * When set, the suite adds a test seeding a USER actor (in this IDP namespace)
+   * that administers a host target, asserting the user → host path resolves.
+   * Use for maintainers whose actor may be a user (e.g. administers).
+   */
+  userActorNamespace?: string;
 }
 
 /**
@@ -61,16 +77,17 @@ export interface RawIdentifiersMaintainerSuiteConfig {
  *
  * Invoke from a thin spec file:
  *
- *   registerRawIdentifiersMaintainerSuite({
+ *   registerHostTargetRawIdentifiersMaintainerSuite({
  *     maintainerId: 'administers',
  *     relationshipKey: 'administers',
  *     entityPrefix: 'adm',
  *   });
  */
-const registerRawIdentifiersMaintainerSuite = (
-  config: RawIdentifiersMaintainerSuiteConfig
+const registerHostTargetRawIdentifiersMaintainerSuite = (
+  config: HostTargetRawIdentifiersMaintainerSuiteConfig
 ): void => {
-  const { maintainerId, relationshipKey, entityPrefix, requiredEntitySource } = config;
+  const { maintainerId, relationshipKey, entityPrefix, requiredEntitySource, userActorNamespace } =
+    config;
   const domain = 'acmecrm.com';
   const actorId = (suffix: string) => `host:${entityPrefix}-${suffix}.${domain}`;
   const targetFqdn = (suffix: string) => `${entityPrefix}-${suffix}-target.${domain}`;
@@ -88,15 +105,13 @@ const registerRawIdentifiersMaintainerSuite = (
       let defaultHeaders: Record<string, string>;
       let internalHeaders: Record<string, string>;
 
-      apiTest.beforeAll(async ({ apiClient, esClient, kbnClient, samlAuth }) => {
+      apiTest.beforeAll(async ({ apiClient, esClient, samlAuth }) => {
         // `admin` is required: the install route enforces `securitySolution` +
         // `entity-analytics` Kibana privileges that lower roles (e.g. platform_engineer)
         // do not hold.
         const credentials = await samlAuth.asInteractiveUser('admin');
         defaultHeaders = { ...credentials.cookieHeader, ...PUBLIC_HEADERS };
         internalHeaders = { ...credentials.cookieHeader, ...INTERNAL_HEADERS };
-
-        await kbnClient.uiSettings.update({ [FF_ENABLE_ENTITY_STORE_V2]: true });
 
         await esClient.indices.delete({
           index: [LATEST_INDEX, UPDATES_INDEX],
@@ -130,9 +145,7 @@ const registerRawIdentifiersMaintainerSuite = (
         });
       });
 
-      apiTest.afterAll(async ({ apiClient, esClient, kbnClient }) => {
-        await kbnClient.uiSettings.unset(FF_ENABLE_ENTITY_STORE_V2);
-
+      apiTest.afterAll(async ({ apiClient, esClient }) => {
         const response = await apiClient.post(ENTITY_STORE_ROUTES.public.UNINSTALL, {
           headers: defaultHeaders,
           responseType: 'json',
@@ -149,10 +162,12 @@ const registerRawIdentifiersMaintainerSuite = (
           const tFqdn = targetFqdn('fresh');
           const target = targetId('fresh');
 
-          // The maintainer task auto-runs once on registration (ensureScheduled
-          // fires ~immediately after init), persisting a watermark before this
-          // test seeds anything. Seed the actor with a future last_seen so it is
-          // always newer than whatever watermark the startup run left.
+          // The maintainer task auto-runs once on registration (ensureScheduled with
+          // an interval schedules the first run ~immediately), persisting a watermark
+          // before this test seeds anything. So we cannot rely on a pristine "no
+          // watermark" state: seed the actor with a FUTURE last_seen so it is always
+          // past whatever watermark the startup run left, and trigger synchronously
+          // so the run completes before we poll.
           const futureTs = new Date(Date.now() + 3_600_000).toISOString();
 
           await seedHostEntity(esClient, { entityId: target, hostName: tFqdn });
@@ -297,16 +312,54 @@ const registerRawIdentifiersMaintainerSuite = (
           }
         );
       }
+
+      if (userActorNamespace) {
+        apiTest(
+          `resolves ${relationshipKey}.ids for a USER actor pointing at a host target (user → host)`,
+          async ({ apiClient, esClient }) => {
+            const tFqdn = targetFqdn('user-actor');
+            const target = targetId('user-actor');
+            // The user actor's EUID is namespace-suffixed; the host TARGET it
+            // resolves to is namespace-less (`host:<fqdn>`), proving the engine
+            // derives the actor type from its entity.id prefix and resolves a
+            // host target regardless of actor type.
+            const userActor = `user:${entityPrefix}-admin@${domain}@${userActorNamespace}`;
+
+            await seedHostEntity(esClient, { entityId: target, hostName: tFqdn });
+            await seedUserEntity(esClient, {
+              entityId: userActor,
+              namespace: userActorNamespace,
+              email: `${entityPrefix}-admin@${domain}`,
+              entitySource: requiredEntitySource,
+              relationship: { key: relationshipKey, hostNames: [tFqdn] },
+            });
+
+            await triggerMaintainerRun(apiClient, internalHeaders, maintainerId, { sync: true });
+
+            await waitForRelationshipIds(esClient, relationshipKey, userActor, target);
+          }
+        );
+      }
     }
   );
 };
 
-// Add a new entry here as each maintainer is onboarded (depends_on, supervises, …);
-// the shared suite seeds host entities, runs the maintainer, and asserts the
-// entity.lifecycle.last_seen watermark gate end-to-end.
-registerRawIdentifiersMaintainerSuite({
+// For each new host-target maintainer, create a new spec file and call registerHostTargetRawIdentifiersMaintainerSuite from there.
+// the shared suite seeds the host target, runs the maintainer, and asserts
+// the entity.lifecycle.last_seen watermark gate end-to-end.
+//
+// administers sets userActorNamespace so the suite also covers the user → host
+// actor path (AD `managedObjects` applies to both user and host actors).
+//
+// Note: user → user maintainers (e.g. supervises) resolve to namespace-suffixed
+// target EUIDs, which this host-target seeding does not cover. Those live in
+// user_target_raw_identifiers_maintainer_suite.spec.ts — the
+// @kbn/eslint/scout_max_one_describe rule allows only one root describe per
+// file, so they cannot be registered alongside this suite.
+registerHostTargetRawIdentifiersMaintainerSuite({
   maintainerId: 'administers',
   relationshipKey: 'administers',
   entityPrefix: 'adm',
   requiredEntitySource: 'entityanalytics_ad',
+  userActorNamespace: 'active_directory',
 });
