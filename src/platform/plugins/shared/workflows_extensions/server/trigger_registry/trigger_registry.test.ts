@@ -21,6 +21,7 @@ const createValidDefinition = (
   overrides: Partial<ServerTriggerDefinition> = {}
 ): ServerTriggerDefinition => ({
   id: 'cases.updated',
+  stability: 'tech_preview',
   title: 'Case updated',
   description: 'Fired when a case is updated.',
   eventSchema: validEventSchema,
@@ -153,6 +154,24 @@ describe('TriggerRegistry', () => {
           })
         );
       }).toThrow('"eventSchema" must be a Zod object schema');
+    });
+
+    it('rejects missing stability', () => {
+      expect(() => {
+        registry.register(createValidDefinition({ stability: undefined }));
+      }).toThrow('"stability" is required');
+    });
+
+    it('rejects stable stability until event-driven triggers GA', () => {
+      expect(() => {
+        registry.register(createValidDefinition({ stability: 'stable' }));
+      }).toThrow('stability "stable" is not supported until event-driven triggers GA');
+    });
+
+    it('rejects beta stability until event-driven triggers GA', () => {
+      expect(() => {
+        registry.register(createValidDefinition({ stability: 'beta' }));
+      }).toThrow('stability "beta" is not supported until event-driven triggers GA');
     });
   });
 

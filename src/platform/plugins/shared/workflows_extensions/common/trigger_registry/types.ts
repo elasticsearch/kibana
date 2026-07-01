@@ -7,6 +7,7 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
+import type { StabilityLevel } from '@kbn/workflows';
 import type { z } from '@kbn/zod/v4';
 
 /**
@@ -70,4 +71,10 @@ export interface CommonTriggerDefinition<EventSchema extends z.ZodType = z.ZodTy
    * Pre-filled values for snippet insertion (e.g. on.condition).
    */
   snippets?: TriggerSnippets;
+  /**
+   * API stability level for this trigger (e.g. 'tech_preview', 'beta', 'stable').
+   * Required so every trigger explicitly declares its contract. Set 'stable' for GA triggers (no badge).
+   * Until event-driven triggers GA, registration accepts only 'tech_preview'.
+   */
+  stability: StabilityLevel;
 }

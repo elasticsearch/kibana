@@ -8,7 +8,7 @@
  */
 
 import type { EuiSelectableOption, IconType } from '@elastic/eui';
-import type { StepStabilityLevel } from '@kbn/workflows';
+import type { StabilityLevel } from '@kbn/workflows';
 
 export interface EditorCommand {
   id: string;
@@ -56,7 +56,7 @@ interface ActionBase {
   description?: string;
   instancesLabel?: string;
   iconColor?: string;
-  stability?: StepStabilityLevel;
+  stability?: StabilityLevel;
   /**
    * Ids from the root menu down through this row (for groups: path to open this group).
    * Set in `getActionOptions` for O(1) navigation when selecting from search.

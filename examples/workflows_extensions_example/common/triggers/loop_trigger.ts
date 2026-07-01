@@ -24,6 +24,7 @@ export type LoopTriggerEvent = z.infer<typeof loopTriggerEventSchema>;
 /** Shared trigger definition for use by public and server. */
 export const commonLoopTriggerDefinition: CommonTriggerDefinition = {
   id: LOOP_TRIGGER_ID,
+  stability: 'tech_preview',
   eventSchema: loopTriggerEventSchema,
   title: i18n.translate('workflowsExtensionsExample.loopTrigger.title', {
     defaultMessage: 'Loop trigger',

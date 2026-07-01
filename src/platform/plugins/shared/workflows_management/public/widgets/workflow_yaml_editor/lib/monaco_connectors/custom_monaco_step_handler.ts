@@ -11,7 +11,7 @@ import type { monaco } from '@kbn/monaco';
 import type { PublicStepDefinition } from '@kbn/workflows-extensions/public';
 import { BaseMonacoConnectorHandler } from './base_monaco_connector_handler';
 import { stepSchemas } from '../../../../../common/step_schemas';
-import { getExtensionStepStability } from '../get_stability_note';
+import { getExtensionStability } from '../get_stability_note';
 import type { ConnectorExamples, HoverContext } from '../monaco_providers/provider_interfaces';
 
 /**
@@ -72,7 +72,7 @@ export class CustomMonacoStepHandler extends BaseMonacoConnectorHandler {
       bodyLines.push('', '_💡 Tip: Check the step documentation for specific parameter details_');
 
       return this.createMarkdownContent(
-        this.prependStabilityBadgeToContent(getExtensionStepStability(stepDefinition), bodyLines)
+        this.prependStabilityBadgeToContent(getExtensionStability(stepDefinition), bodyLines)
       );
     } catch (error) {
       // console.warn('GenericMonacoConnectorHandler: Error generating hover content', error);

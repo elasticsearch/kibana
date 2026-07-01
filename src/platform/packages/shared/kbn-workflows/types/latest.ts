@@ -63,7 +63,7 @@ export type {
   InternalConnectorContract,
   DynamicConnectorContract,
   BaseConnectorContract,
-  StepStabilityLevel,
+  StabilityLevel,
   HttpMethod,
   EditorHandlers,
   EditorHandlersConfig,

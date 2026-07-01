@@ -565,7 +565,7 @@ export type CompletionFn = () => Promise<
   Array<{ label: string; value: string; detail?: string; documentation?: string }>
 >;
 
-export type StepStabilityLevel = 'stable' | 'beta' | 'tech_preview';
+export type StabilityLevel = 'stable' | 'beta' | 'tech_preview';
 
 export interface BaseConnectorContract {
   type: string;
@@ -578,7 +578,7 @@ export interface BaseConnectorContract {
   /** Documentation URL for this API endpoint */
   documentation?: string | null;
   /** API stability level derived from the OpenAPI `x-state` field */
-  stability?: StepStabilityLevel;
+  stability?: StabilityLevel;
   /** Deprecation metadata for this step type. */
   deprecation?: StepDeprecationInfo;
   examples?: ConnectorExamples;

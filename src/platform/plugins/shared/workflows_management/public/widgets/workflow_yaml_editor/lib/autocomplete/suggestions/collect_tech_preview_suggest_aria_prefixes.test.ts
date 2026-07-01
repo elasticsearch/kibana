@@ -36,7 +36,7 @@ jest.mock('@kbn/workflows', () => ({
 jest.mock('../../get_stability_note', () => {
   const actual = jest.requireActual('../../get_stability_note');
   return {
-    getExtensionStepStability: actual.getExtensionStepStability,
+    getExtensionStability: actual.getExtensionStability,
   };
 });
 

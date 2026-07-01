@@ -135,6 +135,7 @@ export type WorkflowExecutionFailedEvent = z.infer<typeof workflowExecutionFaile
 
 export const commonWorkflowExecutionFailedTriggerDefinition: CommonTriggerDefinition = {
   id: WORKFLOW_EXECUTION_FAILED_TRIGGER_ID,
+  stability: 'tech_preview',
   eventSchema: workflowExecutionFailedEventSchema,
   title: i18n.translate('workflowsExtensions.triggers.workflowExecutionFailed.title', {
     defaultMessage: 'Workflow failed',

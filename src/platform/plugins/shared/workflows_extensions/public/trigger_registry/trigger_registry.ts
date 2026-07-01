@@ -9,6 +9,7 @@
 
 import type { z } from '@kbn/zod/v4';
 import type { PublicTriggerDefinition } from './types';
+import { validateTriggerStability } from '../../common/trigger_registry/validate_trigger_stability';
 import type { PublicTriggerDefinitionOrLoader } from '../types';
 
 /**
@@ -50,6 +51,7 @@ export class PublicTriggerRegistry {
     definition: PublicTriggerDefinition<EventSchema>
   ): void {
     const id = String(definition.id);
+    validateTriggerStability(id, definition.stability);
     if (this.registry.has(id)) {
       throw new Error(
         `Trigger definition for "${id}" is already registered. Each trigger must have a unique identifier.`

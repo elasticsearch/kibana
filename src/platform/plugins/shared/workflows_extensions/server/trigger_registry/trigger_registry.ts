@@ -8,6 +8,7 @@
  */
 
 import type { z } from '@kbn/zod/v4';
+import { validateTriggerStability } from '../../common/trigger_registry/validate_trigger_stability';
 import type { ServerTriggerDefinition } from '../types';
 
 /** Id must be <namespace>.<event> (kebab-case namespace, camelCase event; e.g. my-namespace.customTrigger) */
@@ -18,7 +19,7 @@ function isZodObject(schema: z.ZodType): schema is z.ZodObject<z.ZodRawShape> {
 }
 
 function validateDefinition(definition: ServerTriggerDefinition): void {
-  const { id, eventSchema } = definition;
+  const { id, eventSchema, stability } = definition;
 
   if (typeof id !== 'string' || id.length === 0) {
     throw new Error('Trigger definition "id" must be a non-empty string.');
@@ -36,6 +37,7 @@ function validateDefinition(definition: ServerTriggerDefinition): void {
       `Trigger "${id}": "eventSchema" must be a Zod object schema (e.g. z.object({...})).`
     );
   }
+  validateTriggerStability(id, stability);
 }
 
 /**

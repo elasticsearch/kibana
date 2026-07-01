@@ -14,6 +14,7 @@ import { getBuiltInStepDefinition, isDynamicConnector, StepCategory } from '@kbn
 import type { WorkflowsExtensionsPublicPluginStart } from '@kbn/workflows-extensions/public';
 import { getAllConnectors, isDeprecatedStepType } from '../../../../common/schema';
 import { triggerSchemas } from '../../../trigger_schemas';
+import { getExtensionStability } from '../../../widgets/workflow_yaml_editor/lib/get_stability_note';
 import type { ActionConnectorGroup, ActionGroup, ActionOptionData } from '../types';
 import { isActionGroup } from '../types';
 
@@ -65,7 +66,7 @@ export function getActionOptions(
       description: t.description ?? t.id,
       iconType: (t.icon != null ? t.icon : 'bolt') as IconType,
       iconColor: euiTheme.colors.vis.euiColorVis6,
-      stability: 'tech_preview',
+      stability: getExtensionStability(t),
     }));
   const triggersGroup: ActionOptionData = {
     iconType: 'bolt',

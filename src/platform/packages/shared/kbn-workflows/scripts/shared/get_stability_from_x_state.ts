@@ -8,11 +8,11 @@
  */
 
 import type { OpenAPIV3 } from 'openapi-types';
-import type { StepStabilityLevel } from '../../types/latest';
+import type { StabilityLevel } from '../../types/latest';
 
 export function getStabilityFromXState(
   operation: OpenAPIV3.OperationObject
-): StepStabilityLevel | undefined {
+): StabilityLevel | undefined {
   const xState = (operation as Record<string, unknown>)['x-state'];
   if (typeof xState !== 'string') {
     return undefined;

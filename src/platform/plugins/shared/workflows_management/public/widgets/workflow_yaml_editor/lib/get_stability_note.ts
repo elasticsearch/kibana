@@ -15,5 +15,5 @@ export {
 
 export { setStabilityBadgeThemeContext } from './stability/stability_badge_theme';
 
-export { getExtensionStepStability } from './stability/get_extension_step_stability';
-export type { StepStabilitySource } from './stability/get_extension_step_stability';
+export { getExtensionStability } from './stability/get_extension_stability';
+export type { StabilitySource } from './stability/get_extension_stability';

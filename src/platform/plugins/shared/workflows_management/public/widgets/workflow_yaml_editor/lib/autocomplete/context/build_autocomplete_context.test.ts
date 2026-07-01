@@ -199,6 +199,7 @@ steps: []
   it('should detect triggers[i].on.condition and resolve registered trigger definition', () => {
     const mockDefinition: PublicTriggerDefinition = {
       id: 'example.custom_trigger',
+      stability: 'tech_preview',
       title: 'Example',
       description: 'Example trigger',
       eventSchema: z.object({ severity: z.string() }),

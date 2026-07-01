@@ -8,7 +8,7 @@
  */
 
 import type { monaco } from '@kbn/monaco';
-import type { StepStabilityLevel } from '@kbn/workflows';
+import type { StabilityLevel } from '@kbn/workflows';
 import { getCachedAllConnectorsMap } from '../../../../../common/schema';
 import { getCachedAllConnectors } from '../connectors_cache';
 import { getStabilityBadgeHtml } from '../get_stability_note';
@@ -147,7 +147,7 @@ export abstract class BaseMonacoConnectorHandler implements MonacoConnectorHandl
    * Prepends the stability badge to hover body lines (top-left, same as trigger hovers).
    */
   protected prependStabilityBadgeToContent(
-    stability: StepStabilityLevel | undefined,
+    stability: StabilityLevel | undefined,
     bodyLines: string[]
   ): string {
     const badge = getStabilityBadgeHtml(stability);
@@ -157,7 +157,7 @@ export abstract class BaseMonacoConnectorHandler implements MonacoConnectorHandl
     return [badge, '', ...bodyLines].join('\n');
   }
 
-  protected getConnectorStabilityFromCache(connectorType: string): StepStabilityLevel | undefined {
+  protected getConnectorStabilityFromCache(connectorType: string): StabilityLevel | undefined {
     const mapStability = getCachedAllConnectorsMap()?.get(connectorType)?.stability;
     const listStability = getCachedAllConnectors().find((c) => c.type === connectorType)?.stability;
     const stability = mapStability ?? listStability;

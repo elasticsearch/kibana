@@ -38,6 +38,7 @@ export type CustomTriggerEvent = z.infer<typeof customTriggerEventSchema>;
 /** Shared trigger definition for use by public and server. */
 export const commonCustomTriggerDefinition: CommonTriggerDefinition = {
   id: CUSTOM_TRIGGER_ID,
+  stability: 'tech_preview',
   eventSchema: customTriggerEventSchema,
   title: i18n.translate('workflowsExtensionsExample.customTrigger.title', {
     defaultMessage: 'Custom trigger',

@@ -8,7 +8,7 @@
  */
 
 import { i18n } from '@kbn/i18n';
-import type { StepStabilityLevel } from '@kbn/workflows';
+import type { StabilityLevel } from '@kbn/workflows';
 import type { StabilityBadgeColors } from './stability_badge_theme';
 import { getStabilityBadgeColors } from './stability_badge_theme';
 
@@ -60,7 +60,7 @@ export function buildStabilityBadgeHtml(label: string, colors: StabilityBadgeCol
 /**
  * Returns HTML for a compact stability badge (matches actions menu EuiBetaBadge).
  */
-export function getStabilityBadgeHtml(stability: StepStabilityLevel | undefined): string {
+export function getStabilityBadgeHtml(stability: StabilityLevel | undefined): string {
   if (stability === 'tech_preview') {
     const label = i18n.translate('workflows.actionsMenu.techPreviewBadge', {
       defaultMessage: 'Tech preview',

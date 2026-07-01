@@ -15,6 +15,7 @@ import { monaco } from '@kbn/monaco';
 import { isTriggerType } from '@kbn/workflows';
 import { getTriggerNodesWithType } from '../../../../../common/lib/yaml';
 import { triggerSchemas } from '../../../../trigger_schemas';
+import { getExtensionStability } from '../../lib/get_stability_note';
 
 /** Marker class for custom (registered) triggers */
 export const CUSTOM_TRIGGER_INLINE_CLASS = 'custom-trigger-inline';
@@ -71,7 +72,13 @@ function tryCreateTriggerDecoration(
   const isCustomTrigger = !isTriggerType(triggerType);
   if (isCustomTrigger && !isRegisteredCustomTrigger(triggerType)) return null;
 
-  const techPreviewClass = isCustomTrigger ? ' type-tech-preview' : '';
+  const triggerDefinition = isCustomTrigger
+    ? triggerSchemas.getTriggerDefinition(triggerType)
+    : undefined;
+  const techPreviewClass =
+    isCustomTrigger && getExtensionStability(triggerDefinition ?? {}) === 'tech_preview'
+      ? ' type-tech-preview'
+      : '';
   const inlineClasses = isCustomTrigger
     ? `type-inline-highlight ${CUSTOM_TRIGGER_INLINE_CLASS} type-${className}${techPreviewClass}`
     : `type-inline-highlight type-${className}`;
