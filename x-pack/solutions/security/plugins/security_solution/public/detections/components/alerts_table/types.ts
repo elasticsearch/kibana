@@ -77,6 +77,12 @@ export interface SecurityAlertsTableContext {
   leadingControlColumn: ControlColumnProps;
   userProfiles: AlertsUserProfilesData;
   pageScope: PageScope;
+  /**
+   * Per-source-instance UUID minted by `AlertsTableComponent` at mount.
+   * Passed here so `ActionsCell` can dispatch row-expand actions via the
+   * correct pagination slice without relying on a global singleton.
+   */
+  paginationInstanceId: string;
 }
 
 export type SecurityAlertsTableProps = AlertsTablePropsWithRef<SecurityAlertsTableContext>;

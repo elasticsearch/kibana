@@ -58,9 +58,11 @@ import { DocumentEventTypes } from '../../../../../common/lib/telemetry/types';
 import { getTimelineRowTypeIndicator } from './get_row_indicator';
 import { isAttackDiscoveryRow } from './is_attack_discovery_row';
 import { DocumentFlyoutWrapper } from '../../../../../flyout_v2/document/main/document_flyout_wrapper';
-import { AttackFlyoutWrapper } from '../../../../../flyout_v2/attack/main/attack_flyout_wrapper';
+import { PaginatedTimelineDocumentFlyout } from '../../../../../flyout_v2/document/paginated_timeline_document_flyout';
 import { flyoutProviders } from '../../../../../flyout_v2/shared/components/flyout_provider';
 import { useDefaultDocumentFlyoutProperties } from '../../../../../flyout_v2/shared/hooks/use_default_flyout_properties';
+import { usePaginatedFlyout } from '../../../../../common/utils/flyout_pagination/use_paginated_flyout';
+import type { ScopedPaginationSlice } from '../../../../../common/utils/flyout_pagination/types';
 
 const DataGridMemoized = React.memo(UnifiedDataTable);
 
@@ -152,13 +154,7 @@ export const TimelineDataTableComponent: React.FC<DataTableProps> = memo(
 
     const [expandedDoc, setExpandedDoc] = useState<DataTableRecord & TimelineItem>();
 
-    const onCloseExpandableFlyout = useCallback((id: string) => {
-      setExpandedDoc((prev) => (!prev ? prev : undefined));
-    }, []);
-
     const { closeFlyout, openFlyout } = useExpandableFlyoutApi();
-
-    useOnExpandableFlyoutClose({ callback: onCloseExpandableFlyout });
 
     const showTimeCol = useMemo(() => !!dataView && !!dataView.timeFieldName, [dataView]);
 
@@ -186,74 +182,125 @@ export const TimelineDataTableComponent: React.FC<DataTableProps> = memo(
       [events, dataView]
     );
 
+    // Body factory for the V2 paginated timeline flyout.
+    const getTimelineBody = useCallback(
+      (instanceId: string) => (
+        <PaginatedTimelineDocumentFlyout
+          paginationInstanceId={instanceId}
+          onAlertUpdated={refetch}
+        />
+      ),
+      [refetch]
+    );
+
+    // Resolves the document at an absolute row index (0-based across the full
+    // result set) from the currently-loaded rows. Returns null when the row is
+    // not in memory — the parallel cross-page query will resolve it and call
+    // openPaginatedFlyout again once the data is available.
+    const resolveDocument = useCallback(
+      (alertIndex: number) => {
+        const targetRow = tableRows[alertIndex];
+        if (!targetRow) {
+          return null;
+        }
+        const docRef = {
+          id: targetRow._id,
+          indexName: targetRow.ecs._index ?? '',
+        };
+        return {
+          id: docRef.id,
+          indexName: docRef.indexName,
+          scopeId: timelineId,
+          stateUpdate: {
+            flyoutDocumentRef: docRef,
+            totalAlertCount: tableRows.length,
+          } as Partial<ScopedPaginationSlice>,
+        };
+      },
+      [tableRows, timelineId]
+    );
+
+    const { openPaginatedFlyout, closePaginatedFlyout } = usePaginatedFlyout({
+      rightPanelKey: DocumentDetailsRightPanelKey,
+      resolveDocument,
+      renderBody: getTimelineBody,
+      historyKey: documentFlyoutHistoryKey,
+    });
+
+    const onCloseExpandableFlyout = useCallback(
+      (id: string) => {
+        setExpandedDoc((prev) => (!prev ? prev : undefined));
+        closePaginatedFlyout();
+      },
+      [closePaginatedFlyout]
+    );
+
+    useOnExpandableFlyoutClose({ callback: onCloseExpandableFlyout });
+
     const handleOnEventDetailPanelOpened = useCallback(
       (eventData: DataTableRecord & TimelineItem) => {
+        const newIndex = tableRows.findIndex((r) => r.id === eventData.id);
+        const eventIndex = newIndex >= 0 ? newIndex : 0;
+        const eventIndexName = eventData.ecs._index ?? '';
+
+        if (!isAttackDiscoveryRow(eventData)) {
+          openPaginatedFlyout(eventIndex);
+        }
+
         if (newFlyoutSystemEnabled) {
-          const isAttackRow = isAttackDiscoveryRow(eventData);
-          overlays.openSystemFlyout(
-            flyoutProviders({
-              services,
-              store,
-              history,
-              children: isAttackRow ? (
-                <AttackFlyoutWrapper
-                  attackId={eventData._id}
-                  indexName={eventData.ecs._index ?? ''}
-                  onAttackUpdated={refetch}
-                />
-              ) : (
-                <DocumentFlyoutWrapper
-                  documentId={eventData._id}
-                  indexName={eventData.ecs._index}
-                  renderCellActions={cellActionRenderer}
-                  onAlertUpdated={refetch}
-                />
-              ),
-            }),
-            {
-              ...defaultFlyoutProperties,
-              historyKey: documentFlyoutHistoryKey,
-              session: 'start',
-            }
-          );
+          if (isAttackDiscoveryRow(eventData)) {
+            overlays.openSystemFlyout(
+              flyoutProviders({
+                services,
+                store,
+                history,
+                children: (
+                  <DocumentFlyoutWrapper
+                    documentId={eventData._id}
+                    indexName={eventIndexName}
+                    renderCellActions={cellActionRenderer}
+                    onAlertUpdated={refetch}
+                  />
+                ),
+              }),
+              {
+                ...defaultFlyoutProperties,
+                historyKey: documentFlyoutHistoryKey,
+                session: 'start',
+              }
+            );
+          }
         } else {
-          const isAttackRow = isAttackDiscoveryRow(eventData);
-          const indexName = eventData.ecs._index ?? '';
-          const rightPanel = isAttackRow
-            ? {
+          if (isAttackDiscoveryRow(eventData)) {
+            openFlyout({
+              right: {
                 id: AttackDetailsRightPanelKey,
                 params: {
                   attackId: eventData._id,
-                  indexName,
+                  indexName: eventIndexName,
                 },
-              }
-            : {
-                id: DocumentDetailsRightPanelKey,
-                params: {
-                  id: eventData._id,
-                  indexName,
-                  scopeId: timelineId,
-                },
-              };
-          openFlyout({
-            right: rightPanel,
-          });
-          telemetry.reportEvent(DocumentEventTypes.DetailsFlyoutOpened, {
-            location: timelineId,
-            panel: 'right',
-          });
+              },
+            });
+          } else {
+            telemetry.reportEvent(DocumentEventTypes.DetailsFlyoutOpened, {
+              location: timelineId,
+              panel: 'right',
+            });
+          }
         }
       },
       [
         defaultFlyoutProperties,
         newFlyoutSystemEnabled,
         overlays,
+        openPaginatedFlyout,
+        openFlyout,
         services,
         store,
         history,
+        tableRows,
         timelineId,
         refetch,
-        openFlyout,
         telemetry,
       ]
     );

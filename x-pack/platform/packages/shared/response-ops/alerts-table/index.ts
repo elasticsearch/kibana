@@ -7,6 +7,7 @@
 
 import { AlertsTable } from './components/alerts_table';
 export { AlertsTable } from './components/alerts_table';
+export { alertsTableQueryClient } from './query_client';
 // Lazy load helper
 // eslint-disable-next-line import/no-default-export
 export default AlertsTable;

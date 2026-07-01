@@ -6,12 +6,17 @@
  */
 
 import React from 'react';
-import { fireEvent, render } from '@testing-library/react';
+import { act, fireEvent, render } from '@testing-library/react';
 import type { DataTableRecord } from '@kbn/discover-utils';
 import { useAlertsPrivileges } from '../../../detections/containers/detection_engine/alerts/use_alerts_privileges';
 import { DocumentFlyout } from '.';
 import { TestProviders } from '../../../common/mock';
 import { createStartServicesMock } from '../../../common/lib/kibana/kibana_react.mock';
+import {
+  __resetFlyoutPaginationStoreForTests,
+  flyoutPaginationStore,
+} from '../../../common/utils/flyout_pagination/store';
+import { FLYOUT_V2_LOADING_SPINNER_TEST_ID } from './components/test_ids';
 
 jest.mock('../../../detections/containers/detection_engine/alerts/use_alerts_privileges');
 jest.mock('./header', () => ({
@@ -46,11 +51,18 @@ const createAlertHit = (extra: DataTableRecord['flattened'] = {}): DataTableReco
     isAnchor: false,
   } as DataTableRecord);
 
+const INSTANCE_ID = 'test-instance-uuid';
+
 describe('<DocumentFlyout />', () => {
   const startServices = createStartServicesMock();
 
   beforeEach(() => {
     jest.clearAllMocks();
+    __resetFlyoutPaginationStoreForTests();
+  });
+
+  afterEach(() => {
+    __resetFlyoutPaginationStoreForTests();
   });
 
   it('renders FlyoutMissingAlertsPrivilege when document is an alert and user lacks alerts read privilege', () => {
@@ -149,6 +161,52 @@ describe('<DocumentFlyout />', () => {
     );
 
     expect(getByTestId('mock-header')).toHaveAttribute('data-has-on-assignees-updated', 'true');
+  });
+
+  describe('cross-page pagination loading branch', () => {
+    it('renders the header and a centered spinner instead of the body when isFlyoutAlertLoading is true', () => {
+      (useAlertsPrivileges as jest.Mock).mockReturnValue({ hasAlertsRead: true, loading: false });
+      act(() => {
+        flyoutPaginationStore.setSlice(INSTANCE_ID, { isFlyoutAlertLoading: true });
+      });
+
+      const { getByTestId, queryByTestId } = render(
+        <TestProviders>
+          <DocumentFlyout
+            hit={createAlertHit()}
+            renderCellActions={jest.fn()}
+            onAlertUpdated={jest.fn()}
+            paginationInstanceId={INSTANCE_ID}
+          />
+        </TestProviders>
+      );
+
+      // Header is preserved so the in-flyout pagination control (rendered by
+      // it) remains operable while the new alert loads.
+      expect(getByTestId('mock-header')).toBeInTheDocument();
+      expect(getByTestId(FLYOUT_V2_LOADING_SPINNER_TEST_ID)).toBeInTheDocument();
+      // The body and footer are replaced by the spinner branch — neither
+      // tab content nor footer should render.
+      expect(queryByTestId('mock-overview-tab')).not.toBeInTheDocument();
+      expect(queryByTestId('mock-footer')).not.toBeInTheDocument();
+    });
+
+    it('renders the normal body once the flyout alert loading flag clears', () => {
+      (useAlertsPrivileges as jest.Mock).mockReturnValue({ hasAlertsRead: true, loading: false });
+
+      const { getByTestId, queryByTestId } = render(
+        <TestProviders>
+          <DocumentFlyout
+            hit={createAlertHit()}
+            renderCellActions={jest.fn()}
+            onAlertUpdated={jest.fn()}
+          />
+        </TestProviders>
+      );
+
+      expect(getByTestId('mock-overview-tab')).toBeInTheDocument();
+      expect(queryByTestId(FLYOUT_V2_LOADING_SPINNER_TEST_ID)).not.toBeInTheDocument();
+    });
   });
 
   describe('remote document callout', () => {

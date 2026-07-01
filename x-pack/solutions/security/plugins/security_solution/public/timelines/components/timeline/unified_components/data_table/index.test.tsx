@@ -38,8 +38,8 @@ const mockOpenSystemFlyout = jest.fn();
 const mockDocumentFlyoutWrapper = jest.fn((_props?: unknown) => (
   <div>{'MockDocumentFlyoutWrapper'}</div>
 ));
-const mockAttackFlyoutWrapper = jest.fn((_props?: unknown) => (
-  <div>{'MockAttackFlyoutWrapper'}</div>
+const mockPaginatedTimelineDocumentFlyout = jest.fn((_props?: unknown) => (
+  <div>{'MockPaginatedTimelineDocumentFlyout'}</div>
 ));
 
 const updateSampleSizeSpy = jest.spyOn(timelineActions, 'updateSampleSize');
@@ -54,8 +54,8 @@ jest.mock('../../../../../flyout_v2/shared/components/flyout_provider', () => ({
 jest.mock('../../../../../flyout_v2/document/main/document_flyout_wrapper', () => ({
   DocumentFlyoutWrapper: (props: unknown) => mockDocumentFlyoutWrapper(props),
 }));
-jest.mock('../../../../../flyout_v2/attack/main/attack_flyout_wrapper', () => ({
-  AttackFlyoutWrapper: (props: unknown) => mockAttackFlyoutWrapper(props),
+jest.mock('../../../../../flyout_v2/document/paginated_timeline_document_flyout', () => ({
+  PaginatedTimelineDocumentFlyout: (props: unknown) => mockPaginatedTimelineDocumentFlyout(props),
 }));
 jest.mock('../../../../../common/lib/kibana', () => {
   const original = jest.requireActual('../../../../../common/lib/kibana');
@@ -207,8 +207,7 @@ describe('unified data table', () => {
       });
 
       const flyoutElement = mockOpenSystemFlyout.mock.calls[0][0];
-      expect(flyoutElement.props.documentId).toBe(mockTimelineData[0]._id);
-      expect(flyoutElement.props.indexName).toBe(mockTimelineData[0].ecs._index);
+      expect(flyoutElement.props.paginationInstanceId).toEqual(expect.any(String));
       expect(flyoutElement.props.onAlertUpdated).toBe(refetchMock);
     },
     SPECIAL_TEST_TIMEOUT

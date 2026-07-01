@@ -207,6 +207,36 @@ describe('RowAction', () => {
     expect(refetch).toHaveBeenCalledTimes(1);
   });
 
+  test('uses the onExpandFlyout override when provided instead of opening the flyout directly', () => {
+    const onExpandFlyout = jest.fn();
+    const wrapper = render(
+      <TestProviders>
+        <RowAction {...defaultProps} onExpandFlyout={onExpandFlyout} />
+      </TestProviders>
+    );
+
+    fireEvent.click(wrapper.getByTestId('expand-event'));
+
+    expect(onExpandFlyout).toHaveBeenCalledTimes(1);
+    expect(mockOpenFlyout).not.toHaveBeenCalled();
+    expect(mockOpenSystemFlyout).not.toHaveBeenCalled();
+  });
+
+  test('still uses the onExpandFlyout override when newFlyoutSystemEnabled is enabled', () => {
+    jest.mocked(useIsExperimentalFeatureEnabled).mockReturnValue(true);
+    const onExpandFlyout = jest.fn();
+    const wrapper = render(
+      <TestProviders>
+        <RowAction {...defaultProps} onExpandFlyout={onExpandFlyout} />
+      </TestProviders>
+    );
+
+    fireEvent.click(wrapper.getByTestId('expand-event'));
+
+    expect(onExpandFlyout).toHaveBeenCalledTimes(1);
+    expect(mockOpenSystemFlyout).not.toHaveBeenCalled();
+  });
+
   describe('privileges', () => {
     test('should show notes and timeline buttons when the user has the required privileges', () => {
       (useUserPrivileges as jest.Mock).mockReturnValue({

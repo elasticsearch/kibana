@@ -55,6 +55,16 @@ export type RowActionProps = EuiDataGridCellValueElementProps & {
   tabType?: string;
   tableId: string;
   width: number;
+  /**
+   * Optional override for the "expand flyout" row action. When provided,
+   * clicking the expand button calls this callback instead of opening the
+   * expandable flyout directly. The alerts page uses this so the alerts table
+   * can drive the in-flyout pagination (see `usePaginatedFlyout` in `common/utils/flyout_pagination`).
+   *
+   * If omitted (e.g. for the cases events table), the default behaviour of
+   * opening `DocumentDetailsRightPanelKey` directly is preserved.
+   */
+  onExpandFlyout?: () => void;
 };
 
 const RowActionComponent = ({
@@ -66,6 +76,7 @@ const RowActionComponent = ({
   index,
   isEventViewer,
   loadingEventIds,
+  onExpandFlyout,
   onRowSelected,
   onRuleChange,
   pageRowIndex,
@@ -120,6 +131,16 @@ const RowActionComponent = ({
   }, [refetch]);
 
   const handleOnEventDetailPanelOpened = useCallback(() => {
+    // When the consumer provides `onExpandFlyout` it takes ownership of opening
+    // the expandable flyout (e.g. so it can also update pagination state).
+    if (onExpandFlyout) {
+      onExpandFlyout();
+      telemetry.reportEvent(DocumentEventTypes.DetailsFlyoutOpened, {
+        location: tableId,
+        panel: 'right',
+      });
+      return;
+    }
     if (newFlyoutSystemEnabled && hit) {
       overlays.openSystemFlyout(
         flyoutProviders({
@@ -168,6 +189,7 @@ const RowActionComponent = ({
     eventId,
     indexName,
     handleAlertUpdated,
+    onExpandFlyout,
     openFlyout,
     tableId,
     telemetry,

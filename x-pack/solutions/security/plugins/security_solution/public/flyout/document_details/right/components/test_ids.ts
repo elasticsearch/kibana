@@ -49,6 +49,9 @@ export const NOTES_LOADING_TEST_ID = `${FLYOUT_HEADER_TEST_ID}NotesLoading` as c
 export const ASSIGNEES_EMPTY_TEST_ID = `${FLYOUT_HEADER_TEST_ID}AssigneesEmpty` as const;
 export const ASSIGNEES_TEST_ID = `${FLYOUT_HEADER_TEST_ID}Assignees` as const;
 export const ASSIGNEES_ADD_BUTTON_TEST_ID = `${FLYOUT_HEADER_TEST_ID}AssigneesAddButton` as const;
+
+export const FLYOUT_ALERT_PAGINATION_TEST_ID = `${FLYOUT_HEADER_TEST_ID}AlertPagination` as const;
+export const FLYOUT_LOADING_SPINNER_TEST_ID = `${PREFIX}LoadingSpinner` as const;
 /* About section */
 
 const ABOUT_SECTION_TEST_ID = `${PREFIX}AboutSection` as const;

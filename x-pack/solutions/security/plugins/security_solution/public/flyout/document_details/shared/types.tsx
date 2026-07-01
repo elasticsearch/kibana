@@ -21,5 +21,13 @@ export interface DocumentDetailsProps extends FlyoutPanelProps {
     isPreviewMode?: boolean;
     jumpToEntityId?: string;
     jumpToCursor?: string;
+    /**
+     * Per-source-instance UUID minted at the source's mount time (e.g. in
+     * `AlertsTableComponent` or `TimelineDataTableComponent`). When present,
+     * `DocumentDetailsContext` exposes it so that `alert_header_title.tsx`
+     * can look up the caller's pagination slice and render in-flyout
+     * `EuiPagination` chevrons keyed to that source.
+     */
+    paginationInstanceId?: string;
   };
 }

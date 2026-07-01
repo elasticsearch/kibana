@@ -8,7 +8,7 @@
 import type { FC } from 'react';
 import React, { useMemo } from 'react';
 import { SECURITY_CELL_ACTIONS_DETAILS_FLYOUT } from '@kbn/ui-actions-plugin/common/trigger_ids';
-import { useAlertsContext } from '../../../../detections/components/alerts_table/alerts_context';
+import { alertsTableRef } from '../../../../detections/components/alerts_table/alerts_table_ref';
 import { useDocumentDetailsContext } from '../context';
 import { getSourcererScopeId } from '../../../../helpers';
 import { SecurityCellActionType } from '../../../../app/actions/constants';
@@ -38,12 +38,11 @@ interface CellActionsProps {
  */
 export const CellActions: FC<CellActionsProps> = ({ field, value, isObjectArray, children }) => {
   const { scopeId, isRulePreview } = useDocumentDetailsContext();
-  const { alertsTableRef } = useAlertsContext();
 
   const data = useMemo(() => ({ field, value }), [field, value]);
   const metadata = useMemo(
     () => ({ scopeId, isObjectArray, alertsTableRef }),
-    [scopeId, isObjectArray, alertsTableRef]
+    [scopeId, isObjectArray]
   );
   const disabledActionTypes = useMemo(
     () =>

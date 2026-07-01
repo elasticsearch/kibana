@@ -7,13 +7,15 @@
 
 import React, { memo, useCallback, useMemo } from 'react';
 import { buildDataTableRecord, type EsHitRecord } from '@kbn/discover-utils';
-import { EuiFlexGroup, EuiFlexItem, EuiSpacer, EuiText } from '@elastic/eui';
+import { EuiFlexGroup, EuiFlexItem, EuiPagination, EuiSpacer, EuiText } from '@elastic/eui';
 import { FormattedMessage } from '@kbn/i18n-react';
+import { i18n } from '@kbn/i18n';
 import {
   FlyoutHeaderBlock,
   flyoutHeaderBlockStyles,
 } from '../../../../flyout_v2/shared/components/flyout_header_block';
 import { useRefetchByScope } from '../../../../flyout_v2/document/main/hooks/use_refetch_by_scope';
+import { useFlyoutPagination } from '../../../../common/utils/flyout_pagination/use_flyout_pagination';
 import { useDocumentDetailsContext } from '../../shared/context';
 import { useUserPrivileges } from '../../../../common/components/user_privileges';
 import { useNavigateToLeftPanel } from '../../shared/hooks/use_navigate_to_left_panel';
@@ -24,21 +26,41 @@ import { RiskScore } from '../../../../flyout_v2/document/main/components/risk_s
 import { DocumentSeverity } from '../../../../flyout_v2/document/main/components/severity';
 import { ALERT_SUMMARY_PANEL_TEST_ID } from '../../../../flyout_v2/shared/components/test_ids';
 import { LeftPanelNotesTab } from '../../left';
-import { STATUS_TITLE_TEST_ID } from './test_ids';
+import { FLYOUT_ALERT_PAGINATION_TEST_ID, STATUS_TITLE_TEST_ID } from './test_ids';
 import { Title } from '../../../../flyout_v2/document/main/components/title';
 import { Status } from '../../../../flyout_v2/document/main/components/status';
 import type { CellActionRenderer } from '../../../../flyout_v2/shared/components/cell_actions';
 import { getEmptyTagValue } from '../../../../common/components/empty_value';
 import { CellActions } from '../../shared/components/cell_actions';
 
+const PAGINATION_ARIA_LABEL = i18n.translate(
+  'xpack.securitySolution.flyout.right.header.paginationAriaLabel',
+  {
+    defaultMessage: 'Navigate between alerts',
+  }
+);
+
 /**
  * Alert details flyout right section header
  */
 export const AlertHeaderTitle = memo(() => {
-  const { scopeId, isRulePreview, refetchFlyoutData, searchHit } = useDocumentDetailsContext();
+  const { scopeId, isRulePreview, refetchFlyoutData, searchHit, paginationInstanceId } =
+    useDocumentDetailsContext();
   const canReadRules = useUserPrivileges().rulesPrivileges.rules.read;
   const openNotesTab = useNavigateToLeftPanel({ tab: LeftPanelNotesTab });
   const hit = useMemo(() => buildDataTableRecord(searchHit as EsHitRecord), [searchHit]);
+
+  const { flyoutAlertIndex, totalAlertCount, openAlertFlyout } =
+    useFlyoutPagination(paginationInstanceId);
+  // Show pagination only when this flyout was opened from a paginated source
+  // (paginationInstanceId is set), there is more than one document to
+  // navigate, and we are not in rule preview mode.
+  const showPagination =
+    paginationInstanceId != null &&
+    totalAlertCount > 1 &&
+    flyoutAlertIndex != null &&
+    flyoutAlertIndex >= 0 &&
+    !isRulePreview;
 
   const { refetch } = useRefetchByScope({ scopeId });
 
@@ -83,9 +105,29 @@ export const AlertHeaderTitle = memo(() => {
 
   return (
     <>
-      <DocumentSeverity hit={hit}>
-        <EuiSpacer size="m" />
-      </DocumentSeverity>
+      <EuiFlexGroup
+        gutterSize="s"
+        justifyContent="spaceBetween"
+        alignItems="center"
+        responsive={false}
+      >
+        <EuiFlexItem grow={false}>
+          <DocumentSeverity hit={hit} />
+        </EuiFlexItem>
+        {showPagination && (
+          <EuiFlexItem grow={false}>
+            <EuiPagination
+              aria-label={PAGINATION_ARIA_LABEL}
+              pageCount={totalAlertCount}
+              activePage={flyoutAlertIndex}
+              onPageClick={openAlertFlyout}
+              compressed
+              data-test-subj={FLYOUT_ALERT_PAGINATION_TEST_ID}
+            />
+          </EuiFlexItem>
+        )}
+      </EuiFlexGroup>
+      <EuiSpacer size="m" />
       <EuiText size="s">
         <Timestamp hit={hit} />
       </EuiText>

@@ -6,7 +6,7 @@
  */
 
 import React from 'react';
-import { render } from '@testing-library/react';
+import { fireEvent, render } from '@testing-library/react';
 import { DocumentDetailsContext } from '../../shared/context';
 import { AlertHeaderTitle } from './alert_header_title';
 import moment from 'moment-timezone';
@@ -31,9 +31,12 @@ import {
   NOTES_TITLE_TEST_ID,
 } from '../../../../flyout_v2/shared/components/test_ids';
 import { useRefetchByScope } from '../../../../flyout_v2/document/main/hooks/use_refetch_by_scope';
+import { useFlyoutPagination } from '../../../../common/utils/flyout_pagination/use_flyout_pagination';
+import { FLYOUT_ALERT_PAGINATION_TEST_ID } from './test_ids';
 
 jest.mock('../../../../common/lib/kibana');
 jest.mock('../../../../flyout_v2/document/main/hooks/use_refetch_by_scope');
+jest.mock('../../../../common/utils/flyout_pagination/use_flyout_pagination');
 jest.mock('../../../../flyout_v2/document/main/components/status', () => ({
   Status: ({ onAlertUpdated }: { onAlertUpdated?: () => void }) => (
     <>
@@ -54,6 +57,8 @@ const createSearchHit = (fields: Record<string, unknown[]>) => ({
     ...fields,
   },
 });
+
+const TEST_PAGINATION_INSTANCE_ID = 'test-instance-uuid';
 
 const mockContextValue = {
   dataFormattedForFieldBrowser: mockDataFormattedForFieldBrowser,
@@ -78,12 +83,25 @@ const renderHeader = (contextValue: DocumentDetailsContext) =>
 
 describe('<AlertHeaderTitle />', () => {
   const refetchMock = jest.fn();
+  const openAlertFlyoutMock = jest.fn();
+
+  const defaultPaginationValue = {
+    flyoutAlertIndex: null,
+    pageSize: 0,
+    totalAlertCount: 0,
+    isFlyoutAlertLoading: false,
+    flyoutAlert: null,
+    flyoutDocumentRef: null,
+    openAlertFlyoutImpl: null,
+    openAlertFlyout: openAlertFlyoutMock,
+  };
 
   beforeEach(() => {
     jest.clearAllMocks();
     jest.mocked(useDateFormat).mockImplementation(() => dateFormat);
     jest.mocked(useTimeZone).mockImplementation(() => 'UTC');
     jest.mocked(useRefetchByScope).mockReturnValue({ refetch: refetchMock });
+    jest.mocked(useFlyoutPagination).mockReturnValue(defaultPaginationValue);
   });
 
   it('should render component', () => {
@@ -129,5 +147,146 @@ describe('<AlertHeaderTitle />', () => {
 
     expect(refetchMock).toHaveBeenCalledTimes(1);
     expect(refetchFlyoutData).toHaveBeenCalledTimes(1);
+  });
+
+  describe('alert pagination', () => {
+    it('does not render the pagination control when no paginationInstanceId is in context', () => {
+      // mockContextValue has no paginationInstanceId → pagination hidden
+      const { queryByTestId } = renderHeader(mockContextValue);
+      expect(queryByTestId(FLYOUT_ALERT_PAGINATION_TEST_ID)).not.toBeInTheDocument();
+    });
+
+    it('does not render the pagination control when only one alert is in the result set', () => {
+      jest.mocked(useFlyoutPagination).mockReturnValue({
+        ...defaultPaginationValue,
+        flyoutAlertIndex: 0,
+        pageSize: 50,
+        totalAlertCount: 1,
+      });
+      const { queryByTestId } = renderHeader({
+        ...mockContextValue,
+        paginationInstanceId: TEST_PAGINATION_INSTANCE_ID,
+      } as unknown as DocumentDetailsContext);
+      expect(queryByTestId(FLYOUT_ALERT_PAGINATION_TEST_ID)).not.toBeInTheDocument();
+    });
+
+    it('does not render the pagination control when the flyout is in rule preview mode', () => {
+      jest.mocked(useFlyoutPagination).mockReturnValue({
+        ...defaultPaginationValue,
+        flyoutAlertIndex: 1,
+        pageSize: 50,
+        totalAlertCount: 1432,
+      });
+      const { queryByTestId } = renderHeader({
+        ...mockContextValue,
+        isRulePreview: true,
+        paginationInstanceId: TEST_PAGINATION_INSTANCE_ID,
+      } as unknown as DocumentDetailsContext);
+      expect(queryByTestId(FLYOUT_ALERT_PAGINATION_TEST_ID)).not.toBeInTheDocument();
+    });
+
+    it('does not render the pagination control when paginationInstanceId does not match a slice (scopeId mismatch equivalent)', () => {
+      // useFlyoutPagination returns absent slice (no flyoutAlertIndex) for unknown id
+      jest.mocked(useFlyoutPagination).mockReturnValue({
+        ...defaultPaginationValue,
+        flyoutAlertIndex: null,
+        totalAlertCount: 0,
+      });
+      const { queryByTestId } = renderHeader({
+        ...mockContextValue,
+        paginationInstanceId: 'some-other-instance',
+      } as unknown as DocumentDetailsContext);
+      expect(queryByTestId(FLYOUT_ALERT_PAGINATION_TEST_ID)).not.toBeInTheDocument();
+    });
+
+    it('renders the pagination control with page count equal to the total alert count', () => {
+      jest.mocked(useFlyoutPagination).mockReturnValue({
+        ...defaultPaginationValue,
+        flyoutAlertIndex: 2,
+        pageSize: 50,
+        totalAlertCount: 1432,
+      });
+      const { getByTestId } = renderHeader({
+        ...mockContextValue,
+        paginationInstanceId: TEST_PAGINATION_INSTANCE_ID,
+      } as unknown as DocumentDetailsContext);
+      const pagination = getByTestId(FLYOUT_ALERT_PAGINATION_TEST_ID);
+      expect(pagination).toBeInTheDocument();
+      // The compressed EuiPagination renders a "{active+1} of {total}" label.
+      expect(pagination).toHaveTextContent('3 of 1432');
+    });
+
+    it('uses the absolute alert index when computing the active page', () => {
+      jest.mocked(useFlyoutPagination).mockReturnValue({
+        ...defaultPaginationValue,
+        // 2nd alert of the 2nd page (page size 50) → absolute index 51.
+        flyoutAlertIndex: 51,
+        pageSize: 50,
+        totalAlertCount: 1432,
+      });
+      const { getByTestId } = renderHeader({
+        ...mockContextValue,
+        paginationInstanceId: TEST_PAGINATION_INSTANCE_ID,
+      } as unknown as DocumentDetailsContext);
+      const pagination = getByTestId(FLYOUT_ALERT_PAGINATION_TEST_ID);
+      // activePage is absolute, so we expect "52 of 1432".
+      expect(pagination).toHaveTextContent('52 of 1432');
+    });
+
+    it('opens the next/prev alert via the flyout pagination slice when pagination is clicked', () => {
+      jest.mocked(useFlyoutPagination).mockReturnValue({
+        ...defaultPaginationValue,
+        flyoutAlertIndex: 49,
+        pageSize: 50,
+        totalAlertCount: 1432,
+      });
+      const { getByTestId } = renderHeader({
+        ...mockContextValue,
+        paginationInstanceId: TEST_PAGINATION_INSTANCE_ID,
+      } as unknown as DocumentDetailsContext);
+      const pagination = getByTestId(FLYOUT_ALERT_PAGINATION_TEST_ID);
+
+      // EuiPagination tags its prev/next chevrons with these test subjects.
+      const nextButton = pagination.querySelector('[data-test-subj="pagination-button-next"]');
+      expect(nextButton).not.toBeNull();
+      fireEvent.click(nextButton as HTMLElement);
+
+      // Last alert of page 1 (absolute index 49) → next is the first alert of
+      // page 2 (absolute index 50). The pagination crosses the page boundary
+      // without changing the underlying table page.
+      expect(openAlertFlyoutMock).toHaveBeenCalledWith(50);
+
+      const prevButton = pagination.querySelector('[data-test-subj="pagination-button-previous"]');
+      expect(prevButton).not.toBeNull();
+      fireEvent.click(prevButton as HTMLElement);
+
+      // Previous from absolute index 49 → 48.
+      expect(openAlertFlyoutMock).toHaveBeenCalledWith(48);
+    });
+
+    it('renders the severity badge and the pagination control in the same EuiFlexGroup row', () => {
+      jest.mocked(useFlyoutPagination).mockReturnValue({
+        ...defaultPaginationValue,
+        flyoutAlertIndex: 2,
+        pageSize: 50,
+        totalAlertCount: 1432,
+      });
+      const { getByTestId } = renderHeader({
+        ...mockContextValue,
+        paginationInstanceId: TEST_PAGINATION_INSTANCE_ID,
+      } as unknown as DocumentDetailsContext);
+
+      const severity = getByTestId(SEVERITY_VALUE_TEST_ID);
+      const pagination = getByTestId(FLYOUT_ALERT_PAGINATION_TEST_ID);
+
+      // The closest ancestor flex group should be the same node for both —
+      // proves severity (left) and pagination (right) share one row, rather
+      // than the pre-iteration-2 layout where pagination sat on its own row
+      // above severity.
+      const severityFlexGroup = severity.closest('.euiFlexGroup');
+      const paginationFlexGroup = pagination.closest('.euiFlexGroup');
+      expect(severityFlexGroup).not.toBeNull();
+      expect(severityFlexGroup).toBe(paginationFlexGroup);
+    });
   });
 });

@@ -9,6 +9,14 @@ import { PREFIX } from '../../../../flyout/shared/test_ids';
 
 export const FLYOUT_MISSING_ALERTS_PRIVILEGE_TEST_ID = `${PREFIX}MissingAlertsPrivilege` as const;
 
+/* Flyout-level loading state shown while in-flyout pagination is fetching a
+ * cross-page alert. */
+export const FLYOUT_V2_LOADING_SPINNER_TEST_ID = `${PREFIX}V2LoadingSpinner` as const;
+
+/* In-flyout EuiPagination that walks the entire alerts result set without
+ * moving the underlying alerts table. */
+export const FLYOUT_V2_ALERT_PAGINATION_TEST_ID = `${PREFIX}V2AlertPagination` as const;
+
 /* Header */
 
 export const TITLE_TEST_ID = `${PREFIX}AlertTitle` as const;

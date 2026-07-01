@@ -59,6 +59,14 @@ export interface DocumentFlyoutWrapperProps {
    * Callback invoked after alert mutations to refresh parent and current flyouts.
    */
   onAlertUpdated: () => void;
+  /**
+   * Per-source-instance UUID that identifies which pagination slice in
+   * `flyoutPaginationStore` belongs to this flyout session. When provided,
+   * the flyout header renders in-flyout pagination controls (prev/next).
+   * Omitting it (e.g. when opened from the Analyzer graph) disables
+   * pagination for that session.
+   */
+  paginationInstanceId?: string;
 }
 
 /**
@@ -67,7 +75,13 @@ export interface DocumentFlyoutWrapperProps {
  * It is currently used in Analyzer when opening a document from the detail panel.
  */
 export const DocumentFlyoutWrapper = memo(
-  ({ documentId, indexName, renderCellActions, onAlertUpdated }: DocumentFlyoutWrapperProps) => {
+  ({
+    documentId,
+    indexName,
+    renderCellActions,
+    onAlertUpdated,
+    paginationInstanceId,
+  }: DocumentFlyoutWrapperProps) => {
     const { dataView, status } = useDataView(PageScope.default);
 
     const isDataViewLoading = status === 'loading' || status === 'pristine';
@@ -129,6 +143,7 @@ export const DocumentFlyoutWrapper = memo(
           hit={hit}
           renderCellActions={renderCellActions}
           onAlertUpdated={handleAlertUpdated}
+          paginationInstanceId={paginationInstanceId}
         />
       );
     }

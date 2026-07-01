@@ -78,6 +78,14 @@ export interface DocumentDetailsContext {
    * To allow communication between the SessionView in the left panel and its preview panels
    */
   jumpToCursor?: string;
+  /**
+   * Per-source-instance UUID passed in via flyout panel params. When
+   * present, `alert_header_title.tsx` uses it to look up the caller's
+   * pagination slice from `flyoutPaginationStore` and render in-flyout
+   * `EuiPagination` chevrons. `undefined` for flyouts opened outside a
+   * paginated source (rule preview, cases page, etc.).
+   */
+  paginationInstanceId?: string;
 }
 
 /**
@@ -100,6 +108,7 @@ export const DocumentDetailsProvider = memo(
     jumpToEntityId,
     jumpToCursor,
     isPreviewMode,
+    paginationInstanceId,
     children,
   }: DocumentDetailsProviderProps) => {
     const { hasAlertsRead } = useAlertsPrivileges();
@@ -140,6 +149,7 @@ export const DocumentDetailsProvider = memo(
               isPreviewMode: Boolean(isPreviewMode),
               jumpToEntityId,
               jumpToCursor,
+              paginationInstanceId,
             }
           : undefined,
       [
@@ -152,6 +162,7 @@ export const DocumentDetailsProvider = memo(
         isPreviewMode,
         jumpToCursor,
         jumpToEntityId,
+        paginationInstanceId,
         refetchFlyoutData,
         scopeId,
         searchHit,
