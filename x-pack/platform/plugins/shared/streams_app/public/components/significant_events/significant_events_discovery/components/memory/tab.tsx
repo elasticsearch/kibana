@@ -36,6 +36,8 @@ import {
   useScrapeConversations,
   useSynthesizeMemory,
   useDetectGaps,
+  useMemoryWorkflowsEnabled,
+  useToggleMemoryWorkflows,
 } from './use_memory';
 import type { MemoryCategoryNode, MemoryVersionRecord } from './types';
 import { EntryFlyout } from './entry_flyout';
@@ -62,6 +64,10 @@ export function MemoryTab() {
   const consolidateMemory = useConsolidateMemory();
   const synthesizeMemory = useSynthesizeMemory();
   const detectGaps = useDetectGaps();
+  const { data: workflowsEnabledData, isLoading: isWorkflowsEnabledLoading } =
+    useMemoryWorkflowsEnabled();
+  const toggleWorkflows = useToggleMemoryWorkflows();
+  const workflowsEnabled = workflowsEnabledData?.enabled ?? false;
 
   const workflowActions: Array<{
     key: string;
@@ -205,24 +211,61 @@ export function MemoryTab() {
                     anchorPosition="downRight"
                   >
                     <EuiContextMenuPanel
-                      items={workflowActions.map((action) => (
-                        <EuiContextMenuItem
-                          key={action.key}
-                          icon={
-                            action.mutation.isLoading ? <EuiLoadingSpinner size="s" /> : action.icon
-                          }
-                          onClick={() => {
-                            action.mutation.mutate();
-                            setIsActionsPopoverOpen(false);
-                          }}
-                          disabled={
-                            action.mutation.isLoading || (action.requiresManage && !canManage)
-                          }
-                          data-test-subj={action.testSubj}
-                        >
-                          {action.label}
-                        </EuiContextMenuItem>
-                      ))}
+                      items={[
+                        ...(canManage
+                          ? [
+                              <EuiContextMenuItem
+                                key="toggleWorkflows"
+                                icon={
+                                  isWorkflowsEnabledLoading || toggleWorkflows.isLoading ? (
+                                    <EuiLoadingSpinner size="s" />
+                                  ) : workflowsEnabled ? (
+                                    'pause'
+                                  ) : (
+                                    'play'
+                                  )
+                                }
+                                onClick={() => {
+                                  toggleWorkflows.mutate(!workflowsEnabled, {
+                                    onSettled: () => setIsActionsPopoverOpen(false),
+                                  });
+                                }}
+                                disabled={isWorkflowsEnabledLoading || toggleWorkflows.isLoading}
+                                data-test-subj="streamsMemoryToggleWorkflowsButton"
+                              >
+                                {workflowsEnabled
+                                  ? i18n.translate('xpack.streams.memory.disableWorkflowsButton', {
+                                      defaultMessage: 'Disable background workflows',
+                                    })
+                                  : i18n.translate('xpack.streams.memory.enableWorkflowsButton', {
+                                      defaultMessage: 'Enable background workflows',
+                                    })}
+                              </EuiContextMenuItem>,
+                            ]
+                          : []),
+                        ...workflowActions.map((action) => (
+                          <EuiContextMenuItem
+                            key={action.key}
+                            icon={
+                              action.mutation.isLoading ? (
+                                <EuiLoadingSpinner size="s" />
+                              ) : (
+                                action.icon
+                              )
+                            }
+                            onClick={() => {
+                              action.mutation.mutate();
+                              setIsActionsPopoverOpen(false);
+                            }}
+                            disabled={
+                              action.mutation.isLoading || (action.requiresManage && !canManage)
+                            }
+                            data-test-subj={action.testSubj}
+                          >
+                            {action.label}
+                          </EuiContextMenuItem>
+                        )),
+                      ]}
                     />
                   </EuiPopover>
                 </EuiFlexItem>

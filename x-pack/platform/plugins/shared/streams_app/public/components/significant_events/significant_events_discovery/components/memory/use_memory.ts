@@ -26,6 +26,7 @@ const memoryKeys = {
   history: (entryId: string) => ['memory', 'history', entryId] as const,
   version: (entryId: string, version: number) => ['memory', 'version', entryId, version] as const,
   recentChanges: ['memory', 'recent-changes'] as const,
+  workflowsEnabled: ['memory', 'workflows-enabled'] as const,
 };
 
 export const useMemoryTree = () => {
@@ -221,4 +222,51 @@ export const useDetectGaps = () => {
       defaultMessage: 'Detect gaps',
     })
   );
+};
+
+export const useMemoryWorkflowsEnabled = () => {
+  const { core } = useKibana();
+  return useQuery({
+    queryKey: memoryKeys.workflowsEnabled,
+    queryFn: () => core.http.get<{ enabled: boolean }>(`${MEMORY_BASE}/_workflows/enabled`),
+  });
+};
+
+export const useToggleMemoryWorkflows = () => {
+  const { core } = useKibana();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (enabled: boolean) =>
+      core.http.put<{ success: boolean }>(`${MEMORY_BASE}/_workflows/enabled`, {
+        body: JSON.stringify({ enabled }),
+      }),
+    onSuccess: (_, enabled) => {
+      queryClient.invalidateQueries({ queryKey: memoryKeys.workflowsEnabled });
+      core.notifications.toasts.addSuccess(
+        i18n.translate('xpack.streams.memory.workflowsToggleSuccess', {
+          defaultMessage: 'Background workflows {state}.',
+          values: {
+            state: enabled
+              ? i18n.translate('xpack.streams.memory.workflowsEnabled', {
+                  defaultMessage: 'enabled',
+                })
+              : i18n.translate('xpack.streams.memory.workflowsDisabled', {
+                  defaultMessage: 'disabled',
+                }),
+          },
+        })
+      );
+    },
+    onError: (error) => {
+      core.notifications.toasts.addError(
+        error instanceof Error ? error : new Error(String(error)),
+        {
+          title: i18n.translate('xpack.streams.memory.workflowsToggleError', {
+            defaultMessage: 'Failed to update background workflow state.',
+          }),
+        }
+      );
+    },
+  });
 };

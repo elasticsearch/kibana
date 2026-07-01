@@ -13,6 +13,7 @@ import {
   STREAMS_MEMORY_CONSOLIDATION_WORKFLOW_ID,
   STREAMS_MEMORY_CONVERSATION_SCRAPER_WORKFLOW_ID,
   STREAMS_MEMORY_GAP_DETECTION_WORKFLOW_ID,
+  STREAMS_MEMORY_SYNTHESIS_WORKFLOW_ID,
 } from '@kbn/workflows/managed';
 import { DEFAULT_SPACE_ID } from '@kbn/core-spaces-common';
 import { STREAMS_API_PRIVILEGES } from '../../../../common/constants';
@@ -548,6 +549,77 @@ const detectGapsRoute = createWorkflowTriggerRoute(
   'Trigger gap detection for memory'
 );
 
+const MEMORY_WORKFLOW_IDS = [
+  STREAMS_MEMORY_CONVERSATION_SCRAPER_WORKFLOW_ID,
+  STREAMS_MEMORY_CONSOLIDATION_WORKFLOW_ID,
+  STREAMS_MEMORY_SYNTHESIS_WORKFLOW_ID,
+  STREAMS_MEMORY_GAP_DETECTION_WORKFLOW_ID,
+] as const;
+
+const getMemoryWorkflowsEnabledRoute = createServerRoute({
+  endpoint: 'GET /internal/streams/memory/_workflows/enabled',
+  options: { access: 'internal', summary: 'Get enabled state of all memory workflows' },
+  security: { authz: { requiredPrivileges: [STREAMS_API_PRIVILEGES.read] } },
+  params: z.object({}),
+  handler: async ({ request, server, getScopedClients }): Promise<{ enabled: boolean }> => {
+    const { licensing, uiSettingsClient } = await getScopedClients({ request });
+    await assertMemoryEnabled({ server, licensing, uiSettingsClient });
+
+    const wfMgmt = server.workflowsManagement;
+    if (!wfMgmt) {
+      return { enabled: false };
+    }
+
+    const spaceId = server.spaces?.spacesService.getSpaceId(request) ?? DEFAULT_SPACE_ID;
+    const workflows = await Promise.all(
+      MEMORY_WORKFLOW_IDS.map((id) => wfMgmt.management.getWorkflow(id, spaceId))
+    );
+    const enabled = workflows.every((w) => w?.enabled === true);
+    return { enabled };
+  },
+});
+
+const setMemoryWorkflowsEnabledRoute = createServerRoute({
+  endpoint: 'PUT /internal/streams/memory/_workflows/enabled',
+  options: { access: 'internal', summary: 'Enable or disable all memory workflows' },
+  security: { authz: { requiredPrivileges: [STREAMS_API_PRIVILEGES.manage] } },
+  params: z.object({ body: z.object({ enabled: z.boolean() }) }),
+  handler: async ({
+    params,
+    request,
+    server,
+    logger,
+    getScopedClients,
+  }): Promise<{ success: boolean }> => {
+    const { licensing, uiSettingsClient } = await getScopedClients({ request });
+    await assertMemoryEnabled({ server, licensing, uiSettingsClient });
+
+    const wfMgmt = server.workflowsManagement;
+    if (!wfMgmt) {
+      throw serverUnavailable(
+        'Workflows management plugin is not available. Cannot update memory workflows.'
+      );
+    }
+
+    const spaceId = server.spaces?.spacesService.getSpaceId(request) ?? DEFAULT_SPACE_ID;
+    const { enabled } = params.body;
+
+    for (const managedWorkflowId of MEMORY_WORKFLOW_IDS) {
+      const workflow = await wfMgmt.management.getWorkflow(managedWorkflowId, spaceId);
+      if (!workflow) {
+        logger.warn(
+          `Memory workflow "${managedWorkflowId}" not found when toggling enabled state.`
+        );
+        continue;
+      }
+      await wfMgmt.management.updateWorkflow(workflow.id, { enabled }, spaceId, request);
+    }
+
+    logger.info(`Memory workflows ${enabled ? 'enabled' : 'disabled'} for space "${spaceId}".`);
+    return { success: true };
+  },
+});
+
 export const internalMemoryRoutes = {
   ...createEntryRoute,
   ...getEntryRoute,
@@ -564,4 +636,6 @@ export const internalMemoryRoutes = {
   ...consolidateMemoryRoute,
   ...synthesizeMemoryRoute,
   ...detectGapsRoute,
+  ...getMemoryWorkflowsEnabledRoute,
+  ...setMemoryWorkflowsEnabledRoute,
 };
