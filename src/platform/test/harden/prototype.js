@@ -204,3 +204,69 @@ test('Function.prototype', (t) => {
     });
   });
 });
+
+test('Array.prototype', (t) => {
+  t.test('Prevents new properties from being added to the prototype', (t) => {
+    Array.prototype.test = 'whoops'; // eslint-disable-line no-extend-native
+    t.equal([].test, undefined);
+    t.end();
+  });
+});
+
+test('Boolean.prototype', (t) => {
+  t.test('Prevents new properties from being added to the prototype', (t) => {
+    Boolean.prototype.test = 'whoops'; // eslint-disable-line no-extend-native
+    t.equal(true.test, undefined);
+    t.end();
+  });
+});
+
+test('__proto__ setter hardening', (t) => {
+  t.test('Blocks prototype reassignment via bracket-notation __proto__ write', (t) => {
+    // Assigning a controlled key via bracket notation still routes through the __proto__ setter.
+    const scope = {};
+    scope['__proto__'] = { evil: true }; // eslint-disable-line dot-notation, no-proto
+    t.equal(
+      Object.getPrototypeOf(scope),
+      Object.prototype,
+      'scope [[Prototype]] is unchanged after bracket-notation __proto__ write'
+    );
+    t.equal(scope.evil, undefined, 'attacker property is not reachable on scope');
+    t.end();
+  });
+
+  t.test('Blocks prototype reassignment via dot-notation __proto__ setter', (t) => {
+    const obj = {};
+    obj.__proto__ = { polluted: true }; // eslint-disable-line no-proto
+    t.equal(
+      Object.getPrototypeOf(obj),
+      Object.prototype,
+      'obj [[Prototype]] is unchanged after dot-notation __proto__ write'
+    );
+    t.equal(obj.polluted, undefined, 'attacker property is not reachable on obj');
+    t.end();
+  });
+
+  t.test('Preserves __proto__ getter (reads still return the correct prototype)', (t) => {
+    t.equal([].__proto__, Array.prototype, '[].__proto__ === Array.prototype'); // eslint-disable-line no-proto
+    t.equal({}.__proto__, Object.prototype, '{}.__proto__ === Object.prototype'); // eslint-disable-line no-proto
+    t.end();
+  });
+
+  t.test('Object.setPrototypeOf still works (the supported prototype-change API)', (t) => {
+    const proto = { legit: 1 };
+    const o = Object.create(null);
+    Object.setPrototypeOf(o, proto);
+    t.equal(Object.getPrototypeOf(o), proto, 'setPrototypeOf changes the prototype');
+    t.equal(o.legit, 1, 'prototype properties are accessible');
+    t.end();
+  });
+
+  t.test('Object.create still works', (t) => {
+    const proto = { inherited: 42 };
+    const o = Object.create(proto);
+    t.equal(Object.getPrototypeOf(o), proto, 'Object.create sets prototype correctly');
+    t.equal(o.inherited, 42, 'inherited property is accessible');
+    t.end();
+  });
+});

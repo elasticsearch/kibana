@@ -26,15 +26,41 @@ function hardenPrototypesPostPolyfill() {
 
   // ** IMPORTANT **
   // This is used both in the browser and in Node.js.
-  // For Node.js, we _additionally_ seal most prototypes in `src/setup_node_env/harden/prototype.js`.
-  // This results in sealing most prototypes twice on the server, with the exception of `Array.prototype`, which is only sealed here.
+  // For Node.js, we _additionally_ seal prototypes in `src/setup_node_env/harden/prototype.js`.
+  // This results in sealing prototypes twice on the server.
   // The extra seal is a no-op, but it is done to ensure that the same code is run in both environments.
+
+  // Block prototype *reassignment* via the __proto__ setter. Redefine the accessor to keep a
+  // working getter (reads like `[].__proto__` still return the correct prototype) but a no-op
+  // setter that silently ignores writes. Must run before the seal while the property is still
+  // configurable. Object.setPrototypeOf / Object.create are unaffected; object-literal
+  // `{ __proto__: x }` syntax is a spec-level operation that does not use this accessor.
+  //
+  // The guard is required because on the server `src/setup_node_env/harden/prototype.js`
+  // runs first and sets the property to non-configurable. This function then runs a second
+  // time (intentionally, as a no-op for the seals). After the first run the property is
+  // non-configurable, so the second defineProperty call would throw — the guard skips it.
+  const protoDescriptor = Object.getOwnPropertyDescriptor(Object.prototype, '__proto__');
+  if (protoDescriptor && protoDescriptor.configurable) {
+    // eslint-disable-next-line no-extend-native
+    Object.defineProperty(Object.prototype, '__proto__', {
+      get() {
+        return Object.getPrototypeOf(this);
+      },
+      set() {
+        /* no-op: block prototype reassignment via __proto__ */
+      },
+      enumerable: false,
+      configurable: false,
+    });
+  }
 
   Object.seal(Object.prototype);
   Object.seal(Number.prototype);
   Object.seal(String.prototype);
   Object.seal(Function.prototype);
   Object.seal(Array.prototype);
+  Object.seal(Boolean.prototype);
 }
 
 // Use of the `KBN_UNSAFE_DISABLE_PROTOTYPE_HARDENING` environment variable is discouraged, and should only be set to facilitate testing

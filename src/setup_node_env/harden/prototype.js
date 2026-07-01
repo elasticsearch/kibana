@@ -28,11 +28,37 @@ function hardenPrototypes() {
   // This results in sealing prototypes twice on the server.
   // The extra seal is a no-op, but it is done to ensure that the same code is run in both environments.
 
+  // Block prototype *reassignment* via the __proto__ setter. Redefine the accessor to keep a
+  // working getter (reads like `[].__proto__` still return the correct prototype) but a no-op
+  // setter that silently ignores writes. Must run before the seal while the property is still
+  // configurable. Object.setPrototypeOf / Object.create are unaffected; object-literal
+  // `{ __proto__: x }` syntax is a spec-level operation that does not use this accessor.
+  //
+  // The guard is required because on the server this function runs first, and then
+  // `kbn-security-hardening/prototype.ts` runs a second time (intentionally, as a no-op).
+  // After the first run the property is non-configurable, so the second defineProperty call
+  // would throw — the guard skips it safely.
+  var protoDescriptor = Object.getOwnPropertyDescriptor(Object.prototype, '__proto__');
+  if (protoDescriptor && protoDescriptor.configurable) {
+    // eslint-disable-next-line no-extend-native
+    Object.defineProperty(Object.prototype, '__proto__', {
+      get: function () {
+        return Object.getPrototypeOf(this);
+      },
+      set: function () {
+        /* no-op: block prototype reassignment via __proto__ */
+      },
+      enumerable: false,
+      configurable: false,
+    });
+  }
+
   Object.seal(Object.prototype);
   Object.seal(Number.prototype);
   Object.seal(String.prototype);
   Object.seal(Function.prototype);
   Object.seal(Array.prototype);
+  Object.seal(Boolean.prototype);
 }
 
 module.exports = hardenPrototypes;

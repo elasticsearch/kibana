@@ -11,10 +11,11 @@ import React from 'react';
 import { EuiPageTemplate, EuiTitle, EuiText } from '@elastic/eui';
 import { createRoot } from 'react-dom/client';
 import type { AppMountParameters, CoreStart } from '@kbn/core/public';
-import { tryPollutingPrototypes } from '../common/pollute';
+import { tryPollutingPrototypes, tryReassigningPrototypes } from '../common/pollute';
 
 export const renderApp = (_core: CoreStart, { element }: AppMountParameters) => {
-  const result = JSON.stringify(tryPollutingPrototypes(), null, 2);
+  const pollutionResult = JSON.stringify(tryPollutingPrototypes(), null, 2);
+  const reassignResult = JSON.stringify(tryReassigningPrototypes(), null, 2);
 
   const root = createRoot(element);
   root.render(
@@ -37,10 +38,18 @@ export const renderApp = (_core: CoreStart, { element }: AppMountParameters) => 
       </EuiPageTemplate.Section>
       <EuiPageTemplate.Section>
         <EuiTitle>
-          <h2>Result</h2>
+          <h2>Pollution result</h2>
         </EuiTitle>
         <EuiText>
-          <pre data-test-subj="pollution-result">{result}</pre>
+          <pre data-test-subj="pollution-result">{pollutionResult}</pre>
+        </EuiText>
+      </EuiPageTemplate.Section>
+      <EuiPageTemplate.Section>
+        <EuiTitle>
+          <h2>Reassignment result</h2>
+        </EuiTitle>
+        <EuiText>
+          <pre data-test-subj="reassign-result">{reassignResult}</pre>
         </EuiText>
       </EuiPageTemplate.Section>
     </EuiPageTemplate>

@@ -37,5 +37,25 @@ export default function ({ getService, getPageObjects }: PluginFunctionalProvide
       const resultText = await testSubjects.getVisibleText('pollution-result');
       await snapshots.compareAgainstBaseline('hardening/prototype_client', JSON.parse(resultText));
     });
+
+    it('blocks prototype reassignment via __proto__ on the server', async () => {
+      const response = await supertest
+        .get('/internal/hardening/_reassign_prototypes')
+        .set('kbn-xsrf', 'true')
+        .expect(200);
+
+      await snapshots.compareAgainstBaseline('hardening/prototype_reassign_server', response.body);
+    });
+
+    it('blocks prototype reassignment via __proto__ on the client', async () => {
+      await PageObjects.common.navigateToApp('hardeningPlugin');
+      await PageObjects.header.waitUntilLoadingHasFinished();
+
+      const resultText = await testSubjects.getVisibleText('reassign-result');
+      await snapshots.compareAgainstBaseline(
+        'hardening/prototype_reassign_client',
+        JSON.parse(resultText)
+      );
+    });
   });
 }

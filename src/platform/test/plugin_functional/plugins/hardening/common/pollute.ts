@@ -16,6 +16,15 @@ export interface PollutionResult {
   array: { prototype?: Record<any, any>; error?: string };
 }
 
+export interface ReassignmentResult {
+  // Plain object via dot-notation `obj.__proto__ = attacker`
+  object: { prototypeUnchanged: boolean; attackerPropUnreachable: boolean };
+  // Plain object via bracket-notation `obj['__proto__'] = attacker`
+  bracketNotation: { prototypeUnchanged: boolean; attackerPropUnreachable: boolean };
+  // Array object via dot-notation
+  array: { prototypeUnchanged: boolean; attackerPropUnreachable: boolean };
+}
+
 export function tryPollutingPrototypes(): PollutionResult {
   const result: PollutionResult = {
     object: {},
@@ -82,4 +91,42 @@ export function tryPollutingPrototypes(): PollutionResult {
   }
 
   return result;
+}
+
+export function tryReassigningPrototypes(): ReassignmentResult {
+  const attacker = { evil: true };
+
+  // Attempt via dot-notation: `obj.__proto__ = attacker`
+  const obj = {} as any;
+  const objOriginalProto = Object.getPrototypeOf(obj);
+  obj.__proto__ = attacker;
+  const objectResult: ReassignmentResult['object'] = {
+    prototypeUnchanged: Object.getPrototypeOf(obj) === objOriginalProto,
+    attackerPropUnreachable: obj.evil === undefined,
+  };
+
+  // Attempt via bracket-notation: `obj['__proto__'] = attacker`
+  // Assigning a controlled key via bracket notation still routes through the __proto__ setter.
+  const bracket = {} as any;
+  const bracketOriginalProto = Object.getPrototypeOf(bracket);
+  bracket['__proto__'] = attacker; // eslint-disable-line dot-notation
+  const bracketResult: ReassignmentResult['bracketNotation'] = {
+    prototypeUnchanged: Object.getPrototypeOf(bracket) === bracketOriginalProto,
+    attackerPropUnreachable: bracket.evil === undefined,
+  };
+
+  // Attempt on an array
+  const arr = [] as any;
+  const arrOriginalProto = Object.getPrototypeOf(arr);
+  arr.__proto__ = attacker;
+  const arrayResult: ReassignmentResult['array'] = {
+    prototypeUnchanged: Object.getPrototypeOf(arr) === arrOriginalProto,
+    attackerPropUnreachable: arr.evil === undefined,
+  };
+
+  return {
+    object: objectResult,
+    bracketNotation: bracketResult,
+    array: arrayResult,
+  };
 }

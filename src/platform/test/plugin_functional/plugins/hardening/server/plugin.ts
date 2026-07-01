@@ -8,7 +8,7 @@
  */
 
 import type { Plugin, CoreSetup } from '@kbn/core/server';
-import { tryPollutingPrototypes } from '../common/pollute';
+import { tryPollutingPrototypes, tryReassigningPrototypes } from '../common/pollute';
 import { tryCodeGeneration } from '../common/code_generation';
 
 export class HardeningPlugin implements Plugin {
@@ -23,6 +23,18 @@ export class HardeningPlugin implements Plugin {
       },
       async (context, request, response) => {
         const result = tryPollutingPrototypes();
+        return response.ok({ body: result });
+      }
+    );
+
+    router.get(
+      {
+        path: '/internal/hardening/_reassign_prototypes',
+        validate: false,
+        security: { authz: { enabled: false, reason: '' } },
+      },
+      async (context, request, response) => {
+        const result = tryReassigningPrototypes();
         return response.ok({ body: result });
       }
     );
