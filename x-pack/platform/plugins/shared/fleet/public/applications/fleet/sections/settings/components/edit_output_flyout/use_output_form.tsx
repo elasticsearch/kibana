@@ -284,12 +284,18 @@ export function useOutputForm(onSucess: () => void, output?: Output, defaultOutp
   // ES output's host URL is restricted to default in serverless
   const isServerless = cloud?.isServerlessEnabled;
   const isEditingRemoteEsOutput = output?.type === outputType.RemoteElasticsearch;
+
   // When editing a remote ES output, the saved hosts belong to the remote ES input,
   // not the regular ES input. Use the default output hosts instead.
-  const elasticsearchUrlDefaultValue =
-    isEditingRemoteEsOutput || (isServerless && !output?.hosts)
-      ? defaultOutput?.hosts || []
-      : output?.hosts || [];
+  // For an existing ES output (incl. the PrivateLink output) always show that output's own
+  // hosts; only fall back to the default when creating a new output in serverless.
+  const elasticsearchUrlDefaultValue = isEditingRemoteEsOutput
+    ? defaultOutput?.hosts || []
+    : output?.hosts?.length
+    ? output.hosts
+    : isServerless
+    ? defaultOutput?.hosts || []
+    : [];
   const elasticsearchUrlDisabled = isServerless || isDisabled('hosts');
   const elasticsearchUrlInput = useComboInput(
     'esHostsComboxBox',

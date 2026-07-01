@@ -124,6 +124,7 @@ export const PreconfiguredFleetServerHostsSchema = schema.arrayOf(
     name: schema.string(),
     is_default: schema.boolean({ defaultValue: false }),
     is_internal: schema.maybe(schema.boolean()),
+    allow_edit: schema.maybe(schema.arrayOf(schema.string(), { maxSize: 100 })),
     host_urls: schema.arrayOf(schema.string(), { minSize: 1, maxSize: 10 }),
     proxy_id: schema.nullable(schema.string()),
     secrets: schema.maybe(

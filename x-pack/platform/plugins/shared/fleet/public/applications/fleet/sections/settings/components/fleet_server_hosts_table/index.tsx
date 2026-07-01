@@ -9,6 +9,7 @@ import React, { useMemo } from 'react';
 import styled from 'styled-components';
 
 import {
+  EuiBadge,
   EuiBasicTable,
   EuiFlexGroup,
   EuiFlexItem,
@@ -19,9 +20,11 @@ import {
 } from '@elastic/eui';
 import type { EuiBasicTableColumn } from '@elastic/eui';
 import { i18n } from '@kbn/i18n';
+import { FormattedMessage } from '@kbn/i18n-react';
 
 import type { FleetServerHost } from '../../../../types';
 import { useAuthz, useLink } from '../../../../hooks';
+import { SERVERLESS_PRIVATE_FLEET_SERVER_HOST_ID } from '../../../../../../../common/constants';
 
 export interface FleetServerHostsTableProps {
   fleetServerHosts: FleetServerHost[];
@@ -48,7 +51,7 @@ export const FleetServerHostsTable: React.FunctionComponent<FleetServerHostsTabl
     return [
       {
         render: (fleetServerHost: FleetServerHost) => (
-          <EuiFlexGroup alignItems="center" gutterSize="xs">
+          <EuiFlexGroup alignItems="center" gutterSize="xs" wrap={false}>
             <NameFlexItemWithMaxWidth grow={false}>
               <p title={fleetServerHost.name} className={`eui-textTruncate`}>
                 {fleetServerHost.name}
@@ -70,9 +73,28 @@ export const FleetServerHostsTable: React.FunctionComponent<FleetServerHostsTabl
                 />
               </EuiFlexItem>
             )}
+            {fleetServerHost.id === SERVERLESS_PRIVATE_FLEET_SERVER_HOST_ID && (
+              <EuiFlexItem grow={false}>
+                <EuiToolTip
+                  content={
+                    <FormattedMessage
+                      id="xpack.fleet.settings.fleetServerHostsTable.privateLinkBadgeTooltip"
+                      defaultMessage="This Fleet Server host uses AWS PrivateLink for private network connectivity."
+                    />
+                  }
+                >
+                  <EuiBadge color="subdued">
+                    <FormattedMessage
+                      id="xpack.fleet.settings.fleetServerHostsTable.privateLinkBadge"
+                      defaultMessage="PrivateLink"
+                    />
+                  </EuiBadge>
+                </EuiToolTip>
+              </EuiFlexItem>
+            )}
           </EuiFlexGroup>
         ),
-        width: '288px',
+        width: '380px',
         name: i18n.translate('xpack.fleet.settings.fleetServerHostsTable.nameColumnTitle', {
           defaultMessage: 'Name',
         }),

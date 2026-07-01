@@ -5,7 +5,10 @@
  * 2.0.
  */
 
-import { SERVERLESS_DEFAULT_FLEET_SERVER_HOST_ID } from '../../constants';
+import {
+  SERVERLESS_DEFAULT_FLEET_SERVER_HOST_ID,
+  SERVERLESS_PRIVATE_FLEET_SERVER_HOST_ID,
+} from '../../constants';
 import { agentPolicyService, appContextService } from '../../services';
 import { fleetServerHostService } from '../../services/fleet_server_host';
 import { withDefaultErrorHandler } from '../../services/security/fleet_router';
@@ -211,6 +214,100 @@ describe('fleet server hosts handler', () => {
     );
 
     expect(res).toEqual({ body: { item: { id: 'host1' } } });
+  });
+
+  describe('private endpoint (PrivateLink) validation', () => {
+    const PRIVATE_URL = 'https://abc.fleet.private.us-east-1.aws.elastic.cloud';
+
+    it('should return ok on put in serverless when host url matches the private endpoint SO', async () => {
+      jest
+        .spyOn(appContextService, 'getCloud')
+        .mockReturnValue({ isServerlessEnabled: true } as any);
+      jest.spyOn(fleetServerHostService, 'get').mockImplementation((id: string) => {
+        if (id === SERVERLESS_PRIVATE_FLEET_SERVER_HOST_ID) {
+          return Promise.resolve({
+            id: SERVERLESS_PRIVATE_FLEET_SERVER_HOST_ID,
+            host_urls: [PRIVATE_URL],
+          } as any);
+        }
+        return Promise.resolve({
+          id: SERVERLESS_DEFAULT_FLEET_SERVER_HOST_ID,
+          host_urls: ['http://elasticsearch:9200'],
+        } as any);
+      });
+
+      const res = await putFleetServerHostHandlerWithErrorHandler(
+        mockContext,
+        { body: { host_urls: [PRIVATE_URL] }, params: { outputId: 'host1' } } as any,
+        mockResponse as any
+      );
+
+      expect(res).toEqual({ body: { item: { id: 'host1' } } });
+    });
+
+    it('should return 403 on put in serverless when host url is arbitrary (not default or private)', async () => {
+      jest
+        .spyOn(appContextService, 'getCloud')
+        .mockReturnValue({ isServerlessEnabled: true } as any);
+      jest.spyOn(fleetServerHostService, 'get').mockImplementation((id: string) => {
+        if (id === SERVERLESS_PRIVATE_FLEET_SERVER_HOST_ID) {
+          return Promise.resolve({
+            id: SERVERLESS_PRIVATE_FLEET_SERVER_HOST_ID,
+            host_urls: [PRIVATE_URL],
+          } as any);
+        }
+        return Promise.resolve({
+          id: SERVERLESS_DEFAULT_FLEET_SERVER_HOST_ID,
+          host_urls: ['http://elasticsearch:9200'],
+        } as any);
+      });
+
+      const res = await putFleetServerHostHandlerWithErrorHandler(
+        mockContext,
+        {
+          body: { host_urls: ['https://arbitrary.host.com'] },
+          params: { outputId: 'host1' },
+        } as any,
+        mockResponse as any
+      );
+
+      expect(res).toEqual({
+        body: {
+          message:
+            'Fleet server host must have default URL in serverless: http://elasticsearch:9200',
+        },
+        statusCode: 403,
+      });
+    });
+
+    it('should return 403 on put in serverless when private SO is absent and url is not the default', async () => {
+      jest
+        .spyOn(appContextService, 'getCloud')
+        .mockReturnValue({ isServerlessEnabled: true } as any);
+      jest.spyOn(fleetServerHostService, 'get').mockImplementation((id: string) => {
+        if (id === SERVERLESS_PRIVATE_FLEET_SERVER_HOST_ID) {
+          return Promise.reject(new Error('Not found'));
+        }
+        return Promise.resolve({
+          id: SERVERLESS_DEFAULT_FLEET_SERVER_HOST_ID,
+          host_urls: ['http://elasticsearch:9200'],
+        } as any);
+      });
+
+      const res = await putFleetServerHostHandlerWithErrorHandler(
+        mockContext,
+        { body: { host_urls: [PRIVATE_URL] }, params: { outputId: 'host1' } } as any,
+        mockResponse as any
+      );
+
+      expect(res).toEqual({
+        body: {
+          message:
+            'Fleet server host must have default URL in serverless: http://elasticsearch:9200',
+        },
+        statusCode: 403,
+      });
+    });
   });
 
   it('should call bumpAllAgentPoliciesForFleetServerHosts with isDefault flag on put', async () => {

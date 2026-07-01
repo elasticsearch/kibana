@@ -133,6 +133,7 @@ export interface FleetServerHostSOAttributes {
   is_default: boolean;
   is_preconfigured: boolean;
   is_internal?: boolean;
+  allow_edit?: string[];
   proxy_id?: string | null;
   secrets?: {
     ssl?: {

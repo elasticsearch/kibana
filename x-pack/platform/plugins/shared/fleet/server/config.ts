@@ -57,6 +57,8 @@ export const config: PluginConfigDescriptor = {
       activeAgentsSoftLimit: true,
       onlyAllowAgentUpgradeToKnownVersions: true,
       excludeDataStreamTypes: true,
+      privateFleetServerHost: true,
+      privateElasticsearchHost: true,
     },
     integrationsHomeOverride: true,
     prereleaseEnabledByDefault: true,
@@ -331,6 +333,9 @@ export const config: PluginConfigDescriptor = {
           })
         ),
         retrySetupOnBoot: schema.boolean({ defaultValue: true }),
+        // Injected by project-controller/kibana-controller when PrivateLink is enabled for this project.
+        privateFleetServerHost: schema.maybe(schema.uri({ scheme: ['https'] })),
+        privateElasticsearchHost: schema.maybe(schema.uri({ scheme: ['https'] })),
         registry: schema.object(
           {
             kibanaVersionCheckEnabled: schema.boolean({ defaultValue: true }),

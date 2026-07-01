@@ -23,3 +23,7 @@ export const SERVERLESS_DEFAULT_FLEET_SERVER_HOST_ID = 'default-fleet-server';
 //  - Both are uneditable by users due to having `is_preconfigured: true` set
 export const ECH_AGENTLESS_FLEET_SERVER_HOST_ID = 'internal-agentless-fleet-server';
 export const SERVERLESS_AGENTLESS_FLEET_SERVER_HOST_ID = 'default-fleet-server-internal';
+
+// Fleet Server host ID for the private endpoint (PrivateLink) in serverless.
+// Injected by project-controller/kibana-controller when PrivateLink is enabled.
+export const SERVERLESS_PRIVATE_FLEET_SERVER_HOST_ID = 'private-fleet-server';

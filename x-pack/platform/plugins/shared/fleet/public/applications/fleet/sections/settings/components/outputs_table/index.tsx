@@ -8,6 +8,7 @@
 import React, { useMemo } from 'react';
 import styled from 'styled-components';
 import {
+  EuiBadge,
   EuiBasicTable,
   EuiButtonIcon,
   EuiFlexGroup,
@@ -17,9 +18,11 @@ import {
 } from '@elastic/eui';
 import type { EuiBasicTableColumn } from '@elastic/eui';
 import { i18n } from '@kbn/i18n';
+import { FormattedMessage } from '@kbn/i18n-react';
 
 import { licenseService, useAuthz, useLink, useStartServices } from '../../../../hooks';
 import type { Output } from '../../../../types';
+import { SERVERLESS_PRIVATE_OUTPUT_ID } from '../../../../../../../common/constants';
 
 import { OutputHealth } from '../edit_output_flyout/output_health';
 
@@ -72,7 +75,7 @@ export const OutputsTable: React.FunctionComponent<OutputsTableProps> = ({
     return [
       {
         render: (output: Output) => (
-          <EuiFlexGroup alignItems="center" gutterSize="xs">
+          <EuiFlexGroup alignItems="center" gutterSize="xs" wrap={false}>
             <NameFlexItemWithMaxWidth grow={false}>
               <p title={output.name} className={`eui-textTruncate`}>
                 {output.name}
@@ -90,9 +93,28 @@ export const OutputsTable: React.FunctionComponent<OutputsTableProps> = ({
                 />
               </EuiFlexItem>
             )}
+            {output.id === SERVERLESS_PRIVATE_OUTPUT_ID && (
+              <EuiFlexItem grow={false}>
+                <EuiToolTip
+                  content={
+                    <FormattedMessage
+                      id="xpack.fleet.settings.outputsTable.privateLinkBadgeTooltip"
+                      defaultMessage="This output uses AWS PrivateLink for private network connectivity."
+                    />
+                  }
+                >
+                  <EuiBadge color="subdued">
+                    <FormattedMessage
+                      id="xpack.fleet.settings.outputsTable.privateLinkBadge"
+                      defaultMessage="PrivateLink"
+                    />
+                  </EuiBadge>
+                </EuiToolTip>
+              </EuiFlexItem>
+            )}
           </EuiFlexGroup>
         ),
-        width: '288px',
+        width: '380px',
         name: i18n.translate('xpack.fleet.settings.outputsTable.nameColumnTitle', {
           defaultMessage: 'Name',
         }),

@@ -22,6 +22,7 @@ const EnrollmentSettingsFleetServerHostSchema = schema.object({
   is_default: schema.boolean({ defaultValue: false }),
   is_preconfigured: schema.boolean({ defaultValue: false }),
   is_internal: schema.maybe(schema.boolean()),
+  allow_edit: schema.maybe(schema.arrayOf(schema.string(), { maxSize: 100 })),
   proxy_id: schema.maybe(schema.oneOf([schema.literal(null), schema.string()])),
   ssl: schema.maybe(
     schema.oneOf([

@@ -21,6 +21,7 @@ export const FleetServerHostBaseSchema = schema.object({
   host_urls: schema.maybe(schema.arrayOf(schema.string(), { minSize: 1, maxSize: 10 })),
   is_default: schema.maybe(schema.boolean({ defaultValue: false })),
   is_internal: schema.maybe(schema.boolean()),
+  allow_edit: schema.maybe(schema.arrayOf(schema.string(), { maxSize: 100 })),
   proxy_id: schema.nullable(schema.string()),
   secrets: schema.maybe(
     schema.object({

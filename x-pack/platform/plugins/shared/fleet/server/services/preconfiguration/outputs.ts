@@ -26,7 +26,13 @@ import type {
 import { normalizeHostsForAgents } from '../../../common/services';
 import { isOtelExporterOutput } from '../../../common/services/output_helpers';
 import type { FleetConfigType } from '../../config';
-import { DEFAULT_OUTPUT_ID, DEFAULT_OUTPUT, ECH_AGENTLESS_OUTPUT_ID } from '../../constants';
+import {
+  DEFAULT_OUTPUT_ID,
+  DEFAULT_OUTPUT,
+  ECH_AGENTLESS_OUTPUT_ID,
+  SERVERLESS_DEFAULT_OUTPUT_ID,
+  SERVERLESS_PRIVATE_OUTPUT_ID,
+} from '../../constants';
 import { outputService } from '../output';
 import { agentPolicyService } from '../agent_policy';
 import { appContextService } from '../app_context';
@@ -69,9 +75,43 @@ export function getPreconfiguredOutputFromConfig(config?: FleetConfigType) {
           } as PreconfiguredOutput,
         ]
       : []),
+    // Include private ES output when PrivateLink is enabled (serverless only)
+    ...(config?.internal?.privateElasticsearchHost
+      ? [
+          {
+            id: SERVERLESS_PRIVATE_OUTPUT_ID,
+            name: 'Private Elasticsearch Output',
+            type: 'elasticsearch' as const,
+            hosts: [config.internal.privateElasticsearchHost],
+            is_default: false,
+            is_default_monitoring: false,
+            is_preconfigured: true,
+          } as PreconfiguredOutput,
+        ]
+      : []),
   ]);
 
-  return outputs;
+  // Ensure the serverless PrivateLink default and private outputs both allow their
+  // is_default / is_default_monitoring fields to be changed at runtime (via the PrivateLink
+  // toggle in the Fleet Settings UI). Without this, _validateFieldsAreEditable rejects any
+  // PUT that touches those fields on a preconfigured output.
+  //
+  // We set allow_edit here (rather than requiring it in every config that defines these
+  // outputs) so that the behaviour is consistent regardless of how the output was defined
+  // (hardcoded above or passed in via config.outputs in the serverless YAML).
+  const PRIVATELINK_ALLOW_EDIT = ['is_default', 'is_default_monitoring'];
+  const PRIVATELINK_OUTPUT_IDS = new Set([SERVERLESS_DEFAULT_OUTPUT_ID, SERVERLESS_PRIVATE_OUTPUT_ID]);
+
+  const result = outputs.map((output) => {
+    if (!PRIVATELINK_OUTPUT_IDS.has(output.id)) {
+      return output;
+    }
+    const existingAllowEdit = output.allow_edit ?? [];
+    const merged = Array.from(new Set([...existingAllowEdit, ...PRIVATELINK_ALLOW_EDIT]));
+    return { ...output, allow_edit: merged };
+  });
+
+  return result;
 }
 
 export async function ensurePreconfiguredOutputs(
@@ -237,7 +277,7 @@ export async function cleanPreconfiguredOutputs(
       continue;
     }
 
-    if (output.is_default) {
+    if (output.is_default || output.is_default_monitoring) {
       logger.info(`Updating default preconfigured output ${output.id} is no longer preconfigured`);
       await outputService.update(
         soClient,
@@ -248,17 +288,25 @@ export async function cleanPreconfiguredOutputs(
           fromPreconfiguration: true,
         }
       );
-    } else if (output.is_default_monitoring) {
-      logger.info(`Updating default preconfigured output ${output.id} is no longer preconfigured`);
-      await outputService.update(
-        soClient,
-        esClient,
-        output.id,
-        { is_preconfigured: false },
-        {
-          fromPreconfiguration: true,
-        }
-      );
+
+      // When PrivateLink is disabled and the private output was the active default,
+      // restore the public serverless default output so agents are not left pointing
+      // at an unreachable PrivateLink URL.
+      if (output.id === SERVERLESS_PRIVATE_OUTPUT_ID) {
+        logger.info(
+          `PrivateLink output ${output.id} was the default; restoring ${SERVERLESS_DEFAULT_OUTPUT_ID} as default`
+        );
+        await outputService.update(
+          soClient,
+          esClient,
+          SERVERLESS_DEFAULT_OUTPUT_ID,
+          {
+            is_default: output.is_default ? true : undefined,
+            is_default_monitoring: output.is_default_monitoring ? true : undefined,
+          },
+          { fromPreconfiguration: true }
+        );
+      }
     } else {
       logger.info(`Deleting preconfigured output ${output.id}`);
       await outputService.delete(output.id, { fromPreconfiguration: true });

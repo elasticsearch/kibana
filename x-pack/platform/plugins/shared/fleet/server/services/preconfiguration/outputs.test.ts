@@ -13,6 +13,8 @@ import type { Output } from '../../types';
 import * as agentPolicy from '../agent_policy';
 import { outputService } from '../output';
 
+import { SERVERLESS_DEFAULT_OUTPUT_ID, SERVERLESS_PRIVATE_OUTPUT_ID } from '../../constants';
+
 import {
   createOrUpdatePreconfiguredOutputs,
   cleanPreconfiguredOutputs,
@@ -1421,6 +1423,125 @@ describe('Outputs preconfiguration', () => {
           { fromPreconfiguration: true }
         );
       });
+
+      it('should restore public default output when PrivateLink output was default and is removed from config', async () => {
+        const soClient = savedObjectsClientMock.create();
+        const esClient = elasticsearchServiceMock.createClusterClient().asInternalUser;
+
+        mockedOutputService.list.mockResolvedValue({
+          items: [
+            {
+              id: SERVERLESS_PRIVATE_OUTPUT_ID,
+              is_preconfigured: true,
+              is_default: true,
+              is_default_monitoring: true,
+            } as Output,
+          ],
+          page: 1,
+          perPage: 10000,
+          total: 1,
+        });
+
+        await cleanPreconfiguredOutputs(soClient, esClient, []);
+
+        // Should un-preconfigure the PrivateLink output
+        expect(mockedOutputService.update).toBeCalledWith(
+          expect.anything(),
+          expect.anything(),
+          SERVERLESS_PRIVATE_OUTPUT_ID,
+          expect.objectContaining({ is_preconfigured: false }),
+          { fromPreconfiguration: true }
+        );
+
+        // Should restore the public default
+        expect(mockedOutputService.update).toBeCalledWith(
+          expect.anything(),
+          expect.anything(),
+          SERVERLESS_DEFAULT_OUTPUT_ID,
+          { is_default: true, is_default_monitoring: true },
+          { fromPreconfiguration: true }
+        );
+      });
     });
+  });
+});
+
+describe('getPreconfiguredOutputFromConfig — PrivateLink allow_edit injection', () => {
+  const baseConfig = {
+    agents: { elasticsearch: { hosts: undefined } },
+  } as any;
+
+  it('should inject allow_edit on the serverless default output', () => {
+    const config = {
+      ...baseConfig,
+      outputs: [
+        {
+          id: SERVERLESS_DEFAULT_OUTPUT_ID,
+          name: 'Default',
+          type: 'elasticsearch' as const,
+          is_default: true,
+          is_default_monitoring: true,
+          hosts: ['https://es.example.com'],
+        },
+      ],
+    };
+
+    const res = getPreconfiguredOutputFromConfig(config);
+    const defaultOutput = res.find((o) => o.id === SERVERLESS_DEFAULT_OUTPUT_ID);
+
+    expect(defaultOutput?.allow_edit).toContain('is_default');
+    expect(defaultOutput?.allow_edit).toContain('is_default_monitoring');
+  });
+
+  it('should inject allow_edit on the PrivateLink output', () => {
+    const config = {
+      ...baseConfig,
+      outputs: [
+        {
+          id: SERVERLESS_DEFAULT_OUTPUT_ID,
+          name: 'Default',
+          type: 'elasticsearch' as const,
+          is_default: true,
+          is_default_monitoring: true,
+          hosts: ['https://es.example.com'],
+        },
+        {
+          id: SERVERLESS_PRIVATE_OUTPUT_ID,
+          name: 'Private ES Output',
+          type: 'elasticsearch' as const,
+          is_default: false,
+          is_default_monitoring: false,
+          is_internal: true,
+          hosts: ['https://private-es.example.com'],
+        },
+      ],
+    };
+
+    const res = getPreconfiguredOutputFromConfig(config);
+    const privateOutput = res.find((o) => o.id === SERVERLESS_PRIVATE_OUTPUT_ID);
+
+    expect(privateOutput?.allow_edit).toContain('is_default');
+    expect(privateOutput?.allow_edit).toContain('is_default_monitoring');
+  });
+
+  it('should not inject allow_edit on non-PrivateLink outputs', () => {
+    const config = {
+      ...baseConfig,
+      outputs: [
+        {
+          id: 'custom-output',
+          name: 'Custom',
+          type: 'elasticsearch' as const,
+          is_default: true,
+          is_default_monitoring: true,
+          hosts: ['https://es.example.com'],
+        },
+      ],
+    };
+
+    const res = getPreconfiguredOutputFromConfig(config);
+    const output = res.find((o) => o.id === 'custom-output');
+
+    expect(output?.allow_edit).toBeUndefined();
   });
 });

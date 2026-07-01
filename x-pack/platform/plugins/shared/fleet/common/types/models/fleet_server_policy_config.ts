@@ -21,6 +21,8 @@ export interface NewFleetServerHost {
   is_default: boolean;
   is_preconfigured: boolean;
   is_internal?: boolean;
+  /** Fields that are allowed to be changed at runtime, bypassing the preconfiguration guard. */
+  allow_edit?: string[];
   proxy_id?: string | null;
   ssl?: {
     certificate_authorities?: string[];

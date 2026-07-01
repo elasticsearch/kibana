@@ -15,8 +15,13 @@ import {
   useLicense,
   useGetDownloadSources,
   useGetFleetServerHosts,
+  useStartServices,
 } from '../../../../hooks';
-import { LICENCE_FOR_PER_POLICY_OUTPUT } from '../../../../../../../common/constants';
+import {
+  LICENCE_FOR_PER_POLICY_OUTPUT,
+  SERVERLESS_PRIVATE_FLEET_SERVER_HOST_ID,
+  SERVERLESS_PRIVATE_OUTPUT_ID,
+} from '../../../../../../../common/constants';
 import {
   getAllowedOutputTypesForAgentPolicy,
   policyHasFleetServer,
@@ -64,6 +69,8 @@ export function useOutputOptions(agentPolicy: Partial<NewAgentPolicy | AgentPoli
   const outputsRequest = useGetOutputs();
   const licenseService = useLicense();
   const { isAgentlessAgentPolicy } = useAgentless();
+  const { cloud } = useStartServices();
+  const isServerless = cloud?.isServerlessEnabled ?? false;
 
   // Allow changing output when agent policy has fleet server or synthetics integrations
   // regardless of license level
@@ -106,7 +113,13 @@ export function useOutputOptions(agentPolicy: Partial<NewAgentPolicy | AgentPoli
     return [
       getDefaultOutput(defaultOutputName, defaultOutputDisabled, defaultOutputDisabledMessage),
       ...outputsRequest.data.items
-        .filter((item) => !item.is_internal || isAgentless)
+        .filter(
+          (item) =>
+            !(isAgentless && item.id === SERVERLESS_PRIVATE_OUTPUT_ID) &&
+            (!item.is_internal ||
+              isAgentless ||
+              (isServerless && item.id === SERVERLESS_PRIVATE_OUTPUT_ID))
+        )
         .map((item) => {
           const isOutputTypeUnsupported = !allowedOutputTypes.includes(item.type);
 
@@ -128,7 +141,7 @@ export function useOutputOptions(agentPolicy: Partial<NewAgentPolicy | AgentPoli
           };
         }),
     ];
-  }, [outputsRequest, isPolicyPerOutputAllowed, allowedOutputTypes, isAgentless]);
+  }, [outputsRequest, isPolicyPerOutputAllowed, allowedOutputTypes, isAgentless, isServerless]);
 
   const monitoringOutputOptions = useMemo(() => {
     if (outputsRequest.isLoading || !outputsRequest.data) {
@@ -141,7 +154,13 @@ export function useOutputOptions(agentPolicy: Partial<NewAgentPolicy | AgentPoli
     return [
       getDefaultOutput(defaultOutputName),
       ...outputsRequest.data.items
-        .filter((item) => !item.is_internal || isAgentless)
+        .filter(
+          (item) =>
+            !(isAgentless && item.id === SERVERLESS_PRIVATE_OUTPUT_ID) &&
+            (!item.is_internal ||
+              isAgentless ||
+              (isServerless && item.id === SERVERLESS_PRIVATE_OUTPUT_ID))
+        )
         .map((item) => {
           return {
             value: item.id,
@@ -150,7 +169,7 @@ export function useOutputOptions(agentPolicy: Partial<NewAgentPolicy | AgentPoli
           };
         }),
     ];
-  }, [outputsRequest, isPolicyPerOutputAllowed, isAgentless]);
+  }, [outputsRequest, isPolicyPerOutputAllowed, isAgentless, isServerless]);
 
   const dataOutputValueOfSelected = agentPolicy.data_output_id || DEFAULT_SELECT_VALUE;
 
@@ -223,6 +242,8 @@ export function useFleetServerHostsOptions(agentPolicy: Partial<NewAgentPolicy |
   const fleetServerHostsRequest = useGetFleetServerHosts();
   const { isAgentlessAgentPolicy } = useAgentless();
   const isAgentless = isAgentlessAgentPolicy(agentPolicy as AgentPolicy);
+  const { cloud } = useStartServices();
+  const isServerless = cloud?.isServerlessEnabled ?? false;
 
   const fleetServerHostsOptions = useMemo(() => {
     if (fleetServerHostsRequest.isLoading || !fleetServerHostsRequest.data) {
@@ -237,7 +258,13 @@ export function useFleetServerHostsOptions(agentPolicy: Partial<NewAgentPolicy |
     return [
       getDefaultFleetServerHosts(defaultFleetServerHostsName),
       ...fleetServerHostsRequest.data.items
-        .filter((item) => !item.is_internal || isAgentless)
+        .filter(
+          (item) =>
+            !(isAgentless && item.id === SERVERLESS_PRIVATE_FLEET_SERVER_HOST_ID) &&
+            (!item.is_internal ||
+              isAgentless ||
+              (isServerless && item.id === SERVERLESS_PRIVATE_FLEET_SERVER_HOST_ID))
+        )
         .map((item) => {
           return {
             value: item.id,
@@ -245,7 +272,7 @@ export function useFleetServerHostsOptions(agentPolicy: Partial<NewAgentPolicy |
           };
         }),
     ];
-  }, [fleetServerHostsRequest, isAgentless]);
+  }, [fleetServerHostsRequest, isAgentless, isServerless]);
 
   return useMemo(
     () => ({
