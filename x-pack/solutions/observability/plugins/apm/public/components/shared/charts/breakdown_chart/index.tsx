@@ -136,9 +136,7 @@ export function BreakdownChart({
             dataValues={annotations.map((annotation) => ({
               dataValue: annotation['@timestamp'],
               header: asAbsoluteDateTime(annotation['@timestamp']),
-              details: `${i18n.translate('xpack.apm.chart.annotation.version', {
-                defaultMessage: 'Version',
-              })} ${annotation.text}`,
+              details: annotation.text,
             }))}
             style={{
               line: { strokeWidth: 1, stroke: annotationColor, opacity: 1 },

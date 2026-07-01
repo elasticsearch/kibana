@@ -9,7 +9,6 @@ import type { LegendItemListener, YDomainRange } from '@elastic/charts';
 import { AnnotationDomainType, LineAnnotation, Position } from '@elastic/charts';
 import React from 'react';
 import { EuiIcon, useEuiTheme } from '@elastic/eui';
-import { i18n } from '@kbn/i18n';
 import { asAbsoluteDateTime } from '../../../../common/utils/formatters';
 import { useAnnotationsContext } from '../../../context/annotations/use_annotations_context';
 import { useAnyOfApmParams } from '../../../hooks/use_apm_params';
@@ -75,9 +74,7 @@ export function TimeseriesChartWithContext({
       dataValues={annotations.map((annotation) => ({
         dataValue: annotation['@timestamp'],
         header: asAbsoluteDateTime(annotation['@timestamp']),
-        details: `${i18n.translate('xpack.apm.chart.annotation.version', {
-          defaultMessage: 'Version',
-        })} ${annotation.text}`,
+        details: annotation.text,
       }))}
       style={{
         line: { strokeWidth: 1, stroke: annotationColor, opacity: 1 },
