@@ -39,6 +39,7 @@ import { getTransforms as getMonitorsTransforms } from '../common/embeddables/mo
 import { SYNTHETICS_MONITORS_EMBEDDABLE } from '../common/embeddables/monitors_overview/constants';
 import { getStatsOverviewEmbeddableSchema, syntheticsMonitorsEmbeddableSchema } from './schemas';
 import { registerDataProviders } from './agent_builder/register_data_provider';
+import { bindAgentBuilder } from './agent_builder/bind_agent_builder';
 
 export class Plugin implements PluginType {
   private savedObjectsClient?: SavedObjectsClientContract;
@@ -129,6 +130,8 @@ export class Plugin implements PluginType {
     });
 
     registerDataProviders({ core, plugins });
+
+    bindAgentBuilder({ logger: this.logger, plugins });
 
     return {};
   }

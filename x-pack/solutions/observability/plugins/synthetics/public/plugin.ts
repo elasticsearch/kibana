@@ -249,6 +249,27 @@ export class SyntheticsPlugin
         observabilityRuleTypeRegistry.register(alertInitializer);
       }
     });
+
+    const { agentBuilder } = pluginsStart;
+    if (agentBuilder) {
+      // Lazy-load the React/EUI attachment bundle so the bytes only land in
+      // sessions where Agent Builder is enabled.
+      import(
+        /* webpackChunkName: "synthetics_monitor_attachment" */
+        './agent_builder/attachments/monitor_attachment_definition'
+      ).then(
+        ({ createMonitorAttachmentDefinition, MONITOR_ATTACHMENT_TYPE: monitorAttachmentType }) => {
+          agentBuilder.attachments.addAttachmentType(
+            monitorAttachmentType,
+            createMonitorAttachmentDefinition({
+              http: coreStart.http,
+              application: coreStart.application,
+              notifications: coreStart.notifications,
+            })
+          );
+        }
+      );
+    }
   }
 
   public stop(): void {}

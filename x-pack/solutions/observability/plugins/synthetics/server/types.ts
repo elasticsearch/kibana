@@ -42,6 +42,7 @@ import type {
   MaintenanceWindowsServerStart,
 } from '@kbn/maintenance-windows-plugin/server';
 import type { ObservabilityAgentBuilderPluginSetup } from '@kbn/observability-agent-builder-plugin/server';
+import type { AgentBuilderPluginSetup } from '@kbn/agent-builder-plugin/server';
 import type { TelemetryEventsSender } from './telemetry/sender';
 import type { UptimeConfig } from './config';
 import type { SyntheticsEsClient } from './lib';
@@ -86,6 +87,7 @@ export interface SyntheticsPluginsSetupDependencies {
   share: SharePluginSetup;
   embeddable: EmbeddableSetup;
   observabilityAgentBuilder?: ObservabilityAgentBuilderPluginSetup;
+  agentBuilder?: AgentBuilderPluginSetup;
 }
 
 export interface SyntheticsPluginsStartDependencies {

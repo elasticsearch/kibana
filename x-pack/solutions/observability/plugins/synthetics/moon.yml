@@ -136,6 +136,11 @@ dependsOn:
   - '@kbn/core-saved-objects-utils-server'
   - '@kbn/core-spaces-common'
   - '@kbn/expect'
+  - '@kbn/zod'
+  - '@kbn/core-application-browser-mocks'
+  - '@kbn/agent-builder-common'
+  - '@kbn/agent-builder-server'
+  - '@kbn/agent-builder-plugin'
 tags:
   - plugin
   - prod
