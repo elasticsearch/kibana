@@ -1157,6 +1157,7 @@ Array [
       "savedObject": Object {
         "all": Array [
           "dashboard",
+          "links",
           "markdown",
           "query",
           "url",
@@ -1169,7 +1170,6 @@ Array [
           "canvas-workpad",
           "event-annotation-group",
           "lens",
-          "links",
           "map",
           "tag",
         ],
@@ -1304,6 +1304,7 @@ Array [
       "savedObject": Object {
         "all": Array [
           "dashboard",
+          "links",
           "markdown",
           "url",
           "search-session",
@@ -1315,7 +1316,6 @@ Array [
           "canvas-workpad",
           "event-annotation-group",
           "lens",
-          "links",
           "map",
           "tag",
         ],
@@ -2316,6 +2316,7 @@ Array [
       "savedObject": Object {
         "all": Array [
           "dashboard",
+          "links",
           "markdown",
           "query",
           "url",
@@ -2328,7 +2329,6 @@ Array [
           "canvas-workpad",
           "event-annotation-group",
           "lens",
-          "links",
           "map",
           "tag",
         ],
@@ -2463,6 +2463,7 @@ Array [
       "savedObject": Object {
         "all": Array [
           "dashboard",
+          "links",
           "markdown",
           "url",
           "search-session",
@@ -2474,7 +2475,6 @@ Array [
           "canvas-workpad",
           "event-annotation-group",
           "lens",
-          "links",
           "map",
           "tag",
         ],

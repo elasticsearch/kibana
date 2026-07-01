@@ -7,10 +7,10 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
-import { DASHBOARD_LINK_TYPE, EXTERNAL_LINK_TYPE } from '../../content_management';
-import { extractReferences, injectReferences } from './references';
+import { transformLinksIn, transformLinksOut } from './transform_links';
 import { DEFAULT_DASHBOARD_NAVIGATION_OPTIONS } from '@kbn/dashboard-navigation-options-common';
 import { DEFAULT_EXTERNAL_LINK_OPTIONS } from '../../constants';
+import { DASHBOARD_LINK_TYPE, EXTERNAL_LINK_TYPE } from '../../constants';
 
 jest.mock('uuid', () => ({
   v4: jest
@@ -38,7 +38,7 @@ describe('extractReferences', () => {
         options: DEFAULT_DASHBOARD_NAVIGATION_OPTIONS,
       },
     ];
-    expect(extractReferences(links)).toEqual({
+    expect(transformLinksIn(links)).toEqual({
       links: [
         {
           type: 'dashboardLink',
@@ -103,7 +103,7 @@ describe('injectReferences', () => {
         type: 'dashboard',
       },
     ];
-    expect(injectReferences(links, references)).toEqual([
+    expect(transformLinksOut(links, references)).toEqual([
       {
         type: 'dashboardLink',
         destination: '19e149f0-e95e-404b-b6f8-fc751317c6be',

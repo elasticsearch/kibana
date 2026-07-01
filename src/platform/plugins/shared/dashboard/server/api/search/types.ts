@@ -8,9 +8,11 @@
  */
 
 import type { TypeOf } from '@kbn/config-schema';
-import type { searchRequestParamsSchema, searchResponseBodySchema } from './schemas';
+import type { asCodeSearchRequestSchema } from '@kbn/as-code-shared-schemas';
+
+import type { searchResponseBodySchema } from './schemas';
 
 /** The request parameters for searching dashboards */
-export type DashboardSearchRequestParams = TypeOf<typeof searchRequestParamsSchema>;
+export type DashboardSearchRequestParams = TypeOf<typeof asCodeSearchRequestSchema>;
 /** The response body type for searching dashboards. */
 export type DashboardSearchResponseBody = TypeOf<typeof searchResponseBodySchema>;

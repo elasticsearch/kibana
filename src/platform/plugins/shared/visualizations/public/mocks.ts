@@ -48,6 +48,7 @@ const createStartContract = (): VisualizationsStart => ({
   unRegisterAlias: jest.fn(),
   showNewVisModal: jest.fn(),
   findListItems: jest.fn().mockResolvedValue({ total: 0, hits: [] }),
+  updateVisualizationLibraryItem: jest.fn(),
 });
 
 const createInstance = async () => {

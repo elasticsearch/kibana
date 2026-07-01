@@ -8,20 +8,20 @@
  */
 
 import React from 'react';
+import { BehaviorSubject } from 'rxjs';
 
+import { EuiThemeProvider } from '@elastic/eui';
+import { DEFAULT_DASHBOARD_NAVIGATION_OPTIONS } from '@kbn/dashboard-navigation-options-common';
+import type { AggregateQuery, Filter, Query, TimeRange } from '@kbn/es-query';
 import { createEvent, fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
-import { LINKS_VERTICAL_LAYOUT } from '../../../common/content_management';
+import { LINKS_VERTICAL_LAYOUT } from '../../../common/constants';
+import { getMockLinksParentApi } from '../../mocks';
+import type { ResolvedLink } from '../../types';
 import type { DashboardLinkProps } from './dashboard_link_component';
 import { DashboardLinkComponent } from './dashboard_link_component';
 import { DashboardLinkStrings } from './dashboard_link_strings';
-import { getMockLinksParentApi } from '../../mocks';
-import type { ResolvedLink } from '../../types';
-import { BehaviorSubject } from 'rxjs';
-import type { AggregateQuery, Filter, Query, TimeRange } from '@kbn/es-query';
-import { EuiThemeProvider } from '@elastic/eui';
-import { DEFAULT_DASHBOARD_NAVIGATION_OPTIONS } from '@kbn/dashboard-navigation-options-common';
 
 function createMockLinksParent({
   initialQuery,
@@ -31,7 +31,7 @@ function createMockLinksParent({
   initialFilters?: Filter[];
 }) {
   const parent = {
-    ...getMockLinksParentApi({ ref_id: '456' }),
+    ...getMockLinksParentApi({ title: 'Test', ref_id: '456' }),
     locator: {
       getRedirectUrl: jest.fn().mockReturnValue('https://my-kibana.com/dashboard/123'),
       navigate: jest.fn(),

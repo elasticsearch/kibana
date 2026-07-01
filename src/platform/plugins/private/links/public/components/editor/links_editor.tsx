@@ -31,8 +31,8 @@ import {
 } from '@elastic/eui';
 import { css, keyframes } from '@emotion/react';
 
-import type { LinksLayoutType } from '../../../common/content_management';
-import { LINKS_HORIZONTAL_LAYOUT, LINKS_VERTICAL_LAYOUT } from '../../../common/content_management';
+import { LINKS_HORIZONTAL_LAYOUT, LINKS_VERTICAL_LAYOUT } from '../../../common/constants';
+import type { LinksLayoutType } from '../../../common/types';
 import { focusMainFlyout } from '../../editor/links_editor_tools';
 import { openLinkEditorFlyout } from '../../editor/open_link_editor_flyout';
 import { coreServices } from '../../services/kibana_services';

@@ -7,42 +7,41 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
-import React, { createContext, useMemo } from 'react';
-import { isUndefined, omitBy } from 'lodash';
-import { BehaviorSubject, map, merge, skip } from 'rxjs';
-import deepEqual from 'fast-deep-equal';
 import type { UseEuiTheme } from '@elastic/eui';
 import { EuiListGroup, EuiPanel } from '@elastic/eui';
+import deepEqual from 'fast-deep-equal';
+import { isUndefined, omitBy } from 'lodash';
+import React, { createContext, useMemo } from 'react';
+import { BehaviorSubject, map, merge, skip } from 'rxjs';
 
+import { css } from '@emotion/react';
 import type { EmbeddablePublicDefinition } from '@kbn/embeddable-plugin/public';
 import { PanelIncompatibleError } from '@kbn/embeddable-plugin/public';
 import type { SerializedTitles } from '@kbn/presentation-publishing';
 import {
-  initializeTitleManager,
-  useBatchedPublishingSubjects,
-  titleComparators,
   apiIsPresentationContainer,
   initializeStateApi,
+  initializeTitleManager,
+  titleComparators,
+  useBatchedPublishingSubjects,
 } from '@kbn/presentation-publishing';
-import { css } from '@emotion/react';
 import { openLazyFlyout } from '@kbn/presentation-util';
-import type { LinksState } from '../../server';
+
+import type { LinksByReferenceState, LinksByValueState, LinksEmbeddableState } from '../../common';
+import { DISPLAY_NAME, LINKS_EMBEDDABLE_TYPE } from '../../common';
 import {
   DASHBOARD_LINK_TYPE,
   LINKS_HORIZONTAL_LAYOUT,
   LINKS_VERTICAL_LAYOUT,
-} from '../../common/content_management';
+} from '../../common/constants';
+import { isParentApiCompatible } from '../actions/add_links_panel_action';
 import { DashboardLinkComponent } from '../components/dashboard_link/dashboard_link_component';
 import { ExternalLinkComponent } from '../components/external_link/external_link_component';
-import type { LinksApi, LinksParentApi, ResolvedLink } from '../types';
-import type { LinksByReferenceState, LinksByValueState, LinksEmbeddableState } from '../../common';
-import { DISPLAY_NAME, LINKS_EMBEDDABLE_TYPE } from '../../common';
-
-import { hasLibraryItemWithTitle, linksClient } from '../content_management';
 import { resolveLinks, serializeResolvedLinks } from '../lib/resolve_links';
-import { isParentApiCompatible } from '../actions/add_links_panel_action';
+import { hasLibraryItemWithTitle, linksClient } from '../links_client';
+import { loadFromLibrary } from '../links_client/load_from_library';
 import { coreServices } from '../services/kibana_services';
-import { loadFromLibrary } from '../content_management/load_from_library';
+import type { LinksApi, LinksParentApi, ResolvedLink } from '../types';
 import { getPlacementHints } from './get_placement_hints';
 
 export const LinksContext = createContext<LinksApi | null>(null);
@@ -53,7 +52,9 @@ export const getLinksEmbeddableFactory = () => {
     getPlacementHints,
     buildEmbeddable: async ({ initialState, finalizeApi, uuid, parentApi }) => {
       const refId = (initialState as LinksByReferenceState).ref_id;
-      const intialLinksState = refId ? await loadFromLibrary(refId) : (initialState as LinksState);
+      const intialLinksState = refId
+        ? await loadFromLibrary(refId)
+        : (initialState as LinksByValueState);
 
       const titleManager = initializeTitleManager(initialState);
 
@@ -75,7 +76,7 @@ export const getLinksEmbeddableFactory = () => {
         return {
           ...titleManager.getLatestState(),
           ref_id: libraryId,
-        };
+        } as LinksByReferenceState;
       }
 
       function serializeByValue() {
@@ -83,7 +84,7 @@ export const getLinksEmbeddableFactory = () => {
           ...titleManager.getLatestState(),
           layout: layout$.getValue(),
           links: serializeResolvedLinks(resolvedLinks$.getValue()),
-        };
+        } as LinksByValueState;
       }
 
       const stateApi = initializeStateApi<LinksEmbeddableState>({
@@ -143,14 +144,11 @@ export const getLinksEmbeddableFactory = () => {
         getTypeDisplayName: () => DISPLAY_NAME,
         saveToLibrary: async (newTitle: string) => {
           defaultTitle$.next(newTitle);
-          const {
-            item: { id },
-          } = await linksClient.create({
-            data: {
-              layout: layout$.getValue(),
-              links: serializeResolvedLinks(resolvedLinks$.getValue()),
-              title: newTitle,
-            },
+          const { id } = await linksClient.create({
+            layout: layout$.getValue(),
+            links: serializeResolvedLinks(resolvedLinks$.getValue()),
+            title: newTitle,
+            description: titleManager.getLatestState().description,
           });
           return id;
         },

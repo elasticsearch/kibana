@@ -607,7 +607,7 @@ const getBaseDashboardFeature = ({
   version: 'v1' | 'v2';
 }): Omit<KibanaFeatureConfig, 'id' | 'order'> => {
   const apiAllPrivileges = ['bulkGetUserProfiles', 'dashboardUsageStats'];
-  const savedObjectAllPrivileges = ['dashboard', 'markdown'];
+  const savedObjectAllPrivileges = ['dashboard', 'links', 'markdown'];
   const uiAllPrivileges = ['createNew', 'show', 'showWriteControls'];
   const apiReadPrivileges = ['bulkGetUserProfiles', 'dashboardUsageStats'];
   const savedObjectReadPrivileges = [
@@ -656,7 +656,6 @@ const getBaseDashboardFeature = ({
             'canvas-workpad',
             'event-annotation-group',
             'lens',
-            'links',
             'map',
             'tag',
           ],

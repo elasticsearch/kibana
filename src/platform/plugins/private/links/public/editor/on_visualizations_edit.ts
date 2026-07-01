@@ -8,17 +8,17 @@
  */
 
 import { openLazyFlyout } from '@kbn/presentation-util';
-import { loadFromLibrary } from '../content_management/load_from_library';
+import { loadFromLibrary } from '../links_client/load_from_library';
 import { getEditorFlyout } from './get_editor_flyout';
 import { resolveLinks } from '../lib/resolve_links';
 import { coreServices } from '../services/kibana_services';
-import type { LinksState } from '../../server';
+import type { LinksByValueState } from '../../server';
 
 export async function onVisualizationsEdit(refId: string) {
   openLazyFlyout({
     core: coreServices,
     loadContent: async ({ closeFlyout }) => {
-      let linksState: LinksState | undefined;
+      let linksState: LinksByValueState | undefined;
       try {
         linksState = await loadFromLibrary(refId);
       } catch (error) {

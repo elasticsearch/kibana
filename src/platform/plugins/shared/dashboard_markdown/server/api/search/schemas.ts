@@ -10,22 +10,12 @@
 import { schema } from '@kbn/config-schema';
 import {
   asCodeMetaSchema,
-  asCodePaginationParamsSchema,
   asCodePaginationResponseMetaSchema,
+  asCodeSearchRequestSchema,
   PAGINATION_MAX_SIZE,
 } from '@kbn/as-code-shared-schemas';
 
-export const searchRequestQuerySchema = schema.object({
-  query: schema.maybe(
-    schema.string({
-      meta: {
-        description:
-          'Filters results by `title` and `description` using Elasticsearch [`simple_query_string`](https://www.elastic.co/docs/reference/query-languages/query-dsl/query-dsl-simple-query-string-query) syntax. Multi-word terms require all words to match.',
-      },
-    })
-  ),
-  ...asCodePaginationParamsSchema.getPropSchemas(),
-});
+export const searchRequestQuerySchema = asCodeSearchRequestSchema;
 
 export const searchResponseBodySchema = schema.object({
   data: schema.arrayOf(

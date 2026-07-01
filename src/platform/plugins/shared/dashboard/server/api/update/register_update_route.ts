@@ -10,6 +10,7 @@
 import { once } from 'lodash';
 
 import { telemetryHandler } from '@kbn/as-code-shared-telemetry';
+import { logRequest, writeErrorHandler } from '@kbn/as-code-utils';
 import { schema } from '@kbn/config-schema';
 import type { VersionedRouter } from '@kbn/core-http-server';
 import type { Logger, RequestHandlerContext } from '@kbn/core/server';
@@ -18,7 +19,7 @@ import type { UsageCounter } from '@kbn/usage-collection-plugin/server';
 import { trackCreateDashboardAction, trackUpdateDashboardAction } from '../../user_activity';
 import { getDashboardStateSchema } from '../dashboard_state_schemas';
 import { getRouteConfig } from '../get_route_config';
-import { writeErrorHandler } from '../write_error_handler';
+import { TransformPanelsInError } from '../transforms/in/transform_panels_in_error';
 import { getUpdateResponseBodySchema } from './schemas';
 import { update } from './update';
 
@@ -103,6 +104,10 @@ export function registerUpdateRoute(
             return res.ok({ body });
           }
         } catch (e) {
+          if (e instanceof TransformPanelsInError) {
+            logRequest(logger, req, 'warn', e.message);
+            return res.custom(e.getCustomResponse());
+          }
           return writeErrorHandler(e, res, logger, req);
         }
       })

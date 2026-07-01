@@ -5,6 +5,9 @@
   },
   "include": ["**/*.ts"],
   "exclude": ["target/**/*"],
-  "kbn_references": ["@kbn/es-query", "@kbn/as-code-shared-schemas"]
+  "kbn_references": [
+    "@kbn/es-query",
+    "@kbn/as-code-shared-schemas",
+    "@kbn/content-management-utils",
+  ]
 }
-

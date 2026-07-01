@@ -190,6 +190,8 @@
       "@kbn/as-code-shared-telemetry/*": ["src/platform/packages/shared/as-code/shared-telemetry/*"],
       "@kbn/as-code-shared-transforms": ["src/platform/packages/shared/as-code/shared-transforms"],
       "@kbn/as-code-shared-transforms/*": ["src/platform/packages/shared/as-code/shared-transforms/*"],
+      "@kbn/as-code-utils": ["src/platform/packages/shared/as-code/utils"],
+      "@kbn/as-code-utils/*": ["src/platform/packages/shared/as-code/utils/*"],
       "@kbn/audit-log-plugin": ["x-pack/platform/test/security_api_integration/plugins/audit_log"],
       "@kbn/audit-log-plugin/*": ["x-pack/platform/test/security_api_integration/plugins/audit_log/*"],
       "@kbn/automatic-import-plugin": ["x-pack/platform/plugins/shared/automatic_import"],

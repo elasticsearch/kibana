@@ -8,7 +8,7 @@
  */
 
 import type { SavedObjectReference } from '@kbn/core-saved-objects-api-server';
-import { tagSavedObjectTypeName } from '@kbn/saved-objects-tagging-plugin/common';
+import { toAsCodeTags } from '@kbn/as-code-shared-transforms';
 
 import { DEFAULT_DASHBOARD_STATE } from '../../../../common/default_dashboard_state';
 import type { DashboardSavedObjectAttributes } from '../../../dashboard_saved_object';
@@ -45,10 +45,7 @@ export function transformDashboardOut(
     projectRouting,
   } = attributes;
 
-  // Extract tag references
-  const tags: string[] = references
-    ? references.filter(({ type }) => type === tagSavedObjectTypeName).map(({ id }) => id)
-    : [];
+  const { tags } = toAsCodeTags(references);
 
   const { panels, warnings } = transformPanelsOut(
     panelsJSON,

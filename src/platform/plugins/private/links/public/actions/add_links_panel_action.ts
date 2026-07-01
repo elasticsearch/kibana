@@ -50,11 +50,12 @@ export const addLinksPanelAction: ActionDefinition<EmbeddableApiContext> = {
           onCompleteEdit: async (newState) => {
             if (!newState) return;
 
-            const { layout, links, refId } = newState;
+            const { layout, links, title, refId } = newState;
 
             function serializeState() {
               if (refId !== undefined) {
                 return {
+                  title: title ?? '',
                   ref_id: refId,
                 };
               }

@@ -120,6 +120,7 @@ dependsOn:
   - '@kbn/monaco'
   - '@kbn/code-editor'
   - '@kbn/as-code-shared-schemas'
+  - '@kbn/as-code-utils'
   - '@kbn/as-code-shared-transforms'
   - '@kbn/core-http-browser'
   - '@kbn/lens-common'

@@ -10,7 +10,7 @@
 import type { VersionedRouter } from '@kbn/core-http-server';
 import type { Logger, RequestHandlerContext } from '@kbn/core/server';
 import { once } from 'lodash';
-import { logRequest } from '../log_request';
+import { logRequest } from '@kbn/as-code-utils';
 import { DASHBOARD_INTERNAL_API_PATH } from '../../../common/constants';
 import { getSanitizeResponseBodySchema } from './schemas';
 import { getDashboardStateSchema } from '../dashboard_state_schemas';

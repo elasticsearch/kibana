@@ -46,7 +46,6 @@ export const getTableList = (
         visualizations={services.visualizations}
         contentManagement={services.contentManagement}
         embeddable={services.embeddable}
-        savedObjectsTagging={services.savedObjectsTagging?.()}
         parentProps={parentProps}
       />
     </TableListViewKibanaProvider>

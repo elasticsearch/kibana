@@ -56,7 +56,7 @@ export const updateBasicSoAttributes = async (
   newAttributes: {
     title: string;
     description: string;
-    tags: string[];
+    tags?: string[];
   },
   dependencies: UpdateBasicSoAttributesDependencies
 ) => {
@@ -81,10 +81,10 @@ export const updateBasicSoAttributes = async (
     description: newAttributes.description,
   };
 
-  if (dependencies.savedObjectsTagging) {
+  if (dependencies.savedObjectsTagging && newAttributes.tags) {
     references = dependencies.savedObjectsTagging.ui.updateTagsReferences(
       references,
-      newAttributes.tags || []
+      newAttributes.tags
     );
   }
 

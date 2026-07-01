@@ -8,7 +8,7 @@
  */
 
 import expect from '@kbn/expect';
-import type { LinksLayoutType } from '@kbn/links-plugin/common/content_management';
+import type { LinksLayoutType } from '@kbn/links-plugin/common/types';
 import { FtrService } from '../ftr_provider_context';
 
 export class DashboardPageLinks extends FtrService {

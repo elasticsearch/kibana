@@ -7,7 +7,7 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
-import { getMeta } from '@kbn/as-code-shared-schemas';
+import { getMeta, getTagsSearchRequest } from '@kbn/as-code-shared-schemas';
 import { tagsToFindOptions } from '@kbn/content-management-utils';
 import type { RequestHandlerContext } from '@kbn/core/server';
 
@@ -23,13 +23,6 @@ export async function search(
   strictValidationSchema: ReturnType<typeof getDashboardStateSchema>
 ): Promise<DashboardSearchResponseBody> {
   const { core } = await requestCtx.resolve(['core']);
-  const normalizeToArray = (value?: string | string[]) => {
-    if (value === undefined) return undefined;
-    return Array.isArray(value) ? value : [value];
-  };
-
-  const includedTags = normalizeToArray(searchParams.tags);
-  const excludedTags = normalizeToArray(searchParams.excluded_tags);
 
   const soResponse = await core.savedObjects.client.find<DashboardSavedObjectAttributes>({
     type: DASHBOARD_SAVED_OBJECT_TYPE,
@@ -46,7 +39,7 @@ export async function search(
     perPage: searchParams.per_page,
     page: searchParams.page,
     defaultSearchOperator: 'AND',
-    ...tagsToFindOptions({ included: includedTags, excluded: excludedTags }),
+    ...tagsToFindOptions(getTagsSearchRequest(searchParams)),
   });
 
   return {

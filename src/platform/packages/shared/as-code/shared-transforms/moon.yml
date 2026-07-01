@@ -19,6 +19,7 @@ project:
 dependsOn:
   - '@kbn/es-query'
   - '@kbn/as-code-shared-schemas'
+  - '@kbn/content-management-utils'
 tags:
   - shared-common
   - package

@@ -4845,6 +4845,10 @@
   version "0.0.0"
   uid ""
 
+"@kbn/as-code-utils@link:src/platform/packages/shared/as-code/utils":
+  version "0.0.0"
+  uid ""
+
 "@kbn/audit-log-plugin@link:x-pack/platform/test/security_api_integration/plugins/audit_log":
   version "0.0.0"
   uid ""

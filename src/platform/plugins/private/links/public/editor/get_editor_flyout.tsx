@@ -11,11 +11,12 @@ import React from 'react';
 import { v4 as uuidv4 } from 'uuid';
 
 import { apiPublishesSavedObjectId } from '@kbn/presentation-publishing';
-import type { LinksLayoutType } from '../../common/content_management';
-import { linksClient, runSaveToLibrary } from '../content_management';
-import type { ResolvedLink } from '../types';
+
+import type { LinksLayoutType } from '../../common/types';
 import LinksEditor from '../components/editor/links_editor';
 import { serializeResolvedLinks } from '../lib/resolve_links';
+import { linksClient, runSaveToLibrary } from '../links_client';
+import type { ResolvedLink } from '../types';
 
 export interface EditorState {
   description?: string;
@@ -55,13 +56,11 @@ export function getEditorFlyout({
         };
         if (initialState?.refId) {
           const { refId, ...updateState } = newState;
-          await linksClient.update({
-            id: initialState.refId,
-            data: {
-              ...updateState,
-              links: serializeResolvedLinks(newLinks),
-            },
-            options: { references: [] },
+          const original = await linksClient.get(initialState.refId); // get the original library item so we can perform a full update
+          await linksClient.update(initialState.refId, {
+            ...original.data,
+            ...updateState,
+            links: serializeResolvedLinks(newLinks),
           });
           onCompleteEdit?.(newState);
           closeFlyout();

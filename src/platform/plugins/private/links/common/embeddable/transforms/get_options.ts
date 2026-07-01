@@ -15,8 +15,8 @@ import type {
   LinkOptions,
   LinksByValueState,
 } from '../../../server';
-import type { LinkType } from '../../content_management';
-import { DASHBOARD_LINK_TYPE } from '../../content_management';
+import type { LinkType } from '../../types';
+import { DASHBOARD_LINK_TYPE } from '../../constants';
 
 export function getOptions(
   type: LinkType,

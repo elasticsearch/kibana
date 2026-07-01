@@ -21,5 +21,4 @@ export const asCodeIdSchema = schema.string({
     }
   },
   minLength: 1,
-  maxLength: 250,
 });

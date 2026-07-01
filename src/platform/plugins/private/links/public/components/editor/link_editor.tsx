@@ -7,39 +7,42 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
-import { v4 as uuidv4 } from 'uuid';
 import React, { useCallback, useMemo, useState } from 'react';
+import { v4 as uuidv4 } from 'uuid';
 
 import type { EuiRadioGroupOption } from '@elastic/eui';
 import {
-  EuiForm,
-  EuiIcon,
-  EuiTitle,
   EuiButton,
-  EuiFormRow,
-  EuiFlexItem,
-  EuiFieldText,
-  EuiFocusTrap,
-  EuiFlexGroup,
-  EuiRadioGroup,
-  EuiFlyoutBody,
   EuiButtonEmpty,
+  EuiFieldText,
+  EuiFlexGroup,
+  EuiFlexItem,
+  EuiFlyoutBody,
   EuiFlyoutFooter,
   EuiFlyoutHeader,
+  EuiFocusTrap,
+  EuiForm,
+  EuiFormRow,
+  EuiIcon,
+  EuiRadioGroup,
+  EuiTitle,
 } from '@elastic/eui';
-
 import { DEFAULT_DASHBOARD_NAVIGATION_OPTIONS } from '@kbn/dashboard-navigation-options-common';
 import { DashboardNavigationOptionsEditor } from '@kbn/dashboard-navigation-options-components';
 import type { DashboardNavigationOptions } from '@kbn/dashboard-navigation-options-schema';
-import type { LinkType } from '../../../common/content_management';
-import { EXTERNAL_LINK_TYPE, DASHBOARD_LINK_TYPE } from '../../../common/content_management';
+
+import {
+  DASHBOARD_LINK_TYPE,
+  DEFAULT_EXTERNAL_LINK_OPTIONS,
+  EXTERNAL_LINK_TYPE,
+} from '../../../common/constants';
+import type { LinkType } from '../../../common/types';
+import type { ExternalLinkOptions } from '../../../server';
+import type { ResolvedLink } from '../../types';
+import { ExternalLinkOptionsEditor } from '../external_link/external_link_options_editor';
 import { LinksStrings } from '../links_strings';
 import { LinkInfo } from './constants';
 import { LinkDestination } from './link_destination';
-import type { ExternalLinkOptions } from '../../../server';
-import type { ResolvedLink } from '../../types';
-import { DEFAULT_EXTERNAL_LINK_OPTIONS } from '../../../common/constants';
-import { ExternalLinkOptionsEditor } from '../external_link/external_link_options_editor';
 
 export const LinkEditor = ({
   link,

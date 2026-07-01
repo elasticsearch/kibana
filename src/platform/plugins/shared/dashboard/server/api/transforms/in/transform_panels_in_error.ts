@@ -17,6 +17,21 @@ export class TransformPanelsInError extends Error {
     this.name = 'TransformPanelsInError';
     this.panelErrors = panelErrors;
   }
+
+  public getCustomResponse() {
+    return {
+      statusCode: 400,
+      bypassErrorFormat: true,
+      body: {
+        message: 'Bad request',
+        panel_errors: this.panelErrors.map((panelError) => ({
+          message: panelError.message,
+          panel_type: panelError.type,
+          panel_config: panelError.config,
+        })),
+      },
+    };
+  }
 }
 
 export class TransformPanelInError extends Error {

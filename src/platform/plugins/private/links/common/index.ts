@@ -15,9 +15,7 @@ export type {
 export {
   APP_ICON,
   APP_NAME,
-  CONTENT_ID,
   DISPLAY_NAME,
-  LATEST_VERSION,
   LINKS_EMBEDDABLE_TYPE,
-  LINKS_SAVED_OBJECT_TYPE,
+  LINKS_LIBRARY_TYPE,
 } from './constants';

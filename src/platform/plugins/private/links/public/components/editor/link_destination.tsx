@@ -10,12 +10,13 @@
 import React, { useState } from 'react';
 
 import { EuiFormRow } from '@elastic/eui';
-import type { LinkType } from '../../../common/content_management';
-import { EXTERNAL_LINK_TYPE, DASHBOARD_LINK_TYPE } from '../../../common/content_management';
-import { ExternalLinkDestinationPicker } from '../external_link/external_link_destination_picker';
-import { DashboardLinkDestinationPicker } from '../dashboard_link/dashboard_link_destination_picker';
-import { LinksStrings } from '../links_strings';
+
+import { DASHBOARD_LINK_TYPE, EXTERNAL_LINK_TYPE } from '../../../common/constants';
+import type { LinkType } from '../../../common/types';
 import type { ResolvedLink } from '../../types';
+import { DashboardLinkDestinationPicker } from '../dashboard_link/dashboard_link_destination_picker';
+import { ExternalLinkDestinationPicker } from '../external_link/external_link_destination_picker';
+import { LinksStrings } from '../links_strings';
 
 export const LinkDestination = ({
   link,

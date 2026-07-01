@@ -7,33 +7,27 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
-import { i18n } from '@kbn/i18n';
 import type {
   ContentManagementPublicSetup,
   ContentManagementPublicStart,
 } from '@kbn/content-management-plugin/public';
+import type { SOWithMetadata } from '@kbn/content-management-utils';
 import type { CoreSetup, CoreStart, Plugin } from '@kbn/core/public';
 import type { DashboardStart } from '@kbn/dashboard-plugin/public';
 import type { EmbeddableSetup, EmbeddableStart } from '@kbn/embeddable-plugin/public';
+import { i18n } from '@kbn/i18n';
 import type { PresentationUtilPluginSetup } from '@kbn/presentation-util-plugin/public';
-import type { UsageCollectionStart } from '@kbn/usage-collection-plugin/public';
-import type { VisualizationsSetup } from '@kbn/visualizations-plugin/public';
-
-import type { UiActionsPublicSetup } from '@kbn/ui-actions-plugin/public/plugin';
+import type { SavedObjectTaggingOssPluginStart } from '@kbn/saved-objects-tagging-oss-plugin/public';
 import { ADD_PANEL_TRIGGER } from '@kbn/ui-actions-plugin/common/trigger_ids';
+import type { UiActionsPublicSetup } from '@kbn/ui-actions-plugin/public/plugin';
+import type { UsageCollectionStart } from '@kbn/usage-collection-plugin/public';
+import type { VisualizationClient, VisualizationsSetup } from '@kbn/visualizations-plugin/public';
+
 import type { LinksEmbeddableState } from '../common';
-import {
-  APP_ICON,
-  APP_NAME,
-  CONTENT_ID,
-  LATEST_VERSION,
-  LINKS_EMBEDDABLE_TYPE,
-  LINKS_SAVED_OBJECT_TYPE,
-} from '../common';
-import type { LinksCrudTypes } from '../common/content_management';
-import { getLinksClient } from './content_management/links_content_management_client';
-import { setKibanaServices } from './services/kibana_services';
+import { APP_ICON, APP_NAME, LINKS_EMBEDDABLE_TYPE, LINKS_LIBRARY_TYPE } from '../common';
+import type { StoredLinksState } from '../server';
 import { ADD_LINKS_PANEL_ACTION_ID } from './actions/constants';
+import { setKibanaServices } from './services/kibana_services';
 
 export interface LinksSetupDependencies {
   embeddable: EmbeddableSetup;
@@ -48,6 +42,7 @@ export interface LinksStartDependencies {
   dashboard: DashboardStart;
   contentManagement: ContentManagementPublicStart;
   usageCollection?: UsageCollectionStart;
+  savedObjectsTaggingOss?: SavedObjectTaggingOssPluginStart;
 }
 
 export class LinksPlugin
@@ -56,20 +51,13 @@ export class LinksPlugin
   constructor() {}
 
   public setup(core: CoreSetup<LinksStartDependencies>, plugins: LinksSetupDependencies) {
-    plugins.contentManagement.registry.register({
-      id: CONTENT_ID,
-      version: {
-        latest: LATEST_VERSION,
-      },
-      name: APP_NAME,
-    });
-
-    plugins.embeddable.registerAddFromLibraryType({
+    plugins.embeddable.registerAddFromLibraryType<{ title: string }>({
       onAdd: async (container, savedObject) => {
         container.addNewPanel<LinksEmbeddableState>(
           {
             panelType: LINKS_EMBEDDABLE_TYPE,
             serializedState: {
+              title: savedObject.attributes.title ?? '',
               ref_id: savedObject.id,
             },
           },
@@ -78,7 +66,7 @@ export class LinksPlugin
           }
         );
       },
-      savedObjectType: LINKS_SAVED_OBJECT_TYPE,
+      savedObjectType: LINKS_LIBRARY_TYPE,
       savedObjectName: APP_NAME,
       getIconForSavedObject: () => APP_ICON,
     });
@@ -90,12 +78,12 @@ export class LinksPlugin
 
     plugins.embeddable.registerLegacyURLTransform(LINKS_EMBEDDABLE_TYPE, async () => {
       const { transformOut } = await import('../common/embeddable/transforms/transform_out');
-      return transformOut;
+      return () => transformOut;
     });
 
     plugins.visualizations.registerAlias({
       disableCreate: true, // do not allow creation through visualization listing page
-      name: CONTENT_ID,
+      name: LINKS_LIBRARY_TYPE,
       title: APP_NAME,
       icon: APP_ICON,
       description: i18n.translate('links.description', {
@@ -104,12 +92,38 @@ export class LinksPlugin
       stage: 'production',
       appExtensions: {
         visualizations: {
-          docTypes: [CONTENT_ID],
+          docTypes: [LINKS_LIBRARY_TYPE],
           searchFields: ['title^3'],
-          client: getLinksClient,
+          client: () =>
+            /**
+             * Avoid async importing in the plugin by creating wrappers for each
+             * function in the client
+             */
+            ({
+              get: async (id) => {
+                const { getLinksClient } = await import('./links_client');
+                return getLinksClient().get(id);
+              },
+              create: async (request) => {
+                const { getLinksClient } = await import('./links_client');
+                return await getLinksClient().create(request);
+              },
+              update: async (request) => {
+                const { getLinksClient } = await import('./links_client');
+                return await getLinksClient().update(request);
+              },
+              delete: async (request) => {
+                const { getLinksClient } = await import('./links_client');
+                return await getLinksClient().delete(request);
+              },
+              search: async (request) => {
+                const { getLinksClient } = await import('./links_client');
+                return await getLinksClient().search(request);
+              },
+            } as VisualizationClient<typeof LINKS_LIBRARY_TYPE, StoredLinksState>),
           toListItem(
-            linkItem: Omit<LinksCrudTypes['Item'], 'attributes'> & {
-              attributes: { title: string; description?: string };
+            linkItem: Omit<SOWithMetadata<StoredLinksState>, 'attributes'> & {
+              attributes: { title: string; description?: string }; // make title and description required
             }
           ) {
             const { id, type, updatedAt, attributes } = linkItem;

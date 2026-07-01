@@ -10,8 +10,32 @@
 import { schema } from '@kbn/config-schema';
 
 export const serializedTitlesSchema = schema.object({
-  description: schema.maybe(schema.string()),
-  hide_title: schema.maybe(schema.boolean()),
-  title: schema.maybe(schema.string()),
-  hide_border: schema.maybe(schema.boolean()),
+  description: schema.maybe(
+    schema.string({
+      meta: {
+        description: 'A short description of the panel.',
+      },
+    })
+  ),
+  hide_title: schema.maybe(
+    schema.boolean({
+      meta: {
+        description: 'When true, the panel title is hidden. Defaults to false.',
+      },
+    })
+  ),
+  title: schema.maybe(
+    schema.string({
+      meta: {
+        description: 'The panel title.',
+      },
+    })
+  ),
+  hide_border: schema.maybe(
+    schema.boolean({
+      meta: {
+        description: 'When true, the panel border is hidden. Defaults to false.',
+      },
+    })
+  ),
 });

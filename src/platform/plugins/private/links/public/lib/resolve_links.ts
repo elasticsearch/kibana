@@ -8,13 +8,13 @@
  */
 
 import { v4 as uuidv4 } from 'uuid';
-import type { ResolvedLink } from '../types';
-import { DASHBOARD_LINK_TYPE, EXTERNAL_LINK_TYPE } from '../../common/content_management';
+import { DASHBOARD_LINK_TYPE, EXTERNAL_LINK_TYPE } from '../../common/constants';
 import type { Link } from '../../server';
-import { validateUrl } from '../components/external_link/external_link_tools';
-import { fetchDashboard } from '../components/dashboard_link/dashboard_link_tools';
 import { DashboardLinkStrings } from '../components/dashboard_link/dashboard_link_strings';
+import { fetchDashboard } from '../components/dashboard_link/dashboard_link_tools';
+import { validateUrl } from '../components/external_link/external_link_tools';
 import { LinksStrings } from '../components/links_strings';
+import type { ResolvedLink } from '../types';
 
 export function serializeResolvedLinks(resolvedLinks: ResolvedLink[]) {
   return resolvedLinks

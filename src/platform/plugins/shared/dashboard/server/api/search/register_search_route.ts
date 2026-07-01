@@ -10,13 +10,14 @@
 import { once } from 'lodash';
 
 import { telemetryHandler } from '@kbn/as-code-shared-telemetry';
+import { logRequest } from '@kbn/as-code-utils';
 import type { VersionedRouter } from '@kbn/core-http-server';
 import type { Logger, RequestHandlerContext } from '@kbn/core/server';
 import type { UsageCounter } from '@kbn/usage-collection-plugin/server';
+import { asCodeSearchRequestSchema } from '@kbn/as-code-shared-schemas';
 
 import { getRouteConfig } from '../get_route_config';
-import { logRequest } from '../log_request';
-import { searchRequestParamsSchema, searchResponseBodySchema } from './schemas';
+import { searchResponseBodySchema } from './schemas';
 import { search } from './search';
 import { getDashboardStateSchema } from '../dashboard_state_schemas';
 
@@ -50,7 +51,7 @@ export function registerSearchRoute(
       },
       validate: {
         request: {
-          query: searchRequestParamsSchema,
+          query: asCodeSearchRequestSchema,
         },
         response: {
           200: {
