@@ -328,26 +328,8 @@ export const performBulkActionRoute = (
                     shouldDuplicateExpiredExceptions = body.duplicate.include_expired_exceptions;
                   }
 
-                  const duplicateRuleToCreate = await duplicateRule({
-                    rule,
-                  });
-
-                  const createdRule = await rulesClient.create({
-                    data: duplicateRuleToCreate,
-                    changeTracking: {
-                      action: SecurityRuleChangeTrackingAction.ruleDuplicate,
-                      metadata: {
-                        bulkCount: rules.length,
-                        originalRuleSoId: rule.id,
-                      },
-                    },
-                  });
-
-                  if (!shouldDuplicateExceptions) {
-                    return createdRule;
-                  }
-
-                  // we try to create exceptions after rule created, and then update rule
+                  // Clone exceptions first so the rule can be created with them already
+                  // attached, avoiding a follow-up update. If this throws, no rule is created.
                   const exceptions = shouldDuplicateExceptions
                     ? await duplicateExceptions({
                         ruleId: rule.params.ruleId,
@@ -357,8 +339,11 @@ export const performBulkActionRoute = (
                       })
                     : [];
 
-                  const updatedRule = await rulesClient.update({
-                    id: createdRule.id,
+                  const duplicateRuleToCreate = await duplicateRule({
+                    rule,
+                  });
+
+                  const createdRule = await rulesClient.create({
                     data: {
                       ...duplicateRuleToCreate,
                       params: {
@@ -367,15 +352,15 @@ export const performBulkActionRoute = (
                       },
                     },
                     changeTracking: {
+                      action: SecurityRuleChangeTrackingAction.ruleDuplicate,
                       metadata: {
                         bulkCount: rules.length,
+                        originalRuleSoId: rule.id,
                       },
                     },
-                    shouldIncrementRevision: () => false,
                   });
 
-                  // TODO: figureout why types can't return just updatedRule
-                  return { ...createdRule, ...updatedRule };
+                  return createdRule;
                 },
                 abortSignal: abortController.signal,
               });

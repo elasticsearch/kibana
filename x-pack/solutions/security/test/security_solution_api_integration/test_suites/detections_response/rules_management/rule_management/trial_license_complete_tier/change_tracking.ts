@@ -384,7 +384,9 @@ export default ({ getService }: FtrProviderContext): void => {
             query: {},
             body: {
               action: BulkActionTypeEnum.duplicate,
-              duplicate: { include_exceptions: false, include_expired_exceptions: false },
+              // Exceptions enabled exercises the path that used to emit a phantom
+              // second history entry; toHaveLength(1) below guards that regression.
+              duplicate: { include_exceptions: true, include_expired_exceptions: true },
             },
           })
           .expect(200);
