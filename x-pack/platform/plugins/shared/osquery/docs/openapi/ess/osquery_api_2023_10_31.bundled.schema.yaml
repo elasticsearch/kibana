@@ -378,6 +378,162 @@ paths:
       summary: Get live query results
       tags:
         - Security Osquery API
+  /api/osquery/live_queries/{id}/results/{actionId}/_export:
+    post:
+      description: >
+        Export the results of a live query action as a downloadable file. The
+        response is a streaming file attachment in the requested format.
+      operationId: OsqueryExportLiveQueryResults
+      parameters:
+        - description: The ID of the live query (parent action ID).
+          in: path
+          name: id
+          required: true
+          schema:
+            description: The ID of the live query.
+            example: 3c42c847-eb30-4452-80e0-728584042334
+            type: string
+        - description: The query action ID whose results are exported. Filters the export
+            to rows for this specific per-agent action.
+          in: path
+          name: actionId
+          required: true
+          schema:
+            description: The ID of the query action.
+            example: 609c4c66-ba3d-43fa-afdd-53e244577aa0
+            type: string
+        - description: The output format of the exported file.
+          in: query
+          name: format
+          required: true
+          schema:
+            $ref: '#/components/schemas/ExportFormat'
+      requestBody:
+        content:
+          application/json:
+            examples:
+              filteredExport:
+                summary: Export only rows matching a KQL filter
+                value:
+                  kuery: 'user.name: "root"'
+            schema:
+              $ref: '#/components/schemas/ExportRequestBody'
+        required: false
+      responses:
+        '200':
+          content:
+            application/json:
+              examples:
+                jsonExport:
+                  summary: JSON export with metadata and results
+                  value:
+                    _meta:
+                      action_id: 609c4c66-ba3d-43fa-afdd-53e244577aa0
+                      exported_by: elastic
+                      format: json
+                      query: SELECT * FROM users;
+                      timestamp: '2026-04-30T09:12:00.000Z'
+                      total_results: 2
+                    results:
+                      - '@timestamp': '2026-04-30T09:11:58.321Z'
+                        agent:
+                          id: 980a6b73-0b03-4d1e-8915-67c202e4a980
+                          name: prod-host-1
+                        user:
+                          id: '1000'
+                          name: ubuntu
+              schema:
+                $ref: '#/components/schemas/ExportJsonResponse'
+                description: >
+                  A JSON object with `_meta` (export metadata) and `results`
+                  (all result rows). Rows are held in memory before writing;
+                  prefer `ndjson` for large exports.
+            application/ndjson:
+              examples:
+                ndjsonExport:
+                  summary: NDJSON export with a leading metadata line
+                  value: |
+                    {"_meta":{"action_id":"609c4c66-ba3d-43fa-afdd-53e244577aa0","query":"SELECT * FROM users;","timestamp":"2026-04-30T09:12:00.000Z","exported_by":"elastic","format":"ndjson","total_results":2}}
+                    {"@timestamp":"2026-04-30T09:11:58.321Z","agent":{"id":"980a6b73-0b03-4d1e-8915-67c202e4a980","name":"prod-host-1"},"user":{"id":"1000","name":"ubuntu"}}
+                    {"@timestamp":"2026-04-30T09:11:58.456Z","agent":{"id":"980a6b73-0b03-4d1e-8915-67c202e4a980","name":"prod-host-1"},"user":{"id":"0","name":"root"}}
+              schema:
+                description: >
+                  Newline-delimited JSON stream. The first line is a metadata
+                  object; each subsequent line is a result row.
+                format: binary
+                type: string
+            text/csv:
+              examples:
+                csvExport:
+                  summary: CSV export with a header row
+                  value: |
+                    agent.name,agent.id,user.id,user.name
+                    prod-host-1,980a6b73-0b03-4d1e-8915-67c202e4a980,1000,ubuntu
+                    prod-host-1,980a6b73-0b03-4d1e-8915-67c202e4a980,0,root
+              schema:
+                description: >
+                  CSV file with a header row derived from the ECS mapping of the
+                  originating query (when available). No metadata block is
+                  included in CSV output.
+                format: binary
+                type: string
+          description: >
+            A downloadable file in the requested format. The
+            `Content-Disposition` header contains the suggested filename.
+          headers:
+            Content-Disposition:
+              description: Attachment disposition with a generated filename, e.g. `attachment;
+                filename="osquery-results-{actionId}-{timestamp}.ndjson"`.
+              schema:
+                example: attachment;
+                  filename="osquery-results-609c4c66-ba3d-43fa-afdd-53e244577aa0-2026-04-30T09-12-00-000Z.ndjson"
+                type: string
+        '400':
+          content:
+            application/json:
+              examples:
+                rowLimitExceeded:
+                  summary: Result count exceeds the export limit
+                  value:
+                    message: Export limited to 500,000 results. Found 500,001. Please add filters to
+                      narrow results.
+              schema:
+                type: object
+                properties:
+                  message:
+                    example: Export limited to 500,000 results. Found 500,001. Please add filters to
+                      narrow results.
+                    type: string
+          description: >
+            Bad request. Possible causes: invalid or missing `format` query
+            parameter, malformed KQL in the request body, invalid `esFilters`,
+            or the result count exceeds the 500,000-row limit.
+        '403':
+          description: >
+            The authenticated user does not have the `osquery-readLiveQueries`
+            privilege required to export live query results.
+        '404':
+          content:
+            application/json:
+              examples:
+                actionNotFound:
+                  summary: The id/actionId pair refers to different queries
+                  value:
+                    message: Live query action not found
+              schema:
+                type: object
+                properties:
+                  message:
+                    example: Live query action not found
+                    type: string
+          description: >
+            The parent live query action `{id}` was found but does not contain a
+            query whose `action_id` matches `{actionId}`. This typically means
+            the `id` and `actionId` URL parameters refer to different queries.
+      summary: Export live query results
+      tags:
+        - Security Osquery API
+      x-state: Added in 9.5.0
   /api/osquery/packs:
     get:
       description: Get a list of all query packs.
@@ -1047,6 +1203,145 @@ paths:
       tags:
         - Security Osquery API
       x-state: Generally available; Added in 9.4.0
+  /api/osquery/scheduled_results/{scheduleId}/{executionCount}/_export:
+    post:
+      description: >
+        Export all result rows for a specific scheduled query execution as a
+        downloadable file. The response is a streaming file attachment in the
+        requested format.
+      operationId: OsqueryExportScheduledQueryResults
+      parameters:
+        - description: The schedule ID of the scheduled query.
+          in: path
+          name: scheduleId
+          required: true
+          schema:
+            description: The schedule ID of the scheduled query.
+            example: 90f342ee-9c05-4844-849b-173993234f22
+            type: string
+        - description: The execution counter for the scheduled query run whose results are
+            exported. Must be a non-negative integer.
+          in: path
+          name: executionCount
+          required: true
+          schema:
+            description: The execution counter for this scheduled query run.
+            example: 17384
+            minimum: 0
+            type: integer
+        - description: The output format of the exported file.
+          in: query
+          name: format
+          required: true
+          schema:
+            $ref: '#/components/schemas/ExportFormat'
+      requestBody:
+        content:
+          application/json:
+            examples:
+              filteredExport:
+                summary: Export only rows matching a KQL filter
+                value:
+                  kuery: 'agent.name: "prod-host-1"'
+            schema:
+              $ref: '#/components/schemas/ExportRequestBody'
+        required: false
+      responses:
+        '200':
+          content:
+            application/json:
+              examples:
+                jsonExport:
+                  summary: JSON export with metadata and results
+                  value:
+                    _meta:
+                      action_id: 90f342ee-9c05-4844-849b-173993234f22
+                      execution_count: 17384
+                      exported_by: elastic
+                      format: json
+                      timestamp: '2026-04-30T09:12:00.000Z'
+                      total_results: 1
+                    results:
+                      - '@timestamp': '2026-04-30T09:11:58.321Z'
+                        agent:
+                          id: 5b1bb334-a23d-4006-80fe-bd129b979c9f
+                          name: prod-host-1
+                        osquery:
+                          uid: '1000'
+                          username: ubuntu
+              schema:
+                $ref: '#/components/schemas/ExportJsonResponse'
+                description: >
+                  A JSON object with `_meta` (export metadata) and `results`
+                  (all result rows). Rows are held in memory before writing;
+                  prefer `ndjson` for large exports.
+            application/ndjson:
+              examples:
+                ndjsonExport:
+                  summary: NDJSON export with a leading metadata line
+                  value: |
+                    {"_meta":{"action_id":"90f342ee-9c05-4844-849b-173993234f22","execution_count":17384,"timestamp":"2026-04-30T09:12:00.000Z","exported_by":"elastic","format":"ndjson","total_results":32}}
+                    {"@timestamp":"2026-04-30T09:11:58.321Z","agent":{"id":"5b1bb334-a23d-4006-80fe-bd129b979c9f","name":"prod-host-1"},"osquery":{"uid":"1000","username":"ubuntu"}}
+              schema:
+                description: >
+                  Newline-delimited JSON stream. The first line is a metadata
+                  object (includes `execution_count`); each subsequent line is a
+                  result row.
+                format: binary
+                type: string
+            text/csv:
+              examples:
+                csvExport:
+                  summary: CSV export with a header row
+                  value: |
+                    osquery.description,agent.name,agent.id,osquery.uid,osquery.username
+                    Ubuntu,prod-host-1,5b1bb334-a23d-4006-80fe-bd129b979c9f,1000,ubuntu
+                    root,prod-host-1,5b1bb334-a23d-4006-80fe-bd129b979c9f,0,root
+              schema:
+                description: >
+                  CSV file with a header row. No metadata block is included in
+                  CSV output.
+                format: binary
+                type: string
+          description: >
+            A downloadable file in the requested format. The
+            `Content-Disposition` header contains the suggested filename.
+          headers:
+            Content-Disposition:
+              description: Attachment disposition with a generated filename, e.g. `attachment;
+                filename="osquery-scheduled-results-{scheduleId}-{executionCount}-{timestamp}.csv"`.
+              schema:
+                example: attachment;
+                  filename="osquery-scheduled-results-90f342ee-9c05-4844-849b-173993234f22-17384-2026-04-30T09-12-00-000Z.csv"
+                type: string
+        '400':
+          content:
+            application/json:
+              examples:
+                rowLimitExceeded:
+                  summary: Result count exceeds the export limit
+                  value:
+                    message: Export limited to 500,000 results. Found 500,001. Please add filters to
+                      narrow results.
+              schema:
+                type: object
+                properties:
+                  message:
+                    example: Export limited to 500,000 results. Found 500,001. Please add filters to
+                      narrow results.
+                    type: string
+          description: >
+            Bad request. Possible causes: invalid or missing `format` query
+            parameter, malformed KQL in the request body, invalid `esFilters`,
+            or the result count exceeds the 500,000-row limit.
+        '403':
+          description: >
+            The authenticated user does not have the `osquery-read` privilege
+            required to export scheduled query results.
+      summary: Export scheduled query results
+      tags:
+        - Security Osquery API
+      x-state: Generally available; Added in 9.5.0
   /api/osquery/scheduled_results/{scheduleId}/{executionCount}/results:
     get:
       description: >
@@ -1810,6 +2105,161 @@ components:
     EnabledOrUndefined:
       $ref: '#/components/schemas/Enabled'
       nullable: true
+    ExportFormat:
+      description: >
+        The output format for the exported file. Use `ndjson` for streaming
+        newline-delimited JSON (recommended for large exports), `json` for a
+        single JSON array (held in memory; suitable for smaller result sets), or
+        `csv` for a comma-separated values file with a header row derived from
+        the ECS mapping.
+      enum:
+        - ndjson
+        - json
+        - csv
+      example: ndjson
+      type: string
+    ExportJsonResponse:
+      description: >
+        JSON export response body. The `_meta` field contains export metadata;
+        `results` contains all result rows. Prefer `ndjson` for large exports
+        since rows are streamed individually rather than held in memory.
+      type: object
+      properties:
+        _meta:
+          $ref: '#/components/schemas/ExportMetadata'
+        results:
+          items:
+            $ref: '#/components/schemas/ExportResultRow'
+          type: array
+      required:
+        - _meta
+        - results
+    ExportMetadata:
+      description: >
+        Metadata block produced for every export. Included as `_meta` in the
+        JSON response body and as the first NDJSON line.
+      type: object
+      properties:
+        action_id:
+          description: The action ID (live query) or schedule ID (scheduled query) that
+            produced the results.
+          example: e88d7652-fc3e-4544-b0e0-3d5df2be454c
+          type: string
+        csv_columns:
+          description: >
+            For CSV exports with ECS mapping and zero hits: the column header
+            row so an empty export is not a 0-byte file.
+          items:
+            type: string
+          nullable: true
+          type: array
+        execution_count:
+          description: >
+            For scheduled query exports only: the execution counter of the
+            scheduled run that produced the results.
+          example: 17384
+          nullable: true
+          type: integer
+        exported_by:
+          description: Username of the Kibana user who triggered the export.
+          example: elastic
+          type: string
+        format:
+          $ref: '#/components/schemas/ExportFormat'
+        query:
+          description: The SQL query text, if it could be resolved from action details.
+          example: SELECT * FROM users;
+          nullable: true
+          type: string
+        timestamp:
+          description: ISO 8601 timestamp of when the export was initiated.
+          example: '2026-04-30T09:12:00.000Z'
+          format: date-time
+          type: string
+        total_results:
+          description: Total number of result rows included in this export.
+          example: 64
+          nullable: true
+          type: integer
+      required:
+        - action_id
+        - timestamp
+        - exported_by
+        - format
+    ExportRequestBody:
+      description: >
+        Optional request body for export endpoints. All fields are optional.
+        Omit the body or send `null` or `{}` to export all results without
+        additional filtering.
+      nullable: true
+      type: object
+      properties:
+        agentIds:
+          description: >
+            An optional allowlist of Elastic Agent IDs. When provided, only rows
+            reported by the listed agents are included in the export.
+          example:
+            - 980a6b73-0b03-4d1e-8915-67c202e4a980
+            - e40fde1c-5729-4885-b0b2-16a42e9332e3
+          items:
+            type: string
+          nullable: true
+          type: array
+        esFilters:
+          description: >
+            An optional array of Elasticsearch / Kibana SearchBar filter objects
+            (the same `esFilters` payload used by the Discover UI). Each filter
+            is applied as an additional AND clause. An invalid filter object
+            causes a 400 response rather than silently returning unfiltered
+            data.
+          example:
+            - meta:
+                key: agent.name
+                params:
+                  query: prod-host-1
+                type: phrase
+              query:
+                match_phrase:
+                  agent.name: prod-host-1
+          items:
+            additionalProperties: true
+            type: object
+          nullable: true
+          type: array
+        kuery:
+          description: >
+            An optional KQL filter appended (with AND) to the base
+            action/schedule filter. The filter is wrapped in parentheses so it
+            cannot override or escape the built-in action_id / schedule_id gate.
+          example: 'host.name: "prod-host-1"'
+          nullable: true
+          type: string
+    ExportResultRow:
+      additionalProperties: true
+      description: >
+        A single result row from an NDJSON or JSON export. Fields follow the
+        Elastic Common Schema (ECS) mapping defined on the originating query
+        when available; otherwise raw osquery column names are used under the
+        `osquery.*` namespace.
+      example:
+        '@timestamp': '2026-04-30T09:11:58.321Z'
+        agent:
+          id: 980a6b73-0b03-4d1e-8915-67c202e4a980
+          name: prod-host-1
+          type: osquerybeat
+          version: 9.4.0
+        osquery:
+          directory: /home/ubuntu
+          gid: '1000'
+          shell: /bin/bash
+          uid: '1000'
+          username: ubuntu
+        user:
+          group:
+            id: '1000'
+          id: '1000'
+          name: ubuntu
+      type: object
     FindLiveQueryDetailsResponse:
       example:
         data:

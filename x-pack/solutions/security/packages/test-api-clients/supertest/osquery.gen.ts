@@ -213,10 +213,6 @@ const securitySolutionApiServiceFactory = (supertest: SuperTest.Agent) => ({
   },
   /**
       * Export the results of a live query action as a downloadable file. The response is a streaming file attachment in the requested format.
-This endpoint is gated behind the `exportResults` experimental feature flag and must be enabled in `kibana.yml` before use:
-```yaml xpack.osquery.enableExperimental:
-  - exportResults
-```
 
       */
   osqueryExportLiveQueryResults(
@@ -238,10 +234,6 @@ This endpoint is gated behind the `exportResults` experimental feature flag and 
   },
   /**
       * Export all result rows for a specific scheduled query execution as a downloadable file. The response is a streaming file attachment in the requested format.
-This endpoint is gated behind the `exportResults` experimental feature flag and must be enabled in `kibana.yml` before use:
-```yaml xpack.osquery.enableExperimental:
-  - exportResults
-```
 
       */
   osqueryExportScheduledQueryResults(

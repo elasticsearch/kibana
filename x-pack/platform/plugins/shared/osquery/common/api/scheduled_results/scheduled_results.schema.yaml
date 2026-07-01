@@ -191,20 +191,10 @@ paths:
         Export all result rows for a specific scheduled query execution as a
         downloadable file. The response is a streaming file attachment in the
         requested format.
-
-        This endpoint is gated behind the `exportResults` experimental feature
-        flag and must be enabled in `kibana.yml` before use:
-
-        ```yaml
-        xpack.osquery.enableExperimental:
-          - exportResults
-        ```
       operationId: OsqueryExportScheduledQueryResults
       x-codegen-enabled: true
-      x-labels: [ ]
-      # TODO: Uncomment when feature flag exportResults is set to true
-      #      x-labels: [ess]
-      #      x-state: Added in 9.5.0
+      x-labels: [ serverless, ess ]
+      x-state: Generally available; Added in 9.5.0
       parameters:
         - name: scheduleId
           in: path
@@ -235,6 +225,11 @@ paths:
           application/json:
             schema:
               $ref: '../export/export_results.schema.yaml#/components/schemas/ExportRequestBody'
+            examples:
+              filteredExport:
+                summary: Export only rows matching a KQL filter
+                value:
+                  kuery: 'agent.name: "prod-host-1"'
       responses:
         '200':
           description: >
@@ -255,9 +250,12 @@ paths:
                   result row.
                 type: string
                 format: binary
-              example: |
-                {"_meta":{"action_id":"90f342ee-9c05-4844-849b-173993234f22","execution_count":17384,"timestamp":"2026-04-30T09:12:00.000Z","exported_by":"elastic","format":"ndjson","total_results":32}}
-                {"@timestamp":"2026-04-30T09:11:58.321Z","agent":{"id":"5b1bb334-a23d-4006-80fe-bd129b979c9f","name":"prod-host-1"},"osquery":{"uid":"1000","username":"ubuntu"}}
+              examples:
+                ndjsonExport:
+                  summary: NDJSON export with a leading metadata line
+                  value: |
+                    {"_meta":{"action_id":"90f342ee-9c05-4844-849b-173993234f22","execution_count":17384,"timestamp":"2026-04-30T09:12:00.000Z","exported_by":"elastic","format":"ndjson","total_results":32}}
+                    {"@timestamp":"2026-04-30T09:11:58.321Z","agent":{"id":"5b1bb334-a23d-4006-80fe-bd129b979c9f","name":"prod-host-1"},"osquery":{"uid":"1000","username":"ubuntu"}}
             application/json:
               schema:
                 description: >
@@ -265,6 +263,25 @@ paths:
                   result rows). Rows are held in memory before writing; prefer
                   `ndjson` for large exports.
                 $ref: '../export/export_results.schema.yaml#/components/schemas/ExportJsonResponse'
+              examples:
+                jsonExport:
+                  summary: JSON export with metadata and results
+                  value:
+                    _meta:
+                      action_id: '90f342ee-9c05-4844-849b-173993234f22'
+                      execution_count: 17384
+                      timestamp: '2026-04-30T09:12:00.000Z'
+                      exported_by: elastic
+                      format: json
+                      total_results: 1
+                    results:
+                      - '@timestamp': '2026-04-30T09:11:58.321Z'
+                        agent:
+                          id: '5b1bb334-a23d-4006-80fe-bd129b979c9f'
+                          name: prod-host-1
+                        osquery:
+                          uid: '1000'
+                          username: ubuntu
             text/csv:
               schema:
                 description: >
@@ -272,10 +289,13 @@ paths:
                   CSV output.
                 type: string
                 format: binary
-              example: |
-                osquery.description,agent.name,agent.id,osquery.uid,osquery.username
-                Ubuntu,prod-host-1,5b1bb334-a23d-4006-80fe-bd129b979c9f,1000,ubuntu
-                root,prod-host-1,5b1bb334-a23d-4006-80fe-bd129b979c9f,0,root
+              examples:
+                csvExport:
+                  summary: CSV export with a header row
+                  value: |
+                    osquery.description,agent.name,agent.id,osquery.uid,osquery.username
+                    Ubuntu,prod-host-1,5b1bb334-a23d-4006-80fe-bd129b979c9f,1000,ubuntu
+                    root,prod-host-1,5b1bb334-a23d-4006-80fe-bd129b979c9f,0,root
         '400':
           description: >
             Bad request. Possible causes: invalid or missing `format` query
@@ -289,6 +309,11 @@ paths:
                   message:
                     type: string
                     example: 'Export limited to 500,000 results. Found 500,001. Please add filters to narrow results.'
+              examples:
+                rowLimitExceeded:
+                  summary: Result count exceeds the export limit
+                  value:
+                    message: 'Export limited to 500,000 results. Found 500,001. Please add filters to narrow results.'
         '403':
           description: >
             The authenticated user does not have the `osquery-read` privilege
