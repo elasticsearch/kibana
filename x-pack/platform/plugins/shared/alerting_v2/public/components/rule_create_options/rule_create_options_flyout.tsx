@@ -25,7 +25,13 @@ const FLYOUT_TITLE_ID = 'ruleCreateOptionsFlyoutTitle';
 export interface RuleCreateOptionsFlyoutProps {
   onClose: () => void;
   onCreateEsqlRule: () => void;
-  onCreateWithAgent?: () => void;
+  onCreateWithAgent: () => void;
+  /**
+   * Optional tooltip text for the "Create with AI Agent" option. When set, the option is rendered
+   * disabled with this text shown as a tooltip (e.g. explaining a missing prerequisite); when
+   * unset, the option is enabled.
+   */
+  createWithAgentTooltipText?: string;
   onCreateThresholdAlert?: () => void;
   legacyRuleTypes?: LegacyRuleTypeItem[];
 }
@@ -34,6 +40,7 @@ export const RuleCreateOptionsFlyout = ({
   onClose,
   onCreateEsqlRule,
   onCreateWithAgent,
+  createWithAgentTooltipText,
   onCreateThresholdAlert,
   legacyRuleTypes,
 }: RuleCreateOptionsFlyoutProps) => {
@@ -84,6 +91,7 @@ export const RuleCreateOptionsFlyout = ({
           layout="vertical"
           onCreateEsqlRule={onCreateEsqlRule}
           onCreateWithAgent={onCreateWithAgent}
+          createWithAgentTooltipText={createWithAgentTooltipText}
           onCreateThresholdAlert={onCreateThresholdAlert}
           legacyRuleTypes={legacyRuleTypes}
         />

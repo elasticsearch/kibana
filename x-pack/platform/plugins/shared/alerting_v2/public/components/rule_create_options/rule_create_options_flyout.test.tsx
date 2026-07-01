@@ -83,19 +83,25 @@ describe('RuleCreateOptionsFlyout', () => {
     expect(onCreateThresholdAlert).toHaveBeenCalledTimes(1);
   });
 
-  it('hides the AI Agent option when onCreateWithAgent is not provided', () => {
+  it('renders the AI Agent option disabled and does not fire onCreateWithAgent when createWithAgentTooltipText is set', () => {
     render(
       <I18nProvider>
         <RuleCreateOptionsFlyout
           onClose={onClose}
           onCreateEsqlRule={onCreateEsqlRule}
+          onCreateWithAgent={onCreateWithAgent}
+          createWithAgentTooltipText="Missing privileges"
           onCreateThresholdAlert={onCreateThresholdAlert}
         />
       </I18nProvider>
     );
 
-    expect(screen.getByText('Create ES|QL rule')).toBeInTheDocument();
-    expect(screen.queryByText('Create with AI Agent')).not.toBeInTheDocument();
-    expect(screen.getByText('Threshold Alert')).toBeInTheDocument();
+    const agentCard = screen.getByTestId('createWithAgentCard');
+    expect(agentCard).toBeInTheDocument();
+    // Kept focusable (aria-disabled) rather than natively disabled so the tooltip stays reachable.
+    expect(agentCard).toHaveAttribute('aria-disabled', 'true');
+
+    fireEvent.click(screen.getByRole('button', { name: /create with ai agent/i }));
+    expect(onCreateWithAgent).not.toHaveBeenCalled();
   });
 });

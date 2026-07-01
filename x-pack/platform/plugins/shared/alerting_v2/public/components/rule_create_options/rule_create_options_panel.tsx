@@ -18,12 +18,14 @@ import {
   EuiSpacer,
   EuiText,
   EuiTitle,
+  EuiToolTip,
   type UseEuiTheme,
 } from '@elastic/eui';
 import { css } from '@emotion/react';
 import { useMemoCss } from '@kbn/css-utils/public/use_memo_css';
 import { i18n } from '@kbn/i18n';
 import { FormattedMessage } from '@kbn/i18n-react';
+import type { RuleManagementABSkillRequirements } from '../../hooks/use_is_rule_management_ab_skill_available';
 import rulesListEmptyIllustration from '../../assets/illustration-results-128.svg';
 
 export interface LegacyRuleTypeItem {
@@ -36,7 +38,13 @@ export interface LegacyRuleTypeItem {
 interface RuleCreateOptionsPanelProps {
   onCreateEsqlRule: () => void;
   layout?: 'vertical' | 'horizontal';
-  onCreateWithAgent?: () => void;
+  onCreateWithAgent: () => void;
+  /**
+   * Optional tooltip text for the "Create with AI Agent" option. When set, the option is always
+   * rendered but disabled, with this text shown as a tooltip explaining why (e.g. a missing
+   * prerequisite). When unset, the option is enabled and `onCreateWithAgent` fires on click.
+   */
+  createWithAgentTooltipText?: string;
   onCreateThresholdAlert?: () => void;
   legacyRuleTypes?: LegacyRuleTypeItem[];
 }
@@ -83,12 +91,20 @@ const listEmptyStateStyles = {
   actionPanelTextWrapper: css({ minWidth: 0 }),
 };
 
+/** Applied to an action panel rendered in a disabled state (e.g. missing privileges). */
+const actionPanelDisabledStyle = css({
+  cursor: 'not-allowed',
+  opacity: 0.5,
+});
+
 interface RuleCreateOptionItem {
   id: string;
   iconType: string;
   title: string;
   description: string;
   onClick: () => void;
+  /** When set, the option is disabled and this string is shown as a hover tooltip. */
+  tooltipText?: string;
   'data-test-subj'?: string;
 }
 
@@ -108,6 +124,48 @@ const AI_AGENT_DESCRIPTION = i18n.translate(
   'xpack.alertingV2.ruleCreateOptionsPanel.createWithAiAgentDescription',
   { defaultMessage: 'Set up an Alerting rule with the help of the AI Agent.' }
 );
+const CREATE_WITH_AGENT_MISSING_PRIVILEGE_TOOLTIP = i18n.translate(
+  'xpack.alertingV2.ruleCreateOptions.createWithAgentMissingPrivilegeTooltip',
+  {
+    defaultMessage:
+      'To create rules with the AI Agent, you need the "Agent Builder: Read" privilege.',
+  }
+);
+const CREATE_WITH_AGENT_MISSING_SETTING_TOOLTIP = i18n.translate(
+  'xpack.alertingV2.ruleCreateOptions.createWithAgentMissingSettingTooltip',
+  {
+    defaultMessage:
+      'To create rules with the AI Agent, enable the "Elastic Agent Builder: Experimental Features" advanced setting.',
+  }
+);
+const CREATE_WITH_AGENT_MISSING_ALL_TOOLTIP = i18n.translate(
+  'xpack.alertingV2.ruleCreateOptions.createWithAgentMissingAllTooltip',
+  {
+    defaultMessage:
+      'To create rules with the AI Agent, you need the "Agent Builder: Read" privilege and the "Elastic Agent Builder: Experimental Features" advanced setting enabled.',
+  }
+);
+
+/**
+ * Builds the tooltip shown on the disabled "Create with agent" entry points, naming the specific
+ * prerequisite(s) the user is missing. Returns `undefined` when the skill is fully available (the
+ * option should then be enabled). Shared so all entry points produce the same message.
+ */
+export const getCreateWithAgentTooltipText = ({
+  hasAgentBuilderCapability,
+  isExperimentalFeaturesEnabled,
+}: RuleManagementABSkillRequirements): string | undefined => {
+  if (hasAgentBuilderCapability && isExperimentalFeaturesEnabled) {
+    return undefined;
+  }
+  if (!hasAgentBuilderCapability && !isExperimentalFeaturesEnabled) {
+    return CREATE_WITH_AGENT_MISSING_ALL_TOOLTIP;
+  }
+  if (!hasAgentBuilderCapability) {
+    return CREATE_WITH_AGENT_MISSING_PRIVILEGE_TOOLTIP;
+  }
+  return CREATE_WITH_AGENT_MISSING_SETTING_TOOLTIP;
+};
 const THRESHOLD_ALERT_TITLE = i18n.translate(
   'xpack.alertingV2.ruleCreateOptionsPanel.thresholdAlertTitle',
   { defaultMessage: 'Threshold Alert' }
@@ -125,30 +183,47 @@ const noop = () => undefined;
 const RuleCreateOptionActionPanel: React.FC<{
   item: RuleCreateOptionItem;
   actionPanelStyle: React.ComponentProps<typeof EuiPanel>['css'];
-}> = ({ item, actionPanelStyle }) => (
-  <EuiPanel
-    element="button"
-    hasBorder
-    paddingSize="none"
-    onClick={item.onClick}
-    css={actionPanelStyle}
-    data-test-subj={item['data-test-subj']}
-  >
-    <EuiFlexGroup alignItems="center" gutterSize="m" responsive={false}>
-      <EuiFlexItem grow={false}>
-        <EuiIcon type={item.iconType} size="m" color="text" aria-hidden={true} />
-      </EuiFlexItem>
-      <EuiFlexItem css={listEmptyStateStyles.actionPanelTextWrapper}>
-        <EuiText size="s">
-          <strong>{item.title}</strong>
-        </EuiText>
-        <EuiText size="xs" color="subdued">
-          {item.description}
-        </EuiText>
-      </EuiFlexItem>
-    </EuiFlexGroup>
-  </EuiPanel>
-);
+}> = ({ item, actionPanelStyle }) => {
+  const isDisabled = item.tooltipText !== undefined;
+  const panel = (
+    <EuiPanel
+      element="button"
+      hasBorder
+      paddingSize="none"
+      // EuiPanel has no built-in disabled appearance (unlike EuiCard's `isDisabled`), and a native
+      // `disabled` button would both leave it unstyled and suppress the hover events EuiToolTip
+      // needs. So we convey the disabled state with `aria-disabled` + styling and guard the click.
+      aria-disabled={isDisabled || undefined}
+      onClick={isDisabled ? noop : item.onClick}
+      css={[actionPanelStyle, isDisabled && actionPanelDisabledStyle]}
+      data-test-subj={item['data-test-subj']}
+    >
+      <EuiFlexGroup alignItems="center" gutterSize="m" responsive={false}>
+        <EuiFlexItem grow={false}>
+          <EuiIcon type={item.iconType} size="m" color="text" aria-hidden={true} />
+        </EuiFlexItem>
+        <EuiFlexItem css={listEmptyStateStyles.actionPanelTextWrapper}>
+          <EuiText size="s">
+            <strong>{item.title}</strong>
+          </EuiText>
+          <EuiText size="xs" color="subdued">
+            {item.description}
+          </EuiText>
+        </EuiFlexItem>
+      </EuiFlexGroup>
+    </EuiPanel>
+  );
+
+  if (isDisabled) {
+    return (
+      <EuiToolTip content={item.tooltipText} display="block">
+        {panel}
+      </EuiToolTip>
+    );
+  }
+
+  return panel;
+};
 
 const RuleBuilderSectionDivider: React.FC = () => (
   <>
@@ -177,12 +252,13 @@ const RuleBuilderSectionDivider: React.FC = () => (
 const RuleCreateOptionsListEmptyState: React.FC<RuleCreateOptionsPanelProps> = ({
   onCreateEsqlRule,
   onCreateWithAgent,
+  createWithAgentTooltipText,
   onCreateThresholdAlert,
 }) => {
   const styles = useMemoCss(listEmptyStateStyles);
 
-  const primaryCreateOptions = useMemo<RuleCreateOptionItem[]>(() => {
-    const options: RuleCreateOptionItem[] = [
+  const primaryCreateOptions = useMemo<RuleCreateOptionItem[]>(
+    () => [
       {
         id: 'create-esql-rule',
         iconType: 'productDiscover',
@@ -191,19 +267,18 @@ const RuleCreateOptionsListEmptyState: React.FC<RuleCreateOptionsPanelProps> = (
         onClick: onCreateEsqlRule,
         'data-test-subj': 'createEsqlRuleCard',
       },
-    ];
-    if (onCreateWithAgent) {
-      options.push({
+      {
         id: 'create-with-agent',
         iconType: 'productAgent',
         title: AI_AGENT_TITLE,
         description: AI_AGENT_DESCRIPTION,
         onClick: onCreateWithAgent,
+        tooltipText: createWithAgentTooltipText,
         'data-test-subj': 'createWithAgentCard',
-      });
-    }
-    return options;
-  }, [onCreateEsqlRule, onCreateWithAgent]);
+      },
+    ],
+    [onCreateEsqlRule, onCreateWithAgent, createWithAgentTooltipText]
+  );
 
   const thresholdCreateOption = useMemo<RuleCreateOptionItem>(
     () => ({
@@ -306,13 +381,37 @@ const LegacyRuleTypesSection: React.FC<{ items: LegacyRuleTypeItem[] }> = ({ ite
   );
 };
 
-/** Create-rule flyout — original card layout (unchanged). */
+/** Create-rule flyout — original card layout. */
 const RuleCreateOptionsFlyoutPanel: React.FC<RuleCreateOptionsPanelProps> = ({
   onCreateEsqlRule,
   onCreateWithAgent,
+  createWithAgentTooltipText,
   onCreateThresholdAlert,
   legacyRuleTypes,
 }) => {
+  const isAgentDisabled = createWithAgentTooltipText !== undefined;
+  const agentCard = (
+    <EuiCard
+      layout="horizontal"
+      display="plain"
+      titleElement="h3"
+      titleSize="xs"
+      hasBorder={true}
+      // Convey the disabled state with `aria-disabled` + styling and a guarded click rather than
+      // EuiCard's native `isDisabled` (which renders a `disabled` <button>). A native disabled
+      // control drops out of the tab order and suppresses the hover events EuiToolTip needs, so the
+      // explanatory tooltip would be unreachable — defeating the goal of signalling how to gain
+      // access. Keeping it focusable lets the tooltip surface on both hover and keyboard focus.
+      aria-disabled={isAgentDisabled || undefined}
+      css={isAgentDisabled ? actionPanelDisabledStyle : undefined}
+      title={AI_AGENT_TITLE}
+      description={AI_AGENT_DESCRIPTION}
+      onClick={isAgentDisabled ? noop : onCreateWithAgent}
+      icon={<EuiIcon type="productAgent" color="text" size="l" aria-hidden={true} />}
+      data-test-subj="createWithAgentCard"
+    />
+  );
+
   return (
     <>
       <EuiFlexGroup direction="column" gutterSize="l">
@@ -330,21 +429,15 @@ const RuleCreateOptionsFlyoutPanel: React.FC<RuleCreateOptionsPanelProps> = ({
             data-test-subj="createEsqlRuleCard"
           />
         </EuiFlexItem>
-        {onCreateWithAgent ? (
-          <EuiFlexItem>
-            <EuiCard
-              layout="horizontal"
-              display="plain"
-              titleElement="h3"
-              titleSize="xs"
-              hasBorder={true}
-              title={AI_AGENT_TITLE}
-              description={AI_AGENT_DESCRIPTION}
-              onClick={onCreateWithAgent}
-              icon={<EuiIcon type="productAgent" color="text" size="l" aria-hidden={true} />}
-            />
-          </EuiFlexItem>
-        ) : null}
+        <EuiFlexItem>
+          {isAgentDisabled ? (
+            <EuiToolTip content={createWithAgentTooltipText} display="block">
+              {agentCard}
+            </EuiToolTip>
+          ) : (
+            agentCard
+          )}
+        </EuiFlexItem>
       </EuiFlexGroup>
       <RuleBuilderSectionDivider />
       <EuiCard

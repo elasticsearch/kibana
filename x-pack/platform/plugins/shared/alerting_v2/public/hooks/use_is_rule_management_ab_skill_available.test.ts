@@ -8,7 +8,10 @@
 import { renderHook } from '@testing-library/react';
 import { useService, CoreStart } from '@kbn/core-di-browser';
 import { AGENT_BUILDER_EXPERIMENTAL_FEATURES_SETTING_ID } from '@kbn/management-settings-ids';
-import { useIsRuleManagementABSkillAvailable } from './use_is_rule_management_ab_skill_available';
+import {
+  useIsRuleManagementABSkillAvailable,
+  useRuleManagementABSkillRequirements,
+} from './use_is_rule_management_ab_skill_available';
 
 jest.mock('@kbn/core-di-browser');
 
@@ -100,5 +103,44 @@ describe('useIsRuleManagementABSkillAvailable', () => {
     const { result } = renderHook(() => useIsRuleManagementABSkillAvailable());
 
     expect(result.current).toBe(false);
+  });
+});
+
+describe('useRuleManagementABSkillRequirements', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it('reports both prerequisites as met when capability and experimental features are on', () => {
+    setupMocks({ agentBuilderShow: true, experimentalFeaturesEnabled: true });
+
+    const { result } = renderHook(() => useRuleManagementABSkillRequirements());
+
+    expect(result.current).toEqual({
+      hasAgentBuilderCapability: true,
+      isExperimentalFeaturesEnabled: true,
+    });
+  });
+
+  it('reports the missing capability when the agent builder privilege is absent', () => {
+    setupMocks({ agentBuilderShow: false, experimentalFeaturesEnabled: true });
+
+    const { result } = renderHook(() => useRuleManagementABSkillRequirements());
+
+    expect(result.current).toEqual({
+      hasAgentBuilderCapability: false,
+      isExperimentalFeaturesEnabled: true,
+    });
+  });
+
+  it('reports the missing setting when experimental features are disabled', () => {
+    setupMocks({ agentBuilderShow: true, experimentalFeaturesEnabled: false });
+
+    const { result } = renderHook(() => useRuleManagementABSkillRequirements());
+
+    expect(result.current).toEqual({
+      hasAgentBuilderCapability: true,
+      isExperimentalFeaturesEnabled: false,
+    });
   });
 });

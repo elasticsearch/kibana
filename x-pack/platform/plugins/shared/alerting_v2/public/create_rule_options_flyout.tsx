@@ -25,7 +25,8 @@ import type { ComposeDiscoverFlyoutProps } from '@kbn/alerting-v2-rule-form';
 import { Context } from '@kbn/core-di-browser';
 import { untilPluginStartServicesReady, type AlertingV2KibanaServices } from './kibana_services';
 import { RuleCreateOptionsFlyout } from './components/rule_create_options/rule_create_options_flyout';
-import { getIsRuleManagementABSkillAvailable } from './hooks/use_is_rule_management_ab_skill_available';
+import { getCreateWithAgentTooltipText } from './components/rule_create_options/rule_create_options_panel';
+import { getRuleManagementABSkillRequirements } from './hooks/use_is_rule_management_ab_skill_available';
 import { RulesApi } from './services/rules_api';
 import { CREATE_WITH_AGENT_INITIAL_PROMPT, AGENT_BUILDER_NEW_CONVERSATION_PATH } from './constants';
 
@@ -238,10 +239,13 @@ const CreateRuleOptionsFlyoutInner = ({
 
   const { services, ComposeDiscoverFlyout } = value;
 
-  const isRuleManagementABSkillAvailable = getIsRuleManagementABSkillAvailable(
+  const abSkillRequirements = getRuleManagementABSkillRequirements(
     services.application,
     services.uiSettings
   );
+  // Always render the "Create with agent" option; disable it with a tooltip naming the missing
+  // prerequisite when unavailable.
+  const createWithAgentTooltipText = getCreateWithAgentTooltipText(abSkillRequirements);
 
   if (step.type === 'esql') {
     return (
@@ -287,7 +291,8 @@ const CreateRuleOptionsFlyoutInner = ({
     <RuleCreateOptionsFlyout
       onClose={onClose}
       onCreateEsqlRule={() => setStep({ type: 'esql' })}
-      onCreateWithAgent={isRuleManagementABSkillAvailable ? navigateToAgentBuilder : undefined}
+      onCreateWithAgent={navigateToAgentBuilder}
+      createWithAgentTooltipText={createWithAgentTooltipText}
       onCreateThresholdAlert={() => setStep({ type: 'threshold' })}
       legacyRuleTypes={legacyPanelItems}
     />

@@ -837,7 +837,7 @@ describe('RulesListPage', () => {
     });
   });
 
-  it('hides agent builder options when agent builder is not available', async () => {
+  it('disables the split button agent option (does not hide it) when agent builder is not available', async () => {
     mockAgentBuilderShow = false;
     mockExperimentalFeaturesEnabled = false;
 
@@ -856,10 +856,15 @@ describe('RulesListPage', () => {
       expect(screen.getByTestId('createEsqlRuleButton')).toBeInTheDocument();
     });
 
-    expect(screen.queryByTestId('createWithAgentButton')).not.toBeInTheDocument();
+    const agentButton = screen.getByTestId('createWithAgentButton');
+    expect(agentButton).toBeInTheDocument();
+    expect(agentButton).toBeDisabled();
+
+    fireEvent.click(agentButton);
+    expect(mockNavigateToApp).not.toHaveBeenCalled();
   });
 
-  it('hides agent builder options in empty state when agent builder is not available', () => {
+  it('disables the empty state agent card (does not hide it) when agent builder is not available', () => {
     mockAgentBuilderShow = false;
     mockExperimentalFeaturesEnabled = false;
 
@@ -873,7 +878,9 @@ describe('RulesListPage', () => {
     renderPage();
 
     expect(screen.getByTestId('createEsqlRuleCard')).toBeInTheDocument();
-    expect(screen.queryByTestId('createWithAgentCard')).not.toBeInTheDocument();
+    const agentCard = screen.getByTestId('createWithAgentCard');
+    expect(agentCard).toBeInTheDocument();
+    expect(agentCard).toHaveAttribute('aria-disabled', 'true');
   });
 
   it('shows delete confirmation modal when delete action is clicked', async () => {
