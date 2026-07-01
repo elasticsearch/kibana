@@ -12,10 +12,12 @@ import { buildAlertEntityGraphStepDefinition } from './build_alert_entity_graph_
 import { setAlertStatusStepDefinition } from './set_alert_status_step/set_alert_status_step';
 import { setAlertTagsStepDefinition } from './set_alert_tags_step/set_alert_tags_step';
 import { assignAlertStepDefinition } from './assign_alert_step/assign_alert_step';
+import { setAttackStatusStepDefinition } from './set_attack_status_step/set_attack_status_step';
 import {
   REGISTER_ALERT_VALIDATION_STEPS_FEATURE_FLAG,
   REGISTER_ALERT_VALIDATION_STEP_FEATURE_FLAG_DEFAULT,
 } from '../../../common/constants';
+import type { ExperimentalFeatures } from '../../../common/experimental_features';
 
 /**
  * Registers all security workflow steps with the workflowsExtensions plugin.
@@ -24,7 +26,8 @@ import {
  */
 export const registerWorkflowSteps = (
   workflowsExtensions: WorkflowsExtensionsServerPluginSetup,
-  core: CoreSetup
+  core: CoreSetup,
+  experimentalFeatures: ExperimentalFeatures
 ): void => {
   const isEnabled = core
     .getStartServices()
@@ -48,4 +51,7 @@ export const registerWorkflowSteps = (
   workflowsExtensions.registerStepDefinition(setAlertStatusStepDefinition);
   workflowsExtensions.registerStepDefinition(setAlertTagsStepDefinition);
   workflowsExtensions.registerStepDefinition(assignAlertStepDefinition);
+  if (experimentalFeatures.publicAttacksApiEnabled) {
+    workflowsExtensions.registerStepDefinition(setAttackStatusStepDefinition);
+  }
 };

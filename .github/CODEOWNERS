@@ -3082,14 +3082,17 @@ x-pack/solutions/security/plugins/entity_store @elastic/core-analysis
 # Common step types
 /x-pack/solutions/security/plugins/security_solution/common/workflows/step_types/assign_alert_step @elastic/security-threat-hunting
 /x-pack/solutions/security/plugins/security_solution/common/workflows/step_types/set_alert_status_step @elastic/security-threat-hunting
+/x-pack/solutions/security/plugins/security_solution/common/workflows/step_types/set_attack_status_step @elastic/security-threat-hunting
 
 # Public step types
 x-pack/solutions/security/plugins/security_solution/public/workflows/step_types/assign_alert_step @elastic/security-threat-hunting
 x-pack/solutions/security/plugins/security_solution/public/workflows/step_types/set_alert_status_step @elastic/security-threat-hunting
+x-pack/solutions/security/plugins/security_solution/public/workflows/step_types/set_attack_status_step @elastic/security-threat-hunting
 
 # Server step types
 x-pack/solutions/security/plugins/security_solution/server/workflows/step_types/assign_alert_step @elastic/security-threat-hunting
 x-pack/solutions/security/plugins/security_solution/server/workflows/step_types/set_alert_status_step @elastic/security-threat-hunting
+x-pack/solutions/security/plugins/security_solution/server/workflows/step_types/set_attack_status_step @elastic/security-threat-hunting
 
 ## Security Threat Hunting owner connectors
 # OpenAI

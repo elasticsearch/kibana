@@ -22,11 +22,9 @@ export const assignAlertStepDefinition = createServerStepDefinition({
     const signalIds = Array.isArray(alertIds) ? alertIds : [alertIds];
 
     try {
-      const { status: responseStatus, body } = await context.contextManager.callKibanaApi<{
-        took?: number;
-        errors?: boolean;
-        items?: unknown[];
-      }>({
+      const { status: responseStatus, body } = await context.contextManager.callKibanaApi<
+        Record<string, unknown>
+      >({
         method: 'POST',
         path: DETECTION_ENGINE_ALERT_ASSIGNEES_URL,
         body: {
