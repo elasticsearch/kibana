@@ -25,6 +25,7 @@ responses:
                 - "user:j.doe@example.com"
               skipped: []
               target_id: "user:jane.doe@example.com"
+              entity_type: "user"
   400:
     description: "Bad request."
     content:
@@ -44,17 +45,12 @@ responses:
               statusCode: 400
               error: "Bad Request"
               message: "Cannot link entities of different types"
-  404:
-    description: "Entities not found."
-    content:
-      application/json:
-        examples:
           notFoundExample:
             summary: "Entities not found"
             description: "One or more of the specified entity identifiers were not found."
             value:
-              statusCode: 404
-              error: "Not Found"
+              statusCode: 400
+              error: "Bad Request"
               message: "Entities not found: [user:nonexistent@example.com, user:also-nonexistent@example.com]"
 x-codeSamples:
   - lang: curl

@@ -23,8 +23,9 @@ responses:
                 - "user:jdoe@example.com"
                 - "user:j.doe@example.com"
               skipped: []
-  404:
-    description: "Entities not found."
+              entity_type: "user"
+  400:
+    description: "Bad request."
     content:
       application/json:
         examples:
@@ -32,9 +33,16 @@ responses:
             summary: "Entities not found"
             description: "One or more of the specified entity identifiers were not found."
             value:
-              statusCode: 404
-              error: "Not Found"
+              statusCode: 400
+              error: "Bad Request"
               message: "Entities not found: [user:nonexistent@example.com]"
+          mixedTypesExample:
+            summary: "Mixed entity types"
+            description: "All entities in a resolution group must be of the same type."
+            value:
+              statusCode: 400
+              error: "Bad Request"
+              message: "All entities must be of the same type. Found types: [user, host]"
 x-codeSamples:
   - lang: curl
     source: |

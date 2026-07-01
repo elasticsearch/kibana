@@ -30,6 +30,7 @@ responses:
                       resolution:
                         resolved_to: "user:jane.doe@example.com"
               group_size: 2
+              entity_type: "user"
   400:
     description: "Bad request."
     content:

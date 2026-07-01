@@ -58,6 +58,7 @@ const runConfig = async (
     logger: loggerMock.create(),
     esClient,
     cpsEsClient: esClient,
+    telemetry: { report: jest.fn() },
   } as unknown as EntityMaintainerTaskMethodContext;
 
   const result = await automatedResolutionMaintainerConfig.run(context);

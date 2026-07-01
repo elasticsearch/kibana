@@ -65,6 +65,33 @@ interface EntityMaintainerEvent {
   errorMessage?: string;
 }
 
+interface ResolutionEventBase {
+  namespace: string;
+}
+
+interface ResolutionTypedEvent extends ResolutionEventBase {
+  entityType: string;
+}
+
+interface ResolutionLinkEvent extends ResolutionTypedEvent {
+  entitiesLinked: number;
+  entitiesSkipped: number;
+}
+
+interface ResolutionUnlinkEvent extends ResolutionTypedEvent {
+  entitiesUnlinked: number;
+  entitiesSkipped: number;
+}
+
+interface ResolutionGroupViewEvent extends ResolutionTypedEvent {
+  groupSize: number;
+}
+
+interface ResolutionErrorEvent extends ResolutionEventBase {
+  errorType: string;
+  operation: string;
+}
+
 interface EntityMaintainerRunSummaryFunnel {
   /** Entities or records scanned from source */
   scanned: number;
@@ -510,6 +537,118 @@ export const ENTITY_MAINTAINER_RUN_SUMMARY_EVENT = {
   },
 } as const satisfies EventTypeOpts<EntityMaintainerRunSummaryEvent>;
 
+export const ENTITY_STORE_RESOLUTION_LINK_EVENT = {
+  eventType: 'entity_store_resolution_link',
+  schema: {
+    entityType: {
+      type: 'keyword',
+      _meta: {
+        description:
+          'Entity type of the resolution group (e.g. "user", "host", "service", "generic")',
+      },
+    },
+    entitiesLinked: {
+      type: 'long',
+      _meta: {
+        description: 'Number of entities successfully linked to the target',
+      },
+    },
+    entitiesSkipped: {
+      type: 'long',
+      _meta: {
+        description: 'Number of entities skipped because they were already linked to the target',
+      },
+    },
+    namespace: {
+      type: 'keyword',
+      _meta: {
+        description: 'Kibana space where the link operation was performed (e.g. "default")',
+      },
+    },
+  },
+} as const satisfies EventTypeOpts<ResolutionLinkEvent>;
+
+export const ENTITY_STORE_RESOLUTION_UNLINK_EVENT = {
+  eventType: 'entity_store_resolution_unlink',
+  schema: {
+    entityType: {
+      type: 'keyword',
+      _meta: {
+        description:
+          'Entity type of the resolution group (e.g. "user", "host", "service", "generic")',
+      },
+    },
+    entitiesUnlinked: {
+      type: 'long',
+      _meta: {
+        description: 'Number of alias entities successfully unlinked',
+      },
+    },
+    entitiesSkipped: {
+      type: 'long',
+      _meta: {
+        description: 'Number of non-alias entities silently skipped',
+      },
+    },
+    namespace: {
+      type: 'keyword',
+      _meta: {
+        description: 'Kibana space where the unlink operation was performed (e.g. "default")',
+      },
+    },
+  },
+} as const satisfies EventTypeOpts<ResolutionUnlinkEvent>;
+
+export const ENTITY_STORE_RESOLUTION_GROUP_VIEW_EVENT = {
+  eventType: 'entity_store_resolution_group_view',
+  schema: {
+    entityType: {
+      type: 'keyword',
+      _meta: {
+        description:
+          'Entity type of the resolution group (e.g. "user", "host", "service", "generic")',
+      },
+    },
+    groupSize: {
+      type: 'long',
+      _meta: {
+        description: 'Total number of entities in the resolution group (target plus aliases)',
+      },
+    },
+    namespace: {
+      type: 'keyword',
+      _meta: {
+        description: 'Kibana space where the group view was requested (e.g. "default")',
+      },
+    },
+  },
+} as const satisfies EventTypeOpts<ResolutionGroupViewEvent>;
+
+export const ENTITY_STORE_RESOLUTION_ERROR_EVENT = {
+  eventType: 'entity_store_resolution_error',
+  schema: {
+    errorType: {
+      type: 'keyword',
+      _meta: {
+        description:
+          'Resolution error category (e.g. "self_link", "chain_resolution", "entities_not_found")',
+      },
+    },
+    operation: {
+      type: 'keyword',
+      _meta: {
+        description: 'Resolution API operation that failed (link, unlink, or group)',
+      },
+    },
+    namespace: {
+      type: 'keyword',
+      _meta: {
+        description: 'Kibana space where the failed operation was attempted (e.g. "default")',
+      },
+    },
+  },
+} as const satisfies EventTypeOpts<ResolutionErrorEvent>;
+
 export const ENTITY_STORE_HEALTH_REPORT_EVENT = {
   eventType: 'entity_store_health_report',
   schema: {
@@ -587,6 +726,10 @@ const events = [
   ENTITY_STORE_HEALTH_REPORT_EVENT,
   ENTITY_MAINTAINER_EVENT,
   ENTITY_MAINTAINER_RUN_SUMMARY_EVENT,
+  ENTITY_STORE_RESOLUTION_LINK_EVENT,
+  ENTITY_STORE_RESOLUTION_UNLINK_EVENT,
+  ENTITY_STORE_RESOLUTION_GROUP_VIEW_EVENT,
+  ENTITY_STORE_RESOLUTION_ERROR_EVENT,
 ] as const;
 
 export const registerTelemetry = (analytics: AnalyticsServiceSetup) =>
@@ -605,6 +748,10 @@ interface TelemetryEventMap {
   [ENTITY_STORE_HEALTH_REPORT_EVENT.eventType]: EntityStoreHealthReportPayload;
   [ENTITY_MAINTAINER_EVENT.eventType]: EntityMaintainerEvent;
   [ENTITY_MAINTAINER_RUN_SUMMARY_EVENT.eventType]: EntityMaintainerRunSummaryEvent;
+  [ENTITY_STORE_RESOLUTION_LINK_EVENT.eventType]: ResolutionLinkEvent;
+  [ENTITY_STORE_RESOLUTION_UNLINK_EVENT.eventType]: ResolutionUnlinkEvent;
+  [ENTITY_STORE_RESOLUTION_GROUP_VIEW_EVENT.eventType]: ResolutionGroupViewEvent;
+  [ENTITY_STORE_RESOLUTION_ERROR_EVENT.eventType]: ResolutionErrorEvent;
 }
 
 export type TelemetryReporter = ReturnType<typeof createReportEvent>;

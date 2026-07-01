@@ -29,7 +29,7 @@ export const automatedResolutionMaintainerConfig: RegisterEntityMaintainerConfig
   interval: '5m',
   initialState: createInitialState(),
   minLicense: 'enterprise',
-  run: async ({ status, abortController, logger, esClient }) => {
+  run: async ({ status, abortController, logger, esClient, telemetry }) => {
     const namespace = status.metadata.namespace;
     const state = migrate(status.state, logger);
 
@@ -46,6 +46,7 @@ export const automatedResolutionMaintainerConfig: RegisterEntityMaintainerConfig
           logger,
           resolutionClient,
           abortController,
+          telemetry,
         });
       }
     }

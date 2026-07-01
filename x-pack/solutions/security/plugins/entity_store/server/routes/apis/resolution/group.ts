@@ -7,18 +7,56 @@
 
 import path from 'node:path';
 import { z } from '@kbn/zod/v4';
-import type { IKibanaResponse } from '@kbn/core-http-server';
+import type { IKibanaResponse, KibanaRequest, KibanaResponseFactory } from '@kbn/core-http-server';
 import { buildStrictRouteValidationWithZod } from '../utils/build_strict_route_validation';
 import { API_VERSIONS, ENTITY_STORE_ROUTES } from '../../../../common';
 import { RESOLUTION_ENTITY_STORE_PERMISSIONS } from '../../constants';
-import type { EntityStorePluginRouter } from '../../../types';
+import type { EntityStorePluginRouter, EntityStoreRequestHandlerContext } from '../../../types';
 import { wrapMiddlewares } from '../../middleware';
 import { enterpriseLicenseMiddleware } from '../../middleware/enterprise_license';
 import { EntitiesNotFoundError, ResolutionSearchTruncatedError } from '../../../domain/errors';
+import { ENTITY_STORE_RESOLUTION_GROUP_VIEW_EVENT } from '../../../telemetry/events';
+import { reportResolutionError } from './utils/resolution_telemetry';
 
 const querySchema = z.object({
   entity_id: z.string().describe('The entity identifier to look up the resolution group for.'),
 });
+
+type GroupRequestQuery = z.infer<typeof querySchema>;
+
+export async function handleResolutionGroup(
+  ctx: EntityStoreRequestHandlerContext,
+  req: KibanaRequest<unknown, GroupRequestQuery, unknown>,
+  res: KibanaResponseFactory
+): Promise<IKibanaResponse> {
+  const { logger, resolutionClient, analytics, namespace } = await ctx.entityStore;
+
+  logger.debug('Resolution Group API called');
+
+  try {
+    const result = await resolutionClient.getResolutionGroup(req.query.entity_id);
+
+    analytics.reportEvent(ENTITY_STORE_RESOLUTION_GROUP_VIEW_EVENT, {
+      entityType: result.entity_type,
+      groupSize: result.group_size,
+      namespace,
+    });
+
+    return res.ok({ body: result });
+  } catch (error) {
+    reportResolutionError(analytics, 'group', namespace, error);
+
+    if (error instanceof EntitiesNotFoundError) {
+      return res.notFound({ body: error });
+    }
+    if (error instanceof ResolutionSearchTruncatedError) {
+      return res.badRequest({ body: error });
+    }
+
+    logger.error(error);
+    throw error;
+  }
+}
 
 export function registerResolutionGroup(router: EntityStorePluginRouter) {
   router.versioned
@@ -48,29 +86,6 @@ export function registerResolutionGroup(router: EntityStorePluginRouter) {
           oasOperationObject: () => path.join(__dirname, '../examples/resolution_group.yaml'),
         },
       },
-      wrapMiddlewares(
-        async (ctx, req, res): Promise<IKibanaResponse> => {
-          const { logger, resolutionClient } = await ctx.entityStore;
-
-          logger.debug('Resolution Group API called');
-
-          try {
-            const result = await resolutionClient.getResolutionGroup(req.query.entity_id);
-
-            return res.ok({ body: result });
-          } catch (error) {
-            if (error instanceof EntitiesNotFoundError) {
-              return res.customError({ statusCode: 404, body: error });
-            }
-            if (error instanceof ResolutionSearchTruncatedError) {
-              return res.badRequest({ body: error });
-            }
-
-            logger.error(error);
-            throw error;
-          }
-        },
-        [enterpriseLicenseMiddleware]
-      )
+      wrapMiddlewares(handleResolutionGroup, [enterpriseLicenseMiddleware])
     );
 }

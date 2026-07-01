@@ -32,6 +32,7 @@ const createDeps = (
   logger: loggerMock.create(),
   resolutionClient,
   abortController: new AbortController(),
+  telemetry: { report: jest.fn() },
   ...overrides,
 });
 
@@ -91,9 +92,12 @@ describe('Email rule resolution', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    mockLinkEntities = jest
-      .fn()
-      .mockResolvedValue({ linked: ['alias-1'], skipped: [], target_id: 'target-1' });
+    mockLinkEntities = jest.fn().mockResolvedValue({
+      linked: ['alias-1'],
+      skipped: [],
+      target_id: 'target-1',
+      entity_type: 'user',
+    });
     mockResolutionClient = { linkEntities: mockLinkEntities } as unknown as ResolutionClient;
     mockEsClient = {
       search: jest.fn(),
@@ -163,16 +167,152 @@ describe('Email rule resolution', () => {
 
     it('should return early when no new entities found', async () => {
       const state = createInitialState({ lastProcessedTimestamp: '2026-03-09T00:00:00Z' });
+      const telemetry = { report: jest.fn() };
       mockEsClient.search.mockResolvedValueOnce(createCollectNewEmailsResponse([], '') as any);
 
       const result = await runEmailRuleResolution(
-        createDeps(state, mockEsClient, mockResolutionClient)
+        createDeps(state, mockEsClient, mockResolutionClient, { telemetry })
       );
 
       expect(result.lastProcessedTimestamp).toBe('2026-03-09T00:00:00Z');
       expect(result.lastRun?.resolutionsCreated).toBe(0);
       expect(result.lastRun?.skippedAmbiguousBuckets).toBe(0);
       expect(mockEsClient.search).toHaveBeenCalledTimes(1);
+      expect(telemetry.report).not.toHaveBeenCalled();
+    });
+
+    it('should report maintainer funnel telemetry after Step 3', async () => {
+      const state = createInitialState();
+      const telemetry = { report: jest.fn() };
+      mockEsClient.search
+        .mockResolvedValueOnce(
+          createCollectNewEmailsResponse(
+            ['a@test.com', 'b@test.com'],
+            '2026-03-10T00:00:00Z'
+          ) as any
+        )
+        .mockResolvedValueOnce(
+          createFindMatchingGroupsResponse([
+            {
+              email: 'a@test.com',
+              unresolved: [
+                { id: 'user-1', namespace: 'okta' },
+                { id: 'user-2', namespace: 'entra_id' },
+              ],
+              existingTargets: [],
+            },
+            {
+              email: 'b@test.com',
+              unresolved: [{ id: 'user-new', namespace: 'okta' }],
+              existingTargets: ['target-1', 'target-2'],
+            },
+          ]) as any
+        );
+
+      mockLinkEntities.mockResolvedValueOnce({
+        linked: ['user-2'],
+        skipped: [],
+        target_id: 'user-1',
+        entity_type: 'user',
+      });
+
+      await runEmailRuleResolution(
+        createDeps(state, mockEsClient, mockResolutionClient, { telemetry })
+      );
+
+      expect(telemetry.report).toHaveBeenCalledTimes(1);
+      expect(telemetry.report).toHaveBeenCalledWith({
+        funnel: {
+          scanned: 2,
+          qualified: 2,
+          applied: 1,
+          skipped: 1,
+          failed: 0,
+        },
+        breakdown: [{ name: 'linked_aliases', count: 1 }],
+      });
+    });
+
+    it('should report bucket-based applied and linked_aliases breakdown when one bucket links multiple aliases', async () => {
+      const state = createInitialState();
+      const telemetry = { report: jest.fn() };
+      mockEsClient.search
+        .mockResolvedValueOnce(
+          createCollectNewEmailsResponse(['a@test.com'], '2026-03-10T00:00:00Z') as any
+        )
+        .mockResolvedValueOnce(
+          createFindMatchingGroupsResponse([
+            {
+              email: 'a@test.com',
+              unresolved: [
+                { id: 'user-1', namespace: 'okta' },
+                { id: 'user-2', namespace: 'entra_id' },
+                { id: 'user-3', namespace: 'active_directory' },
+              ],
+              existingTargets: [],
+            },
+          ]) as any
+        );
+
+      mockLinkEntities.mockResolvedValueOnce({
+        linked: ['user-2', 'user-3'],
+        skipped: [],
+        target_id: 'user-1',
+        entity_type: 'user',
+      });
+
+      await runEmailRuleResolution(
+        createDeps(state, mockEsClient, mockResolutionClient, { telemetry })
+      );
+
+      expect(telemetry.report).toHaveBeenCalledTimes(1);
+      expect(telemetry.report).toHaveBeenCalledWith({
+        funnel: {
+          scanned: 1,
+          qualified: 1,
+          applied: 1,
+          skipped: 0,
+          failed: 0,
+        },
+        breakdown: [{ name: 'linked_aliases', count: 2 }],
+      });
+    });
+
+    it('should include failed buckets in maintainer funnel telemetry', async () => {
+      const state = createInitialState();
+      const telemetry = { report: jest.fn() };
+      mockEsClient.search
+        .mockResolvedValueOnce(
+          createCollectNewEmailsResponse(['a@test.com'], '2026-03-10T00:00:00Z') as any
+        )
+        .mockResolvedValueOnce(
+          createFindMatchingGroupsResponse([
+            {
+              email: 'a@test.com',
+              unresolved: [
+                { id: 'user-1', namespace: 'okta' },
+                { id: 'user-2', namespace: 'entra_id' },
+              ],
+              existingTargets: [],
+            },
+          ]) as any
+        );
+
+      mockLinkEntities.mockRejectedValueOnce(new Error('transient ES failure'));
+
+      await runEmailRuleResolution(
+        createDeps(state, mockEsClient, mockResolutionClient, { telemetry })
+      );
+
+      expect(telemetry.report).toHaveBeenCalledWith({
+        funnel: {
+          scanned: 1,
+          qualified: 1,
+          applied: 0,
+          skipped: 0,
+          failed: 1,
+        },
+      });
     });
 
     it('should create new resolution group with 2+ unresolved entities', async () => {

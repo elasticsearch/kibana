@@ -42,17 +42,20 @@ export interface LinkResult {
   linked: string[];
   skipped: string[];
   target_id: string;
+  entity_type: string;
 }
 
 export interface UnlinkResult {
   unlinked: string[];
   skipped: string[];
+  entity_type: string;
 }
 
 export interface ResolutionGroup {
   target: Record<string, unknown>;
   aliases: Array<Record<string, unknown>>;
   group_size: number;
+  entity_type: string;
 }
 
 /** Options controlling how the underlying bulk write behaves. */
@@ -113,7 +116,7 @@ export class ResolutionClient {
     const { sources, docIds } = await this.fetchAndValidateEntities(allIds);
 
     // 4. Validate: all same type
-    this.validateSameEntityType(sources);
+    const entityType = this.assertSingleEntityType(sources);
 
     // 5. Validate: target has no resolved_to (is not an alias)
     const targetEntity = sources.get(targetId)!;
@@ -145,7 +148,7 @@ export class ResolutionClient {
     }
 
     if (linked.length === 0) {
-      return { linked: [], skipped, target_id: targetId };
+      return { linked: [], skipped, target_id: targetId, entity_type: entityType };
     }
 
     // 8. Bulk update: set resolved_to on all entities to link
@@ -159,7 +162,7 @@ export class ResolutionClient {
 
     this.throwOnBulkErrors(linkResult, `linking entities to '${targetId}'`);
 
-    return { linked, skipped, target_id: targetId };
+    return { linked, skipped, target_id: targetId, entity_type: entityType };
   }
 
   /**
@@ -178,7 +181,10 @@ export class ResolutionClient {
     const entityIds = [...new Set(rawEntityIds)];
     const { sources, docIds } = await this.fetchAndValidateEntities(entityIds);
 
-    // 2. Categorize: aliases to unlink vs non-aliases to skip
+    // 2. Validate: entire batch is single-type
+    const entityType = this.assertSingleEntityType(sources);
+
+    // 3. Categorize: aliases to unlink vs non-aliases to skip
     const toUnlink: string[] = [];
     const skipped: string[] = [];
 
@@ -193,10 +199,14 @@ export class ResolutionClient {
     }
 
     if (toUnlink.length === 0) {
-      return { unlinked: [], skipped };
+      return {
+        unlinked: [],
+        skipped,
+        entity_type: entityType,
+      };
     }
 
-    // 3. Bulk update: set resolved_to to null (effectively removes the link)
+    // 4. Bulk update: set resolved_to to null (effectively removes the link)
     this.logger.debug(`Unlinking ${toUnlink.length} entities`);
 
     const updates = toUnlink.map((entityId) => ({
@@ -207,7 +217,11 @@ export class ResolutionClient {
 
     this.throwOnBulkErrors(unlinkResult, 'unlinking entities');
 
-    return { unlinked: toUnlink, skipped };
+    return {
+      unlinked: toUnlink,
+      skipped,
+      entity_type: entityType,
+    };
   }
 
   /**
@@ -265,6 +279,7 @@ export class ResolutionClient {
       target,
       aliases,
       group_size: 1 + aliases.length,
+      entity_type: getFieldValue(target, ENGINE_METADATA_TYPE_FIELD) ?? '',
     };
   }
 
@@ -373,19 +388,27 @@ export class ResolutionClient {
   }
 
   /**
-   * Validates that all entities in the map have the same EngineMetadata.Type.
+   * Asserts all entities share a single EngineMetadata.Type. Returns that type, or '' when
+   * none carry a type. Throws MixedEntityTypesError when more than one distinct type is present.
    */
-  private validateSameEntityType(entities: Map<string, Record<string, unknown>>): void {
+  private assertSingleEntityType(entities: Map<string, Record<string, unknown>>): string {
     const types = new Set<string>();
+    let firstType = '';
+
     for (const entity of entities.values()) {
       const type = getFieldValue(entity, ENGINE_METADATA_TYPE_FIELD);
       if (type) {
         types.add(type);
+        if (!firstType) {
+          firstType = type;
+        }
       }
     }
 
     if (types.size > 1) {
       throw new MixedEntityTypesError([...types]);
     }
+
+    return firstType;
   }
 }

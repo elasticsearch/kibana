@@ -314,6 +314,7 @@ describe('processResolutionCsvUpload', () => {
         linked: ['alias:1', 'alias:2'],
         skipped: [],
         target_id: 'target:golden',
+        entity_type: 'user',
       });
 
       const csv = 'type,user.email,resolved_to\nuser,shared@test.com,target:golden';
@@ -345,6 +346,7 @@ describe('processResolutionCsvUpload', () => {
         linked: ['alias:1'],
         skipped: [],
         target_id: 'target:golden',
+        entity_type: 'user',
       });
 
       const csv = 'type,user.email,resolved_to\nuser,alias@test.com,target:golden';
@@ -358,6 +360,7 @@ describe('processResolutionCsvUpload', () => {
         linked: [],
         skipped: ['alias:1'],
         target_id: 'target:golden',
+        entity_type: 'user',
       });
 
       const csv = 'type,user.email,resolved_to\nuser,alias@test.com,target:golden';
@@ -453,6 +456,7 @@ describe('processResolutionCsvUpload', () => {
         linked: ['alias:1'],
         skipped: [],
         target_id: 'target:1',
+        entity_type: 'user',
       });
 
       const csv = [

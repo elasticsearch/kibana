@@ -21,6 +21,7 @@ import { getLatestEntitiesIndexName } from '../../../common';
 import type { ResolutionClient } from '../../domain/resolution';
 import { getFieldValue } from '../../../common/domain/euid/commons';
 import { ENTITY_ID_FIELD } from '../../../common/domain/definitions/common_fields';
+import type { MaintainerTelemetryClient } from '../../tasks/entity_maintainers/maintainer_telemetry_client';
 import type { PerRuleState, MatchBucket, EntityHit } from './types';
 
 const MATCH_FIELD = 'user.email';
@@ -39,10 +40,11 @@ export interface RunDeps {
   logger: Logger;
   resolutionClient: ResolutionClient;
   abortController: AbortController;
+  telemetry: MaintainerTelemetryClient;
 }
 
 export async function runEmailRuleResolution(deps: RunDeps): Promise<PerRuleState> {
-  const { state, namespace, esClient, logger, resolutionClient, abortController } = deps;
+  const { state, namespace, esClient, logger, resolutionClient, abortController, telemetry } = deps;
   const index = getLatestEntitiesIndexName(namespace);
 
   // Step 1: Collect new email values
@@ -73,14 +75,24 @@ export async function runEmailRuleResolution(deps: RunDeps): Promise<PerRuleStat
   }
 
   // Step 3: Resolve
-  const { resolutionsCreated, skippedAmbiguousBuckets, failedBuckets } = await resolveMatchBuckets(
-    resolutionClient,
-    matchBuckets,
-    logger
-  );
+  const { resolutionsCreated, appliedBuckets, skippedAmbiguousBuckets, failedBuckets } =
+    await resolveMatchBuckets(resolutionClient, matchBuckets, logger);
   logger.info(
     `Completed: ${resolutionsCreated} resolutions created, ${skippedAmbiguousBuckets} ambiguous buckets skipped, ${failedBuckets} buckets failed`
   );
+
+  telemetry.report({
+    funnel: {
+      scanned: values.length,
+      qualified: matchBuckets.length,
+      applied: appliedBuckets,
+      skipped: skippedAmbiguousBuckets,
+      failed: failedBuckets,
+    },
+    ...(resolutionsCreated > 0
+      ? { breakdown: [{ name: 'linked_aliases', count: resolutionsCreated }] }
+      : {}),
+  });
 
   // Step 4: Update state — don't advance watermark if any buckets failed,
   // so the next run re-collects the same email values and retries.
@@ -277,8 +289,14 @@ async function resolveMatchBuckets(
   resolutionClient: ResolutionClient,
   buckets: MatchBucket[],
   logger: Logger
-): Promise<{ resolutionsCreated: number; skippedAmbiguousBuckets: number; failedBuckets: number }> {
+): Promise<{
+  resolutionsCreated: number;
+  appliedBuckets: number;
+  skippedAmbiguousBuckets: number;
+  failedBuckets: number;
+}> {
   let resolutionsCreated = 0;
+  let appliedBuckets = 0;
   let skippedAmbiguousBuckets = 0;
   let failedBuckets = 0;
 
@@ -303,6 +321,9 @@ async function resolveMatchBuckets(
         if (aliasIds.length === 0) continue;
 
         const result = await resolutionClient.linkEntities(targetId, aliasIds);
+        if (result.linked.length > 0) {
+          appliedBuckets++;
+        }
         resolutionsCreated += result.linked.length;
       } else if (unresolvedEntities.length >= 2) {
         // New group: pick target via namespace priority, link the rest
@@ -312,6 +333,9 @@ async function resolveMatchBuckets(
           .map((e) => e.entityId);
 
         const result = await resolutionClient.linkEntities(targetEntity.entityId, aliasIds);
+        if (result.linked.length > 0) {
+          appliedBuckets++;
+        }
         resolutionsCreated += result.linked.length;
       }
       // else: only 1 unresolved, no existing targets → no match, skip
@@ -321,7 +345,7 @@ async function resolveMatchBuckets(
     }
   }
 
-  return { resolutionsCreated, skippedAmbiguousBuckets, failedBuckets };
+  return { resolutionsCreated, appliedBuckets, skippedAmbiguousBuckets, failedBuckets };
 }
 
 /**

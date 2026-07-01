@@ -263,14 +263,14 @@ apiTest.describe('Entity Store Resolution API tests', { tag: ENTITY_STORE_TAGS }
     expect(response.statusCode).toBe(400);
   });
 
-  apiTest('Link: should return 404 for non-existent entities', async ({ apiClient }) => {
+  apiTest('Link: should return 400 for non-existent entities', async ({ apiClient }) => {
     const response = await apiClient.post(ENTITY_STORE_ROUTES.public.RESOLUTION_LINK, {
       headers: defaultHeaders,
       responseType: 'json',
       body: { target_id: 'nonexistent-target-9', entity_ids: ['nonexistent-alias-9'] },
     });
 
-    expect(response.statusCode).toBe(404);
+    expect(response.statusCode).toBe(400);
   });
 
   apiTest('Link: should return 400 for chain resolution', async ({ apiClient }) => {
@@ -325,14 +325,14 @@ apiTest.describe('Entity Store Resolution API tests', { tag: ENTITY_STORE_TAGS }
     expect(hasAliasesLink.statusCode).toBe(400);
   });
 
-  apiTest('Unlink: should return 404 for non-existent entities', async ({ apiClient }) => {
+  apiTest('Unlink: should return 400 for non-existent entities', async ({ apiClient }) => {
     const response = await apiClient.post(ENTITY_STORE_ROUTES.public.RESOLUTION_UNLINK, {
       headers: defaultHeaders,
       responseType: 'json',
       body: { entity_ids: ['nonexistent-12'] },
     });
 
-    expect(response.statusCode).toBe(404);
+    expect(response.statusCode).toBe(400);
   });
 
   apiTest('Group: should return 404 for non-existent entity', async ({ apiClient }) => {
