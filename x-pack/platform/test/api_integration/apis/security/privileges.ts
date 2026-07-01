@@ -88,6 +88,7 @@ export default function ({ getService }: FtrProviderContext) {
         'cases_manage_templates',
       ],
       observabilityAIAssistant: ['all', 'read', 'minimal_all', 'minimal_read'],
+      observabilityAlerts: ['all', 'read', 'minimal_all', 'minimal_read'],
       agentBuilder: [
         'all',
         'read',

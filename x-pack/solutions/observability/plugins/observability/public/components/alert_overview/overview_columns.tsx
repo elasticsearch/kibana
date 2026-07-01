@@ -163,10 +163,14 @@ export const overviewColumns: Array<EuiBasicTableColumn<AlertOverviewField>> = [
         case ColumnIDs.RULE_NAME:
           const ruleName = value as string;
           const ruleLink = meta?.ruleLink as string;
-          return (
-            <EuiLink data-test-subj="alertFlyoutOverview" href={ruleLink ? ruleLink : '#'}>
+          return ruleLink ? (
+            <EuiLink data-test-subj="alertFlyoutOverview" href={ruleLink}>
               {ruleName}
             </EuiLink>
+          ) : (
+            <EuiText size="s" data-test-subj="alertFlyoutOverviewRuleName">
+              {ruleName}
+            </EuiText>
           );
         case ColumnIDs.OBSERVED_VALUE:
           if (!ruleCriteria) return <>{'-'}</>;

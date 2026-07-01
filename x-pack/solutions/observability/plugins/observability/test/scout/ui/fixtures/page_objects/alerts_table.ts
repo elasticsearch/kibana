@@ -162,8 +162,30 @@ export class AlertsTablePage {
   }
 
   async closeFlyout() {
-    await this.flyout.locator('[data-test-subj="euiFlyoutCloseButton"]').click();
+    // A transient global toast (e.g. a background request failing for a
+    // low-privilege role) can overlap the flyout's close button and intercept
+    // the click. Dismiss any toasts first, then fall back to the Escape key if
+    // the button is still obscured, so closing the flyout stays deterministic.
+    await this.dismissToasts();
+    const closeButton = this.flyout.locator('[data-test-subj="euiFlyoutCloseButton"]');
+    try {
+      await closeButton.click({ timeout: 5_000 });
+    } catch {
+      await this.page.keyboard.press('Escape');
+    }
     await this.flyout.waitFor({ state: 'hidden' });
+  }
+
+  /**
+   * Clears any visible global toasts so they cannot intercept pointer events on
+   * elements underneath them (e.g. the flyout close button). No-op when there
+   * are no toasts.
+   */
+  async dismissToasts() {
+    const toastCloseButtons = await this.page.locator('[data-test-subj="toastCloseButton"]').all();
+    for (const toastCloseButton of toastCloseButtons) {
+      await toastCloseButton.click({ timeout: 2_000 }).catch(() => {});
+    }
   }
 
   // Row actions

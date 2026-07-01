@@ -8,6 +8,7 @@
 import type { QueryObserverResult, RefetchOptions, RefetchQueryFilters } from '@kbn/react-query';
 import { useQuery } from '@kbn/react-query';
 import { i18n } from '@kbn/i18n';
+import type { IHttpFetchError } from '@kbn/core-http-browser';
 import { INTERNAL_BASE_ALERTING_API_PATH } from '@kbn/alerting-plugin/common';
 import type { Rule } from '@kbn/triggers-actions-ui-plugin/public';
 import type { AsApiContract } from '@kbn/actions-plugin/common';
@@ -26,7 +27,13 @@ export interface UseFetchRuleResponse {
   ) => Promise<QueryObserverResult<Rule | undefined, unknown>>;
 }
 
-export function useFetchRule({ ruleId }: { ruleId?: string }): UseFetchRuleResponse {
+export function useFetchRule({
+  ruleId,
+  enabled = true,
+}: {
+  ruleId?: string;
+  enabled?: boolean;
+}): UseFetchRuleResponse {
   const {
     http,
     notifications: { toasts },
@@ -52,8 +59,17 @@ export function useFetchRule({ ruleId }: { ruleId?: string }): UseFetchRuleRespo
         }
       },
       keepPreviousData: true,
-      enabled: Boolean(ruleId),
+      enabled: Boolean(ruleId) && enabled,
       refetchOnWindowFocus: false,
+      retry: (failureCount, error) => {
+        // Don't retry when the user is not authorized to read the rule; a 403
+        // will keep failing and only delays showing the error.
+        const status = (error as IHttpFetchError<{ statusCode?: number }>)?.response?.status;
+        if (status === 403) {
+          return false;
+        }
+        return failureCount < 3;
+      },
       onError: (error: Error) => {
         toasts.addError(error, {
           title: i18n.translate('xpack.observability.ruleDetails.ruleLoadError', {

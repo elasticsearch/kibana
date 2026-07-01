@@ -7,7 +7,7 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
-import { useMemo } from 'react';
+import { useCallback, useMemo } from 'react';
 import { keyBy } from 'lodash';
 import type { UseQueryOptions } from '@kbn/react-query';
 import type { HttpStart } from '@kbn/core-http-browser';
@@ -107,6 +107,29 @@ export const useGetRuleTypesPermissions = ({
     authorizedToCreateAnyRules ||
     authorizedRuleTypes.some((ruleType) => ruleType.authorizedConsumers[ALERTS_FEATURE_ID]?.read);
 
+  // Returns whether the current user can read a specific rule type. Authorization
+  // is enforced per rule type (and consumer), so callers operating on a single
+  // rule (e.g. an alert details page) should prefer this over the coarse
+  // `authorizedToReadAnyRules`. When a consumer is provided it is checked
+  // specifically; otherwise any authorized consumer with read access qualifies.
+  const authorizedToReadRuleType = useCallback(
+    (ruleTypeId: string, consumer?: string) => {
+      const ruleType = filteredIndex.get(ruleTypeId);
+      if (!ruleType) {
+        return false;
+      }
+      const consumers = ruleType.authorizedConsumers;
+      const specificConsumer = consumer ? consumers[consumer] : undefined;
+      if (specificConsumer) {
+        return Boolean(specificConsumer.read || specificConsumer.all);
+      }
+      return Object.values(consumers).some(
+        (authorizedConsumer) => authorizedConsumer.read || authorizedConsumer.all
+      );
+    },
+    [filteredIndex]
+  );
+
   return {
     ruleTypesState: {
       isInitialLoad: isInitialLoading,
@@ -117,6 +140,7 @@ export const useGetRuleTypesPermissions = ({
     hasAnyAuthorizedRuleType,
     authorizedRuleTypes,
     authorizedToReadAnyRules,
+    authorizedToReadRuleType,
     authorizedToCreateAnyRules,
     isSuccess,
   };

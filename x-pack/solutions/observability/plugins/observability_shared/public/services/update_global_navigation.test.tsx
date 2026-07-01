@@ -25,6 +25,7 @@ describe('updateGlobalNavigation', () => {
     it('hides the overview link', () => {
       const capabilities = {
         logs: { show: false },
+        observabilityAlerts: { show: false },
         navLinks: { apm: false, logs: false, metrics: false, uptime: false },
       } as unknown as ApplicationStart['capabilities'];
       const deepLinks: AppDeepLink[] = [];
@@ -126,6 +127,45 @@ describe('updateGlobalNavigation', () => {
 
         expect(callback).toHaveBeenCalledWith({
           deepLinks: [], // Deeplink has been filtered out
+          visibleIn: ['classicSideNav', 'projectSideNav', 'home', 'kibanaOverview', 'globalSearch'],
+        });
+      });
+    });
+
+    describe('when only observabilityAlerts privilege is granted', () => {
+      it('shows the alerts deep link', () => {
+        const capabilities = {
+          logs: { show: false },
+          observabilityAlerts: { show: true },
+          navLinks: { apm: false, logs: false, metrics: false, uptime: false },
+        } as unknown as ApplicationStart['capabilities'];
+
+        const deepLinks = [
+          {
+            id: 'alerts',
+            title: 'Alerts',
+            order: 8001,
+            path: '/alerts',
+            visibleIn: [],
+          },
+        ];
+        const callback = jest.fn();
+        const updater$ = {
+          next: (cb: AppUpdater) => callback(cb(app)),
+        } as unknown as Subject<AppUpdater>;
+
+        updateGlobalNavigation({ capabilities, deepLinks, updater$, pricing });
+
+        expect(callback).toHaveBeenCalledWith({
+          deepLinks: [
+            {
+              id: 'alerts',
+              title: 'Alerts',
+              order: 8001,
+              path: '/alerts',
+              visibleIn: ['classicSideNav', 'projectSideNav', 'globalSearch'],
+            },
+          ],
           visibleIn: ['classicSideNav', 'projectSideNav', 'home', 'kibanaOverview', 'globalSearch'],
         });
       });

@@ -113,6 +113,7 @@ export default function ({ getService }: FtrProviderContext) {
             'graph',
             'monitoring',
             'observabilityAIAssistant',
+            'observabilityAlerts',
             'observabilityCasesV3',
             'savedObjectsManagement',
             'savedQueryManagement',

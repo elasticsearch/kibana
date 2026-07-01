@@ -242,5 +242,57 @@ describe('DefaultAlertActions', () => {
       expect(await screen.findByText('ViewRuleDetailsAlertAction')).toBeInTheDocument();
       expect(await screen.findByText('ViewAlertDetailsAlertAction')).toBeInTheDocument();
     });
+
+    describe('with canModifyAlerts override', () => {
+      it('should show all modify options for non-security rules when canModifyAlerts is true', async () => {
+        const nonSecurityProps = createPartialObjectMock<AlertActionsProps>({
+          alert: {
+            [ALERT_RULE_TYPE_ID]: 'apm.anomaly' as any,
+          },
+          refresh: jest.fn(),
+          canModifyAlerts: true,
+        });
+
+        render(<TestComponent {...nonSecurityProps} />);
+
+        expect(screen.queryByText('AcknowledgeAlertAction')).toBeInTheDocument();
+        expect(screen.queryByText('MuteAlertAction')).toBeInTheDocument();
+        expect(screen.queryByText('MarkAsUntrackedAlertAction')).toBeInTheDocument();
+        expect(screen.queryByText('EditTagsAction')).toBeInTheDocument();
+      });
+
+      it('should still hide all modify options for security rules even when canModifyAlerts is true', async () => {
+        const siemProps = createPartialObjectMock<AlertActionsProps>({
+          alert: {
+            [ALERT_RULE_TYPE_ID]: 'siem.queryRule' as any,
+          },
+          refresh: jest.fn(),
+          canModifyAlerts: true,
+        });
+
+        render(<TestComponent {...siemProps} />);
+
+        expect(screen.queryByText('AcknowledgeAlertAction')).not.toBeInTheDocument();
+        expect(screen.queryByText('MuteAlertAction')).not.toBeInTheDocument();
+        expect(screen.queryByText('MarkAsUntrackedAlertAction')).not.toBeInTheDocument();
+        expect(screen.queryByText('EditTagsAction')).not.toBeInTheDocument();
+      });
+
+      it('should keep modify options hidden for non-security rules when canModifyAlerts is false', async () => {
+        const nonSecurityProps = createPartialObjectMock<AlertActionsProps>({
+          alert: {
+            [ALERT_RULE_TYPE_ID]: 'apm.anomaly' as any,
+          },
+          refresh: jest.fn(),
+          canModifyAlerts: false,
+        });
+
+        render(<TestComponent {...nonSecurityProps} />);
+
+        expect(screen.queryByText('MuteAlertAction')).not.toBeInTheDocument();
+        expect(screen.queryByText('MarkAsUntrackedAlertAction')).not.toBeInTheDocument();
+        expect(screen.queryByText('EditTagsAction')).not.toBeInTheDocument();
+      });
+    });
   });
 });

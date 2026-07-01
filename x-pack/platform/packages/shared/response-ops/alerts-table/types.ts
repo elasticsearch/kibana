@@ -706,6 +706,15 @@ export type AlertActionsProps<AC extends AdditionalContext = AdditionalContext> 
        * Used to generate "View in App" links for individual alerts.
        */
       getAlertFormatter?: (ruleTypeId: string) => AlertFormatter | undefined;
+      /**
+       * When `true`, the alert "modify" row actions (Acknowledge, Mark as untracked,
+       * Mute/Unmute, Edit tags) are shown even if the user is not authorized to create
+       * rules. Consumers can derive this from their own alert-write capability (e.g. RAC
+       * `alert:all` / `rule:mute_alerts`), which is not exposed via rule-type permissions.
+       * The value is additive: it never hides actions that are already shown for
+       * rule-create authorized users.
+       */
+      canModifyAlerts?: boolean;
     };
 
 export interface BulkActionsConfig {

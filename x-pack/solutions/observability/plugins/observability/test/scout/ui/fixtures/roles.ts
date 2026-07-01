@@ -79,3 +79,78 @@ export const CASES_READ_WITH_ALERTS_ROLE: KibanaRole = observabilityRole({
   apm: ['read'],
   logs: ['all'],
 });
+
+/**
+ * Roles used to exercise the per-rule-type "View rule" link gating on the
+ * Observability alerts page.
+ *
+ * Both roles grant `observabilityAlerts: ['read']`, which authorizes alert read
+ * for *every* observability rule type (so the alerts table shows both the logs
+ * and metrics alerts) but grants no rule read. Each role then layers a single
+ * solution feature on top to authorize rule read for one rule type only:
+ * `logs` for `logs.alert.document.count` and `infrastructure` for
+ * `metrics.alert.threshold`. The rule links must therefore appear for the rule
+ * the user can read and stay hidden for the one it cannot.
+ *
+ * Elasticsearch privileges are intentionally empty: alerts-as-data reads go
+ * through Kibana's internal user + RAC, so the gating is driven purely by the
+ * Kibana feature privileges under test.
+ */
+export const ALERTS_WITH_LOGS_RULES_ROLE: KibanaRole = {
+  elasticsearch: { cluster: [], indices: [] },
+  kibana: [
+    {
+      base: [],
+      feature: { observabilityAlerts: ['read'], logs: ['read'] },
+      spaces: ['*'],
+    },
+  ],
+};
+
+/**
+ * Same as `ALERTS_WITH_LOGS_RULES_ROLE` but additionally grants full
+ * observability cases access. Used to assert that the alert details "Add to
+ * case" button is shown only when the user has cases privileges.
+ */
+export const ALERTS_WITH_LOGS_RULES_AND_CASES_ROLE: KibanaRole = {
+  elasticsearch: { cluster: [], indices: [] },
+  kibana: [
+    {
+      base: [],
+      feature: {
+        observabilityAlerts: ['read'],
+        logs: ['read'],
+        observabilityCasesV3: ['all'],
+      },
+      spaces: ['*'],
+    },
+  ],
+};
+
+export const ALERTS_WITH_METRICS_RULES_ROLE: KibanaRole = {
+  elasticsearch: { cluster: [], indices: [] },
+  kibana: [
+    {
+      base: [],
+      feature: { observabilityAlerts: ['read'], infrastructure: ['read'] },
+      spaces: ['*'],
+    },
+  ],
+};
+
+/**
+ * `observabilityAlerts: ['read']` only — authorizes alert read for every
+ * observability rule type but grants no rule read. This persona can view the
+ * alerts table but must not see any rule management affordances (Manage rules
+ * button, rule stats) or per-alert rule links.
+ */
+export const ALERTS_ONLY_ROLE: KibanaRole = {
+  elasticsearch: { cluster: [], indices: [] },
+  kibana: [
+    {
+      base: [],
+      feature: { observabilityAlerts: ['read'] },
+      spaces: ['*'],
+    },
+  ],
+};

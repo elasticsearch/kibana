@@ -89,6 +89,7 @@ export function getTestSuiteFactory(context: DeploymentAgnosticFtrProviderContex
             'apm',
             'infrastructure',
             'logs',
+            'observabilityAlerts',
             'observabilityCasesV3',
             'securitySolutionAlertsV1',
             'securitySolutionAssistant',

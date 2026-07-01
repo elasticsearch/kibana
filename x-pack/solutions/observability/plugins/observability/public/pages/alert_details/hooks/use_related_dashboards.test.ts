@@ -79,6 +79,24 @@ describe('useRelatedDashboards', () => {
     });
   });
 
+  it('should be enabled by default when an alertId is provided', () => {
+    renderHook(() => useRelatedDashboards(TEST_ALERT_ID));
+
+    expect(mockUseQuery).toHaveBeenCalledWith(expect.objectContaining({ enabled: true }));
+  });
+
+  it('should be disabled when enabled is false (e.g. user cannot read the rule)', () => {
+    renderHook(() => useRelatedDashboards(TEST_ALERT_ID, { enabled: false }));
+
+    expect(mockUseQuery).toHaveBeenCalledWith(expect.objectContaining({ enabled: false }));
+  });
+
+  it('should be disabled when no alertId is provided', () => {
+    renderHook(() => useRelatedDashboards(''));
+
+    expect(mockUseQuery).toHaveBeenCalledWith(expect.objectContaining({ enabled: false }));
+  });
+
   it('should return suggested and linked dashboards', () => {
     const mockApiResponse = {
       suggestedDashboards: [

@@ -36,6 +36,16 @@ import type {
   RenderContext,
 } from '@kbn/response-ops-alerts-table/types';
 import { KibanaContextProvider } from '@kbn/kibana-react-plugin/public';
+
+const mockUseGetRuleTypesPermissions = jest.fn(() => ({
+  authorizedToReadRuleType: (_ruleTypeId: string, _consumer?: string): boolean => true,
+  authorizedToCreateAnyRules: false,
+}));
+jest.mock('@kbn/alerts-ui-shared/src/common/hooks', () => ({
+  ...jest.requireActual('@kbn/alerts-ui-shared/src/common/hooks'),
+  useGetRuleTypesPermissions: () => mockUseGetRuleTypesPermissions(),
+}));
+
 const refresh = jest.fn();
 const caseHooksReturnedValue = {
   open: () => {
@@ -114,6 +124,10 @@ describe('ObservabilityActions component', () => {
     jest.clearAllMocks();
     getFormatterMock.mockReturnValue(jest.fn().mockReturnValue('a reason'));
     mockTelemetryClient.reportAlertAddedToCase.mockClear();
+    mockUseGetRuleTypesPermissions.mockReturnValue({
+      authorizedToReadRuleType: () => true,
+      authorizedToCreateAnyRules: false,
+    });
   });
 
   const setup = async (pageId: string) => {
@@ -214,6 +228,18 @@ describe('ObservabilityActions component', () => {
     wrapper.find('[data-test-subj="alertsTableRowActionMore"]').hostNodes().simulate('click');
     await waitFor(() => {
       expect(wrapper.find('[data-test-subj~="viewRuleDetails"]').hostNodes().length).toBe(1);
+    });
+  });
+
+  it('should hide "View rule details" menu item when unauthorized to read the rule type', async () => {
+    mockUseGetRuleTypesPermissions.mockReturnValue({
+      authorizedToReadRuleType: () => false,
+      authorizedToCreateAnyRules: false,
+    });
+    const wrapper = await setup('nothing');
+    wrapper.find('[data-test-subj="alertsTableRowActionMore"]').hostNodes().simulate('click');
+    await waitFor(() => {
+      expect(wrapper.find('[data-test-subj~="viewRuleDetails"]').hostNodes().length).toBe(0);
     });
   });
 

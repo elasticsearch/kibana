@@ -39,9 +39,10 @@ export const DefaultAlertActions = <AC extends AdditionalContext = AdditionalCon
 
   const isSecurityRule =
     props.alert[ALERT_RULE_TYPE_ID] && isSiemRuleType(props.alert[ALERT_RULE_TYPE_ID].toString());
-  const { isMutedAlertsEnabled = true } = props;
+  const { isMutedAlertsEnabled = true, canModifyAlerts } = props;
 
-  const showModifyOption = authorizedToCreateAnyRules && !isSecurityRule;
+  const showModifyOption =
+    (authorizedToCreateAnyRules || Boolean(canModifyAlerts)) && !isSecurityRule;
 
   return (
     <>
