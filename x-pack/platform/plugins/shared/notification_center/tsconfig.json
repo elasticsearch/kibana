@@ -10,5 +10,8 @@
     "@kbn/config-schema",
     "@kbn/zod",
     "@kbn/std",
+    "@kbn/core-data-streams-server",
+    "@kbn/core-data-streams-server-mocks",
+    "@kbn/es-mappings",
   ]
 }

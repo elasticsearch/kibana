@@ -13,6 +13,7 @@ import type {
   PluginInitializerContext,
 } from '@kbn/core/server';
 import type { NotificationCenterConfig } from './config';
+import { registerNotificationDataStream } from './data_stream/notification_data_stream';
 import type {
   NotificationCenterPluginSetup,
   NotificationCenterPluginStart,
@@ -36,10 +37,16 @@ export class NotificationCenterPlugin
   }
 
   public setup(
-    _core: CoreSetup<NotificationCenterStartDependencies, NotificationCenterPluginStart>
+    core: CoreSetup<NotificationCenterStartDependencies, NotificationCenterPluginStart>
   ): NotificationCenterPluginSetup {
-    // Gated by `xpack.notificationCenter.enabled` in kibana config
+    // Reached only when the plugin is enabled; core gates the whole plugin on
+    // `xpack.notificationCenter.enabled` (default false).
     this.logger.debug('Setting up Notification Center plugin');
+
+    // Eagerly install the data stream's index template and mappings. The data
+    // stream itself is created lazily on the first notification write.
+    registerNotificationDataStream(core.dataStreams);
+
     return {};
   }
 
