@@ -228,6 +228,61 @@ describe('<FollowerIndicesList />', () => {
 
         expect(await screen.findByTestId('unfollowLeaderConfirmation')).toBeInTheDocument();
       });
+
+      test('should clear the selection after confirming an action', async () => {
+        const firstCheckbox = within(table.getRows()[0]).getByRole('checkbox');
+        await user.click(firstCheckbox);
+        expect(firstCheckbox).toBeChecked();
+
+        const contextMenuButton = await screen.findByTestId('contextMenuButton');
+        await user.click(contextMenuButton);
+
+        const contextMenu = await screen.findByTestId('contextMenu');
+        const pauseButton = within(contextMenu).queryAllByRole('button')[0];
+        await user.click(pauseButton);
+
+        const confirmation = await screen.findByTestId('pauseReplicationConfirmation');
+        const confirmButton = within(confirmation).getByTestId('confirmModalConfirmButton');
+        await user.click(confirmButton);
+
+        await act(async () => {
+          await jest.runOnlyPendingTimersAsync();
+        });
+
+        // The selection is reset, so the manage button is gone and the row is unchecked.
+        expect(screen.queryByTestId('contextMenuButton')).not.toBeInTheDocument();
+        expect(within(table.getRows()[0]).getByRole('checkbox')).not.toBeChecked();
+      });
+
+      test('should clear the selection after confirming an action from the detail flyout', async () => {
+        const firstCheckbox = within(table.getRows()[0]).getByRole('checkbox');
+        await user.click(firstCheckbox);
+        expect(firstCheckbox).toBeChecked();
+
+        // Open the detail flyout for the selected follower index via its name link.
+        await actions.clickFollowerIndexAt(0);
+
+        const detailPanel = await screen.findByTestId('followerIndexDetail');
+        const manageButton = within(detailPanel).getByTestId('manageButton');
+        await user.click(manageButton);
+
+        const contextMenu = await screen.findByTestId('contextMenu');
+        const pauseButton = within(contextMenu).queryAllByRole('button')[0];
+        await user.click(pauseButton);
+
+        const confirmation = await screen.findByTestId('pauseReplicationConfirmation');
+        const confirmButton = within(confirmation).getByTestId('confirmModalConfirmButton');
+        await user.click(confirmButton);
+
+        await act(async () => {
+          await jest.runOnlyPendingTimersAsync();
+        });
+
+        // The selection is reset through the detail flyout too, so the bulk manage button
+        // is gone and the row is unchecked.
+        expect(screen.queryByTestId('contextMenuButton')).not.toBeInTheDocument();
+        expect(within(table.getRows()[0]).getByRole('checkbox')).not.toBeChecked();
+      });
     });
 
     describe('table row action menu', () => {

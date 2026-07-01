@@ -91,11 +91,13 @@ export interface FollowerIndicesTableProps {
   followerIndices: FollowerIndexWithPausedStatus[];
   selectFollowerIndex: (name: string) => void;
   apiStatusDelete: ApiStatus;
+  selectedItems: FollowerIndexWithPausedStatus[];
+  onSelectionChange: (selectedItems: FollowerIndexWithPausedStatus[]) => void;
+  resetSelection: () => void;
 }
 
 interface FollowerIndicesTableState {
   prevFollowerIndices: FollowerIndexWithPausedStatus[];
-  selectedItems: FollowerIndexWithPausedStatus[];
   filteredIndices: FollowerIndexWithPausedStatus[];
   queryText: string;
 }
@@ -127,7 +129,6 @@ export class FollowerIndicesTable extends PureComponent<
 
     this.state = {
       prevFollowerIndices: props.followerIndices,
-      selectedItems: [],
       filteredIndices: props.followerIndices,
       queryText: '',
     };
@@ -302,7 +303,8 @@ export class FollowerIndicesTable extends PureComponent<
   };
 
   render() {
-    const { selectedItems, filteredIndices } = this.state;
+    const { filteredIndices } = this.state;
+    const { selectedItems, onSelectionChange, resetSelection } = this.props;
     const reactRouter = routing.reactRouterOrThrow;
 
     const sorting = {
@@ -318,13 +320,17 @@ export class FollowerIndicesTable extends PureComponent<
     };
 
     const selection = {
-      onSelectionChange: (newSelectedItems: FollowerIndexWithPausedStatus[]) =>
-        this.setState({ selectedItems: newSelectedItems }),
+      selected: selectedItems,
+      onSelectionChange,
     };
 
     const search: EuiInMemoryTableProps<FollowerIndexWithPausedStatus>['search'] = {
       toolsLeft: selectedItems.length ? (
-        <ContextMenu followerIndices={selectedItems} testSubj="contextMenuButton" />
+        <ContextMenu
+          followerIndices={selectedItems}
+          testSubj="contextMenuButton"
+          onActionComplete={resetSelection}
+        />
       ) : undefined,
       toolsRight: (
         <EuiButton

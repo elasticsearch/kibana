@@ -36,6 +36,7 @@ export interface ContextMenuProps {
   followerIndices: FollowerIndexWithPausedStatus[];
   isPollingStatus?: boolean;
   testSubj?: string;
+  onActionComplete?: () => void;
 }
 
 interface ContextMenuState {
@@ -59,6 +60,11 @@ export class ContextMenu extends PureComponent<ContextMenuProps, ContextMenuStat
     this.setState({
       isPopoverOpen: false,
     });
+  };
+
+  onActionComplete = () => {
+    this.closePopover();
+    this.props.onActionComplete?.();
   };
 
   editFollowerIndex = (id: string) => {
@@ -120,7 +126,7 @@ export class ContextMenu extends PureComponent<ContextMenuProps, ContextMenuStat
         </EuiPopoverTitle>
         <EuiContextMenuPanel data-test-subj="contextMenu">
           {activeFollowerIndices.length ? (
-            <FollowerIndexPauseProvider onConfirm={this.closePopover}>
+            <FollowerIndexPauseProvider onConfirm={this.onActionComplete}>
               {(pauseFollowerIndex) => (
                 <EuiContextMenuItem
                   icon="pause"
@@ -137,7 +143,7 @@ export class ContextMenu extends PureComponent<ContextMenuProps, ContextMenuStat
           ) : null}
 
           {pausedFollowerIndexNames.length && !isPollingStatus ? (
-            <FollowerIndexResumeProvider onConfirm={this.closePopover}>
+            <FollowerIndexResumeProvider onConfirm={this.onActionComplete}>
               {(resumeFollowerIndex) => (
                 <EuiContextMenuItem
                   icon="play"
@@ -169,7 +175,7 @@ export class ContextMenu extends PureComponent<ContextMenuProps, ContextMenuStat
             </Fragment>
           )}
 
-          <FollowerIndexUnfollowProvider onConfirm={this.closePopover}>
+          <FollowerIndexUnfollowProvider onConfirm={this.onActionComplete}>
             {(unfollowLeaderIndex) => (
               <EuiContextMenuItem
                 icon="chartThreshold"
