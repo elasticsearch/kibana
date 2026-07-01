@@ -102,7 +102,6 @@ enabled:
   - src/platform/test/functional/apps/discover/query_mode/config.ts
   - src/platform/test/functional/apps/discover/query_mode_esql_default/config.ts
   - src/platform/test/functional/apps/discover/tabs2/config.ts
-  - src/platform/test/functional/apps/discover/tabs3/config.ts
   - src/platform/test/functional/apps/discover/tabs4/config.ts
   - src/platform/test/functional/apps/discover/tabs/config.ts
   - src/platform/test/functional/apps/discover/tabs5/config.ts

@@ -328,6 +328,14 @@ export class DataGrid {
     await this.page.testSubj.click(`docViewerTab-${tabId}`);
   }
 
+  getDocViewer(): Locator {
+    return this.page.testSubj.locator('kbnDocViewer');
+  }
+
+  getDocViewerTab(tabId: string): Locator {
+    return this.page.testSubj.locator(`docViewerTab-${tabId}`);
+  }
+
   async openGridDisplaySettings() {
     await this.page.testSubj.click('dataGridDisplaySelectorButton');
   }
@@ -478,8 +486,7 @@ export class DataGrid {
   }
 
   async waitForDocViewerFlyoutOpen() {
-    const docViewer = this.page.testSubj.locator('kbnDocViewer');
-    await docViewer.waitFor({ state: 'visible', timeout: 30_000 });
+    await this.getDocViewer().waitFor({ state: 'visible', timeout: 30_000 });
   }
 
   async waitForLoad() {

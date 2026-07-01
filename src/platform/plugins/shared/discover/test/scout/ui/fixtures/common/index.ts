@@ -16,7 +16,7 @@ import { spaceTest as spaceBaseTest, tags } from '@kbn/scout';
 import * as testData from './constants';
 
 export interface DiscoverScoutSpace extends ScoutSpaceParallelFixture {
-  setupDiscoverDefaults: () => Promise<void>;
+  setupDiscoverDefaults: (options?: { loadFlightsDataView?: boolean }) => Promise<void>;
   teardownDiscoverDefaults: () => Promise<void>;
 }
 
@@ -29,8 +29,11 @@ export const spaceTest = spaceBaseTest.extend<ScoutParallelTestFixtures, Discove
     async ({ scoutSpace }, use) => {
       const discoverScoutSpace: DiscoverScoutSpace = {
         ...scoutSpace,
-        setupDiscoverDefaults: async () => {
+        setupDiscoverDefaults: async ({ loadFlightsDataView = false } = {}) => {
           await scoutSpace.savedObjects.load(testData.DISCOVER_KBN_ARCHIVE);
+          if (loadFlightsDataView) {
+            await scoutSpace.savedObjects.load(testData.FLIGHTS_KBN_ARCHIVE);
+          }
           await scoutSpace.uiSettings.setDefaultIndex(testData.DEFAULT_DATA_VIEW);
           await scoutSpace.uiSettings.setDefaultTime(testData.DEFAULT_TIME_RANGE);
         },

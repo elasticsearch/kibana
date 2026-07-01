@@ -45,7 +45,6 @@ export default function ({ getService, getPageObjects, loadTestFile }: FtrProvid
     });
 
     loadTestFile(require.resolve('./_restorable_state'));
-    loadTestFile(require.resolve('./_on_tab_change'));
     loadTestFile(require.resolve('./_controls'));
   });
 }

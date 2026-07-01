@@ -44,7 +44,6 @@ export default function ({ getService, getPageObjects, loadTestFile }: FtrProvid
       await discover.waitUntilTabIsLoaded();
     });
 
-    loadTestFile(require.resolve('./_unsaved_changes'));
     loadTestFile(require.resolve('./_data_view_editing'));
   });
 }

@@ -66,6 +66,15 @@ globalSetupHook(
       '[setup:index_pattern_without_timefield] index_pattern_without_timefield ES data ready'
     );
 
+    // Sample flights data for Discover tabs ES|QL time-field tests.
+    log.debug(
+      '[setup:kibana_sample_data_flights] loading kibana_sample_data_flights ES data (only if it does not exist)...'
+    );
+    await esArchiver.loadIfNeeded(
+      'src/platform/test/functional/fixtures/es_archiver/kibana_sample_data_flights'
+    );
+    log.debug('[setup:kibana_sample_data_flights] kibana_sample_data_flights ES data ready');
+
     // Metrics Experience setup
     log.debug('[setup:metrics] creating metrics test index (only if it does not exist)...');
     const created = await createMetricsTestIndexIfNeeded(esClient);
