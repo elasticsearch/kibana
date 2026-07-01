@@ -11,6 +11,7 @@ import { loggingSystemMock } from '@kbn/core-logging-server-mocks';
 import type { MockedVersionedRouter } from '@kbn/core-http-router-server-mocks';
 import { encryptedSavedObjectsMock } from '@kbn/encrypted-saved-objects-plugin/server/mocks';
 import { savedObjectsClientMock } from '@kbn/core-saved-objects-api-server-mocks';
+import type { InferenceServerStart } from '@kbn/inference-plugin/server';
 
 jest.mock('../../remote_kibana/forward_to_remote_kibana', () => {
   const actual = jest.requireActual('../../remote_kibana/forward_to_remote_kibana');
@@ -964,6 +965,9 @@ describe('dataset routes', () => {
         router,
         logger,
         canEncrypt,
+        evaluatorRegistry: { list: () => [], get: () => undefined },
+        getInferenceStart: async () =>
+          ({ getClient: jest.fn() } as unknown as InferenceServerStart),
         getEncryptedSavedObjectsStart: async () => encryptedSavedObjectsMock.createStart(),
         getInternalRemoteConfigsSoClient: async () => savedObjectsClientMock.create(),
       });

@@ -12,6 +12,7 @@ import type { MockedVersionedRouter } from '@kbn/core-http-router-server-mocks';
 import { EVALS_EXPERIMENT_URL, API_VERSIONS } from '@kbn/evals-common';
 import { encryptedSavedObjectsMock } from '@kbn/encrypted-saved-objects-plugin/server/mocks';
 import { savedObjectsClientMock } from '@kbn/core-saved-objects-api-server-mocks';
+import type { InferenceServerStart } from '@kbn/inference-plugin/server';
 import { registerGetExperimentRoute } from './get_experiment';
 
 describe('GET /internal/evals/experiments/{experimentId}', () => {
@@ -22,6 +23,8 @@ describe('GET /internal/evals/experiments/{experimentId}', () => {
       router,
       logger,
       canEncrypt: false,
+      evaluatorRegistry: { list: () => [], get: () => undefined },
+      getInferenceStart: async () => ({ getClient: jest.fn() } as unknown as InferenceServerStart),
       getEncryptedSavedObjectsStart: async () => encryptedSavedObjectsMock.createStart(),
       getInternalRemoteConfigsSoClient: async () => savedObjectsClientMock.create(),
     });

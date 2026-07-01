@@ -28,3 +28,5 @@ export * from './tracing/get_tracing_projects_route.gen';
 export * from './tracing/get_project_traces_route.gen';
 export * from './examples/get_example_scores_route.gen';
 export * from './scores/ingest_scores_route.gen';
+export * from './evaluators/list_evaluators_route.gen';
+export * from './evaluators/evaluate_route.gen';

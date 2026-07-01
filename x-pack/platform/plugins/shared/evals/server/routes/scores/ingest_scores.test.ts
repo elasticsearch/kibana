@@ -17,6 +17,7 @@ import {
 } from '@kbn/evals-common';
 import { encryptedSavedObjectsMock } from '@kbn/encrypted-saved-objects-plugin/server/mocks';
 import { savedObjectsClientMock } from '@kbn/core-saved-objects-api-server-mocks';
+import type { InferenceServerStart } from '@kbn/inference-plugin/server';
 import type { WriteResult } from '../../storage/evaluation_score_service';
 import { registerIngestScoresRoute } from './ingest_scores';
 
@@ -78,6 +79,8 @@ describe('POST /internal/evals/scores', () => {
       router,
       logger,
       canEncrypt: false,
+      evaluatorRegistry: { list: () => [], get: () => undefined },
+      getInferenceStart: async () => ({ getClient: jest.fn() } as unknown as InferenceServerStart),
       getEncryptedSavedObjectsStart: async () => encryptedSavedObjectsMock.createStart(),
       getInternalRemoteConfigsSoClient: async () => savedObjectsClientMock.create(),
     });
@@ -268,6 +271,8 @@ describe('POST /internal/evals/scores', () => {
       router,
       logger,
       canEncrypt: false,
+      evaluatorRegistry: { list: () => [], get: () => undefined },
+      getInferenceStart: async () => ({ getClient: jest.fn() } as unknown as InferenceServerStart),
       getEncryptedSavedObjectsStart: async () => encryptedSavedObjectsMock.createStart(),
       getInternalRemoteConfigsSoClient: async () => savedObjectsClientMock.create(),
     });

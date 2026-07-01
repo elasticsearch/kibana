@@ -11,6 +11,7 @@
     "@kbn/logging",
     "@kbn/features-plugin",
     "@kbn/encrypted-saved-objects-plugin",
+    "@kbn/inference-plugin",
     "@kbn/management-plugin",
     "@kbn/kibana-react-plugin",
     "@kbn/storage-adapter",

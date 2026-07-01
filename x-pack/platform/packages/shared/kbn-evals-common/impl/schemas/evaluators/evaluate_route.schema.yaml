@@ -1,0 +1,129 @@
+openapi: 3.0.0
+info:
+  title: Evaluate API endpoint
+  version: '1'
+paths:
+  /internal/evals/_evaluate:
+    post:
+      x-codegen-enabled: true
+      x-labels: [ess, serverless]
+      operationId: Evaluate
+      description: Executes one or more evaluators against a subject
+      summary: Evaluate
+      tags:
+        - Evals API
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - subject
+                - evaluators
+              properties:
+                subject:
+                  type: object
+                  required:
+                    - traces
+                  properties:
+                    mode:
+                      type: string
+                      enum:
+                        - single-turn
+                        - multi-turn
+                      default: single-turn
+                    traces:
+                      type: array
+                      minItems: 1
+                      items:
+                        type: object
+                        required:
+                          - trace_id
+                        properties:
+                          trace_id:
+                            type: string
+                          reference_data:
+                            type: object
+                            additionalProperties: true
+                evaluators:
+                  type: array
+                  minItems: 1
+                  items:
+                    type: object
+                    required:
+                      - name
+                    properties:
+                      name:
+                        type: string
+                      version:
+                        type: string
+                      connector_id:
+                        type: string
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - results
+                properties:
+                  results:
+                    type: array
+                    items:
+                      type: object
+                      required:
+                        - name
+                        - status
+                      properties:
+                        name:
+                          type: string
+                        status:
+                          type: string
+                          enum:
+                            - ok
+                            - error
+                        evaluator:
+                          type: object
+                          required:
+                            - name
+                            - version
+                            - kind
+                          properties:
+                            name:
+                              type: string
+                            version:
+                              type: string
+                            kind:
+                              type: string
+                              enum:
+                                - llm
+                                - code
+                        scores:
+                          type: array
+                          items:
+                            type: object
+                            required:
+                              - name
+                            properties:
+                              name:
+                                type: string
+                              score:
+                                type: number
+                                nullable: true
+                              label:
+                                type: string
+                              explanation:
+                                type: string
+                              metadata:
+                                type: object
+                                additionalProperties: true
+                        error:
+                          type: object
+                          required:
+                            - message
+                          properties:
+                            message:
+                              type: string

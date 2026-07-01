@@ -129,6 +129,42 @@ evaluate.describe('kbn-evals framework smoke tests', { tag: tags.stateful.classi
     }
   );
 
+  evaluate(
+    'smoke tests: trace-based groundedness',
+    async ({ agentBuilderClient, evaluatorClient, evaluationConnector }) => {
+      const response = await agentBuilderClient.converse({
+        agentId: 'elastic-ai-agent',
+        input: 'What is the current status of the payment service?',
+      });
+      if (!response.traceId) {
+        throw new Error('Agent Builder response is missing traceId');
+      }
+
+      const result = await evaluatorClient.evaluate({
+        subject: {
+          mode: 'single-turn',
+          traces: [{ trace_id: response.traceId }],
+        },
+        evaluators: [
+          {
+            name: 'groundedness',
+            connector_id: 'azure-gpt4_1',
+          },
+        ],
+      });
+
+      expect(result.results).toHaveLength(1);
+
+      const groundedness = result.results.find((entry) => entry.name === 'groundedness');
+
+      expect(groundedness?.status).toBe('ok');
+
+      const groundednessScore = groundedness?.scores?.[0];
+
+      expect(groundednessScore?.label).toBeDefined();
+    }
+  );
+
   evaluate.describe('smoke tests: es-snapshot-loader', () => {
     let replayResult: LoadResult;
 

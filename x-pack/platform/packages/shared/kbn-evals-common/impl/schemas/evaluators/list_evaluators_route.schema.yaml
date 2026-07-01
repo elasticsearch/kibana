@@ -1,0 +1,53 @@
+openapi: 3.0.0
+info:
+  title: List Evals Evaluators API endpoint
+  version: '1'
+paths:
+  /internal/evals/evaluators:
+    get:
+      x-codegen-enabled: true
+      x-labels: [ess, serverless]
+      operationId: ListEvaluators
+      description: Lists available evaluators for the internal evals API
+      summary: List evaluators
+      tags:
+        - Evals API
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  evaluators:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        name:
+                          type: string
+                        version:
+                          type: string
+                        kind:
+                          type: string
+                          enum:
+                            - llm
+                            - code
+                        description:
+                          type: string
+                        supported_inputs:
+                          type: array
+                          items:
+                            type: string
+                            enum:
+                              - trace
+                              - reference_data
+                      required:
+                        - name
+                        - version
+                        - kind
+                        - description
+                        - supported_inputs
+                required:
+                  - evaluators

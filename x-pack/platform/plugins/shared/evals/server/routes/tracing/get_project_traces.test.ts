@@ -16,6 +16,7 @@ import {
 } from '@kbn/evals-common';
 import type { EncryptedSavedObjectsPluginStart } from '@kbn/encrypted-saved-objects-plugin/server';
 import type { SavedObjectsClientContract } from '@kbn/core/server';
+import type { InferenceServerStart } from '@kbn/inference-plugin/server';
 import { registerGetProjectTracesRoute } from './get_project_traces';
 
 const emptySpanCountResponse = {
@@ -32,6 +33,8 @@ describe('GET /internal/evals/tracing/projects/{projectName}/traces', () => {
       router,
       logger,
       canEncrypt: false,
+      evaluatorRegistry: { list: () => [], get: () => undefined },
+      getInferenceStart: async () => ({ getClient: jest.fn() } as unknown as InferenceServerStart),
       getEncryptedSavedObjectsStart: async () => ({} as EncryptedSavedObjectsPluginStart),
       getInternalRemoteConfigsSoClient: async () => ({} as SavedObjectsClientContract),
     });

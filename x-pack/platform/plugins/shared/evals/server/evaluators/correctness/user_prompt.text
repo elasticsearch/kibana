@@ -1,0 +1,20 @@
+[TASK]
+Now, perform the analysis on the following inputs.
+
+[User Query]:
+
+```
+{{{user_query}}}
+```
+
+[Ground Truth Response]:
+
+```
+{{{ground_truth_response}}}
+```
+
+[Agent Response]:
+
+```
+{{{agent_response}}}
+```

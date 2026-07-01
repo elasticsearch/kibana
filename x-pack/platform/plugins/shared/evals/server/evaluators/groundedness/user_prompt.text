@@ -1,0 +1,11 @@
+[TASK]
+Now, perform the analysis on the following inputs.
+
+[User Query]:
+{{{user_query}}}
+
+[Tool Call History]:
+{{{tool_call_history}}}
+
+[Agent Response]:
+{{{agent_response}}}

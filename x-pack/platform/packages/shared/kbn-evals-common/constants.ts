@@ -18,6 +18,8 @@ export const EVALS_EXPERIMENT_DATASET_EXAMPLES_URL =
 export const EVALS_EXAMPLE_SCORES_URL =
   `${EVALS_INTERNAL_URL}/examples/{exampleId}/scores` as const;
 export const EVALS_TRACE_URL = `${EVALS_INTERNAL_URL}/traces/{traceId}` as const;
+export const EVALS_EVALUATORS_URL = `${EVALS_INTERNAL_URL}/evaluators` as const;
+export const EVALS_EVALUATE_URL = `${EVALS_INTERNAL_URL}/_evaluate` as const;
 export const EVALS_TRACING_PROJECTS_URL = `${EVALS_INTERNAL_URL}/tracing/projects` as const;
 export const EVALS_TRACING_PROJECT_TRACES_URL =
   `${EVALS_INTERNAL_URL}/tracing/projects/{projectName}/traces` as const;
@@ -36,6 +38,7 @@ export const EvaluationIndices = {
 } as const;
 
 export const TRACES_INDEX_PATTERN = 'traces-*' as const;
+export const LOGS_INDEX_PATTERN = 'logs-*' as const;
 
 export const API_VERSIONS = {
   internal: {

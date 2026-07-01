@@ -33,6 +33,7 @@ import {
 } from './evaluators/trace_based';
 import { ESQL_EQUIVALENCE_EVALUATOR_NAME } from './evaluators/esql';
 import { EvalsClient } from './utils/evals_client';
+import { EvaluatorApiClient } from './utils/evaluator_api_client';
 import { getBuildkiteCiMetadataFromEnv } from './utils/ci_metadata';
 import { buildIngestRequest } from './utils/build_ingest_request';
 import type {
@@ -97,6 +98,14 @@ export const evaluate = base.extend<{}, EvaluationSpecificWorkerFixtures>({
       const evalsClient = new EvalsClient(evaluationsKbnClient, log);
       await evalsClient.assertPluginEnabled();
       await use(evalsClient);
+    },
+    { scope: 'worker' },
+  ],
+  evaluatorClient: [
+    async ({ kbnClient, log }, use) => {
+      const evaluationsKbnClient = getEvaluationsKbnClient({ kbnClient, log });
+      const evaluatorClient = new EvaluatorApiClient(evaluationsKbnClient, log);
+      await use(evaluatorClient);
     },
     { scope: 'worker' },
   ],

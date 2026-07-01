@@ -128,6 +128,7 @@ export {
   type UpsertDatasetInput,
   type DatasetWithId,
 } from './src/utils/evals_client';
+export { EvaluatorApiClient, type MapContextFn } from './src/utils/evaluator_api_client';
 export { getBuildkiteCiMetadataFromEnv, type BuildkiteCiMetadata } from './src/utils/ci_metadata';
 export { buildIngestRequest } from './src/utils/build_ingest_request';
 

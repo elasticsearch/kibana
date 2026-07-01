@@ -15,6 +15,8 @@ import {
 import type { Logger } from '@kbn/logging';
 import { PLUGIN_ID, PLUGIN_NAME, EVALS_API_PRIVILEGES, EVALS_UI_PRIVILEGES } from '../common';
 import type { EvalsConfig } from './config';
+import { createEvaluatorRegistry } from './evaluators/registry';
+import type { EvaluatorRegistry } from './evaluators/types';
 import {
   EVALS_REMOTE_KIBANA_CONFIG_SAVED_OBJECT_TYPE,
   evalsRemoteKibanaConfigSavedObjectType,
@@ -38,6 +40,7 @@ export class EvalsPlugin
   private readonly logger: Logger;
   private readonly config: EvalsConfig;
   private readonly isServerless: boolean;
+  private evaluatorRegistry?: EvaluatorRegistry;
   private datasetService?: DatasetService;
   private evaluationScoreService?: EvaluationScoreService;
 
@@ -65,17 +68,19 @@ export class EvalsPlugin
       attributesToEncrypt: new Set(['apiKey']),
       attributesToIncludeInAAD: new Set(['createdAt', 'url']),
     });
+    this.evaluatorRegistry = createEvaluatorRegistry();
 
     coreSetup.http.registerRouteHandlerContext<EvalsRequestHandlerContext, 'evals'>(
       'evals',
       async () => {
-        if (!this.datasetService || !this.evaluationScoreService) {
+        if (!this.datasetService || !this.evaluationScoreService || !this.evaluatorRegistry) {
           throw new Error('Evals storage services have not been initialized');
         }
 
         return {
           datasetService: this.datasetService,
           evaluationScoreService: this.evaluationScoreService,
+          evaluatorRegistry: this.evaluatorRegistry,
         };
       }
     );
@@ -122,6 +127,9 @@ export class EvalsPlugin
       router,
       logger: this.logger,
       canEncrypt: encryptedSavedObjects.canEncrypt,
+      evaluatorRegistry: this.evaluatorRegistry,
+      getInferenceStart: () =>
+        coreSetup.getStartServices().then(([, pluginsStart]) => pluginsStart.inference),
       getEncryptedSavedObjectsStart: () =>
         coreSetup.getStartServices().then(([, pluginsStart]) => pluginsStart.encryptedSavedObjects),
       getInternalRemoteConfigsSoClient: () => internalRemoteConfigsSoClientPromise,
