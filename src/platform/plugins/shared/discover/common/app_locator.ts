@@ -120,6 +120,10 @@ export interface DiscoverAppLocatorParams extends SerializableRecord {
    */
   hideTable?: boolean;
   /**
+   * Used to force the field list sidebar to be hidden or visible
+   */
+  hideSidebar?: boolean;
+  /**
    * Number of rows to sample for Discover grid
    */
   sampleSize?: number;

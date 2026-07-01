@@ -237,6 +237,10 @@ export interface DefaultAppStateExtension {
    * The state for data table visibility toggle
    */
   hideTable?: boolean;
+  /**
+   * The state for field list sidebar visibility toggle
+   */
+  hideSidebar?: boolean;
 }
 
 /**

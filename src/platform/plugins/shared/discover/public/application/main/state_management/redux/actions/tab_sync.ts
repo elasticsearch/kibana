@@ -100,10 +100,8 @@ export const initializeAndSync: InternalStateThunkActionCreator<[TabActionPayloa
       // Set the profile state fields to reset only if not loading a saved search,
       // to avoid overwriting saved search state
       if (!persistedDiscoverSession?.id) {
-        const { breakdownField, columns, rowHeight, hideChart, hideTable } = getCurrentUrlState(
-          urlStateStorage,
-          services
-        );
+        const { breakdownField, columns, rowHeight, hideChart, hideTable, hideSidebar } =
+          getCurrentUrlState(urlStateStorage, services);
 
         // Only set default state which is not already set in the URL
         dispatch(
@@ -115,6 +113,7 @@ export const initializeAndSync: InternalStateThunkActionCreator<[TabActionPayloa
               breakdownField: breakdownField === undefined,
               hideChart: hideChart === undefined,
               hideTable: hideTable === undefined,
+              hideSidebar: hideSidebar === undefined,
             }),
           })
         );

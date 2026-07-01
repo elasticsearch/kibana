@@ -15,4 +15,5 @@ export const getDefaultAppState: NonNullable<
   ...prev(params),
   hideChart: false,
   hideTable: true,
+  hideSidebar: true,
 });

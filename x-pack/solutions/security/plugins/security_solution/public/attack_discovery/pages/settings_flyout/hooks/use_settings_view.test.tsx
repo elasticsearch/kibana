@@ -41,6 +41,7 @@ jest.mock('@kbn/discover-utils', () => ({
   getDefaultSort: jest.fn().mockReturnValue([]),
   getSortArray: jest.fn().mockReturnValue([]),
   getTableHidden: jest.fn().mockReturnValue(undefined),
+  getSidebarClosed: jest.fn().mockReturnValue(undefined),
 }));
 
 jest.mock('@kbn/data-plugin/common', () => ({

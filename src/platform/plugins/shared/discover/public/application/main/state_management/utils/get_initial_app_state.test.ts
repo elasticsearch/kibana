@@ -178,6 +178,7 @@ describe('getInitialAppState', () => {
         "headerRowHeight": undefined,
         "hideAggregatedPreview": undefined,
         "hideChart": undefined,
+        "hideSidebar": undefined,
         "hideTable": undefined,
         "interval": "auto",
         "query": Object {
@@ -224,6 +225,7 @@ describe('getInitialAppState', () => {
         "headerRowHeight": undefined,
         "hideAggregatedPreview": undefined,
         "hideChart": undefined,
+        "hideSidebar": undefined,
         "hideTable": undefined,
         "interval": "auto",
         "query": Object {

@@ -63,6 +63,17 @@ describe('UnifiedFieldList getSidebarVisibility', () => {
     expect(state.initialValue).toBe(false);
   });
 
+  it('should update the observable without persisting when updateLocalStorage is false', async () => {
+    const state = getSidebarVisibility({ localStorageKey });
+
+    act(() => {
+      state.toggle(true, false);
+    });
+
+    expect(state.isCollapsed$.getValue()).toBe(true);
+    expect(localStorage.getItem(localStorageKey)).toBe(null);
+  });
+
   it('should not persist if local storage key is not defined', async () => {
     const state = getSidebarVisibility({ localStorageKey: undefined });
 

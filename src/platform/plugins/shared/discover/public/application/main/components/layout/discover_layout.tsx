@@ -309,7 +309,6 @@ export function DiscoverLayout() {
           onAddFilter={onAddFilter}
           onFieldEdited={onFieldEdited}
           onDropFieldToTable={onDropFieldToTable}
-          sidebarToggleState$={sidebarToggleState$}
         />
         {resultState === 'loading' && <LoadingSpinner />}
       </>
@@ -322,7 +321,6 @@ export function DiscoverLayout() {
     onAddFilter,
     onFieldEdited,
     onDropFieldToTable,
-    sidebarToggleState$,
     dataStateContainer,
   ]);
 
@@ -430,12 +428,7 @@ export function DiscoverLayout() {
                 {resultState === 'none' ? (
                   <>
                     <div css={styles.mainPanel}>
-                      <PanelsToggle
-                        sidebarToggleState$={sidebarToggleState$}
-                        omitChartButton
-                        omitTableButton
-                        dataTestSubjSuffix="InPage"
-                      />
+                      <PanelsToggle omitChartButton omitTableButton dataTestSubjSuffix="InPage" />
                     </div>
                     {dataState.error ? (
                       <ErrorCallout

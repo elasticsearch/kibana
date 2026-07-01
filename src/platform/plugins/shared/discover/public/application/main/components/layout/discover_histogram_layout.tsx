@@ -19,22 +19,14 @@ import {
   useAppStateSelector,
 } from '../../state_management/redux';
 
-export const DiscoverHistogramLayout = ({
-  sidebarToggleState$,
-  ...mainContentProps
-}: DiscoverMainContentProps) => {
+export const DiscoverHistogramLayout = (mainContentProps: DiscoverMainContentProps) => {
   const chartPortalNode = useCurrentChartPortalNode();
   const { localStorageKeyPrefix, layoutPropsMap } = useCurrentTabRuntimeState(
     (tab) => tab.unifiedHistogramConfig$
   );
   const layoutProps = layoutPropsMap[localStorageKeyPrefix ?? DEFAULT_HISTOGRAM_KEY_PREFIX];
   const isMainPanelHidden = useAppStateSelector((state) => Boolean(state.hideTable));
-  const panelsToggle = useMemo(
-    () => (
-      <PanelsToggle sidebarToggleState$={sidebarToggleState$} dataTestSubjSuffix="InHistogram" />
-    ),
-    [sidebarToggleState$]
-  );
+  const panelsToggle = useMemo(() => <PanelsToggle dataTestSubjSuffix="InHistogram" />, []);
 
   if (!layoutProps) {
     return null;
@@ -48,7 +40,7 @@ export const DiscoverHistogramLayout = ({
       isMainPanelHidden={isMainPanelHidden}
       {...layoutProps}
     >
-      <DiscoverMainContent {...mainContentProps} sidebarToggleState$={sidebarToggleState$} />
+      <DiscoverMainContent {...mainContentProps} />
     </UnifiedHistogramLayout>
   );
 };

@@ -191,10 +191,12 @@ function getCompProps(options?: { hits?: DataTableRecord[] }): TestWrapperProps 
 
 async function setupToolkit({
   query,
+  hideSidebar,
   fieldListUiState,
   services,
 }: {
   query?: Query | AggregateQuery;
+  hideSidebar?: boolean;
   fieldListUiState?: Partial<UnifiedFieldListRestorableState>;
   services?: DiscoverServices;
 }): Promise<InternalStateMockToolkit> {
@@ -207,6 +209,7 @@ async function setupToolkit({
       appState: {
         query: query ?? { query: '', language: 'lucene' },
         filters: [],
+        hideSidebar,
       },
     })
   );
@@ -224,6 +227,7 @@ async function renderComponent(
   props: TestWrapperProps,
   appStateParams: {
     query?: Query | AggregateQuery;
+    hideSidebar?: boolean;
     fieldListUiState?: Partial<UnifiedFieldListRestorableState>;
   } = {},
   services?: DiscoverServices
@@ -513,9 +517,7 @@ describe('discover responsive sidebar', function () {
     const { result: collapsedRender } = await renderComponent(
       props,
       {
-        fieldListUiState: {
-          isCollapsed: true,
-        },
+        hideSidebar: true,
       },
       undefined
     );
@@ -527,9 +529,7 @@ describe('discover responsive sidebar', function () {
     const { result: expandedRender } = await renderComponent(
       props,
       {
-        fieldListUiState: {
-          isCollapsed: false,
-        },
+        hideSidebar: false,
       },
       undefined
     );
@@ -789,9 +789,7 @@ describe('discover responsive sidebar', function () {
           sidebarToggleState$: collapsedSidebarToggleState$,
         },
         {
-          fieldListUiState: {
-            isCollapsed: true,
-          },
+          hideSidebar: true,
         }
       );
 

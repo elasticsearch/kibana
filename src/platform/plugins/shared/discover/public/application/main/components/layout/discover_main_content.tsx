@@ -14,7 +14,6 @@ import type { DataView } from '@kbn/data-views-plugin/common';
 import { METRIC_TYPE } from '@kbn/analytics';
 import { i18n } from '@kbn/i18n';
 import type { DocViewFilterFn } from '@kbn/unified-doc-viewer/types';
-import type { BehaviorSubject } from 'rxjs';
 import { VIEW_MODE } from '../../../../../common/constants';
 import { useDiscoverServices } from '../../../../hooks/use_discover_services';
 import { DocumentViewModeToggle } from '../../../../components/view_mode_toggle';
@@ -26,7 +25,6 @@ import { PanelsToggle } from '../../../../components/panels_toggle';
 import { PatternAnalysisTab } from '../pattern_analysis/pattern_analysis_tab';
 import { PATTERN_ANALYSIS_VIEW_CLICK } from '../pattern_analysis/constants';
 import { useIsEsqlMode } from '../../hooks/use_is_esql_mode';
-import type { SidebarToggleState } from '../../../types';
 import {
   internalStateActions,
   useCurrentTabAction,
@@ -59,7 +57,6 @@ export interface DiscoverMainContentProps {
   }) => Promise<void>;
   onDropFieldToTable?: () => void;
   columns: string[];
-  sidebarToggleState$: BehaviorSubject<SidebarToggleState>;
   isChartAvailable?: boolean; // it will be injected by UnifiedHistogram
 }
 
@@ -70,7 +67,6 @@ export const DiscoverMainContent = ({
   onFieldEdited,
   columns,
   onDropFieldToTable,
-  sidebarToggleState$,
   isChartAvailable,
 }: DiscoverMainContentProps) => {
   const { trackUiMetric } = useDiscoverServices();
@@ -132,7 +128,6 @@ export const DiscoverMainContent = ({
           prepend={
             showPanelsToggle ? (
               <PanelsToggle
-                sidebarToggleState$={sidebarToggleState$}
                 omitChartButton={!isChartAvailable}
                 omitTableButton={!isChartAvailable}
                 dataTestSubjSuffix="InPage"
@@ -142,15 +137,7 @@ export const DiscoverMainContent = ({
         />
       );
     },
-    [
-      viewMode,
-      isEsqlMode,
-      setDiscoverViewMode,
-      dataView,
-      showPanelsToggle,
-      sidebarToggleState$,
-      isChartAvailable,
-    ]
+    [viewMode, isEsqlMode, setDiscoverViewMode, dataView, showPanelsToggle, isChartAvailable]
   );
 
   const viewModeToggle = useMemo(() => renderViewModeToggle(), [renderViewModeToggle]);

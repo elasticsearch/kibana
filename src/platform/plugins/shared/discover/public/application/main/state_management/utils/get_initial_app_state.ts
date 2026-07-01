@@ -17,6 +17,7 @@ import {
   DOC_HIDE_TIME_COLUMN_SETTING,
   getChartHidden,
   getTableHidden,
+  getSidebarClosed,
   getDefaultSort,
   getSortArray,
   SORT_DEFAULT_ORDER_SETTING,
@@ -67,6 +68,10 @@ export function getInitialAppState({
 
   if (typeof mergedState.hideTable !== 'boolean') {
     mergedState.hideTable = undefined;
+  }
+
+  if (typeof mergedState.hideSidebar !== 'boolean') {
+    mergedState.hideSidebar = undefined;
   }
 
   if (mergedState.hideChart && mergedState.hideTable) {
@@ -168,6 +173,7 @@ function getDefaultAppState({
   const columns = getDefaultColumns(persistedTab, uiSettings);
   const chartHidden = getChartHidden(storage, 'discover');
   const tableHidden = getTableHidden(storage, 'discover');
+  const sidebarHidden = getSidebarClosed(storage, 'discover');
   const dataSource = createDataSource({
     dataView: dataView ?? persistedTab?.serializedSearchSource.index,
     query,
@@ -189,6 +195,7 @@ function getDefaultAppState({
     filters: cloneDeep(persistedTab?.serializedSearchSource.filter),
     hideChart: chartHidden,
     hideTable: tableHidden,
+    hideSidebar: sidebarHidden,
     viewMode: undefined,
     hideAggregatedPreview: undefined,
     savedQuery: undefined,

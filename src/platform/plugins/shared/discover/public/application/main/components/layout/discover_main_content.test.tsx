@@ -8,12 +8,10 @@
  */
 
 import React from 'react';
-import { BehaviorSubject } from 'rxjs';
 import { renderWithKibanaRenderContext } from '@kbn/test-jest-helpers';
 import { screen, waitFor } from '@testing-library/react';
 import { esHitsMock } from '@kbn/discover-utils/src/__mocks__';
 import { createDiscoverServicesMock } from '../../../../__mocks__/services';
-import type { SidebarToggleState } from '../../../types';
 import { FetchStatus } from '../../../types';
 import { buildDataTableRecord } from '@kbn/discover-utils';
 import type { DiscoverMainContentProps } from './discover_main_content';
@@ -127,10 +125,6 @@ const renderComponent = async ({
     columns: [],
     viewMode,
     onAddFilter: jest.fn(),
-    sidebarToggleState$: new BehaviorSubject<SidebarToggleState>({
-      isCollapsed: false,
-      toggle: jest.fn(),
-    }),
     isChartAvailable,
   };
 

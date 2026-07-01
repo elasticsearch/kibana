@@ -9,13 +9,10 @@
 
 import React, { useCallback } from 'react';
 import { i18n } from '@kbn/i18n';
-import useObservable from 'react-use/lib/useObservable';
-import type { BehaviorSubject } from 'rxjs';
 import { useIsWithinBreakpoints } from '@elastic/eui';
 import { IconButtonGroup } from '@kbn/shared-ux-button-toolbar';
-import { setChartHidden, setTableHidden } from '@kbn/discover-utils';
+import { setChartHidden, setSidebarClosed, setTableHidden } from '@kbn/discover-utils';
 import { useAppStateSelector } from '../../application/main/state_management/redux';
-import type { SidebarToggleState } from '../../application/types';
 import {
   internalStateActions,
   useCurrentTabAction,
@@ -31,7 +28,6 @@ const disabledCollapsingTooltip = i18n.translate(
 );
 
 export interface PanelsToggleProps {
-  sidebarToggleState$: BehaviorSubject<SidebarToggleState>;
   omitChartButton?: boolean;
   omitTableButton?: boolean;
   dataTestSubjSuffix?: string;
@@ -121,14 +117,12 @@ const getTableButton = ({
 };
 
 /**
- * @param sidebarToggleState$
  * @param omitChartButton
  * @param omitTableButton
  * @param dataTestSubjSuffix
  * @constructor
  */
 export const PanelsToggle: React.FC<PanelsToggleProps> = ({
-  sidebarToggleState$,
   omitChartButton = false,
   omitTableButton = false,
   dataTestSubjSuffix,
@@ -138,8 +132,7 @@ export const PanelsToggle: React.FC<PanelsToggleProps> = ({
   const updateAppState = useCurrentTabAction(internalStateActions.updateAppState);
   const isChartHidden = useAppStateSelector((state) => Boolean(state.hideChart));
   const isTableHidden = useAppStateSelector((state) => Boolean(state.hideTable));
-  const sidebarToggleState = useObservable(sidebarToggleState$, sidebarToggleState$.getValue());
-  const isSidebarHidden = sidebarToggleState.isCollapsed;
+  const isSidebarHidden = useAppStateSelector((state) => Boolean(state.hideSidebar));
   const isMobile = useIsWithinBreakpoints(['xs', 's']);
 
   const onToggleChart = useCallback(() => {
@@ -155,8 +148,10 @@ export const PanelsToggle: React.FC<PanelsToggleProps> = ({
   }, [dispatch, isTableHidden, storage, updateAppState]);
 
   const onToggleSidebar = useCallback(() => {
-    sidebarToggleState.toggle?.(!isSidebarHidden);
-  }, [isSidebarHidden, sidebarToggleState]);
+    const hideSidebar = !isSidebarHidden;
+    setSidebarClosed(storage, 'discover', hideSidebar);
+    dispatch(updateAppState({ appState: { hideSidebar } }));
+  }, [dispatch, isSidebarHidden, storage, updateAppState]);
 
   const disableHideChart = isTableHidden && !isChartHidden;
   const disableHideTable = isChartHidden && !isTableHidden;
