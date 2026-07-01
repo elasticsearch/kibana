@@ -10,6 +10,7 @@
 export const DEFAULT_ROUTE_UI_SETTING_ID = 'defaultRoute';
 
 export const NAV_CUSTOMIZATION_STORAGE_KEY = 'navigation:customization';
+export const NAV_BASELINE_TELEMETRY_REPORTED_STORAGE_KEY = 'navigation:baselineTelemetryReported';
 
 export const AGENT_BUILDER_NAV_AT_TOP_FLAG = 'navigation.agentBuilderAtTop';
 

@@ -25,7 +25,7 @@ export interface OpenCustomizeNavigationModalDeps {
     userOrder: readonly string[]
   ) => NavigationCustomization['moves'];
   onChange: (customization: NavigationCustomization) => void;
-  onSave: (customization: NavigationCustomization) => void;
+  onSave: (customization: NavigationCustomization, order: string[], hiddenIds: string[]) => void;
   onReset: () => Promise<NavigationItemInfo[]>;
   onClose: () => void;
   /**
@@ -60,7 +60,7 @@ export const openCustomizeNavigationModal = ({
     React.createElement(CustomizeNavigationModal, {
       items,
       onChange: (order, hiddenIds) => onChange(toCustomization(order, hiddenIds)),
-      onSave: (order, hiddenIds) => onSave(toCustomization(order, hiddenIds)),
+      onSave: (order, hiddenIds) => onSave(toCustomization(order, hiddenIds), order, hiddenIds),
       onReset,
       onClose,
     })

@@ -19,6 +19,7 @@ import type {
 import type { UnifiedSearchPublicPluginStart } from '@kbn/unified-search-plugin/public';
 import type { Space } from '@kbn/spaces-plugin/public';
 import { type SolutionId } from '@kbn/core-chrome-browser';
+import { KIBANA_PROJECTS } from '@kbn/projects-solutions-groups';
 import type { InternalChromeStart } from '@kbn/core-chrome-browser-internal';
 import type {
   NavigationPublicSetup,
@@ -30,6 +31,7 @@ import type {
 import { TopNavMenuExtensionsRegistry, createTopNav } from './top_nav_menu';
 import type { RegisteredTopNavMenuData } from './top_nav_menu/top_nav_menu_data';
 import { NavigationCustomizationService } from './navigation_customization';
+import { registerNavigationCustomizationEvents } from './navigation_customization/telemetry';
 
 export class NavigationPublicPlugin
   implements
@@ -52,6 +54,8 @@ export class NavigationPublicPlugin
   constructor(private initializerContext: PluginInitializerContext) {}
 
   public setup(core: CoreSetup, deps: NavigationPublicSetupDependencies): NavigationPublicSetup {
+    registerNavigationCustomizationEvents(core.analytics);
+
     return {
       registerMenuItem: this.topNavMenuExtensionsRegistry.register.bind(
         this.topNavMenuExtensionsRegistry
@@ -107,8 +111,9 @@ export class NavigationPublicPlugin
       // confirms a project-nav solution. The handler may have already been
       // registered synchronously below; enableUi's per-capability idempotency
       // guards prevent double-registration.
-      if (security && !isServerless && getIsProjectNav(activeSpace?.solution)) {
-        this.customizationService.enableUi({ core, chrome, security });
+      const solutionView = activeSpace?.solution;
+      if (security && !isServerless && isKnownSolutionView(solutionView)) {
+        this.customizationService.enableUi({ core, chrome, security, solution: solutionView });
       }
     };
 
@@ -139,7 +144,7 @@ export class NavigationPublicPlugin
         .pipe(take(1))
         .subscribe(({ solutionId }) => {
           this.activeSolutionId = solutionId;
-          this.customizationService.enableUi({ core, chrome, security });
+          this.customizationService.enableUi({ core, chrome, security, solution: solutionId });
         });
     }
 
@@ -221,5 +226,9 @@ function getIsProjectNav(solutionView?: string) {
 }
 
 function isKnownSolutionView(solution?: string): solution is SolutionId {
-  return Boolean(solution) && ['oblt', 'es', 'security'].includes(solution!);
+  // Validate against the canonical project/solution list rather than a hardcoded
+  // subset, so every solution type (es, oblt, security, workplaceai, vectordb, …)
+  // is supported and new ones are picked up automatically. `SolutionId` is the
+  // element type of `KIBANA_PROJECTS`, which keeps this predicate sound.
+  return solution !== undefined && (KIBANA_PROJECTS as readonly string[]).includes(solution);
 }

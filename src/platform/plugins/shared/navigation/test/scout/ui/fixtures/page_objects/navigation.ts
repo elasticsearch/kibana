@@ -57,8 +57,8 @@ export class Navigation {
 
   async applyCustomization() {
     // Set up the response waiter before clicking so we don't miss the request.
-    // We don't assert on status: the PUT can succeed (200) or fail (e.g. a
-    // read-only user lacks user-storage write access), and callers assert the
+    // We don't assert on status: the PUT can succeed (200) or fail because
+    // User Storage could not persist the value, and callers assert the
     // resulting UI state (persisted nav, or an error toast) afterwards.
     const saved = this.page.waitForResponse(
       (resp) => resp.url().includes('/internal/user_storage/') && resp.request().method() === 'PUT'

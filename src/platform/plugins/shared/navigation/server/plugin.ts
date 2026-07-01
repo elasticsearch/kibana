@@ -23,7 +23,10 @@ import type {
   NavigationServerStartDependencies,
 } from './types';
 import { getUiSettings } from './ui_settings';
-import { NAV_CUSTOMIZATION_STORAGE_KEY } from '../common/constants';
+import {
+  NAV_CUSTOMIZATION_STORAGE_KEY,
+  NAV_BASELINE_TELEMETRY_REPORTED_STORAGE_KEY,
+} from '../common/constants';
 
 const navCustomizationSchema = z.object({
   moves: z.array(
@@ -63,6 +66,12 @@ export class NavigationServerPlugin
       [NAV_CUSTOMIZATION_STORAGE_KEY]: {
         schema: navCustomizationSchema,
         defaultValue: { moves: [], hidden: [] },
+        scope: 'space',
+        preload: true,
+      },
+      [NAV_BASELINE_TELEMETRY_REPORTED_STORAGE_KEY]: {
+        schema: z.boolean(),
+        defaultValue: false,
         scope: 'space',
         preload: true,
       },

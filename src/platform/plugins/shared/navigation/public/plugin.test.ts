@@ -14,6 +14,7 @@ import { cloudMock } from '@kbn/cloud-plugin/public/mocks';
 import { spacesPluginMock } from '@kbn/spaces-plugin/public/mocks';
 import type { Space } from '@kbn/spaces-plugin/public';
 import type { BuildFlavor } from '@kbn/config';
+import { KIBANA_PROJECTS } from '@kbn/projects-solutions-groups';
 import { NavigationPublicPlugin } from './plugin';
 
 jest.mock('rxjs', () => {
@@ -182,10 +183,11 @@ describe('Navigation Plugin', () => {
       expect(coreStart.chrome.setChromeStyle).not.toHaveBeenCalled();
     });
 
-    it('should set the Chrome style to "project" when space solution is a known solution', async () => {
+    it('should set the Chrome style to "project" for every known solution type', async () => {
       const { plugin, coreStart, unifiedSearch, cloud, spaces } = setup();
 
-      for (const solution of ['es', 'oblt', 'security']) {
+      // Iterate the canonical list so newly added solutions are covered automatically.
+      for (const solution of KIBANA_PROJECTS) {
         spaces.getActiveSpace$ = jest
           .fn()
           .mockReturnValue(of({ solution } as Pick<Space, 'solution'>));

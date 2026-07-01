@@ -122,7 +122,7 @@ pageLoadAssetSize:
   ml: 99842
   mockIdpPlugin: 7463
   monitoring: 28983
-  navigation: 17399
+  navigation: 18500
   newsfeed: 11110
   noDataPage: 1749
   notificationCenter: 1791
@@ -216,4 +216,4 @@ pageLoadAssetSize:
   workflowsExtensions: 43032
   workflowsManagement: 39968
   workplaceAIApp: 6234
-  
+
