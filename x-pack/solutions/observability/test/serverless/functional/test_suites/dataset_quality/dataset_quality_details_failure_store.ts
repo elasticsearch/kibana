@@ -153,9 +153,7 @@ export default function ({ getService, getPageObjects }: FtrProviderContext) {
 
         await testSubjects.click(enableFailureStoreToggle);
 
-        expect(await saveModalButton.isEnabled()).to.be(true);
-
-        await testSubjects.click(failureStoreModalSaveButton);
+        await testSubjects.clickWhenNotDisabled(failureStoreModalSaveButton);
 
         await testSubjects.missingOrFail(editFailureStoreModal);
 
