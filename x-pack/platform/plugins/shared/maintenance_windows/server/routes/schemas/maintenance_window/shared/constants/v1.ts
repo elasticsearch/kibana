@@ -19,3 +19,10 @@ export const maintenanceWindowStatus = {
   ARCHIVED: 'archived',
   DISABLED: 'disabled',
 } as const;
+
+export const ID_MAX_LENGTH = 100;
+export const TITLE_MAX_LENGTH = 256;
+export const SEARCH_MAX_LENGTH = 1024;
+export const BULK_GET_IDS_MAX_SIZE = 100;
+export const STATUS_FILTER_MAX_SIZE = Object.keys(maintenanceWindowStatus).length;
+export const CATEGORY_IDS_MAX_SIZE = 3;

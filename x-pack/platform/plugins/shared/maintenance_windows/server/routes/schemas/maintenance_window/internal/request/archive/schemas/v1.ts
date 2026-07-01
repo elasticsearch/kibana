@@ -6,9 +6,10 @@
  */
 
 import { schema } from '@kbn/config-schema';
+import { ID_MAX_LENGTH } from '../../../../shared/constants/latest';
 
 export const archiveParamsSchema = schema.object({
-  id: schema.string(),
+  id: schema.string({ maxLength: ID_MAX_LENGTH }),
 });
 
 export const archiveBodySchema = schema.object({

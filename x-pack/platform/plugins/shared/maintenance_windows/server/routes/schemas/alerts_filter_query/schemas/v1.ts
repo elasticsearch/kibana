@@ -11,6 +11,7 @@ import { FilterStateStore } from '@kbn/es-query';
 export const alertsFilterQuerySchema = schema.object(
   {
     kql: schema.string({
+      maxLength: 10000,
       meta: { description: 'A filter written in Kibana Query Language (KQL).' },
     }),
     filters: schema.arrayOf(
@@ -52,6 +53,7 @@ export const alertsFilterQuerySchema = schema.object(
         ),
       }),
       {
+        maxSize: 100,
         meta: {
           description:
             'A filter written in Elasticsearch Query Domain Specific Language (DSL) as defined in the `kbn-es-query` package.',
@@ -60,6 +62,7 @@ export const alertsFilterQuerySchema = schema.object(
     ),
     dsl: schema.maybe(
       schema.string({
+        maxLength: 10000,
         meta: {
           description: 'A filter written in Elasticsearch Query Domain Specific Language (DSL).',
         },

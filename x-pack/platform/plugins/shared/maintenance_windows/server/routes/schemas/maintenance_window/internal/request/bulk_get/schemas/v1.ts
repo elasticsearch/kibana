@@ -6,7 +6,10 @@
  */
 
 import { schema } from '@kbn/config-schema';
+import { BULK_GET_IDS_MAX_SIZE, ID_MAX_LENGTH } from '../../../../shared/constants/latest';
 
 export const bulkGetBodySchema = schema.object({
-  ids: schema.arrayOf(schema.string()),
+  ids: schema.arrayOf(schema.string({ maxLength: ID_MAX_LENGTH }), {
+    maxSize: BULK_GET_IDS_MAX_SIZE,
+  }),
 });
