@@ -8,8 +8,32 @@
  */
 
 import { ExecutionError } from '@kbn/workflows/server';
+import { KibanaApiCallError } from '@kbn/workflows-extensions/server';
 
 export const DEFAULT_MAX_STEP_SIZE = '10mb';
+
+/**
+ * Normalizes a thrown step error into an {@link ExecutionError} for persistence.
+ *
+ * Behaves like {@link ExecutionError.fromError} for everything except {@link KibanaApiCallError},
+ * which is enriched so an **uncaught** `callKibanaApi` failure persists a well-formed structured
+ * error (`type: 'KibanaApiCallError'`, `details: { status }`) instead of a flat `{ type, message }`.
+ *
+ * Safety: only the safe scalar `status` is lifted into `details`; the potentially large/sensitive
+ * `body` and `headers` are intentionally left off, so they are never written to ES.
+ * `KibanaApiCallError` is deliberately a plain `Error` (not an `ExecutionError`) to avoid a class
+ * init import cycle through the extensions server barrel — this is where the structured mapping lives.
+ */
+export function toExecutionError(error: Error): ExecutionError {
+  if (error instanceof KibanaApiCallError) {
+    return new ExecutionError({
+      type: 'KibanaApiCallError',
+      message: error.message,
+      details: { status: error.status },
+    });
+  }
+  return ExecutionError.fromError(error);
+}
 
 const BYTE_UNITS: Array<{ unit: string; size: number }> = [
   { unit: 'GB', size: 1024 * 1024 * 1024 },

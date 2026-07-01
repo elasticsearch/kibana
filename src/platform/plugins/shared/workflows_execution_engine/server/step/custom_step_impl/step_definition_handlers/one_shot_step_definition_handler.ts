@@ -8,11 +8,11 @@
  */
 
 import type { AtomicGraphNode } from '@kbn/workflows/graph';
-import { ExecutionError } from '@kbn/workflows/server';
 import type { ServerHandlerStepDefinition } from '@kbn/workflows-extensions/server';
 import { createBaseHandlerContext } from './create_base_handler_context';
 import type { StepExecutionRuntime } from '../../../workflow_context_manager/step_execution_runtime';
 import type { IWorkflowEventLogger } from '../../../workflow_event_logger';
+import { toExecutionError } from '../../errors';
 import type { RunStepResult } from '../../node_implementation';
 import type { CustomStepDefinitionHandler } from '../types';
 
@@ -75,7 +75,7 @@ export class OneShotStepDefinitionHandler implements CustomStepDefinitionHandler
     };
 
     if (handlerResult.error) {
-      stepResult.error = ExecutionError.fromError(handlerResult.error).toSerializableObject();
+      stepResult.error = toExecutionError(handlerResult.error).toSerializableObject();
     }
 
     return stepResult;

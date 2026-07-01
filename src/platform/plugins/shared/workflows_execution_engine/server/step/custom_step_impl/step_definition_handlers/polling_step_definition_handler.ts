@@ -22,6 +22,7 @@ import { DURABLE_STEP_STATE_KEY, type DurableStepState } from './durable_step_st
 import { applyBackoffJitter } from '../../../utils/backoff_jitter/backoff_jitter';
 import type { StepExecutionRuntime } from '../../../workflow_context_manager/step_execution_runtime';
 import type { IWorkflowEventLogger } from '../../../workflow_event_logger';
+import { toExecutionError } from '../../errors';
 import type { RunStepResult } from '../../node_implementation';
 import type { CustomStepDefinitionHandler } from '../types';
 
@@ -115,7 +116,7 @@ export class PollPolicyStepHandler implements CustomStepDefinitionHandler {
         input,
         output: pollResult.output,
         error: pollResult.error
-          ? ExecutionError.fromError(pollResult.error).toSerializableObject()
+          ? toExecutionError(pollResult.error).toSerializableObject()
           : undefined,
       };
     }

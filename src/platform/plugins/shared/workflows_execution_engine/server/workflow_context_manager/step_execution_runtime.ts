@@ -21,6 +21,7 @@ import type { StepIoService } from './step_io_service';
 import type { WorkflowContextManager } from './workflow_context_manager';
 import type { WorkflowExecutionState } from './workflow_execution_state';
 import { WorkflowScopeStack } from './workflow_scope_stack';
+import { toExecutionError } from '../step/errors';
 import type { RunStepResult } from '../step/node_implementation';
 import { extractTokenUsage, parseDuration } from '../utils';
 
@@ -223,7 +224,15 @@ export class StepExecutionRuntime {
    *   into the per-execution total.
    */
   public failStep(error: Error, partialOutput?: unknown): void {
-    const executionError = ExecutionError.fromError(error);
+    // Guardrail: this is the single choke point where a thrown error becomes the persisted
+    // error for both the step and the workflow execution. The persisted shape is constrained by
+    // `BaseSerializedErrorSchema` (`type` / `message` / optional `details`) and produced by
+    // `toSerializableObject`, which only ever serializes those three fields. So arbitrary instance
+    // fields a custom error may carry — e.g. `KibanaApiCallError.body`/`.headers` holding a full
+    // parsed HTTP response — are never written to ES; only what an error explicitly puts in
+    // `details` is persisted (`KibanaApiCallError` deliberately limits this to the safe `status`).
+    // (Covered by `step_execution_runtime.test.ts` > failStep > "persists status in details ...".)
+    const executionError = toExecutionError(error);
     const serializedError = executionError.toSerializableObject();
 
     this.workflowExecutionState.setLastFailedStepContext({

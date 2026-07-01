@@ -7,6 +7,7 @@
 
 import { setAlertStatusStepDefinition } from './set_alert_status_step';
 import { ExecutionError } from '@kbn/workflows/server';
+import { KibanaApiCallError } from '@kbn/workflows-extensions/server';
 import { DETECTION_ENGINE_SIGNALS_STATUS_URL } from '../../../../common/constants';
 import type { StepHandlerContext } from '@kbn/workflows-extensions/server';
 
@@ -98,19 +99,31 @@ describe('setAlertStatusStepDefinition', () => {
       });
     });
 
-    it('should throw ExecutionError if API returns >= 400', async () => {
+    it('persists only status (not the raw body/headers) when callKibanaApi throws on a non-2xx', async () => {
       const mockContext = createMockContext({ alert_ids: 'alert-1', status: 'open' });
-      (mockContext.contextManager.callKibanaApi as jest.Mock).mockResolvedValue({
-        status: 404,
-        body: { error: 'Not found' },
-      });
-
-      await expect(setAlertStatusStepDefinition.handler(mockContext)).rejects.toThrow(
-        ExecutionError
+      (mockContext.contextManager.callKibanaApi as jest.Mock).mockRejectedValue(
+        new KibanaApiCallError({
+          status: 500,
+          headers: { 'x-leaky-header': 'header-value' },
+          body: { sensitive: 'partial-success-payload', items: [{ id: 'alert-1' }] },
+          message: 'HTTP 500: bulk action partially failed',
+        })
       );
+
+      const error = await setAlertStatusStepDefinition
+        .handler(mockContext)
+        .then(() => undefined)
+        .catch((e) => e);
+
+      expect(error).toBeInstanceOf(ExecutionError);
+      const serialized = (error as ExecutionError).toSerializableObject();
+      expect(serialized.type).toBe('ApiError');
+      expect(serialized.details).toEqual({ status: 500 });
+      expect(JSON.stringify(serialized.details)).not.toContain('partial-success-payload');
+      expect(JSON.stringify(serialized.details)).not.toContain('x-leaky-header');
     });
 
-    it('should throw ExecutionError if API call throws an error', async () => {
+    it('should throw ExecutionError if API call throws a generic error', async () => {
       const mockContext = createMockContext({ alert_ids: 'alert-1', status: 'open' });
       (mockContext.contextManager.callKibanaApi as jest.Mock).mockRejectedValue(
         new Error('Network error')

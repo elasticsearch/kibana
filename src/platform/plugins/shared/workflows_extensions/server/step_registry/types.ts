@@ -462,9 +462,11 @@ export interface ContextManager {
 
   /**
    * Calls a Kibana API route on the running Kibana instance, using the workflow's fake
-   * request for authentication. Throws on non-2xx responses with an error of the form
-   * `HTTP <status>: <body>`. The implementation may evolve (e.g. move to an in-process
-   * call) but the API surface stays stable.
+   * request for authentication. Throws a {@link KibanaApiCallError} on non-2xx responses
+   * (other than 304); its `message` keeps the `HTTP <status>: <body>` shape, and it also
+   * exposes the parsed `status`, `headers`, and `body` so authors can recover a structured
+   * partial-success response via `try/catch` + `instanceof KibanaApiCallError`. The
+   * implementation may evolve (e.g. move to an in-process call) but the API surface stays stable.
    *
    * Not supported: multipart/form-data, streaming/SSE responses, custom fetcher/TLS
    * options. For those, use the `kibana.request` YAML step.

@@ -8,7 +8,6 @@
  */
 
 import type { AtomicGraphNode } from '@kbn/workflows/graph';
-import { ExecutionError } from '@kbn/workflows/server';
 import type { ServerStepDefinition } from '@kbn/workflows-extensions/server';
 import { isOneShotStepDefinition, isPollStepDefinition } from '@kbn/workflows-extensions/server';
 
@@ -18,6 +17,7 @@ import type { ConnectorExecutor } from '../../connector_executor';
 import type { StepExecutionRuntime } from '../../workflow_context_manager/step_execution_runtime';
 import type { WorkflowExecutionRuntimeManager } from '../../workflow_context_manager/workflow_execution_runtime_manager';
 import type { IWorkflowEventLogger } from '../../workflow_event_logger';
+import { toExecutionError } from '../errors';
 import { BaseAtomicNodeImplementation } from '../node_implementation';
 import type { BaseStep, CancellableNode, RunStepResult } from '../node_implementation';
 
@@ -92,7 +92,7 @@ export class CustomStepImpl
         this.getRenderedConfig()
       );
     } catch (err) {
-      const error = ExecutionError.fromError(err).toSerializableObject();
+      const error = toExecutionError(err as Error).toSerializableObject();
       return { input, output: undefined, error };
     }
   }

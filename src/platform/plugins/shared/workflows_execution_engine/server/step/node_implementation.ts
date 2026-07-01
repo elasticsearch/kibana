@@ -16,6 +16,7 @@ import {
   parseByteSize,
   ResponseSizeLimitError,
   safeOutputSize,
+  toExecutionError,
 } from './errors';
 import type { ConnectorExecutor } from '../connector_executor';
 import type { StepExecutionRuntime } from '../workflow_context_manager/step_execution_runtime';
@@ -304,7 +305,7 @@ export abstract class BaseAtomicNodeImplementation<TStep extends BaseStep>
     return {
       input,
       output: undefined,
-      error: ExecutionError.fromError(error),
+      error: toExecutionError(error),
     };
   }
 }
