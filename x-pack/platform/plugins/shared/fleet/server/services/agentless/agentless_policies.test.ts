@@ -249,6 +249,469 @@ describe('AgentlessPoliciesService', () => {
     });
   });
 
+  describe('updateAgentlessPolicy', () => {
+    let packagePolicyService: ReturnType<typeof createPackagePolicyServiceMock>;
+
+    const createService = () =>
+      new AgentlessPoliciesServiceImpl(
+        packagePolicyService,
+        savedObjectsClientMock.create(),
+        elasticsearchServiceMock.createClusterClient().asInternalUser,
+        loggingSystemMock.createLogger()
+      );
+
+    const buildUpdateRequest = (overrides: Record<string, any> = {}): any => ({
+      name: 'Test Agentless Policy',
+      namespace: 'default',
+      package: { name: 'test_agentless', version: '1.0.0' },
+      inputs: {},
+      ...overrides,
+    });
+
+    beforeEach(() => {
+      const cloudSetup = cloudMock.createSetup();
+      cloudSetup.isCloudEnabled = true;
+
+      appContextService.start({
+        ...createAppContextStartContractMock({
+          agentless: { enabled: true },
+        }),
+        cloud: cloudSetup,
+      });
+
+      jest.resetAllMocks();
+      packagePolicyService = createPackagePolicyServiceMock();
+
+      // Existing (stored) agentless package + agent policy.
+      packagePolicyService.get.mockResolvedValue(buildAgentlessPackagePolicy());
+      jest.mocked(agentPolicyService.get).mockResolvedValue({
+        id: 'agentless-policy-id',
+        name: 'Agentless policy for Test Agentless Policy',
+        namespace: 'default',
+        supports_agentless: true,
+        agentless: { cluster_id: 'cluster-123' },
+      } as any);
+
+      // The update echoes back the new package policy so the mapper has a package to read.
+      packagePolicyService.update.mockImplementation(async (_, __, id, policy: any) => ({
+        id,
+        name: policy.name,
+        namespace: policy.namespace,
+        package: policy.package,
+        inputs: [],
+        vars: policy.vars,
+        revision: 2,
+        supports_agentless: true,
+        enabled: true,
+        policy_ids: policy.policy_ids || [],
+        cloud_connector_id: policy.cloud_connector_id,
+        created_at: '2024-01-01T00:00:00.000Z',
+        created_by: 'system',
+        updated_at: '2024-01-02T00:00:00.000Z',
+        updated_by: 'system',
+      }));
+
+      jest.mocked(agentPolicyService.update).mockResolvedValue({} as any);
+      jest.mocked(agentPolicyService.deployPolicy).mockResolvedValue(undefined as any);
+
+      jest.mocked(getPackageInfo).mockImplementation(
+        async ({ pkgName, pkgVersion }) =>
+          ({
+            name: pkgName,
+            title: 'Test Agentless',
+            version: pkgVersion,
+            policy_templates: [
+              {
+                name: 'test_template',
+                deployment_modes: { agentless: { enabled: true, resources: {} } },
+              },
+            ],
+          } as any)
+      );
+    });
+
+    it('should update the package + agent policy, re-deploy, and return the mapped policy', async () => {
+      const result = await createService().updateAgentlessPolicy(
+        'agentless-policy-id',
+        buildUpdateRequest({
+          namespace: 'production',
+        })
+      );
+
+      // Package policy is updated without bumping its revision (matches create).
+      expect(packagePolicyService.update).toHaveBeenCalledTimes(1);
+      expect(packagePolicyService.update).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.anything(),
+        'agentless-policy-id',
+        expect.objectContaining({ supports_agentless: true, namespace: 'production' }),
+        expect.objectContaining({ bumpRevision: false })
+      );
+
+      // Backing agent policy is kept in sync (name derived, namespace mirrored).
+      expect(jest.mocked(agentPolicyService.update)).toHaveBeenCalledTimes(1);
+      expect(jest.mocked(agentPolicyService.update)).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.anything(),
+        'agentless-policy-id',
+        expect.objectContaining({
+          name: 'Agentless policy for Test Agentless Policy',
+          namespace: 'production',
+        }),
+        expect.anything()
+      );
+
+      // Live workload reconcile is the final step and surfaces agentless errors.
+      expect(jest.mocked(agentPolicyService.deployPolicy)).toHaveBeenCalledTimes(1);
+      expect(jest.mocked(agentPolicyService.deployPolicy)).toHaveBeenCalledWith(
+        expect.anything(),
+        'agentless-policy-id',
+        undefined,
+        expect.objectContaining({ throwOnAgentlessError: true })
+      );
+
+      // Response is the clean agentless contract (no Fleet internals).
+      expect(result).toEqual(
+        expect.objectContaining({ id: 'agentless-policy-id', namespace: 'production' })
+      );
+      expect(result).not.toHaveProperty('supports_agentless');
+      expect(result).not.toHaveProperty('policy_ids');
+      expect(result).not.toHaveProperty('revision');
+    });
+
+    it('should preserve the runtime cluster_id on the agent policy across the update', async () => {
+      await createService().updateAgentlessPolicy('agentless-policy-id', buildUpdateRequest());
+
+      expect(jest.mocked(agentPolicyService.update)).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.anything(),
+        'agentless-policy-id',
+        expect.objectContaining({
+          agentless: expect.objectContaining({ cluster_id: 'cluster-123' }),
+        }),
+        expect.anything()
+      );
+    });
+
+    it('should throw a not found error when the package policy does not exist', async () => {
+      packagePolicyService.get.mockReset();
+      packagePolicyService.get.mockRejectedValueOnce(
+        SavedObjectsErrorHelpers.createGenericNotFoundError('test')
+      );
+
+      await expect(() =>
+        createService().updateAgentlessPolicy('missing-policy-id', buildUpdateRequest())
+      ).rejects.toThrow('Agentless policy missing-policy-id not found');
+
+      expect(packagePolicyService.update).not.toHaveBeenCalled();
+      expect(jest.mocked(agentPolicyService.update)).not.toHaveBeenCalled();
+    });
+
+    it('should throw a not found error when the package policy is not agentless', async () => {
+      packagePolicyService.get.mockReset();
+      packagePolicyService.get.mockResolvedValueOnce(
+        buildAgentlessPackagePolicy({ supports_agentless: false })
+      );
+
+      await expect(() =>
+        createService().updateAgentlessPolicy('regular-policy-id', buildUpdateRequest())
+      ).rejects.toThrow('Agentless policy regular-policy-id not found');
+
+      expect(packagePolicyService.update).not.toHaveBeenCalled();
+    });
+
+    it('should throw a not found error when the backing agent policy is not agentless', async () => {
+      jest.mocked(agentPolicyService.get).mockReset();
+      jest.mocked(agentPolicyService.get).mockResolvedValueOnce({
+        id: 'agentless-policy-id',
+        supports_agentless: false,
+      } as any);
+
+      await expect(() =>
+        createService().updateAgentlessPolicy('agentless-policy-id', buildUpdateRequest())
+      ).rejects.toThrow('Agentless policy agentless-policy-id not found');
+
+      expect(packagePolicyService.update).not.toHaveBeenCalled();
+    });
+
+    it('should reject a change to the package name', async () => {
+      await expect(() =>
+        createService().updateAgentlessPolicy(
+          'agentless-policy-id',
+          buildUpdateRequest({ package: { name: 'a_different_package', version: '1.0.0' } })
+        )
+      ).rejects.toThrow(
+        'Cannot change the integration package of an agentless policy (from "test_agentless" to "a_different_package").'
+      );
+
+      expect(packagePolicyService.update).not.toHaveBeenCalled();
+      expect(jest.mocked(agentPolicyService.update)).not.toHaveBeenCalled();
+    });
+
+    it('should allow a package version change and re-derive package info from the requested version', async () => {
+      await createService().updateAgentlessPolicy(
+        'agentless-policy-id',
+        buildUpdateRequest({ package: { name: 'test_agentless', version: '2.0.0' } })
+      );
+
+      // Package info must be loaded for the requested version, not the stored one.
+      expect(jest.mocked(getPackageInfo)).toHaveBeenCalledWith(
+        expect.objectContaining({ pkgName: 'test_agentless', pkgVersion: '2.0.0' })
+      );
+      expect(packagePolicyService.update).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.anything(),
+        'agentless-policy-id',
+        expect.objectContaining({ package: expect.objectContaining({ version: '2.0.0' }) }),
+        expect.objectContaining({ bumpRevision: false })
+      );
+      expect(jest.mocked(agentPolicyService.deployPolicy)).toHaveBeenCalledTimes(1);
+    });
+
+    it('should roll back the package and agent policy when the deploy fails', async () => {
+      jest
+        .mocked(agentPolicyService.deployPolicy)
+        .mockRejectedValueOnce(new Error('Error calling agentless API'));
+
+      await expect(() =>
+        createService().updateAgentlessPolicy('agentless-policy-id', buildUpdateRequest())
+      ).rejects.toThrow('Error calling agentless API');
+
+      // Once for the update, once for the restore.
+      expect(packagePolicyService.update).toHaveBeenCalledTimes(2);
+      expect(jest.mocked(agentPolicyService.update)).toHaveBeenCalledTimes(2);
+      // The restore re-applies the prior agent policy state.
+      expect(jest.mocked(agentPolicyService.update)).toHaveBeenLastCalledWith(
+        expect.anything(),
+        expect.anything(),
+        'agentless-policy-id',
+        expect.objectContaining({
+          name: 'Agentless policy for Test Agentless Policy',
+          agentless: expect.objectContaining({ cluster_id: 'cluster-123' }),
+        }),
+        expect.objectContaining({ force: true })
+      );
+    });
+
+    it('should detach the cloud connector when cloud_connector is omitted on update', async () => {
+      packagePolicyService.get.mockReset();
+      packagePolicyService.get.mockResolvedValue(
+        buildAgentlessPackagePolicy({ cloud_connector_id: 'old-connector-id' })
+      );
+      const createSpy = jest.spyOn(cloudConnectorService, 'create');
+      const deleteSpy = jest.spyOn(cloudConnectorService, 'delete');
+
+      const result = await createService().updateAgentlessPolicy(
+        'agentless-policy-id',
+        buildUpdateRequest()
+      );
+
+      expect(createSpy).not.toHaveBeenCalled();
+      expect(result.cloud_connector).toBeNull();
+      // The connector fields must be sent as explicit clearing values (null / false), NOT omitted:
+      // `packagePolicyService.update` persists via a partial saved-object update where an omitted
+      // (undefined) field is dropped on serialization and the stale stored value would be retained.
+      expect(packagePolicyService.update).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.anything(),
+        'agentless-policy-id',
+        expect.objectContaining({ cloud_connector_id: null, supports_cloud_connector: false }),
+        expect.anything()
+      );
+      // The previously-attached connector saved object is left intact: connectors have an
+      // independent, shareable lifecycle and Fleet never garbage-collects them on detach.
+      expect(deleteSpy).not.toHaveBeenCalled();
+    });
+
+    it('should not delete the previously-attached connector when swapping to a different one', async () => {
+      packagePolicyService.get.mockReset();
+      packagePolicyService.get.mockResolvedValue(
+        buildAgentlessPackagePolicy({
+          package: {
+            name: 'cloud_security_posture',
+            title: 'Cloud Security Posture',
+            version: '3.1.1',
+          },
+          cloud_connector_id: 'old-connector-id',
+        })
+      );
+      jest.mocked(getPackageInfo).mockReset();
+      jest.mocked(getPackageInfo).mockResolvedValue({
+        name: 'cloud_security_posture',
+        title: 'Cloud Security Posture',
+        version: '3.1.1',
+        type: 'integration',
+        data_streams: [
+          {
+            dataset: 'cloud_security_posture.findings',
+            type: 'logs',
+            title: 'Findings',
+            package: 'cloud_security_posture',
+            path: 'findings',
+            streams: [
+              {
+                input: 'cloudbeat/cis_aws',
+                enabled: true,
+                template_path: 'findings.yml.hbs',
+                title: 'Findings',
+                vars: [{ name: 'role_arn', type: 'text', default: '' }],
+              },
+            ],
+          },
+        ],
+        policy_templates: [
+          {
+            name: 'cspm',
+            deployment_modes: { agentless: { enabled: true, resources: {} } },
+            inputs: [{ type: 'cloudbeat/cis_aws', title: 'CIS AWS' }],
+          },
+        ],
+      } as any);
+
+      const getByIdSpy = jest.spyOn(cloudConnectorService, 'getById');
+      getByIdSpy.mockResolvedValue({
+        id: 'new-connector-id',
+        name: 'new-connector',
+        cloudProvider: 'aws',
+        vars: {},
+        packagePolicyCount: 1,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      } as any);
+      const createSpy = jest.spyOn(cloudConnectorService, 'create');
+      const deleteSpy = jest.spyOn(cloudConnectorService, 'delete');
+
+      const result = await createService().updateAgentlessPolicy(
+        'agentless-policy-id',
+        buildUpdateRequest({
+          package: { name: 'cloud_security_posture', version: '3.1.1' },
+          cloud_connector: {
+            enabled: true,
+            target_csp: 'aws',
+            cloud_connector_id: 'new-connector-id',
+          },
+          inputs: {
+            'cspm-cloudbeat/cis_aws': {
+              enabled: true,
+              streams: {
+                'cloud_security_posture.findings': {
+                  enabled: true,
+                  vars: { role_arn: 'arn:aws:iam::123456789012:role/TestRole' },
+                },
+              },
+            },
+          },
+        })
+      );
+
+      // Reused the supplied connector, created nothing, and crucially did NOT delete the old one.
+      expect(createSpy).not.toHaveBeenCalled();
+      expect(deleteSpy).not.toHaveBeenCalled();
+      expect(result.cloud_connector).toEqual({
+        enabled: true,
+        cloud_connector_id: 'new-connector-id',
+      });
+    });
+
+    it('should create and wire a cloud connector when enabling it on update', async () => {
+      // The stored policy must already be on the cloud_security_posture package: the package
+      // name is immutable, so the cloud-connector enable transition happens within it.
+      packagePolicyService.get.mockReset();
+      packagePolicyService.get.mockResolvedValue(
+        buildAgentlessPackagePolicy({
+          package: {
+            name: 'cloud_security_posture',
+            title: 'Cloud Security Posture',
+            version: '3.1.1',
+          },
+        })
+      );
+      jest.mocked(getPackageInfo).mockReset();
+      jest.mocked(getPackageInfo).mockResolvedValue({
+        name: 'cloud_security_posture',
+        title: 'Cloud Security Posture',
+        version: '3.1.1',
+        type: 'integration',
+        data_streams: [
+          {
+            dataset: 'cloud_security_posture.findings',
+            type: 'logs',
+            title: 'Findings',
+            package: 'cloud_security_posture',
+            path: 'findings',
+            streams: [
+              {
+                input: 'cloudbeat/cis_aws',
+                enabled: true,
+                template_path: 'findings.yml.hbs',
+                title: 'Findings',
+                vars: [
+                  { name: 'role_arn', type: 'text', default: '' },
+                  { name: 'external_id', type: 'text', default: '' },
+                ],
+              },
+            ],
+          },
+        ],
+        policy_templates: [
+          {
+            name: 'cspm',
+            deployment_modes: { agentless: { enabled: true, resources: {} } },
+            inputs: [{ type: 'cloudbeat/cis_aws', title: 'CIS AWS' }],
+          },
+        ],
+      } as any);
+
+      const createSpy = jest.spyOn(cloudConnectorService, 'create');
+      createSpy.mockResolvedValueOnce({
+        id: 'aws-cloud-connector-123',
+        name: 'arn:aws:iam::123456789012:role/TestRole',
+        cloudProvider: 'aws',
+        vars: {
+          role_arn: { type: 'text', value: 'arn:aws:iam::123456789012:role/TestRole' },
+          external_id: { id: 'ABCDEFGHIJKLMNOPQRST', isSecretRef: true },
+        },
+        packagePolicyCount: 1,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      } as any);
+
+      const result = await createService().updateAgentlessPolicy(
+        'agentless-policy-id',
+        buildUpdateRequest({
+          package: { name: 'cloud_security_posture', version: '3.1.1' },
+          cloud_connector: { enabled: true, target_csp: 'aws' },
+          inputs: {
+            'cspm-cloudbeat/cis_aws': {
+              enabled: true,
+              streams: {
+                'cloud_security_posture.findings': {
+                  enabled: true,
+                  vars: {
+                    role_arn: 'arn:aws:iam::123456789012:role/TestRole',
+                    external_id: { id: 'ABCDEFGHIJKLMNOPQRST', isSecretRef: true },
+                  },
+                },
+              },
+            },
+          },
+        })
+      );
+
+      expect(createSpy).toHaveBeenCalledTimes(1);
+      expect(result.cloud_connector).toEqual({
+        enabled: true,
+        cloud_connector_id: 'aws-cloud-connector-123',
+      });
+      expect(jest.mocked(agentPolicyService.deployPolicy)).toHaveBeenCalledWith(
+        expect.anything(),
+        'agentless-policy-id',
+        undefined,
+        expect.objectContaining({ throwOnAgentlessError: true })
+      );
+    });
+  });
+
   describe('deleteAgentlessPolicy', () => {
     let packagePolicyService: ReturnType<typeof createPackagePolicyServiceMock>;
     beforeEach(() => {

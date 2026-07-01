@@ -4079,6 +4079,58 @@ describe('Package policy service', () => {
       );
     });
 
+    // Regression tripwire. CURRENT behavior: update() bumps the associated agent policies'
+    // revision unconditionally — it ignores `bumpRevision: false` (unlike create()/bulkCreate(),
+    // which gate the bump on `options?.bumpRevision ?? true`).
+    //
+    // `updateAgentlessPolicy` (server/services/agentless/agentless_policies.ts) passes
+    // `bumpRevision: false` here and deliberately does NOT rely on this implicit bump/deploy:
+    // it performs its own explicit `deployPolicy({ throwOnAgentlessError: true })` as the sole,
+    // error-surfacing reconcile.
+    //
+    // If this test ever fails because update() now honors `bumpRevision: false`, that is an
+    // intentional behavior change — but go re-evaluate updateAgentlessPolicy first:
+    //   1. An agentless PUT would then bump the agent policy revision zero times (the agent-policy
+    //      update there also passes `bumpRevision: false`). That is functionally safe because the
+    //      explicit deployPolicy reconcile is content-based, not revision-gated, but decide whether
+    //      an agentless PUT should still bump the revision for parity/audit.
+    //   2. Update the comments in updateAgentlessPolicy that describe this implicit deploy.
+    it('bumps the associated agent policy revision even when bumpRevision is false (see updateAgentlessPolicy)', async () => {
+      mockAgentPolicyService.bumpRevision.mockReset();
+
+      const soClient = createSavedObjectClientMock();
+      const esClient = elasticsearchServiceMock.createClusterClient().asInternalUser;
+      const mockPackagePolicy = createPackagePolicyMock();
+      const attributes = { ...mockPackagePolicy, inputs: [] };
+
+      soClient.bulkGet.mockResolvedValue({
+        saved_objects: [
+          {
+            id: 'test-package-policy',
+            type: LEGACY_PACKAGE_POLICY_SAVED_OBJECT_TYPE,
+            references: [],
+            attributes,
+          },
+        ],
+      });
+      soClient.update.mockResolvedValue({
+        id: 'test-package-policy',
+        type: LEGACY_PACKAGE_POLICY_SAVED_OBJECT_TYPE,
+        references: [],
+        attributes,
+      });
+
+      await packagePolicyService.update(
+        soClient,
+        esClient,
+        'test-package-policy',
+        { ...mockPackagePolicy, inputs: [] },
+        { bumpRevision: false }
+      );
+
+      expect(mockAgentPolicyService.bumpRevision).toHaveBeenCalled();
+    });
+
     describe('remove protections', () => {
       beforeEach(() => {
         mockAgentPolicyService.bumpRevision.mockReset();

@@ -16,6 +16,7 @@ import type {
   DeleteAgentlessPolicyRequestSchema,
   GetBulkAgentlessPolicyThroughputRequestSchema,
   GetAgentlessPolicyRequestSchema,
+  UpdateAgentlessPolicyRequestSchema,
 } from '../../../common/types/rest_spec/agentless_policy';
 import { syncAgentlessDeployments } from '../../services/agentless/deployment_sync';
 import { agentlessAgentService } from '../../services/agents/agentless_agent';
@@ -77,6 +78,41 @@ export const createAgentlessPolicyHandler: FleetRequestHandler<
   return response.ok({
     body: {
       item: agentlessPolicy,
+    },
+  });
+};
+
+export const updateAgentlessPolicyHandler: FleetRequestHandler<
+  TypeOf<typeof UpdateAgentlessPolicyRequestSchema.params>,
+  undefined,
+  TypeOf<typeof UpdateAgentlessPolicyRequestSchema.body>
+> = async (context, request, response) => {
+  const [coreContext, fleetContext] = await Promise.all([context.core, context.fleet]);
+
+  const soClient = coreContext.savedObjects.client;
+  const esClient = coreContext.elasticsearch.client.asInternalUser;
+
+  const logger = appContextService.getLogger().get('agentless');
+
+  const agentlessPoliciesService = new AgentlessPoliciesServiceImpl(
+    fleetContext.packagePolicyService.asCurrentUser,
+    soClient,
+    esClient,
+    logger
+  );
+
+  // The service throws FleetNotFoundError when the policy is missing or not agentless,
+  // which Fleet's global error handler maps to a 404 (a package name change throws
+  // PackagePolicyRequestError → 400). No explicit branching needed here.
+  const item = await agentlessPoliciesService.updateAgentlessPolicy(
+    request.params.policyId,
+    request.body,
+    request
+  );
+
+  return response.ok({
+    body: {
+      item,
     },
   });
 };

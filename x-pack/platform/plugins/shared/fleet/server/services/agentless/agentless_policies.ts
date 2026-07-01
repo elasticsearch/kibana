@@ -22,6 +22,8 @@ import type {
   NewAgentlessPolicy,
   AgentlessPolicy,
   AgentlessAgentPolicyConfig,
+  AgentPolicy,
+  NewPackagePolicy,
   PackagePolicy,
   ListWithKuery,
   ListResult,
@@ -43,7 +45,7 @@ import type { PackagePolicyClient } from '../package_policy_service';
 import { agentPolicyService } from '../agent_policy';
 import { getPackageInfo } from '../epm/packages';
 import { appContextService, cloudConnectorService } from '..';
-import { FleetNotFoundError } from '../../errors';
+import { FleetNotFoundError, PackagePolicyRequestError } from '../../errors';
 
 import type { PackageInfo } from '../../types';
 import {
@@ -71,6 +73,12 @@ export interface AgentlessPoliciesService {
   createAgentlessPolicy: (
     data: NewAgentlessPolicy,
     context?: RequestHandlerContext,
+    request?: KibanaRequest
+  ) => Promise<AgentlessPolicy>;
+
+  updateAgentlessPolicy: (
+    policyId: string,
+    data: NewAgentlessPolicy,
     request?: KibanaRequest
   ) => Promise<AgentlessPolicy>;
 
@@ -142,6 +150,37 @@ export const packagePolicyToAgentlessPolicy = (packagePolicy: PackagePolicy): Ag
     created_by: packagePolicy.created_by,
     updated_at: packagePolicy.updated_at,
     updated_by: packagePolicy.updated_by,
+  };
+};
+
+/**
+ * Converts a stored {@link PackagePolicy} back into an update payload by dropping read-only
+ * saved-object metadata and the compiled (server-generated) input/stream fields that the
+ * update path rejects. Used only by the rollback path to restore the prior package policy.
+ */
+const toUpdatePackagePolicy = (packagePolicy: PackagePolicy): NewPackagePolicy => {
+  const {
+    id,
+    spaceIds,
+    version,
+    agents,
+    revision,
+    secret_references: secretReferences,
+    created_at: createdAt,
+    created_by: createdBy,
+    updated_at: updatedAt,
+    updated_by: updatedBy,
+    package_agent_version_condition: packageAgentVersionCondition,
+    inputs,
+    ...rest
+  } = packagePolicy;
+
+  return {
+    ...rest,
+    inputs: inputs.map(({ compiled_input: compiledInput, streams, ...restInput }) => ({
+      ...restInput,
+      streams: streams.map(({ compiled_stream: compiledStream, ...restStream }) => restStream),
+    })),
   };
 };
 
@@ -333,6 +372,176 @@ export class AgentlessPoliciesServiceImpl implements AgentlessPoliciesService {
     }
   }
 
+  async updateAgentlessPolicy(
+    policyId: string,
+    data: NewAgentlessPolicy,
+    request?: KibanaRequest
+  ): Promise<AgentlessPolicy> {
+    this.logger.debug(`Updating agentless policy ${policyId}`);
+
+    const user = request
+      ? appContextService.getSecurityCore().authc.getCurrentUser(request) || undefined
+      : undefined;
+
+    const force = data.force;
+    const policyTemplate = data.policy_template;
+
+    // Load and guard the target. A missing policy, or one that is not agentless throws a 404
+    const existingAgentPolicy = await this.getExistingAgentlessAgentPolicy(policyId);
+    const existingPackagePolicy = await this.getExistingAgentlessPackagePolicy(policyId);
+
+    const pkg = data.package;
+    // `package` is accepted (full-replace, symmetric with POST). The package name is
+    // immutable (swapping the integration on an existing deployment is not supported),
+    // but the version may change: a PUT can bump (or downgrade) the package version,
+    // mirroring the regular package-policy PUT.
+    this.assertPackageNameUnchanged(existingPackagePolicy, pkg);
+
+    // Load package info for the *requested* version (not the stored one) so a version
+    // change re-derives the agentless config, resources, global data tags and inputs
+    // against the new version.
+    const pkgInfo = await getPackageInfo({
+      savedObjectsClient: this.soClient,
+      pkgName: pkg.name,
+      pkgVersion: pkg.version,
+      ignoreUnverified: force,
+      prerelease: true,
+    });
+
+    let createdCloudConnectorId: string | undefined;
+    let cloudConnectorWasCreated = false;
+    let packagePolicyUpdated = false;
+    let agentPolicyUpdated = false;
+
+    try {
+      // Rebuild the agent policy's agentless config full-replace: config-derived fields are
+      // re-derived from package info / the request, but runtime-managed fields written back by
+      // the deployment sync (currently only `cluster_id`) must be preserved below, or the next
+      // sync would treat the workload as un-clustered.
+      const baseAgentlessConfig = getAgentlessAgentPolicyConfig(pkgInfo);
+      let agentlessConfig: AgentlessAgentPolicyConfig | undefined = baseAgentlessConfig;
+
+      const existingClusterId = existingAgentPolicy.agentless?.cluster_id;
+      if (existingClusterId) {
+        agentlessConfig = { ...(agentlessConfig ?? {}), cluster_id: existingClusterId };
+      }
+
+      if (data.cloud_connector?.enabled) {
+        agentlessConfig = {
+          ...(agentlessConfig ?? {}),
+          cloud_connectors: {
+            target_csp: data.cloud_connector.target_csp,
+            enabled: true,
+          },
+        };
+      }
+
+      const cloudConnectorEnabled = Boolean(data.cloud_connector?.enabled);
+      const newPolicy = {
+        ...omit(data, 'id', 'package', 'cloud_connector'),
+        namespace: data.namespace || 'default',
+        policy_ids: [policyId],
+        supports_agentless: true,
+        supports_cloud_connector: cloudConnectorEnabled,
+        cloud_connector_id: cloudConnectorEnabled
+          ? data.cloud_connector?.cloud_connector_id ?? null
+          : null,
+      };
+
+      let newPackagePolicy = simplifiedPackagePolicytoNewPackagePolicy(newPolicy, pkgInfo, {
+        policyTemplate,
+      });
+
+      // Handle cloud-connector add / reuse / swap. Detaching or swapping only updates the reference; 
+      // Previous connector is left in place, as connectors are shareable and managed via their own API.
+      const {
+        packagePolicy: integratedPackagePolicy,
+        cloudConnectorId,
+        wasCreated,
+      } = await createAndIntegrateCloudConnector({
+        packagePolicy: newPackagePolicy,
+        agentPolicy: { ...existingAgentPolicy, agentless: agentlessConfig },
+        policyName: data.name,
+        packageInfo: pkgInfo,
+        soClient: this.soClient,
+        esClient: this.esClient,
+        logger: this.logger,
+        cloudConnectorName: data.cloud_connector?.name,
+        policyTemplate,
+      });
+
+      newPackagePolicy = integratedPackagePolicy;
+      createdCloudConnectorId = cloudConnectorId;
+      cloudConnectorWasCreated = wasCreated;
+
+      // Persist the new package policy. `packagePolicyService.update` ignores `bumpRevision: false`
+      // and always fires an intermediate deploy; we don't rely on suppressing it — the authoritative
+      // reconcile is the explicit `deployPolicy({ throwOnAgentlessError: true })` below.
+      this.logger.debug(`Updating agentless package policy ${policyId}`);
+      packagePolicyUpdated = true; // needed for rollback
+      const updatedPackagePolicy = await this.packagePolicyService.update(
+        this.soClient,
+        this.esClient,
+        policyId,
+        newPackagePolicy,
+        { user, force, bumpRevision: false }
+      );
+
+      // Update the backing agent policy. Its `global_data_tags` are the package's fixed agentless
+      // ownership tags (org/division/team), always re-derived from package info — NOT the caller's
+      // `data.global_data_tags`, which are the user's custom tags and were applied to the package
+      // policy above. `bumpRevision: false` avoids a second redundant deploy here; the explicit
+      // `deployPolicy` below is the single authoritative reconcile.
+      this.logger.debug(`Updating agentless agent policy ${policyId}`);
+      agentPolicyUpdated = true; // needed for rollback
+      await agentPolicyService.update(
+        this.soClient,
+        this.esClient,
+        policyId,
+        {
+          name: getAgentlessAgentPolicyNameFromPackagePolicyName(data.name),
+          namespace: data.namespace || 'default',
+          agentless: agentlessConfig,
+          global_data_tags: getAgentlessGlobalDataTags(pkgInfo),
+        },
+        { user, force, bumpRevision: false }
+      );
+
+      // Re-sync the saved-object config to the live agentless workload. throwOnAgentlessError
+      // makes a failed external reconcile fail the whole operation instead of silently
+      // leaving the deployment out of sync.
+      this.logger.debug(`Deploy agentless policy ${policyId}`);
+      await agentPolicyService.deployPolicy(this.soClient, policyId, undefined, {
+        throwOnAgentlessError: true,
+      });
+
+      return packagePolicyToAgentlessPolicy(updatedPackagePolicy);
+    } catch (err) {
+      // Log the triggering failure at error level before attempting rollback. The error is also
+      // surfaced to the caller (rethrown below), but logging it here guarantees a server-side
+      // record correlated with the rollback-outcome log, even for errors the route maps to a
+      // generic client response.
+      this.logger.error(
+        `Failed to update agentless policy ${policyId}, attempting rollback: ${err.message}`,
+        { error: err }
+      );
+
+      await this.rollbackAgentlessPolicyUpdate({
+        policyId,
+        existingPackagePolicy,
+        existingAgentPolicy,
+        createdCloudConnectorId,
+        cloudConnectorWasCreated,
+        packagePolicyUpdated,
+        agentPolicyUpdated,
+        user,
+        originalError: err,
+      });
+
+      throw err;
+    }
+  }
+
   async deleteAgentlessPolicy(
     policyId: string,
     options?: { force?: boolean },
@@ -429,6 +638,204 @@ export class AgentlessPoliciesServiceImpl implements AgentlessPoliciesService {
       page: result.page,
       perPage: result.perPage,
     };
+  }
+
+  /**
+   * Loads the package policy backing an agentless policy, collapsing "missing" and
+   * "exists but not agentless" into a single {@link FleetNotFoundError} (404) so the
+   * endpoint never confirms the existence of, or operates on, non-agentless policies.
+   */
+  private async getExistingAgentlessPackagePolicy(policyId: string): Promise<PackagePolicy> {
+    let packagePolicy: PackagePolicy | null;
+    try {
+      packagePolicy = await this.packagePolicyService.get(this.soClient, policyId);
+    } catch (error) {
+      if (error instanceof FleetNotFoundError || SavedObjectsErrorHelpers.isNotFoundError(error)) {
+        throw new FleetNotFoundError(`Agentless policy ${policyId} not found`);
+      }
+      throw error;
+    }
+
+    if (!packagePolicy || packagePolicy.supports_agentless !== true) {
+      throw new FleetNotFoundError(`Agentless policy ${policyId} not found`);
+    }
+
+    return packagePolicy;
+  }
+
+  /**
+   * Loads the agent policy backing an agentless policy, collapsing "missing" and
+   * "exists but not agentless" into a single {@link FleetNotFoundError} (404). Mirrors
+   * {@link getExistingAgentlessPackagePolicy}: `agentPolicyService.get` throws a Saved Objects
+   * not-found error (not `null`) for a missing policy, so it must be normalized here rather
+   * than relying on a truthiness guard.
+   */
+  private async getExistingAgentlessAgentPolicy(policyId: string): Promise<AgentPolicy> {
+    let agentPolicy: AgentPolicy | null;
+    try {
+      agentPolicy = await agentPolicyService.get(this.soClient, policyId);
+    } catch (error) {
+      if (error instanceof FleetNotFoundError || SavedObjectsErrorHelpers.isNotFoundError(error)) {
+        throw new FleetNotFoundError(`Agentless policy ${policyId} not found`);
+      }
+      throw error;
+    }
+
+    if (!agentPolicy?.supports_agentless) {
+      throw new FleetNotFoundError(`Agentless policy ${policyId} not found`);
+    }
+
+    return agentPolicy;
+  }
+
+  /**
+   * The integration package name is immutable on update: changing it (swapping the
+   * integration on an existing deployment) is rejected with a 400. The package version
+   * may change — a version bump/downgrade is handled as a full-replace, mirroring the
+   * regular package-policy PUT (bulk upgrades remain a separate flow).
+   */
+  private assertPackageNameUnchanged(
+    existingPackagePolicy: PackagePolicy,
+    requestedPackage: NewAgentlessPolicy['package']
+  ): void {
+    const existingPackage = existingPackagePolicy.package;
+    if (!existingPackage) {
+      // An agentless package policy is always created with a package, so a missing one is a
+      // corrupt saved object. Fail loudly instead of silently allowing the integration to be
+      // swapped (the absence of an existing name must not be treated as "name unchanged").
+      throw new Error(
+        `Agentless policy ${existingPackagePolicy.id} is missing a package reference`
+      );
+    }
+    if (requestedPackage.name !== existingPackage.name) {
+      throw new PackagePolicyRequestError(
+        `Cannot change the integration package of an agentless policy (from "${existingPackage.name}" to "${requestedPackage.name}").`
+      );
+    }
+  }
+
+  /**
+   * Best-effort rollback for a failed update: restore the package + agent policy saved objects and
+   * delete any connector this update created. Restoring the SOs also re-deploys, re-syncing the live
+   * workload back to the prior config. Pitfall: unlike the forward path, this re-sync does NOT set
+   * `throwOnAgentlessError`, so if the external reconcile fails it is only logged (not surfaced). The
+   * result is that the saved objects are successfully restored while the live workload may stay in the
+   * bad state — i.e. SO state and the running workload can end up diverged. Each step is independently
+   * caught/logged (a failure in one doesn't block the others) and the caller always rethrows the original error.
+   */
+  private async rollbackAgentlessPolicyUpdate({
+    policyId,
+    existingPackagePolicy,
+    existingAgentPolicy,
+    createdCloudConnectorId,
+    cloudConnectorWasCreated,
+    packagePolicyUpdated,
+    agentPolicyUpdated,
+    user,
+    originalError,
+  }: {
+    policyId: string;
+    existingPackagePolicy: PackagePolicy;
+    existingAgentPolicy: AgentPolicy;
+    createdCloudConnectorId?: string;
+    cloudConnectorWasCreated: boolean;
+    packagePolicyUpdated: boolean;
+    agentPolicyUpdated: boolean;
+    user?: AuthenticatedUser;
+    originalError: Error;
+  }): Promise<void> {
+    // Track which steps were attempted and which failed so we can emit a single rollback-outcome
+    // summary at the end. A partially-failed rollback can leave the policy in an inconsistent
+    // state, so it must be observable rather than buried in per-step logs.
+    const attempted: string[] = [];
+    const failed: string[] = [];
+
+    // Restore the package policy first, then the agent policy. NOTE: like the forward path,
+    // `packagePolicyService.update` ignores `bumpRevision: false` and fires a best-effort deploy
+    // here; the agent-policy restore below (default `bumpRevision`) is the authoritative live
+    // re-sync back to the prior config. Both deploys run through the `'updated'` event handler,
+    // which does not set `throwOnAgentlessError`, so the re-sync is best-effort.
+    if (packagePolicyUpdated) {
+      attempted.push('package policy');
+      this.logger.debug(`Rolling back: restoring package policy ${policyId}`);
+      await this.packagePolicyService
+        .update(
+          this.soClient,
+          this.esClient,
+          policyId,
+          toUpdatePackagePolicy(existingPackagePolicy),
+          { user, force: true, bumpRevision: false }
+        )
+        .catch((e: Error) => {
+          failed.push('package policy');
+          this.logger.error(
+            `Failed to roll back package policy ${policyId} (original update error: ${originalError.message}): ${e.message}`,
+            { error: e }
+          );
+        });
+    }
+
+    if (agentPolicyUpdated) {
+      attempted.push('agent policy');
+      this.logger.debug(`Rolling back: restoring agent policy ${policyId}`);
+      await agentPolicyService
+        .update(
+          this.soClient,
+          this.esClient,
+          policyId,
+          {
+            name: existingAgentPolicy.name,
+            namespace: existingAgentPolicy.namespace,
+            agentless: existingAgentPolicy.agentless,
+            global_data_tags: existingAgentPolicy.global_data_tags,
+          },
+          { user, force: true }
+        )
+        .catch((e: Error) => {
+          failed.push('agent policy');
+          this.logger.error(
+            `Failed to roll back agent policy ${policyId} (original update error: ${originalError.message}): ${e.message}`,
+            { error: e }
+          );
+        });
+    }
+
+    // Only delete a connector that this update created; reused/pre-existing connectors are
+    // left untouched. Now that the package policy no longer references it, force-delete is safe.
+    if (createdCloudConnectorId && cloudConnectorWasCreated) {
+      attempted.push('created cloud connector');
+      this.logger.debug(
+        `Rolling back: deleting created cloud connector ${createdCloudConnectorId}`
+      );
+      await cloudConnectorService
+        .delete(this.soClient, this.esClient, createdCloudConnectorId, true)
+        .catch((e: Error) => {
+          failed.push('created cloud connector');
+          this.logger.error(
+            `Failed to delete cloud connector ${createdCloudConnectorId} (original update error: ${originalError.message}): ${e.message}`,
+            { error: e }
+          );
+        });
+    }
+
+    // Rollback-outcome summary. A failed step is logged at error level (the policy may now be
+    // partially reverted / diverged from the live workload); a fully successful rollback is a
+    // debug-level note so the original update error stays the headline failure.
+    if (failed.length > 0) {
+      this.logger.error(
+        `Rollback for agentless policy ${policyId} completed with failures. Failed steps: [${failed.join(
+          ', '
+        )}]. Attempted steps: [${attempted.join(', ')}]. Original update error: ${
+          originalError.message
+        }`
+      );
+    } else {
+      this.logger.debug(
+        `Rollback for agentless policy ${policyId} completed successfully (steps: [${
+          attempted.join(', ') || 'none'
+        }])`
+      );
+    }
   }
 
   private async deleteOrphanedAgentlessResources(policyId: string, user?: AuthenticatedUser) {
