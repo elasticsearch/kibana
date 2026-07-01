@@ -12,10 +12,10 @@ cross_links:
   - ecs
   - elasticsearch
 storybook:
-  # Registry of embeddable Storybook stories published from `main` by the
-  # storybook-docs CI step (see .buildkite/scripts/steps/storybooks/build_and_upload.ts).
-  # Resolves `:::{storybook}` directives, e.g. `:id: kibana:<alias>:<story>`.
-  registry: https://ci-artifacts.kibana.dev/storybooks/main/storybook-docs/docs_registry.json
+  # TEMPORARY (revert before merge): point at this PR's own preview registry so the
+  # `:::{storybook}` embeds resolve before the stories land on `main`. The canonical
+  # value is the `main` registry, defined on the storybook-to-docs branch (#272927).
+  registry: https://ci-artifacts.kibana.dev/storybooks/pr-272934/storybook-docs/docs_registry.json
 toc:
   - toc: reference
   - toc: release-notes

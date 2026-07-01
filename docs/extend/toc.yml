@@ -183,4 +183,5 @@ toc:
           - file: migrate-tests.md
       - file: ftr.md
   - file: plugin-list.md
+  - file: kbn-ui-feedback.md
   - file: dependencies-versions.md

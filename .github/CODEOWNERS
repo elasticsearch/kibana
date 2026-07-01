@@ -3551,6 +3551,7 @@ x-pack/solutions/observability/plugins/observability_shared/public/components/pr
 /src/platform/kbn-ui/chrome-layout-constants @elastic/appex-sharedux
 /src/platform/kbn-ui/chrome-layout-utils @elastic/appex-sharedux
 /src/platform/kbn-ui/side-navigation @elastic/appex-sharedux
+/docs/extend/kbn-ui-feedback.md @elastic/appex-sharedux
 /x-pack/platform/test/serverless/api_integration/test_suites/favorites @elastic/appex-sharedux # Assigned per https://github.com/elastic/kibana/pull/200985
 /src/platform/test/api_integration/apis/short_url/**/*.ts @elastic/appex-sharedux # Assigned per https://github.com/elastic/kibana/pull/200209/files#r1846654156
 /src/platform/test/api_integration/apis/unused_urls_task/**/*.ts @elastic/appex-sharedux # Assigned per https://github.com/elastic/kibana/pull/220138

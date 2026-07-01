@@ -11,6 +11,7 @@
     "@kbn/i18n-react",
     "@kbn/test-jest-helpers",
     "@kbn/i18n",
+    "@kbn/storybook",
   ],
   "exclude": [
     "target/**/*",
