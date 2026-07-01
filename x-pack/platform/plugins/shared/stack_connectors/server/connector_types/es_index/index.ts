@@ -35,6 +35,8 @@ import type {
   ConnectorTypeSecretsType,
 } from '@kbn/connector-schemas/es_index';
 
+import { TaskErrorSource } from '@kbn/task-manager-plugin/common';
+
 export type ESIndexConnectorType = ConnectorType<
   ConnectorTypeConfigType,
   ConnectorTypeSecretsType,
@@ -87,13 +89,24 @@ async function executor(
 
   const bulkBody = [];
   for (const document of params.documents) {
+    let jsonDocument: Record<string, unknown>;
+    if (typeof document === 'string') {
+      try {
+        jsonDocument = JSON.parse(document);
+      } catch (err) {
+        return wrapErr(`error parsing document: ${err.message}`, actionId, logger, true);
+      }
+    } else {
+      jsonDocument = document;
+    }
+
     const timeField = config.executionTimeField == null ? '' : config.executionTimeField.trim();
     if (timeField !== '') {
-      document[timeField] = new Date();
+      jsonDocument[timeField] = new Date();
     }
 
     bulkBody.push({ index: { op_type: 'create' } });
-    bulkBody.push(document);
+    bulkBody.push(jsonDocument);
   }
 
   const bulkParams = {
@@ -162,7 +175,8 @@ function renderParameterTemplates(
 function wrapErr(
   errMessage: string,
   actionId: string,
-  logger: Logger
+  logger: Logger,
+  isUserError: boolean = false
 ): ConnectorTypeExecutorResult<unknown> {
   const message = i18n.translate('xpack.stackConnectors.esIndex.errorIndexingErrorMessage', {
     defaultMessage: 'error indexing documents',
@@ -173,5 +187,6 @@ function wrapErr(
     actionId,
     message,
     serviceMessage: errMessage,
+    ...(isUserError ? { errorSource: TaskErrorSource.USER } : {}),
   };
 }
