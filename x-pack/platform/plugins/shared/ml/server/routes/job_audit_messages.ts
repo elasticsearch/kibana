@@ -42,9 +42,9 @@ export function jobAuditMessagesRoutes({ router, routeGuard }: RouteInitializati
         },
       },
       routeGuard.fullLicenseAPIGuard(
-        async ({ client, mlClient, request, response, mlSavedObjectService }) => {
+        async ({ client, mlClient, request, response, mlSavedObjectService, serverless }) => {
           try {
-            const { getJobAuditMessages } = jobAuditMessagesProvider(client, mlClient);
+            const { getJobAuditMessages } = jobAuditMessagesProvider(client, mlClient, serverless);
             const { jobId } = request.params;
             const { from, start, end } = request.query;
             const resp = await getJobAuditMessages(mlSavedObjectService, {
@@ -86,9 +86,9 @@ export function jobAuditMessagesRoutes({ router, routeGuard }: RouteInitializati
         },
       },
       routeGuard.fullLicenseAPIGuard(
-        async ({ client, mlClient, request, response, mlSavedObjectService }) => {
+        async ({ client, mlClient, request, response, mlSavedObjectService, serverless }) => {
           try {
-            const { getJobAuditMessages } = jobAuditMessagesProvider(client, mlClient);
+            const { getJobAuditMessages } = jobAuditMessagesProvider(client, mlClient, serverless);
             const { from } = request.query;
             const resp = await getJobAuditMessages(mlSavedObjectService, { from });
 
@@ -124,9 +124,13 @@ export function jobAuditMessagesRoutes({ router, routeGuard }: RouteInitializati
         },
       },
       routeGuard.fullLicenseAPIGuard(
-        async ({ client, mlClient, request, response, mlSavedObjectService }) => {
+        async ({ client, mlClient, request, response, serverless }) => {
           try {
-            const { clearJobAuditMessages } = jobAuditMessagesProvider(client, mlClient);
+            const { clearJobAuditMessages } = jobAuditMessagesProvider(
+              client,
+              mlClient,
+              serverless
+            );
             const { jobId, notificationIndices } = request.body;
             const resp = await clearJobAuditMessages(jobId, notificationIndices);
 

@@ -187,6 +187,9 @@ export function fieldsServiceProvider({ asCurrentUser }: IScopedClusterClient) {
       },
       aggs,
       ...runtimeMappings,
+      ...(datafeedConfig?.project_routing
+        ? { project_routing: datafeedConfig.project_routing }
+        : {}),
     };
 
     const { aggregations } = await asCurrentUser.search(
@@ -422,6 +425,9 @@ export function fieldsServiceProvider({ asCurrentUser }: IScopedClusterClient) {
         index,
         ...body,
         ...getIndicesOptions(datafeedConfig),
+        ...(datafeedConfig?.project_routing
+          ? { project_routing: datafeedConfig.project_routing }
+          : {}),
       },
       { maxRetries: 0 }
     );

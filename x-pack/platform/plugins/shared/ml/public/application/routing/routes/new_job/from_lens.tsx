@@ -41,6 +41,7 @@ const PageWrapper: FC<PageProps> = ({ location }) => {
       mlServices: { mlApi },
       lens,
       share,
+      cps,
     },
   } = useMlKibana();
 
@@ -54,6 +55,7 @@ const PageWrapper: FC<PageProps> = ({ location }) => {
           timeFilter,
           kibanaConfig,
           share,
+          cps,
         },
         vis,
         from,

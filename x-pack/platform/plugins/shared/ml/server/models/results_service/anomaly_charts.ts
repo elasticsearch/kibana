@@ -1020,7 +1020,6 @@ export function anomalyChartsDataProvider(mlClient: MlClient, client: IScopedClu
         }
       }
     }
-
     const { chartRange, tooManyBuckets } = calculateChartRange(
       seriesConfigs as SeriesConfigWithMetadata[],
       selectedEarliestMs,
@@ -1512,7 +1511,8 @@ export function anomalyChartsDataProvider(mlClient: MlClient, client: IScopedClu
     timeFieldName: string,
     earliestMs: number,
     latestMs: number,
-    intervalMs: number
+    intervalMs: number,
+    projectRouting?: string
   ): Promise<any> {
     if (splitField === undefined) {
       return [];
@@ -1595,6 +1595,7 @@ export function anomalyChartsDataProvider(mlClient: MlClient, client: IScopedClu
           },
         },
       },
+      ...(projectRouting !== undefined ? { project_routing: projectRouting } : {}),
     };
 
     if (
@@ -1697,7 +1698,8 @@ export function anomalyChartsDataProvider(mlClient: MlClient, client: IScopedClu
         config.timeField,
         range.min,
         range.max,
-        config.bucketSpanSeconds * 1000
+        config.bucketSpanSeconds * 1000,
+        config.datafeedConfig.project_routing
       );
     } catch (e) {
       handleError(

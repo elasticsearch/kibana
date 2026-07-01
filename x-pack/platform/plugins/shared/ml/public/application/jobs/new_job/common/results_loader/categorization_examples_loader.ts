@@ -49,7 +49,8 @@ export class CategorizationExamplesLoader {
       this._jobCreator.end,
       analyzer,
       this._jobCreator.runtimeMappings ?? undefined,
-      this._jobCreator.datafeedConfig.indices_options
+      this._jobCreator.datafeedConfig.indices_options,
+      this._jobCreator.projectRouting ?? undefined
     );
     return resp;
   }

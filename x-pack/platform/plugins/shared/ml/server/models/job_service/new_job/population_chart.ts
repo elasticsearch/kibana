@@ -45,7 +45,8 @@ export function newJobPopulationChartProvider({ asCurrentUser }: IScopedClusterC
     aggFieldNamePairs: AggFieldNamePair[],
     splitFieldName: string | null,
     runtimeMappings: RuntimeMappings | undefined,
-    indicesOptions: IndicesOptions | undefined
+    indicesOptions: IndicesOptions | undefined,
+    projectRouting: string | undefined
   ) {
     const json: object = getPopulationSearchJsonFromConfig(
       indexPatternTitle,
@@ -57,7 +58,8 @@ export function newJobPopulationChartProvider({ asCurrentUser }: IScopedClusterC
       aggFieldNamePairs,
       splitFieldName,
       runtimeMappings,
-      indicesOptions
+      indicesOptions,
+      projectRouting
     );
 
     const body = await asCurrentUser.search(json, { maxRetries: 0 });
@@ -141,7 +143,8 @@ function getPopulationSearchJsonFromConfig(
   aggFieldNamePairs: AggFieldNamePair[],
   splitFieldName: string | null,
   runtimeMappings: RuntimeMappings | undefined,
-  indicesOptions: IndicesOptions | undefined
+  indicesOptions: IndicesOptions | undefined,
+  projectRouting: string | undefined
 ): object {
   const json = {
     index: indexPatternTitle,
@@ -164,6 +167,7 @@ function getPopulationSearchJsonFromConfig(
         },
       },
       ...(runtimeMappings !== undefined ? { runtime_mappings: runtimeMappings } : {}),
+      ...(projectRouting !== undefined ? { project_routing: projectRouting } : {}),
     },
     ...(indicesOptions ?? {}),
   };

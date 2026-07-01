@@ -7893,6 +7893,10 @@
   version "0.0.0"
   uid ""
 
+"@kbn/ml-cps@link:x-pack/platform/packages/shared/ml/ml-cps":
+  version "0.0.0"
+  uid ""
+
 "@kbn/ml-creation-wizard-utils@link:x-pack/platform/packages/private/ml/creation_wizard_utils":
   version "0.0.0"
   uid ""

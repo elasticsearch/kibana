@@ -54,6 +54,7 @@ export const datafeedConfigSchema = schema.object({
   query_delay: schema.maybe(schema.string({ maxLength: 10000 })),
   script_fields: schema.maybe(schema.any()),
   runtime_mappings: schema.maybe(schema.any()),
+  project_routing: schema.maybe(schema.string()),
   scroll_size: schema.maybe(schema.number()),
   delayed_data_check_config: schema.maybe(schema.any()),
   indices_options: schema.maybe(indicesOptionsSchema),

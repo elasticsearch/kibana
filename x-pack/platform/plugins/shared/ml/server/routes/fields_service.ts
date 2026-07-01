@@ -5,7 +5,7 @@
  * 2.0.
  */
 
-import type { IScopedClusterClient } from '@kbn/core/server';
+import type { Datafeed } from '@kbn/ml-common-types/anomaly_detection_jobs/datafeed';
 import { ML_INTERNAL_BASE_PATH } from '../../common/constants/app';
 import { wrapError } from '../client/error_wrapper';
 import type { RouteInitialization } from '../types';
@@ -16,25 +16,6 @@ import {
   getTimeFieldRangeSchema,
 } from './schemas/fields_service_schema';
 import { fieldsServiceProvider } from '../models/fields_service';
-
-function getCardinalityOfFields(client: IScopedClusterClient, payload: any) {
-  const fs = fieldsServiceProvider(client);
-  const { index, fieldNames, query, timeFieldName, earliestMs, latestMs } = payload;
-  return fs.getCardinalityOfFields(index, fieldNames, query, timeFieldName, earliestMs, latestMs);
-}
-
-function getTimeFieldRange(client: IScopedClusterClient, payload: any) {
-  const fs = fieldsServiceProvider(client);
-  const { index, timeFieldName, query, runtimeMappings, indicesOptions, projectRouting } = payload;
-  return fs.getTimeFieldRange(
-    index,
-    timeFieldName,
-    query,
-    runtimeMappings,
-    indicesOptions,
-    projectRouting
-  );
-}
 
 /**
  * Routes for fields service
@@ -70,7 +51,18 @@ export function fieldsService({ router, routeGuard }: RouteInitialization) {
       },
       routeGuard.fullLicenseAPIGuard(async ({ client, request, response }) => {
         try {
-          const resp = await getCardinalityOfFields(client, request.body);
+          const fs = fieldsServiceProvider(client);
+          const { index, fieldNames, query, timeFieldName, earliestMs, latestMs, datafeed } =
+            request.body;
+          const resp = await fs.getCardinalityOfFields(
+            index,
+            fieldNames ?? [],
+            query,
+            timeFieldName ?? '',
+            earliestMs ?? 0,
+            latestMs ?? 0,
+            datafeed as Datafeed
+          );
 
           return response.ok({
             body: resp,
@@ -111,7 +103,18 @@ export function fieldsService({ router, routeGuard }: RouteInitialization) {
       },
       routeGuard.basicLicenseAPIGuard(async ({ client, request, response }) => {
         try {
-          const resp = await getTimeFieldRange(client, request.body);
+          const fs = fieldsServiceProvider(client);
+          const { index, timeFieldName, query, runtimeMappings, indicesOptions, projectRouting } =
+            request.body;
+          const resp = await fs.getTimeFieldRange(
+            index,
+            timeFieldName ?? '',
+            query,
+            runtimeMappings,
+            indicesOptions,
+            false,
+            projectRouting
+          );
 
           return response.ok({
             body: resp,

@@ -5,7 +5,8 @@
  * 2.0.
  */
 
-import type { ApplicationStart, ToastsStart } from '@kbn/core/public';
+import type { ToastsStart } from '@kbn/core/public';
+import type { SharePluginStart } from '@kbn/share-plugin/public';
 
 import type { CombinedJobWithStats } from '@kbn/ml-common-types/anomaly_detection_jobs/combined_job';
 import type { MlSummaryJob } from '@kbn/ml-common-types/anomaly_detection_jobs/summary_job';
@@ -14,9 +15,10 @@ import type { MlApi } from '../../../services/ml_api_service';
 
 export function loadFullJob(mlApi: MlApi, jobId: string): Promise<CombinedJobWithStats>;
 export function loadJobForCloning(mlApi: MlApi, jobId: string): Promise<any>;
-export function isStartable(jobs: CombinedJobWithStats[]): boolean;
-export function isClosable(jobs: CombinedJobWithStats[]): boolean;
-export function isResettable(jobs: CombinedJobWithStats[]): boolean;
+export function isStartable(jobs: Array<CombinedJobWithStats | MlSummaryJob>): boolean;
+export function isStoppable(jobs: Array<CombinedJobWithStats | MlSummaryJob>): boolean;
+export function isClosable(jobs: Array<CombinedJobWithStats | MlSummaryJob>): boolean;
+export function isResettable(jobs: Array<CombinedJobWithStats | MlSummaryJob>): boolean;
 export function forceStartDatafeeds(
   toastNotifications: ToastsStart,
   mlApi: MlApi,
@@ -38,7 +40,7 @@ export function showResults(
 ): void;
 export function cloneJob(
   toastNotifications: ToastsStart,
-  application: ApplicationStart,
+  share: SharePluginStart,
   mlApi: MlApi,
   jobId: string
 ): Promise<void>;

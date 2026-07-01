@@ -522,6 +522,7 @@ export function mlApiProvider(httpService: HttpService) {
       end,
       jobOverrides,
       estimateModelMemory,
+      projectRouting,
     }: {
       moduleId: string;
       prefix?: string;
@@ -534,6 +535,7 @@ export function mlApiProvider(httpService: HttpService) {
       end?: number;
       jobOverrides?: Array<Partial<Job>>;
       estimateModelMemory?: boolean;
+      projectRouting?: string;
     }) {
       const body = JSON.stringify({
         prefix,
@@ -546,6 +548,7 @@ export function mlApiProvider(httpService: HttpService) {
         end,
         jobOverrides,
         estimateModelMemory,
+        projectRouting,
       });
 
       return httpService.http<DataRecognizerConfigResponse>({
@@ -694,6 +697,7 @@ export function mlApiProvider(httpService: HttpService) {
       timeFieldName,
       earliestMs,
       latestMs,
+      datafeed,
     }: {
       index: string;
       fieldNames: string[];
@@ -701,6 +705,7 @@ export function mlApiProvider(httpService: HttpService) {
       timeFieldName: string;
       earliestMs: number;
       latestMs: number;
+      datafeed?: Datafeed;
     }) {
       const body = JSON.stringify({
         index,
@@ -709,6 +714,7 @@ export function mlApiProvider(httpService: HttpService) {
         timeFieldName,
         earliestMs,
         latestMs,
+        datafeed,
       });
 
       return httpService.http<any>({

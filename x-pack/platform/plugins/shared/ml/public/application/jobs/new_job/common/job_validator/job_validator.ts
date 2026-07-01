@@ -61,6 +61,7 @@ export interface BasicValidations {
   categorizerMissingPerPartition: Validation;
   categorizerVaryingPerPartitionField: Validation;
   summaryCountField: Validation;
+  projectRouting: Validation;
 }
 
 export interface AdvancedValidations {
@@ -88,6 +89,7 @@ export class JobValidator {
     categorizerMissingPerPartition: { valid: true },
     categorizerVaryingPerPartitionField: { valid: true },
     summaryCountField: { valid: true },
+    projectRouting: { valid: true },
   };
   private _advancedValidations: AdvancedValidations = {
     categorizationFieldValid: { valid: true },
@@ -273,6 +275,10 @@ export class JobValidator {
 
   public get scrollSize(): Validation {
     return this._basicValidations.scrollSize;
+  }
+
+  public get projectRouting(): Validation {
+    return this._basicValidations.projectRouting;
   }
 
   public set advancedValid(valid: boolean) {

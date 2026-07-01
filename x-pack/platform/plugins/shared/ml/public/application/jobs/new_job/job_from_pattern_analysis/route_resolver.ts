@@ -9,6 +9,7 @@ import type { IUiSettingsClient } from '@kbn/core-ui-settings-browser';
 import type { DataPublicPluginStart, TimefilterContract } from '@kbn/data-plugin/public';
 import type { SharePluginStart } from '@kbn/share-plugin/public';
 import type { QueryDslQueryContainer } from '@kbn/data-views-plugin/common/types';
+import type { CPSPluginStart } from '@kbn/cps/public/types';
 import {
   type CategorizationType,
   QuickCategorizationJobCreator,
@@ -24,6 +25,7 @@ interface Dependencies {
   data: DataPublicPluginStart;
   mlApi: MlApi;
   share: SharePluginStart;
+  cps?: CPSPluginStart;
 }
 export async function resolver(
   deps: Dependencies,
@@ -36,7 +38,7 @@ export async function resolver(
   toRisonString: string,
   queryRisonString: string
 ) {
-  const { mlApi, timeFilter, kibanaConfig, share, data } = deps;
+  const { mlApi, timeFilter, kibanaConfig, share, data, cps } = deps;
 
   const query = getRisonValue<QueryDslQueryContainer>(queryRisonString, getDefaultDatafeedQuery());
   const from = getRisonValue<string>(fromRisonString, '');
@@ -57,7 +59,8 @@ export async function resolver(
     timeFilter,
     share,
     data,
-    mlApi
+    mlApi,
+    cps
   );
   await jobCreator.createAndStashADJob(
     categorizationType,

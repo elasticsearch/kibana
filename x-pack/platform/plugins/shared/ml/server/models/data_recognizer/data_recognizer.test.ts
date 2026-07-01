@@ -26,6 +26,11 @@ const mlClusterClient = {
 
 const mlClient = callAs as unknown as MlClient;
 
+const serverlessMock = {
+  isServerless: false,
+  cpsEnabled: false,
+};
+
 describe('ML - data recognizer', () => {
   const dr = new DataRecognizer(
     mlClusterClient,
@@ -37,7 +42,8 @@ describe('ML - data recognizer', () => {
     { find: jest.fn() } as unknown as DataViewsService,
     {} as MLSavedObjectService,
     { headers: { authorization: '' } } as unknown as KibanaRequest,
-    null
+    null,
+    serverlessMock
   );
 
   describe('jobOverrides', () => {

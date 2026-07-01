@@ -68,7 +68,8 @@ export const SingleMetricDetectorsSummary: FC = () => {
           null,
           cs.intervalMs,
           jobCreator.runtimeMappings,
-          jobCreator.datafeedConfig.indices_options
+          jobCreator.datafeedConfig.indices_options,
+          jobCreator.projectRouting ?? undefined
         );
         if (resp[DTR_IDX] !== undefined) {
           setLineChartData(resp);

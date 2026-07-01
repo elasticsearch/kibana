@@ -19,6 +19,7 @@ import type { JobType } from '@kbn/ml-common-types/saved_objects';
 import type { MLSavedObjectService } from '../../saved_objects';
 import { ML_RESULTS_INDEX_PATTERN } from '../../../common/constants/index_patterns';
 import type { ServerlessInfo } from '../../types';
+import { DEFAULT_ML_PROJECT_ROUTING } from '../../../common/constants/cps';
 
 export function searchProvider(
   client: IScopedClusterClient,
@@ -62,7 +63,7 @@ export function searchProvider(
         ...searchParams,
         index: ML_RESULTS_INDEX_PATTERN,
         ...(serverless.isServerless && serverless.cpsEnabled
-          ? { project_routing: '_alias:_origin' }
+          ? { project_routing: DEFAULT_ML_PROJECT_ROUTING }
           : {}),
       },
       options

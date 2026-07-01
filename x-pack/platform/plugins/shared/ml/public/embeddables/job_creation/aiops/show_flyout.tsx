@@ -15,7 +15,7 @@ import type { DashboardStart } from '@kbn/dashboard-plugin/public';
 import type { DataView, DataViewField } from '@kbn/data-views-plugin/common';
 import type { QueryDslQueryContainer } from '@elastic/elasticsearch/lib/api/types';
 import type { TimeRange } from '@kbn/es-query';
-
+import type { CPSPluginStart } from '@kbn/cps/public/types';
 import { createFlyout, type FlyoutComponentProps } from '../common/create_flyout';
 import { CreateCategorizationJobFlyout } from './flyout';
 
@@ -28,8 +28,8 @@ export async function showPatternAnalysisToADJobFlyout(
   share: SharePluginStart,
   data: DataPublicPluginStart,
   dashboardService: DashboardStart,
-
-  lens?: LensPublicStart
+  lens?: LensPublicStart,
+  cps?: CPSPluginStart
 ): Promise<void> {
   const Comp: FC<FlyoutComponentProps> = ({ onClose }) => (
     <CreateCategorizationJobFlyout
@@ -40,5 +40,5 @@ export async function showPatternAnalysisToADJobFlyout(
       onClose={onClose}
     />
   );
-  return createFlyout(Comp, coreStart, share, data, dashboardService, lens);
+  return createFlyout(Comp, coreStart, share, data, dashboardService, lens, cps);
 }

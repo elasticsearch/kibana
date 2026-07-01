@@ -227,6 +227,184 @@ export function datafeedsProvider(client: IScopedClusterClient, mlClient: MlClie
     }
   }
 
+  /**
+   * Updates `project_routing` on datafeeds selected by job ID, job group, and/or the `auto` flag.
+   * - When `jobIds` and/or `jobGroups` are provided, datafeeds are selected from jobs matching those
+   *   filters. If both are provided, a job must be in `jobIds` and belong to at least one `jobGroups` entry.
+   * - When only `jobGroups` is defined, jobs are loaded via `getJobs` to resolve group membership.
+   * - When `auto` is true, every datafeed with no `project_routing` is also included.
+   * - Datafeed IDs are deduplicated in a Set before updates are applied.
+   * - When `simulate` is true, no updates are sent; the same selection is returned with `simulated: true` per result.
+   * - When `restartRunningJobs` is true (default) and `simulate` is false, datafeeds that are still running
+   *   (started) in the update set are stopped first, then updated, then started again without `start`/`end` times.
+   * - `results` is keyed by job ID; each value includes the corresponding `datafeedId`.
+   */
+  async function bulkUpdateProjectRouting(
+    projectRouting: string,
+    jobIds?: string[],
+    jobGroups?: string[],
+    autoDetectDatafeeds: boolean = false,
+    simulate?: boolean,
+    restartRunningJobs: boolean = true
+  ) {
+    const [{ datafeeds }, { datafeeds: datafeedStats }] = await Promise.all([
+      mlClient.getDatafeeds(),
+      mlClient.getDatafeedStats(),
+    ]);
+    const datafeedIdsToUpdate = new Set<string>();
+
+    const hasJobIds = jobIds !== undefined && jobIds.length > 0;
+    const hasJobGroups = jobGroups !== undefined;
+
+    if (autoDetectDatafeeds === false && (hasJobIds || hasJobGroups)) {
+      let jobIdsMatchingSelection: Set<string> | undefined;
+
+      if (hasJobGroups) {
+        const { jobs } = await mlClient.getJobs();
+        const jobGroupSet = new Set(jobGroups);
+        jobIdsMatchingSelection = new Set(
+          jobs
+            .filter(
+              (job) =>
+                Array.isArray(job.groups) && job.groups.some((group) => jobGroupSet.has(group))
+            )
+            .map((job) => job.job_id)
+        );
+      }
+
+      if (hasJobIds) {
+        const jobIdSet = new Set(jobIds);
+        jobIdsMatchingSelection =
+          jobIdsMatchingSelection !== undefined
+            ? new Set([...jobIdsMatchingSelection].filter((id) => jobIdSet.has(id)))
+            : jobIdSet;
+      }
+
+      if (jobIdsMatchingSelection !== undefined) {
+        for (const df of datafeeds) {
+          if (jobIdsMatchingSelection.has(df.job_id)) {
+            datafeedIdsToUpdate.add(df.datafeed_id);
+          }
+        }
+      }
+    }
+
+    if (autoDetectDatafeeds === true) {
+      for (const df of datafeeds) {
+        // @ts-expect-error @elastic-elasticsearch datafeed_config type incorrect, missing project_routing
+        if (df.project_routing === undefined || df.project_routing === '') {
+          datafeedIdsToUpdate.add(df.datafeed_id);
+        }
+      }
+    }
+
+    const datafeedIdToJobId = new Map(
+      datafeeds.map((d) => [d.datafeed_id, d.job_id] as [string, string])
+    );
+    const runningDatafeeds = new Set<string>();
+    for (const datafeedStat of datafeedStats) {
+      if (
+        datafeedStat.state === DATAFEED_STATE.STARTED &&
+        datafeedIdsToUpdate.has(datafeedStat.datafeed_id)
+      ) {
+        runningDatafeeds.add(datafeedStat.datafeed_id);
+      }
+    }
+
+    const results: {
+      [jobId: string]: {
+        success: boolean;
+        updateError?: unknown;
+        stopError?: unknown;
+        restartError?: unknown;
+        datafeedId: string;
+        simulated?: boolean;
+      };
+    } = Object.create(null);
+
+    // stop any running jobs
+    const stopErrors = new Map<string, unknown>();
+    if (restartRunningJobs && simulate !== true && runningDatafeeds.size > 0) {
+      const stopResults = await stopDatafeeds([...runningDatafeeds], false);
+      for (const datafeedId of runningDatafeeds) {
+        const r = stopResults[datafeedId];
+        if (r === undefined || r.stopped !== true) {
+          const err =
+            r !== undefined && 'error' in r
+              ? (r as { error?: unknown }).error
+              : 'datafeed not stopped';
+          stopErrors.set(datafeedIdToJobId.get(datafeedId)!, err);
+        }
+      }
+    }
+
+    for (const datafeedId of datafeedIdsToUpdate) {
+      const jobId = datafeedIdToJobId.get(datafeedId)!;
+      if (simulate === true) {
+        results[jobId] = { success: true, datafeedId, simulated: true };
+        continue;
+      }
+
+      const stopError = stopErrors.get(jobId);
+      if (stopError !== undefined) {
+        results[jobId] = {
+          success: false,
+          datafeedId,
+          stopError,
+        };
+        continue;
+      }
+
+      // update the datafeed
+      try {
+        await mlClient.updateDatafeed({
+          datafeed_id: datafeedId,
+          body: { project_routing: projectRouting },
+        });
+        results[jobId] = {
+          datafeedId,
+          success: true,
+        };
+      } catch (error) {
+        const updateError = (error as { body?: unknown }).body ?? error;
+        results[jobId] = {
+          success: false,
+          datafeedId,
+          updateError,
+        };
+      }
+    }
+
+    // start any jobs which were previously running
+    if (restartRunningJobs && simulate !== true && runningDatafeeds.size > 0) {
+      for (const datafeedId of runningDatafeeds) {
+        const jobId = datafeedIdToJobId.get(datafeedId)!;
+        const perJob = results[jobId];
+        if (perJob === undefined || perJob.success !== true) {
+          // Do not restart if stop or update did not complete successfully.
+          continue;
+        }
+        try {
+          await mlClient.startDatafeed({ datafeed_id: datafeedId });
+        } catch (error) {
+          const previous = results[jobId] ?? { success: false, datafeedId };
+          const restartError = (error as { body?: unknown }).body ?? error;
+          results[jobId] = {
+            ...previous,
+            datafeedId: previous.datafeedId ?? datafeedId,
+            success: false,
+            restartError,
+          };
+        }
+      }
+    }
+
+    return {
+      simulate: simulate === true,
+      results,
+    };
+  }
+
   return {
     forceStartDatafeeds,
     stopDatafeeds,
@@ -234,5 +412,6 @@ export function datafeedsProvider(client: IScopedClusterClient, mlClient: MlClie
     getDatafeedIdsByJobId,
     getJobIdsByDatafeedId,
     getDatafeedByJobId,
+    bulkUpdateProjectRouting,
   };
 }

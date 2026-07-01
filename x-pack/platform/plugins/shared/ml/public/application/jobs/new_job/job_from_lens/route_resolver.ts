@@ -13,6 +13,7 @@ import type { IUiSettingsClient } from '@kbn/core-ui-settings-browser';
 import type { TimefilterContract } from '@kbn/data-plugin/public';
 import type { SharePluginStart } from '@kbn/share-plugin/public';
 import type { DataViewsContract } from '@kbn/data-views-plugin/public';
+import type { CPSPluginStart } from '@kbn/cps/public/types';
 import { QuickLensJobCreator } from './quick_create_job';
 import type { MlApi } from '../../../services/ml_api_service';
 
@@ -25,6 +26,7 @@ interface Dependencies {
   timeFilter: TimefilterContract;
   share: SharePluginStart;
   mlApi: MlApi;
+  cps?: CPSPluginStart;
 }
 export async function resolver(
   deps: Dependencies,
@@ -35,7 +37,7 @@ export async function resolver(
   filtersRisonString: string,
   layerIndexRisonString: string
 ) {
-  const { dataViews, lens, mlApi, timeFilter, kibanaConfig, share } = deps;
+  const { dataViews, lens, mlApi, timeFilter, kibanaConfig, share, cps } = deps;
   if (lensSavedObjectRisonString === undefined) {
     throw new Error('Cannot create visualization');
   }
@@ -57,7 +59,8 @@ export async function resolver(
     kibanaConfig,
     timeFilter,
     share,
-    mlApi
+    mlApi,
+    cps
   );
   await jobCreator.createAndStashADJob(vis, from, to, query, filters, layerIndex);
 }

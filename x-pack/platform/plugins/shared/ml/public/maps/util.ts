@@ -26,7 +26,10 @@ import type { MlApi } from '../application/services/ml_api_service';
 import { tabColor } from '../../common/util/group_color_utils';
 import { AnomalySource } from './anomaly_source';
 import type { ExplorerJob } from '../application/explorer/explorer_utils';
-import { getIndexPattern, type SourceIndexGeoFields } from '../application/explorer/explorer_utils';
+import {
+  getAnomalyResultsIndexPattern,
+  type SourceIndexGeoFields,
+} from '../application/explorer/explorer_utils';
 
 export const ML_ANOMALY_LAYERS = {
   TYPICAL: 'typical',
@@ -174,7 +177,7 @@ export async function getResultsForJobId(
   const hasQuery = query && query.query !== '';
   let queryFilter;
 
-  const indexPattern = getIndexPattern([{ id: jobId }] as ExplorerJob[]);
+  const indexPattern = getAnomalyResultsIndexPattern([{ id: jobId }] as ExplorerJob[]);
 
   if (hasQuery && query.language === SEARCH_QUERY_LANGUAGE.KUERY) {
     queryFilter = toElasticsearchQuery(fromKueryExpression(query.query), indexPattern);

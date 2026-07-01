@@ -49,6 +49,7 @@ export const CreateJob: FC<Props> = ({ dataView, field, query, timeRange }) => {
       share,
       uiSettings,
       mlServices: { mlApi },
+      cps,
     },
   } = useMlFromLensKibanaContext();
   const [categorizationType, setCategorizationType] = useState<CategorizationType>(
@@ -89,9 +90,10 @@ export const CreateJob: FC<Props> = ({ dataView, field, query, timeRange }) => {
         data.query.timefilter.timefilter,
         share,
         data,
-        mlApi
+        mlApi,
+        cps
       ),
-    [share, data, mlApi, uiSettings]
+    [share, data, mlApi, uiSettings, cps]
   );
 
   function createADJobInWizard() {

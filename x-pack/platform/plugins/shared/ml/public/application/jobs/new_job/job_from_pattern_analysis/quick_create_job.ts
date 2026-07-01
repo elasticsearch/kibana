@@ -14,6 +14,7 @@ import type { TimeRange } from '@kbn/es-query';
 import { i18n } from '@kbn/i18n';
 import { MLCATEGORY, ML_JOB_AGGREGATION } from '@kbn/ml-anomaly-utils';
 import type { QueryDslQueryContainer } from '@elastic/elasticsearch/lib/api/types';
+import type { CPSPluginStart } from '@kbn/cps/public/types';
 import { CREATED_BY_LABEL, DEFAULT_BUCKET_SPAN } from '../../../../../common/constants/new_job';
 import { type CreateState, QuickJobCreatorBase } from '../job_from_dashboard/quick_create_job_base';
 import type { MlApi } from '../../../services/ml_api_service';
@@ -36,9 +37,10 @@ export class QuickCategorizationJobCreator extends QuickJobCreatorBase {
     timeFilter: TimefilterContract,
     share: SharePluginStart,
     private data: DataPublicPluginStart,
-    mlApi: MlApi
+    mlApi: MlApi,
+    cps?: CPSPluginStart
   ) {
-    super(dataViews, kibanaConfig, timeFilter, share, mlApi);
+    super(dataViews, kibanaConfig, timeFilter, share, mlApi, cps);
   }
 
   public async createAndSaveJob(

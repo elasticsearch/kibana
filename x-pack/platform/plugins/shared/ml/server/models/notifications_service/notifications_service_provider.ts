@@ -20,6 +20,8 @@ import type {
   MessagesSearchParams,
   NotificationsCountParams,
 } from '../../routes/schemas/notifications_schema';
+import type { ServerlessInfo } from '../../types';
+import { DEFAULT_ML_PROJECT_ROUTING } from '../../../common/constants/cps';
 
 const MAX_NOTIFICATIONS_SIZE = 10000;
 
@@ -32,7 +34,8 @@ export class NotificationsService {
   constructor(
     private readonly scopedClusterClient: IScopedClusterClient,
     private readonly mlSavedObjectService: MLSavedObjectService,
-    private readonly enabledFeatures: MlFeatures
+    private readonly enabledFeatures: MlFeatures,
+    private readonly serverless: ServerlessInfo
   ) {}
 
   private getDefaultCountResponse() {
@@ -136,6 +139,9 @@ export class NotificationsService {
                   ],
                 },
               },
+              ...(this.serverless.isServerless && this.serverless.cpsEnabled
+                ? { project_routing: DEFAULT_ML_PROJECT_ROUTING }
+                : {}),
             },
             { maxRetries: 0 }
           );
@@ -249,6 +255,9 @@ export class NotificationsService {
               terms: { field: 'level' },
             },
           },
+          ...(this.serverless.isServerless && this.serverless.cpsEnabled
+            ? { project_routing: DEFAULT_ML_PROJECT_ROUTING }
+            : {}),
         });
 
         if (!responseBody.aggregations) {

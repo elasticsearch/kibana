@@ -550,7 +550,7 @@ export async function getDataViewsAndIndicesWithGeoFields(
 
 // Creates index pattern in the format expected by the kuery bar/kuery autocomplete provider
 // Field objects required fields: name, type, aggregatable, searchable
-export function getIndexPattern(influencers: ExplorerJob[]) {
+export function getAnomalyResultsIndexPattern(influencers: ExplorerJob[]) {
   return {
     title: ML_RESULTS_INDEX_PATTERN,
     fields: influencers.map((influencer) => ({

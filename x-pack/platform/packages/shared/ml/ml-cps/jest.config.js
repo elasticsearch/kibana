@@ -5,4 +5,8 @@
  * 2.0.
  */
 
-export { CPSUnsupportedWarning } from './cps_unsupported_warning';
+module.exports = {
+  preset: '@kbn/test/jest_node',
+  rootDir: '../../../../../..',
+  roots: ['<rootDir>/x-pack/platform/packages/shared/ml/ml-cps'],
+};

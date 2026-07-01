@@ -46,6 +46,7 @@ export function useEstimateBucketSpan() {
     timeField: dataSourceContext.selectedDataView.timeFieldName,
     runtimeMappings: jobCreator.runtimeMappings ?? undefined,
     indicesOptions: jobCreator.datafeedConfig.indices_options,
+    projectRouting: jobCreator.projectRouting ?? undefined,
   };
 
   if (isMultiMetricJobCreator(jobCreator) && jobCreator.splitField !== null) {

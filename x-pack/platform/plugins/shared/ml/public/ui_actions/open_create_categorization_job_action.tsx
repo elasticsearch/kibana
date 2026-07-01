@@ -33,7 +33,7 @@ export function createCategorizationADJobAction(
       }
 
       try {
-        const [{ showPatternAnalysisToADJobFlyout }, [coreStart, { share, data, dashboard }]] =
+        const [{ showPatternAnalysisToADJobFlyout }, [coreStart, { share, data, dashboard, cps }]] =
           await Promise.all([import('../embeddables/job_creation/aiops'), getStartServices()]);
 
         await showPatternAnalysisToADJobFlyout(
@@ -44,7 +44,9 @@ export function createCategorizationADJobAction(
           coreStart,
           share,
           data,
-          dashboard
+          dashboard,
+          undefined,
+          cps
         );
       } catch (e) {
         return Promise.reject();

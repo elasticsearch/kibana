@@ -61,7 +61,8 @@ export class ChartLoader {
     splitFieldValue: SplitFieldValue,
     intervalMs: number,
     runtimeMappings: RuntimeMappings | null,
-    indicesOptions?: IndicesOptions
+    indicesOptions?: IndicesOptions,
+    projectRouting?: string
   ): Promise<LineChartData> {
     if (this._timeFieldName !== '') {
       if (aggFieldPairsCanBeCharted(aggFieldPairs) === false) {
@@ -83,7 +84,8 @@ export class ChartLoader {
         splitFieldName,
         splitFieldValue,
         runtimeMappings ?? undefined,
-        indicesOptions
+        indicesOptions,
+        projectRouting
       );
 
       return resp.results;
@@ -98,7 +100,8 @@ export class ChartLoader {
     splitField: SplitField,
     intervalMs: number,
     runtimeMappings: RuntimeMappings | null,
-    indicesOptions?: IndicesOptions
+    indicesOptions?: IndicesOptions,
+    projectRouting?: string
   ): Promise<LineChartData> {
     if (this._timeFieldName !== '') {
       if (aggFieldPairsCanBeCharted(aggFieldPairs) === false) {
@@ -119,7 +122,8 @@ export class ChartLoader {
         aggFieldPairNames,
         splitFieldName,
         runtimeMappings ?? undefined,
-        indicesOptions
+        indicesOptions,
+        projectRouting
       );
 
       return resp.results;
@@ -132,7 +136,8 @@ export class ChartLoader {
     end: number,
     intervalMs: number,
     runtimeMappings?: RuntimeMappings,
-    indicesOptions?: IndicesOptions
+    indicesOptions?: IndicesOptions,
+    projectRouting?: string
   ): Promise<LineChartPoint[]> {
     if (this._timeFieldName !== '') {
       const resp = await this._getEventRateData(
@@ -143,7 +148,8 @@ export class ChartLoader {
         end,
         intervalMs * 3,
         runtimeMappings,
-        indicesOptions
+        indicesOptions,
+        projectRouting
       );
       if (resp.error !== undefined) {
         throw resp.error;
@@ -160,7 +166,8 @@ export class ChartLoader {
   async loadFieldExampleValues(
     field: Field,
     runtimeMappings: RuntimeMappings | null,
-    indicesOptions?: IndicesOptions
+    indicesOptions?: IndicesOptions,
+    projectRouting?: string
   ): Promise<string[]> {
     const { results } = await this._getCategoryFields(
       this._mlApi,
@@ -169,7 +176,8 @@ export class ChartLoader {
       10,
       this._query,
       runtimeMappings ?? undefined,
-      indicesOptions
+      indicesOptions,
+      projectRouting ?? undefined
     );
     return results;
   }

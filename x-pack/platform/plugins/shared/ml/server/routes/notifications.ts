@@ -45,12 +45,13 @@ export function notificationsRoutes({
         },
       },
       routeGuard.fullLicenseAPIGuard(
-        async ({ client, request, response, mlSavedObjectService }) => {
+        async ({ client, request, response, mlSavedObjectService, serverless }) => {
           try {
             const notificationsService = new NotificationsService(
               client,
               mlSavedObjectService,
-              getEnabledFeatures()
+              getEnabledFeatures(),
+              serverless
             );
 
             const results = await notificationsService.searchMessages(request.query);
@@ -91,12 +92,13 @@ export function notificationsRoutes({
         },
       },
       routeGuard.fullLicenseAPIGuard(
-        async ({ client, mlSavedObjectService, request, response }) => {
+        async ({ client, mlSavedObjectService, request, response, serverless }) => {
           try {
             const notificationsService = new NotificationsService(
               client,
               mlSavedObjectService,
-              getEnabledFeatures()
+              getEnabledFeatures(),
+              serverless
             );
 
             const results = await notificationsService.countMessages(request.query);

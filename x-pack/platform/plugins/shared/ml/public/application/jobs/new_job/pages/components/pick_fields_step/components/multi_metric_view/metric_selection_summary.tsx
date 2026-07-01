@@ -50,7 +50,8 @@ export const MultiMetricDetectorsSummary: FC = () => {
           const tempFieldValues = await chartLoader.loadFieldExampleValues(
             jobCreator.splitField,
             jobCreator.runtimeMappings,
-            jobCreator.datafeedConfig.indices_options
+            jobCreator.datafeedConfig.indices_options,
+            jobCreator.projectRouting ?? undefined
           );
           setFieldValues(tempFieldValues);
         } catch (error) {
@@ -87,7 +88,8 @@ export const MultiMetricDetectorsSummary: FC = () => {
           fieldValues.length > 0 ? fieldValues[0] : null,
           cs.intervalMs,
           jobCreator.runtimeMappings,
-          jobCreator.datafeedConfig.indices_options
+          jobCreator.datafeedConfig.indices_options,
+          jobCreator.projectRouting ?? undefined
         );
         setLineChartsData(resp);
       } catch (error) {

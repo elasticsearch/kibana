@@ -285,7 +285,6 @@ export class MlServerPlugin
       getSpaces,
       cloud: plugins.cloud,
       resolveMlCapabilities,
-      serverless: this.serverless,
     });
     notificationsRoutes(routeInit);
     alertingRoutes(routeInit, sharedServicesProviders);

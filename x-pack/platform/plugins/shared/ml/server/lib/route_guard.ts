@@ -44,6 +44,7 @@ type Handler<P = unknown, Q = unknown, B = unknown> = (handlerParams: {
   mlClient: MlClient;
   getDataViewsService(): Promise<DataViewsService>;
   auditLogger: MlAuditLogger;
+  serverless: ServerlessInfo;
 }) => ReturnType<RequestHandler<P, Q, B>>;
 
 type GetMlSavedObjectClient = (request: KibanaRequest) => SavedObjectsClientContract | null;
@@ -149,6 +150,7 @@ export class RouteGuard {
             request
           ),
           auditLogger,
+          serverless: this._serverless,
         })
       );
     };

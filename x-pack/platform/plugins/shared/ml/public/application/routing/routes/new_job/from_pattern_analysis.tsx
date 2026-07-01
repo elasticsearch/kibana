@@ -41,6 +41,7 @@ const PageWrapper: FC<PageProps> = ({ location }) => {
       uiSettings: kibanaConfig,
       mlServices: { mlApi },
       share,
+      cps,
     },
   } = useMlKibana();
 
@@ -53,6 +54,7 @@ const PageWrapper: FC<PageProps> = ({ location }) => {
           kibanaConfig,
           share,
           data,
+          cps,
         },
         categorizationType,
         dataViewId,

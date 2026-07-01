@@ -92,7 +92,6 @@ export default function ({ getService }: FtrProviderContext) {
         row: {
           recordCount: '4,675',
           memoryStatus: 'ok',
-          jobState: 'closed',
           datafeedState: 'stopped',
           latestTimestamp: '2023-07-12 23:45:36',
         },
@@ -158,7 +157,6 @@ export default function ({ getService }: FtrProviderContext) {
         row: {
           recordCount: '1,000',
           memoryStatus: 'ok',
-          jobState: 'closed',
           datafeedState: 'stopped',
           latestTimestamp: '2019-11-21 00:01:13',
         },

@@ -15,6 +15,7 @@ import {
   SINGLE_METRIC_VIEWER_ENTITY_FIELD_SELECTION_TRIGGER,
   SWIM_LANE_SELECTION_TRIGGER,
 } from '@kbn/ui-actions-plugin/common/trigger_ids';
+import { UPDATE_AD_JOBS_PROJECT_ROUTING_TRIGGER } from '@kbn/ui-actions-plugin/common/trigger_ids';
 import type { MlPluginStart, MlStartDependencies } from '../plugin';
 import { CONTROLLED_BY_SINGLE_METRIC_VIEWER_FILTER } from './constants';
 /**
@@ -116,6 +117,14 @@ export function registerMlUiActions(
     async () => {
       const { createCategorizationADJobAction } = await import('./async_module');
       return createCategorizationADJobAction(core.getStartServices);
+    }
+  );
+  uiActions.addTriggerActionAsync(
+    UPDATE_AD_JOBS_PROJECT_ROUTING_TRIGGER,
+    'update-ad-jobs-project-routing-action',
+    async () => {
+      const { updateADJobsProjectRouting } = await import('./async_module');
+      return updateADJobsProjectRouting(core.getStartServices);
     }
   );
 }

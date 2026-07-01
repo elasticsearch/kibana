@@ -7,9 +7,13 @@
 
 import type { IScopedClusterClient } from '@kbn/core/server';
 import { annotationProvider } from './annotation';
+import type { ServerlessInfo } from '../../types';
 
-export function annotationServiceProvider(client: IScopedClusterClient) {
+export function annotationServiceProvider(
+  client: IScopedClusterClient,
+  serverless: ServerlessInfo
+) {
   return {
-    ...annotationProvider(client),
+    ...annotationProvider(client, serverless),
   };
 }

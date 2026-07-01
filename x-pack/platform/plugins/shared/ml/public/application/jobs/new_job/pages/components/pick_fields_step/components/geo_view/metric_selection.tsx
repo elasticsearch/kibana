@@ -50,7 +50,8 @@ export const GeoDetector: FC<Props> = ({ setIsValid }) => {
         .loadFieldExampleValues(
           jobCreator.splitField,
           jobCreator.runtimeMappings,
-          jobCreator.datafeedConfig.indices_options
+          jobCreator.datafeedConfig.indices_options,
+          jobCreator.projectRouting ?? undefined
         )
         .then(setFieldValues)
         .catch((error) => {

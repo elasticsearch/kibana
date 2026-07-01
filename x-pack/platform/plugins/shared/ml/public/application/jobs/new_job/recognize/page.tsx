@@ -36,8 +36,8 @@ import type {
 } from '@kbn/ml-common-types/modules';
 import type { JobId } from '@kbn/ml-common-types/anomaly_detection_jobs/job';
 import { ML_PAGES } from '@kbn/ml-common-types/locator_ml_pages';
-import { useDataSource } from '../../../contexts/ml';
 import { useMlKibana, useMlLocator } from '../../../contexts/kibana';
+import { useDataSource } from '../../../contexts/ml';
 import { CreateResultCallout } from './components/create_result_callout';
 import { KibanaObjectList } from './components/kibana_objects';
 import { ModuleJobs } from './components/module_jobs';
@@ -81,7 +81,6 @@ export const Page: FC<PageProps> = ({ moduleId, existingGroupIds }) => {
   } = useMlKibana();
   const locator = useMlLocator();
 
-  // #region State
   const [jobPrefix, setJobPrefix] = useState<string>('');
   const [jobs, setJobs] = useState<ModuleJobUI[]>([]);
   const [jobOverrides, setJobOverrides] = useState<JobOverrides>({});
@@ -90,9 +89,13 @@ export const Page: FC<PageProps> = ({ moduleId, existingGroupIds }) => {
   const [resultsUrl, setResultsUrl] = useState<string>('');
   const [existingGroups, setExistingGroups] = useState(existingGroupIds);
   const [jobsAwaitingNodeCount, setJobsAwaitingNodeCount] = useState(0);
-  // #endregion
 
-  const { selectedSavedSearch, selectedDataView: dataView, combinedQuery } = useDataSource();
+  const {
+    selectedSavedSearch,
+    selectedDataView: dataView,
+    combinedQuery,
+    projectRouting,
+  } = useDataSource();
   const pageTitle = selectedSavedSearch
     ? i18n.translate('xpack.ml.newJob.recognize.savedSearchPageTitle', {
         defaultMessage: 'Discover session {savedSearchTitle}',
@@ -138,6 +141,7 @@ export const Page: FC<PageProps> = ({ moduleId, existingGroupIds }) => {
           // By default we want to use full non-frozen time range
           query: addExcludeFrozenToQuery(combinedQuery),
           ...(isPopulatedObject(runtimeMappings) ? { runtimeMappings } : {}),
+          projectRouting,
         });
         return {
           start,
@@ -147,7 +151,7 @@ export const Page: FC<PageProps> = ({ moduleId, existingGroupIds }) => {
         return Promise.resolve(timeRange);
       }
     },
-    [combinedQuery, dataView, getTimeFieldRange]
+    [dataView, getTimeFieldRange, combinedQuery, projectRouting]
   );
 
   useEffect(() => {
@@ -167,7 +171,6 @@ export const Page: FC<PageProps> = ({ moduleId, existingGroupIds }) => {
         useFullIndexData,
         timeRange,
       } = formValues;
-
       const resultTimeRange = await getTimeRange(useFullIndexData, timeRange);
 
       try {
@@ -183,6 +186,7 @@ export const Page: FC<PageProps> = ({ moduleId, existingGroupIds }) => {
           startDatafeed: startDatafeedAfterSave,
           ...(jobOverridesPayload !== null ? { jobOverrides: jobOverridesPayload } : {}),
           ...resultTimeRange,
+          ...(projectRouting ? { projectRouting } : {}),
         });
         const {
           datafeeds: datafeedsResponse,
@@ -258,6 +262,7 @@ export const Page: FC<PageProps> = ({ moduleId, existingGroupIds }) => {
       }
     },
     [
+      projectRouting,
       dataView,
       getTimeRange,
       jobOverrides,
@@ -289,15 +294,27 @@ export const Page: FC<PageProps> = ({ moduleId, existingGroupIds }) => {
   return (
     <>
       <MlPageHeader>
-        <PageTitle
-          title={
-            <FormattedMessage
-              id="xpack.ml.newJob.recognize.newJobFromTitle"
-              defaultMessage="New job from {pageTitle}"
-              values={{ pageTitle }}
-            />
-          }
-        />
+        <>
+          <PageTitle
+            title={
+              <FormattedMessage
+                id="xpack.ml.newJob.recognize.newJobFromTitle"
+                defaultMessage="New job from {pageTitle}"
+                values={{ pageTitle }}
+              />
+            }
+          />
+          {projectRouting ? (
+            <EuiText size="s">
+              <FormattedMessage
+                id="xpack.ml.newJob.recognize.projectRouting"
+                defaultMessage="Project scope: {projectRouting}"
+                values={{ projectRouting }}
+              />
+            </EuiText>
+          ) : null}
+        </>
+        <EuiSpacer size="s" />
       </MlPageHeader>
 
       {displayQueryWarning && (

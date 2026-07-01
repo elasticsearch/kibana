@@ -20,6 +20,7 @@ import type { ErrorType } from '@kbn/ml-error-utils';
 import type { DataViewsContract } from '@kbn/data-views-plugin/public';
 import type { SharePluginStart } from '@kbn/share-plugin/public';
 import { DASHBOARD_APP_LOCATOR } from '@kbn/deeplinks-analytics';
+import type { CPSPluginStart } from '@kbn/cps/public/types';
 import type { Datafeed } from '@kbn/ml-common-types/anomaly_detection_jobs/datafeed';
 import type { Job } from '@kbn/ml-common-types/anomaly_detection_jobs/job';
 import type { MlApi } from '../../../services/ml_api_service';
@@ -56,7 +57,8 @@ export class QuickJobCreatorBase {
     protected readonly kibanaConfig: IUiSettingsClient,
     protected readonly timeFilter: TimefilterContract,
     protected readonly share: SharePluginStart,
-    protected readonly mlApi: MlApi
+    protected readonly mlApi: MlApi,
+    protected readonly cps?: CPSPluginStart
   ) {}
 
   protected async putJobAndDataFeed({
@@ -81,7 +83,13 @@ export class QuickJobCreatorBase {
     dashboard?: DashboardApi;
   }) {
     const datafeedId = createDatafeedId(jobId);
-    const datafeed = { ...datafeedConfig, job_id: jobId, datafeed_id: datafeedId };
+    const projectRouting = this.cps?.cpsManager?.getProjectRouting();
+    const datafeed = {
+      ...datafeedConfig,
+      job_id: jobId,
+      datafeed_id: datafeedId,
+      ...(projectRouting ? { project_routing: projectRouting } : {}),
+    };
 
     const job: estypes.MlJob = {
       ...jobConfig,

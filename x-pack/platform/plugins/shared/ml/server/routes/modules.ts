@@ -68,6 +68,7 @@ export function dataRecognizer(
           context,
           mlSavedObjectService,
           getDataViewsService,
+          serverless,
         }) => {
           try {
             const { indexPatternTitle } = request.params;
@@ -82,7 +83,8 @@ export function dataRecognizer(
               dataViewsService,
               mlSavedObjectService,
               request,
-              compatibleModuleType
+              compatibleModuleType,
+              serverless
             );
             const results = await dr.findMatches(indexPatternTitle, filter);
 
@@ -126,6 +128,7 @@ export function dataRecognizer(
           context,
           mlSavedObjectService,
           getDataViewsService,
+          serverless,
         }) => {
           try {
             const { moduleId } = request.params;
@@ -140,7 +143,8 @@ export function dataRecognizer(
               dataViewsService,
               mlSavedObjectService,
               request,
-              compatibleModuleType
+              compatibleModuleType,
+              serverless
             );
             const results = await dr.findIndexMatches(moduleId, size);
 
@@ -191,6 +195,7 @@ export function dataRecognizer(
           context,
           mlSavedObjectService,
           getDataViewsService,
+          serverless,
         }) => {
           try {
             let { moduleId } = request.params;
@@ -210,7 +215,8 @@ export function dataRecognizer(
               dataViewsService,
               mlSavedObjectService,
               request,
-              compatibleModuleType
+              compatibleModuleType,
+              serverless
             );
 
             const results =
@@ -265,6 +271,7 @@ export function dataRecognizer(
           context,
           mlSavedObjectService,
           getDataViewsService,
+          serverless,
         }) => {
           try {
             const { moduleId } = request.params;
@@ -282,6 +289,7 @@ export function dataRecognizer(
               datafeedOverrides,
               estimateModelMemory,
               applyToAllSpaces,
+              projectRouting,
             } = request.body as TypeOf<typeof setupModuleBodySchema>;
             const soClient = (await context.core).savedObjects.client;
             const dataViewsService = await getDataViewsService();
@@ -293,7 +301,8 @@ export function dataRecognizer(
               dataViewsService,
               mlSavedObjectService,
               request,
-              compatibleModuleType
+              compatibleModuleType,
+              serverless
             );
             const result = await dr.setup(
               moduleId,
@@ -308,7 +317,8 @@ export function dataRecognizer(
               jobOverrides,
               datafeedOverrides,
               estimateModelMemory,
-              applyToAllSpaces
+              applyToAllSpaces,
+              projectRouting
             );
 
             return response.ok({ body: result });
@@ -364,6 +374,7 @@ export function dataRecognizer(
           context,
           mlSavedObjectService,
           getDataViewsService,
+          serverless,
         }) => {
           try {
             const { moduleId } = request.params;
@@ -377,7 +388,8 @@ export function dataRecognizer(
               dataViewsService,
               mlSavedObjectService,
               request,
-              compatibleModuleType
+              compatibleModuleType,
+              serverless
             );
             const result = await dr.dataRecognizerJobsExist(moduleId);
 

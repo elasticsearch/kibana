@@ -56,6 +56,7 @@ import { groupsProvider } from './groups';
 import type { MlClient } from '../../lib/ml_client';
 import { ML_ALERT_TYPES } from '../../../common/constants/alerts';
 import type { MlAnomalyDetectionAlertParams } from '../../routes/schemas/alerting_schema';
+import type { ServerlessInfo } from '../../types';
 
 interface Results {
   [id: string]: {
@@ -67,6 +68,7 @@ interface Results {
 export function jobsProvider(
   client: IScopedClusterClient,
   mlClient: MlClient,
+  serverless: ServerlessInfo,
   rulesClient?: RulesClient
 ) {
   const { asInternalUser } = client;
@@ -75,7 +77,7 @@ export function jobsProvider(
     client,
     mlClient
   );
-  const { getAuditMessagesSummary } = jobAuditMessagesProvider(client, mlClient);
+  const { getAuditMessagesSummary } = jobAuditMessagesProvider(client, mlClient, serverless);
   const { getLatestBucketTimestampByJob } = resultsServiceProvider(mlClient);
   const calMngr = new CalendarManager(mlClient);
 
@@ -285,6 +287,10 @@ export function jobsProvider(
         jobTags: job.custom_settings?.job_tags ?? {},
         bucketSpanSeconds: parseInterval(job.analysis_config.bucket_span!)!.asSeconds(),
       };
+
+      if (serverless.cpsEnabled && hasDatafeed) {
+        tempJob.projectRouting = job.datafeed_config.project_routing ?? null;
+      }
 
       if (jobIds.find((j) => j === tempJob.id)) {
         tempJob.fullJob = job;

@@ -186,6 +186,10 @@ function extractDatafeed(job, newDatafeedData) {
     if (job.datafeed_config.scroll_size !== newDatafeedData.datafeedScrollSize) {
       datafeedData.scroll_size = newDatafeedData.datafeedScrollSize;
     }
+
+    if (job.datafeed_config.project_routing !== newDatafeedData.datafeedProjectRouting) {
+      datafeedData.project_routing = newDatafeedData.datafeedProjectRouting;
+    }
   }
 
   return datafeedData;

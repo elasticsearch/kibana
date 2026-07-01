@@ -1,0 +1,7 @@
+{
+  "type": "shared-browser",
+  "id": "@kbn/ml-cps",
+  "owner": "@elastic/ml-ui",
+  "group": "platform",
+  "visibility": "shared"
+}

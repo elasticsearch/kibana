@@ -440,6 +440,10 @@ export class DataVisualizer {
       ...(isPopulatedObject(combinedRuntimeMappings)
         ? { runtime_mappings: combinedRuntimeMappings }
         : {}),
+
+      ...(datafeedConfig?.project_routing
+        ? { project_routing: datafeedConfig.project_routing }
+        : {}),
     };
 
     const body = await this._asCurrentUser.search(

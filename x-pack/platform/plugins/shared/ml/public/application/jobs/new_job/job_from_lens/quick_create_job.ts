@@ -17,6 +17,7 @@ import type { DataViewsContract } from '@kbn/data-views-plugin/public';
 import { isOfAggregateQueryType, type Filter, type Query } from '@kbn/es-query';
 import type { SharePluginStart } from '@kbn/share-plugin/public';
 import type { LensApi } from '@kbn/lens-plugin/public';
+import type { CPSPluginStart } from '@kbn/cps/public/types';
 import type { JobCreatorType } from '../common/job_creator';
 import { createEmptyJob, createEmptyDatafeed } from '../common/job_creator/util/default_configs';
 import type { MlApi } from '../../../services/ml_api_service';
@@ -42,9 +43,10 @@ export class QuickLensJobCreator extends QuickJobCreatorBase {
     kibanaConfig: IUiSettingsClient,
     timeFilter: TimefilterContract,
     share: SharePluginStart,
-    mlApi: MlApi
+    mlApi: MlApi,
+    cps?: CPSPluginStart
   ) {
-    super(dataViews, kibanaConfig, timeFilter, share, mlApi);
+    super(dataViews, kibanaConfig, timeFilter, share, mlApi, cps);
   }
 
   public async createAndSaveJob(

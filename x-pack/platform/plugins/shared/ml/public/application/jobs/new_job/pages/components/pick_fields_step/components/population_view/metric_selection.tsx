@@ -65,6 +65,11 @@ export const PopulationDetectors: FC<Props> = ({ setIsValid }) => {
     0
   );
   const [pageReady, setPageReady] = useState(false);
+
+  const [projectRouting, setProjectRouting] = useState<string | null>(
+    jobCreator.projectRouting ?? null
+  );
+
   const updateByFields = () => setByFieldsUpdated(0);
 
   function detectorChangeHandler(selectedOptionsIn: DropDownLabel[]) {
@@ -136,6 +141,11 @@ export const PopulationDetectors: FC<Props> = ({ setIsValid }) => {
       loadCharts();
     }
 
+    if (jobCreator.projectRouting !== projectRouting) {
+      setProjectRouting(jobCreator.projectRouting ?? null);
+      loadCharts();
+    }
+
     setPopulationField(jobCreator.populationField);
 
     // update by fields and their by fields
@@ -176,7 +186,8 @@ export const PopulationDetectors: FC<Props> = ({ setIsValid }) => {
           jobCreator.populationField,
           cs.intervalMs,
           jobCreator.runtimeMappings,
-          jobCreator.datafeedConfig.indices_options
+          jobCreator.datafeedConfig.indices_options,
+          jobCreator.projectRouting ?? undefined
         );
 
         setLineChartsData(resp);
@@ -199,7 +210,8 @@ export const PopulationDetectors: FC<Props> = ({ setIsValid }) => {
               fields: await chartLoader.loadFieldExampleValues(
                 field,
                 jobCreator.runtimeMappings,
-                jobCreator.datafeedConfig.indices_options
+                jobCreator.datafeedConfig.indices_options,
+                jobCreator.projectRouting ?? undefined
               ),
             };
           })(i, af.by.field)

@@ -29,6 +29,7 @@ import type { Category } from '@kbn/ml-common-types/categories';
 import type {
   JobsExistResponse,
   BulkCreateResults,
+  BulkUpdateProjectRoutingResponse,
   ResetJobsResponse,
 } from '@kbn/ml-common-types/job_service';
 import type { ExistingJobsAndGroups } from '../job_service';
@@ -256,7 +257,8 @@ export const jobsApiProvider = (httpService: HttpService) => ({
     splitFieldName: string | null,
     splitFieldValue: string | null,
     runtimeMappings?: RuntimeMappings,
-    indicesOptions?: IndicesOptions
+    indicesOptions?: IndicesOptions,
+    projectRouting?: string
   ) {
     const body = JSON.stringify({
       indexPatternTitle,
@@ -270,6 +272,7 @@ export const jobsApiProvider = (httpService: HttpService) => ({
       splitFieldValue,
       runtimeMappings,
       indicesOptions,
+      projectRouting,
     });
     return httpService.http<any>({
       path: `${ML_INTERNAL_BASE_PATH}/jobs/new_job_line_chart`,
@@ -289,7 +292,8 @@ export const jobsApiProvider = (httpService: HttpService) => ({
     aggFieldNamePairs: AggFieldNamePair[],
     splitFieldName: string,
     runtimeMappings?: RuntimeMappings,
-    indicesOptions?: IndicesOptions
+    indicesOptions?: IndicesOptions,
+    projectRouting?: string
   ) {
     const body = JSON.stringify({
       indexPatternTitle,
@@ -302,6 +306,7 @@ export const jobsApiProvider = (httpService: HttpService) => ({
       splitFieldName,
       runtimeMappings,
       indicesOptions,
+      projectRouting,
     });
     return httpService.http<any>({
       path: `${ML_INTERNAL_BASE_PATH}/jobs/new_job_population_chart`,
@@ -344,6 +349,7 @@ export const jobsApiProvider = (httpService: HttpService) => ({
     analyzer: CategorizationAnalyzer,
     runtimeMappings?: RuntimeMappings,
     indicesOptions?: IndicesOptions,
+    projectRouting?: string,
     includeExamples?: boolean
   ) {
     const body = JSON.stringify({
@@ -357,6 +363,7 @@ export const jobsApiProvider = (httpService: HttpService) => ({
       analyzer,
       runtimeMappings,
       indicesOptions,
+      projectRouting,
       includeExamples,
     });
     return httpService.http<FieldValidationResults>({
@@ -412,6 +419,28 @@ export const jobsApiProvider = (httpService: HttpService) => ({
     const body = JSON.stringify(jobs);
     return httpService.http<BulkCreateResults>({
       path: `${ML_INTERNAL_BASE_PATH}/jobs/bulk_create`,
+      method: 'POST',
+      body,
+      version: '1',
+    });
+  },
+
+  bulkUpdateProjectRouting({
+    projectRouting,
+    jobIds,
+    auto,
+    simulate,
+    restartRunningJobs,
+  }: {
+    projectRouting: string;
+    jobIds?: string[];
+    auto?: boolean;
+    simulate?: boolean;
+    restartRunningJobs?: boolean;
+  }) {
+    const body = JSON.stringify({ projectRouting, jobIds, auto, simulate, restartRunningJobs });
+    return httpService.http<BulkUpdateProjectRoutingResponse>({
+      path: `${ML_INTERNAL_BASE_PATH}/jobs/bulk_update_project_routing`,
       method: 'POST',
       body,
       version: '1',

@@ -20,11 +20,13 @@ import {
   getAnnotationFieldValue,
 } from '@kbn/ml-common-types/annotations';
 import type { JobId } from '@kbn/ml-common-types/anomaly_detection_jobs/job';
+import type { ServerlessInfo } from '../../types';
 import {
   ML_ANNOTATIONS_INDEX_ALIAS_READ,
   ML_ANNOTATIONS_INDEX_ALIAS_WRITE,
 } from '../../../common/constants/index_patterns';
 import { ANNOTATION_EVENT_USER, ANNOTATION_TYPE } from '../../../common/constants/annotations';
+import { DEFAULT_ML_PROJECT_ROUTING } from '../../../common/constants/cps';
 
 // TODO All of the following interface/type definitions should
 // eventually be replaced by the proper upstream definitions
@@ -69,7 +71,10 @@ export interface AggByJob {
   latest_delayed: Pick<estypes.SearchResponse<Annotation>, 'hits'>;
 }
 
-export function annotationProvider({ asInternalUser }: IScopedClusterClient) {
+export function annotationProvider(
+  { asInternalUser }: IScopedClusterClient,
+  serverless: ServerlessInfo
+) {
   // Find the index the annotation is stored in.
   async function fetchAnnotationIndex(id: string) {
     const searchParams: estypes.SearchRequest = {
@@ -112,6 +117,9 @@ export function annotationProvider({ asInternalUser }: IScopedClusterClient) {
       body: annotation,
       refresh: 'wait_for',
       require_alias: true,
+      ...(serverless.isServerless && serverless.cpsEnabled
+        ? { project_routing: DEFAULT_ML_PROJECT_ROUTING }
+        : {}),
     };
 
     if (typeof annotation._id !== 'undefined') {
@@ -294,6 +302,9 @@ export function annotationProvider({ asInternalUser }: IScopedClusterClient) {
           ...(shouldClauses ? { should: shouldClauses, minimum_should_match: 1 } : {}),
         },
       },
+      ...(serverless.isServerless && serverless.cpsEnabled
+        ? { project_routing: DEFAULT_ML_PROJECT_ROUTING }
+        : {}),
     };
 
     try {
@@ -385,6 +396,9 @@ export function annotationProvider({ asInternalUser }: IScopedClusterClient) {
           },
         },
       },
+      ...(serverless.isServerless && serverless.cpsEnabled
+        ? { project_routing: DEFAULT_ML_PROJECT_ROUTING }
+        : {}),
     };
 
     const body = await asInternalUser.search<Annotation>(params, { maxRetries: 0 });
@@ -406,6 +420,9 @@ export function annotationProvider({ asInternalUser }: IScopedClusterClient) {
       index,
       id,
       refresh: 'wait_for',
+      ...(serverless.isServerless && serverless.cpsEnabled
+        ? { project_routing: DEFAULT_ML_PROJECT_ROUTING }
+        : {}),
     };
 
     return await asInternalUser.delete(deleteParams);

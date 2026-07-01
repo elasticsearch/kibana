@@ -1096,6 +1096,7 @@ x-pack/platform/packages/shared/ml/chi2test @elastic/ml-ui
 x-pack/platform/packages/shared/ml/common-types @elastic/ml-ui
 x-pack/platform/packages/shared/ml/data-visualizer-server-schemas @elastic/ml-ui
 x-pack/platform/packages/shared/ml/error_utils @elastic/ml-ui
+x-pack/platform/packages/shared/ml/ml-cps @elastic/ml-ui
 x-pack/platform/packages/shared/ml/random_sampler_utils @elastic/ml-ui
 x-pack/platform/packages/shared/ml/response_stream @elastic/ml-ui
 x-pack/platform/packages/shared/ml/runtime_field_utils @elastic/ml-ui

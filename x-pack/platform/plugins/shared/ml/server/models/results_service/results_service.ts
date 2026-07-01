@@ -35,7 +35,7 @@ import { getPartitionFieldsValuesFactory } from './get_partition_fields_values';
 import type { MlClient } from '../../lib/ml_client';
 import { datafeedsProvider } from '../job_service/datafeeds';
 import { annotationServiceProvider } from '../annotation_service';
-import { anomalyChartsDataProvider } from './anomaly_charts';
+import type { ServerlessInfo } from '../../types';
 
 // Service for carrying out Elasticsearch queries to obtain data for the
 // ML Results dashboards.
@@ -75,7 +75,11 @@ export function getTypicalAndActualValues(source: MlAnomalyRecordDoc) {
   return result;
 }
 
-export function resultsServiceProvider(mlClient: MlClient, client?: IScopedClusterClient) {
+export function resultsServiceProvider(
+  mlClient: MlClient,
+  client?: IScopedClusterClient,
+  serverless?: ServerlessInfo
+) {
   // Obtains data for the anomalies table, aggregating anomalies by day or hour as requested.
   // Return an Object with properties 'anomalies' and 'interval' (interval used to aggregate anomalies,
   // one of day, hour or second. Note 'auto' can be provided as the aggregationInterval in the request,
@@ -702,25 +706,28 @@ export function resultsServiceProvider(mlClient: MlClient, client?: IScopedClust
       datafeedQueryClone = { bool: { must: [datafeedQueryClone], filter: [rangeFilter] } };
     }
 
-    const esSearchRequest = {
-      index: datafeedConfig.indices.join(','),
-      query: datafeedQueryClone,
-      ...(datafeedConfig.runtime_mappings
-        ? { runtime_mappings: datafeedConfig.runtime_mappings }
-        : {}),
-      aggs: {
-        doc_count_by_bucket_span: {
-          date_histogram: {
-            field: timefield,
-            fixed_interval: bucketSpan,
+    if (client && serverless) {
+      const esSearchRequest = {
+        index: datafeedConfig.indices.join(','),
+        query: datafeedQueryClone,
+        ...(datafeedConfig.runtime_mappings
+          ? { runtime_mappings: datafeedConfig.runtime_mappings }
+          : {}),
+        aggs: {
+          doc_count_by_bucket_span: {
+            date_histogram: {
+              field: timefield,
+              fixed_interval: bucketSpan,
+            },
           },
         },
-      },
-      size: 0,
-      ...getIndicesOptions(datafeedConfig),
-    };
+        size: 0,
+        ...getIndicesOptions(datafeedConfig),
+        ...(serverless.isServerless && serverless.cpsEnabled && datafeedConfig.project_routing
+          ? { project_routing: datafeedConfig.project_routing }
+          : {}),
+      };
 
-    if (client) {
       const { aggregations } = await client.asCurrentUser.search(esSearchRequest, {
         maxRetries: 0,
       });
@@ -733,7 +740,7 @@ export function resultsServiceProvider(mlClient: MlClient, client?: IScopedClust
         ]) || [];
     }
 
-    const { getAnnotations } = annotationServiceProvider(client!);
+    const { getAnnotations } = annotationServiceProvider(client!, serverless!);
 
     const [bucketResp, annotationResp] = await Promise.all([
       mlClient.getBuckets({
@@ -783,11 +790,6 @@ export function resultsServiceProvider(mlClient: MlClient, client?: IScopedClust
     return finalResults;
   }
 
-  const { getAnomalyChartsData, getRecordsForCriteria } = anomalyChartsDataProvider(
-    mlClient,
-    client!
-  );
-
   return {
     getAnomaliesTableData,
     getCategoryDefinition,
@@ -798,7 +800,5 @@ export function resultsServiceProvider(mlClient: MlClient, client?: IScopedClust
     getCategorizerStats,
     getCategoryStoppedPartitions,
     getDatafeedResultsChartData,
-    getAnomalyChartsData,
-    getRecordsForCriteria,
   };
 }

@@ -18,7 +18,7 @@ export type {
   CPSAppAccessResolver,
 } from './types';
 export type { ProjectRoutingValue } from '@kbn/cps-common';
-export { ProjectPicker } from './components/project_picker';
+export { ProjectPicker, DisabledProjectPicker } from './components/project_picker';
 export { ProjectPickerContent } from './components/project_picker_content';
 export { ProjectPickerContainer } from './components/project_picker_container';
 export { useFetchProjects } from './components/use_fetch_projects';

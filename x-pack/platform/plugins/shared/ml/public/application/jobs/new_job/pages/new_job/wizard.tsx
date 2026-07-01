@@ -86,12 +86,12 @@ export const Wizard: FC<Props> = ({
   );
 
   useEffect(() => {
-    const subscription = jobValidator.validationResult$.subscribe(() => {
+    const validationSubscription = jobValidator.validationResult$.subscribe(() => {
       jobValidatorUpdate();
     });
 
     return () => {
-      return subscription.unsubscribe();
+      validationSubscription.unsubscribe();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [jobValidator]);

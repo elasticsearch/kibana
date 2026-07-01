@@ -21,6 +21,7 @@ export const categorizationFieldValidationSchema = {
   analyzer: schema.any(),
   runtimeMappings: runtimeMappingsSchema,
   indicesOptions: indicesOptionsSchema,
+  projectRouting: schema.maybe(schema.string()),
 };
 
 export const basicChartSchema = {
@@ -35,6 +36,7 @@ export const basicChartSchema = {
   splitFieldValue: schema.nullable(schema.string({ maxLength: 10000 })),
   runtimeMappings: schema.maybe(runtimeMappingsSchema),
   indicesOptions: schema.maybe(indicesOptionsSchema),
+  projectRouting: schema.maybe(schema.string()),
 };
 
 export const populationChartSchema = {
@@ -49,6 +51,7 @@ export const populationChartSchema = {
   splitFieldValue: schema.maybe(schema.nullable(schema.string({ maxLength: 10000 }))),
   runtimeMappings: schema.maybe(runtimeMappingsSchema),
   indicesOptions: schema.maybe(indicesOptionsSchema),
+  projectRouting: schema.maybe(schema.string()),
 };
 
 export const forceStartDatafeedSchema = schema.object({
@@ -167,3 +170,37 @@ export const bulkCreateSchema = schema.oneOf([
     datafeed: datafeedConfigSchema,
   }),
 ]);
+
+export const bulkUpdateProjectRoutingSchema = schema.object({
+  projectRouting: schema.string(),
+  jobIds: schema.maybe(
+    schema.arrayOf(schema.string(), { maxSize: 10000, meta: { description: 'Job IDs to update.' } })
+  ),
+  jobGroups: schema.maybe(
+    schema.arrayOf(schema.string(), {
+      maxSize: 10000,
+      meta: { description: 'Filter jobs by groups.' },
+    })
+  ),
+  auto: schema.maybe(
+    schema.boolean({
+      defaultValue: false,
+      meta: { description: 'When true, also update datafeeds with no project_routing set.' },
+    })
+  ),
+  simulate: schema.maybe(
+    schema.boolean({
+      defaultValue: false,
+      meta: { description: 'When true, compute matching datafeeds but do not call update.' },
+    })
+  ),
+  restartRunningJobs: schema.maybe(
+    schema.boolean({
+      defaultValue: true,
+      meta: {
+        description:
+          'When true, stop running datafeeds in the update set before the update, then start them again afterward (no start/end on restart).',
+      },
+    })
+  ),
+});

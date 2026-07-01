@@ -64,9 +64,9 @@ export function annotationRoutes(
           },
         },
       },
-      routeGuard.fullLicenseAPIGuard(async ({ client, request, response }) => {
+      routeGuard.fullLicenseAPIGuard(async ({ client, request, response, serverless }) => {
         try {
-          const { getAnnotations } = annotationServiceProvider(client);
+          const { getAnnotations } = annotationServiceProvider(client, serverless);
           const resp = await getAnnotations(request.body);
 
           return response.ok({
@@ -100,14 +100,14 @@ export function annotationRoutes(
           request: { body: indexAnnotationSchema },
         },
       },
-      routeGuard.fullLicenseAPIGuard(async ({ client, request, response }) => {
+      routeGuard.fullLicenseAPIGuard(async ({ client, request, response, serverless }) => {
         try {
           const annotationsFeatureAvailable = await isAnnotationsFeatureAvailable(client);
           if (annotationsFeatureAvailable === false) {
             throw getAnnotationsFeatureUnavailableErrorMessage();
           }
 
-          const { indexAnnotation } = annotationServiceProvider(client);
+          const { indexAnnotation } = annotationServiceProvider(client, serverless);
 
           const currentUser =
             securityPlugin !== undefined ? securityPlugin.authc.getCurrentUser(request) : {};
@@ -146,7 +146,7 @@ export function annotationRoutes(
           request: { params: deleteAnnotationSchema },
         },
       },
-      routeGuard.fullLicenseAPIGuard(async ({ client, request, response }) => {
+      routeGuard.fullLicenseAPIGuard(async ({ client, request, response, serverless }) => {
         try {
           const annotationsFeatureAvailable = await isAnnotationsFeatureAvailable(client);
           if (annotationsFeatureAvailable === false) {
@@ -154,7 +154,7 @@ export function annotationRoutes(
           }
 
           const annotationId = request.params.annotationId;
-          const { deleteAnnotation } = annotationServiceProvider(client);
+          const { deleteAnnotation } = annotationServiceProvider(client, serverless);
           const resp = await deleteAnnotation(annotationId);
 
           return response.ok({

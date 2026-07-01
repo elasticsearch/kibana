@@ -20,6 +20,7 @@ export function indexServiceFactory(dataViewsService: DataViewsContract) {
    * @returns The data view ID or null if it doesn't exist.
    */
   async function getDataViewIdFromName(name: string, job?: Job): Promise<string | null> {
+    // !!!!!!!!!!!!!!!!!!!!!!!! does this need to use project routing?
     const dataViews = await dataViewsService.find(name);
     const dataView = dataViews.find((dv) => dv.getIndexPattern() === name);
     if (!dataView) {

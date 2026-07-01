@@ -27,7 +27,8 @@ export class SingleSeriesChecker {
     query,
     thresholds,
     runtimeMappings,
-    indicesOptions
+    indicesOptions,
+    projectRouting
   ) {
     this.index = index;
     this.timeField = timeField;
@@ -44,6 +45,7 @@ export class SingleSeriesChecker {
     this.runtimeMappings = runtimeMappings;
     this.indicesOptions = indicesOptions;
     this.asCurrentUser = asCurrentUser;
+    this.projectRouting = projectRouting;
     this.interval = null;
   }
 
@@ -184,6 +186,7 @@ export class SingleSeriesChecker {
         },
       },
       ...this.runtimeMappings,
+      ...this.projectRouting,
     };
 
     if (this.field !== null) {

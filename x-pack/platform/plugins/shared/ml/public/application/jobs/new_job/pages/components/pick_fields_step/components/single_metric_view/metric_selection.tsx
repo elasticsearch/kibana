@@ -56,6 +56,10 @@ export const SingleMetricDetectors: FC<Props> = ({ setIsValid }) => {
   const [end, setEnd] = useState(jobCreator.end);
   const [bucketSpanMs, setBucketSpanMs] = useState(jobCreator.bucketSpanMs);
 
+  const [projectRouting, setProjectRouting] = useState<string | null>(
+    jobCreator.projectRouting ?? null
+  );
+
   function detectorChangeHandler(selectedOptionsIn: DropDownLabel[]) {
     setSelectedOptions(selectedOptionsIn);
     if (selectedOptionsIn.length) {
@@ -93,6 +97,11 @@ export const SingleMetricDetectors: FC<Props> = ({ setIsValid }) => {
       setBucketSpanMs(jobCreator.bucketSpanMs);
       loadChart();
     }
+
+    if (jobCreator.projectRouting !== projectRouting) {
+      setProjectRouting(jobCreator.projectRouting ?? null);
+      loadChart();
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [jobCreator, jobCreatorUpdated]);
 
@@ -109,7 +118,8 @@ export const SingleMetricDetectors: FC<Props> = ({ setIsValid }) => {
           null,
           cs.intervalMs,
           jobCreator.runtimeMappings,
-          jobCreator.datafeedConfig.indices_options
+          jobCreator.datafeedConfig.indices_options,
+          jobCreator.projectRouting ?? undefined
         );
         if (resp[DTR_IDX] !== undefined) {
           setLineChartData(resp);

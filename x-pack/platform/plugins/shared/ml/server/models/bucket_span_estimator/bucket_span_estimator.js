@@ -15,7 +15,8 @@ import { PolledDataChecker } from './polled_data_checker';
 
 export function estimateBucketSpanFactory(client) {
   const { asCurrentUser, asInternalUser } = client;
-
+  // here!!!
+  // check everywhere where runtimeMappings is used
   class BucketSpanEstimator {
     constructor(
       {
@@ -28,6 +29,7 @@ export function estimateBucketSpanFactory(client) {
         splitField,
         runtimeMappings,
         indicesOptions,
+        projectRouting,
       },
       splitFieldValues,
       maxBuckets
@@ -48,6 +50,7 @@ export function estimateBucketSpanFactory(client) {
 
       this.runtimeMappings =
         runtimeMappings !== undefined ? { runtime_mappings: runtimeMappings } : {};
+      this.projectRouting = projectRouting !== undefined ? { project_routing: projectRouting } : {};
 
       // determine durations for bucket span estimation
       // taking into account the clusters' search.max_buckets settings
@@ -82,7 +85,9 @@ export function estimateBucketSpanFactory(client) {
         this.timeField,
         this.duration,
         this.query,
-        indicesOptions
+        this.runtimeMappings,
+        indicesOptions,
+        this.projectRouting
       );
 
       if (this.aggTypes.length === this.fields.length) {
@@ -101,7 +106,8 @@ export function estimateBucketSpanFactory(client) {
                 this.query,
                 this.thresholds,
                 this.runtimeMappings,
-                indicesOptions
+                indicesOptions,
+                this.projectRouting
               ),
               result: null,
             });
@@ -126,7 +132,8 @@ export function estimateBucketSpanFactory(client) {
                   queryCopy,
                   this.thresholds,
                   this.runtimeMappings,
-                  indicesOptions
+                  indicesOptions,
+                  this.projectRouting
                 ),
                 result: null,
               });
@@ -278,6 +285,7 @@ export function estimateBucketSpanFactory(client) {
               ...(runtimeMappings !== undefined ? { runtime_mappings: runtimeMappings } : {}),
             },
             ...(indicesOptions ?? {}),
+            ...(this.projectRouting !== undefined ? { project_routing: this.projectRouting } : {}),
           },
           { maxRetries: 0 }
         )
@@ -321,6 +329,9 @@ export function estimateBucketSpanFactory(client) {
                   ...(runtimeMappings !== undefined ? { runtime_mappings: runtimeMappings } : {}),
                 },
                 ...(indicesOptions ?? {}),
+                ...(this.projectRouting !== undefined
+                  ? { project_routing: this.projectRouting }
+                  : {}),
               },
               { maxRetries: 0 }
             )

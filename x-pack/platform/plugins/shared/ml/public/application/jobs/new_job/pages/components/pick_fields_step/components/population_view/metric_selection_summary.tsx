@@ -89,7 +89,8 @@ export const PopulationDetectorsSummary: FC = () => {
           jobCreator.populationField,
           cs.intervalMs,
           jobCreator.runtimeMappings,
-          jobCreator.datafeedConfig.indices_options
+          jobCreator.datafeedConfig.indices_options,
+          jobCreator.projectRouting ?? undefined
         );
 
         setLineChartsData(resp);

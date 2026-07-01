@@ -5,14 +5,20 @@
  * 2.0.
  */
 
-import PropTypes from 'prop-types';
+import type { FC } from 'react';
 import React, { useMemo } from 'react';
 
 import { EuiButtonIcon, EuiFlexGroup, EuiFlexItem, EuiToolTip } from '@elastic/eui';
 import { i18n } from '@kbn/i18n';
+import type { MlSummaryJob } from '@kbn/ml-common-types/anomaly_detection_jobs/summary_job';
+
 import { useCreateADLinks } from '../../../../components/custom_hooks/use_create_ad_links';
 
-export function ResultLinks({ jobs }) {
+interface Props {
+  jobs: MlSummaryJob[];
+}
+
+export const ResultLinks: FC<Props> = ({ jobs }) => {
   const openJobsInSingleMetricViewerText = i18n.translate(
     'xpack.ml.jobsList.resultActions.openJobsInSingleMetricViewerText',
     {
@@ -37,7 +43,7 @@ export function ResultLinks({ jobs }) {
   const singleMetricVisible = jobs.length < 2;
   const singleMetricEnabled = jobs.length === 1 && jobs[0].isSingleMetricViewerJob;
   const singleMetricDisabledMessage =
-    jobs.length === 1 && jobs[0].isNotSingleMetricViewerJobMessage;
+    jobs.length === 1 ? jobs[0].isNotSingleMetricViewerJobMessage : undefined;
 
   const singleMetricDisabledMessageText =
     singleMetricDisabledMessage !== undefined
@@ -52,11 +58,12 @@ export function ResultLinks({ jobs }) {
   const { createLinkWithUserDefaults } = useCreateADLinks();
   const timeSeriesExplorerLink = useMemo(
     () => createLinkWithUserDefaults('timeseriesexplorer', jobs),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [jobs]
+    [createLinkWithUserDefaults, jobs]
   );
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const anomalyExplorerLink = useMemo(() => createLinkWithUserDefaults('explorer', jobs), [jobs]);
+  const anomalyExplorerLink = useMemo(
+    () => createLinkWithUserDefaults('explorer', jobs),
+    [createLinkWithUserDefaults, jobs]
+  );
 
   return (
     <EuiFlexGroup
@@ -100,7 +107,4 @@ export function ResultLinks({ jobs }) {
       </EuiFlexItem>
     </EuiFlexGroup>
   );
-}
-ResultLinks.propTypes = {
-  jobs: PropTypes.array.isRequired,
 };

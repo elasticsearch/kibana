@@ -56,7 +56,6 @@ export default function ({ getService }: FtrProviderContext) {
         row: {
           recordCount: '105,120',
           memoryStatus: 'ok',
-          jobState: 'closed',
           datafeedState: 'stopped',
           latestTimestamp: '2016-01-01 00:00:00',
         },

@@ -13,6 +13,7 @@ import type { DataPublicPluginStart } from '@kbn/data-plugin/public';
 import type { LensPublicStart } from '@kbn/lens-plugin/public';
 import type { DashboardStart } from '@kbn/dashboard-plugin/public';
 import type { LensApi } from '@kbn/lens-plugin/public';
+import type { CPSPluginStart } from '@kbn/cps/public/types';
 import { createFlyout, type FlyoutComponentProps } from '../common/create_flyout';
 import { LensLayerSelectionFlyout } from './lens_vis_layer_selection_flyout';
 
@@ -22,10 +23,11 @@ export async function showLensVisToADJobFlyout(
   share: SharePluginStart,
   data: DataPublicPluginStart,
   dashboardService: DashboardStart,
-  lens: LensPublicStart
+  lens: LensPublicStart,
+  cps?: CPSPluginStart
 ): Promise<void> {
   const Comp: FC<FlyoutComponentProps> = ({ onClose }) => (
     <LensLayerSelectionFlyout embeddable={embeddable} onClose={onClose} />
   );
-  return createFlyout(Comp, coreStart, share, data, dashboardService, lens);
+  return createFlyout(Comp, coreStart, share, data, dashboardService, lens, cps);
 }

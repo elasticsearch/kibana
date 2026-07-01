@@ -5,5 +5,4 @@
  * 2.0.
  */
 
-export { actionsMenuContent } from './management';
-export { ResultLinks } from './results';
+export { MlProjectPickerPanel, type MlProjectPickerPanelProps } from './project_picker';

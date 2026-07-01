@@ -14,7 +14,16 @@
 import { get } from 'lodash';
 
 export class PolledDataChecker {
-  constructor(asCurrentUser, index, timeField, duration, query, runtimeMappings, indicesOptions) {
+  constructor(
+    asCurrentUser,
+    index,
+    timeField,
+    duration,
+    query,
+    runtimeMappings,
+    indicesOptions,
+    projectRouting
+  ) {
     this.index = index;
     this.timeField = timeField;
     this.duration = duration;
@@ -22,6 +31,7 @@ export class PolledDataChecker {
     this.runtimeMappings = runtimeMappings;
     this.indicesOptions = indicesOptions;
     this.asCurrentUser = asCurrentUser;
+    this.projectRouting = projectRouting;
 
     this.isPolled = false;
     this.minimumBucketSpan = 0;
@@ -64,6 +74,7 @@ export class PolledDataChecker {
         },
       },
       ...this.runtimeMappings,
+      ...this.projectRouting,
     };
 
     return search;

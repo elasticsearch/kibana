@@ -58,6 +58,10 @@ export const MultiMetricDetectors: FC<Props> = ({ setIsValid }) => {
   const [fieldValues, setFieldValues] = useState<string[]>([]);
   const [pageReady, setPageReady] = useState(false);
 
+  const [projectRouting, setProjectRouting] = useState<string | null>(
+    jobCreator.projectRouting ?? null
+  );
+
   function detectorChangeHandler(selectedOptionsIn: DropDownLabel[]) {
     addDetector(selectedOptionsIn);
   }
@@ -112,6 +116,11 @@ export const MultiMetricDetectors: FC<Props> = ({ setIsValid }) => {
       loadCharts();
     }
 
+    if (jobCreator.projectRouting !== projectRouting) {
+      setProjectRouting(jobCreator.projectRouting ?? null);
+      loadCharts();
+    }
+
     setSplitField(jobCreator.splitField);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [jobCreatorUpdated]);
@@ -125,7 +134,8 @@ export const MultiMetricDetectors: FC<Props> = ({ setIsValid }) => {
         .loadFieldExampleValues(
           splitField,
           jobCreator.runtimeMappings,
-          jobCreator.datafeedConfig.indices_options
+          jobCreator.datafeedConfig.indices_options,
+          jobCreator.projectRouting ?? undefined
         )
         .then(setFieldValues)
         .catch((error) => {
@@ -158,7 +168,8 @@ export const MultiMetricDetectors: FC<Props> = ({ setIsValid }) => {
           fieldValues.length > 0 ? fieldValues[0] : null,
           cs.intervalMs,
           jobCreator.runtimeMappings,
-          jobCreator.datafeedConfig.indices_options
+          jobCreator.datafeedConfig.indices_options,
+          jobCreator.projectRouting ?? undefined
         );
         setLineChartsData(resp);
       } catch (error) {

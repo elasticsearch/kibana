@@ -8,6 +8,7 @@
 import type { KibanaRequest, SavedObjectsClientContract } from '@kbn/core/server';
 import type { GetGuards } from '../shared_services';
 import { jobServiceProvider } from '../../models/job_service';
+import type { ServerlessInfo } from '../../types';
 
 type OrigJobServiceProvider = ReturnType<typeof jobServiceProvider>;
 
@@ -22,7 +23,10 @@ export interface JobServiceProvider {
   };
 }
 
-export function getJobServiceProvider(getGuards: GetGuards): JobServiceProvider {
+export function getJobServiceProvider(
+  getGuards: GetGuards,
+  serverless: ServerlessInfo
+): JobServiceProvider {
   return {
     jobServiceProvider(request: KibanaRequest, savedObjectsClient: SavedObjectsClientContract) {
       const guards = getGuards(request, savedObjectsClient);
@@ -32,7 +36,7 @@ export function getJobServiceProvider(getGuards: GetGuards): JobServiceProvider 
             .isFullLicense()
             .hasMlCapabilities(['canGetJobs'])
             .ok(({ scopedClient, mlClient }) => {
-              const { jobsSummary } = jobServiceProvider(scopedClient, mlClient);
+              const { jobsSummary } = jobServiceProvider(scopedClient, mlClient, serverless);
               return jobsSummary(...args);
             });
         },
@@ -41,7 +45,11 @@ export function getJobServiceProvider(getGuards: GetGuards): JobServiceProvider 
             .isFullLicense()
             .hasMlCapabilities(['canStartStopDatafeed'])
             .ok(({ scopedClient, mlClient }) => {
-              const { forceStartDatafeeds } = jobServiceProvider(scopedClient, mlClient);
+              const { forceStartDatafeeds } = jobServiceProvider(
+                scopedClient,
+                mlClient,
+                serverless
+              );
               return forceStartDatafeeds(...args);
             });
         },
@@ -50,7 +58,7 @@ export function getJobServiceProvider(getGuards: GetGuards): JobServiceProvider 
             .isFullLicense()
             .hasMlCapabilities(['canStartStopDatafeed'])
             .ok(({ scopedClient, mlClient }) => {
-              const { stopDatafeeds } = jobServiceProvider(scopedClient, mlClient);
+              const { stopDatafeeds } = jobServiceProvider(scopedClient, mlClient, serverless);
               return stopDatafeeds(...args);
             });
         },

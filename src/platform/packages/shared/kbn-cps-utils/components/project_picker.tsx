@@ -159,24 +159,34 @@ export const ProjectPickerSkeleton = () => (
   <EuiSkeletonRectangle width={48} height={24} borderRadius="m" />
 );
 
-export const DisabledProjectPicker = ({ totalProjectCount }: { totalProjectCount: number }) => {
+export const DisabledProjectPicker = ({
+  totalProjectCount,
+  displayTooltip = true,
+}: {
+  totalProjectCount: number;
+  displayTooltip?: boolean;
+}) => {
   const styles = useMemoCss(projectPickerStyles);
   if (totalProjectCount <= 1) {
     return null;
   }
-  return (
-    <EuiToolTip content={strings.getProjectPickerDisabledTooltip()}>
-      <EuiButtonIcon
-        css={styles.disabledButton}
-        aria-label={strings.getProjectPickerButtonAriaLabel()}
-        data-test-subj="project-picker-button-disabled"
-        size="xs"
-        isDisabled
-        display="fill"
-        iconType={CPSIconDisabled}
-      />
-    </EuiToolTip>
+  const buttonIcon = (
+    <EuiButtonIcon
+      css={styles.disabledButton}
+      aria-label={strings.getProjectPickerButtonAriaLabel()}
+      data-test-subj="project-picker-button-disabled"
+      size="xs"
+      isDisabled
+      display="fill"
+      iconType={CPSIconDisabled}
+    />
   );
+
+  if (!displayTooltip) {
+    return buttonIcon;
+  }
+
+  return <EuiToolTip content={strings.getProjectPickerDisabledTooltip()}>{buttonIcon}</EuiToolTip>;
 };
 
 const projectPickerStyles = {

@@ -61,7 +61,8 @@ export const CategorizationDetectorsSummary: FC = () => {
         jobCreator.end,
         chartInterval.getInterval().asMilliseconds(),
         jobCreator.runtimeMappings ?? undefined,
-        jobCreator.datafeedConfig.indices_options
+        jobCreator.datafeedConfig.indices_options,
+        jobCreator.projectRouting ?? undefined
       );
       setEventRateChartData(resp);
     } catch (error) {

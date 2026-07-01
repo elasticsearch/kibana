@@ -98,17 +98,11 @@ export function MachineLearningJobTableProvider(
       for (const tr of $.findTestSubjects('~mlJobListRow').toArray()) {
         const $tr = $(tr);
 
-        const $description = $tr
-          .findTestSubject('mlJobListColumnDescription')
-          .find('.euiTableCellContent');
-        const $jobGroups = $description.findTestSubjects('mlJobGroup');
+        const $jobGroups = $tr.findTestSubject('mlJobListRowGroups').findTestSubjects('mlJobGroup');
         const jobGroups = [];
         for (const el of $jobGroups.toArray()) {
           // collect this group in our array
           jobGroups.push($(el).text().trim());
-
-          // remove this element from $description so it doesn't pollute it's text value
-          $(el).remove();
         }
 
         const rowObject: {
@@ -117,13 +111,13 @@ export function MachineLearningJobTableProvider(
           jobGroups: string[];
           recordCount: string;
           memoryStatus: string;
-          jobState: string;
           datafeedState: string;
           latestTimestamp?: string;
           spaces?: string[];
         } = {
-          id: $tr.findTestSubject('mlJobListColumnId').find('.euiTableCellContent').text().trim(),
-          description: $description
+          id: $tr.findTestSubject('mlModelsTableColumnIdValueId').text().trim(),
+          description: $tr
+            .findTestSubject('mlJobListRowDescription')
             .text()
             .replace(/(&nbsp;$)/g, '')
             .trim(),
@@ -135,11 +129,6 @@ export function MachineLearningJobTableProvider(
             .trim(),
           memoryStatus: $tr
             .findTestSubject('mlJobListColumnMemoryStatus')
-            .find('.euiTableCellContent')
-            .text()
-            .trim(),
-          jobState: $tr
-            .findTestSubject('mlJobListColumnJobState')
             .find('.euiTableCellContent')
             .text()
             .trim(),

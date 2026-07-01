@@ -9,6 +9,7 @@ import type { IUiSettingsClient } from '@kbn/core-ui-settings-browser';
 import type { TimefilterContract } from '@kbn/data-plugin/public';
 import type { SharePluginStart } from '@kbn/share-plugin/public';
 import type { DataViewsContract } from '@kbn/data-views-plugin/public';
+import type { CPSPluginStart } from '@kbn/cps/public/types';
 import type { MlApi } from '../../../services/ml_api_service';
 import { QuickGeoJobCreator } from './quick_create_job';
 
@@ -20,6 +21,7 @@ interface Dependencies {
   timeFilter: TimefilterContract;
   share: SharePluginStart;
   mlApi: MlApi;
+  cps?: CPSPluginStart;
 }
 export async function resolver(
   deps: Dependencies,
@@ -32,7 +34,7 @@ export async function resolver(
   toRisonString: string,
   layerRisonString?: string
 ) {
-  const { dataViews, kibanaConfig, timeFilter, share, mlApi } = deps;
+  const { dataViews, kibanaConfig, timeFilter, share, mlApi, cps } = deps;
   const defaultLayer = { query: getDefaultQuery(), filters: [] };
 
   const dashboard = getRisonValue<typeof defaultLayer>(dashboardRisonString, defaultLayer);
@@ -50,7 +52,7 @@ export async function resolver(
   const from = getRisonValue<string>(fromRisonString, '');
   const to = getRisonValue<string>(toRisonString, '');
 
-  const jobCreator = new QuickGeoJobCreator(dataViews, kibanaConfig, timeFilter, share, mlApi);
+  const jobCreator = new QuickGeoJobCreator(dataViews, kibanaConfig, timeFilter, share, mlApi, cps);
 
   await jobCreator.createAndStashGeoJob(
     dataViewId,

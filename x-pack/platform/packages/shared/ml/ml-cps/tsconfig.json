@@ -1,0 +1,25 @@
+{
+  "extends": "@kbn/tsconfig-base/tsconfig.json",
+  "compilerOptions": {
+    "outDir": "target/types",
+    "types": ["jest", "node", "react"]
+  },
+  "include": [
+    "**/*.ts",
+    "**/*.tsx"
+  ],
+  "exclude": [
+    "target/**/*"
+  ],
+  "kbn_references": [
+    "@kbn/cps-utils",
+    "@kbn/es-query",
+    "@kbn/i18n",
+    "@kbn/i18n-react",
+    "@kbn/core-http-browser",
+    "@kbn/ui-actions-plugin",
+    "@kbn/core",
+    "@kbn/core-rendering-browser",
+    "@kbn/react-kibana-mount"
+  ]
+}

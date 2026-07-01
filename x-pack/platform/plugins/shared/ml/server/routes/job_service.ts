@@ -29,6 +29,7 @@ import {
   bulkCreateSchema,
   deleteJobsSchema,
   stopDatafeedsSchema,
+  bulkUpdateProjectRoutingSchema,
 } from './schemas/job_service_schema';
 
 import { jobForCloningSchema, jobIdSchema } from './schemas/anomaly_detectors_schema';
@@ -60,19 +61,21 @@ export function jobServiceRoutes({ router, routeGuard }: RouteInitialization) {
           },
         },
       },
-      routeGuard.fullLicenseAPIGuard(async ({ client, mlClient, request, response }) => {
-        try {
-          const { forceStartDatafeeds } = jobServiceProvider(client, mlClient);
-          const { datafeedIds, start, end } = request.body;
-          const resp = await forceStartDatafeeds(datafeedIds, start, end);
+      routeGuard.fullLicenseAPIGuard(
+        async ({ client, mlClient, request, response, serverless }) => {
+          try {
+            const { forceStartDatafeeds } = jobServiceProvider(client, mlClient, serverless);
+            const { datafeedIds, start, end } = request.body;
+            const resp = await forceStartDatafeeds(datafeedIds, start, end);
 
-          return response.ok({
-            body: resp,
-          });
-        } catch (e) {
-          return response.customError(wrapError(e));
+            return response.ok({
+              body: resp,
+            });
+          } catch (e) {
+            return response.customError(wrapError(e));
+          }
         }
-      })
+      )
     );
 
   router.versioned
@@ -96,19 +99,21 @@ export function jobServiceRoutes({ router, routeGuard }: RouteInitialization) {
           },
         },
       },
-      routeGuard.fullLicenseAPIGuard(async ({ client, mlClient, request, response }) => {
-        try {
-          const { stopDatafeeds } = jobServiceProvider(client, mlClient);
-          const { datafeedIds, closeJobs } = request.body;
-          const resp = await stopDatafeeds(datafeedIds, closeJobs);
+      routeGuard.fullLicenseAPIGuard(
+        async ({ client, mlClient, request, response, serverless }) => {
+          try {
+            const { stopDatafeeds } = jobServiceProvider(client, mlClient, serverless);
+            const { datafeedIds, closeJobs } = request.body;
+            const resp = await stopDatafeeds(datafeedIds, closeJobs);
 
-          return response.ok({
-            body: resp,
-          });
-        } catch (e) {
-          return response.customError(wrapError(e));
+            return response.ok({
+              body: resp,
+            });
+          } catch (e) {
+            return response.customError(wrapError(e));
+          }
         }
-      })
+      )
     );
 
   router.versioned
@@ -132,23 +137,25 @@ export function jobServiceRoutes({ router, routeGuard }: RouteInitialization) {
           },
         },
       },
-      routeGuard.fullLicenseAPIGuard(async ({ client, mlClient, request, response, context }) => {
-        try {
-          const alerting = await context.alerting;
-          const rulesClient = await alerting?.getRulesClient();
-          const { deleteJobs } = jobServiceProvider(client, mlClient, rulesClient);
+      routeGuard.fullLicenseAPIGuard(
+        async ({ client, mlClient, request, response, context, serverless }) => {
+          try {
+            const alerting = await context.alerting;
+            const rulesClient = await alerting?.getRulesClient();
+            const { deleteJobs } = jobServiceProvider(client, mlClient, serverless, rulesClient);
 
-          const { jobIds, deleteUserAnnotations, deleteAlertingRules } = request.body;
+            const { jobIds, deleteUserAnnotations, deleteAlertingRules } = request.body;
 
-          const resp = await deleteJobs(jobIds, deleteUserAnnotations, deleteAlertingRules);
+            const resp = await deleteJobs(jobIds, deleteUserAnnotations, deleteAlertingRules);
 
-          return response.ok({
-            body: resp,
-          });
-        } catch (e) {
-          return response.customError(wrapError(e));
+            return response.ok({
+              body: resp,
+            });
+          } catch (e) {
+            return response.customError(wrapError(e));
+          }
         }
-      })
+      )
     );
 
   router.versioned
@@ -172,19 +179,21 @@ export function jobServiceRoutes({ router, routeGuard }: RouteInitialization) {
           },
         },
       },
-      routeGuard.fullLicenseAPIGuard(async ({ client, mlClient, request, response }) => {
-        try {
-          const { closeJobs } = jobServiceProvider(client, mlClient);
-          const { jobIds } = request.body;
-          const resp = await closeJobs(jobIds);
+      routeGuard.fullLicenseAPIGuard(
+        async ({ client, mlClient, request, response, serverless }) => {
+          try {
+            const { closeJobs } = jobServiceProvider(client, mlClient, serverless);
+            const { jobIds } = request.body;
+            const resp = await closeJobs(jobIds);
 
-          return response.ok({
-            body: resp,
-          });
-        } catch (e) {
-          return response.customError(wrapError(e));
+            return response.ok({
+              body: resp,
+            });
+          } catch (e) {
+            return response.customError(wrapError(e));
+          }
         }
-      })
+      )
     );
 
   router.versioned
@@ -208,19 +217,21 @@ export function jobServiceRoutes({ router, routeGuard }: RouteInitialization) {
           },
         },
       },
-      routeGuard.fullLicenseAPIGuard(async ({ client, mlClient, request, response }) => {
-        try {
-          const { resetJobs } = jobServiceProvider(client, mlClient);
-          const { jobIds, deleteUserAnnotations } = request.body;
-          const resp = await resetJobs(jobIds, deleteUserAnnotations);
+      routeGuard.fullLicenseAPIGuard(
+        async ({ client, mlClient, request, response, serverless }) => {
+          try {
+            const { resetJobs } = jobServiceProvider(client, mlClient, serverless);
+            const { jobIds, deleteUserAnnotations } = request.body;
+            const resp = await resetJobs(jobIds, deleteUserAnnotations);
 
-          return response.ok({
-            body: resp,
-          });
-        } catch (e) {
-          return response.customError(wrapError(e));
+            return response.ok({
+              body: resp,
+            });
+          } catch (e) {
+            return response.customError(wrapError(e));
+          }
         }
-      })
+      )
     );
 
   router.versioned
@@ -245,19 +256,21 @@ export function jobServiceRoutes({ router, routeGuard }: RouteInitialization) {
           },
         },
       },
-      routeGuard.fullLicenseAPIGuard(async ({ client, mlClient, request, response }) => {
-        try {
-          const { forceStopAndCloseJob } = jobServiceProvider(client, mlClient);
-          const { jobId } = request.body;
-          const resp = await forceStopAndCloseJob(jobId);
+      routeGuard.fullLicenseAPIGuard(
+        async ({ client, mlClient, request, response, serverless }) => {
+          try {
+            const { forceStopAndCloseJob } = jobServiceProvider(client, mlClient, serverless);
+            const { jobId } = request.body;
+            const resp = await forceStopAndCloseJob(jobId);
 
-          return response.ok({
-            body: resp,
-          });
-        } catch (e) {
-          return response.customError(wrapError(e));
+            return response.ok({
+              body: resp,
+            });
+          } catch (e) {
+            return response.customError(wrapError(e));
+          }
         }
-      })
+      )
     );
 
   router.versioned
@@ -280,21 +293,23 @@ export function jobServiceRoutes({ router, routeGuard }: RouteInitialization) {
           request: { body: optionalJobIdsSchema },
         },
       },
-      routeGuard.fullLicenseAPIGuard(async ({ client, mlClient, request, response, context }) => {
-        try {
-          const alerting = await context.alerting;
-          const rulesClient = await alerting?.getRulesClient();
-          const { jobsSummary } = jobServiceProvider(client, mlClient, rulesClient);
-          const { jobIds } = request.body;
-          const resp = await jobsSummary(jobIds);
+      routeGuard.fullLicenseAPIGuard(
+        async ({ client, mlClient, request, response, context, serverless }) => {
+          try {
+            const alerting = await context.alerting;
+            const rulesClient = await alerting?.getRulesClient();
+            const { jobsSummary } = jobServiceProvider(client, mlClient, serverless, rulesClient);
+            const { jobIds } = request.body;
+            const resp = await jobsSummary(jobIds);
 
-          return response.ok({
-            body: resp,
-          });
-        } catch (e) {
-          return response.customError(wrapError(e));
+            return response.ok({
+              body: resp,
+            });
+          } catch (e) {
+            return response.customError(wrapError(e));
+          }
         }
-      })
+      )
     );
 
   router.versioned
@@ -315,21 +330,28 @@ export function jobServiceRoutes({ router, routeGuard }: RouteInitialization) {
         version: '1',
         validate: false,
       },
-      routeGuard.fullLicenseAPIGuard(async ({ client, mlClient, response, context }) => {
-        try {
-          const alerting = await context.alerting;
-          const rulesClient = await alerting?.getRulesClient();
-          const { getJobIdsWithGeo } = jobServiceProvider(client, mlClient, rulesClient);
+      routeGuard.fullLicenseAPIGuard(
+        async ({ client, mlClient, response, context, serverless }) => {
+          try {
+            const alerting = await context.alerting;
+            const rulesClient = await alerting?.getRulesClient();
+            const { getJobIdsWithGeo } = jobServiceProvider(
+              client,
+              mlClient,
+              serverless,
+              rulesClient
+            );
 
-          const resp = await getJobIdsWithGeo();
+            const resp = await getJobIdsWithGeo();
 
-          return response.ok({
-            body: resp,
-          });
-        } catch (e) {
-          return response.customError(wrapError(e));
+            return response.ok({
+              body: resp,
+            });
+          } catch (e) {
+            return response.customError(wrapError(e));
+          }
         }
-      })
+      )
     );
 
   router.versioned
@@ -349,9 +371,9 @@ export function jobServiceRoutes({ router, routeGuard }: RouteInitialization) {
         version: '1',
         validate: false,
       },
-      routeGuard.fullLicenseAPIGuard(async ({ client, mlClient, request, response }) => {
+      routeGuard.fullLicenseAPIGuard(async ({ client, mlClient, response, serverless }) => {
         try {
-          const { jobsWithTimerange } = jobServiceProvider(client, mlClient);
+          const { jobsWithTimerange } = jobServiceProvider(client, mlClient, serverless);
           const resp = await jobsWithTimerange();
 
           return response.ok({
@@ -384,19 +406,21 @@ export function jobServiceRoutes({ router, routeGuard }: RouteInitialization) {
           },
         },
       },
-      routeGuard.fullLicenseAPIGuard(async ({ client, mlClient, request, response }) => {
-        try {
-          const { getJobForCloning } = jobServiceProvider(client, mlClient);
-          const { jobId, retainCreatedBy } = request.body;
+      routeGuard.fullLicenseAPIGuard(
+        async ({ client, mlClient, request, response, serverless }) => {
+          try {
+            const { getJobForCloning } = jobServiceProvider(client, mlClient, serverless);
+            const { jobId, retainCreatedBy } = request.body;
 
-          const resp = await getJobForCloning(jobId, retainCreatedBy);
-          return response.ok({
-            body: resp,
-          });
-        } catch (e) {
-          return response.customError(wrapError(e));
+            const resp = await getJobForCloning(jobId, retainCreatedBy);
+            return response.ok({
+              body: resp,
+            });
+          } catch (e) {
+            return response.customError(wrapError(e));
+          }
         }
-      })
+      )
     );
 
   router.versioned
@@ -420,22 +444,29 @@ export function jobServiceRoutes({ router, routeGuard }: RouteInitialization) {
           },
         },
       },
-      routeGuard.fullLicenseAPIGuard(async ({ client, mlClient, request, response, context }) => {
-        try {
-          const alerting = await context.alerting;
-          const rulesClient = await alerting?.getRulesClient();
+      routeGuard.fullLicenseAPIGuard(
+        async ({ client, mlClient, request, response, context, serverless }) => {
+          try {
+            const alerting = await context.alerting;
+            const rulesClient = await alerting?.getRulesClient();
 
-          const { createFullJobsList } = jobServiceProvider(client, mlClient, rulesClient);
-          const { jobIds } = request.body;
-          const resp = await createFullJobsList(jobIds);
+            const { createFullJobsList } = jobServiceProvider(
+              client,
+              mlClient,
+              serverless,
+              rulesClient
+            );
+            const { jobIds } = request.body;
+            const resp = await createFullJobsList(jobIds);
 
-          return response.ok({
-            body: resp,
-          });
-        } catch (e) {
-          return response.customError(wrapError(e));
+            return response.ok({
+              body: resp,
+            });
+          } catch (e) {
+            return response.customError(wrapError(e));
+          }
         }
-      })
+      )
     );
 
   router.versioned
@@ -455,9 +486,9 @@ export function jobServiceRoutes({ router, routeGuard }: RouteInitialization) {
         version: '1',
         validate: false,
       },
-      routeGuard.fullLicenseAPIGuard(async ({ client, mlClient, response }) => {
+      routeGuard.fullLicenseAPIGuard(async ({ client, mlClient, response, serverless }) => {
         try {
-          const { getAllGroups } = jobServiceProvider(client, mlClient);
+          const { getAllGroups } = jobServiceProvider(client, mlClient, serverless);
           const resp = await getAllGroups();
 
           return response.ok({
@@ -490,19 +521,21 @@ export function jobServiceRoutes({ router, routeGuard }: RouteInitialization) {
           },
         },
       },
-      routeGuard.fullLicenseAPIGuard(async ({ client, mlClient, request, response }) => {
-        try {
-          const { updateGroups } = jobServiceProvider(client, mlClient);
-          const { jobs } = request.body;
-          const resp = await updateGroups(jobs);
+      routeGuard.fullLicenseAPIGuard(
+        async ({ client, mlClient, request, response, serverless }) => {
+          try {
+            const { updateGroups } = jobServiceProvider(client, mlClient, serverless);
+            const { jobs } = request.body;
+            const resp = await updateGroups(jobs);
 
-          return response.ok({
-            body: resp,
-          });
-        } catch (e) {
-          return response.customError(wrapError(e));
+            return response.ok({
+              body: resp,
+            });
+          } catch (e) {
+            return response.customError(wrapError(e));
+          }
         }
-      })
+      )
     );
 
   router.versioned
@@ -522,9 +555,9 @@ export function jobServiceRoutes({ router, routeGuard }: RouteInitialization) {
         version: '1',
         validate: false,
       },
-      routeGuard.fullLicenseAPIGuard(async ({ client, mlClient, response }) => {
+      routeGuard.fullLicenseAPIGuard(async ({ client, mlClient, response, serverless }) => {
         try {
-          const { blockingJobTasks } = jobServiceProvider(client, mlClient);
+          const { blockingJobTasks } = jobServiceProvider(client, mlClient, serverless);
           const resp = await blockingJobTasks();
 
           return response.ok({
@@ -558,19 +591,21 @@ export function jobServiceRoutes({ router, routeGuard }: RouteInitialization) {
           },
         },
       },
-      routeGuard.fullLicenseAPIGuard(async ({ client, mlClient, request, response }) => {
-        try {
-          const { jobsExist } = jobServiceProvider(client, mlClient);
-          const { jobIds, allSpaces } = request.body;
-          const resp = await jobsExist(jobIds, allSpaces);
+      routeGuard.fullLicenseAPIGuard(
+        async ({ client, mlClient, request, response, serverless }) => {
+          try {
+            const { jobsExist } = jobServiceProvider(client, mlClient, serverless);
+            const { jobIds, allSpaces } = request.body;
+            const resp = await jobsExist(jobIds, allSpaces);
 
-          return response.ok({
-            body: resp,
-          });
-        } catch (e) {
-          return response.customError(wrapError(e));
+            return response.ok({
+              body: resp,
+            });
+          } catch (e) {
+            return response.customError(wrapError(e));
+          }
         }
-      })
+      )
     );
 
   router.versioned
@@ -598,11 +633,11 @@ export function jobServiceRoutes({ router, routeGuard }: RouteInitialization) {
         },
       },
       routeGuard.fullLicenseAPIGuard(
-        async ({ client, mlClient, request, response, getDataViewsService }) => {
+        async ({ client, mlClient, request, response, getDataViewsService, serverless }) => {
           try {
             const { indexPattern } = request.params;
             const isRollup = request.query?.rollup === 'true';
-            const { newJobCaps } = jobServiceProvider(client, mlClient);
+            const { newJobCaps } = jobServiceProvider(client, mlClient, serverless);
 
             const dataViewsService = await getDataViewsService();
             const resp = await newJobCaps(indexPattern, isRollup, dataViewsService);
@@ -638,44 +673,48 @@ export function jobServiceRoutes({ router, routeGuard }: RouteInitialization) {
           },
         },
       },
-      routeGuard.fullLicenseAPIGuard(async ({ client, mlClient, request, response }) => {
-        try {
-          const {
-            indexPatternTitle,
-            timeField,
-            start,
-            end,
-            intervalMs,
-            query,
-            aggFieldNamePairs,
-            splitFieldName,
-            splitFieldValue,
-            runtimeMappings,
-            indicesOptions,
-          } = request.body;
+      routeGuard.fullLicenseAPIGuard(
+        async ({ client, mlClient, request, response, serverless }) => {
+          try {
+            const {
+              indexPatternTitle,
+              timeField,
+              start,
+              end,
+              intervalMs,
+              query,
+              aggFieldNamePairs,
+              splitFieldName,
+              splitFieldValue,
+              runtimeMappings,
+              indicesOptions,
+              projectRouting,
+            } = request.body;
 
-          const { newJobLineChart } = jobServiceProvider(client, mlClient);
-          const resp = await newJobLineChart(
-            indexPatternTitle,
-            timeField,
-            start,
-            end,
-            intervalMs,
-            query,
-            aggFieldNamePairs,
-            splitFieldName,
-            splitFieldValue,
-            runtimeMappings,
-            indicesOptions
-          );
+            const { newJobLineChart } = jobServiceProvider(client, mlClient, serverless);
+            const resp = await newJobLineChart(
+              indexPatternTitle,
+              timeField,
+              start,
+              end,
+              intervalMs,
+              query,
+              aggFieldNamePairs,
+              splitFieldName,
+              splitFieldValue,
+              runtimeMappings,
+              indicesOptions,
+              projectRouting
+            );
 
-          return response.ok({
-            body: resp,
-          });
-        } catch (e) {
-          return response.customError(wrapError(e));
+            return response.ok({
+              body: resp,
+            });
+          } catch (e) {
+            return response.customError(wrapError(e));
+          }
         }
-      })
+      )
     );
 
   router.versioned
@@ -699,42 +738,46 @@ export function jobServiceRoutes({ router, routeGuard }: RouteInitialization) {
           },
         },
       },
-      routeGuard.fullLicenseAPIGuard(async ({ client, mlClient, request, response }) => {
-        try {
-          const {
-            indexPatternTitle,
-            timeField,
-            start,
-            end,
-            intervalMs,
-            query,
-            aggFieldNamePairs,
-            splitFieldName,
-            runtimeMappings,
-            indicesOptions,
-          } = request.body;
+      routeGuard.fullLicenseAPIGuard(
+        async ({ client, mlClient, request, response, serverless }) => {
+          try {
+            const {
+              indexPatternTitle,
+              timeField,
+              start,
+              end,
+              intervalMs,
+              query,
+              aggFieldNamePairs,
+              splitFieldName,
+              runtimeMappings,
+              indicesOptions,
+              projectRouting,
+            } = request.body;
 
-          const { newJobPopulationChart } = jobServiceProvider(client, mlClient);
-          const resp = await newJobPopulationChart(
-            indexPatternTitle,
-            timeField,
-            start,
-            end,
-            intervalMs,
-            query,
-            aggFieldNamePairs,
-            splitFieldName,
-            runtimeMappings,
-            indicesOptions
-          );
+            const { newJobPopulationChart } = jobServiceProvider(client, mlClient, serverless);
+            const resp = await newJobPopulationChart(
+              indexPatternTitle,
+              timeField,
+              start,
+              end,
+              intervalMs,
+              query,
+              aggFieldNamePairs,
+              splitFieldName,
+              runtimeMappings,
+              indicesOptions,
+              projectRouting
+            );
 
-          return response.ok({
-            body: resp,
-          });
-        } catch (e) {
-          return response.customError(wrapError(e));
+            return response.ok({
+              body: resp,
+            });
+          } catch (e) {
+            return response.customError(wrapError(e));
+          }
         }
-      })
+      )
     );
 
   router.versioned
@@ -754,9 +797,9 @@ export function jobServiceRoutes({ router, routeGuard }: RouteInitialization) {
         version: '1',
         validate: false,
       },
-      routeGuard.fullLicenseAPIGuard(async ({ client, mlClient, response }) => {
+      routeGuard.fullLicenseAPIGuard(async ({ client, mlClient, response, serverless }) => {
         try {
-          const { getAllJobAndGroupIds } = jobServiceProvider(client, mlClient);
+          const { getAllJobAndGroupIds } = jobServiceProvider(client, mlClient, serverless);
           const resp = await getAllJobAndGroupIds();
 
           return response.ok({
@@ -789,19 +832,21 @@ export function jobServiceRoutes({ router, routeGuard }: RouteInitialization) {
           },
         },
       },
-      routeGuard.fullLicenseAPIGuard(async ({ client, mlClient, request, response }) => {
-        try {
-          const { getLookBackProgress } = jobServiceProvider(client, mlClient);
-          const { jobId, start, end } = request.body;
-          const resp = await getLookBackProgress(jobId, start, end);
+      routeGuard.fullLicenseAPIGuard(
+        async ({ client, mlClient, request, response, serverless }) => {
+          try {
+            const { getLookBackProgress } = jobServiceProvider(client, mlClient, serverless);
+            const { jobId, start, end } = request.body;
+            const resp = await getLookBackProgress(jobId, start, end);
 
-          return response.ok({
-            body: resp,
-          });
-        } catch (e) {
-          return response.customError(wrapError(e));
+            return response.ok({
+              body: resp,
+            });
+          } catch (e) {
+            return response.customError(wrapError(e));
+          }
         }
-      })
+      )
     );
 
   router.versioned
@@ -825,43 +870,46 @@ export function jobServiceRoutes({ router, routeGuard }: RouteInitialization) {
           },
         },
       },
-      routeGuard.fullLicenseAPIGuard(async ({ client, mlClient, request, response }) => {
-        try {
-          const { validateCategoryExamples } = categorizationExamplesProvider(client);
-          const {
-            indexPatternTitle,
-            timeField,
-            query,
-            size,
-            field,
-            start,
-            end,
-            analyzer,
-            runtimeMappings,
-            indicesOptions,
-          } = request.body;
+      routeGuard.fullLicenseAPIGuard(
+        async ({ client, mlClient, request, response, serverless }) => {
+          try {
+            const { validateCategoryExamples } = categorizationExamplesProvider(client);
+            const {
+              indexPatternTitle,
+              timeField,
+              query,
+              size,
+              field,
+              start,
+              end,
+              analyzer,
+              runtimeMappings,
+              indicesOptions,
+              projectRouting,
+            } = request.body;
 
-          const resp = await validateCategoryExamples(
-            indexPatternTitle,
-            query,
-            size,
-            field,
-            timeField,
-            start,
-            end,
-            analyzer,
-            runtimeMappings,
-            indicesOptions,
-            undefined
-          );
+            const resp = await validateCategoryExamples(
+              indexPatternTitle,
+              query,
+              size,
+              field,
+              timeField,
+              start,
+              end,
+              analyzer,
+              runtimeMappings,
+              indicesOptions,
+              projectRouting
+            );
 
-          return response.ok({
-            body: resp,
-          });
-        } catch (e) {
-          return response.customError(wrapError(e));
+            return response.ok({
+              body: resp,
+            });
+          } catch (e) {
+            return response.customError(wrapError(e));
+          }
         }
-      })
+      )
     );
 
   router.versioned
@@ -885,19 +933,21 @@ export function jobServiceRoutes({ router, routeGuard }: RouteInitialization) {
           },
         },
       },
-      routeGuard.fullLicenseAPIGuard(async ({ client, mlClient, request, response }) => {
-        try {
-          const { topCategories } = jobServiceProvider(client, mlClient);
-          const { jobId, count } = request.body;
-          const resp = await topCategories(jobId, count);
+      routeGuard.fullLicenseAPIGuard(
+        async ({ client, mlClient, request, response, serverless }) => {
+          try {
+            const { topCategories } = jobServiceProvider(client, mlClient, serverless);
+            const { jobId, count } = request.body;
+            const resp = await topCategories(jobId, count);
 
-          return response.ok({
-            body: resp,
-          });
-        } catch (e) {
-          return response.customError(wrapError(e));
+            return response.ok({
+              body: resp,
+            });
+          } catch (e) {
+            return response.customError(wrapError(e));
+          }
         }
-      })
+      )
     );
 
   /**
@@ -930,7 +980,7 @@ export function jobServiceRoutes({ router, routeGuard }: RouteInitialization) {
           },
         },
       },
-      routeGuard.fullLicenseAPIGuard(async ({ client, mlClient, request, response }) => {
+      routeGuard.fullLicenseAPIGuard(async ({ mlClient, request, response }) => {
         try {
           const { datafeedId, job, datafeed } = request.body;
 
@@ -980,27 +1030,29 @@ export function jobServiceRoutes({ router, routeGuard }: RouteInitialization) {
           },
         },
       },
-      routeGuard.fullLicenseAPIGuard(async ({ client, mlClient, request, response }) => {
-        try {
-          const { revertModelSnapshot } = jobServiceProvider(client, mlClient);
-          const { jobId, snapshotId, replay, end, deleteInterveningResults, calendarEvents } =
-            request.body;
-          const resp = await revertModelSnapshot(
-            jobId,
-            snapshotId,
-            replay,
-            end,
-            deleteInterveningResults,
-            calendarEvents
-          );
+      routeGuard.fullLicenseAPIGuard(
+        async ({ client, mlClient, request, response, serverless }) => {
+          try {
+            const { revertModelSnapshot } = jobServiceProvider(client, mlClient, serverless);
+            const { jobId, snapshotId, replay, end, deleteInterveningResults, calendarEvents } =
+              request.body;
+            const resp = await revertModelSnapshot(
+              jobId,
+              snapshotId,
+              replay,
+              end,
+              deleteInterveningResults,
+              calendarEvents
+            );
 
-          return response.ok({
-            body: resp,
-          });
-        } catch (e) {
-          return response.customError(wrapError(e));
+            return response.ok({
+              body: resp,
+            });
+          } catch (e) {
+            return response.customError(wrapError(e));
+          }
         }
-      })
+      )
     );
 
   router.versioned
@@ -1024,22 +1076,71 @@ export function jobServiceRoutes({ router, routeGuard }: RouteInitialization) {
           },
         },
       },
-      routeGuard.fullLicenseAPIGuard(async ({ client, mlClient, request, response }) => {
-        try {
-          const bulkJobs = request.body;
+      routeGuard.fullLicenseAPIGuard(
+        async ({ client, mlClient, request, response, serverless }) => {
+          try {
+            const bulkJobs = request.body;
 
-          const { bulkCreate } = jobServiceProvider(client, mlClient);
-          const jobs = (Array.isArray(bulkJobs) ? bulkJobs : [bulkJobs]) as Array<{
-            job: Job;
-            datafeed: Datafeed;
-          }>;
-          const body = await bulkCreate(jobs);
-          return response.ok({
-            body,
-          });
-        } catch (e) {
-          return response.customError(wrapError(e));
+            const { bulkCreate } = jobServiceProvider(client, mlClient, serverless);
+            const jobs = (Array.isArray(bulkJobs) ? bulkJobs : [bulkJobs]) as Array<{
+              job: Job;
+              datafeed: Datafeed;
+            }>;
+            const body = await bulkCreate(jobs);
+            return response.ok({
+              body,
+            });
+          } catch (e) {
+            return response.customError(wrapError(e));
+          }
         }
-      })
+      )
+    );
+
+  router.versioned
+    .post({
+      path: `${ML_INTERNAL_BASE_PATH}/jobs/bulk_update_project_routing`,
+      access: 'internal',
+      security: {
+        authz: {
+          requiredPrivileges: ['ml:canUpdateDatafeed', 'ml:canStartStopDatafeed'],
+        },
+      },
+      summary: 'Bulk update project routing on datafeeds',
+      description:
+        'Updates project_routing on datafeeds matched by job ID and/or on all datafeeds with no project_routing when auto is true. When simulate is true, returns the same selection without writing updates.',
+    })
+    .addVersion(
+      {
+        version: '1',
+        validate: {
+          request: {
+            body: bulkUpdateProjectRoutingSchema,
+          },
+        },
+      },
+      routeGuard.fullLicenseAPIGuard(
+        async ({ client, mlClient, request, response, serverless }) => {
+          try {
+            const { bulkUpdateProjectRouting } = jobServiceProvider(client, mlClient, serverless);
+            const { projectRouting, jobIds, jobGroups, auto, simulate, restartRunningJobs } =
+              request.body;
+            const body = await bulkUpdateProjectRouting(
+              projectRouting,
+              jobIds,
+              jobGroups,
+              auto,
+              simulate,
+              restartRunningJobs
+            );
+
+            return response.ok({
+              body,
+            });
+          } catch (e) {
+            return response.customError(wrapError(e));
+          }
+        }
+      )
     );
 }

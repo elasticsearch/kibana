@@ -39,6 +39,7 @@ import {
   CATEGORIZE_FIELD_TRIGGER,
   IN_APP_EMBEDDABLE_EDIT_TRIGGER,
   CREATE_PATTERN_ANALYSIS_TO_ML_AD_JOB_TRIGGER,
+  UPDATE_AD_JOBS_PROJECT_ROUTING_TRIGGER,
   SWIM_LANE_SELECTION_TRIGGER,
   EXPLORER_ENTITY_FIELD_SELECTION_TRIGGER,
   SINGLE_METRIC_VIEWER_ENTITY_FIELD_SELECTION_TRIGGER,
@@ -292,26 +293,48 @@ export const triggers: { [key: string]: Trigger } = {
       defaultMessage: 'Create categorization anomaly detection job',
     }),
   },
+  [UPDATE_AD_JOBS_PROJECT_ROUTING_TRIGGER]: {
+    id: UPDATE_AD_JOBS_PROJECT_ROUTING_TRIGGER,
+    title: i18n.translate('uiActions.triggers.ml.actions.updateADJobsProjectRouting.title', {
+      defaultMessage: 'Update anomaly detection job project routing',
+    }),
+    description: i18n.translate(
+      'uiActions.triggers.ml.actions.updateADJobsProjectRouting.description',
+      {
+        defaultMessage:
+          'Update project routing for anomaly detection jobs to use cross-project search.',
+      }
+    ),
+  },
   [SWIM_LANE_SELECTION_TRIGGER]: {
     id: SWIM_LANE_SELECTION_TRIGGER,
     // This is empty string to hide title of ui_actions context menu that appears
     // when this trigger is executed.
     title: '',
-    description: 'Swim lane selection triggered',
+    description: i18n.translate('uiActions.triggers.ml.swimLaneSelection.description', {
+      defaultMessage: 'Swim lane selection triggered',
+    }),
   },
   [EXPLORER_ENTITY_FIELD_SELECTION_TRIGGER]: {
     id: EXPLORER_ENTITY_FIELD_SELECTION_TRIGGER,
     // This is empty string to hide title of ui_actions context menu that appears
     // when this trigger is executed.
     title: '',
-    description: 'Entity field selection triggered',
+    description: i18n.translate('uiActions.triggers.ml.explorerEntityFieldSelection.description', {
+      defaultMessage: 'Entity field selection triggered',
+    }),
   },
   [SINGLE_METRIC_VIEWER_ENTITY_FIELD_SELECTION_TRIGGER]: {
     id: SINGLE_METRIC_VIEWER_ENTITY_FIELD_SELECTION_TRIGGER,
     // This is empty string to hide title of ui_actions context menu that appears
     // when this trigger is executed.
     title: '',
-    description: 'Single metric viewer entity field selection triggered',
+    description: i18n.translate(
+      'uiActions.triggers.ml.singleMetricViewerEntityFieldSelection.description',
+      {
+        defaultMessage: 'Single metric viewer entity field selection triggered',
+      }
+    ),
   },
   [DISCOVER_CELL_ACTIONS_TRIGGER_ID]: { id: DISCOVER_CELL_ACTIONS_TRIGGER_ID },
   [O11Y_APM_TRANSACTION_CONTEXT_MENU_TRIGGER]: { id: O11Y_APM_TRANSACTION_CONTEXT_MENU_TRIGGER },

@@ -23,7 +23,8 @@ export function getCategoryFields(
   size: number,
   query: any,
   runtimeMappings?: RuntimeMappings,
-  indicesOptions?: IndicesOptions
+  indicesOptions?: IndicesOptions,
+  projectRouting?: string
 ): Promise<CategoryResults> {
   return new Promise((resolve, reject) => {
     mlApi
@@ -41,6 +42,7 @@ export function getCategoryFields(
             },
           },
           ...(runtimeMappings !== undefined ? { runtime_mappings: runtimeMappings } : {}),
+          ...(projectRouting !== undefined ? { project_routing: projectRouting } : {}),
         },
         ...(indicesOptions ?? {}),
       })

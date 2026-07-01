@@ -5,7 +5,7 @@
  * 2.0.
  */
 
-import type { InfluencersFilterQuery, EntityField } from '@kbn/ml-anomaly-utils';
+import type { InfluencersFilterQuery } from '@kbn/ml-anomaly-utils';
 import type { RuntimeMappings } from '@kbn/ml-runtime-field-utils';
 import type { IndicesOptions } from '@kbn/ml-common-types/anomaly_detection_jobs/datafeed';
 import type { SeverityThreshold } from '@kbn/ml-server-schemas/embeddables/anomaly_charts';
@@ -22,7 +22,6 @@ export function resultsServiceProvider(mlApi: MlApi): {
     swimLaneSeverity?: SeverityThreshold[],
     influencersFilterQuery?: InfluencersFilterQuery
   ): Promise<any>;
-  getTopInfluencerValues(): Promise<any>;
   getOverallBucketScores(
     jobIds: any,
     topN: any,
@@ -31,22 +30,6 @@ export function resultsServiceProvider(mlApi: MlApi): {
     interval?: any,
     overallScore?: number
   ): Promise<any>;
-  getInfluencerValueMaxScoreByTime(
-    jobIds: string[],
-    influencerFieldName: string,
-    influencerFieldValues: string[],
-    earliestMs: number,
-    latestMs: number,
-    intervalMs: number,
-    maxResults: number,
-    perPage: number,
-    fromPage: number,
-    influencersFilterQuery: InfluencersFilterQuery,
-    swimLaneSeverity?: SeverityThreshold[]
-  ): Promise<any>;
-  getRecordInfluencers(): Promise<any>;
-  getRecordsForDetector(): Promise<any>;
-  getRecords(): Promise<any>;
   getEventRateData(
     index: string,
     query: any,
@@ -55,19 +38,8 @@ export function resultsServiceProvider(mlApi: MlApi): {
     latestMs: number,
     intervalMs: number,
     runtimeMappings?: RuntimeMappings,
-    indicesOptions?: IndicesOptions
-  ): Promise<any>;
-  getEventDistributionData(
-    index: string,
-    splitField: EntityField | undefined | null,
-    filterField: EntityField | undefined | null,
-    query: any,
-    metricFunction: string | undefined | null, // ES aggregation name
-    metricFieldName: string | undefined,
-    timeFieldName: string,
-    earliestMs: number,
-    latestMs: number,
-    intervalMs: number
+    indicesOptions?: IndicesOptions,
+    projectRouting?: string
   ): Promise<any>;
   getRecordMaxScoreByTime(
     jobId: string,

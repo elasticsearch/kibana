@@ -17,6 +17,11 @@ import { annotationServiceProvider } from '.';
 
 const acknowledgedResponseMock = { acknowledged: true };
 
+const serverlessMock = {
+  isServerless: false,
+  cpsEnabled: false,
+};
+
 const jobIdMock = 'jobIdMock';
 
 describe('annotation_service', () => {
@@ -37,7 +42,7 @@ describe('annotation_service', () => {
 
   describe('deleteAnnotation()', () => {
     it('should delete annotation', async () => {
-      const { deleteAnnotation } = annotationServiceProvider(mlClusterClientSpy);
+      const { deleteAnnotation } = annotationServiceProvider(mlClusterClientSpy, serverlessMock);
       const mockFunct = mlClusterClientSpy;
 
       const annotationMockId = 'mockId';
@@ -56,7 +61,7 @@ describe('annotation_service', () => {
 
   describe('getAnnotation()', () => {
     it('should get annotations for specific job', async () => {
-      const { getAnnotations } = annotationServiceProvider(mlClusterClientSpy);
+      const { getAnnotations } = annotationServiceProvider(mlClusterClientSpy, serverlessMock);
       const mockFunct = mlClusterClientSpy;
 
       const indexAnnotationArgsMock: IndexAnnotationArgs = {
@@ -89,7 +94,7 @@ describe('annotation_service', () => {
         },
       };
 
-      const { getAnnotations } = annotationServiceProvider(mlClusterClientSpyError);
+      const { getAnnotations } = annotationServiceProvider(mlClusterClientSpyError, serverlessMock);
 
       const indexAnnotationArgsMock: IndexAnnotationArgs = {
         jobIds: [jobIdMock],
@@ -106,7 +111,7 @@ describe('annotation_service', () => {
 
   describe('indexAnnotation()', () => {
     it('should index annotation', async () => {
-      const { indexAnnotation } = annotationServiceProvider(mlClusterClientSpy);
+      const { indexAnnotation } = annotationServiceProvider(mlClusterClientSpy, serverlessMock);
       const mockFunct = mlClusterClientSpy;
 
       const annotationMock: Annotation = {
@@ -131,7 +136,7 @@ describe('annotation_service', () => {
     });
 
     it('should remove ._id and .key before updating annotation', async () => {
-      const { indexAnnotation } = annotationServiceProvider(mlClusterClientSpy);
+      const { indexAnnotation } = annotationServiceProvider(mlClusterClientSpy, serverlessMock);
       const mockFunct = mlClusterClientSpy;
 
       const annotationMock: Annotation = {
@@ -160,7 +165,10 @@ describe('annotation_service', () => {
     });
 
     it('should update annotation text and the username for modified_username', async () => {
-      const { getAnnotations, indexAnnotation } = annotationServiceProvider(mlClusterClientSpy);
+      const { getAnnotations, indexAnnotation } = annotationServiceProvider(
+        mlClusterClientSpy,
+        serverlessMock
+      );
       const mockFunct = mlClusterClientSpy;
 
       const indexAnnotationArgsMock: IndexAnnotationArgs = {

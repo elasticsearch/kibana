@@ -100,6 +100,14 @@ export const setupModuleBodySchema = schema.object({
   applyToAllSpaces: schema.maybe(
     schema.boolean({ meta: { description: 'Add each job created to the * space (optional)' } })
   ),
+  projectRouting: schema.maybe(
+    schema.string({
+      meta: {
+        description:
+          'Project routing value. This will be added to the datafeed configuration for each datafeed created by the module (optional).',
+      },
+    })
+  ),
 });
 
 export const optionalModuleIdParamSchema = schema.object({
