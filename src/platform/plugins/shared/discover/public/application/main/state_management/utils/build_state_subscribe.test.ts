@@ -128,6 +128,25 @@ describe('buildStateSubscribe', () => {
     expect(dataState.refetch$.next).toHaveBeenCalled();
   });
 
+  it('should call refetch$ if useApproximation has changed in ES|QL mode', async () => {
+    await getSubscribeFn()(
+      getNextState({
+        appState: {
+          dataSource: { type: DataSourceType.Esql },
+          useApproximation: true,
+        },
+      })
+    );
+
+    expect(dataState.refetch$.next).toHaveBeenCalled();
+  });
+
+  it('should not call refetch$ if useApproximation has changed in non-ES|QL mode', async () => {
+    await getSubscribeFn()(getNextState({ appState: { useApproximation: true } }));
+
+    expect(dataState.refetch$.next).not.toHaveBeenCalled();
+  });
+
   it('should not call refetch$ if filters have changed', async () => {
     await getSubscribeFn()(
       getNextState({

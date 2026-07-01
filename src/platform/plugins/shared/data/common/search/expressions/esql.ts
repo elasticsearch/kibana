@@ -405,7 +405,10 @@ export const getEsqlFn = ({ getStartDependencies }: EsqlFnArguments) => {
                 },
               }),
           })
-          .json(params)
+          .json({
+            ...params,
+            ...(input?.useApproximation !== undefined && { approximation: input.useApproximation }),
+          })
           .ok({ json: { rawResponse }, requestParams });
 
         // Map to Datatable
@@ -413,7 +416,10 @@ export const getEsqlFn = ({ getStartDependencies }: EsqlFnArguments) => {
       } catch (error) {
         // Inspector logging on error
         logInspectorRequest()
-          .json(params)
+          .json({
+            ...params,
+            ...(input?.useApproximation !== undefined && { approximation: input.useApproximation }),
+          })
           .error({
             json: 'attributes' in error ? error.attributes : { message: error.message },
           });

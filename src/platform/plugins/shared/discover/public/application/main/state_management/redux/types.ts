@@ -124,6 +124,12 @@ export interface DiscoverAppState {
    * Density of table
    */
   density?: DataGridDensity;
+  /**
+   * When true, ES|QL queries use approximate execution for faster, estimated results.
+   * Intentionally URL-only and not persisted to saved sessions in v1 — this may need to
+   * be reconsidered in a future version once the embedding story is clearer.
+   */
+  useApproximation?: boolean;
 }
 
 export interface CascadedDocumentsState {

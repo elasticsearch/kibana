@@ -9,6 +9,9 @@
 
 export const ENABLE_ESQL = 'enableESQL';
 
+// Temporary feature flag for ES|QL approximation
+export const ESQL_APPROXIMATION_FEATURE_FLAG_KEY = 'esql.approximation';
+
 /**
  * Denotes placeholder value for property on a record that is not set.
  */

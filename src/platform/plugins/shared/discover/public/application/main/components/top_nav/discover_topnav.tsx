@@ -7,6 +7,7 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
+import { i18n } from '@kbn/i18n';
 import { ControlGroupRenderer, type ControlGroupRendererApi } from '@kbn/control-group-renderer';
 import { DataViewType, type DataView, type DataViewSpec } from '@kbn/data-views-plugin/public';
 import {
@@ -80,6 +81,7 @@ export const DiscoverTopNav = ({
   const onSaveCbRef = useRef<(() => void) | undefined>(undefined);
 
   const query = useAppStateSelector((state) => state.query);
+  const useApproximation = useAppStateSelector((state) => state.useApproximation ?? false);
   const esqlVariables = useCurrentTabSelector((tab) => tab.esqlVariables);
   const { timeRangeAbsolute } = useCurrentTabSelector((tab) => tab.dataRequestParams);
   const refreshInterval = useCurrentTabSelector((state) => state.globalState.refreshInterval);
@@ -198,6 +200,13 @@ export const DiscoverTopNav = ({
       }
     },
     [dispatch, setAppState, getState, currentTabId, updateAppState]
+  );
+
+  const onUseApproximationChange = useCallback(
+    (nextValue: boolean) => {
+      dispatch(updateAppState({ appState: { useApproximation: nextValue } }));
+    },
+    [dispatch, updateAppState]
   );
 
   const dataStateContainer = useCurrentTabDataStateContainer();
@@ -436,6 +445,17 @@ export const DiscoverTopNav = ({
         }
         esqlQueryStats={esqlQueryStats}
         onOpenQueryInNewTab={onOpenQueryInNewTab}
+        esqlApproximation={
+          isEsqlMode && services.discoverFeatureFlags.getEsqlApproximationEnabled()
+            ? {
+                useApproximation,
+                onChange: onUseApproximationChange,
+                additionalText: i18n.translate('discover.esqlApproximationToggle.additionalText', {
+                  defaultMessage: 'Only applies to queries that use exactly one STATS command.',
+                }),
+              }
+            : undefined
+        }
       />
       {isESQLToDataViewTransitionModalVisible && (
         <ESQLToDataViewTransitionModal onClose={onESQLToDataViewTransitionModalClose} />
