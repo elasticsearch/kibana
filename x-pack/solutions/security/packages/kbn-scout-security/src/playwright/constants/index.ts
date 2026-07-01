@@ -8,3 +8,4 @@
 export * as archives from './archives';
 export * as detection_rules from './detection_rules';
 export type * from './entity_analytics';
+export { FULL_KIBANA_SECURITY_ROLE } from './roles';

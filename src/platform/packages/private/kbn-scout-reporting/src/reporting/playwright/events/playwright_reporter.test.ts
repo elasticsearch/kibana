@@ -66,6 +66,51 @@ describe('ScoutPlaywrightReporter', () => {
       .map(([event]) => event)
       .find((event) => event.event?.action === ScoutReportEventAction.TEST_END);
 
+  describe('getScoutConfigInfo', () => {
+    const getInfo = (configPath: string) => (reporter as any).getScoutConfigInfo(configPath);
+
+    it('returns ui-test category for root-level ui config', () => {
+      expect(getInfo('src/platform/plugins/shared/foo/test/scout/ui/playwright.config.ts')).toEqual(
+        { category: 'ui-test', namespace: undefined }
+      );
+    });
+
+    it('returns api-test category for root-level api config', () => {
+      expect(
+        getInfo('src/platform/plugins/shared/foo/test/scout/api/playwright.config.ts')
+      ).toEqual({ category: 'api-test', namespace: undefined });
+    });
+
+    it('returns ui-test category for scout_* root ui config', () => {
+      expect(
+        getInfo('src/platform/plugins/shared/foo/test/scout_custom/ui/playwright.config.ts')
+      ).toEqual({ category: 'ui-test', namespace: undefined });
+    });
+
+    it('returns ui-test category and namespace for namespace-based ui config', () => {
+      expect(
+        getInfo(
+          'x-pack/solutions/security/plugins/security_solution/test/scout/entity_analytics/ui/parallel.playwright.config.ts'
+        )
+      ).toEqual({ category: 'ui-test', namespace: 'entity_analytics' });
+    });
+
+    it('returns api-test category and namespace for namespace-based api config', () => {
+      expect(
+        getInfo(
+          'x-pack/solutions/security/plugins/security_solution/test/scout/entity_analytics/api/playwright.config.ts'
+        )
+      ).toEqual({ category: 'api-test', namespace: 'entity_analytics' });
+    });
+
+    it('returns UNKNOWN category and no namespace for unrecognised path', () => {
+      expect(getInfo('some/other/path/config.ts')).toEqual({
+        category: 'unknown',
+        namespace: undefined,
+      });
+    });
+  });
+
   describe('onTestEnd', () => {
     it('sets console_errors on the test-end event when the attachment is present', () => {
       const consoleErrorText = 'Error: React state update on unmounted component';

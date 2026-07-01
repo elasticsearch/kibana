@@ -48,7 +48,7 @@ export const reporterMappings: ClusterPutComponentTemplateRequest = {
 
 export const testRunMappings: ClusterPutComponentTemplateRequest = {
   name: 'scout-test-event.mappings.test-run',
-  version: 4,
+  version: 5,
   template: {
     mappings: {
       properties: {

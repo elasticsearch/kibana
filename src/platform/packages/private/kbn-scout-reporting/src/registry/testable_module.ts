@@ -41,6 +41,7 @@ export const testableModules = {
           path: config.path,
           category: config.category,
           type: config.type,
+          namespace: config.namespace,
           manifest: config.manifest,
           server: config.server,
         })),

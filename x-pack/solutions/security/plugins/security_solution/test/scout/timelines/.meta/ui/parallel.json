@@ -1,0 +1,96 @@
+{
+  "sha1": "b0b0909cb9ba1da8b40b46c1c330cfb0eb157042",
+  "tests": [
+    {
+      "id": "5225b19b2303390-62e78b299821a45",
+      "title": "Global setup",
+      "expectedStatus": "passed",
+      "tags": [],
+      "location": {
+        "file": "x-pack/solutions/security/plugins/security_solution/test/scout/timelines/ui/parallel_tests/global.setup.ts",
+        "line": 10,
+        "column": 16
+      }
+    },
+    {
+      "id": "e353d0fed3f52d3-9d312dcc4589fce",
+      "title": "Timeline creation should create a timeline from a template and have the same query",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic",
+        "@cloud-stateful-classic",
+        "@local-serverless-security_complete",
+        "@cloud-serverless-security_complete"
+      ],
+      "location": {
+        "file": "x-pack/solutions/security/plugins/security_solution/test/scout/timelines/ui/parallel_tests/timeline_creation.spec.ts",
+        "line": 27,
+        "column": 14
+      }
+    },
+    {
+      "id": "e353d0fed3f52d3-1b2e5fff0a010c9",
+      "title": "Timeline creation should be able to create timeline",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic",
+        "@cloud-stateful-classic",
+        "@local-serverless-security_complete",
+        "@cloud-serverless-security_complete"
+      ],
+      "location": {
+        "file": "x-pack/solutions/security/plugins/security_solution/test/scout/timelines/ui/parallel_tests/timeline_creation.spec.ts",
+        "line": 53,
+        "column": 14
+      }
+    },
+    {
+      "id": "e353d0fed3f52d3-464e816e31187d1",
+      "title": "Timeline creation should show the different timeline states",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic",
+        "@cloud-stateful-classic",
+        "@local-serverless-security_complete",
+        "@cloud-serverless-security_complete"
+      ],
+      "location": {
+        "file": "x-pack/solutions/security/plugins/security_solution/test/scout/timelines/ui/parallel_tests/timeline_creation.spec.ts",
+        "line": 64,
+        "column": 14
+      }
+    },
+    {
+      "id": "e353d0fed3f52d3-5db62fb1c09443c",
+      "title": "Timeline creation should save timelines as new",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic",
+        "@cloud-stateful-classic",
+        "@local-serverless-security_complete",
+        "@cloud-serverless-security_complete"
+      ],
+      "location": {
+        "file": "x-pack/solutions/security/plugins/security_solution/test/scout/timelines/ui/parallel_tests/timeline_creation.spec.ts",
+        "line": 85,
+        "column": 14
+      }
+    },
+    {
+      "id": "fcff19c5e785ca5-704ed04f1601b4e",
+      "title": "Timeline read-only should not be able to create/update timeline with only read privileges",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic",
+        "@cloud-stateful-classic",
+        "@local-serverless-security_complete",
+        "@cloud-serverless-security_complete"
+      ],
+      "location": {
+        "file": "x-pack/solutions/security/plugins/security_solution/test/scout/timelines/ui/parallel_tests/timeline_read_only.spec.ts",
+        "line": 25,
+        "column": 14
+      }
+    }
+  ]
+}

@@ -12,10 +12,17 @@
 const path = require('path');
 
 /**
- * Matches Scout test file paths following the pattern:
- * {scout,scout_*}/{ui,api}/{tests,parallel_tests}/**\/*.spec.ts
+ * Matches `scout{_*}/[<namespace>/]{ui,api}/{parallel_,}tests/` paths.
+ * Backtracking prevents `ui`/`api` from being consumed as the namespace segment.
  */
-const SCOUT_TEST_PATH_PATTERN = /\/test\/scout(_[^/]+)?\/(?:ui|api)\/(?:parallel_)?tests\//;
+const SCOUT_TEST_PATH_PATTERN =
+  /\/test\/scout(?:_[^/]+)?(?:\/[^/]+)?\/(?:ui|api)\/(?:parallel_)?tests\//;
+
+/**
+ * Detects unsupported two-level namespace nesting: `scout{_*}/<a>/<b>/{ui,api}/`.
+ * Only one namespace level is allowed between the scout root and `{ui,api}/`.
+ */
+const SCOUT_TOO_DEEP_NAMESPACE_PATTERN = /\/test\/scout(?:_[^/]+)?\/[^/]+\/[^/]+\/(?:ui|api)\//;
 
 /**
  * Checks if a file path is in a Scout test directory
@@ -93,7 +100,12 @@ module.exports = {
       invalidExtension:
         'Scout test files must end with .spec.ts extension. Found: "{{actual}}", expected: "{{expected}}"',
       invalidPath:
-        'Scout test files must be located in scout{_*}/{ui,api}/{parallel_,}tests/ directories.',
+        'Scout test files must be located in scout{_*}/[<namespace>/]{ui,api}/{parallel_,}tests/ directories, ' +
+        'where the optional <namespace> is a single sub-directory level.',
+      invalidNamespaceDepth:
+        'Scout test files support at most one namespace sub-directory between the scout root and the ' +
+        '{ui,api} directory: scout{_*}/<namespace>/{ui,api}/{parallel_,}tests/. ' +
+        'Found more than one namespace level; rename to use a single namespace segment.',
       invalidPlaywrightConfigName: `Scout Playwright config files must be named one of the following: ${[
         ...ALLOWED_PLAYWRIGHT_CONFIG_NAMES,
       ].join(', ')}. Found: "{{actual}}"`,
@@ -148,8 +160,20 @@ module.exports = {
         };
       }
 
-      // File is in /test/scout but not in the correct subdirectory structure
-      // Only report if it looks like a test file (has test/spec in name or is .ts)
+      // Check for unsupported two-level namespace paths, e.g. scout/<a>/<b>/{ui,api}/
+      if (SCOUT_TOO_DEEP_NAMESPACE_PATTERN.test(filename)) {
+        return {
+          Program(node) {
+            context.report({
+              node,
+              messageId: 'invalidNamespaceDepth',
+            });
+          },
+        };
+      }
+
+      // File is in /test/scout but not in the correct subdirectory structure.
+      // Only report if it looks like a test file (has spec in name or .spec.ts ext).
       const basename = path.basename(filename, '.ts');
       if (basename.includes('spec') || hasSpecExtension(filename)) {
         return {

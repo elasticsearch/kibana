@@ -18,12 +18,13 @@ export interface TestFilesValidationResult {
 }
 
 /**
- * Regex pattern to match scout test directory paths
- * Pattern: {scout,scout_*}/{ui,api}/{tests,parallel_tests}
- * Capturing groups: [1] scout directory name, [2] type (ui|api), [3] test type (tests|parallel_tests)
+ * Regex pattern to match scout test directory paths.
+ * Pattern: {scout,scout_*}[/<namespace>]/{ui,api}/{tests,parallel_tests}
+ * Capturing groups: [1] scout directory name, [2] namespace (optional), [3] type (ui|api), [4] test type (tests|parallel_tests)
  */
-const SCOUT_TEST_DIR_PATTERN = /\/(scout(?:_[^/]+)?)\/(ui|api)\/(tests|parallel_tests)/;
-const SCOUT_TEST_DIR = '{scout,scout_*}/{ui,api}/{tests,parallel_tests}';
+const SCOUT_TEST_DIR_PATTERN =
+  /\/(scout(?:_[^/]+)?)(?:\/([^/]+))?\/(ui|api)\/(tests|parallel_tests)/;
+const SCOUT_TEST_DIR = '{scout,scout_*}/{,<namespace>/}{ui,api}/{tests,parallel_tests}';
 
 function isTestFile(fileName: string): boolean {
   return fileName.endsWith('.spec.ts');
@@ -167,11 +168,12 @@ function deriveConfigPath(normalizedPath: string, originalPath: string): string 
     throw createFlagError(`Unable to derive config path for path: ${originalPath}`);
   }
 
-  const [, scoutDir, type, testType] = match;
+  const [, scoutDir, namespace, type, testType] = match;
+  const namespaceSegment = namespace ? `/${namespace}` : '';
   // Find the index of the scout directory pattern to preserve the full path prefix
-  const scoutIndex = normalizedPath.indexOf(`/${scoutDir}/${type}/`);
+  const scoutIndex = normalizedPath.indexOf(`/${scoutDir}${namespaceSegment}/${type}/`);
   const pathPrefix = normalizedPath.substring(0, scoutIndex);
-  const scoutBasePath = `${pathPrefix}/${scoutDir}/${type}`;
+  const scoutBasePath = `${pathPrefix}/${scoutDir}${namespaceSegment}/${type}`;
 
   if (testType === 'parallel_tests') {
     return `${scoutBasePath}/parallel.playwright.config.ts`;

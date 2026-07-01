@@ -68,6 +68,7 @@ export interface ScoutTestRunInfo {
   config?: {
     file?: ScoutFileInfo;
     category?: ScoutTestRunConfigCategory;
+    namespace?: string;
   };
   status?: string;
   duration?: number;

@@ -61,6 +61,21 @@ describe('isScoutTestsOnlyDiff', () => {
       ])
     ).toBe(true);
   });
+
+  it('matches area-scoped spec files', () => {
+    expect(
+      isScoutTestsOnlyDiff([
+        'pkg/test/scout/detection_engine/ui/parallel_tests/foo.spec.ts',
+        'pkg/test/scout/entity_analytics/ui/parallel_tests/bar.spec.ts',
+      ])
+    ).toBe(true);
+  });
+
+  it('matches area-scoped .meta/ paths', () => {
+    expect(isScoutTestsOnlyDiff(['pkg/test/scout/detection_engine/.meta/ui/parallel.json'])).toBe(
+      true
+    );
+  });
 });
 
 describe('criticalScoutFilesTouched', () => {
@@ -222,6 +237,72 @@ describe('deriveScoutConfigsForFile', () => {
         tmpRoot
       )
     ).toEqual(['x-pack/solutions/observability/plugins/foo/test/scout/ui/playwright.config.ts']);
+  });
+
+  it('maps an area parallel spec to the area parallel config', () => {
+    touch('pkg/test/scout/detection_engine/ui/parallel.playwright.config.ts');
+    expect(
+      deriveScoutConfigsForFile(
+        'pkg/test/scout/detection_engine/ui/parallel_tests/a.spec.ts',
+        tmpRoot
+      )
+    ).toEqual(['pkg/test/scout/detection_engine/ui/parallel.playwright.config.ts']);
+  });
+
+  it('maps an area sequential spec to the area playwright.config.ts', () => {
+    touch('pkg/test/scout/detection_engine/ui/playwright.config.ts');
+    expect(
+      deriveScoutConfigsForFile('pkg/test/scout/detection_engine/ui/tests/a.spec.ts', tmpRoot)
+    ).toEqual(['pkg/test/scout/detection_engine/ui/playwright.config.ts']);
+  });
+
+  it('maps area shared fixtures to all area-scoped configs that exist', () => {
+    touch('pkg/test/scout/detection_engine/ui/playwright.config.ts');
+    touch('pkg/test/scout/detection_engine/ui/parallel.playwright.config.ts');
+
+    const configs = deriveScoutConfigsForFile(
+      'pkg/test/scout/detection_engine/ui/fixtures/page_objects/foo.ts',
+      tmpRoot
+    );
+    expect(configs.sort()).toEqual([
+      'pkg/test/scout/detection_engine/ui/parallel.playwright.config.ts',
+      'pkg/test/scout/detection_engine/ui/playwright.config.ts',
+    ]);
+  });
+
+  it('maps area .meta/ manifests to the area-scoped configs', () => {
+    touch('pkg/test/scout/detection_engine/ui/parallel.playwright.config.ts');
+    const configs = deriveScoutConfigsForFile(
+      'pkg/test/scout/detection_engine/.meta/ui/parallel.json',
+      tmpRoot
+    );
+    expect(configs).toEqual(['pkg/test/scout/detection_engine/ui/parallel.playwright.config.ts']);
+  });
+
+  it('never crosses area scopes — area A change does not affect area B config', () => {
+    touch('pkg/test/scout/detection_engine/ui/playwright.config.ts');
+    touch('pkg/test/scout/entity_analytics/ui/playwright.config.ts');
+
+    const de = deriveScoutConfigsForFile(
+      'pkg/test/scout/detection_engine/ui/tests/a.spec.ts',
+      tmpRoot
+    );
+    expect(de).toEqual(['pkg/test/scout/detection_engine/ui/playwright.config.ts']);
+
+    const ea = deriveScoutConfigsForFile(
+      'pkg/test/scout/entity_analytics/ui/tests/b.spec.ts',
+      tmpRoot
+    );
+    expect(ea).toEqual(['pkg/test/scout/entity_analytics/ui/playwright.config.ts']);
+  });
+
+  it('non-area spec is not matched to area configs', () => {
+    touch('pkg/test/scout/ui/playwright.config.ts');
+    touch('pkg/test/scout/detection_engine/ui/playwright.config.ts');
+
+    expect(deriveScoutConfigsForFile('pkg/test/scout/ui/tests/a.spec.ts', tmpRoot)).toEqual([
+      'pkg/test/scout/ui/playwright.config.ts',
+    ]);
   });
 });
 

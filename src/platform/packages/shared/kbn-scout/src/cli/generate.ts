@@ -58,6 +58,36 @@ function normalizeScoutRoot(scoutRootRaw: string): string {
   return stripped;
 }
 
+function normalizeNamespace(namespaceRaw: string): string {
+  const normalized = namespaceRaw.trim().replace(/\\/g, '/');
+
+  if (!normalized) {
+    throw createFlagError(`--namespace cannot be empty`);
+  }
+
+  if (normalized.includes('/')) {
+    throw createFlagError(`--namespace must be a single directory name with no slashes`);
+  }
+
+  const RESERVED_NAMESPACE_NAMES = new Set(['api', 'ui', '.meta', 'common']);
+  if (RESERVED_NAMESPACE_NAMES.has(normalized)) {
+    throw createFlagError(
+      `--namespace cannot be "${normalized}" — reserved names are: ${[
+        ...RESERVED_NAMESPACE_NAMES,
+      ].join(', ')}. ` +
+        `"common" is reserved for a plain shared-utilities directory (no Playwright config).`
+    );
+  }
+
+  if (!/^[a-z][a-z0-9_]*$/.test(normalized)) {
+    throw createFlagError(
+      `--namespace must start with a lowercase letter and contain only lowercase letters, digits, and underscores, got "${normalized}"`
+    );
+  }
+
+  return normalized;
+}
+
 async function validatePath(input: string): Promise<boolean | string> {
   const normalizedPath = input.trim();
   if (!normalizedPath) {
@@ -108,17 +138,49 @@ async function pathExists(targetPath: string): Promise<boolean> {
   }
 }
 
+/**
+ * Returns the list of existing namespace sub-directories inside a scout root.
+ * Used by the interactive prompt to avoid surprising the developer with a
+ * hard mixing-guard error after they've already answered other questions.
+ */
+async function detectExistingNamespaces(scoutDir: string): Promise<string[]> {
+  const RESERVED = new Set(['ui', 'api', '.meta', 'common']);
+  try {
+    const entries = await Fsp.readdir(scoutDir, { withFileTypes: true });
+    const namespaces: string[] = [];
+    for (const entry of entries) {
+      if (!entry.isDirectory() || RESERVED.has(entry.name) || entry.name.startsWith('.')) {
+        continue;
+      }
+      const hasNamespaceUi = await pathExists(Path.resolve(scoutDir, entry.name, 'ui'));
+      const hasNamespaceApi = await pathExists(Path.resolve(scoutDir, entry.name, 'api'));
+      if (hasNamespaceUi || hasNamespaceApi) namespaces.push(entry.name);
+    }
+    return namespaces;
+  } catch {
+    return [];
+  }
+}
+
 async function createDirectoryStructure(
   basePath: string,
-  opts: { scoutRoot: string; generateApi: boolean; generateUi: boolean; uiParallel: boolean }
+  opts: {
+    scoutRoot: string;
+    namespace?: string;
+    generateApi: boolean;
+    generateUi: boolean;
+    uiParallel: boolean;
+  }
 ): Promise<void> {
   const fullBasePath = Path.resolve(REPO_ROOT, basePath);
   const scoutRootDir = Path.resolve(fullBasePath, 'test', opts.scoutRoot);
+  // When a namespace is provided, all generated content lives under test/<scoutRoot>/<namespace>/
+  const contentRootDir = opts.namespace ? Path.resolve(scoutRootDir, opts.namespace) : scoutRootDir;
   const scoutPackage = getScoutPackageImport(basePath);
   const copyrightHeader = getCopyrightHeader(basePath);
 
   if (opts.generateApi) {
-    const apiTestDir = Path.resolve(scoutRootDir, 'api');
+    const apiTestDir = Path.resolve(contentRootDir, 'api');
     const apiFixturesDir = Path.resolve(apiTestDir, 'fixtures');
     const apiTestsDir = Path.resolve(apiTestDir, 'tests');
     const apiConfigPath = Path.resolve(apiTestDir, 'playwright.config.ts');
@@ -145,7 +207,7 @@ async function createDirectoryStructure(
   }
 
   if (opts.generateUi) {
-    const uiTestDir = Path.resolve(scoutRootDir, 'ui');
+    const uiTestDir = Path.resolve(contentRootDir, 'ui');
     const uiFixturesDir = Path.resolve(uiTestDir, 'fixtures');
     const uiPageObjectsDir = Path.resolve(uiFixturesDir, 'page_objects');
     const uiPageObjectsIndexPath = Path.resolve(uiPageObjectsDir, 'index.ts');
@@ -276,7 +338,7 @@ export const generateCmd: Command<void> = {
   generated configs can run in CI.
   `,
   flags: {
-    string: ['path', 'type', 'scout-root'],
+    string: ['path', 'type', 'scout-root', 'namespace'],
     boolean: ['force', 'ui-parallel'],
     alias: {
       p: 'path',
@@ -290,6 +352,9 @@ export const generateCmd: Command<void> = {
     --path             Relative path to the plugin or package (e.g. x-pack/platform/plugins/shared/maps)
     --type             Test type to generate: api | ui | both
     --scout-root       Directory name under <path>/test/ (default: scout). Example: scout_uiam_local
+    --namespace        Optional namespace sub-directory under test/<scout-root>/ (e.g. detection_engine).
+                       Creates test/<scout-root>/<namespace>/{ui,api}/ instead of test/<scout-root>/{ui,api}/.
+                       Useful for splitting a large plugin into independently-runnable CI configs per team namespace.
     --ui-parallel      For UI scaffolds, generate parallel tests (default: true). Use --no-ui-parallel for sequential.
     --force            If some Scout directories already exist, generate only the missing sections without prompting
   `,
@@ -297,6 +362,7 @@ export const generateCmd: Command<void> = {
     node scripts/scout.js generate --path x-pack/platform/plugins/shared/maps --type api
     node scripts/scout.js generate --path x-pack/platform/plugins/shared/maps --type ui --no-ui-parallel
     node scripts/scout.js generate --path x-pack/platform/plugins/shared/security --type both --scout-root scout_uiam_local --force
+    node scripts/scout.js generate --path x-pack/solutions/security/plugins/security_solution --type ui --namespace detection_engine
   `,
   },
   run: async ({ flagsReader, log }) => {
@@ -350,10 +416,99 @@ export const generateCmd: Command<void> = {
 
     const basePath = Path.resolve(REPO_ROOT, relativePath);
     const scoutRoot = normalizeScoutRoot(flagsReader.string('scout-root') ?? 'scout');
+    const namespaceRaw = flagsReader.string('namespace');
+    let namespace = namespaceRaw ? normalizeNamespace(namespaceRaw) : undefined;
 
     const scoutDir = Path.resolve(basePath, 'test', scoutRoot);
-    const apiDir = Path.resolve(scoutDir, 'api');
-    const uiDir = Path.resolve(scoutDir, 'ui');
+
+    // In interactive mode, detect existing namespaces and prompt the developer to
+    // pick one (or name a new one) before hitting the mixing-guard hard error.
+    if (!namespace && !isNonInteractive && (await pathExists(scoutDir))) {
+      const existingNamespaces = await detectExistingNamespaces(scoutDir);
+      if (existingNamespaces.length > 0) {
+        const NEW_NAMESPACE_SENTINEL = '__new__';
+        const { chosenNamespace } = await inquirer.prompt<{ chosenNamespace: string }>({
+          type: 'list',
+          name: 'chosenNamespace',
+          message: `This plugin uses namespace-based Scout structure. Which namespace do you want to scaffold?`,
+          choices: [
+            ...existingNamespaces.map((ns) => ({ name: `${ns} (existing)`, value: ns })),
+            { name: 'Create a new namespace (enter name below)', value: NEW_NAMESPACE_SENTINEL },
+          ],
+        });
+
+        if (chosenNamespace === NEW_NAMESPACE_SENTINEL) {
+          const { newNamespaceName } = await inquirer.prompt<{ newNamespaceName: string }>({
+            type: 'input',
+            name: 'newNamespaceName',
+            message: 'New namespace name (lowercase letters, digits, underscores):',
+            validate: (input: string) => {
+              try {
+                normalizeNamespace(input);
+                return true;
+              } catch (e) {
+                return e instanceof Error ? e.message : 'Invalid namespace name';
+              }
+            },
+          });
+          namespace = normalizeNamespace(newNamespaceName);
+        } else {
+          namespace = chosenNamespace;
+        }
+        log.info(`Selected namespace: ${namespace}`);
+      }
+    }
+
+    // Content root is scout/<namespace>/ when namespace is given, otherwise scout/ directly
+    const contentDir = namespace ? Path.resolve(scoutDir, namespace) : scoutDir;
+    const apiDir = Path.resolve(contentDir, 'api');
+    const uiDir = Path.resolve(contentDir, 'ui');
+
+    const contentDirLabel = namespace ? `test/${scoutRoot}/${namespace}` : `test/${scoutRoot}`;
+
+    // Guard: a scout root must be either entirely root-level (test/<root>/{ui,api}/)
+    // or entirely namespace-based (test/<root>/<namespace>/{ui,api}/), never both at once.
+    if (await pathExists(scoutDir)) {
+      if (namespace) {
+        // Adding a namespace: fail if root-level category dirs already exist.
+        const rootUi = await pathExists(Path.resolve(scoutDir, 'ui'));
+        const rootApi = await pathExists(Path.resolve(scoutDir, 'api'));
+        if (rootUi || rootApi) {
+          const existing = [rootUi && 'ui', rootApi && 'api'].filter(Boolean).join(' and ');
+          throw createFlagError(
+            `Cannot add namespace '${namespace}' to '${relativePath}/test/${scoutRoot}' because root-level ` +
+              `${existing} ${
+                existing.includes(' and ')
+                  ? 'directories already exist'
+                  : 'directory already exists'
+              }. ` +
+              `A Scout root must use either root-level (test/${scoutRoot}/{ui,api}/) ` +
+              `or namespace-based (test/${scoutRoot}/<namespace>/{ui,api}/) structure, not both. ` +
+              `To use namespaces, first migrate the existing root-level tests into a namespace sub-directory.`
+          );
+        }
+      } else {
+        // Adding root-level categories: fail if any namespace sub-directory already exists.
+        const entries = await Fsp.readdir(scoutDir, { withFileTypes: true }).catch(() => []);
+        const RESERVED = new Set(['ui', 'api', '.meta', 'common']);
+        for (const entry of entries) {
+          if (!entry.isDirectory() || RESERVED.has(entry.name) || entry.name.startsWith('.')) {
+            continue;
+          }
+          const namespaceUi = await pathExists(Path.resolve(scoutDir, entry.name, 'ui'));
+          const namespaceApi = await pathExists(Path.resolve(scoutDir, entry.name, 'api'));
+          if (namespaceUi || namespaceApi) {
+            throw createFlagError(
+              `Cannot add root-level tests to '${relativePath}/test/${scoutRoot}' because namespace ` +
+                `'${entry.name}' already exists. ` +
+                `A Scout root must use either root-level (test/${scoutRoot}/{ui,api}/) ` +
+                `or namespace-based (test/${scoutRoot}/<namespace>/{ui,api}/) structure, not both. ` +
+                `To use root-level tests, first remove or migrate the existing namespace directories.`
+            );
+          }
+        }
+      }
+    }
 
     const scoutDirExists = await pathExists(scoutDir);
     const apiDirExists = await pathExists(apiDir);
@@ -361,7 +516,7 @@ export const generateCmd: Command<void> = {
 
     if (apiDirExists && uiDirExists) {
       log.warning(
-        `Both test/${scoutRoot}/api and test/${scoutRoot}/ui already exist. The generator will not modify existing sub-directories.`
+        `Both ${contentDirLabel}/api and ${contentDirLabel}/ui already exist. The generator will not modify existing sub-directories.`
       );
       return;
     }
@@ -370,13 +525,13 @@ export const generateCmd: Command<void> = {
     if (scoutDirExists || apiDirExists || uiDirExists) {
       const existingDirs: string[] = [];
       if (apiDirExists) {
-        existingDirs.push(`test/${scoutRoot}/api`);
+        existingDirs.push(`${contentDirLabel}/api`);
       }
       if (uiDirExists) {
-        existingDirs.push(`test/${scoutRoot}/ui`);
+        existingDirs.push(`${contentDirLabel}/ui`);
       }
       if (existingDirs.length === 0 && scoutDirExists) {
-        existingDirs.push(`test/${scoutRoot}`);
+        existingDirs.push(contentDirLabel);
       }
       log.warning(
         `Existing Scout test directories found: ${existingDirs.join(
@@ -387,7 +542,7 @@ export const generateCmd: Command<void> = {
       if (!force) {
         if (isNonInteractive) {
           throw createFlagError(
-            `Rerun with --force to generate only the missing sections under test/${scoutRoot}/`
+            `Rerun with --force to generate only the missing sections under ${contentDirLabel}/`
           );
         }
 
@@ -423,12 +578,12 @@ export const generateCmd: Command<void> = {
     if (requestedType) {
       if (requestedType === 'api' && !apiMissing) {
         throw createFlagError(
-          `test/${scoutRoot}/api already exists. The generator will not modify existing sub-directories.`
+          `${contentDirLabel}/api already exists. The generator will not modify existing sub-directories.`
         );
       }
       if (requestedType === 'ui' && !uiMissing) {
         throw createFlagError(
-          `test/${scoutRoot}/ui already exists. The generator will not modify existing sub-directories.`
+          `${contentDirLabel}/ui already exists. The generator will not modify existing sub-directories.`
         );
       }
       testType = requestedType;
@@ -485,6 +640,7 @@ export const generateCmd: Command<void> = {
     log.info('Creating directory structure...');
     await createDirectoryStructure(relativePath, {
       scoutRoot,
+      namespace,
       generateApi: shouldGenerateApi,
       generateUi: shouldGenerateUi,
       uiParallel,
@@ -493,11 +649,19 @@ export const generateCmd: Command<void> = {
     log.success(
       `Successfully generated Scout test structure for ${Path.posix.join(
         relativePath.replace(/\\\\/g, '/'),
-        `test/${scoutRoot}`
+        contentDirLabel
       )}`
     );
     log.write('\n');
 
     await enableModuleInScoutCiConfig(relativePath, log);
+
+    if (namespace) {
+      log.write('\n');
+      log.info(
+        `Next step: update .github/CODEOWNERS if the new namespace has a dedicated feature team owner:\n` +
+          `  ${relativePath}/test/${scoutRoot}/${namespace}/ @elastic/<team>\n`
+      );
+    }
   },
 };

@@ -23,6 +23,7 @@ import { ToolingLog } from '@kbn/tooling-log';
 import {
   BROWSER_CONSOLE_ERRORS_ATTACHMENT,
   SCOUT_REPORT_OUTPUT_ROOT,
+  SCOUT_UNIFIED_CONFIG_PATH_REGEX,
   ScoutTestRunConfigCategory,
   ScoutTestTarget,
 } from '@kbn/scout-info';
@@ -114,16 +115,23 @@ export class ScoutPlaywrightReporter implements Reporter {
     };
   }
 
-  private getScoutConfigCategory(configPath: string): ScoutTestRunConfigCategory {
-    // Matches scout/{api|ui} or scout_<custom>/{api|ui} and captures api|ui
-    const pattern = /scout(?:_[^/]+)?\/(api|ui)\//;
-    const match = configPath.match(pattern);
-    if (match) {
-      return match[1] === 'api'
+  private getScoutConfigInfo(absoluteConfigPath: string): {
+    category: ScoutTestRunConfigCategory;
+    namespace: string | undefined;
+  } {
+    const relativePath = path.relative(REPO_ROOT, absoluteConfigPath);
+    const groups = SCOUT_UNIFIED_CONFIG_PATH_REGEX.exec(relativePath)?.groups;
+
+    if (!groups) {
+      return { category: ScoutTestRunConfigCategory.UNKNOWN, namespace: undefined };
+    }
+
+    const category =
+      groups.testCategory === 'api'
         ? ScoutTestRunConfigCategory.API_TEST
         : ScoutTestRunConfigCategory.UI_TEST;
-    }
-    return ScoutTestRunConfigCategory.UNKNOWN;
+
+    return { category, namespace: groups.namespace };
   }
 
   private getSuitePropsFromTest(test: TestCase): ScoutReportEvent['suite'] {
@@ -188,9 +196,11 @@ export class ScoutPlaywrightReporter implements Reporter {
     let configInfo: ScoutTestRunInfo['config'];
 
     if (config.configFile !== undefined) {
+      const { category, namespace } = this.getScoutConfigInfo(config.configFile);
       configInfo = {
         file: this.getScoutFileInfoForPath(path.relative(REPO_ROOT, config.configFile)),
-        category: this.getScoutConfigCategory(config.configFile),
+        category,
+        ...(namespace !== undefined && { namespace }),
       };
     }
 

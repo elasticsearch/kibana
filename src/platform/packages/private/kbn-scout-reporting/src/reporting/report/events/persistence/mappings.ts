@@ -178,6 +178,9 @@ export const testRunProperties: Record<PropertyName, MappingProperty> = {
       category: {
         type: 'keyword',
       },
+      namespace: {
+        type: 'keyword',
+      },
     },
   },
 };

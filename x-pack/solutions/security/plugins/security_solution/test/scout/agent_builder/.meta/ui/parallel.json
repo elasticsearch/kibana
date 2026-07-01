@@ -1,0 +1,72 @@
+{
+  "sha1": "13cb5f7dfb5dce888c19a24dc9cada6759a42393",
+  "tests": [
+    {
+      "id": "bcac908d8664b22-1054e603e578b92",
+      "title": "Ingest archives to Elasticsearch",
+      "expectedStatus": "passed",
+      "tags": [],
+      "location": {
+        "file": "x-pack/solutions/security/plugins/security_solution/test/scout/agent_builder/ui/parallel_tests/global.setup.ts",
+        "line": 10,
+        "column": 16
+      }
+    },
+    {
+      "id": "4102fbff6eaf7b3-668900ccdf79d81",
+      "title": "Bulk add alerts to chat should disable the \"Add to chat\" bulk action when all alerts are selected via the query button",
+      "expectedStatus": "skipped",
+      "tags": [
+        "@local-stateful-classic",
+        "@cloud-stateful-classic"
+      ],
+      "location": {
+        "file": "x-pack/solutions/security/plugins/security_solution/test/scout/agent_builder/ui/parallel_tests/bulk_add_alerts_to_chat.spec.ts",
+        "line": 60,
+        "column": 14
+      }
+    },
+    {
+      "id": "4102fbff6eaf7b3-236824c49e31bf1",
+      "title": "Bulk add alerts to chat should open agent builder conversation with attachment chip and pre-filled prompt, and send multiple alerts to the LLM",
+      "expectedStatus": "skipped",
+      "tags": [
+        "@local-stateful-classic",
+        "@cloud-stateful-classic"
+      ],
+      "location": {
+        "file": "x-pack/solutions/security/plugins/security_solution/test/scout/agent_builder/ui/parallel_tests/bulk_add_alerts_to_chat.spec.ts",
+        "line": 89,
+        "column": 14
+      }
+    },
+    {
+      "id": "779b72aeeeda591-38e67daa824cbab",
+      "title": "Serverless Security - Agent Builder item in project chrome vs chat experience shows Agent Builder in chrome nav when preferred chat experience has no saved value",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-serverless-security_complete",
+        "@cloud-serverless-security_complete"
+      ],
+      "location": {
+        "file": "x-pack/solutions/security/plugins/security_solution/test/scout/agent_builder/ui/parallel_tests/serverless_agent_builder_chrome_nav.spec.ts",
+        "line": 26,
+        "column": 14
+      }
+    },
+    {
+      "id": "779b72aeeeda591-d5e6a7c7c474f5e",
+      "title": "Serverless Security - Agent Builder item in project chrome vs chat experience hides Agent Builder in chrome nav when chat experience is Classic",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-serverless-security_complete",
+        "@cloud-serverless-security_complete"
+      ],
+      "location": {
+        "file": "x-pack/solutions/security/plugins/security_solution/test/scout/agent_builder/ui/parallel_tests/serverless_agent_builder_chrome_nav.spec.ts",
+        "line": 44,
+        "column": 14
+      }
+    }
+  ]
+}

@@ -1,0 +1,32 @@
+{
+  "sha1": "e3fcd598adf9d0db3fa707691763446c55e3d637",
+  "tests": [
+    {
+      "id": "8d72edc08d77646-1054e603e578b92",
+      "title": "Ingest archives to Elasticsearch",
+      "expectedStatus": "passed",
+      "tags": [],
+      "location": {
+        "file": "x-pack/solutions/security/plugins/security_solution/test/scout/flyout/ui/parallel_tests/global.setup.ts",
+        "line": 10,
+        "column": 16
+      }
+    },
+    {
+      "id": "8e7d3ac6b5df63c-3916e4686fbd655",
+      "title": "Expandable flyout state sync should test flyout url sync",
+      "expectedStatus": "skipped",
+      "tags": [
+        "@local-stateful-classic",
+        "@cloud-stateful-classic",
+        "@local-serverless-security_complete",
+        "@cloud-serverless-security_complete"
+      ],
+      "location": {
+        "file": "x-pack/solutions/security/plugins/security_solution/test/scout/flyout/ui/parallel_tests/alert_details_url_sync.spec.ts",
+        "line": 33,
+        "column": 14
+      }
+    }
+  ]
+}

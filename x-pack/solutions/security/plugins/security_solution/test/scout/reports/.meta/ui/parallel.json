@@ -1,0 +1,104 @@
+{
+  "sha1": "91eb37f13757c0fcdb676110dbc352b68de071d5",
+  "tests": [
+    {
+      "id": "ac7591df410e28e-62e78b299821a45",
+      "title": "Global setup",
+      "expectedStatus": "passed",
+      "tags": [],
+      "location": {
+        "file": "x-pack/solutions/security/plugins/security_solution/test/scout/reports/ui/parallel_tests/global.setup.ts",
+        "line": 10,
+        "column": 16
+      }
+    },
+    {
+      "id": "024be1b9b5d6e8f-b63472fd75edd4f",
+      "title": "AI Value Report renders the sample data banner, badge and attack discovery CTA when there are no attack discoveries",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic",
+        "@cloud-stateful-classic",
+        "@local-stateful-security_complete",
+        "@cloud-stateful-security_complete",
+        "@local-serverless-security_complete",
+        "@cloud-serverless-security_complete",
+        "@local-serverless-security_ease",
+        "@cloud-serverless-security_ease"
+      ],
+      "location": {
+        "file": "x-pack/solutions/security/plugins/security_solution/test/scout/reports/ui/parallel_tests/ai_value_report.spec.ts",
+        "line": 22,
+        "column": 14
+      }
+    },
+    {
+      "id": "024be1b9b5d6e8f-89f0a961d32bcde",
+      "title": "AI Value Report export button is disabled when there is no real data",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic",
+        "@cloud-stateful-classic",
+        "@local-stateful-security_complete",
+        "@cloud-stateful-security_complete",
+        "@local-serverless-security_complete",
+        "@cloud-serverless-security_complete",
+        "@local-serverless-security_ease",
+        "@cloud-serverless-security_ease"
+      ],
+      "location": {
+        "file": "x-pack/solutions/security/plugins/security_solution/test/scout/reports/ui/parallel_tests/ai_value_report.spec.ts",
+        "line": 37,
+        "column": 14
+      }
+    },
+    {
+      "id": "024be1b9b5d6e8f-c10e3c1a58b1390",
+      "title": "AI Value Report shows NoPrivileges for a user without the socManagement capability",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic",
+        "@cloud-stateful-classic",
+        "@local-stateful-security_complete",
+        "@cloud-stateful-security_complete",
+        "@local-serverless-security_complete",
+        "@cloud-serverless-security_complete",
+        "@local-serverless-security_ease",
+        "@cloud-serverless-security_ease"
+      ],
+      "location": {
+        "file": "x-pack/solutions/security/plugins/security_solution/test/scout/reports/ui/parallel_tests/ai_value_report.spec.ts",
+        "line": 51,
+        "column": 14
+      }
+    },
+    {
+      "id": "790e066765fd844-70f1d886ab87713",
+      "title": "Serverless Security - AI Value Report item hidden in project chrome on essentials tier hides AI Value Report in chrome nav on essentials tier",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-serverless-security_essentials",
+        "@cloud-serverless-security_essentials"
+      ],
+      "location": {
+        "file": "x-pack/solutions/security/plugins/security_solution/test/scout/reports/ui/parallel_tests/serverless_ai_value_report_chrome_nav.spec.ts",
+        "line": 15,
+        "column": 14
+      }
+    },
+    {
+      "id": "702b58cbdbbceff-b6c3ce7e87e3b8c",
+      "title": "Serverless Security - AI Value Report item hidden in project chrome for non-socManager role hides AI Value Report in chrome nav for a non-socManager role",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-serverless-security_complete",
+        "@cloud-serverless-security_complete"
+      ],
+      "location": {
+        "file": "x-pack/solutions/security/plugins/security_solution/test/scout/reports/ui/parallel_tests/serverless_ai_value_report_role_chrome_nav.spec.ts",
+        "line": 15,
+        "column": 14
+      }
+    }
+  ]
+}

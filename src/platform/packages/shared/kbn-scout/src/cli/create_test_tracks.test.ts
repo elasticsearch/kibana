@@ -54,6 +54,7 @@ const createMockConfig = (overrides: Partial<ScoutTestConfig> = {}): ScoutTestCo
   path: 'plugin/test/scout/ui/config.playwright.config.ts',
   category: 'ui',
   type: 'standard',
+  namespace: undefined,
   module: {
     name: 'test-plugin',
     group: 'platform',

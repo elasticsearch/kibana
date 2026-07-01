@@ -185,12 +185,75 @@ describe('validateAndProcessTestFiles', () => {
     });
   });
 
+  describe('Namespace sub-directory tests', () => {
+    it('should derive correct config for scout/<namespace>/ui/parallel_tests directory', () => {
+      const testFile =
+        'x-pack/solutions/security/plugins/security_solution/test/scout/detection_engine/ui/parallel_tests/test.spec.ts';
+
+      const result = validateAndProcessTestFiles(testFile);
+
+      expect(result).toEqual({
+        testFiles: [testFile],
+        configPath:
+          'x-pack/solutions/security/plugins/security_solution/test/scout/detection_engine/ui/parallel.playwright.config.ts',
+      });
+    });
+
+    it('should derive correct config for scout/<namespace>/ui/tests directory', () => {
+      const testFile =
+        'x-pack/solutions/security/plugins/security_solution/test/scout/entity_analytics/ui/tests/test.spec.ts';
+
+      const result = validateAndProcessTestFiles(testFile);
+
+      expect(result).toEqual({
+        testFiles: [testFile],
+        configPath:
+          'x-pack/solutions/security/plugins/security_solution/test/scout/entity_analytics/ui/playwright.config.ts',
+      });
+    });
+
+    it('should derive correct config for scout/<namespace>/api/tests directory', () => {
+      const testFile =
+        'x-pack/solutions/security/plugins/security_solution/test/scout/detection_engine/api/tests/test.spec.ts';
+
+      const result = validateAndProcessTestFiles(testFile);
+
+      expect(result).toEqual({
+        testFiles: [testFile],
+        configPath:
+          'x-pack/solutions/security/plugins/security_solution/test/scout/detection_engine/api/playwright.config.ts',
+      });
+    });
+
+    it('should throw for files from different namespaces (namespace A vs namespace B)', () => {
+      const testFilesString = [
+        'path/scout/detection_engine/ui/tests/test1.spec.ts',
+        'path/scout/entity_analytics/ui/tests/test2.spec.ts',
+      ].join(',');
+
+      expect(() => validateAndProcessTestFiles(testFilesString)).toThrow(
+        `All paths must be from the same scout test directory`
+      );
+    });
+
+    it('should throw for files mixing namespace and non-namespace paths', () => {
+      const testFilesString = [
+        'path/scout/detection_engine/ui/tests/test1.spec.ts',
+        'path/scout/ui/tests/test2.spec.ts',
+      ].join(',');
+
+      expect(() => validateAndProcessTestFiles(testFilesString)).toThrow(
+        `All paths must be from the same scout test directory`
+      );
+    });
+  });
+
   describe('Error cases', () => {
     it('should throw error for invalid scout path', () => {
       const testFile = 'some/other/path/test.spec.ts';
 
       expect(() => validateAndProcessTestFiles(testFile)).toThrow(
-        `Test file must be within a scout directory matching pattern '{scout,scout_*}/{ui,api}/{tests,parallel_tests}': ${testFile}`
+        `Test file must be within a scout directory matching pattern '{scout,scout_*}/{,<namespace>/}{ui,api}/{tests,parallel_tests}': ${testFile}`
       );
     });
 

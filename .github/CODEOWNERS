@@ -2945,8 +2945,7 @@ x-pack/solutions/security/test/security_solution_api_integration/test_suites/sou
 /x-pack/solutions/security/plugins/security_solution/public/common/components/navigation @elastic/security-pds-deployment
 /x-pack/solutions/security/plugins/security_solution/public/onboarding @elastic/security-pds-deployment
 /x-pack/solutions/security/plugins/security_solution/public/reports @elastic/security-pds-deployment
-/x-pack/solutions/security/plugins/security_solution/test/scout/ui/parallel_tests/reports/ @elastic/security-pds-deployment
-/x-pack/solutions/security/plugins/security_solution/test/scout/ui/parallel_tests/navigation/serverless_ai_value_report* @elastic/security-pds-deployment
+/x-pack/solutions/security/plugins/security_solution/test/scout/reports/ @elastic/security-pds-deployment
 /x-pack/solutions/security/plugins/security_solution/test/scout_ai_value_report/ @elastic/security-pds-deployment
 x-pack/solutions/security/plugins/security_solution/common/trial_companion/ @elastic/security-pds-deployment
 x-pack/solutions/security/plugins/security_solution/public/trial_companion/ @elastic/security-pds-deployment
@@ -3044,6 +3043,11 @@ x-pack/solutions/security/plugins/entity_store @elastic/core-analysis
 /x-pack/solutions/security/plugins/security_solution/public/sourcerer @elastic/security-threat-hunting
 /x-pack/solutions/security/plugins/security_solution/public/threat_intelligence @elastic/security-threat-hunting
 /x-pack/solutions/security/plugins/security_solution/public/timelines @elastic/security-threat-hunting
+
+/x-pack/solutions/security/plugins/security_solution/test/scout/agent_builder/ @elastic/security-threat-hunting
+/x-pack/solutions/security/plugins/security_solution/test/scout/flyout/ @elastic/security-threat-hunting
+/x-pack/solutions/security/plugins/security_solution/test/scout/timelines/ @elastic/security-threat-hunting
+/x-pack/solutions/security/plugins/security_solution/test/scout/workflows/ @elastic/security-threat-hunting
 
 /x-pack/solutions/security/plugins/security_solution_serverless/public/components/dashboards_landing_callout @elastic/security-threat-hunting
 /x-pack/solutions/security/plugins/security_solution_serverless/public/upselling/pages/threat_intelligence_paywall.tsx @elastic/security-threat-hunting
@@ -3394,6 +3398,7 @@ x-pack/solutions/security/plugins/security_solution/common/search_strategy/secur
 x-pack/solutions/security/plugins/security_solution/common/search_strategy/security_solution/risk_score @elastic/security-entity-analytics
 x-pack/solutions/security/plugins/security_solution/public/common/components/matrix_histogram @elastic/security-entity-analytics
 x-pack/solutions/security/plugins/security_solution/public/entity_analytics @elastic/security-entity-analytics
+x-pack/solutions/security/plugins/security_solution/test/scout/entity_analytics/ @elastic/security-entity-analytics
 x-pack/solutions/security/plugins/security_solution/public/explore @elastic/security-entity-analytics
 x-pack/solutions/security/plugins/security_solution/public/flyout/entity_details @elastic/security-entity-analytics
 
