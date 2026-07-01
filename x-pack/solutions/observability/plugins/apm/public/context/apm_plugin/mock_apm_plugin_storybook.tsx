@@ -172,6 +172,7 @@ export const storybookTelemetry: ITelemetryClient = {
   reportServiceMapAddedToDashboard: () => {},
   reportMetricsCalloutDateRangeSelected: () => {},
   reportMetricsCalloutLoaded: () => {},
+  reportServiceFlyoutViewed: () => {},
 };
 
 const mockUnifiedSearchBar = {

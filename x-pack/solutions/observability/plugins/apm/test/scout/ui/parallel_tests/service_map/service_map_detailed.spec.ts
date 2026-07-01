@@ -20,6 +20,8 @@ test.describe(
   'Service map - nodes, edges and popovers',
   { tag: [...tags.stateful.classic, ...tags.serverless.observability.complete] },
   () => {
+    test.use({ viewport: { width: 1600, height: 1200 } });
+
     test.beforeEach(async ({ browserAuth, pageObjects: { serviceMapPage } }) => {
       await browserAuth.loginAsViewer();
       await serviceMapPage.gotoWithDateSelected(testData.START_DATE, testData.END_DATE, {
@@ -64,30 +66,29 @@ test.describe(
       });
     });
 
-    test('shows popover when clicking on a service node', async ({
+    test('shows flyout when clicking on a service node', async ({
       pageObjects: { serviceMapPage },
     }) => {
       await serviceMapPage.clickFitView();
       await serviceMapPage.waitForServiceNodeToLoad(SERVICE_OPBEANS_JAVA);
-      await serviceMapPage.openServiceNodePopover(SERVICE_OPBEANS_JAVA);
-      await expect(serviceMapPage.serviceMapPopover).toBeVisible();
+      await serviceMapPage.openServiceNodeFlyout(SERVICE_OPBEANS_JAVA);
+      await expect(serviceMapPage.serviceMapFlyout).toBeVisible();
 
-      const popoverTitle = await serviceMapPage.getPopoverTitle();
-      expect(popoverTitle).toContain(SERVICE_OPBEANS_JAVA);
-      await expect(serviceMapPage.serviceMapServiceDetailsButton).toBeVisible();
-      await expect(serviceMapPage.serviceMapFocusMapButton).toBeVisible();
+      const flyoutTitle = await serviceMapPage.getFlyoutTitle();
+      expect(flyoutTitle).toContain(SERVICE_OPBEANS_JAVA);
+      await expect(serviceMapPage.serviceMapFlyoutContent).toBeVisible();
     });
 
-    test('dismisses popover when clicking outside', async ({ pageObjects: { serviceMapPage } }) => {
+    test('dismisses service flyout when clicking the close button', async ({
+      pageObjects: { serviceMapPage },
+    }) => {
       await serviceMapPage.clickFitView();
       await serviceMapPage.waitForServiceNodeToLoad(SERVICE_OPBEANS_JAVA);
-      await serviceMapPage.openServiceNodePopover(SERVICE_OPBEANS_JAVA);
-      await expect(serviceMapPage.serviceMapPopoverContent).toBeVisible();
+      await serviceMapPage.openServiceNodeFlyout(SERVICE_OPBEANS_JAVA);
+      await expect(serviceMapPage.serviceMapFlyout).toBeVisible();
 
-      await serviceMapPage.clickFitView();
-      await serviceMapPage.waitForServiceNodeToLoad(SERVICE_OPBEANS_JAVA);
-      await serviceMapPage.waitForPopoverToBeHidden();
-      await expect(serviceMapPage.serviceMapPopoverContent).toBeHidden();
+      await serviceMapPage.closeFlyout();
+      await expect(serviceMapPage.serviceMapFlyout).toBeHidden();
     });
 
     test('shows popover when clicking on an edge', async ({ pageObjects: { serviceMapPage } }) => {
@@ -116,55 +117,92 @@ test.describe(
       await expect(serviceMapPage.serviceMapDependencyDetailsButton).toBeVisible();
     });
 
-    test('navigates to Service Details from popover', async ({
+    test('navigates to Discover (traces)', async ({
+      page,
+      pageObjects: { serviceMapPage, discover },
+    }) => {
+      await serviceMapPage.clickFitView();
+      await serviceMapPage.waitForServiceNodeToLoad(SERVICE_OPBEANS_JAVA);
+      await serviceMapPage.openServiceNodeFlyout(SERVICE_OPBEANS_JAVA);
+
+      await expect(serviceMapPage.serviceMapFlyout).toBeVisible();
+
+      await serviceMapPage.clickServiceMapFlyoutAction('openTracesInDiscover');
+
+      await expect(page).toHaveURL(new RegExp(`/app/discover`));
+      await discover.waitUntilSearchingHasFinished();
+      expect(await discover.getEsqlQueryValue()).toMatch(new RegExp('traces-'));
+    });
+
+    test('navigates to Discover (logs)', async ({
+      page,
+      pageObjects: { serviceMapPage, discover },
+    }) => {
+      await serviceMapPage.clickFitView();
+      await serviceMapPage.waitForServiceNodeToLoad(SERVICE_OPBEANS_JAVA);
+      await serviceMapPage.openServiceNodeFlyout(SERVICE_OPBEANS_JAVA);
+
+      await expect(serviceMapPage.serviceMapFlyout).toBeVisible();
+
+      await serviceMapPage.clickServiceMapFlyoutAction('openLogsInDiscover');
+
+      await expect(page).toHaveURL(new RegExp(`/app/discover`));
+      await discover.waitUntilSearchingHasFinished();
+      expect(await discover.getEsqlQueryValue()).toMatch(new RegExp('logs-'));
+    });
+
+    test('navigates to Service Details (alerts)', async ({
       page,
       pageObjects: { serviceMapPage },
     }) => {
-      await serviceMapPage.dismissPopoverIfOpen();
       await serviceMapPage.clickFitView();
       await serviceMapPage.waitForServiceNodeToLoad(SERVICE_OPBEANS_JAVA);
-      await serviceMapPage.openServiceNodePopover(SERVICE_OPBEANS_JAVA);
-      await serviceMapPage.serviceMapServiceDetailsButton.click();
+      await serviceMapPage.openServiceNodeFlyout(SERVICE_OPBEANS_JAVA);
+
+      await expect(serviceMapPage.serviceMapFlyout).toBeVisible();
+
+      await serviceMapPage.clickServiceMapFlyoutAction('openAlerts');
+
+      await expect(page).toHaveURL(new RegExp(`/app/apm/services/${SERVICE_OPBEANS_JAVA}/alerts`));
+    });
+
+    test('navigates to SLOs', async ({ page, pageObjects: { serviceMapPage } }) => {
+      await serviceMapPage.clickFitView();
+      await serviceMapPage.waitForServiceNodeToLoad(SERVICE_OPBEANS_JAVA);
+      await serviceMapPage.openServiceNodeFlyout(SERVICE_OPBEANS_JAVA);
+
+      await expect(serviceMapPage.serviceMapFlyout).toBeVisible();
+
+      await serviceMapPage.clickServiceMapFlyoutAction('openSlos');
+
+      await expect(page).toHaveURL(new RegExp(`/app/slos`));
+    });
+
+    test('navigates to Service Details from flyout title', async ({
+      page,
+      pageObjects: { serviceMapPage },
+    }) => {
+      await serviceMapPage.clickFitView();
+      await serviceMapPage.waitForServiceNodeToLoad(SERVICE_OPBEANS_JAVA);
+      await serviceMapPage.openServiceNodeFlyout(SERVICE_OPBEANS_JAVA);
+
+      await serviceMapPage.serviceMapFlyoutTitle.click();
 
       await expect(page).toHaveURL(
         new RegExp(`/app/apm/services/${SERVICE_OPBEANS_JAVA}/overview`)
       );
-      await page.goBack();
-      await serviceMapPage.waitForMapToLoad();
-      await expect(serviceMapPage.serviceMapGraph).toBeVisible();
-    });
-
-    test('navigates to Focus Map from popover', async ({
-      page,
-      pageObjects: { serviceMapPage },
-    }) => {
-      await serviceMapPage.dismissPopoverIfOpen();
-      await serviceMapPage.clickFitView();
-      await serviceMapPage.waitForServiceNodeToLoad(SERVICE_OPBEANS_JAVA);
-      await serviceMapPage.openServiceNodePopover(SERVICE_OPBEANS_JAVA);
-      await serviceMapPage.serviceMapFocusMapButton.click();
-
-      await expect(page).toHaveURL(
-        new RegExp(`/app/apm/services/${SERVICE_OPBEANS_JAVA}/service-map`)
-      );
-      await serviceMapPage.waitForMapToLoad();
-      await expect(serviceMapPage.serviceMapGraph).toBeVisible();
     });
 
     test('navigates to Dependency Details from popover', async ({
       page,
       pageObjects: { serviceMapPage },
     }) => {
-      await serviceMapPage.dismissPopoverIfOpen();
       await serviceMapPage.clickFitView();
       await serviceMapPage.waitForNodeToLoad(`>${DEPENDENCY_POSTGRESQL}`);
       await serviceMapPage.openNodePopover(`>${DEPENDENCY_POSTGRESQL}`);
       await serviceMapPage.serviceMapDependencyDetailsButton.click();
 
       await expect(page).toHaveURL(new RegExp(`/app/apm/dependencies/overview`));
-      await page.goBack();
-      await serviceMapPage.waitForMapToLoad();
-      await expect(serviceMapPage.serviceMapGraph).toBeVisible();
     });
   }
 );

@@ -155,6 +155,24 @@ const metricsCalloutLoadedEventType: TelemetryEvent = {
   },
 };
 
+const serviceFlyoutViewedEventType: TelemetryEvent = {
+  eventType: TelemetryEventTypes.SERVICE_FLYOUT_VIEWED,
+  schema: {
+    tabId: {
+      type: 'keyword',
+      _meta: {
+        description: 'The service flyout tab shown when viewed',
+      },
+    },
+    source: {
+      type: 'keyword',
+      _meta: {
+        description: 'Where the flyout was opened from',
+      },
+    },
+  },
+};
+
 export const apmTelemetryEventBasedTypes = [
   searchQuerySubmittedEventType,
   sloOverviewFlyoutViewedEventType,
@@ -165,4 +183,5 @@ export const apmTelemetryEventBasedTypes = [
   serviceMapAddedToDashboardEventType,
   metricsCalloutDateRangeSelectedEventType,
   metricsCalloutLoadedEventType,
+  serviceFlyoutViewedEventType,
 ];

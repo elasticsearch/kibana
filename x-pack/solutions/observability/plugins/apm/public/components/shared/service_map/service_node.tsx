@@ -17,10 +17,11 @@
 
 import React, { useMemo, memo } from 'react';
 import { Handle, Position, type Node, type NodeProps } from '@xyflow/react';
-import { useEuiTheme, EuiBadge, EuiFlexGroup, EuiFlexItem, EuiToolTip } from '@elastic/eui';
+import { useEuiTheme, EuiFlexGroup, EuiFlexItem } from '@elastic/eui';
 import { getAgentIcon } from '@kbn/custom-icons';
 import { css } from '@emotion/react';
 import { i18n } from '@kbn/i18n';
+import { EBT_CLICK_ACTIONS, getEbtProps } from '@kbn/ebt-click';
 import { getSeverity, getSeverityColor } from '../../../../common/anomaly_detection';
 import type { ServiceNodeData } from '../../../../common/service_map';
 import {
@@ -30,54 +31,14 @@ import {
 } from '../../../../common/service_map/constants';
 import { NodeLabel } from './node_label';
 import { useApmPluginContext } from '../../../context/apm_plugin/use_apm_plugin_context';
+import { AlertsBadge } from '../badge/alerts_badge';
 import { SloStatusBadge } from '../slo_status_badge';
 import { useServiceMapSloFlyout } from './service_map_slo_flyout_context';
-import {
-  useServiceMapAlertsNavigate,
-  type ServiceMapAlertsNavigateHandler,
-} from './service_map_alerts_navigate_context';
+import { useServiceMapAlertsNavigate } from './service_map_alerts_navigate_context';
 import { HighlightWrapper } from './highlight_wrapper';
+import { SERVICE_MAP_EBT_ELEMENTS } from './ebt_constants';
 
 type ServiceNodeType = Node<ServiceNodeData, 'service'>;
-
-/**
- * Renders the alerts-count badge. Returns a clickable, role="button" variant
- * when `onNavigate` is wired (Service Map) and a plain, non-interactive badge
- * otherwise (Agent Builder attachment, or any host that didn't wrap the map
- * in a `ServiceMapAlertsNavigateProvider`). The variants live in one component
- * because `EuiBadgeProps` is a discriminated union — conditionally spreading
- * `onClick` violates the union — but they still share their static props.
- */
-function AlertsCountBadge({
-  count,
-  tooltip,
-  onNavigate,
-}: {
-  count: number;
-  tooltip: string;
-  onNavigate?: ServiceMapAlertsNavigateHandler;
-}) {
-  if (onNavigate) {
-    return (
-      <EuiBadge
-        data-test-subj="serviceMapNodeAlertsBadge"
-        color="danger"
-        iconType="warning"
-        onClick={onNavigate}
-        tabIndex={0}
-        role="button"
-        onClickAriaLabel={tooltip}
-      >
-        {count}
-      </EuiBadge>
-    );
-  }
-  return (
-    <EuiBadge data-test-subj="serviceMapNodeAlertsBadge" color="danger" iconType="warning">
-      {count}
-    </EuiBadge>
-  );
-}
 
 export const ServiceNode = memo(
   ({ data, selected, sourcePosition, targetPosition }: NodeProps<ServiceNodeType>) => {
@@ -207,20 +168,6 @@ export const ServiceNode = memo(
     const showSloBadge =
       canReadSlos && (data.sloStatus === 'violated' || data.sloStatus === 'degrading');
 
-    // Tooltip copy depends on whether a navigation handler is wired: telling a
-    // user to "click to view" on a non-interactive badge is misleading for both
-    // sighted and assistive-tech users.
-    const alertsTooltip = navigateToAlertsTab
-      ? i18n.translate('xpack.apm.serviceMap.serviceNode.alertsBadgeTooltip.navigable', {
-          defaultMessage:
-            '{count, plural, one {# active alert} other {# active alerts}}. Click to view.',
-          values: { count: data.alertsCount ?? 0 },
-        })
-      : i18n.translate('xpack.apm.serviceMap.serviceNode.alertsBadgeTooltip', {
-          defaultMessage: '{count, plural, one {# active alert} other {# active alerts}}',
-          values: { count: data.alertsCount ?? 0 },
-        });
-
     return (
       <HighlightWrapper nodeId={data.id} contextHighlight={contextHighlight}>
         <EuiFlexGroup
@@ -239,6 +186,10 @@ export const ServiceNode = memo(
               tabIndex={0}
               aria-label={ariaLabel}
               aria-pressed={selected}
+              {...getEbtProps({
+                action: EBT_CLICK_ACTIONS.VIEW_SERVICE,
+                element: SERVICE_MAP_EBT_ELEMENTS.SERVICE_NODE,
+              })}
             >
               {iconUrl && (
                 <img src={iconUrl} alt={data.agentName} css={iconStyles} aria-hidden="true" />
@@ -262,13 +213,12 @@ export const ServiceNode = memo(
                     onClick={(e) => e.stopPropagation()}
                     onKeyDown={(e) => e.stopPropagation()}
                   >
-                    <EuiToolTip position="bottom" content={alertsTooltip}>
-                      <AlertsCountBadge
-                        count={data.alertsCount ?? 0}
-                        tooltip={alertsTooltip}
-                        onNavigate={navigateToAlertsTab}
-                      />
-                    </EuiToolTip>
+                    <AlertsBadge
+                      count={data.alertsCount ?? 0}
+                      serviceName={data.label}
+                      data-test-subj="serviceMapNodeAlertsBadge"
+                      {...(navigateToAlertsTab ? { onClick: navigateToAlertsTab } : {})}
+                    />
                   </span>
                 )}
                 {showSloBadge && data.sloStatus && (

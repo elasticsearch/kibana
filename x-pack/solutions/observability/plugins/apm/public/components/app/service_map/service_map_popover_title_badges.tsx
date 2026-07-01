@@ -5,11 +5,11 @@
  * 2.0.
  */
 
-import { EuiBadge, EuiFlexGroup, EuiFlexItem, EuiToolTip } from '@elastic/eui';
-import { i18n } from '@kbn/i18n';
+import { EuiFlexGroup, EuiFlexItem } from '@elastic/eui';
 import React from 'react';
 import { useApmPluginContext } from '../../../context/apm_plugin/use_apm_plugin_context';
 import type { ServiceNodeData } from '../../../../common/service_map';
+import { AlertsBadge } from '../../shared/badge/alerts_badge';
 import { SloStatusBadge } from '../../shared/slo_status_badge';
 import { useServiceMapSloFlyout } from '../../shared/service_map/service_map_slo_flyout_context';
 import { useServiceMapAlertsTabNavigate } from './use_service_map_alerts_tab_href';
@@ -38,29 +38,17 @@ export function ServiceMapPopoverTitleBadges({ nodeData }: Props) {
     return null;
   }
 
-  const alertsTooltip = i18n.translate('xpack.apm.serviceHeader.alertsBadge.tooltip', {
-    defaultMessage: '{count, plural, one {# active alert} other {# active alerts}}. Click to view.',
-    values: { count: nodeData.alertsCount ?? 0 },
-  });
-
   return (
     <EuiFlexGroup gutterSize="xs" alignItems="center" responsive={false}>
       {showAlertsBadge && (
         <EuiFlexItem grow={false}>
           <span onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
-            <EuiToolTip position="bottom" content={alertsTooltip}>
-              <EuiBadge
-                data-test-subj="serviceMapPopoverAlertsBadge"
-                color="danger"
-                iconType="warning"
-                onClick={navigateToAlertsTab}
-                tabIndex={0}
-                role="button"
-                onClickAriaLabel={alertsTooltip}
-              >
-                {nodeData.alertsCount}
-              </EuiBadge>
-            </EuiToolTip>
+            <AlertsBadge
+              count={nodeData.alertsCount ?? 0}
+              serviceName={serviceName}
+              data-test-subj="serviceMapPopoverAlertsBadge"
+              onClick={navigateToAlertsTab}
+            />
           </span>
         </EuiFlexItem>
       )}

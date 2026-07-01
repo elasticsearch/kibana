@@ -17,6 +17,8 @@ import {
   EuiText,
   useEuiMinBreakpoint,
 } from '@elastic/eui';
+import type { EbtClickAttrs } from '@kbn/ebt-click';
+import { getEbtProps } from '@kbn/ebt-click';
 import { i18n } from '@kbn/i18n';
 import type { SloStatus } from '../../../../common/service_inventory';
 
@@ -126,6 +128,7 @@ export function SloStatusBadge({
   sloCount,
   serviceName,
   onClick,
+  ebt,
   hideTooltip = false,
   compactLabelOnNarrowScreens = false,
 }: {
@@ -134,6 +137,8 @@ export function SloStatusBadge({
   serviceName: string;
   /** When omitted, the badge is display-only (e.g. service map static badges). */
   onClick?: MouseEventHandler<HTMLButtonElement>;
+  /** EBT click attributes; only applied when `onClick` is provided. */
+  ebt?: EbtClickAttrs;
   /** When true, no EuiToolTip (e.g. service map). Inventory and other callers omit this. */
   hideTooltip?: boolean;
   /**
@@ -154,6 +159,8 @@ export function SloStatusBadge({
 
   const useNarrowCompact =
     compactLabelOnNarrowScreens && config.showCount && cappedCount !== undefined;
+
+  const ebtProps = onClick && ebt ? getEbtProps(ebt) : {};
 
   const responsiveCompactRowStyles = useNarrowCompact
     ? css`
@@ -177,6 +184,7 @@ export function SloStatusBadge({
       data-test-subj="apmSloBadge"
       data-slo-status={sloStatus}
       color={config.color}
+      {...ebtProps}
       {...(onClick
         ? { onClick, onClickAriaLabel: config.ariaLabel(serviceName) }
         : { 'aria-label': config.ariaLabel(serviceName) })}

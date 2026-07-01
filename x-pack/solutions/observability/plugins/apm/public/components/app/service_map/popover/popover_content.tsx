@@ -12,20 +12,16 @@ import { i18n } from '@kbn/i18n';
 import { enableDiagnosticMode } from '@kbn/observability-plugin/common';
 import type { Environment } from '../../../../../common/environment_rt';
 import {
-  isServiceNodeData,
   isGroupedNodeData,
   type ServiceMapNode,
   type ServiceMapEdge,
 } from '../../../../../common/service_map';
-import { ServiceMapPopoverTitleBadges } from '../service_map_popover_title_badges';
 import { isEdge, type ServiceMapSelection } from './utils';
 import { POPOVER_WIDTH } from './constants';
 import { DependencyContents } from './dependency_contents';
 import { EdgeContents } from './edge_contents';
 import { ExternalsListContents } from './externals_list_contents';
 import { ResourceContents } from './resource_contents';
-import { ServiceContents } from './service_contents';
-import { withDiagnoseButton } from './with_diagnose_button';
 import { useApmPluginContext } from '../../../../context/apm_plugin/use_apm_plugin_context';
 
 export type { ServiceMapSelection } from './utils';
@@ -51,8 +47,6 @@ export interface ContentsProps {
   clearKueryOnNavigation?: boolean;
 }
 
-export const ServiceContentsWithDiagnose = withDiagnoseButton(ServiceContents);
-
 /**
  * Returns the content component for the given selection (node or edge).
  */
@@ -66,9 +60,6 @@ export function getContentsComponent(
   const data = selection.data;
   if (isGroupedNodeData(data)) {
     return ExternalsListContents;
-  }
-  if (isServiceNodeData(data)) {
-    return isDiagnosticModeEnabled ? ServiceContentsWithDiagnose : ServiceContents;
   }
   if (data.spanType === 'resource') {
     return ResourceContents;
@@ -157,11 +148,6 @@ export function PopoverContent({
               </h3>
             </EuiTitle>
           </EuiFlexItem>
-          {!isEdge(selection) && selection.data != null && isServiceNodeData(selection.data) && (
-            <EuiFlexItem grow={false}>
-              <ServiceMapPopoverTitleBadges nodeData={selection.data} />
-            </EuiFlexItem>
-          )}
         </EuiFlexGroup>
         <EuiHorizontalRule margin="xs" />
       </EuiFlexItem>

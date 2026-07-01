@@ -16,7 +16,4 @@ export { DependencyContents } from './dependency_contents';
 export { EdgeContents } from './edge_contents';
 export { ExternalsListContents } from './externals_list_contents';
 export { ResourceContents } from './resource_contents';
-export { ServiceContents } from './service_contents';
-export { StatsList } from './stats_list';
-export { withDiagnoseButton } from './with_diagnose_button';
 export { AnomalyDetection } from './anomaly_detection';

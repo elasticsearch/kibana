@@ -63,6 +63,11 @@ export interface MetricsCalloutLoadedParams {
   shownInstrumentationType: ReturnType<typeof getIngestionPath>;
 }
 
+export interface ServiceFlyoutViewedParams {
+  tabId: string;
+  source: string;
+}
+
 export interface ITelemetryClient {
   reportSearchQuerySubmitted(params: SearchQuerySubmittedParams): void;
   reportSloOverviewFlyoutViewed(): void;
@@ -73,6 +78,7 @@ export interface ITelemetryClient {
   reportServiceMapAddedToDashboard(params: ServiceMapAddedToDashboardParams): void;
   reportMetricsCalloutDateRangeSelected(params: MetricsCalloutDateRangeSelectedParams): void;
   reportMetricsCalloutLoaded(params: MetricsCalloutLoadedParams): void;
+  reportServiceFlyoutViewed(params: ServiceFlyoutViewedParams): void;
 }
 
 export enum TelemetryEventTypes {
@@ -85,6 +91,7 @@ export enum TelemetryEventTypes {
   SERVICE_MAP_ADDED_TO_DASHBOARD = 'service_map_added_to_dashboard',
   METRICS_CALLOUT_DATE_RANGE_SELECTED = 'metrics_callout_date_range_selected',
   METRICS_CALLOUT_LOADED = 'metrics_callout_loaded',
+  SERVICE_FLYOUT_VIEWED = 'service_flyout_viewed',
 }
 
 export type TelemetryEvent =
@@ -120,4 +127,8 @@ export type TelemetryEvent =
   | {
       eventType: TelemetryEventTypes.METRICS_CALLOUT_LOADED;
       schema: RootSchema<MetricsCalloutLoadedParams>;
+    }
+  | {
+      eventType: TelemetryEventTypes.SERVICE_FLYOUT_VIEWED;
+      schema: RootSchema<ServiceFlyoutViewedParams>;
     };

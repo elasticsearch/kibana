@@ -27,6 +27,8 @@ import { TimeoutPrompt } from '../../components/app/service_map/timeout_prompt';
 import { useServiceMap } from '../../components/app/service_map/use_service_map';
 import { useServiceMapBadges } from '../../components/app/service_map/use_service_map_badges';
 import { ServiceMapGraph } from '../../components/app/service_map/graph';
+import { SERVICE_FLYOUT_SOURCES } from '../../components/shared/service_flyout/constants';
+import type { ServiceFlyoutOptions } from '../../components/shared/service_flyout/types';
 import { ServiceMapSloFlyoutProvider } from '../../components/shared/service_map/service_map_slo_flyout_context';
 import {
   SloOverviewFlyout,
@@ -68,6 +70,8 @@ export interface ServiceMapEmbeddableProps {
    * Set by the dashboard embeddable factory when the panel is maximized in view mode.
    */
   showEmbeddedControls?: boolean;
+  /** Optional overrides for the service flyout opened from this map. */
+  flyoutOptions?: ServiceFlyoutOptions;
 }
 
 function LoadingSpinner() {
@@ -104,6 +108,7 @@ export function ServiceMapEmbeddable({
   viewFilters,
   onViewFiltersChange,
   showEmbeddedControls,
+  flyoutOptions,
 }: ServiceMapEmbeddableProps) {
   const license = useLicenseContext();
   const { config } = useApmPluginContext();
@@ -210,6 +215,14 @@ export function ServiceMapEmbeddable({
       anomalySeverityFilter: [],
     };
   }, [viewFilters, badgesStatus]);
+
+  const flyoutOptionsForGraph = useMemo<ServiceFlyoutOptions>(
+    () => ({
+      source: SERVICE_FLYOUT_SOURCES.dashboardEmbeddable,
+      ...flyoutOptions,
+    }),
+    [flyoutOptions]
+  );
 
   const badgeDependentFiltersActive =
     (viewFilters?.alertStatusFilter?.length ?? 0) > 0 ||
@@ -352,6 +365,7 @@ export function ServiceMapEmbeddable({
           onMapOrientationChange={onMapOrientationChange}
           viewFilters={viewFiltersForGraph}
           onViewFiltersChange={onViewFiltersChange}
+          flyoutOptions={flyoutOptionsForGraph}
         />
       </div>
       {sloOverviewFlyout && (

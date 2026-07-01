@@ -11,6 +11,5 @@ export default function ({ loadTestFile }: DeploymentAgnosticFtrProviderContext)
   describe('Throughput', () => {
     loadTestFile(require.resolve('./dependencies_apis.spec.ts'));
     loadTestFile(require.resolve('./service_apis.spec.ts'));
-    loadTestFile(require.resolve('./service_maps.spec.ts'));
   });
 }

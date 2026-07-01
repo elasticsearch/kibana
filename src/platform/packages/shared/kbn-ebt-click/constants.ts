@@ -46,6 +46,8 @@ export const EBT_CLICK_ACTIONS = {
   SET_BREAKDOWN: 'setBreakdown',
   /** User intends to view active alerts for an entity. */
   VIEW_ALERTS: 'viewAlerts',
+  /** User intends to view SLOs for a service or resource. */
+  VIEW_SLOS: 'viewSlos',
 } as const;
 
 /**

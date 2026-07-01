@@ -16,8 +16,6 @@ import type { DeploymentAgnosticFtrProviderContext } from '../../../ftr_provider
 import { extractExitSpansConnections } from './utils';
 
 type DependencyResponse = SupertestReturnType<'GET /internal/apm/service-map/dependency'>;
-type ServiceNodeResponse =
-  SupertestReturnType<'GET /internal/apm/service-map/service/{serviceName}'>;
 
 function getSpanLinksFromEvents(events: ApmFields[]) {
   return compact(
@@ -53,39 +51,6 @@ export default function ({ getService }: DeploymentAgnosticFtrProviderContext) {
 
         expect(response.status).toBe(200);
         expect(response.body.spans.length).toBe(0);
-      });
-
-      describe('/internal/apm/service-map/service/{serviceName} without data', () => {
-        let response: ServiceNodeResponse;
-        before(async () => {
-          response = await apmApiClient.readUser({
-            endpoint: `GET /internal/apm/service-map/service/{serviceName}`,
-            params: {
-              path: { serviceName: 'opbeans-node' },
-              query: {
-                start: new Date(start).toISOString(),
-                end: new Date(end).toISOString(),
-                environment: 'ENVIRONMENT_ALL',
-              },
-            },
-          });
-        });
-
-        it('retuns status code 200', () => {
-          expect(response.status).toBe(200);
-        });
-
-        it('returns an object with nulls', async () => {
-          [
-            response.body.currentPeriod?.failedTransactionsRate?.value,
-            response.body.currentPeriod?.memoryUsage?.value,
-            response.body.currentPeriod?.cpuUsage?.value,
-            response.body.currentPeriod?.transactionStats?.latency?.value,
-            response.body.currentPeriod?.transactionStats?.throughput?.value,
-          ].forEach((value) => {
-            expect(value).toEqual(null);
-          });
-        });
       });
 
       describe('/internal/apm/service-map/dependency', () => {

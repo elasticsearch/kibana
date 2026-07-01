@@ -170,7 +170,8 @@
     "@kbn/ebt-click",
     "@kbn/apm-types-shared",
     "@kbn/apm-common",
-    "@kbn/storybook"
+    "@kbn/storybook",
+    "@kbn/lens-embeddable-utils"
   ],
   "exclude": ["target/**/*"]
 }

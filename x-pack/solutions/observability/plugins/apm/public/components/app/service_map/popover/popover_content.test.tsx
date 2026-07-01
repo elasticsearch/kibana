@@ -8,13 +8,8 @@
 import React from 'react';
 import { render, screen } from '@testing-library/react';
 import { MarkerType } from '@xyflow/react';
-import {
-  getContentsComponent,
-  PopoverContent,
-  ServiceContentsWithDiagnose,
-} from './popover_content';
+import { getContentsComponent, PopoverContent } from './popover_content';
 import type { ServiceMapNode, ServiceMapEdge } from '../../../../../common/service_map';
-import { ServiceContents } from './service_contents';
 import { DependencyContents } from './dependency_contents';
 import { ExternalsListContents } from './externals_list_contents';
 import { ResourceContents } from './resource_contents';
@@ -26,10 +21,6 @@ jest.mock('../../../../context/apm_plugin/use_apm_plugin_context', () => ({
       uiSettings: { get: jest.fn().mockReturnValue(false) },
     },
   }),
-}));
-
-jest.mock('./service_contents', () => ({
-  ServiceContents: jest.fn(() => <div data-testid="service-contents" />),
 }));
 
 jest.mock('./dependency_contents', () => ({
@@ -67,28 +58,6 @@ function edge(id: string, source: string, target: string): ServiceMapEdge {
 describe('getContentsComponent', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-  });
-
-  describe('service nodes', () => {
-    it('returns ServiceContents for service node data', () => {
-      const selection = node({
-        id: 'test-service',
-        label: 'Test Service',
-        isService: true,
-      });
-      const Component = getContentsComponent(selection, false);
-      expect(Component).toBe(ServiceContents);
-    });
-
-    it('wraps ServiceContents with diagnose button when diagnostic mode is enabled', () => {
-      const selection = node({
-        id: 'test-service',
-        label: 'Test Service',
-        isService: true,
-      });
-      const Component = getContentsComponent(selection, true);
-      expect(Component).toBe(ServiceContentsWithDiagnose);
-    });
   });
 
   describe('dependency nodes', () => {

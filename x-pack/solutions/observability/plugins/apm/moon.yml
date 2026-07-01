@@ -170,6 +170,7 @@ dependsOn:
   - '@kbn/apm-types-shared'
   - '@kbn/apm-common'
   - '@kbn/storybook'
+  - '@kbn/lens-embeddable-utils'
 tags:
   - plugin
   - prod

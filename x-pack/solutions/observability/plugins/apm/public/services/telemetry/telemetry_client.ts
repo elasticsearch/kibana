@@ -11,6 +11,7 @@ import type {
   MetricsCalloutDateRangeSelectedParams,
   MetricsCalloutLoadedParams,
   SearchQuerySubmittedParams,
+  ServiceFlyoutViewedParams,
   ServiceMapAddedToDashboardParams,
   ServiceMapDagreLayoutFallbackParams,
   SloOverviewFlyoutSearchQueriedParams,
@@ -61,5 +62,9 @@ export class TelemetryClient implements ITelemetryClient {
 
   public reportMetricsCalloutLoaded = (params: MetricsCalloutLoadedParams): void => {
     this.analytics.reportEvent(TelemetryEventTypes.METRICS_CALLOUT_LOADED, params);
+  };
+
+  public reportServiceFlyoutViewed = (params: ServiceFlyoutViewedParams): void => {
+    this.analytics.reportEvent(TelemetryEventTypes.SERVICE_FLYOUT_VIEWED, params);
   };
 }

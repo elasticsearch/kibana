@@ -15,7 +15,7 @@ import { SparkPlot } from '../../../shared/charts/spark_plot';
 import { ChartType, getTimeSeriesColor } from '../../../shared/charts/helper/get_timeseries_color';
 import type { APIReturnType } from '../../../../services/rest/create_call_apm_api';
 
-type ServiceNodeReturn = APIReturnType<'GET /internal/apm/service-map/service/{serviceName}'>;
+type DependencyNodeReturn = APIReturnType<'GET /internal/apm/service-map/dependency'>;
 
 function LoadingSpinner() {
   return (
@@ -37,7 +37,7 @@ function NoDataMessage() {
 
 interface StatsListProps {
   isLoading: boolean;
-  data: Partial<ServiceNodeReturn>;
+  data: Partial<DependencyNodeReturn>;
 }
 
 interface Item {

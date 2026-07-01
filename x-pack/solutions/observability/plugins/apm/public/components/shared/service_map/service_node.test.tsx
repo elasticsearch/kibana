@@ -113,6 +113,13 @@ describe('ServiceNode', () => {
     expect(screen.getByTestId('serviceMapNode-service-test-service')).toBeInTheDocument();
   });
 
+  it('instruments the service circle with EBT click attributes', () => {
+    renderServiceNode();
+    const circle = screen.getByTestId('serviceMapNodeServiceCircle');
+    expect(circle).toHaveAttribute('data-ebt-action', 'viewService');
+    expect(circle).toHaveAttribute('data-ebt-element', 'serviceMapNode');
+  });
+
   it('applies primary color when selected', () => {
     renderServiceNode(createServiceNodeData(), true);
     // The label should have primary color when selected
