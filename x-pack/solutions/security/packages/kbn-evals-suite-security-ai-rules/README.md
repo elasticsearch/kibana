@@ -14,6 +14,12 @@ This package evaluates the quality of AI-generated detection rules against known
 - Severity and risk score accuracy
 - Schedule validity (interval format, lookback gap)
 - Rejection of impossible detection requests (negative cases)
+- Tool-call trajectory vs. the canonical sequence prescribed by the
+  `detection-rule-edit` SKILL.md (defaults to a single
+  `security.create_detection_rule` call; negatives expect no tools)
+- Skill invocation — verifies the agent loaded
+  `detection-rule-edit/SKILL.md` per the rule attachment's instruction
+- Trace-based non-functional metrics — input/output/cached tokens, tool-call count, latency
 
 ## API Flow
 
@@ -104,7 +110,16 @@ SELECTED_EVALUATORS="Query Syntax Validity,Field Coverage,MITRE Accuracy" \
 
 ## Evaluation Metrics
 
-The suite runs 12 evaluators (10 deterministic CODE evaluators, 1 LLM-as-judge evaluator, and 1 rejection evaluator). In the summary table, these are grouped into columns for readability.
+The suite runs the following evaluators. In the summary table, related ones are grouped into columns for readability.
+
+- **Structural Validity** (6 CODE evaluators)
+- **Field Coverage** (1 CODE evaluator)
+- **Reference Match** (3 CODE evaluators)
+- **ES|QL Functional Equivalence** (1 LLM-as-judge)
+- **Rejection** (1 CODE evaluator)
+- **Tool Trajectory** (1 CODE evaluator)
+- **Skill Invocation** (1 trace-based evaluator)
+- **Trace-based observability** (5 trace-based evaluators: input/output/cached tokens, tool calls, latency)
 
 ### Structural Validity (CODE — grouped column)
 
@@ -146,6 +161,27 @@ These two evaluators use `criteria` to check semantic equivalence for the rule n
 createRuleNameEvaluator(evaluators),
 createRuleDescriptionEvaluator(evaluators),
 ```
+
+### Tool Trajectory (CODE — 0 to 1)
+
+Scores tool-call coverage and order against a golden sequence using LCS for order (weight 0.4) and set intersection for coverage (weight 0.6). The default golden sequence is inferred from each example's `category`:
+
+- `category: 'negative'` → `[]` (no tools expected; agent should refuse)
+- otherwise → `['security.create_detection_rule']` (the canonical creation flow per `detection-rule-edit/SKILL.md`)
+
+Override the default by setting `tool_sequence: string[]` on a `ReferenceRule`. `filestore.read` is filtered from observed tool calls because those are SKILL.md loads covered by the Skill Invocation evaluator.
+
+### Skill Invocation (TRACE-BASED — binary: 0 or 1)
+
+Verifies the agent loaded `detection-rule-edit/SKILL.md` via the `filestore.read` tool, matching the rule attachment's `getAgentDescription()` instruction ("ALWAYS read the detection-rule-edit skill"). Reads OTel spans from `traces-*` via ES|QL; zero per-example LLM cost.
+
+### Trace-Based Observability (TRACE-BASED — zero LLM cost)
+
+Five evaluators that query OTel spans for non-functional signals:
+
+- **Input Tokens / Output Tokens / Cached Tokens** — cumulative per round (mean + median in the report)
+- **Tool Calls** — total tool span count, catches tool-call inflation
+- **Latency** — end-to-end seconds
 
 ### Skip Wrappers
 

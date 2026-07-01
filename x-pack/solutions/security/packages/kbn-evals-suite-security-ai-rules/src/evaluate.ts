@@ -138,6 +138,7 @@ export const evaluate = base.extend<
         ['Risk Score Match', { statsToInclude: ['mean', 'median'] }],
         ['ES|QL Functional Equivalence', { statsToInclude: ['mean'] }],
         ['Rejection', { statsToInclude: ['mean'] }],
+        ['Tool Trajectory', { statsToInclude: ['mean'] }],
       ]);
 
       await use({

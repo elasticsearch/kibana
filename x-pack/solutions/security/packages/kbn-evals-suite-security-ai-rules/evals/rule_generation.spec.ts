@@ -17,12 +17,20 @@ import { negativePairs } from '../datasets/negative_pairs';
 evaluate.describe('AI Rule Generation', { tag: tags.serverless.security.complete }, () => {
   evaluate(
     'generates accurate detection rules',
-    async ({ executorClient, evaluators, chatClient, evaluationInferenceClient, log }) => {
+    async ({
+      executorClient,
+      evaluators,
+      chatClient,
+      evaluationInferenceClient,
+      traceEsClient,
+      log,
+    }) => {
       const evaluateDataset = createEvaluateDataset({
         evaluators,
         executorClient,
         chatClient,
         inferenceClient: evaluationInferenceClient,
+        traceEsClient,
         log,
       });
 
@@ -47,7 +55,14 @@ evaluate.describe('AI Rule Generation', { tag: tags.serverless.security.complete
 
   evaluate(
     'handles edge cases and errors gracefully',
-    async ({ executorClient, evaluators, chatClient, evaluationInferenceClient, log }) => {
+    async ({
+      executorClient,
+      evaluators,
+      chatClient,
+      evaluationInferenceClient,
+      traceEsClient,
+      log,
+    }) => {
       const usableCases = hardCases.filter(
         (c) => c.metadata.difficulty !== 'very-hard' // too slow / rate-limited for CI
       );
@@ -62,6 +77,7 @@ evaluate.describe('AI Rule Generation', { tag: tags.serverless.security.complete
         executorClient,
         chatClient,
         inferenceClient: evaluationInferenceClient,
+        traceEsClient,
         log,
       });
 
@@ -84,12 +100,20 @@ evaluate.describe('AI Rule Generation', { tag: tags.serverless.security.complete
 
   evaluate(
     'rejects impossible detection requests',
-    async ({ executorClient, evaluators, chatClient, evaluationInferenceClient, log }) => {
+    async ({
+      executorClient,
+      evaluators,
+      chatClient,
+      evaluationInferenceClient,
+      traceEsClient,
+      log,
+    }) => {
       const evaluateDataset = createEvaluateDataset({
         evaluators,
         executorClient,
         chatClient,
         inferenceClient: evaluationInferenceClient,
+        traceEsClient,
         log,
       });
 

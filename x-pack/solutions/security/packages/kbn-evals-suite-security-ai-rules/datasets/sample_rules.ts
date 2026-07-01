@@ -31,6 +31,20 @@ export interface ReferenceRule {
   interval?: string;
   /** Native ES|QL translation of the original query (for non-ES|QL rules) */
   esqlQuery?: string;
+  /**
+   * Golden tool-call sequence for the trajectory evaluator.
+   *
+   * If omitted, the evaluator infers the default from `category`:
+   *   - `'negative'` → `[]`               (model should refuse, no tools called)
+   *   - everything else → `['security.create_detection_rule']`
+   *     (the detection-rule-edit SKILL.md instructs the agent to invoke
+   *      `security.create_detection_rule` exactly once for new-rule creation;
+   *      `attachment_update` is for edits, which this suite does not test)
+   *
+   * Set this field explicitly when an example expects a non-default sequence
+   * (e.g., a future multi-step edit scenario).
+   */
+  tool_sequence?: string[];
 }
 
 /**
