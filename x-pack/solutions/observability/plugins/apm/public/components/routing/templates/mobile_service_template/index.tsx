@@ -120,7 +120,7 @@ function TemplateWithContext({
         searchBar={
           <>
             {BottomHeaderContent && <BottomHeaderContent />}
-            {customSearchBar ?? <MobileSearchBar {...searchBarOptions} />}
+            {customSearchBar ?? <MobileSearchBar {...searchBarOptions} showEnvironmentFilter />}
           </>
         }
         pageHeader={{

@@ -87,6 +87,36 @@ test.describe(
       });
     });
 
+    test('mobile service overview header renders the environment filter', async ({
+      page,
+      pageObjects: { serviceDetailsPage },
+    }) => {
+      await serviceDetailsPage.goToMobileServiceOverview(testData.SERVICE_MOBILE_ANDROID, {
+        rangeFrom: testData.START_DATE,
+        rangeTo: testData.END_DATE,
+      });
+
+      await test.step('Verify the environment filter is visible in the header', async () => {
+        await expect(page.getByTestId('environmentFilter')).toBeVisible({
+          timeout: EXTENDED_TIMEOUT,
+        });
+      });
+
+      await test.step('Selecting an environment updates the environment query param', async () => {
+        const environmentFilter = page.getByTestId('environmentFilter');
+        await environmentFilter.locator('input').click();
+        const optionToSelect = page.getByRole('option', { name: PRODUCTION_ENVIRONMENT });
+        await optionToSelect.waitFor({ state: 'visible' });
+        await optionToSelect.click();
+
+        await page.waitForURL(
+          (url) => url.searchParams.get('environment') === PRODUCTION_ENVIRONMENT,
+          { timeout: EXTENDED_TIMEOUT }
+        );
+        expect(page.url()).toContain(`environment=${PRODUCTION_ENVIRONMENT}`);
+      });
+    });
+
     test('accessing mobile service from apm route redirects to mobile route', async ({
       page,
       kbnUrl,

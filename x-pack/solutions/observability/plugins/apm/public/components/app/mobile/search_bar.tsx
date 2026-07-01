@@ -5,11 +5,13 @@
  * 2.0.
  */
 
-import type { EuiFlexGroupProps } from '@elastic/eui';
-import { EuiFlexGroup, EuiFlexItem, EuiSpacer } from '@elastic/eui';
+import { css } from '@emotion/react';
+import { EuiFlexGrid, EuiFlexGroup, EuiFlexItem, EuiSpacer } from '@elastic/eui';
 import React from 'react';
 import { useBreakpoints } from '../../../hooks/use_breakpoints';
+import { ApmEnvironmentFilter } from '../../shared/environment_filter';
 import { TimeComparison } from '../../shared/time_comparison';
+import { useSecondaryFiltersWidthStyle } from '../../shared/search_bar/use_secondary_filters_width_style';
 import { MobileFilters } from './service_overview/filters';
 import { UnifiedSearchBar } from '../../shared/unified_search_bar';
 
@@ -18,6 +20,7 @@ interface Props {
   showUnifiedSearchBar?: boolean;
   showFilterBar?: boolean;
   showTimeComparison?: boolean;
+  showEnvironmentFilter?: boolean;
   showTransactionTypeSelector?: boolean;
   showQueryInput?: boolean;
   showMobileFilters?: boolean;
@@ -29,57 +32,64 @@ export function MobileSearchBar({
   showUnifiedSearchBar = true,
   showFilterBar = false,
   showTimeComparison = false,
+  showEnvironmentFilter = false,
   showTransactionTypeSelector = false,
   showQueryInput = true,
   showMobileFilters = false,
   searchBarPlaceholder,
 }: Props) {
-  const { isSmall, isMedium, isLarge, isXl, isXXXL } = useBreakpoints();
+  const { isMedium } = useBreakpoints();
+  const hasSecondaryFilters = showEnvironmentFilter || showTimeComparison || showMobileFilters;
+
+  const { secondaryFiltersWidthStyle, setSearchBarContainerRef } = useSecondaryFiltersWidthStyle({
+    isMedium,
+    enabled: showUnifiedSearchBar && showQueryInput,
+  });
 
   if (hidden) {
     return null;
   }
 
-  const searchBarDirection: EuiFlexGroupProps['direction'] =
-    isXXXL || (!isXl && !showTimeComparison) ? 'row' : 'column';
-
   return (
-    <>
-      <EuiFlexGroup gutterSize="s" responsive={false} direction={searchBarDirection}>
-        <EuiFlexGroup
-          direction={isLarge ? 'columnReverse' : 'row'}
-          gutterSize="s"
-          responsive={false}
-        >
-          {showUnifiedSearchBar && (
-            <EuiFlexItem>
-              <UnifiedSearchBar
-                placeholder={searchBarPlaceholder}
-                showQueryInput={showQueryInput}
-                showFilterBar={showFilterBar}
-              />
-            </EuiFlexItem>
-          )}
+    <div ref={setSearchBarContainerRef}>
+      {showUnifiedSearchBar && (
+        <EuiFlexItem>
+          <UnifiedSearchBar
+            placeholder={searchBarPlaceholder}
+            showQueryInput={showQueryInput}
+            showFilterBar={showFilterBar}
+          />
+        </EuiFlexItem>
+      )}
+      {hasSecondaryFilters && <EuiSpacer size="s" />}
+      {hasSecondaryFilters && (
+        <EuiFlexGroup gutterSize="none" justifyContent="flexStart" responsive={false}>
+          <EuiFlexItem grow={false} style={secondaryFiltersWidthStyle}>
+            <EuiFlexGrid
+              columns={!isMedium ? 3 : 1}
+              gutterSize="s"
+              css={css`
+                width: 100%;
+                max-width: 100%;
+              `}
+            >
+              {showEnvironmentFilter && (
+                <EuiFlexItem>
+                  <ApmEnvironmentFilter compressed fullWidth />
+                </EuiFlexItem>
+              )}
+
+              {showTimeComparison && (
+                <EuiFlexItem>
+                  <TimeComparison compressed fullWidth />
+                </EuiFlexItem>
+              )}
+
+              {showMobileFilters && <MobileFilters />}
+            </EuiFlexGrid>
+          </EuiFlexItem>
         </EuiFlexGroup>
-      </EuiFlexGroup>
-      <EuiSpacer size="s" />
-      <EuiFlexGroup
-        justifyContent="spaceBetween"
-        gutterSize={isMedium ? 's' : 'm'}
-        direction={isLarge || isMedium ? 'column' : 'row'}
-      >
-        {showTimeComparison && (
-          <EuiFlexItem grow={isSmall}>
-            <TimeComparison />
-          </EuiFlexItem>
-        )}
-        {showMobileFilters && (
-          <EuiFlexItem style={{ minWidth: 300 }}>
-            <MobileFilters />
-          </EuiFlexItem>
-        )}
-      </EuiFlexGroup>
-      <EuiSpacer size="m" />
-    </>
+      )}
+    </div>
   );
 }
