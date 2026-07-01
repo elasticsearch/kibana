@@ -8,7 +8,7 @@
  */
 
 import { expect } from '@kbn/scout/ui';
-import { spaceTest, testData } from '../../fixtures/common';
+import { spaceTest, testData } from '../../../fixtures/common';
 
 const INITIAL_HIT_COUNT = 14004;
 const FILTERED_HIT_COUNT = 270;

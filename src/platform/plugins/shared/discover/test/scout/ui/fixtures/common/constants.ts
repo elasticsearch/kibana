@@ -13,6 +13,9 @@
  */
 export const DISCOVER_KBN_ARCHIVE = 'src/platform/test/functional/fixtures/kbn_archiver/discover';
 
+export const FLIGHTS_KBN_ARCHIVE =
+  'src/platform/test/functional/fixtures/kbn_archiver/kibana_sample_data_flights_index_pattern';
+
 export const DEFAULT_DATA_VIEW = 'logstash-*';
 
 export const SAVED_SEARCH_TITLE = 'A Saved Search';

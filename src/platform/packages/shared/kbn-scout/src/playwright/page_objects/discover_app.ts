@@ -111,10 +111,7 @@ export class DiscoverApp {
     const editor = new DataViewEditorPage(this.page);
     await this.page.testSubj.locator('indexPatternEditorFlyout').waitFor({ state: 'visible' });
 
-    // FTR passes the base name and relies on the editor auto-appending `*` as the
-    // user types. Scout sets the title verbatim (`fill`), so append the wildcard
-    // here to preserve that contract (`name`, `* will be added automatically`).
-    await editor.setTitle(name.endsWith('*') ? name : `${name}*`);
+    await editor.setTitleWithAutoWildcard(name);
 
     // wait for timestamp options; default @timestamp applies.
     await editor.timestampField
@@ -179,16 +176,27 @@ export class DiscoverApp {
     await menuItem.click();
   }
 
-  async clickNewSearch({ isInOverflowMenu }: { isInOverflowMenu?: boolean } = {}) {
-    await this.clickAppMenuItem('discoverNewButton', { isInOverflowMenu });
-    await this.page.testSubj.hover('dscHideSidebarButton'); // cancel tooltips
-    await this.waitForDiscoverPage();
-    await this.page.testSubj.waitForSelector('loadingSpinner', { state: 'hidden' });
+  private async dismissHoverOverlays() {
+    await this.page.mouse.move(0, 0);
   }
 
-  async saveSearch(name: string) {
+  async clickNewSearch({ isInOverflowMenu }: { isInOverflowMenu?: boolean } = {}) {
+    await this.clickAppMenuItem('discoverNewButton', { isInOverflowMenu });
+    await this.dismissHoverOverlays();
+    await this.waitUntilTabIsLoaded();
+  }
+
+  async saveSearch(name: string, { storeTimeRange }: { storeTimeRange?: boolean } = {}) {
     await this.page.testSubj.click('discoverSaveButton');
     await this.page.testSubj.fill('savedObjectTitle', name);
+    if (storeTimeRange !== undefined) {
+      const switchControl = this.page.testSubj.locator('storeTimeWithSearch');
+      await switchControl.waitFor({ state: 'visible' });
+      const isChecked = (await switchControl.getAttribute('aria-checked')) === 'true';
+      if (isChecked !== storeTimeRange) {
+        await switchControl.click();
+      }
+    }
     await this.page.testSubj.click('confirmSaveSavedObjectButton');
     await this.page.testSubj.waitForSelector('savedObjectSaveModal', { state: 'hidden' });
   }
@@ -522,6 +530,15 @@ export class DiscoverApp {
 
   async navigateToLensEditor() {
     await this.page.testSubj.click('unifiedHistogramEditVisualization');
+  }
+
+  async openLensEditFlyout() {
+    await this.page.testSubj.locator('unifiedHistogramEditFlyoutVisualization').click();
+    await this.getLensEditFlyout().waitFor({ state: 'visible' });
+  }
+
+  getLensEditFlyout(): Locator {
+    return this.page.testSubj.locator('lnsChartSwitchPopover');
   }
 
   async getTheColumnFromGrid(): Promise<string[]> {

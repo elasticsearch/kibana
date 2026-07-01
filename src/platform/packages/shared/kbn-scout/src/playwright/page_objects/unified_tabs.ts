@@ -17,11 +17,22 @@ import { expect } from '..';
 export const UNIFIED_TABS_TEST_SUBJ = {
   selectTabBtnPrefix: 'unifiedTabs_selectTabBtn_',
   tabMenuBtnPrefix: 'unifiedTabs_tabMenuBtn_',
+  editTabLabelInputPrefix: 'unifiedTabs_editTabLabelInput_',
   newTabBtn: 'unifiedTabs_tabsBar_newTabBtn',
   tabsBar: 'unifiedTabs_tabsBar',
   duplicateMenuItem: 'unifiedTabs_tabMenuItem_duplicate',
+  tabPreviewOuterPanelPrefix: 'unifiedTabs_tabPreview_outerPanel_',
   tabPreviewContentPanel: 'unifiedTabs_tabPreview_contentPanel',
+  tabPreviewTitlePrefix: 'unifiedTabs_tabPreview_title_',
+  tabPreviewQueryPrefix: 'unifiedTabs_tabPreviewCodeBlock_',
+  tabPreviewLabelPrefix: 'unifiedTabs_tabPreview_label_',
 } as const;
+
+export interface TabPreviewContent {
+  title: string;
+  query: string;
+  label: string;
+}
 
 export class UnifiedTabs {
   constructor(private readonly page: ScoutPage) {}
@@ -36,6 +47,16 @@ export class UnifiedTabs {
     return this.getTabsBar().locator(
       `[data-test-subj^="${UNIFIED_TABS_TEST_SUBJ.selectTabBtnPrefix}"]`
     );
+  }
+
+  private async getTab(index: number): Promise<Locator> {
+    const tabs = await this.getTabs().all();
+
+    if (index < 0 || index >= tabs.length) {
+      throw new Error(`Tab index ${index} is out of bounds (found ${tabs.length} tabs)`);
+    }
+
+    return tabs[index];
   }
 
   /**
@@ -67,21 +88,70 @@ export class UnifiedTabs {
       .waitFor({ state: 'hidden' });
   }
 
+  async openTabPreview(index: number) {
+    const tab = await this.getTab(index);
+    await this.hideTabPreview();
+    await tab.hover();
+    await this.page.testSubj
+      .locator(UNIFIED_TABS_TEST_SUBJ.tabPreviewContentPanel)
+      .waitFor({ state: 'visible' });
+  }
+
+  private getVisibleTabPreviewPanel(): Locator {
+    return this.page
+      .locator(`[data-test-subj^="${UNIFIED_TABS_TEST_SUBJ.tabPreviewOuterPanelPrefix}"]`)
+      .filter({ has: this.page.testSubj.locator(UNIFIED_TABS_TEST_SUBJ.tabPreviewContentPanel) });
+  }
+
+  private async getVisibleTabPreviewText(testSubjectPrefix: string): Promise<string> {
+    const elements = this.getVisibleTabPreviewPanel().locator(
+      `[data-test-subj^="${testSubjectPrefix}"]`
+    );
+    const elementCount = await elements.count();
+
+    if (elementCount > 1) {
+      throw new Error(`Expected at most one tab preview element for ${testSubjectPrefix}`);
+    }
+
+    if (elementCount === 0) {
+      return '';
+    }
+
+    return (await elements.innerText()).trim();
+  }
+
+  async getTabPreviewContent(index: number): Promise<TabPreviewContent> {
+    await this.openTabPreview(index);
+
+    return {
+      title: await this.getVisibleTabPreviewText(UNIFIED_TABS_TEST_SUBJ.tabPreviewTitlePrefix),
+      query: await this.getVisibleTabPreviewText(UNIFIED_TABS_TEST_SUBJ.tabPreviewQueryPrefix),
+      label: await this.getVisibleTabPreviewText(UNIFIED_TABS_TEST_SUBJ.tabPreviewLabelPrefix),
+    };
+  }
+
   /**
    * Switches to the tab at the given 0-based index and waits for it to become active.
    * Does NOT wait for content to load — consumers should call their own
    * content-loading waiter after this if needed.
    */
   async selectTab(index: number) {
-    const tabs = await this.getTabs().all();
-
-    if (index < 0 || index >= tabs.length) {
-      throw new Error(`Tab index ${index} is out of bounds (found ${tabs.length} tabs)`);
-    }
-
-    const tab = tabs[index];
+    const tab = await this.getTab(index);
     await tab.click();
     await expect(tab).toHaveAttribute('aria-selected', 'true');
+  }
+
+  async editTabLabel(index: number, newLabel: string) {
+    const tab = await this.getTab(index);
+    await tab.dblclick();
+
+    const input = this.page.locator(
+      `[data-test-subj^="${UNIFIED_TABS_TEST_SUBJ.editTabLabelInputPrefix}"]`
+    );
+    await input.waitFor({ state: 'visible' });
+    await input.fill(newLabel);
+    await input.press('Enter');
+    await tab.getByText(newLabel, { exact: true }).waitFor({ state: 'visible' });
   }
 
   /**
@@ -162,12 +232,7 @@ export class UnifiedTabs {
    * The duplicated tab becomes the active one.
    */
   async duplicateTab(index: number) {
-    const tabs = await this.getTabs().all();
-    if (index < 0 || index >= tabs.length) {
-      throw new Error(`Tab index ${index} is out of bounds (found ${tabs.length} tabs)`);
-    }
-
-    const tab = tabs[index];
+    const tab = await this.getTab(index);
     const originalTestSubj = await tab.getAttribute('data-test-subj');
     if (!originalTestSubj) {
       throw new Error(`Tab at index ${index} is missing a data-test-subj attribute`);
