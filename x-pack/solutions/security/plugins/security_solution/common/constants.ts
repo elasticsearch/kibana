@@ -692,6 +692,8 @@ export const ESSENTIAL_ALERT_FIELDS: string[] = [
   'kibana.alert.severity',
   'kibana.alert.start',
   'kibana.alert.workflow_status',
+  'kibana.alert.workflow_reason',
+  'kibana.alert.workflow_user',
   'kibana.alert.reason',
   'kibana.alert.risk_score',
   'kibana.alert.rule.name',

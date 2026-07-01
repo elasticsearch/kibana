@@ -157,7 +157,11 @@ Examples:
 
 ## No Actions
 
-This skill is read-only. Never suggest or offer to enable, disable, edit, delete, duplicate, or bulk-edit rules. Do not prompt the user to take any action on the rules returned. If the user asks to modify a rule, direct them to the Detection Rules UI.`,
+This skill is read-only. Never suggest or offer to enable, disable, edit, delete, duplicate, or bulk-edit rules. If the user asks to modify a rule, direct them to the Detection Rules UI.
+
+**Exception — noise/FP queries:** if the user's request was about noisy rules, high alert volume, or false positives (e.g. "which rules fire the most?", "find my noisiest rules"), end your response with:
+"I can investigate any of these rules individually — just let me know which one."
+(On the next turn, the \`investigate-rule\` skill will handle the investigation.)`,
     getRegistryTools: () => [SECURITY_ALERTS_TOOL_ID],
     getInlineTools: () => [
       createFindRulesInlineTool({ getStartServices, logger }),

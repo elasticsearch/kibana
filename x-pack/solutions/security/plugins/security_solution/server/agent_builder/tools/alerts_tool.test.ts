@@ -152,6 +152,36 @@ describe('alertsTool', () => {
       expect(callArgs.index).toBe(`${DEFAULT_ALERTS_INDEX}-custom-space`);
     });
 
+    it('forwards time_window_hours to runSearchTool as a time range', async () => {
+      (runSearchTool as jest.Mock).mockResolvedValue({ results: [] });
+
+      await tool.handler(
+        { query: 'find alerts', time_window_hours: 72 },
+        createToolHandlerContext(mockRequest, mockEsClient, mockLogger, {
+          modelProvider: mockModelProvider,
+          events: mockEvents as ToolHandlerContext['events'],
+        })
+      );
+
+      const callArgs = (runSearchTool as jest.Mock).mock.calls[0][0];
+      expect(callArgs.timeRange).toEqual({ from: 'now-72h', to: 'now' });
+    });
+
+    it('leaves the time range unset when time_window_hours is not provided (24h default preserved)', async () => {
+      (runSearchTool as jest.Mock).mockResolvedValue({ results: [] });
+
+      await tool.handler(
+        { query: 'find alerts' },
+        createToolHandlerContext(mockRequest, mockEsClient, mockLogger, {
+          modelProvider: mockModelProvider,
+          events: mockEvents as ToolHandlerContext['events'],
+        })
+      );
+
+      const callArgs = (runSearchTool as jest.Mock).mock.calls[0][0];
+      expect(callArgs.timeRange).toBeUndefined();
+    });
+
     it('calls runSearchTool with explicit index when provided', async () => {
       const mockResults = [{ type: ToolResultType.other, data: 'test results' }];
       (runSearchTool as jest.Mock).mockResolvedValue({ results: mockResults });
@@ -241,7 +271,7 @@ describe('alertsTool', () => {
       );
 
       expect(mockLogger.debug).toHaveBeenCalledWith(
-        'alerts tool called with query: test query, index: .alerts-security.alerts-default, isCount: true'
+        'alerts tool called with query: test query, index: .alerts-security.alerts-default, isCount: true, timeWindowHours: default'
       );
     });
 

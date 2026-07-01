@@ -17,6 +17,7 @@ import { threatHuntingSkill } from './threat_hunting';
 import { alertAnalysisSkill } from './alert_analysis';
 import type { EntityAnalyticsRoutesDeps } from '../../lib/entity_analytics/types';
 import { findSecurityMlJobsSkill } from './find_security_ml_jobs';
+import { createInvestigateRuleSkill } from './investigate_rule';
 import { createFindRulesSkill } from './find_rules';
 import { siemReadinessSkill } from './siem_readiness';
 import { createRecommendPrebuiltRulesSkill } from './recommend_prebuilt_rules';
@@ -76,5 +77,9 @@ export const registerSkills = async ({
 
   if (experimentalFeatures.pciComplianceAgentBuilder) {
     agentBuilder.skills.register(pciComplianceSkill);
+  }
+
+  if (experimentalFeatures.investigateRuleSkill) {
+    await agentBuilder.skills.register(createInvestigateRuleSkill());
   }
 };
