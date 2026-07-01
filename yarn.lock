@@ -9353,6 +9353,10 @@
   version "0.0.0"
   uid ""
 
+"@kbn/significant-events-plugin@link:x-pack/platform/plugins/shared/significant_events":
+  version "0.0.0"
+  uid ""
+
 "@kbn/significant-events-schema@link:x-pack/platform/packages/shared/kbn-significant-events-schema":
   version "0.0.0"
   uid ""

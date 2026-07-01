@@ -2444,6 +2444,8 @@
       "@kbn/sidebar-examples-plugin/*": ["examples/sidebar_examples/*"],
       "@kbn/siem-readiness": ["x-pack/solutions/security/packages/siem-readiness"],
       "@kbn/siem-readiness/*": ["x-pack/solutions/security/packages/siem-readiness/*"],
+      "@kbn/significant-events-plugin": ["x-pack/platform/plugins/shared/significant_events"],
+      "@kbn/significant-events-plugin/*": ["x-pack/platform/plugins/shared/significant_events/*"],
       "@kbn/significant-events-schema": ["x-pack/platform/packages/shared/kbn-significant-events-schema"],
       "@kbn/significant-events-schema/*": ["x-pack/platform/packages/shared/kbn-significant-events-schema/*"],
       "@kbn/slo-plugin": ["x-pack/solutions/observability/plugins/slo"],

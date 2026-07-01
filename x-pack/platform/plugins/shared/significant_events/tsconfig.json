@@ -1,0 +1,22 @@
+{
+  "extends": "@kbn/tsconfig-base/tsconfig.json",
+  "compilerOptions": {
+    "outDir": "target/types",
+    "useUnknownInCatchVariables": true
+  },
+  "include": [
+    "../../../../../typings/**/*",
+    "common/**/*",
+    "docs/**/*",
+    "scripts/**/*",
+    "server/**/*",
+    "public/**/*",
+    "types/**/*",
+    "test/**/*"
+  ],
+  "exclude": ["target/**/*"],
+  "kbn_references": [
+    "@kbn/streams-plugin",
+    "@kbn/core",
+  ]
+}

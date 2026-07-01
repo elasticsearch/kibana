@@ -27,6 +27,7 @@ import type { WorkflowsExtensionsServerPluginStart } from '@kbn/workflows-extens
 import type { RulesClientApi } from '@kbn/alerting-v2-plugin/server';
 import { distinctUntilChanged, filter, skip } from 'rxjs';
 import type { Subscription } from 'rxjs';
+import type { KnowledgeIndicatorClientContract } from '@kbn/significant-events-schema';
 import { isSignificantEventsMemoryEnabled } from './lib/memory/is_significant_events_memory_enabled';
 import type { StreamsConfig } from '../common/config';
 import { installWorkflows } from './lib/workflows/setup/install_workflows';
@@ -93,8 +94,11 @@ import {
 
 const STREAMS_MANAGED_WORKFLOW_OWNER = 'streams';
 
-// eslint-disable-next-line @typescript-eslint/no-empty-interface
-export interface StreamsPluginSetup {}
+export interface StreamsPluginSetup {
+  registerKnowledgeIndicatorClientProvider(
+    provider: (request: KibanaRequest) => Promise<KnowledgeIndicatorClientContract>
+  ): void;
+}
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
 export interface StreamsPluginStart {}
 
@@ -117,6 +121,7 @@ export class StreamsPlugin
   private patternExtractionService?: PatternExtractionService;
   private streamsGetScopedClients?: GetScopedClients;
   private subscriptions: Subscription[] = [];
+  private kiProvider?: (request: KibanaRequest) => Promise<KnowledgeIndicatorClientContract>;
 
   constructor(context: PluginInitializerContext<StreamsConfig>) {
     this.isDev = context.env.mode.dev;
@@ -250,25 +255,29 @@ export class StreamsPlugin
         return significantEventsAlertingV2StatePromise;
       };
 
-      let kiClientPromise: ReturnType<typeof knowledgeIndicatorService.getClient> | undefined;
-      const getKnowledgeIndicatorClient = () => {
-        kiClientPromise ??= (async () => {
-          const { alertingV2RulesClient } = await getSignificantEventsAlertingV2State();
-          const rulesClient = await pluginsStart.alerting.getRulesClientWithRequestInSpace(
-            request,
-            DEFAULT_SPACE_ID,
-            rulesClientOptions
-          );
-          return knowledgeIndicatorService.getClient({
-            esClient: scopedClusterClient.asInternalUser,
-            soClient,
-            alertingRulesClient: rulesClient,
-            alertingV2RulesClient,
-            config: tuningConfig,
-          });
-        })();
-        return kiClientPromise;
-      };
+      // Use the registered KI provider (from significant_events plugin) if available;
+      // fall back to internal construction while significant_events hasn't moved KI yet.
+      let kiClientPromise: Promise<KnowledgeIndicatorClientContract> | undefined;
+      const getKnowledgeIndicatorClient = this.kiProvider
+        ? () => this.kiProvider!(request)
+        : () => {
+            kiClientPromise ??= (async () => {
+              const { alertingV2RulesClient } = await getSignificantEventsAlertingV2State();
+              const rulesClient = await pluginsStart.alerting.getRulesClientWithRequestInSpace(
+                request,
+                DEFAULT_SPACE_ID,
+                rulesClientOptions
+              );
+              return knowledgeIndicatorService.getClient({
+                esClient: scopedClusterClient.asInternalUser,
+                soClient,
+                alertingRulesClient: rulesClient,
+                alertingV2RulesClient,
+                config: tuningConfig,
+              });
+            })();
+            return kiClientPromise;
+          };
 
       const getAlertingV2RulesClient = async (): Promise<RulesClientApi | undefined> => {
         const { alertingV2RulesClient } = await getSignificantEventsAlertingV2State();
@@ -585,7 +594,11 @@ export class StreamsPlugin
       logger: this.logger,
     });
 
-    return {};
+    return {
+      registerKnowledgeIndicatorClientProvider: (provider) => {
+        this.kiProvider = provider;
+      },
+    };
   }
 
   public start(core: CoreStart, plugins: StreamsPluginStartDependencies): StreamsPluginStart {

@@ -8,10 +8,10 @@
 import type { ElasticsearchClient, Logger } from '@kbn/core/server';
 import type { Streams } from '@kbn/streams-schema';
 import type { LockManagerService } from '@kbn/lock-manager';
+import type { KnowledgeIndicatorClientContract } from '@kbn/significant-events-schema';
 import type { StreamsClient } from '../client';
 import type { StreamsStorageClient } from '../storage/streams_storage_client';
 import type { AttachmentClient } from '../attachments/attachment_client';
-import type { KnowledgeIndicatorClient } from '../ki';
 
 interface StreamUpsertChange {
   type: 'upsert';
@@ -32,7 +32,7 @@ export interface StateDependencies {
   storageClient: StreamsStorageClient;
   esClient: ElasticsearchClient;
   attachmentClient: AttachmentClient;
-  getKnowledgeIndicatorClient?: () => Promise<KnowledgeIndicatorClient>;
+  getKnowledgeIndicatorClient?: () => Promise<KnowledgeIndicatorClientContract>;
   isServerless: boolean;
   isSecurityEnabled: boolean;
   isWiredStreamViewsEnabled: boolean;
