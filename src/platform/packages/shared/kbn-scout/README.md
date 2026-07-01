@@ -240,7 +240,13 @@ The `global_hooks` directory contains setup and teardown logic that applies glob
 
 The `page_objects` directory contains all the Page Objects that represent Platform core functionality such as Discover, Dashboard, Index Management, etc.
 
-If a Page Object is likely to be used in more than one plugin, it should be added here. This allows other teams to reuse it, improving collaboration across teams, reducing code duplication, and simplifying support and adoption.
+##### Where should a Page Object live?
+
+`@kbn/scout` is a critical package for Scout: any change to it triggers a full Scout test run. To keep CI fast, only add Page Objects here when they are shared across plugins. Use the following guidance to decide where a Page Object belongs:
+
+- If it is used by a single plugin, keep it in that plugin under `test/scout/ui/fixtures/page_objects/` and register it locally (see ["Registering a plugin-local Page Object"](#registering-a-plugin-local-page-object)). Changes are then scoped to that plugin's tests instead of the whole suite.
+- If it is used by a few plugins that already depend on the owning plugin, keep it in the owning plugin and import it from the others as a test helper (see ["Reusing a Page Object from another plugin"](#reusing-a-page-object-from-another-plugin)).
+- If it represents a core Platform surface with no natural owner (Discover, Dashboard, etc.), add it here so other teams can reuse it.
 
 Page Objects must be registered with the `createLazyPageObject` function, which guarantees its instance is lazy-initialized. This way, we can have all the page objects available in the test context, but only the ones that are called will be actually initialized:
 
@@ -259,6 +265,72 @@ All registered Page Objects are available via the `pageObjects` fixture:
 ```ts
 test.beforeEach(async ({ pageObjects }) => {
   await pageObjects.discover.goto({ queryMode: 'classic' });
+});
+```
+
+###### Registering a plugin-local Page Object
+
+For a Page Object used by a single plugin, keep it next to the tests in `test/scout/ui/fixtures/page_objects/` and extend the base `test` (or `spaceTest`) to add it to the `pageObjects` fixture:
+
+```ts
+import type { PageObjects, ScoutParallelTestFixtures, ScoutParallelWorkerFixtures } from '@kbn/scout';
+import { spaceTest as spaceBaseTest, createLazyPageObject } from '@kbn/scout';
+import { MyPluginPage } from './page_objects';
+
+export interface MyPluginTestFixtures extends ScoutParallelTestFixtures {
+  pageObjects: PageObjects & { myPluginPage: MyPluginPage };
+}
+
+export const spaceTest = spaceBaseTest.extend<MyPluginTestFixtures, ScoutParallelWorkerFixtures>({
+  pageObjects: async ({ pageObjects, page }, use) => {
+    await use({
+      ...pageObjects,
+      myPluginPage: createLazyPageObject(MyPluginPage, page),
+    });
+  },
+});
+```
+
+Tests then import `spaceTest` (or `test`) from the plugin's own fixtures instead of `@kbn/scout`.
+
+###### Reusing a Page Object from another plugin
+
+When a Page Object is owned by one plugin but needed by another that already depends on it, keep it in the owning plugin and import it as a test helper, rather than moving it to `@kbn/scout`. Two prerequisites:
+
+1. The owning plugin exports the Page Object from its `page_objects` barrel, e.g. `unified_search/test/scout/ui/fixtures/page_objects/index.ts`:
+
+```ts
+export { SavedQueryManagementMenu } from './saved_query_management_menu';
+export type { SaveQueryOptions } from './saved_query_management_menu';
+```
+
+2. The consuming plugin already lists the owner in its `tsconfig.json` `kbn_references` (true whenever there is a real plugin dependency, e.g. `discover` → `@kbn/unified-search-plugin`).
+
+The consumer then imports the Page Object via the owner's `@kbn/<plugin>` subpath and registers it on its own `pageObjects` fixture:
+
+```ts
+import type {
+  PageObjects,
+  ScoutParallelTestFixtures,
+  ScoutParallelWorkerFixtures,
+} from '@kbn/scout';
+import { spaceTest as spaceBaseTest, createLazyPageObject } from '@kbn/scout';
+// Page Object owned by the unified_search plugin, reused here as a test helper:
+import { SavedQueryManagementMenu } from '@kbn/unified-search-plugin/test/scout/ui/fixtures/page_objects';
+
+export interface DiscoverTestFixtures extends ScoutParallelTestFixtures {
+  pageObjects: PageObjects & {
+    savedQueryManagementMenu: SavedQueryManagementMenu;
+  };
+}
+
+export const spaceTest = spaceBaseTest.extend<DiscoverTestFixtures, ScoutParallelWorkerFixtures>({
+  pageObjects: async ({ pageObjects, page }, use) => {
+    await use({
+      ...pageObjects,
+      savedQueryManagementMenu: createLazyPageObject(SavedQueryManagementMenu, page),
+    });
+  },
 });
 ```
 
@@ -718,7 +790,7 @@ export const scoutTestFixtures = mergeTests(coreFixtures, newTestFixture);
 
 #### Best Practices
 
-- **Reusable Code:** When creating Page Objects, API services or Fixtures that apply to more than one plugin, ensure they are added to the `kbn-scout` package.
+- **Reusable Code:** When creating Page Objects, API services or Fixtures that apply to more than one plugin, ensure they are added to the `kbn-scout` package. Single-consumer Page Objects should instead live in the consuming plugin (see ["Where should a Page Object live?"](#where-should-a-page-object-live)), since any change to `kbn-scout` re-runs the whole Scout suite.
 - **Adhere to Existing Structure:** Maintain consistency with the project's architecture.
 - **Keep the Scope of Components Clear** When designing test components, keep in mind naming conventions, scope, maintainability and performance.
   - `Page Objects` should focus exclusively on UI interactions (clicking buttons, filling forms, navigating page). They should not make API calls directly.

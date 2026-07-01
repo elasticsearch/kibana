@@ -7,8 +7,4 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
-export { MetricsExperiencePage } from './metrics_experience';
-export { Inspector } from './inspector';
-export type { InspectorView } from './inspector';
-export type { ShareHelper } from './share_helper';
-export { createShareHelper } from './share_helper';
+export { DataViewEditorPage } from './data_view_editor_page';

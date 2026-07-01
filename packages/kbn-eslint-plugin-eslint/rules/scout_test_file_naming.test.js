@@ -80,6 +80,12 @@ ruleTester.run('@kbn/eslint/scout_test_file_naming', rule, {
       filename:
         'x-pack/platform/packages/shared/kbn-streamlang-tests/test/scout/api/fixtures/test_bed_fixture.ts',
     },
+    // Valid: Scout page object whose name contains 'spec' as a substring (not a test file)
+    {
+      code: '',
+      filename:
+        'src/platform/plugins/shared/discover/test/scout/ui/fixtures/metrics_experience/page_objects/inspector.ts',
+    },
     // Valid: Scout config file
     {
       code: '',

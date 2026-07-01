@@ -7,7 +7,39 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
-import { spaceTest } from '@kbn/scout';
+import type {
+  PageObjects,
+  ScoutParallelTestFixtures,
+  ScoutParallelWorkerFixtures,
+} from '@kbn/scout';
+import { spaceTest as spaceBaseTest, createLazyPageObject } from '@kbn/scout';
+import { SavedQueryManagementMenu } from './page_objects';
 
-export { spaceTest };
+export interface UnifiedSearchTestFixtures extends ScoutParallelTestFixtures {
+  pageObjects: PageObjects & {
+    savedQueryManagementMenu: SavedQueryManagementMenu;
+  };
+}
+
+export const spaceTest = spaceBaseTest.extend<
+  UnifiedSearchTestFixtures,
+  ScoutParallelWorkerFixtures
+>({
+  pageObjects: async (
+    {
+      pageObjects,
+      page,
+    }: {
+      pageObjects: UnifiedSearchTestFixtures['pageObjects'];
+      page: UnifiedSearchTestFixtures['page'];
+    },
+    use: (pageObjects: UnifiedSearchTestFixtures['pageObjects']) => Promise<void>
+  ) => {
+    await use({
+      ...pageObjects,
+      savedQueryManagementMenu: createLazyPageObject(SavedQueryManagementMenu, page),
+    });
+  },
+});
+
 export * as testData from './constants';

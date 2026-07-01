@@ -7,8 +7,8 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
-import type { Locator } from 'playwright/test';
-import type { ScoutPage } from '..';
+import type { Locator } from '@kbn/scout';
+import type { ScoutPage } from '@kbn/scout';
 
 export interface CopyToSpaceSetupOptions {
   destinationSpaceId: string;

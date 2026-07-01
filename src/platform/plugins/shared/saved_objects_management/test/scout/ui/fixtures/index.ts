@@ -7,6 +7,37 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
-export { test } from '@kbn/scout';
+import type { PageObjects, ScoutTestFixtures, ScoutWorkerFixtures } from '@kbn/scout';
+import { test as baseTest, createLazyPageObject } from '@kbn/scout';
+import { SavedObjectsManagementPage, CopySavedObjectsToSpaceFlyout } from './page_objects';
+
+export interface SavedObjectsManagementTestFixtures extends ScoutTestFixtures {
+  pageObjects: PageObjects & {
+    savedObjectsManagement: SavedObjectsManagementPage;
+    copySavedObjectsToSpaceFlyout: CopySavedObjectsToSpaceFlyout;
+  };
+}
+
+export const test = baseTest.extend<SavedObjectsManagementTestFixtures, ScoutWorkerFixtures>({
+  pageObjects: async (
+    {
+      pageObjects,
+      page,
+      kbnUrl,
+    }: {
+      pageObjects: SavedObjectsManagementTestFixtures['pageObjects'];
+      page: SavedObjectsManagementTestFixtures['page'];
+      kbnUrl: ScoutWorkerFixtures['kbnUrl'];
+    },
+    use: (pageObjects: SavedObjectsManagementTestFixtures['pageObjects']) => Promise<void>
+  ) => {
+    await use({
+      ...pageObjects,
+      savedObjectsManagement: createLazyPageObject(SavedObjectsManagementPage, page, kbnUrl),
+      copySavedObjectsToSpaceFlyout: createLazyPageObject(CopySavedObjectsToSpaceFlyout, page),
+    });
+  },
+});
+
 export { CUSTOM_ROLES } from '../../api/fixtures/custom_roles';
 export { testData } from '../../api/fixtures';

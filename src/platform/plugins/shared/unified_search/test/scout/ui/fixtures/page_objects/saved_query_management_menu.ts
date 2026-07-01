@@ -7,9 +7,8 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
-import type { Locator } from 'playwright/test';
-import type { ScoutPage } from '..';
-import { expect } from '..';
+import type { Locator, ScoutPage } from '@kbn/scout';
+import { expect } from '@kbn/scout/ui';
 
 export interface SaveQueryOptions {
   includeFilters?: boolean;

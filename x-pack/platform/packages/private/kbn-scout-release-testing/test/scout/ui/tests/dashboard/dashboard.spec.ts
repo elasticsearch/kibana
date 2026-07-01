@@ -6,9 +6,10 @@
  */
 
 import { expect } from '@kbn/scout/ui';
-import { test, tags } from '@kbn/scout';
+import { tags } from '@kbn/scout';
 import fs from 'fs';
 import os from 'os';
+import { test } from '../../fixtures';
 import { SavedObjectsTracker, cleanupDownloadedFile } from '../../helpers';
 
 const tracker = new SavedObjectsTracker();

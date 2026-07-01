@@ -7,10 +7,9 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
-import type { Locator } from 'playwright/test';
-import { expect, type ScoutPage } from '..';
-import type { KibanaUrl } from '../../common/services/kibana_url';
-import { KibanaCodeEditorWrapper } from '../ui_components';
+import type { Locator, ScoutPage, KibanaUrl } from '@kbn/scout';
+import { KibanaCodeEditorWrapper } from '@kbn/scout';
+import { expect } from '@kbn/scout/ui';
 
 const spacePrefix = (spaceId?: string) => (spaceId && spaceId !== 'default' ? `/s/${spaceId}` : '');
 

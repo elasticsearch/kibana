@@ -7,8 +7,9 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
-export { MetricsExperiencePage } from './metrics_experience';
-export { Inspector } from './inspector';
-export type { InspectorView } from './inspector';
-export type { ShareHelper } from './share_helper';
-export { createShareHelper } from './share_helper';
+export { SavedObjectsManagementPage } from './saved_objects_management_page';
+export { CopySavedObjectsToSpaceFlyout } from './copy_saved_objects_to_space_flyout';
+export type {
+  CopyToSpaceSetupOptions,
+  CopyToSpaceSummary,
+} from './copy_saved_objects_to_space_flyout';
