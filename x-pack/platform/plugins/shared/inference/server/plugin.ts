@@ -282,7 +282,7 @@ export class InferencePlugin
       },
 
       getConnectorList: async (request: KibanaRequest) => {
-        const esClient = core.elasticsearch.client.asInternalUser;
+        const esClient = core.elasticsearch.client.asScoped(request).asCurrentUser;
         return getConnectorList({
           actions: pluginsStart.actions,
           request,
@@ -291,7 +291,7 @@ export class InferencePlugin
         });
       },
       getDefaultConnector: async (request: KibanaRequest) => {
-        const esClient = core.elasticsearch.client.asInternalUser;
+        const esClient = core.elasticsearch.client.asScoped(request).asCurrentUser;
         const scopedSavedObjectsClient = core.savedObjects.getScopedClient(request);
         const uiSettingsClient = core.uiSettings.asScopedToClient(scopedSavedObjectsClient);
         return loadDefaultConnector({
@@ -303,7 +303,7 @@ export class InferencePlugin
         });
       },
       getConnectorById: async (id: string, request: KibanaRequest) => {
-        const esClient = core.elasticsearch.client.asInternalUser;
+        const esClient = core.elasticsearch.client.asScoped(request).asCurrentUser;
         return getConnectorById({
           connectorId: id,
           actions: pluginsStart.actions,
