@@ -162,6 +162,18 @@ describe('DetectionRulesClient.upgradePrebuiltRule', () => {
         })
       );
     });
+
+    it('creates a new rule with initialRevision bumped by 1 from the existing rule revision', async () => {
+      await detectionRulesClient.upgradePrebuiltRule({ ruleAsset });
+
+      expect(rulesClient.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          options: expect.objectContaining({
+            initialRevision: installedRule.revision + 1,
+          }),
+        })
+      );
+    });
   });
 
   describe('if the new version has the same type than the existing version', () => {
@@ -194,6 +206,16 @@ describe('DetectionRulesClient.upgradePrebuiltRule', () => {
 
     beforeEach(() => {
       (getRuleByRuleId as jest.Mock).mockResolvedValue(installedRule);
+    });
+
+    it('does not pass shouldIncrementRevision to rulesClient.update, relying on alerting default', async () => {
+      rulesClient.update.mockResolvedValue(getRuleMock(getEqlRuleParams()));
+
+      await detectionRulesClient.upgradePrebuiltRule({ ruleAsset });
+
+      expect(rulesClient.update).not.toHaveBeenCalledWith(
+        expect.objectContaining({ shouldIncrementRevision: expect.anything() })
+      );
     });
 
     it('patches the existing rule with the new params from the rule asset', async () => {

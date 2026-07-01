@@ -27,6 +27,7 @@ interface CreateRuleOptions {
   mlAuthz: MlAuthz;
   rule: RuleCreateProps & { immutable: boolean };
   id?: string;
+  initialRevision?: number;
   allowMissingConnectorSecrets?: boolean;
   changeTracking?: SecurityRuleChangeTracking;
 }
@@ -37,6 +38,7 @@ export const createRule = async ({
   mlAuthz,
   rule,
   id,
+  initialRevision,
   allowMissingConnectorSecrets,
   changeTracking,
 }: CreateRuleOptions): Promise<RuleResponse> => {
@@ -55,6 +57,7 @@ export const createRule = async ({
     data: payload,
     options: {
       id,
+      initialRevision,
     },
     changeTracking,
     allowMissingConnectorSecrets,

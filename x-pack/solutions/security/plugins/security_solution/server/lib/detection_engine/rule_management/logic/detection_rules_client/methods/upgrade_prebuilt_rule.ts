@@ -66,6 +66,9 @@ export const upgradePrebuiltRule = async ({
         timeline_title: existingRule.timeline_title,
       },
       id: existingRule.id,
+      // Bump revision by +1 to make it consistent with an alternative
+      // prebuilt rule upgrade branch. It bumps revision due to version change.
+      initialRevision: existingRule.revision + 1,
       changeTracking: { action: SecurityRuleChangeTrackingAction.ruleUpgrade, ...changeTracking },
     });
 
