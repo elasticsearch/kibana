@@ -1,0 +1,82 @@
+name: Check and Complete Team Labels
+
+on:
+  issues:
+    types: [opened, edited, labeled]
+
+permissions:
+  issues: write
+
+jobs:
+  ensure-team-labels:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check and add missing labels
+        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
+        with:
+          script: |
+            const currentLabels = context.payload.issue.labels.map(l => l.name);
+            const currentLabelSet = new Set(currentLabels);
+
+            const hasDetectionEngine = currentLabels.includes("Team:Detection Engine");
+            const hasRuleManagement = currentLabels.includes("Team:Detection Rule Management");
+
+            const detectionGroup = [
+              "Team:Detection Engine",
+              "Team:Detections and Resp",
+              "Team:Security Solution",
+              "triage_needed"
+            ];
+
+            const ruleManagementGroup = [
+              "Team:Detection Rule Management",
+              "Team:Detections and Resp",
+              "Team:Security Solution",
+              "triage_needed"
+            ];
+
+            const labelsToAdd = new Set();
+
+            // Utility: set difference
+            function difference(setA, setB) {
+              return new Set([...setA].filter(x => !setB.has(x)));
+            }
+
+            // Add missing labels for Detection Engine group
+            if (hasDetectionEngine) {
+              const missing = difference(new Set(detectionGroup), currentLabelSet);
+              missing.forEach(label => labelsToAdd.add(label));
+            }
+
+            // Add missing labels for Rule Management group
+            if (hasRuleManagement) {
+              const missing = difference(new Set(ruleManagementGroup), currentLabelSet);
+              missing.forEach(label => labelsToAdd.add(label));
+            }
+
+            // Add 'needs-team' when only shared labels are present (ambiguous ownership)
+            const hasOnlyShared =
+              !hasDetectionEngine &&
+              !hasRuleManagement &&
+              (currentLabels.includes("Team:Security Solution") || currentLabels.includes("Team:Detections and Resp"));
+
+            if (hasOnlyShared) {
+              if (!currentLabelSet.has("needs-team")) {
+                labelsToAdd.add("needs-team");
+              }
+              if (!currentLabelSet.has("triage_needed")) {
+                labelsToAdd.add("triage_needed");
+              }
+            }
+
+            if (labelsToAdd.size > 0) {
+              await github.rest.issues.addLabels({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                labels: Array.from(labelsToAdd)
+              });
+              console.log(`Added missing labels to issue #${context.issue.number}: ${Array.from(labelsToAdd).join(", ")}`);
+            } else {
+              console.log(`No labels to add for issue #${context.issue.number}.`);
+            }
