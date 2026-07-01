@@ -9,6 +9,8 @@
 
 import { ExpressionLegacyMetricPlugin } from './plugin';
 
+export { getLegacyMetricDataBounds } from './utils';
+
 export function plugin() {
   return new ExpressionLegacyMetricPlugin();
 }

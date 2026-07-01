@@ -20,7 +20,12 @@ import type { ExpressionValueVisDimension } from '@kbn/chart-expressions-common'
 import { getFormatService, getPaletteService } from '../services';
 import type { VisParams, MetricOptions } from '../../common/types';
 import { MetricVisValue } from './metric_value';
-import { formatValueAsText, formatValueAsReactNode, shouldApplyColor } from '../utils';
+import {
+  formatValueAsText,
+  formatValueAsReactNode,
+  shouldApplyColor,
+  getLegacyMetricDataBounds,
+} from '../utils';
 import { needsLightText } from '../utils/palette';
 import { withAutoScale } from './with_auto_scale';
 
@@ -35,11 +40,12 @@ export interface MetricVisComponentProps {
 const AutoScaleMetricVisValue = withAutoScale(MetricVisValue);
 
 class MetricVisComponent extends Component<MetricVisComponentProps> {
-  private getColor(value: number, paletteParams: CustomPaletteState) {
-    return getPaletteService().get('custom')?.getColorForValue?.(value, paletteParams, {
-      min: paletteParams.rangeMin,
-      max: paletteParams.rangeMax,
-    });
+  private getColor(
+    value: number,
+    paletteParams: CustomPaletteState,
+    bounds: { min: number; max: number }
+  ) {
+    return getPaletteService().get('custom')?.getColorForValue?.(value, paletteParams, bounds);
   }
 
   private processTableGroups(table: Datatable) {
@@ -67,10 +73,13 @@ class MetricVisComponent extends Component<MetricVisComponentProps> {
         const formatter = getFormatService().deserialize(
           getFormatByAccessor(metric, table.columns)
         );
+        // Color against the live data range (like the metric/datatable charts) rather than the
+        // edit-time `rangeMin`/`rangeMax` snapshot frozen on the palette.
+        const dataBounds = getLegacyMetricDataBounds(column?.id, table);
         const metrics = table.rows.map((row, rowIndex) => {
           let title = column!.name;
           let value: number = row[column!.id];
-          const color = palette ? this.getColor(value, palette) : undefined;
+          const color = palette ? this.getColor(value, palette, dataBounds) : undefined;
 
           if (isPercentageMode && stops.length) {
             value = (value - min) / (max - min);

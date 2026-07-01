@@ -183,7 +183,7 @@ describe('metric dimension editor', () => {
     expect(instance.find(CustomizablePalette).prop('dataBounds')).toEqual({ min: -2, max: 0 });
   });
 
-  it('should apply an initial range with shifted stops (first stop === rangeMin)', () => {
+  it('should apply the default named palette with open bounds', () => {
     frame.activeData!.first.columns[0].meta.type = 'number';
     frame.activeData!.first.rows[0].foo = 5;
     state.colorMode = ColorMode.None;
@@ -199,6 +199,10 @@ describe('metric dimension editor', () => {
 
     expect(setState).toHaveBeenCalledWith(
       paletteParamsContaining({
+        name: 'status',
+        continuity: 'all',
+        rangeMin: -Infinity,
+        rangeMax: Infinity,
         stops: expect.arrayContaining([]),
       })
     );

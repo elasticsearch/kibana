@@ -6,12 +6,13 @@
  */
 import { EuiButtonGroup, EuiFormRow, htmlIdGenerator } from '@elastic/eui';
 import type { CustomPaletteParams, PaletteOutput, PaletteRegistry } from '@kbn/coloring';
-import { CustomizablePalette, CUSTOM_PALETTE, applyPaletteParams } from '@kbn/coloring';
+import { CustomizablePalette, applyPaletteParams } from '@kbn/coloring';
 import { i18n } from '@kbn/i18n';
 import React from 'react';
 import { ColorMode } from '@kbn/charts-plugin/common';
 import { css } from '@emotion/react';
 import type { LegacyMetricState, VisualizationDimensionEditorProps } from '@kbn/lens-common';
+import { getLegacyMetricDataBounds } from '@kbn/expression-legacy-metric-vis-plugin/public';
 import { isNumericFieldForDatatable } from '../../../common/expressions/impl/datatable/utils';
 import { PalettePanelContainer } from '../../shared_components';
 import { defaultPaletteParams } from './palette_config';
@@ -34,11 +35,7 @@ export function MetricDimensionEditor(
   const currentColorMode = state?.colorMode || ColorMode.None;
   const hasDynamicColoring = currentColorMode !== ColorMode.None;
 
-  const currentMinMax = {
-    min: Math.min(firstRow[accessor] * 2, firstRow[accessor] === 0 ? -50 : 0),
-    // if value is 0, then fallback to 100 as last resort
-    max: Math.max(firstRow[accessor] * 2, firstRow[accessor] === 0 ? 100 : 0),
-  };
+  const currentMinMax = getLegacyMetricDataBounds(accessor, currentData);
 
   const activePalette =
     state?.palette ||
@@ -49,8 +46,6 @@ export function MetricDimensionEditor(
         ...defaultPaletteParams,
         stops: undefined,
         colorStops: undefined,
-        rangeMin: currentMinMax.min,
-        rangeMax: (currentMinMax.max * 3) / 4,
       },
     } satisfies PaletteOutput<CustomPaletteParams>);
 
@@ -106,12 +101,7 @@ export function MetricDimensionEditor(
                 ...activePalette,
                 params: {
                   ...activePalette.params,
-                  // align this initial computation with same format for default palettes in the panel. This to avoid custom computation issue with metric fake data range
-                  stops: stops.map((v, i, array) => ({
-                    ...v,
-                    // Note: these stops are the lower bound of the color stop for bwc. This is normally incorrect.
-                    stop: currentMinMax.min + (i === 0 ? 0 : array[i - 1].stop),
-                  })),
+                  stops,
                 },
               };
             }
@@ -150,14 +140,6 @@ export function MetricDimensionEditor(
               activePalette={activePalette}
               dataBounds={currentMinMax}
               setPalette={(newPalette) => {
-                // if the new palette is not custom, replace the rangeMin with the artificial one
-                if (
-                  newPalette.name !== CUSTOM_PALETTE &&
-                  newPalette.params &&
-                  newPalette.params.rangeMin !== currentMinMax.min
-                ) {
-                  newPalette.params.rangeMin = currentMinMax.min;
-                }
                 setState({
                   ...state,
                   palette: newPalette,

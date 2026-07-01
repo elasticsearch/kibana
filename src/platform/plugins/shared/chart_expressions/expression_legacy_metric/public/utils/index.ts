@@ -7,5 +7,10 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
-export { parseRgbString, shouldApplyColor, needsLightText } from './palette';
+export {
+  parseRgbString,
+  shouldApplyColor,
+  needsLightText,
+  getLegacyMetricDataBounds,
+} from './palette';
 export { formatValueAsText, formatValueAsReactNode } from './format';

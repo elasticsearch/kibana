@@ -8,6 +8,45 @@
  */
 
 import { isColorDark } from '@elastic/eui';
+import type { Datatable } from '@kbn/expressions-plugin/common';
+
+/**
+ * Coloring domain for the legacy metric. This is the single source of truth shared by the editor
+ *  and the render-time coloring so the two can never diverge:
+ *  - a single value is centered at 0: `[0, 2 * value]` (or `[2 * value, 0]` for negatives), matching
+ *    the metric chart's single-value behavior.
+ *  - a single `0` has no meaningful range, so we fall back to a fixed `[-50, 100]` domain that keeps
+ *    the palette visible instead of collapsing to `[0, 0]`.
+ *  - multiple rows span the actual min/max of the values, so every tile is colored relative to the others
+ */
+export const getLegacyMetricDataBounds = (
+  metricId?: string,
+  data?: Datatable
+): { min: number; max: number } => {
+  if (!data || !metricId || data.rows.length === 0) {
+    return { min: -Infinity, max: Infinity };
+  }
+
+  const metricValues = data.rows.map((row) => row[metricId]);
+
+  if (metricValues.length === 1) {
+    const [value] = metricValues;
+    if (value === 0) {
+      return { min: -50, max: 100 };
+    }
+    return value < 0 ? { min: value * 2, max: 0 } : { min: 0, max: value * 2 };
+  }
+
+  const minMaxBounds = metricValues.reduce(
+    (bounds, value) => ({
+      min: Math.min(bounds.min, value),
+      max: Math.max(bounds.max, value),
+    }),
+    { min: Infinity, max: -Infinity }
+  );
+
+  return minMaxBounds;
+};
 
 export const parseRgbString = (rgb: string) => {
   const groups = rgb.match(/rgb\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*?(,\s*(\d+)\s*)?\)/) ?? [];

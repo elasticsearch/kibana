@@ -13,6 +13,7 @@ import { generateId } from '../../id_generator';
 import { chartPluginMock } from '@kbn/charts-plugin/public/mocks';
 import { ColorMode } from '@kbn/charts-plugin/common';
 import { CUSTOM_PALETTE } from '@kbn/coloring';
+import type { CustomPaletteParams, PaletteOutput } from '@kbn/coloring';
 
 jest.mock('../../id_generator');
 
@@ -386,6 +387,76 @@ describe('metric_visualization', () => {
           "type": "expression",
         }
       `);
+    });
+
+    describe('palette stops', () => {
+      const numericDatasource = (): DatasourcePublicAPI => ({
+        ...createMockDatasource('l1').publicAPIMock,
+        getOperationForColumnId() {
+          return {
+            dataType: 'number',
+            isBucketed: false,
+            label: 'test_metric',
+            isStaticValue: false,
+            hasTimeShift: false,
+            hasReducedTimeRange: false,
+          };
+        },
+      });
+
+      const getCustomPaletteToExpression = (palette: PaletteOutput<CustomPaletteParams>) => {
+        const paletteService = chartPluginMock.createPaletteRegistry();
+        const customPaletteToExpression = paletteService.get(CUSTOM_PALETTE)
+          .toExpression as jest.Mock;
+        const visualization = getLegacyMetricVisualization({ paletteService });
+
+        visualization.toExpression(
+          {
+            ...exampleState(),
+            colorMode: ColorMode.Background,
+            palette,
+          },
+          { l1: numericDatasource() }
+        );
+
+        return customPaletteToExpression;
+      };
+
+      it('sends explicit stops for a custom palette', () => {
+        const customPaletteToExpression = getCustomPaletteToExpression({
+          type: 'palette',
+          name: CUSTOM_PALETTE,
+          params: {
+            name: CUSTOM_PALETTE,
+            stops: [
+              { color: 'blue', stop: 10 },
+              { color: 'red', stop: 20 },
+            ],
+          },
+        });
+
+        expect(customPaletteToExpression).toHaveBeenCalledWith(
+          expect.objectContaining({ stops: [10, 20] })
+        );
+      });
+
+      it('sends empty stops for a named palette so the renderer distributes across live data', () => {
+        const customPaletteToExpression = getCustomPaletteToExpression({
+          type: 'palette',
+          name: 'status',
+          params: {
+            rangeType: 'number',
+            stops: [
+              { color: 'blue', stop: 10 },
+              { color: 'red', stop: 20 },
+            ],
+          },
+        });
+
+        expect(customPaletteToExpression).toHaveBeenCalledWith(
+          expect.objectContaining({ stops: [] })
+        );
+      });
     });
   });
 });

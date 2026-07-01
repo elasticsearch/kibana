@@ -34,10 +34,10 @@
       "eventAnnotation",
       "unifiedSearch",
       "kql",
-      "contentManagement"
+      "contentManagement",
+      "expressionLegacyMetricVis",
     ],
     "optionalPlugins": [
-      "expressionLegacyMetricVis",
       "expressionPartitionVis",
       "usageCollection",
       "taskManager",

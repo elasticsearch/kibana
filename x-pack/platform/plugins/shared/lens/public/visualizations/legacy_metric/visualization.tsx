@@ -11,7 +11,7 @@ import { i18n } from '@kbn/i18n';
 import { euiThemeVars } from '@kbn/ui-theme';
 import type { Ast } from '@kbn/interpreter';
 import type { PaletteOutput, PaletteRegistry } from '@kbn/coloring';
-import { CUSTOM_PALETTE, shiftPalette, getOverridePaletteStops } from '@kbn/coloring';
+import { CUSTOM_PALETTE, getOverridePaletteStops } from '@kbn/coloring';
 import type { CustomPaletteState } from '@kbn/charts-plugin/common';
 import { ColorMode } from '@kbn/charts-plugin/common';
 import { VIS_EVENT_TO_TRIGGER } from '@kbn/visualizations-plugin/public';
@@ -82,13 +82,10 @@ const toExpression = (
   const paletteParams = {
     ...state.palette?.params,
     colors: stops.map(({ color }) => color),
-    stops:
-      isCustomPalette || state.palette?.params?.rangeMax == null
-        ? stops.map(({ stop }) => stop)
-        : shiftPalette(
-            stops,
-            Math.max(state.palette?.params?.rangeMax, ...stops.map(({ stop }) => stop))
-          ).map(({ stop }) => stop),
+    // Only custom palettes ship explicit thresholds. Named (predefined) palettes carry no
+    // user-defined range, so we send empty stops and let the renderer distribute the palette
+    // uniformly across the live data range (matching the metric/datatable charts).
+    stops: isCustomPalette ? stops.map(({ stop }) => stop) : [],
     reverse: false,
   };
 
