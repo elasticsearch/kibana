@@ -10,6 +10,7 @@ import type {
   SavedObject,
   SavedObjectsBulkUpdateResponse,
 } from '@kbn/core-saved-objects-api-server';
+import { isSavedObjectErrorResult } from '@kbn/core/server';
 import { bulkGetRulesSo, bulkUpdateRuleSo } from '../../../../data/rule';
 import type { BulkEditOperationResult } from '../../../../rules_client/common/bulk_edit';
 import { retryIfBulkEditConflicts } from '../../../../rules_client/common';
@@ -80,7 +81,7 @@ async function bulkMuteUnmuteInstancesWithOCC(
     }
 
     rules.saved_objects.forEach((rule) => {
-      if (rule.error) {
+      if (isSavedObjectErrorResult(rule)) {
         return;
       }
 

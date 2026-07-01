@@ -7,6 +7,7 @@
 
 import { distinctUntilChanged, type Subscription } from 'rxjs';
 import type { AnalyticsServiceSetup, Logger, CoreSetup, CoreStart } from '@kbn/core/server';
+import { isSavedObjectErrorResult } from '@kbn/core/server';
 import type {
   TaskManagerSetupContract,
   TaskManagerStartContract,
@@ -398,7 +399,7 @@ export class UiamApiKeyProvisioningTask {
     try {
       const result = await context.savedObjectsClient.bulkCreate(docs, { overwrite: true });
       for (const so of result?.saved_objects ?? []) {
-        if (so.error) {
+        if (isSavedObjectErrorResult(so)) {
           // Per-item SOR failure: next run will re-attempt the same id via `overwrite: true`.
           // We surface it as a warn so operators can spot systematically broken docs instead
           // of the failure being silently swallowed inside the bulk response.

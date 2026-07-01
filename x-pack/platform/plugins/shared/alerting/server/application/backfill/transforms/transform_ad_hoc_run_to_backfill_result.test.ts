@@ -424,7 +424,6 @@ describe('transformAdHocRunToBackfillResult', () => {
   test('should pass through error if saved object error when original create request is not provided', () => {
     expect(
       transformAdHocRunToBackfillResult({
-        // @ts-expect-error
         adHocRunSO: {
           type: 'ad_hoc_rule_run_params',
           id: '788a2784-c021-484f-a53e-0c1c63c7567c',
@@ -447,7 +446,6 @@ describe('transformAdHocRunToBackfillResult', () => {
   test('should pass through error if saved object error when original create request is provided', () => {
     expect(
       transformAdHocRunToBackfillResult({
-        // @ts-expect-error
         adHocRunSO: {
           type: 'ad_hoc_rule_run_params',
           id: '788a2784-c021-484f-a53e-0c1c63c7567c',

@@ -8,6 +8,8 @@
 import Boom from '@hapi/boom';
 import pMap from 'p-map';
 import { chunk } from 'lodash';
+import type { SavedObject } from '@kbn/core/server';
+import { isSavedObjectErrorResult } from '@kbn/core/server';
 import type { KueryNode } from '@kbn/es-query';
 import { nodeBuilder } from '@kbn/es-query';
 import { ruleAuditEvent, RuleAuditAction } from '../../../../rules_client/common/audit_events';
@@ -15,6 +17,7 @@ import type { RulesClientContext } from '../../../../rules_client/types';
 import { RULE_SAVED_OBJECT_TYPE } from '../../../../saved_objects';
 import type { BulkGetRulesParams } from './types';
 import { bulkGetRulesParamsSchema } from './schemas';
+import type { RawRule } from '../../../../types';
 import type { RuleParams } from '../../types';
 import { bulkGetRulesSo } from '../../../../data/rule';
 import { transformRuleSoToSanitizedRule } from '../../transforms';
@@ -53,7 +56,7 @@ export async function bulkGetRules<Params extends RuleParams = never>(
     errors: [],
   };
 
-  const savedObjects: Awaited<ReturnType<typeof bulkGetRulesSo>>['saved_objects'] = [];
+  const savedObjects: Array<SavedObject<RawRule>> = [];
 
   await pMap(
     chunk(params.ids, 100),
@@ -63,7 +66,7 @@ export async function bulkGetRules<Params extends RuleParams = never>(
         ids,
       });
       saved_objects.forEach((so) => {
-        if (so.error) {
+        if (isSavedObjectErrorResult(so)) {
           result.errors.push({ id: so.id, error: so.error });
           return;
         }

@@ -7,6 +7,7 @@
 import type { KueryNode } from '@kbn/es-query';
 import { nodeBuilder } from '@kbn/es-query';
 import type { SavedObjectsBulkUpdateObject, SavedObjectsBulkCreateObject } from '@kbn/core/server';
+import { isSavedObjectErrorResult } from '@kbn/core/server';
 import Boom from '@hapi/boom';
 import { withSpan } from '@kbn/apm-utils';
 import pMap from 'p-map';
@@ -270,7 +271,7 @@ const bulkDisableRulesWithOCC = async (
   const disabledRules: Array<SavedObjectsBulkUpdateObject<RawRule>> = [];
 
   result.saved_objects.forEach((rule) => {
-    if (rule.error === undefined) {
+    if (!isSavedObjectErrorResult(rule)) {
       if (rule.attributes.scheduledTaskId) {
         if (rule.attributes.scheduledTaskId !== rule.id) {
           taskIdsToDelete.push(rule.attributes.scheduledTaskId);

@@ -13,6 +13,7 @@ import type {
   SavedObjectsBulkUpdateObject,
   SavedObjectsUpdateResponse,
 } from '@kbn/core/server';
+import { isSavedObjectErrorResult } from '@kbn/core/server';
 import type { BulkEditActionSkipResult } from '../../../../common/bulk_action';
 import { convertRuleIdsToKueryNode } from '../../../lib';
 import type { BulkOperationError } from '../../types';
@@ -76,7 +77,11 @@ export const retryIfBulkEditConflicts = async (
 
     const conflictErrorMap = resultSavedObjects.reduce<Map<string, { message: string }>>(
       (acc, item) => {
-        if (item.type === RULE_SAVED_OBJECT_TYPE && item?.error?.statusCode === 409) {
+        if (
+          item.type === RULE_SAVED_OBJECT_TYPE &&
+          isSavedObjectErrorResult(item) &&
+          item.error.statusCode === 409
+        ) {
           return acc.set(item.id, { message: item.error.message });
         }
         return acc;
@@ -84,7 +89,12 @@ export const retryIfBulkEditConflicts = async (
       new Map()
     );
 
-    const results = [...accResults, ...resultSavedObjects.filter((res) => res.error === undefined)];
+    const results = [
+      ...accResults,
+      ...resultSavedObjects.filter(
+        (res): res is SavedObjectsUpdateResponse<RawRule> => !isSavedObjectErrorResult(res)
+      ),
+    ];
     const apiKeysToInvalidate = [...accApiKeysToInvalidate, ...localApiKeysToInvalidate];
     const errors = [...accErrors, ...localErrors];
     // Create array of unique skipped rules by id

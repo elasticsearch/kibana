@@ -13,6 +13,7 @@ import type {
   SavedObjectsBulkUpdateObject,
   SavedObjectsFindResult,
 } from '@kbn/core/server';
+import { isSavedObjectErrorResult } from '@kbn/core/server';
 import type { RuleChangeTracking } from '@kbn/alerting-types';
 import { RuleChangeTrackingAction } from '@kbn/alerting-types';
 import { logRuleChanges } from '../../../application/rule/methods/common_utils/log_rule_changes';
@@ -243,7 +244,8 @@ async function saveBulkUpdatedRules({
   }
 
   if (shouldInvalidateApiKeys) {
-    result.saved_objects.map(({ id, error }) => {
+    result.saved_objects.map((so) => {
+      const { id } = so;
       const apiKey = apiKeysMap.get(id);
 
       const oldApiKey = apiKey?.oldApiKey;
@@ -254,17 +256,23 @@ async function saveBulkUpdatedRules({
       const newUiamApiKey = apiKey?.newUiamApiKey;
 
       // if SO wasn't saved and has new API key it will be invalidated
-      if (error && newApiKey && !newApiKeyCreatedByUser) {
-        apiKeysToInvalidate.push(newApiKey);
-        // if SO saved and has old Api Key it will be invalidate
-      } else if (!error && oldApiKey && !oldApiKeyCreatedByUser) {
-        apiKeysToInvalidate.push(oldApiKey);
-      }
+      if (isSavedObjectErrorResult(so)) {
+        if (newApiKey && !newApiKeyCreatedByUser) {
+          apiKeysToInvalidate.push(newApiKey);
+        }
 
-      if (error && newUiamApiKey && !newApiKeyCreatedByUser) {
-        apiKeysToInvalidate.push(newUiamApiKey);
-      } else if (!error && oldUiamApiKey && !oldApiKeyCreatedByUser) {
-        apiKeysToInvalidate.push(oldUiamApiKey);
+        if (newUiamApiKey && !newApiKeyCreatedByUser) {
+          apiKeysToInvalidate.push(newUiamApiKey);
+        }
+      } else {
+        // if SO saved and has old Api Key it will be invalidate
+        if (oldApiKey && !oldApiKeyCreatedByUser) {
+          apiKeysToInvalidate.push(oldApiKey);
+        }
+
+        if (oldUiamApiKey && !oldApiKeyCreatedByUser) {
+          apiKeysToInvalidate.push(oldUiamApiKey);
+        }
       }
     });
   }

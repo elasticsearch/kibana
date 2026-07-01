@@ -5,14 +5,19 @@
  * 2.0.
  */
 
-import type { SavedObject, SavedObjectsBulkCreateObject } from '@kbn/core/server';
+import type {
+  SavedObject,
+  SavedObjectBulkResult,
+  SavedObjectsBulkCreateObject,
+} from '@kbn/core/server';
+import { isSavedObjectErrorResult } from '@kbn/core/server';
 import type { AdHocRun, AdHocRunSO } from '../../../data/ad_hoc_run/types';
 import { createBackfillError } from '../../../backfill_client/lib';
 import type { ScheduleBackfillResult } from '../methods/schedule/types';
 import { transformRawActionsToDomainActions } from '../../rule/transforms';
 
 interface TransformAdHocRunToBackfillResultOpts {
-  adHocRunSO: SavedObject<AdHocRunSO>;
+  adHocRunSO: SavedObjectBulkResult<AdHocRunSO>;
   isSystemAction: (connectorId: string) => boolean;
   originalSO?: SavedObjectsBulkCreateObject<AdHocRunSO>;
 }
@@ -22,13 +27,18 @@ export const transformAdHocRunToBackfillResult = ({
   isSystemAction,
   originalSO,
 }: TransformAdHocRunToBackfillResultOpts): ScheduleBackfillResult => {
-  const { id, attributes, references, error } = adHocRunSO;
-  const ruleId = references?.[0]?.id ?? originalSO?.references?.[0]?.id ?? 'unknown';
-  const ruleName = attributes?.rule?.name ?? originalSO?.attributes?.rule.name;
-  if (error) {
-    return createBackfillError(error.message, ruleId, ruleName);
+  const ruleId =
+    (isSavedObjectErrorResult(adHocRunSO) ? undefined : adHocRunSO.references?.[0]?.id) ??
+    originalSO?.references?.[0]?.id ??
+    'unknown';
+  const ruleName =
+    (isSavedObjectErrorResult(adHocRunSO) ? undefined : adHocRunSO.attributes?.rule?.name) ??
+    originalSO?.attributes?.rule.name;
+  if (isSavedObjectErrorResult(adHocRunSO)) {
+    return createBackfillError(adHocRunSO.error.message, ruleId, ruleName);
   }
 
+  const { id, attributes, references } = adHocRunSO;
   if (!id) {
     return createBackfillError(
       'Malformed saved object in bulkCreate response - Missing "id".',
@@ -82,7 +92,11 @@ export const transformAdHocRunToAdHocRunData = ({
   adHocRunSO,
   isSystemAction,
   originalSO,
-}: TransformAdHocRunToBackfillResultOpts): AdHocRun => {
+}: {
+  adHocRunSO: SavedObject<AdHocRunSO>;
+  isSystemAction: (connectorId: string) => boolean;
+  originalSO?: SavedObjectsBulkCreateObject<AdHocRunSO>;
+}): AdHocRun => {
   const result = transformAdHocRunToBackfillResult({
     adHocRunSO,
     isSystemAction,
