@@ -4,6 +4,7 @@
  * 2.0; you may not use this file except in compliance with the Elastic License
  * 2.0.
  */
+import { lazy } from 'react';
 import { BehaviorSubject } from 'rxjs';
 import { UpsellingService } from '@kbn/security-solution-upselling/service';
 import type { CoreStart } from '@kbn/core/public';
@@ -17,6 +18,13 @@ import type { ExperimentalFeatures } from '../common/experimental_features';
 import { breadcrumbsNav$ } from './common/breadcrumbs';
 import { ContractComponentsService } from './contract_components';
 import { OnboardingService } from './onboarding/service';
+
+const AIValueReportLazy = lazy(() =>
+  import(
+    /* webpackChunkName: "ai_value_report" */
+    './reports/components/ai_value'
+  ).then(({ AIValueReport }) => ({ default: AIValueReport }))
+);
 
 export class PluginContract {
   public componentsService: ContractComponentsService;
@@ -54,6 +62,7 @@ export class PluginContract {
         this.solutionNavigationTree$.next(navigationTree);
       },
       setOnboardingSettings: this.onboardingService.setSettings.bind(this.onboardingService),
+      getAIValueReport: () => AIValueReportLazy,
     };
   }
 

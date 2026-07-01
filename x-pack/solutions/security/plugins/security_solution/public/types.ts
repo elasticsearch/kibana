@@ -5,6 +5,7 @@
  * 2.0.
  */
 
+import type React from 'react';
 import type { Observable } from 'rxjs';
 
 import type { AppLeaveHandler, AppMountParameters, CoreStart } from '@kbn/core/public';
@@ -239,12 +240,24 @@ export interface PluginSetup {
   setProductFeatureKeys: (productFeatureKeys: ProductFeatureKeys) => void;
 }
 
+export interface AIValueReportProps {
+  setHasReportData?: React.Dispatch<boolean>;
+  setIsDatePickerDisabled?: React.Dispatch<boolean>;
+  setIsSampleMode?: React.Dispatch<boolean>;
+  isSourcererLoading: boolean;
+  from: string;
+  to: string;
+  sampleBanner?: React.ReactNode;
+  forceSampleData?: boolean;
+}
+
 export interface PluginStart {
   setComponents: SetComponents;
   getBreadcrumbsNav$: () => Observable<BreadcrumbsNav>;
   getUpselling: () => UpsellingService;
   setOnboardingSettings: OnboardingService['setSettings'];
   setSolutionNavigationTree: (navigationTree: NavigationTreeDefinition | null) => void;
+  getAIValueReport: () => React.ComponentType<AIValueReportProps>;
 }
 
 export type InspectResponse = Inspect & {

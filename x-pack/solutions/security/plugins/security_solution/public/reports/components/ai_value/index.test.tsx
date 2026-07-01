@@ -160,6 +160,7 @@ describe('AIValueReport', () => {
       to: defaultProps.to,
       minutesPerAlert: 10,
       analystHourlyRate: 50,
+      enabled: true,
     });
   });
 
@@ -195,6 +196,34 @@ describe('AIValueReport', () => {
     expect(defaultProps.setHasReportData).toHaveBeenCalledWith(false);
     expect(defaultProps.setIsDatePickerDisabled).toHaveBeenCalledWith(true);
     expect(defaultProps.setIsSampleMode).toHaveBeenCalledWith(true);
+  });
+
+  it('uses the injected sampleBanner instead of the default banner in sample state', () => {
+    mockUseValueMetrics.mockReturnValue({
+      attackAlertIds: [],
+      hasNoCurrentDiscoveries: true,
+      isLoading: false,
+      valueMetrics: {
+        ...mockValueMetrics,
+        attackDiscoveryCount: 0,
+      },
+      valueMetricsCompare: mockValueMetricsCompare,
+    });
+    mockuseHasEverUsedAttackDiscovery.mockReturnValue({
+      hasEverUsedAttackDiscovery: false,
+      isLoading: false,
+    });
+
+    render(
+      <AIValueReport
+        {...defaultProps}
+        sampleBanner={<div data-test-subj="aiValueEssentialsUpgradeBanner" />}
+      />
+    );
+
+    expect(screen.getByTestId('aiValueEssentialsUpgradeBanner')).toBeInTheDocument();
+    expect(screen.queryByTestId('aiValueSampleAttackDiscoveryBanner')).not.toBeInTheDocument();
+    expect(screen.getByTestId('aiValueSampleDataBadge')).toBeInTheDocument();
   });
 
   it('renders the empty state when the feature was used before but the window has no discoveries', () => {
@@ -371,6 +400,7 @@ describe('AIValueReport', () => {
       to: defaultProps.to,
       minutesPerAlert: 5,
       analystHourlyRate: 75,
+      enabled: true,
     });
   });
 });

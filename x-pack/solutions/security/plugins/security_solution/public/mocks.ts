@@ -37,6 +37,7 @@ const startMock = (): PluginStart => ({
   getUpselling: () => upselling,
   setOnboardingSettings: onboardingService.setSettings.bind(onboardingService),
   setSolutionNavigationTree: jest.fn(),
+  getAIValueReport: jest.fn(() => () => null),
 });
 
 export const securitySolutionMock = {

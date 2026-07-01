@@ -18,4 +18,12 @@ describe('upsellingPages', () => {
 
     expect(attackDiscoveryPage?.pli).toEqual(ProductFeatureKey.attackDiscovery);
   });
+
+  it('registers the AI Value Report page upsell with the aiValueReport PLI', () => {
+    const aiValuePage = upsellingPages.find(
+      ({ pageName }) => pageName === SecurityPageName.aiValue
+    );
+
+    expect(aiValuePage?.pli).toEqual(ProductFeatureKey.aiValueReport);
+  });
 });

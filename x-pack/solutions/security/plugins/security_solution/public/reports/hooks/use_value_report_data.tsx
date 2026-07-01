@@ -19,6 +19,7 @@ interface Props {
   to: string;
   minutesPerAlert: number;
   analystHourlyRate: number;
+  forceSampleData?: boolean;
 }
 
 export interface ValueReportData {
@@ -49,6 +50,7 @@ export const useValueReportData = ({
   to,
   minutesPerAlert,
   analystHourlyRate,
+  forceSampleData = false,
 }: Props): ValueReportData => {
   const {
     attackAlertIds,
@@ -56,20 +58,22 @@ export const useValueReportData = ({
     isLoading: isLoadingMetrics,
     valueMetrics,
     valueMetricsCompare,
-  } = useValueMetrics({ from, to, minutesPerAlert, analystHourlyRate });
+  } = useValueMetrics({ from, to, minutesPerAlert, analystHourlyRate, enabled: !forceSampleData });
 
   const {
     hasEverUsedAttackDiscovery: hasHistoricalAttackDiscoveries,
     isLoading: isLoadingHistory,
-  } = useHasEverUsedAttackDiscovery({ enabled: shouldCheckHistory });
+  } = useHasEverUsedAttackDiscovery({ enabled: shouldCheckHistory && !forceSampleData });
 
-  const isLoading = isLoadingMetrics || (shouldCheckHistory && isLoadingHistory);
+  const isLoading =
+    !forceSampleData && (isLoadingMetrics || (shouldCheckHistory && isLoadingHistory));
 
   // Discoveries in the selected range imply prior usage; otherwise rely on the history query.
   const hasEverUsedAttackDiscovery =
-    valueMetrics.attackDiscoveryCount > 0 || hasHistoricalAttackDiscoveries;
+    !forceSampleData && (valueMetrics.attackDiscoveryCount > 0 || hasHistoricalAttackDiscoveries);
 
-  const isSample = !isLoading && shouldCheckHistory && !hasEverUsedAttackDiscovery;
+  const isSample =
+    forceSampleData || (!isLoading && shouldCheckHistory && !hasEverUsedAttackDiscovery);
 
   return useMemo<ValueReportData>(
     () => ({

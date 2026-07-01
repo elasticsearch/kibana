@@ -58,6 +58,7 @@ dependsOn:
   - '@kbn/usage-api-plugin'
   - '@kbn/workflows-management-plugin'
   - '@kbn/navigation-plugin'
+  - '@kbn/announcement-banner'
 tags:
   - plugin
   - prod

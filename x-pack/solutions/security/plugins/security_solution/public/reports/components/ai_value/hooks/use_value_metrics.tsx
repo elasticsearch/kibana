@@ -25,6 +25,7 @@ interface Props {
   from: string;
   to: string;
   minutesPerAlert: number;
+  enabled?: boolean;
 }
 interface UseValueMetrics {
   attackAlertIds: string[];
@@ -39,15 +40,17 @@ export const useValueMetrics = ({
   from,
   to,
   minutesPerAlert,
+  enabled = true,
 }: Props): UseValueMetrics => {
   const { http } = useKibana().services;
   const { assistantAvailability } = useAssistantContext();
   const { signalIndexName } = useSignalIndex();
+  const shouldQUeryAttackDiscoveries = enabled && assistantAvailability.isAssistantEnabled;
   const { data, isLoading: isLoadingAttackDiscoveries } = useFindAttackDiscoveries({
     end: to,
     http,
     includeUniqueAlertIds: true,
-    isAssistantEnabled: assistantAvailability.isAssistantEnabled,
+    isAssistantEnabled: shouldQUeryAttackDiscoveries,
     start: from,
     status: [OPEN, ACKNOWLEDGED, CLOSED].map((s) => s.toLowerCase()),
   });
@@ -57,7 +60,7 @@ export const useValueMetrics = ({
       end: compareTimeRange.to,
       http,
       includeUniqueAlertIds: true,
-      isAssistantEnabled: assistantAvailability.isAssistantEnabled,
+      isAssistantEnabled: shouldQUeryAttackDiscoveries,
       start: compareTimeRange.from,
       status: [OPEN, ACKNOWLEDGED, CLOSED].map((s) => s.toLowerCase()),
     });
@@ -77,6 +80,7 @@ export const useValueMetrics = ({
     from,
     signalIndexName,
     filters,
+    skip: !shouldQUeryAttackDiscoveries,
     queryName: ALERTS_QUERY_NAMES.COUNT_AI_VALUE,
   });
 
@@ -85,6 +89,7 @@ export const useValueMetrics = ({
     from: compareTimeRange.from,
     signalIndexName,
     filters: filtersCompare,
+    skip: !shouldQUeryAttackDiscoveries,
     queryName: ALERTS_QUERY_NAMES.COUNT_AI_VALUE_COMPARE,
   });
 
@@ -92,12 +97,14 @@ export const useValueMetrics = ({
     to,
     from,
     signalIndexName,
+    skip: !shouldQUeryAttackDiscoveries,
     queryName: ALERTS_QUERY_NAMES.COUNT_AI_VALUE_TOTAL,
   });
   const { alertCount: alertCountCompare, isLoading: isLoadingAlertsCompare } = useAlertCountQuery({
     to: compareTimeRange.to,
     from: compareTimeRange.from,
     signalIndexName,
+    skip: !shouldQUeryAttackDiscoveries,
     queryName: ALERTS_QUERY_NAMES.COUNT_AI_VALUE_TOTAL_COMPARE,
   });
   const isLoading = useMemo(

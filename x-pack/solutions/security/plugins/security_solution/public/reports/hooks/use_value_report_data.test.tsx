@@ -155,6 +155,30 @@ describe('useValueReportData', () => {
     });
   });
 
+  describe('forceSampleData', () => {
+    it('immediately returns sample data without querying when forceSampleData is true', () => {
+      mockMetrics({ valueMetrics: LIVE_METRICS });
+      mockHistory({ hasEverUsedAttackDiscovery: true });
+
+      let renderCount = 0;
+      const { result } = renderHook(() => {
+        renderCount++;
+        return useValueReportData({ ...PROPS, forceSampleData: true });
+      });
+
+      // No state transitions — the hook settled in a single render with no re-renders
+      expect(renderCount).toBe(1);
+      expect(result.current.isSample).toBe(true);
+      expect(result.current.isLoading).toBe(false);
+      expect(result.current.hasEverUsedAttackDiscovery).toBe(false);
+      expect(result.current.valueMetrics).toBe(SAMPLE_VALUE_METRICS);
+      expect(result.current.valueMetricsCompare).toBe(SAMPLE_VALUE_METRICS_COMPARE);
+      expect(result.current.attackAlertIds).toEqual([]);
+      expect(mockUseValueMetrics).toHaveBeenCalledWith(expect.objectContaining({ enabled: false }));
+      expect(mockUseHasEverUsedAttackDiscovery).toHaveBeenCalledWith({ enabled: false });
+    });
+  });
+
   describe('loading behavior', () => {
     it('suppresses sample mode while metrics are loading so the report does not flash sample data during fetch', () => {
       mockMetrics({ isLoading: true, valueMetrics: EMPTY_LIVE_METRICS });

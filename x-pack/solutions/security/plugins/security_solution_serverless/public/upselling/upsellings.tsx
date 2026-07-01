@@ -29,6 +29,7 @@ import {
 } from './sections/endpoint_management';
 import { getProductTypeByPLI } from './hooks/use_product_type_by_pli';
 import {
+  AIValueReportUpsellPageLazy,
   AttackDiscoveryUpsellingPageLazy,
   EntityAnalyticsUpsellingPageLazy,
   EntityAnalyticsUpsellingSectionLazy,
@@ -84,6 +85,11 @@ export const upsellingPages: UpsellingPages = [
     pageName: SecurityPageName.siemMigrationsRules,
     pli: ProductFeatureKey.siemMigrations,
     component: () => <SiemMigrationsTranslatedRulesUpsellPageLazy />,
+  },
+  {
+    pageName: SecurityPageName.aiValue,
+    pli: ProductFeatureKey.aiValueReport,
+    component: () => <AIValueReportUpsellPageLazy />,
   },
 ];
 

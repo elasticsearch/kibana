@@ -34,17 +34,9 @@ import { useKibana } from '../../../common/lib/kibana';
 import { useAIValueExportContext } from '../../providers/ai_value/export_provider';
 import { PageLoader } from '../../../common/components/page_loader';
 import * as i18n from './translations';
+import type { AIValueReportProps } from '../../../types';
 
-interface Props {
-  setHasReportData: React.Dispatch<boolean>;
-  setIsDatePickerDisabled: React.Dispatch<boolean>;
-  setIsSampleMode: React.Dispatch<boolean>;
-  isSourcererLoading: boolean;
-  from: string;
-  to: string;
-}
-
-type AIValueReportContentProps = Omit<Props, 'isSourcererLoading'>;
+type AIValueReportContentProps = Omit<AIValueReportProps, 'isSourcererLoading'>;
 
 const AIValueReportContent: React.FC<AIValueReportContentProps> = ({
   setHasReportData,
@@ -52,6 +44,8 @@ const AIValueReportContent: React.FC<AIValueReportContentProps> = ({
   setIsSampleMode,
   from: propFrom,
   to: propTo,
+  sampleBanner,
+  forceSampleData,
 }) => {
   const { settings } = useKibana().services;
   const exportContext = useAIValueExportContext();
@@ -87,7 +81,13 @@ const AIValueReportContent: React.FC<AIValueReportContentProps> = ({
     [settings.client]
   );
 
-  const data = useValueReportData({ from, to, minutesPerAlert, analystHourlyRate });
+  const data = useValueReportData({
+    from,
+    to,
+    minutesPerAlert,
+    analystHourlyRate,
+    forceSampleData,
+  });
 
   useEffect(() => {
     if (data.isLoading || data.isSample || !setReportInputForExportContext) {
@@ -103,15 +103,15 @@ const AIValueReportContent: React.FC<AIValueReportContentProps> = ({
   }, [data, setReportInputForExportContext]);
 
   useEffect(() => {
-    setHasReportData(!data.isSample && data.valueMetrics.attackDiscoveryCount > 0);
+    setHasReportData?.(!data.isSample && data.valueMetrics.attackDiscoveryCount > 0);
   }, [data.isSample, data.valueMetrics, setHasReportData]);
 
   useEffect(() => {
-    setIsDatePickerDisabled(data.isLoading || data.isSample);
+    setIsDatePickerDisabled?.(data.isLoading || data.isSample);
   }, [data.isLoading, data.isSample, setIsDatePickerDisabled]);
 
   useEffect(() => {
-    setIsSampleMode(data.isSample);
+    setIsSampleMode?.(data.isSample);
   }, [data.isSample, setIsSampleMode]);
 
   if (data.isLoading) {
@@ -123,24 +123,26 @@ const AIValueReportContent: React.FC<AIValueReportContentProps> = ({
     // to show the full report layout and provide an example of how the metrics are calculated
     return (
       <>
-        <AnnouncementBanner
-          data-test-subj="aiValueSampleAttackDiscoveryBanner"
-          title={i18n.RUN_ATTACK_DISCOVERY_TEXT}
-          headingElement="h3"
-          text={i18n.GET_STARTED_ATTACK_DISCOVERY_TEXT}
-          media={<EuiIcon type={analyticsSpeedAcceleration} size="original" aria-hidden={true} />}
-          actionProps={{
-            primary: {
-              children: i18n.ATTACK_DISCOVERY_LINK,
-              href: attackDiscoveryHref,
-              iconType: 'popout',
-              iconSide: 'left',
-              target: '_blank',
-              rel: 'noopener noreferrer',
-              'data-test-subj': 'sampleAttackDiscoveryCtaButton',
-            },
-          }}
-        />
+        {sampleBanner ?? (
+          <AnnouncementBanner
+            data-test-subj="aiValueSampleAttackDiscoveryBanner"
+            title={i18n.RUN_ATTACK_DISCOVERY_TEXT}
+            headingElement="h3"
+            text={i18n.GET_STARTED_ATTACK_DISCOVERY_TEXT}
+            media={<EuiIcon type={analyticsSpeedAcceleration} size="original" aria-hidden={true} />}
+            actionProps={{
+              primary: {
+                children: i18n.ATTACK_DISCOVERY_LINK,
+                href: attackDiscoveryHref,
+                iconType: 'popout',
+                iconSide: 'left',
+                target: '_blank',
+                rel: 'noopener noreferrer',
+                'data-test-subj': 'sampleAttackDiscoveryCtaButton',
+              },
+            }}
+          />
+        )}
         <EuiSpacer size="l" />
         <EuiPanel hasBorder={true} borderRadius="m" color="transparent" paddingSize="l">
           <EuiFlexGroup responsive={false} alignItems="center" justifyContent="spaceBetween">
@@ -221,20 +223,22 @@ const AIValueReportContent: React.FC<AIValueReportContentProps> = ({
   );
 };
 
-export const AIValueReport: React.FC<Props> = ({
+export const AIValueReport: React.FC<AIValueReportProps> = ({
   setHasReportData,
   setIsDatePickerDisabled,
   setIsSampleMode,
   isSourcererLoading,
   from,
   to,
+  sampleBanner,
+  forceSampleData,
 }) => {
   useEffect(() => {
     if (isSourcererLoading) {
       // safety check: clear stale parent flags as soon as loading starts.
-      setHasReportData(false);
-      setIsDatePickerDisabled(true);
-      setIsSampleMode(false);
+      setHasReportData?.(false);
+      setIsDatePickerDisabled?.(true);
+      setIsSampleMode?.(false);
     }
   }, [isSourcererLoading, setHasReportData, setIsDatePickerDisabled, setIsSampleMode]);
 
@@ -249,6 +253,8 @@ export const AIValueReport: React.FC<Props> = ({
       setIsSampleMode={setIsSampleMode}
       from={from}
       to={to}
+      sampleBanner={sampleBanner}
+      forceSampleData={forceSampleData}
     />
   );
 };
