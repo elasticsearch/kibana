@@ -1487,6 +1487,22 @@ groups:
           ech: unavailable
           self: ga
 
+      - setting: server.xsrf.allowedSchemes
+        id: settings-xsrf-allowedschemes
+        description: |
+          A list of `Authorization` header authentication schemes whose requests bypass the `kbn-xsrf` check. Supported values are `apikey` and `bearer` (case-insensitive); `Basic` and other schemes always require the header. For example, `['apikey', 'bearer']` exempts both API key and Bearer token authenticated requests. An empty list disables the bypass.
+
+          It is not recommended to enable this setting unless API clients cannot set custom headers on cross-origin requests.
+        note: |
+          :applies_to: serverless: ga
+          In Serverless environments, requests authenticated using `Authorization: ApiKey` or `Authorization: Bearer` headers bypass the `kbn-xsrf` check by default.
+        datatype: string
+        default: "[]"
+        applies_to:
+          stack: ga 9.5
+          ech: ga
+          self: ga
+
   - group: Telemetry settings
     id: telemetry-settings
     settings:

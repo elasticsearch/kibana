@@ -26,4 +26,5 @@ export const mockAuthenticatedUser: AuthenticatedUser = {
   profile_uid: 'u_EWATCHX9oIEsmcXj8aA1FkcaY3DE-XEpsiGTjrR2PmM_0',
   roles: ['admin'],
   username: 'test_user',
+  http_authentication_scheme: null,
 };

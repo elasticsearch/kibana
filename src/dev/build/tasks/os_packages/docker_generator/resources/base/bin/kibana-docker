@@ -198,6 +198,7 @@ kibana_vars=(
     server.ssl.truststore.path
     server.uuid
     server.xsrf.allowlist
+    server.xsrf.allowedSchemes
     server.xsrf.disableProtection
     status.allowAnonymous
     status.v6ApiFormat

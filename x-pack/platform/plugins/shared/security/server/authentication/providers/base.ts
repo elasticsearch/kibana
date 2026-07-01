@@ -198,6 +198,7 @@ export abstract class BaseAuthenticationProvider<TState = unknown> {
         this.options.isElasticCloudDeployment() &&
         authenticationInfo.authentication_realm.type === 'saml' &&
         authenticationInfo.authentication_realm.name === ELASTIC_CLOUD_SSO_REALM_NAME,
+      http_authentication_scheme: null,
     } as AuthenticatedUser);
   }
 
@@ -216,6 +217,8 @@ export abstract class BaseAuthenticationProvider<TState = unknown> {
       // We should probably refactor audit logs to avoid using `roles` property for minimally
       // authenticated users and then remove this property altogether and throw for its access.
       roles: [],
+      // Minimally-authenticated users are session-cookie requests, not HTTP-credential requests.
+      http_authentication_scheme: null,
     };
 
     return deepFreeze(

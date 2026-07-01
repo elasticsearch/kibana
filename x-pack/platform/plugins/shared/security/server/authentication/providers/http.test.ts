@@ -133,9 +133,14 @@ describe('HTTPAuthenticationProvider', () => {
           supportedSchemes: new Set(schemes),
         });
 
+        const scheme = header.split(' ')[0].toLowerCase();
         await expect(provider.authenticate(request)).resolves.toEqual(
           AuthenticationResult.succeeded(
-            { ...user, authentication_provider: { type: 'http', name: 'http' } },
+            {
+              ...user,
+              authentication_provider: { type: 'http', name: 'http' },
+              http_authentication_scheme: scheme,
+            },
             { authHeaders: { authorization: header } }
           )
         );
@@ -162,7 +167,11 @@ describe('HTTPAuthenticationProvider', () => {
 
       await expect(provider.authenticate(request)).resolves.toEqual(
         AuthenticationResult.succeeded(
-          { ...user, authentication_provider: { type: 'http', name: 'http' } },
+          {
+            ...user,
+            authentication_provider: { type: 'http', name: 'http' },
+            http_authentication_scheme: 'bearer',
+          },
           { authHeaders: { authorization: header } }
         )
       );
@@ -189,7 +198,11 @@ describe('HTTPAuthenticationProvider', () => {
 
       await expect(provider.authenticate(request)).resolves.toEqual(
         AuthenticationResult.succeeded(
-          { ...user, authentication_provider: { type: 'http', name: 'http' } },
+          {
+            ...user,
+            authentication_provider: { type: 'http', name: 'http' },
+            http_authentication_scheme: 'basic',
+          },
           { authHeaders: { authorization: header } }
         )
       );
@@ -219,7 +232,11 @@ describe('HTTPAuthenticationProvider', () => {
 
       await expect(provider.authenticate(request)).resolves.toEqual(
         AuthenticationResult.succeeded(
-          { ...user, authentication_provider: { type: 'http', name: 'http' } },
+          {
+            ...user,
+            authentication_provider: { type: 'http', name: 'http' },
+            http_authentication_scheme: 'bearer',
+          },
           { authHeaders: { authorization: header } }
         )
       );
@@ -314,7 +331,11 @@ describe('HTTPAuthenticationProvider', () => {
 
       await expect(provider.authenticate(request)).resolves.toEqual(
         AuthenticationResult.succeeded(
-          { ...user, authentication_provider: { type: 'http', name: 'http' } },
+          {
+            ...user,
+            authentication_provider: { type: 'http', name: 'http' },
+            http_authentication_scheme: 'bearer',
+          },
           {
             authHeaders: {
               authorization: 'Bearer essu_ephemeral_token',
@@ -375,7 +396,11 @@ describe('HTTPAuthenticationProvider', () => {
 
       await expect(provider.authenticate(request)).resolves.toEqual(
         AuthenticationResult.succeeded(
-          { ...user, authentication_provider: { type: 'http', name: 'http' } },
+          {
+            ...user,
+            authentication_provider: { type: 'http', name: 'http' },
+            http_authentication_scheme: 'bearer',
+          },
           { authHeaders: { authorization: header } }
         )
       );
@@ -427,7 +452,11 @@ describe('HTTPAuthenticationProvider', () => {
 
       await expect(provider.authenticate(request)).resolves.toEqual(
         AuthenticationResult.succeeded(
-          { ...user, authentication_provider: { type: 'http', name: 'http' } },
+          {
+            ...user,
+            authentication_provider: { type: 'http', name: 'http' },
+            http_authentication_scheme: 'bearer',
+          },
           { authHeaders: { authorization: header } }
         )
       );
@@ -454,7 +483,11 @@ describe('HTTPAuthenticationProvider', () => {
 
       await expect(provider.authenticate(request)).resolves.toEqual(
         AuthenticationResult.succeeded(
-          { ...user, authentication_provider: { type: 'http', name: 'http' } },
+          {
+            ...user,
+            authentication_provider: { type: 'http', name: 'http' },
+            http_authentication_scheme: 'bearer',
+          },
           { authHeaders: { authorization: header } }
         )
       );

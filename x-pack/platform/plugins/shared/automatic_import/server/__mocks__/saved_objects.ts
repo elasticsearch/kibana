@@ -30,6 +30,7 @@ export const mockAuthenticatedUser: AuthenticatedUser = {
   authentication_type: 'realm',
   elastic_cloud_user: false,
   profile_uid: 'test-profile-uid',
+  http_authentication_scheme: null,
 };
 
 export const mockIntegrationParams: IntegrationParams = {

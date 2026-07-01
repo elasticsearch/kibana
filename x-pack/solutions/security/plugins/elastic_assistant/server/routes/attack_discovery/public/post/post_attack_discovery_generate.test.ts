@@ -70,6 +70,7 @@ const mockUser = {
   roles: ['superuser'],
   full_name: 'Test User',
   email: 'test@example.com',
+  http_authentication_scheme: null,
 };
 
 const mockApiConfig = {

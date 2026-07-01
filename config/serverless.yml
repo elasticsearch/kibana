@@ -199,6 +199,8 @@ xpack.ml.nlp:
 
 # Enforce restring access to internal APIs see https://github.com/elastic/kibana/issues/151940
 server.restrictInternalApis: true
+# Allow API key and Bearer token authenticated requests to bypass the XSRF check
+server.xsrf.allowedSchemes: ['apikey', 'bearer']
 # Telemetry enabled by default and not disableable via UI
 telemetry.optIn: true
 telemetry.allowChangingOptInStatus: false

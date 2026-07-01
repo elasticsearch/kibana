@@ -33,11 +33,13 @@ export default function ({ getService }: FtrProviderContext) {
           ({ body, status } = await supertestWithoutAuth
             .post('/api/encrypted_saved_objects/_rotate_key')
             .set(roleAuthc.apiKeyHeader));
-          // expect a rejection because we're not using the internal header
+          // xsrf bypass exposes internal access denied without internal header
           expect(body).toEqual({
             statusCode: 400,
             error: 'Bad Request',
-            message: expect.stringContaining('Request must contain a kbn-xsrf header.'),
+            message: expect.stringContaining(
+              'exists but is not available with the current configuration'
+            ),
           });
           expect(status).toBe(400);
 
@@ -45,10 +47,8 @@ export default function ({ getService }: FtrProviderContext) {
             .post('/api/encrypted_saved_objects/_rotate_key')
             .set(internalReqHeader)
             .set(roleAuthc.apiKeyHeader));
-          // expect a different, legitimate error when we use the internal header
-          // the config does not contain decryptionOnlyKeys, so when the API is
-          // called successfully, it will error for this reason, and not for an
-          // access or or missing header reason
+          // with the internal origin header the route is accessible; the config does
+          // not contain decryptionOnlyKeys so the handler returns its own 400.
           expect(body).toEqual({
             statusCode: 400,
             error: 'Bad Request',

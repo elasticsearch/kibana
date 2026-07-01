@@ -64,6 +64,7 @@ describe('user activity injected context', () => {
       authentication_type: 'realm',
       elastic_cloud_user: false,
       profile_uid: 'test_profile_uid',
+      http_authentication_scheme: null,
     };
 
     const httpSetup = await server.setup({

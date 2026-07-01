@@ -293,6 +293,7 @@ const mockUser = {
   profile_uid: '123',
   roles: ['superuser'],
   username: 'coolguy',
+  http_authentication_scheme: null,
 };
 
 beforeEach(() => {

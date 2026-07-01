@@ -133,7 +133,7 @@ export class HttpService
       },
     });
 
-    registerCoreHandlers(prebootSetup, config, this.env, this.log);
+    registerCoreHandlers(prebootSetup, config, this.env, this.log, prebootSetup.auth);
 
     if (this.shouldListen(config)) {
       this.log.debug('starting preboot server');
@@ -198,7 +198,7 @@ export class HttpService
       userActivity: deps.userActivity,
     });
 
-    registerCoreHandlers(serverContract, config, this.env, this.log);
+    registerCoreHandlers(serverContract, config, this.env, this.log, serverContract.auth);
 
     this.internalSetup = {
       ...serverContract,

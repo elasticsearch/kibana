@@ -48,13 +48,14 @@ describe('registerCoreHandlers', () => {
     } as unknown as HttpConfig;
 
     const logger = loggerMock.create();
+    const auth = { get: jest.fn(), isAuthenticated: jest.fn() };
 
-    registerCoreHandlers(registrarMock, config, createTestEnv(), logger);
+    registerCoreHandlers(registrarMock, config, createTestEnv(), logger, auth);
     expect(createVersionCheckPostAuthHandler).toHaveBeenCalledTimes(0);
     expect(createBuildNrMismatchLoggerPreResponseHandler).toHaveBeenCalledTimes(1); // we do expect to register a logger
 
     config.versioned.strictClientVersionCheck = true;
-    registerCoreHandlers(registrarMock, config, createTestEnv(), logger);
+    registerCoreHandlers(registrarMock, config, createTestEnv(), logger, auth);
     expect(createVersionCheckPostAuthHandler).toHaveBeenCalledTimes(1);
     expect(createBuildNrMismatchLoggerPreResponseHandler).toHaveBeenCalledTimes(1); // logger registration should not be called again
   });

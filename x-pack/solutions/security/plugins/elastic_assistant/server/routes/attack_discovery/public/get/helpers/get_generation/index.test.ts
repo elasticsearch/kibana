@@ -35,6 +35,7 @@ describe('getGeneration', () => {
     authentication_type: 'type',
     elastic_cloud_user: false,
     enabled: true,
+    http_authentication_scheme: null,
   } as AuthenticatedUser;
 
   const mockGeneration: AttackDiscoveryGeneration = {

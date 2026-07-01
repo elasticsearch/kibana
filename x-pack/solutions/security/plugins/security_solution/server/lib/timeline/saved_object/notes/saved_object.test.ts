@@ -229,6 +229,7 @@ describe('persistNote', () => {
       enabled: true,
       elastic_cloud_user: false,
       roles: ['superuser'],
+      http_authentication_scheme: null,
     },
   };
   const mockNoteResponse = {

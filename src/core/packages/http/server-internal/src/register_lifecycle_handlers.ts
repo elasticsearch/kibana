@@ -9,6 +9,7 @@
 
 import type { Env } from '@kbn/config';
 import type { Logger } from '@kbn/logging';
+import type { HttpAuth } from '@kbn/core-http-server';
 import type { HttpConfig } from './http_config';
 import type { LifecycleRegistrar } from './http_server';
 import {
@@ -25,7 +26,8 @@ export const registerCoreHandlers = (
   registrar: LifecycleRegistrar,
   config: HttpConfig,
   env: Env,
-  log: Logger
+  log: Logger,
+  auth: HttpAuth
 ) => {
   // add headers based on config
   registrar.registerOnPreResponse(createCustomHeadersPreResponseHandler(config));
@@ -35,7 +37,7 @@ export const registerCoreHandlers = (
   );
   // add extra request checks stuff
   registrar.registerOnPreAuth(createExcludeRoutesPreAuthHandler(config, log));
-  registrar.registerOnPostAuth(createXsrfPostAuthHandler(config));
+  registrar.registerOnPostAuth(createXsrfPostAuthHandler(config, auth.get));
   if (config.versioned.strictClientVersionCheck !== false) {
     // add check on version
     registrar.registerOnPostAuth(createVersionCheckPostAuthHandler(env.packageInfo.version));

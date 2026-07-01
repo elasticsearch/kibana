@@ -14,20 +14,30 @@ import type {
   OnPreResponseInfo,
   KibanaRequest,
 } from '@kbn/core-http-server';
+import type { GetAuthState } from '@kbn/core-http-server';
 import {
   getWarningHeaderMessageFromRouteDeprecation,
   isSafeMethod,
 } from '@kbn/core-http-router-server-internal';
 import type { Logger } from '@kbn/logging';
 import { KIBANA_BUILD_NR_HEADER } from '@kbn/core-http-common';
+import type { AuthenticatedUser } from '@kbn/core-security-common';
 import type { HttpConfig } from './http_config';
 
 const VERSION_HEADER = 'kbn-version';
 const XSRF_HEADER = 'kbn-xsrf';
 const KIBANA_NAME_HEADER = 'kbn-name';
 
-export const createXsrfPostAuthHandler = (config: HttpConfig): OnPostAuthHandler => {
-  const { allowlist, disableProtection } = config.xsrf;
+export const createXsrfPostAuthHandler = (
+  config: HttpConfig,
+  getAuthState: GetAuthState
+): OnPostAuthHandler => {
+  const { allowlist, disableProtection, allowedSchemes } = config.xsrf;
+  // `allowedSchemes` is validated against a stateless-credential safe set and normalized to
+  // lower-case in HttpConfig, so the values are canonical here. Core reads
+  // http_authentication_scheme from AuthenticatedUser (set by the security plugin's HTTP auth
+  // provider), which only sets it for requests authenticated via an Authorization header.
+  const exemptSchemes = new Set(allowedSchemes);
 
   return (request, response, toolkit) => {
     if (
@@ -36,6 +46,14 @@ export const createXsrfPostAuthHandler = (config: HttpConfig): OnPostAuthHandler
       request.route.options.xsrfRequired === false
     ) {
       return toolkit.next();
+    }
+
+    if (exemptSchemes.size > 0 && !isSafeMethod(request.route.method)) {
+      const authState = getAuthState<AuthenticatedUser>(request);
+      const scheme = authState.state?.http_authentication_scheme;
+      if (scheme != null && exemptSchemes.has(scheme.toLowerCase())) {
+        return toolkit.next();
+      }
     }
 
     const hasVersionHeader = VERSION_HEADER in request.headers;

@@ -186,6 +186,7 @@ describe('ChangePasswordModal', () => {
           authentication_provider: { type: 'basic', name: 'basic' },
           authentication_type: 'realm',
           elastic_cloud_user: false,
+          http_authentication_scheme: null,
         },
         error: undefined,
       });
@@ -320,6 +321,7 @@ describe('ChangePasswordModal', () => {
             authentication_provider: { type: 'basic', name: 'basic' },
             authentication_type: 'realm',
             elastic_cloud_user: false,
+            http_authentication_scheme: null,
           },
           error: undefined,
         });

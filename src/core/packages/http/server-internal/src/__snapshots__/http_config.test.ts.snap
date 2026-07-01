@@ -149,6 +149,7 @@ Object {
     "versionResolution": "oldest",
   },
   "xsrf": Object {
+    "allowedSchemes": Array [],
     "allowlist": Array [],
     "disableProtection": false,
   },

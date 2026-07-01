@@ -130,11 +130,14 @@ export class HTTPAuthenticationProvider extends BaseAuthenticationProvider {
         return AuthenticationResult.notHandled();
       }
 
-      return AuthenticationResult.succeeded(user, {
-        // Even though the `Authorization` header is already present in the HTTP headers of the original request,
-        // we still need to expose it to the Core authentication service for consistency.
-        authHeaders: { authorization: authorizationHeader.toString() },
-      });
+      return AuthenticationResult.succeeded(
+        { ...user, http_authentication_scheme: authorizationHeader.scheme.toLowerCase() },
+        {
+          // Even though the `Authorization` header is already present in the HTTP headers of the original request,
+          // we still need to expose it to the Core authentication service for consistency.
+          authHeaders: { authorization: authorizationHeader.toString() },
+        }
+      );
     } catch (err) {
       this.logger.debug(
         () =>
@@ -183,7 +186,10 @@ export class HTTPAuthenticationProvider extends BaseAuthenticationProvider {
 
       this.logger.debug('Request authenticated via UIAM OAuth token exchange.');
 
-      return AuthenticationResult.succeeded(user, { authHeaders });
+      return AuthenticationResult.succeeded(
+        { ...user, http_authentication_scheme: authorizationHeader.scheme.toLowerCase() },
+        { authHeaders }
+      );
     } catch (err) {
       this.logger.error(
         `Failed to authenticate via UIAM OAuth token exchange: ${getDetailedErrorMessage(err)}`
