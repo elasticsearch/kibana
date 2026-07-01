@@ -40,14 +40,20 @@ export const ctaSchema = z
   .strict();
 
 /**
- * The canonical notification document, as stored in the `.kibana-notification-center`
+ * The canonical notification document stored in the `.kibana-notification-center`
  * data stream. Documents are append-only and immutable; per-user state (read,
  * subscriptions, horizons) lives separately in `core.userStorage`.
+ *
+ * This is the **write** contract: the shape a producer must provide to submit a
+ * notification. It is `strict()` so that an unexpected field or typo
+ * is rejected at submit time rather than silently persisted.
+ *
+ * Note there is no `@timestamp` here: that is the data stream ingest time,
+ * stamped by the Notification Center at write time, never supplied by a
+ * producer. Producers express event time via `event_timestamp`.
  */
-export const notificationSchema = z
+export const notificationWriteSchema = z
   .object({
-    /** Ingest time, into the datastream, ISO 8601. Determines ordering and retention. */
-    '@timestamp': z.iso.datetime(),
     /**
      * Deterministic idempotency key. See the ID conventions in `notification_id.ts`.
      */
@@ -71,3 +77,30 @@ export const notificationSchema = z
     cta: ctaSchema.optional(),
   })
   .strict();
+
+/**
+ * The **read** contract: validates documents read back from the
+ * `.kibana-notification-center` data stream.
+ *
+ * It is the write contract plus `@timestamp` (the data stream ingest time the
+ * Notification Center stamps on write), and is deliberately more permissive
+ * than the write schema because a single data stream is read and written by
+ * many Kibana nodes that may run different versions during an upgrade:
+ *
+ * - `loose()` (vs. the write schema's `strict()`) — a document written by a
+ *   *newer* node may carry a field this node does not yet know about.
+ * - `severity` falls back to `info` via `.catch('info')` — an *older* node
+ *   reading a document whose severity is a tier added in a *newer* version
+ *   (unknown to this node's enum) keeps a usable value rather than failing the
+ *   whole document.
+ *
+ * When a future field is added it should be `.optional()` on the write side so
+ * that documents predating it continue to validate here.
+ */
+export const notificationReadSchema = notificationWriteSchema
+  .extend({
+    /** Ingest time into the data stream, ISO 8601. Determines ordering and retention. */
+    '@timestamp': z.iso.datetime(),
+    severity: z.enum(SEVERITIES).default('info').catch('info'),
+  })
+  .loose();

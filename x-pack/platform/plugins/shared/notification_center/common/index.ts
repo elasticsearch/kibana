@@ -16,7 +16,12 @@ export {
 } from './feature_flags';
 export type { NotificationTypeId } from './feature_flags';
 
-export { notificationSchema, ctaSchema, SEVERITIES } from './notification_schema';
+export {
+  notificationWriteSchema,
+  notificationReadSchema,
+  ctaSchema,
+  SEVERITIES,
+} from './notification_schema';
 
 export {
   NOTIFICATION_ID_SEPARATOR,
@@ -25,4 +30,4 @@ export {
 } from './notification_id';
 export type { StaticStateNotificationIdParts, EventNotificationIdParts } from './notification_id';
 
-export type { Notification, Severity, Cta } from './types';
+export type { Notification, NotificationInput, NotificationDocument, Severity, Cta } from './types';
