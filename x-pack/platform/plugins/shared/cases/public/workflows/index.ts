@@ -7,13 +7,34 @@
 
 // import { createCreateCaseFromTemplateStepDefinition } from './create_case_from_template';
 import type { CasesPublicSetupDependencies } from '../types';
+import type { UnifiedAttachmentTypeRegistry } from '../client/attachment_framework/unified_attachment_registry';
 import { registerCasesTriggerDefinitions } from './triggers';
 
 export function registerCasesSteps(
-  workflowsExtensions: CasesPublicSetupDependencies['workflowsExtensions']
+  workflowsExtensions: CasesPublicSetupDependencies['workflowsExtensions'],
+  unifiedAttachmentTypeRegistry: UnifiedAttachmentTypeRegistry,
+  isCasesAttachmentsEnabled: boolean
 ) {
   if (!workflowsExtensions) {
     return;
+  }
+
+  // Attachment types are registered during `start` (and by other solutions'
+  // setup), so the registry is empty here at `setup`. The loaders read it lazily
+  // and resolve to `undefined` when no authorable type exists, which the step
+  // registry treats as a skipped registration.
+  if (isCasesAttachmentsEnabled) {
+    workflowsExtensions.registerStepDefinition(() =>
+      import('./add_attachment').then((m) =>
+        m.getAddAttachmentStepDefinition(unifiedAttachmentTypeRegistry)
+      )
+    );
+
+    workflowsExtensions.registerStepDefinition(() =>
+      import('./add_attachment').then((m) =>
+        m.getAddAttachmentsStepDefinition(unifiedAttachmentTypeRegistry)
+      )
+    );
   }
 
   workflowsExtensions.registerStepDefinition(() =>

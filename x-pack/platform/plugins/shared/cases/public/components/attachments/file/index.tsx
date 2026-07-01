@@ -115,4 +115,7 @@ export const getFileAttachmentType = () =>
     getAttachmentRemovalObject: () => ({ event: i18n.REMOVED_FILE }),
     getAttachmentTabViewObject: () => ({ children: CaseViewFiles }),
     schema: FileAttachmentPayloadSchema,
+    // File attachments reference uploaded files by id; workflow authors can't
+    // produce that id from YAML, so file is excluded from workflow steps.
+    workflowSchema: false,
   });

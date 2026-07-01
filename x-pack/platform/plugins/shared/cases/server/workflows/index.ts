@@ -8,6 +8,7 @@
 import type { KibanaRequest } from '@kbn/core/server';
 import type { CasesServerSetupDependencies } from '../types';
 import type { CasesClient } from '../client';
+import type { UnifiedAttachmentTypeRegistry } from '../attachment_framework/unified_attachment_registry';
 
 import { getCaseStepDefinition } from './steps/get_case';
 import { createCaseStepDefinition } from './steps/create_case';
@@ -20,6 +21,9 @@ import { deleteCasesStepDefinition } from './steps/delete_cases';
 import { unassignCaseStepDefinition } from './steps/unassign_case';
 import { addAlertsStepDefinition } from './steps/add_alerts';
 import { addEventsStepDefinition } from './steps/add_events';
+import { addAttachmentStepDefinition } from './steps/add_attachment';
+import { addAttachmentsStepDefinition } from './steps/add_attachments';
+import { selectAuthorableAttachmentSchemas } from './steps/unified_attachment_schemas';
 import { findSimilarCasesStepDefinition } from './steps/find_similar_cases';
 import { addObservablesStepDefinition } from './steps/add_observables';
 import { addTagsStepDefinition } from './steps/add_tags';
@@ -43,7 +47,9 @@ import {
 
 export function registerCaseWorkflowSteps(
   workflowsExtensions: CasesServerSetupDependencies['workflowsExtensions'],
-  getCasesClient: (request: KibanaRequest) => Promise<CasesClient>
+  getCasesClient: (request: KibanaRequest) => Promise<CasesClient>,
+  unifiedAttachmentTypeRegistry: UnifiedAttachmentTypeRegistry,
+  isCasesAttachmentsEnabled: boolean
 ) {
   if (!workflowsExtensions) {
     return;
@@ -65,6 +71,20 @@ export function registerCaseWorkflowSteps(
   workflowsExtensions.registerStepDefinition(unassignCaseStepDefinition(getCasesClient));
   workflowsExtensions.registerStepDefinition(addAlertsStepDefinition(getCasesClient));
   workflowsExtensions.registerStepDefinition(addEventsStepDefinition(getCasesClient));
+  // Skip the generic attachment steps when no attachment type exposes an
+  // authorable schema — the discriminated union cannot be composed from zero
+  // members and would throw during synchronous registration.
+  if (
+    isCasesAttachmentsEnabled &&
+    selectAuthorableAttachmentSchemas(unifiedAttachmentTypeRegistry).length > 0
+  ) {
+    workflowsExtensions.registerStepDefinition(
+      addAttachmentStepDefinition(unifiedAttachmentTypeRegistry, getCasesClient)
+    );
+    workflowsExtensions.registerStepDefinition(
+      addAttachmentsStepDefinition(unifiedAttachmentTypeRegistry, getCasesClient)
+    );
+  }
   workflowsExtensions.registerStepDefinition(findSimilarCasesStepDefinition(getCasesClient));
   workflowsExtensions.registerStepDefinition(setDescriptionStepDefinition(getCasesClient));
   workflowsExtensions.registerStepDefinition(setTitleStepDefinition(getCasesClient));

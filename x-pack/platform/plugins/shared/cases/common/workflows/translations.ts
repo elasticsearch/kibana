@@ -328,6 +328,50 @@ export const ADD_EVENTS_STEP_DOCUMENTATION_DETAILS = i18n.translate(
   }
 );
 
+export const ADD_ATTACHMENT_STEP_LABEL = i18n.translate(
+  'xpack.cases.workflowSteps.addAttachment.label',
+  {
+    defaultMessage: 'Cases - Add attachment to case',
+  }
+);
+
+export const ADD_ATTACHMENT_STEP_DESCRIPTION = i18n.translate(
+  'xpack.cases.workflowSteps.addAttachment.description',
+  {
+    defaultMessage: 'Adds an attachment of any registered type to a case',
+  }
+);
+
+export const ADD_ATTACHMENT_STEP_DOCUMENTATION_DETAILS = i18n.translate(
+  'xpack.cases.workflowSteps.addAttachment.documentation.details',
+  {
+    defaultMessage:
+      'This step adds a single attachment to an existing case. The `attachment` shape is determined by its `type` discriminator; the YAML editor narrows the available fields once a type is chosen. Author-friendly attachment types include `comment`, `file`, alerts, and events.',
+  }
+);
+
+export const ADD_ATTACHMENTS_STEP_LABEL = i18n.translate(
+  'xpack.cases.workflowSteps.addAttachments.label',
+  {
+    defaultMessage: 'Cases - Add attachments to case',
+  }
+);
+
+export const ADD_ATTACHMENTS_STEP_DESCRIPTION = i18n.translate(
+  'xpack.cases.workflowSteps.addAttachments.description',
+  {
+    defaultMessage: 'Adds one or more attachments of any registered type to a case in one request',
+  }
+);
+
+export const ADD_ATTACHMENTS_STEP_DOCUMENTATION_DETAILS = i18n.translate(
+  'xpack.cases.workflowSteps.addAttachments.documentation.details',
+  {
+    defaultMessage:
+      'This step adds multiple attachments to an existing case in a single bulk request. Each entry follows the same per-type shape as `cases.addAttachment`.',
+  }
+);
+
 export const FIND_SIMILAR_CASES_STEP_LABEL = i18n.translate(
   'xpack.cases.workflowSteps.findSimilarCases.label',
   {

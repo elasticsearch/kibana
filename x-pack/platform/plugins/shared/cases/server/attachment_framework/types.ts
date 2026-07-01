@@ -60,6 +60,11 @@ export interface UnifiedAttachmentType
     Omit<PersistableState<UnifiedAttachmentState>, 'migrations' | 'inject' | 'extract'> {
   /** Full-payload zod schema. Preferred over `schemaValidator` for new registrations. */
   schema?: z.ZodType;
+  /**
+   * Schema exposed to workflow authors. When unset, workflow steps fall back to
+   * `schema` if it is a Zod object; when `false`, the type is excluded.
+   */
+  workflowSchema?: z.ZodObject | false;
 }
 
 export interface UnifiedAttachmentTypeSetup
@@ -67,6 +72,7 @@ export interface UnifiedAttachmentTypeSetup
     Omit<PersistableStateDefinition<UnifiedAttachmentState>, 'migrations' | 'inject' | 'extract'> {
   /** Full-payload zod schema. Preferred over `schemaValidator` for new registrations. */
   schema?: z.ZodType;
+  workflowSchema?: z.ZodObject | false;
 }
 
 export interface AttachmentFramework {
