@@ -29,6 +29,7 @@
     "@kbn/logging-mocks",
     "@kbn/workflows-extensions",
     "@kbn/workflows",
-    "@kbn/zod"
+    "@kbn/zod",
+    "@kbn/es-errors"
   ]
 }

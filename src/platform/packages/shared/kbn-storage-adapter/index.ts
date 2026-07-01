@@ -211,6 +211,11 @@ export interface InternalIStorageClient<TDocumentType extends { _id?: string } =
   get: StorageClientGet<TDocumentType>;
   existsIndex: StorageClientExistsIndex;
   esql: StorageClientEsql;
+  /**
+   * Applies any pending mapping changes to the current write index via putMapping.
+   * Throws if the schema has incompatible structural changes that require a full rebuild.
+   */
+  reconcileMappings: () => Promise<void>;
 }
 
 type UnionKeys<T> = T extends T ? keyof T : never;
