@@ -14,10 +14,18 @@ jest.mock('@kbn/esql/public/kibana_services', () => ({
   untilPluginStartServicesReady: jest.fn(() => new Promise(() => {})),
 }));
 
+jest.mock('@kbn/date-range-picker-presets', () => ({
+  useDateRangePickerPresets: jest.fn(() => ({
+    presets: [],
+    onPresetSave: undefined,
+    onPresetDelete: undefined,
+  })),
+}));
+
 import React from 'react';
 import { BehaviorSubject } from 'rxjs';
 import { render, screen, waitFor, within } from '@testing-library/react';
-import { EMPTY } from 'rxjs';
+import { EMPTY, of } from 'rxjs';
 
 import { QueryBarTopRow, SharingMetaFields } from './query_bar_top_row';
 import { coreMock } from '@kbn/core/public/mocks';
@@ -34,6 +42,9 @@ import type { IUnifiedSearchPluginServices } from '../types';
 import userEvent from '@testing-library/user-event';
 import { getSessionServiceMock } from '@kbn/data-plugin/public/search/session/mocks';
 import { SearchSessionState } from '@kbn/data-plugin/public';
+import { useDateRangePickerPresets } from '@kbn/date-range-picker-presets';
+
+const mockUseDateRangePickerPresets = useDateRangePickerPresets as jest.Mock;
 
 const startMock = coreMock.createStart();
 startMock.chrome.getActiveSolutionNavId$.mockReturnValue(new BehaviorSubject('oblt'));
@@ -47,6 +58,7 @@ const mockTimeHistory = {
 };
 
 let useNewDateRangePickerFlag = true;
+let usePresetPersistenceFlag = true;
 
 startMock.uiSettings.get.mockImplementation((key: string) => {
   switch (key) {
@@ -78,7 +90,20 @@ startMock.featureFlags.getBooleanValue.mockImplementation((key: string, fallback
   if (key === 'unifiedSearch.newDateRangePickerEnabled') {
     return useNewDateRangePickerFlag;
   }
+  if (key === 'unifiedSearch.dateRangePickerPresetsPersistenceEnabled') {
+    return usePresetPersistenceFlag;
+  }
   return fallback;
+});
+
+startMock.featureFlags.getBooleanValue$.mockImplementation((key: string, fallback: boolean) => {
+  if (key === 'unifiedSearch.newDateRangePickerEnabled') {
+    return of(useNewDateRangePickerFlag);
+  }
+  if (key === 'unifiedSearch.dateRangePickerPresetsPersistenceEnabled') {
+    return of(usePresetPersistenceFlag);
+  }
+  return of(fallback);
 });
 
 const noop = () => {
@@ -147,6 +172,8 @@ function wrapQueryBarTopRowInContext(
 describe('QueryBarTopRowTopRow', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    useNewDateRangePickerFlag = true;
+    usePresetPersistenceFlag = true;
   });
 
   describe.each([
@@ -832,6 +859,67 @@ describe('QueryBarTopRowTopRow', () => {
         expect(screen.queryByTestId('unifiedTextLangEditor')).not.toBeInTheDocument();
         expect(screen.getByTestId(pickerButtonTestSubj)).toBeInTheDocument();
         expect(within(screen.getByTestId('querySubmitButton')).getByText('Refresh')).toBeVisible();
+      });
+    });
+  });
+
+  describe('date range picker preset persistence', () => {
+    const renderWithDatePicker = () =>
+      render(
+        wrapQueryBarTopRowInContext({
+          query: kqlQuery,
+          screenTitle: 'Another Screen',
+          isDirty: false,
+          indexPatterns: [stubIndexPattern],
+          timeHistory: mockTimeHistory,
+        })
+      );
+
+    it('passes userStorage to the presets hook when the new picker and persistence flag are enabled', async () => {
+      useNewDateRangePickerFlag = true;
+      usePresetPersistenceFlag = true;
+
+      renderWithDatePicker();
+
+      await waitFor(() => {
+        expect(mockUseDateRangePickerPresets).toHaveBeenCalledWith(
+          expect.objectContaining({
+            userStorage: startMock.userStorage,
+            uiSettings: startMock.uiSettings,
+            userProfile: startMock.userProfile,
+            notifications: startMock.notifications,
+          })
+        );
+      });
+    });
+
+    it('passes null userStorage to the presets hook when persistence is disabled', async () => {
+      useNewDateRangePickerFlag = true;
+      usePresetPersistenceFlag = false;
+
+      renderWithDatePicker();
+
+      await waitFor(() => {
+        expect(mockUseDateRangePickerPresets).toHaveBeenCalledWith(
+          expect.objectContaining({
+            userStorage: null,
+          })
+        );
+      });
+    });
+
+    it('passes null userStorage to the presets hook on the legacy picker path', async () => {
+      useNewDateRangePickerFlag = false;
+      usePresetPersistenceFlag = true;
+
+      renderWithDatePicker();
+
+      await waitFor(() => {
+        expect(mockUseDateRangePickerPresets).toHaveBeenCalledWith(
+          expect.objectContaining({
+            userStorage: null,
+          })
+        );
       });
     });
   });

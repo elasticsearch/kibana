@@ -19,6 +19,7 @@
     "@kbn/scout",
     "@kbn/core-http-common",
     "@kbn/core",
+    "@kbn/core-user-storage-common",
     "@kbn/ui-actions-plugin",
     "@kbn/share-plugin",
     "@kbn/inspector-plugin",
@@ -72,7 +73,9 @@
     "@kbn/std",
     "@kbn/core-elasticsearch-server",
     "@kbn/css-utils",
-    "@kbn/shared-ux-utility"
+    "@kbn/shared-ux-utility",
+    "@kbn/date-range-picker-presets-common",
+    "@kbn/zod"
   ],
   "exclude": ["target/**/*"]
 }

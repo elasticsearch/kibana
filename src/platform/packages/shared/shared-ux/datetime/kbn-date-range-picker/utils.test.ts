@@ -7,6 +7,8 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
+import moment from 'moment';
+
 import { DATE_TYPE_ABSOLUTE, DATE_TYPE_NOW, DATE_TYPE_RELATIVE } from './constants';
 import type { TimeRange } from './types';
 import {
@@ -92,8 +94,34 @@ describe('isValidTimeRange', () => {
 });
 
 describe('getOptionDisplayLabel', () => {
-  it('returns the label when present', () => {
+  it('keeps a natural-language label verbatim', () => {
     expect(getOptionDisplayLabel({ start: 'now-15m', end: 'now', label: 'Last 15 minutes' })).toBe(
+      'Last 15 minutes'
+    );
+  });
+
+  it('regenerates a display-form label from bounds, honouring timePrecision', () => {
+    const start = '2026-05-25T00:00:00.000Z';
+    const end = '2026-05-27T23:59:59.999Z';
+
+    // A frozen, full-precision display label is ignored in favour of the bounds,
+    // so the list uses the → delimiter and respects the current timePrecision.
+    expect(
+      getOptionDisplayLabel(
+        { start, end, label: 'May 25, 00:00:00.000 → May 27, 23:59:59.999' },
+        { timePrecision: 'none' }
+      )
+    ).toBe(
+      `${moment.utc(start).local().format('MMM D, HH:mm')} → ${moment
+        .utc(end)
+        .local()
+        .format('MMM D, HH:mm')}`
+    );
+  });
+
+  it('regenerates an input-form label into display form (→ delimiter)', () => {
+    // A stale, input-form label ("-15m to …") is regenerated as display text.
+    expect(getOptionDisplayLabel({ start: 'now-15m', end: 'now', label: '-15m to now' })).toBe(
       'Last 15 minutes'
     );
   });
@@ -158,6 +186,28 @@ describe('getOptionInputText', () => {
     expect(getOptionInputText({ start: 'now-15m', end: 'now', label: 'Last 15 minutes' })).toBe(
       'Last 15 minutes'
     );
+  });
+
+  it('derives readable input from bounds when the label is display-only', () => {
+    const start = '2026-05-01T00:00:00.000Z';
+    const end = '2026-05-02T23:59:00.000Z';
+
+    expect(getOptionInputText({ start, end, label: 'May 1, 00:00 → May 2, 23:59' })).toBe(
+      `${moment.utc(start).local().format('MMM D, YYYY, HH:mm:ss.SSS')} to ${moment
+        .utc(end)
+        .local()
+        .format('MMM D, YYYY, HH:mm:ss.SSS')}`
+    );
+  });
+
+  it('derives readable input for a mixed relative/absolute range, preserving rounding', () => {
+    const end = '2026-06-29T13:55:55.000Z';
+
+    // Rounding is kept (`-15m/m`, not `-15m`) so re-applying the text reproduces the
+    // stored bound exactly; only the absolute end becomes readable instead of raw ISO.
+    expect(
+      getOptionInputText({ start: 'now-15m/m', end, label: '15 minutes ago → 15:55:55' })
+    ).toBe(`-15m/m to ${moment.utc(end).local().format('MMM D, YYYY, HH:mm:ss.SSS')}`);
   });
 
   it('falls back to shorthand when label does not parse', () => {

@@ -12,7 +12,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import useObservable from 'react-use/lib/useObservable';
 import classNames from 'classnames';
 import deepEqual from 'fast-deep-equal';
-import { EMPTY, delay, mergeMap, of } from 'rxjs';
+import { EMPTY, delay, distinctUntilChanged, mergeMap, of } from 'rxjs';
 import { map } from 'rxjs';
 import { throttle, debounce } from 'lodash';
 
@@ -63,6 +63,7 @@ import {
   type DateRangePickerOnChangeProps,
   type AutoRefreshSettings,
 } from '@kbn/date-range-picker';
+import { useDateRangePickerPresets } from '@kbn/date-range-picker-presets';
 import { AddFilterPopover } from './add_filter_popover';
 import type { DataViewPickerProps } from '../dataview_picker';
 import { DataViewPicker } from '../dataview_picker';
@@ -75,6 +76,8 @@ import { FilterBarContextProvider } from '../filter_bar/filter_bar_context';
 
 /** Feature flag key for the new DateRangePicker. Falls back to `true` (new picker). */
 const DATE_RANGE_PICKER_FEATURE_FLAG = 'unifiedSearch.newDateRangePickerEnabled';
+const DATE_RANGE_PICKER_PRESETS_PERSISTENCE_FEATURE_FLAG =
+  'unifiedSearch.dateRangePickerPresetsPersistenceEnabled';
 
 const SuperDatePicker = React.memo(
   EuiSuperDatePicker as any
@@ -398,11 +401,48 @@ export const QueryBarTopRow = React.memo(
       http,
       dataViews,
       application,
+      featureFlags,
+      userStorage,
+      userProfile,
     } = kibana.services;
 
+    const isDateRangePickerFeatureFlagEnabled$ = useMemo(
+      () =>
+        enableDateRangePicker && featureFlags
+          ? featureFlags
+              .getBooleanValue$(DATE_RANGE_PICKER_FEATURE_FLAG, true)
+              .pipe(distinctUntilChanged())
+          : of(true),
+      [enableDateRangePicker, featureFlags]
+    );
+    const isDateRangePickerFeatureFlagEnabled = useObservable(
+      isDateRangePickerFeatureFlagEnabled$,
+      true
+    );
     const shouldUseLegacyTimePicker =
-      !enableDateRangePicker ||
-      !kibana.services.featureFlags?.getBooleanValue(DATE_RANGE_PICKER_FEATURE_FLAG, true);
+      !enableDateRangePicker || !isDateRangePickerFeatureFlagEnabled;
+
+    const isPresetsPersistenceFeatureFlagEnabled$ = useMemo(
+      () =>
+        featureFlags
+          ? featureFlags
+              .getBooleanValue$(DATE_RANGE_PICKER_PRESETS_PERSISTENCE_FEATURE_FLAG, true)
+              .pipe(distinctUntilChanged())
+          : of(true),
+      [featureFlags]
+    );
+    const isPresetsPersistenceFeatureFlagEnabled = useObservable(
+      isPresetsPersistenceFeatureFlagEnabled$,
+      true
+    );
+    const shouldPersistDateRangePickerPresets =
+      !shouldUseLegacyTimePicker && isPresetsPersistenceFeatureFlagEnabled;
+    const dateRangePickerPresets = useDateRangePickerPresets({
+      userStorage: shouldPersistDateRangePickerPresets ? userStorage ?? null : null,
+      uiSettings,
+      userProfile,
+      notifications,
+    });
 
     const isQueryLangSelected = props.query && !isOfQueryType(props.query);
     const shouldRenderESQLUi = Boolean(showQueryInput && isQueryLangSelected);
@@ -854,8 +894,10 @@ export const QueryBarTopRow = React.memo(
               compressed
               collapsed={isMobile || isQueryInputFocused}
               showTimeWindowButtons
-              presets={commonlyUsedRanges}
+              presets={dateRangePickerPresets.presets}
               recent={recentlyUsedRanges}
+              onPresetSave={dateRangePickerPresets.onPresetSave}
+              onPresetDelete={dateRangePickerPresets.onPresetDelete}
               settings={dateRangePickerSettingsWithAutoRefresh}
               onSettingsChange={onDateRangePickerSettingsChange}
               onRefresh={propsOnRefreshChange ? onDateRangePickerRefresh : undefined}

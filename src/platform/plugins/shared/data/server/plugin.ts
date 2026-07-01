@@ -27,6 +27,7 @@ import { ScriptsService } from './scripts';
 import { KqlTelemetryService } from './kql_telemetry';
 import { getUiSettings } from './ui_settings';
 import type { QuerySetup } from './query';
+import { dateRangePickerPresetsUserStorageRegistration } from './date_range_picker_presets';
 
 export interface DataPluginSetup {
   search: ISearchSetup;
@@ -96,6 +97,7 @@ export class DataServerPlugin
     this.kqlTelemetryService.setup(core, { usageCollection });
 
     core.uiSettings.register(getUiSettings(core.docLinks, this.config.enableUiSettingsValidations));
+    core.userStorage.register(dateRangePickerPresetsUserStorageRegistration);
 
     const searchSetup = this.searchService.setup(core, {
       expressions,

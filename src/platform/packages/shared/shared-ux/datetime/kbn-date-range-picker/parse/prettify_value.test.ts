@@ -188,6 +188,22 @@ describe('prettifyValue', () => {
       expect(prettifyValue('now-3d/d to now', { presets })).toBe('-3d');
     });
 
+    it('ignores display-form preset labels (non natural-language) and prettifies the bounds', () => {
+      const start = '2026-05-01T00:00:00.000Z';
+      const end = '2026-05-02T23:59:00.000Z';
+
+      expect(
+        prettifyValue(`${start} to ${end}`, {
+          presets: [{ start, end, label: 'May 1, 00:00 → May 2, 23:59' }],
+        })
+      ).toBe(
+        `${moment.utc(start).local().format(DEFAULT_DATE_FORMAT)} to ${moment
+          .utc(end)
+          .local()
+          .format(DEFAULT_DATE_FORMAT)}`
+      );
+    });
+
     it('works without presets (no options)', () => {
       expect(prettifyValue('now-7d/d to now')).toBe('-7d');
     });

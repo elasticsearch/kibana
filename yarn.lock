@@ -6509,6 +6509,14 @@
   version "0.0.0"
   uid ""
 
+"@kbn/date-range-picker-presets-common@link:src/platform/packages/shared/shared-ux/datetime/kbn-date-range-picker-presets-common":
+  version "0.0.0"
+  uid ""
+
+"@kbn/date-range-picker-presets@link:src/platform/packages/shared/shared-ux/datetime/kbn-date-range-picker-presets":
+  version "0.0.0"
+  uid ""
+
 "@kbn/date-range-picker@link:src/platform/packages/shared/shared-ux/datetime/kbn-date-range-picker":
   version "0.0.0"
   uid ""

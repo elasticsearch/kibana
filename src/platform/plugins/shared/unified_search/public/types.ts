@@ -102,6 +102,7 @@ export interface IUnifiedSearchPluginServices extends Partial<CoreStart> {
   i18n: CoreStart['i18n'];
   theme: CoreStart['theme'];
   userProfile: CoreStart['userProfile'];
+  userStorage: CoreStart['userStorage'];
   storage: IStorageWrapper;
   docLinks: DocLinksStart;
   data: DataPublicPluginStart;

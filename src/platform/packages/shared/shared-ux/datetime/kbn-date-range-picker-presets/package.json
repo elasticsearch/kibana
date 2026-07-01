@@ -1,0 +1,7 @@
+{
+  "name": "@kbn/date-range-picker-presets",
+  "private": true,
+  "version": "1.0.0",
+  "license": "Elastic License 2.0 OR AGPL-3.0-only OR SSPL-1.0",
+  "sideEffects": false
+}

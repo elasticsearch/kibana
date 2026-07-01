@@ -320,8 +320,11 @@ describe('CalendarPanel', () => {
       expect(applyRange).toHaveBeenCalledWith();
     });
 
-    it('calls onPresetSave when Save as preset is checked', async () => {
-      mockUseDateRangePickerContext.mockReturnValue(makeContextNoDates());
+    it('calls onPresetSave with a precision-aware display label when Save as preset is checked', async () => {
+      mockUseDateRangePickerContext.mockReturnValue({
+        ...makeContextNoDates(),
+        settings: { ...defaultSettings, timePrecision: 'none' },
+      });
       renderWithEuiTheme(<CalendarPanel />);
 
       await user.click(screen.getByRole('checkbox', { name: 'Save as preset' }));
@@ -329,8 +332,11 @@ describe('CalendarPanel', () => {
       await clickDay(15);
       await user.click(screen.getByRole('button', { name: 'Apply' }));
 
+      // 'none' precision drops the seconds, and the label is display-only (uses the → delimiter).
       expect(onPresetSave).toHaveBeenCalledWith(
-        expect.objectContaining({ label: expect.any(String) })
+        expect.objectContaining({
+          label: expect.stringMatching(/^Feb 10(?:, 2026)?, 00:00 → Feb 15(?:, 2026)?, 23:59$/),
+        })
       );
     });
 

@@ -592,6 +592,8 @@
     "@kbn/data-visualizer-server-schemas": "link:x-pack/platform/packages/shared/ml/data-visualizer-server-schemas",
     "@kbn/dataset-quality-plugin": "link:x-pack/platform/plugins/shared/dataset_quality",
     "@kbn/date-range-picker": "link:src/platform/packages/shared/shared-ux/datetime/kbn-date-range-picker",
+    "@kbn/date-range-picker-presets": "link:src/platform/packages/shared/shared-ux/datetime/kbn-date-range-picker-presets",
+    "@kbn/date-range-picker-presets-common": "link:src/platform/packages/shared/shared-ux/datetime/kbn-date-range-picker-presets-common",
     "@kbn/datemath": "link:src/platform/packages/shared/kbn-datemath",
     "@kbn/deeplinks-agent-builder": "link:src/platform/packages/shared/deeplinks/agent_builder",
     "@kbn/deeplinks-analytics": "link:src/platform/packages/shared/deeplinks/analytics",

@@ -10,8 +10,9 @@
 import moment from 'moment';
 
 import { DATE_RANGE_INPUT_DELIMITER, DEFAULT_DATE_FORMAT } from '../constants';
-import type { TimeRangeBoundsOption } from '../types';
-import { PARSER_DELIMITERS, buildDelimiterPattern } from './parse_text';
+import type { TimePrecision, TimeRangeBoundsOption } from '../types';
+import { applyTimePrecision } from '../format';
+import { PARSER_DELIMITERS, buildDelimiterPattern, textToTimeRange } from './parse_text';
 
 /**
  * Simplifies a dateMath value string into a compact shorthand suitable for
@@ -46,12 +47,15 @@ const getDelimiterPatterns = (extraDelimiter?: string): RegExp[] => {
 };
 
 /**
- * Formats an ISO 8601 date string into a human-readable display format.
- * Returns `null` if the string is not a valid ISO date.
+ * Formats an ISO 8601 date string into a human-readable display format at the
+ * requested sub-minute precision. Returns `null` if the string is not a valid
+ * ISO date.
  */
-const prettifyAbsoluteDate = (bound: string): string | null => {
+const prettifyAbsoluteDate = (bound: string, precision: TimePrecision = 'ms'): string | null => {
   const parsed = moment(bound, moment.ISO_8601, true);
-  return parsed.isValid() ? parsed.format(DEFAULT_DATE_FORMAT) : null;
+  return parsed.isValid()
+    ? parsed.format(applyTimePrecision(DEFAULT_DATE_FORMAT, precision))
+    : null;
 };
 
 /**
@@ -90,7 +94,12 @@ export interface PrettifyValueOptions {
 
 /**
  * Tries to match a split `{start, end}` pair against a preset.
- * Returns the preset label if found, `null` otherwise.
+ * Returns the preset label only when it is natural language (e.g. "Last 7 days",
+ * "Today") and therefore safe to show in the editable input. Display-form labels
+ * (e.g. `"Feb 3 → Feb 10"`) must not leak into the input; we gate on
+ * `isNaturalLanguage` rather than `!isInvalid` because moment's forgiving parser
+ * "validates" display labels by matching a fragment, so they are prettified from
+ * their bounds instead.
  */
 const matchPresetBounds = (
   start: string,
@@ -98,7 +107,9 @@ const matchPresetBounds = (
   presets: TimeRangeBoundsOption[]
 ): string | null => {
   const match = presets.find((p) => p.start === start && p.end === end);
-  return match?.label ?? null;
+  if (!match?.label) return null;
+
+  return textToTimeRange(match.label).isNaturalLanguage ? match.label : null;
 };
 
 /**

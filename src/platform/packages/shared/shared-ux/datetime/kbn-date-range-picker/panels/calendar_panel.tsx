@@ -138,18 +138,21 @@ export function CalendarPanel() {
       onPresetSave({
         start,
         end,
-        label: timeRangeToDisplayText({
-          value: formatDateRange(startDate, endDate, timePrecision),
-          start,
-          end,
-          startDate,
-          endDate,
-          type: [DATE_TYPE_ABSOLUTE, DATE_TYPE_ABSOLUTE],
-          isNaturalLanguage: false,
-          isInvalid: false,
-          startOffset: null,
-          endOffset: null,
-        }),
+        label: timeRangeToDisplayText(
+          {
+            value: formatDateRange(startDate, endDate, timePrecision),
+            start,
+            end,
+            startDate,
+            endDate,
+            type: [DATE_TYPE_ABSOLUTE, DATE_TYPE_ABSOLUTE],
+            isNaturalLanguage: false,
+            isInvalid: false,
+            startOffset: null,
+            endOffset: null,
+          },
+          { timePrecision }
+        ),
       });
     }
   }, [applyRange, onPresetSave, saveAsPreset, timeRange, timePrecision]);

@@ -45,6 +45,7 @@
     "@kbn/css-utils",
     "@kbn/kql",
     "@kbn/date-range-picker",
+    "@kbn/date-range-picker-presets",
     "@kbn/scout",
   ],
   "exclude": ["target/**/*"]

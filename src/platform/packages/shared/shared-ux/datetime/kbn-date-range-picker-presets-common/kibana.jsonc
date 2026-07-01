@@ -1,0 +1,7 @@
+{
+  "type": "shared-common",
+  "id": "@kbn/date-range-picker-presets-common",
+  "owner": ["@elastic/appex-sharedux", "@elastic/eui-team"],
+  "group": "platform",
+  "visibility": "shared"
+}

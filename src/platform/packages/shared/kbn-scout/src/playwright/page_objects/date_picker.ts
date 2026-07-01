@@ -61,6 +61,13 @@ export class DatePicker {
       : this.page.testSubj.locator(selector);
   }
 
+  private getDateRangePresetTestSubject(label: string) {
+    return `dateRangePickerPresetItem-${label
+      .replace(/→/g, '-')
+      .replace(/["'&]/g, '')
+      .replace(/\s+/g, '_')}`;
+  }
+
   // ---------------------------------------------------------------------------
   // Legacy EuiSuperDatePicker helpers
   // ---------------------------------------------------------------------------
@@ -169,6 +176,18 @@ export class DatePicker {
     }
   }
 
+  async openDateRangePickerPresetsPanel() {
+    if (!(await this.isNewDateRangePicker())) {
+      throw new Error(
+        'openDateRangePickerPresetsPanel is only supported by the new DateRangePicker'
+      );
+    }
+
+    await this.ensurePickerVisible();
+    await this.page.testSubj.locator('dateRangePickerControlButton').click();
+    await this.page.testSubj.locator('dateRangePickerMainPanel').waitFor();
+  }
+
   private async openCustomRangePanel(containerLocator?: Locator) {
     await this.ensurePickerVisible(containerLocator);
     // Click the control button scoped to the container
@@ -260,6 +279,45 @@ export class DatePicker {
       await expect(commonlyUsedOption).toBeVisible();
       await commonlyUsedOption.click();
     }
+  }
+
+  async setTextRange(value: string) {
+    if (!(await this.isNewDateRangePicker())) {
+      throw new Error('setTextRange is only supported by the new DateRangePicker');
+    }
+
+    await this.ensurePickerVisible();
+    await this.page.testSubj.locator('dateRangePickerControlButton').click();
+    const input = this.page.testSubj.locator('dateRangePickerInput');
+    await input.clear();
+    await input.fill(value);
+    await input.press('Enter');
+    await this.page.testSubj.locator('querySubmitButton').click();
+  }
+
+  async saveCurrentRangeAsPreset() {
+    if (!(await this.isNewDateRangePicker())) {
+      throw new Error('saveCurrentRangeAsPreset is only supported by the new DateRangePicker');
+    }
+
+    await this.openDateRangePickerPresetsPanel();
+    await this.page.testSubj.locator('dateRangePickerSavePresetButton').click();
+  }
+
+  getDateRangePreset(label: string) {
+    return this.page.testSubj.locator(this.getDateRangePresetTestSubject(label));
+  }
+
+  async deleteDateRangePreset(label: string) {
+    if (!(await this.isNewDateRangePicker())) {
+      throw new Error('deleteDateRangePreset is only supported by the new DateRangePicker');
+    }
+
+    await this.openDateRangePickerPresetsPanel();
+    const preset = this.getDateRangePreset(label);
+    await preset.waitFor();
+    await preset.hover();
+    await preset.getByTestId('dateRangePickerDeletePresetButton').click();
   }
 
   async setAbsoluteRange({ from, to }: { from: string; to: string }) {

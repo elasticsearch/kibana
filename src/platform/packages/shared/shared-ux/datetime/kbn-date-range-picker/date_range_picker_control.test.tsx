@@ -105,6 +105,54 @@ describe('DateRangePickerControl', () => {
       }
     );
 
+    it('saves a relative range with its human-readable display label, not the raw input', async () => {
+      const onPresetSave = jest.fn();
+
+      renderWithEuiTheme(
+        <DateRangePicker {...defaultProps} defaultValue="-2m" onPresetSave={onPresetSave} />
+      );
+
+      openEditing();
+      fireEvent.click(screen.getByTestId('dateRangePickerSavePresetButton'));
+
+      expect(onPresetSave).toHaveBeenCalledWith({
+        start: 'now-2m',
+        end: 'now',
+        label: 'Last 2 minutes',
+      });
+
+      await waitForPopoverClose();
+    });
+
+    it('derives readable input from bounds when selecting a preset with a display-only label', async () => {
+      const expectedInputText = 'May 1, 2026, 00:00:00.000 to May 2, 2026, 23:59:00.000';
+
+      renderWithEuiTheme(
+        <DateRangePicker
+          {...defaultProps}
+          defaultValue="last 20 minutes"
+          settings={{ roundRelativeTime: false, timePrecision: 'none' }}
+          presets={[
+            {
+              start: '2026-05-01T00:00:00.000Z',
+              end: '2026-05-02T23:59:00.000Z',
+              label: 'May 1, 00:00 → May 2, 23:59',
+            },
+          ]}
+        />
+      );
+
+      const input = openEditing();
+      fireEvent.keyDown(input, { key: 'ArrowDown' });
+      fireEvent.click(screen.getByText('May 1, 00:00 → May 2, 23:59'));
+
+      const selectedInput = openEditing() as HTMLInputElement;
+
+      expect(selectedInput.value).toBe(expectedInputText);
+      fireEvent.keyDown(selectedInput, { key: 'Escape' });
+      await waitForPopoverClose();
+    });
+
     it('selects clicked no-year absolute display parts in the input', async () => {
       jest.useFakeTimers().setSystemTime(new Date('2026-06-04T12:00:00.000Z'));
 

@@ -190,6 +190,7 @@ export function DateRangePickerProvider({
   const [isEditing, setIsEditing] = useState<boolean>(false);
   const isEditingRef = useRef(isEditing);
   isEditingRef.current = isEditing;
+  const timePrecision = settings.timePrecision ?? 's';
   const [text, setText] = useState<string>(() =>
     prettifyValue(value ?? defaultValue ?? '', { presets })
   );
@@ -198,7 +199,6 @@ export function DateRangePickerProvider({
       textToTimeRange(text, { presets, dateFormat, roundRelativeTime: settings.roundRelativeTime }),
     [text, presets, dateFormat, settings.roundRelativeTime]
   );
-  const timePrecision = settings.timePrecision ?? 's';
   const displayText = useMemo(
     () => timeRangeToDisplayText(timeRange, { timePrecision }),
     [timeRange, timePrecision]
