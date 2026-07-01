@@ -27,6 +27,7 @@ dependsOn:
   - '@kbn/es-query'
   - '@kbn/eval-kql'
   - '@kbn/core-elasticsearch-server'
+  - '@kbn/core-security-server'
   - '@kbn/cloud-plugin'
   - '@kbn/utility-types'
   - '@kbn/zod'

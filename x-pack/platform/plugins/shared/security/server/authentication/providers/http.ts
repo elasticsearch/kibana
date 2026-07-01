@@ -6,10 +6,15 @@
  */
 
 import type { KibanaRequest } from '@kbn/core/server';
-import { HTTPAuthorizationHeader, isUiamCredential } from '@kbn/core-security-server';
+import {
+  HTTPAuthorizationHeader,
+  isUiamCredential,
+  UIAM_INTERNAL_CLIENT_AUTH_HEADER,
+} from '@kbn/core-security-server';
 
 import type { AuthenticationProviderOptions } from './base';
 import { BaseAuthenticationProvider } from './base';
+import { ES_CLIENT_AUTHENTICATION_HEADER } from '../../../common/constants';
 import { getDetailedErrorMessage } from '../../errors';
 import { ROUTE_TAG_ACCEPT_JWT, ROUTE_TAG_ACCEPT_UIAM_OAUTH } from '../../routes/tags';
 import { AuthenticationResult } from '../authentication_result';
@@ -108,8 +113,23 @@ export class HTTPAuthenticationProvider extends BaseAuthenticationProvider {
       );
     }
 
+    /**
+     * Internal UIAM API keys (e.g. an `ApiKey essu_...` minted by Task Manager and replayed by the
+     * workflows engine over a loopback HTTP request) must be validated against Elasticsearch with the
+     * UIAM client-authentication shared secret. We only attach it for requests that carry the
+     * `UIAM_INTERNAL_CLIENT_AUTH_HEADER` marker set by those trusted in-process callers; the secret
+     * stays server-side and the marker is never forwarded to ES.
+     */
+    const clientAuthHeaders =
+      this.options.uiam &&
+      authorizationHeader.scheme.toLowerCase() !== 'bearer' &&
+      isUiamCredential(authorizationHeader) &&
+      request.headers[UIAM_INTERNAL_CLIENT_AUTH_HEADER] === 'true'
+        ? { [ES_CLIENT_AUTHENTICATION_HEADER]: this.options.uiam.getClientAuthentication().value }
+        : undefined;
+
     try {
-      const user = await this.getUser(request);
+      const user = await this.getUser(request, clientAuthHeaders);
       this.logger.debug(
         `Request to ${request.url.pathname}${request.url.search} has been authenticated via authorization header with "${authorizationHeader.scheme}" scheme.`
       );
@@ -133,7 +153,7 @@ export class HTTPAuthenticationProvider extends BaseAuthenticationProvider {
       return AuthenticationResult.succeeded(user, {
         // Even though the `Authorization` header is already present in the HTTP headers of the original request,
         // we still need to expose it to the Core authentication service for consistency.
-        authHeaders: { authorization: authorizationHeader.toString() },
+        authHeaders: { authorization: authorizationHeader.toString(), ...clientAuthHeaders },
       });
     } catch (err) {
       this.logger.debug(

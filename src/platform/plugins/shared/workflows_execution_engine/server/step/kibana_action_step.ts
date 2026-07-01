@@ -10,6 +10,11 @@
 // TODO: Remove eslint exceptions comments and fix the issues
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
+import {
+  HTTPAuthorizationHeader,
+  isUiamCredential,
+  UIAM_INTERNAL_CLIENT_AUTH_HEADER,
+} from '@kbn/core-security-server';
 import type { FetcherConfigSchema } from '@kbn/workflows';
 import { buildKibanaRequest, KibanaHttpMethods } from '@kbn/workflows';
 import type { KibanaGraphNode } from '@kbn/workflows/graph/types';
@@ -156,6 +161,13 @@ export class KibanaActionStepImpl extends BaseAtomicNodeImplementation<BaseStep>
     if (fakeRequest?.headers?.authorization) {
       // Use API key from fakeRequest if available
       headers.Authorization = fakeRequest.headers.authorization.toString();
+      // When authenticating with an internal UIAM API key, mark the loopback request so the HTTP auth
+      // provider attaches the UIAM client-authentication shared secret (which stays server-side). See
+      // UIAM_INTERNAL_CLIENT_AUTH_HEADER.
+      const parsedAuth = HTTPAuthorizationHeader.parseFromRequest(fakeRequest);
+      if (parsedAuth && isUiamCredential(parsedAuth)) {
+        headers[UIAM_INTERNAL_CLIENT_AUTH_HEADER] = 'true';
+      }
     } else {
       throw new Error('No authentication headers found');
     }

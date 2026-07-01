@@ -7,6 +7,7 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
+import { UIAM_INTERNAL_CLIENT_AUTH_HEADER } from '@kbn/core-security-server';
 import type { KibanaGraphNode } from '@kbn/workflows/graph/types';
 
 import { KibanaActionStepImpl } from './kibana_action_step';
@@ -1257,6 +1258,39 @@ describe('KibanaActionStepImpl - Fetcher Configuration', () => {
       expect(headers.Authorization).toBe('ApiKey test-key');
       expect(headers['x-elastic-internal-origin']).toBe('Kibana');
       expect(headers['kbn-xsrf']).toBe('true');
+      // Non-UIAM credential must not be marked for UIAM client-auth forwarding.
+      expect(headers[UIAM_INTERNAL_CLIENT_AUTH_HEADER]).toBeUndefined();
+    });
+
+    it('marks the request for UIAM client-auth when authenticating with a UIAM API key', async () => {
+      mockContextManager.getFakeRequest.mockReturnValue({
+        headers: { authorization: 'ApiKey essu_internal_api_key' },
+      } as any);
+
+      const stepWith = {
+        request: { method: 'GET', path: '/api/status' },
+      };
+      const step = {
+        id: 'status_step',
+        type: 'kibana.request',
+        stepId: 'status_step',
+        stepType: 'kibana.request',
+        configuration: { name: 'status_step', type: 'kibana.request', with: stepWith },
+      } as unknown as KibanaGraphNode;
+
+      const kibanaStep = new KibanaActionStepImpl(
+        step,
+        mockStepExecutionRuntime,
+        mockWorkflowRuntime,
+        mockWorkflowLogger
+      );
+
+      await runStep(kibanaStep, stepWith);
+
+      const fetchOptions = mockedFetch.mock.calls[0][1] as RequestInit;
+      const headers = fetchOptions.headers as Record<string, string>;
+      expect(headers.Authorization).toBe('ApiKey essu_internal_api_key');
+      expect(headers[UIAM_INTERNAL_CLIENT_AUTH_HEADER]).toBe('true');
     });
 
     it('preserves the raw body return shape on the JSON-body path (no envelope leak)', async () => {

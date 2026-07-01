@@ -12,6 +12,14 @@ import { HTTPAuthorizationHeader } from '../authentication';
 const UIAM_CREDENTIALS_PREFIX = 'essu_';
 
 /**
+ * Marker header set by trusted, in-process Kibana callers (e.g. the workflows execution engine) on
+ * loopback HTTP requests that authenticate with an *internal* UIAM API key. It tells the HTTP
+ * authentication provider to attach the UIAM client-authentication shared secret when validating the
+ * credential against Elasticsearch.
+ */
+export const UIAM_INTERNAL_CLIENT_AUTH_HEADER = 'x-kbn-uiam-internal-client-auth';
+
+/**
  * Checks if the given authorization credentials are UIAM credentials.
  *
  * @param credential The HTTP authorization header or access token to check.

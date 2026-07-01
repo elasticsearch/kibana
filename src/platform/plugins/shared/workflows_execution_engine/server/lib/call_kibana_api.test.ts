@@ -8,6 +8,7 @@
  */
 
 import type { CoreStart, KibanaRequest } from '@kbn/core/server';
+import { UIAM_INTERNAL_CLIENT_AUTH_HEADER } from '@kbn/core-security-server';
 import { callKibanaApi, CallKibanaApiResponseTooLargeError } from './call_kibana_api';
 
 const originalFetch = global.fetch;
@@ -144,6 +145,58 @@ describe('callKibanaApi', () => {
     const [, init] = mockedFetch.mock.calls[0];
     const headers = (init as RequestInit).headers as Record<string, string>;
     expect(headers.Authorization).toBe('ApiKey caller-key');
+  });
+
+  it('marks the request for UIAM client-auth when authenticating with a UIAM API key', async () => {
+    mockedFetch.mockResolvedValue(createMockResponse({ body: { ok: true } }));
+
+    await callKibanaApi(
+      {
+        fakeRequest: createFakeRequest({ headers: { authorization: 'ApiKey essu_internal' } }),
+        coreStart: createCoreStart(),
+      },
+      { method: 'GET', path: '/api/status' }
+    );
+
+    const [, init] = mockedFetch.mock.calls[0];
+    const headers = (init as RequestInit).headers as Record<string, string>;
+    expect(headers[UIAM_INTERNAL_CLIENT_AUTH_HEADER]).toBe('true');
+  });
+
+  it('does not mark the request for non-UIAM credentials', async () => {
+    mockedFetch.mockResolvedValue(createMockResponse({ body: { ok: true } }));
+
+    await callKibanaApi(
+      {
+        fakeRequest: createFakeRequest({ headers: { authorization: 'ApiKey native-key' } }),
+        coreStart: createCoreStart(),
+      },
+      { method: 'GET', path: '/api/status' }
+    );
+
+    const [, init] = mockedFetch.mock.calls[0];
+    const headers = (init as RequestInit).headers as Record<string, string>;
+    expect(headers[UIAM_INTERNAL_CLIENT_AUTH_HEADER]).toBeUndefined();
+  });
+
+  it('ignores a caller-supplied UIAM client-auth marker (cannot be spoofed)', async () => {
+    mockedFetch.mockResolvedValue(createMockResponse({ body: { ok: true } }));
+
+    await callKibanaApi(
+      {
+        fakeRequest: createFakeRequest({ headers: { authorization: 'ApiKey native-key' } }),
+        coreStart: createCoreStart(),
+      },
+      {
+        method: 'GET',
+        path: '/api/status',
+        headers: { [UIAM_INTERNAL_CLIENT_AUTH_HEADER]: 'true' },
+      }
+    );
+
+    const [, init] = mockedFetch.mock.calls[0];
+    const headers = (init as RequestInit).headers as Record<string, string>;
+    expect(headers[UIAM_INTERNAL_CLIENT_AUTH_HEADER]).toBeUndefined();
   });
 
   it('throws when the fake request has no Authorization header', async () => {

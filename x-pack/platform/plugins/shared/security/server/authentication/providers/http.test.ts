@@ -9,6 +9,7 @@ import { errors } from '@elastic/elasticsearch';
 
 import type { ScopeableRequest } from '@kbn/core/server';
 import { elasticsearchServiceMock, httpServerMock } from '@kbn/core/server/mocks';
+import { UIAM_INTERNAL_CLIENT_AUTH_HEADER } from '@kbn/core-security-server';
 
 import type { MockAuthenticationProviderOptions } from './base.mock';
 import { mockAuthenticationProviderOptions } from './base.mock';
@@ -460,6 +461,106 @@ describe('HTTPAuthenticationProvider', () => {
       );
 
       expect(mockOptionsWithUiam.uiam!.exchangeOAuthToken).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('UIAM API key authentication', () => {
+    let mockOptionsWithUiam: MockAuthenticationProviderOptions;
+
+    beforeEach(() => {
+      mockOptionsWithUiam = mockAuthenticationProviderOptions({ name: 'http', uiam: true });
+      mockOptionsWithUiam.uiam!.getClientAuthentication.mockReturnValue({
+        scheme: 'SharedSecret',
+        value: 'some-shared-secret',
+      });
+    });
+
+    it('attaches the UIAM shared secret for an internal UIAM API key carrying the marker.', async () => {
+      const header = 'ApiKey essu_internal_api_key';
+      const user = mockAuthenticatedUser();
+
+      const request = httpServerMock.createKibanaRequest({
+        headers: { authorization: header, [UIAM_INTERNAL_CLIENT_AUTH_HEADER]: 'true' },
+      });
+
+      const mockScopedClusterClient = elasticsearchServiceMock.createScopedClusterClient();
+      mockScopedClusterClient.asCurrentUser.security.authenticate.mockResponse(user);
+      mockOptionsWithUiam.client.asScoped.mockReturnValue(mockScopedClusterClient);
+
+      const provider = new HTTPAuthenticationProvider(mockOptionsWithUiam, {
+        supportedSchemes: new Set(['apikey']),
+      });
+
+      await expect(provider.authenticate(request)).resolves.toEqual(
+        AuthenticationResult.succeeded(
+          { ...user, authentication_provider: { type: 'http', name: 'http' } },
+          {
+            authHeaders: {
+              authorization: header,
+              [ES_CLIENT_AUTHENTICATION_HEADER]: 'some-shared-secret',
+            },
+          }
+        )
+      );
+
+      expect(mockOptionsWithUiam.client.asScoped).toHaveBeenCalledWith({
+        headers: {
+          ...request.headers,
+          [ES_CLIENT_AUTHENTICATION_HEADER]: 'some-shared-secret',
+        },
+      });
+    });
+
+    it('does not attach the UIAM shared secret for a UIAM API key without the marker.', async () => {
+      const header = 'ApiKey essu_external_global_key';
+      const user = mockAuthenticatedUser();
+
+      const request = httpServerMock.createKibanaRequest({ headers: { authorization: header } });
+
+      const mockScopedClusterClient = elasticsearchServiceMock.createScopedClusterClient();
+      mockScopedClusterClient.asCurrentUser.security.authenticate.mockResponse(user);
+      mockOptionsWithUiam.client.asScoped.mockReturnValue(mockScopedClusterClient);
+
+      const provider = new HTTPAuthenticationProvider(mockOptionsWithUiam, {
+        supportedSchemes: new Set(['apikey']),
+      });
+
+      await expect(provider.authenticate(request)).resolves.toEqual(
+        AuthenticationResult.succeeded(
+          { ...user, authentication_provider: { type: 'http', name: 'http' } },
+          { authHeaders: { authorization: header } }
+        )
+      );
+
+      expect(mockOptionsWithUiam.uiam!.getClientAuthentication).not.toHaveBeenCalled();
+      expect(mockOptionsWithUiam.client.asScoped).toHaveBeenCalledWith(request);
+    });
+
+    it('does not attach the UIAM shared secret for a non-UIAM API key even with the marker.', async () => {
+      const header = 'ApiKey regular_api_key';
+      const user = mockAuthenticatedUser();
+
+      const request = httpServerMock.createKibanaRequest({
+        headers: { authorization: header, [UIAM_INTERNAL_CLIENT_AUTH_HEADER]: 'true' },
+      });
+
+      const mockScopedClusterClient = elasticsearchServiceMock.createScopedClusterClient();
+      mockScopedClusterClient.asCurrentUser.security.authenticate.mockResponse(user);
+      mockOptionsWithUiam.client.asScoped.mockReturnValue(mockScopedClusterClient);
+
+      const provider = new HTTPAuthenticationProvider(mockOptionsWithUiam, {
+        supportedSchemes: new Set(['apikey']),
+      });
+
+      await expect(provider.authenticate(request)).resolves.toEqual(
+        AuthenticationResult.succeeded(
+          { ...user, authentication_provider: { type: 'http', name: 'http' } },
+          { authHeaders: { authorization: header } }
+        )
+      );
+
+      expect(mockOptionsWithUiam.uiam!.getClientAuthentication).not.toHaveBeenCalled();
+      expect(mockOptionsWithUiam.client.asScoped).toHaveBeenCalledWith(request);
     });
   });
 
