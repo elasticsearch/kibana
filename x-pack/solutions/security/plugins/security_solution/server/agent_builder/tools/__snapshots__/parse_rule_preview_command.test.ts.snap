@@ -1,0 +1,341 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`parseRulePreviewCommand — snapshots: error messages --threat-mapping is a JSON object (not an array) 1`] = `
+Object {
+  "kind": "error",
+  "message": "--threat-mapping must be a JSON array",
+}
+`;
+
+exports[`parseRulePreviewCommand — snapshots: error messages --threat-mapping is invalid JSON 1`] = `
+Object {
+  "kind": "error",
+  "message": "--threat-mapping: invalid JSON — not-json",
+}
+`;
+
+exports[`parseRulePreviewCommand — snapshots: error messages --threshold-value is NaN 1`] = `
+Object {
+  "kind": "error",
+  "message": "--threshold-value must be a positive integer, got \\"NaN\\"",
+}
+`;
+
+exports[`parseRulePreviewCommand — snapshots: error messages empty command 1`] = `
+Object {
+  "kind": "error",
+  "message": "No command provided. Run --help to see usage.",
+}
+`;
+
+exports[`parseRulePreviewCommand — snapshots: error messages eql missing --query 1`] = `
+Object {
+  "kind": "error",
+  "message": "Missing required argument: query",
+}
+`;
+
+exports[`parseRulePreviewCommand — snapshots: error messages esql missing --query 1`] = `
+Object {
+  "kind": "error",
+  "message": "Missing required argument: query",
+}
+`;
+
+exports[`parseRulePreviewCommand — snapshots: error messages machine_learning missing --anomaly-threshold 1`] = `
+Object {
+  "kind": "error",
+  "message": "Missing required argument: anomaly-threshold",
+}
+`;
+
+exports[`parseRulePreviewCommand — snapshots: error messages machine_learning missing --job-id 1`] = `
+Object {
+  "kind": "error",
+  "message": "Missing required argument: job-id",
+}
+`;
+
+exports[`parseRulePreviewCommand — snapshots: error messages new_terms missing --history-window-start 1`] = `
+Object {
+  "kind": "error",
+  "message": "Missing required argument: history-window-start",
+}
+`;
+
+exports[`parseRulePreviewCommand — snapshots: error messages no subcommand given 1`] = `
+Object {
+  "kind": "error",
+  "message": "Specify a rule type. Run --help to see all types and examples.",
+}
+`;
+
+exports[`parseRulePreviewCommand — snapshots: error messages saved_query missing --saved-id 1`] = `
+Object {
+  "kind": "error",
+  "message": "Missing required argument: saved-id",
+}
+`;
+
+exports[`parseRulePreviewCommand — snapshots: error messages threat_match missing --threat-mapping 1`] = `
+Object {
+  "kind": "error",
+  "message": "Missing required argument: threat-mapping",
+}
+`;
+
+exports[`parseRulePreviewCommand — snapshots: error messages threshold missing --query 1`] = `
+Object {
+  "kind": "error",
+  "message": "Missing required argument: query",
+}
+`;
+
+exports[`parseRulePreviewCommand — snapshots: error messages threshold missing --threshold-value 1`] = `
+Object {
+  "kind": "error",
+  "message": "Missing required argument: threshold-value",
+}
+`;
+
+exports[`parseRulePreviewCommand — snapshots: error messages unknown flag on known subcommand 1`] = `
+Object {
+  "kind": "error",
+  "message": "Unknown argument: bogus",
+}
+`;
+
+exports[`parseRulePreviewCommand — snapshots: error messages unknown subcommand 1`] = `
+Object {
+  "kind": "error",
+  "message": "Unknown argument: invalid_type",
+}
+`;
+
+exports[`parseRulePreviewCommand — snapshots: help output -h shorthand 1`] = `
+Object {
+  "kind": "help",
+  "text": "  <command>
+
+Commands:
+   esql             Preview an ES|QL detection rule
+   eql              Preview an EQL (event query language) detection rule
+   query            Preview a custom query detection rule (KQL / Lucene)
+   saved_query      Preview a saved query detection rule
+   threshold        Preview a threshold-based detection rule
+   threat_match     Preview a threat indicator match detection rule
+   machine_learning  Preview a machine learning anomaly detection rule
+   new_terms        Preview a new terms detection rule
+
+Options:
+  --interval         Rule run frequency, e.g. \\"5m\\", \\"1h\\"  [string] [default: \\"1h\\"]
+  --timeframe-start  Preview window start as datemath, e.g. \\"now-24h\\"  [string] [default: \\"now-1h\\"]
+  --timeframe-end    Preview window end as datemath  [string] [default: \\"now\\"]
+  -h, --help         Show help  [boolean]",
+}
+`;
+
+exports[`parseRulePreviewCommand — snapshots: help output eql --help 1`] = `
+Object {
+  "kind": "help",
+  "text": "  eql
+
+Preview an EQL (event query language) detection rule
+
+Options:
+  --interval         Rule run frequency, e.g. \\"5m\\", \\"1h\\"  [string] [default: \\"1h\\"]
+  --timeframe-start  Preview window start as datemath, e.g. \\"now-24h\\"  [string] [default: \\"now-1h\\"]
+  --timeframe-end    Preview window end as datemath  [string] [default: \\"now\\"]
+  --query            EQL query string  [string] [required]
+  --index            Index pattern (repeat for multiple)  [array]
+  --data-view-id     Kibana data view ID (alternative to --index)  [string]
+  -h, --help         Show help  [boolean]
+
+Examples:
+   eql --query \\"process where process.name == \\\\\\"cmd.exe\\\\\\"\\"",
+}
+`;
+
+exports[`parseRulePreviewCommand — snapshots: help output esql --help 1`] = `
+Object {
+  "kind": "help",
+  "text": "  esql
+
+Preview an ES|QL detection rule
+
+Options:
+  --interval         Rule run frequency, e.g. \\"5m\\", \\"1h\\"  [string] [default: \\"1h\\"]
+  --timeframe-start  Preview window start as datemath, e.g. \\"now-24h\\"  [string] [default: \\"now-1h\\"]
+  --timeframe-end    Preview window end as datemath  [string] [default: \\"now\\"]
+  --query            ES|QL query string  [string] [required]
+  -h, --help         Show help  [boolean]
+
+Examples:
+   esql --query \\"FROM logs-* | LIMIT 10\\"
+   esql --query \\"FROM logs-* | STATS count() BY host.name\\" --timeframe-start now-24h",
+}
+`;
+
+exports[`parseRulePreviewCommand — snapshots: help output global --help 1`] = `
+Object {
+  "kind": "help",
+  "text": "  <command>
+
+Commands:
+   esql             Preview an ES|QL detection rule
+   eql              Preview an EQL (event query language) detection rule
+   query            Preview a custom query detection rule (KQL / Lucene)
+   saved_query      Preview a saved query detection rule
+   threshold        Preview a threshold-based detection rule
+   threat_match     Preview a threat indicator match detection rule
+   machine_learning  Preview a machine learning anomaly detection rule
+   new_terms        Preview a new terms detection rule
+
+Options:
+  --interval         Rule run frequency, e.g. \\"5m\\", \\"1h\\"  [string] [default: \\"1h\\"]
+  --timeframe-start  Preview window start as datemath, e.g. \\"now-24h\\"  [string] [default: \\"now-1h\\"]
+  --timeframe-end    Preview window end as datemath  [string] [default: \\"now\\"]
+  -h, --help         Show help  [boolean]",
+}
+`;
+
+exports[`parseRulePreviewCommand — snapshots: help output machine_learning --help 1`] = `
+Object {
+  "kind": "help",
+  "text": "  machine_learning
+
+Preview a machine learning anomaly detection rule
+
+Options:
+  --interval           Rule run frequency, e.g. \\"5m\\", \\"1h\\"  [string] [default: \\"1h\\"]
+  --timeframe-start    Preview window start as datemath, e.g. \\"now-24h\\"  [string] [default: \\"now-1h\\"]
+  --timeframe-end      Preview window end as datemath  [string] [default: \\"now\\"]
+  --job-id             ML job ID (repeat for multiple jobs)  [array] [required]
+  --anomaly-threshold  Minimum anomaly score to alert (0–100)  [number] [required]
+  -h, --help           Show help  [boolean]
+
+Examples:
+   machine_learning --job-id my-ml-job --anomaly-threshold 75
+   machine_learning --job-id job-a --job-id job-b --anomaly-threshold 50",
+}
+`;
+
+exports[`parseRulePreviewCommand — snapshots: help output new_terms --help 1`] = `
+Object {
+  "kind": "help",
+  "text": "  new_terms
+
+Preview a new terms detection rule
+
+Options:
+  --interval              Rule run frequency, e.g. \\"5m\\", \\"1h\\"  [string] [default: \\"1h\\"]
+  --timeframe-start       Preview window start as datemath, e.g. \\"now-24h\\"  [string] [default: \\"now-1h\\"]
+  --timeframe-end         Preview window end as datemath  [string] [default: \\"now\\"]
+  --query                 KQL / Lucene query for events to analyse  [string] [required]
+  --new-terms-fields      Field(s) to monitor for new values (repeat for multiple, max 3)  [array] [required]
+  --history-window-start  Start of the baseline window as datemath, e.g. \\"now-30d\\"  [string] [required]
+  --language              Query language: \\"kuery\\" (KQL, default) or \\"lucene\\"  [string] [choices: \\"kuery\\", \\"lucene\\"] [default: \\"kuery\\"]
+  --index                 Index pattern (repeat for multiple)  [array]
+  --data-view-id          Kibana data view ID (alternative to --index)  [string]
+  -h, --help              Show help  [boolean]
+
+Examples:
+   new_terms --query \\"*:*\\" --new-terms-fields source.ip --history-window-start now-30d",
+}
+`;
+
+exports[`parseRulePreviewCommand — snapshots: help output query --help 1`] = `
+Object {
+  "kind": "help",
+  "text": "  query
+
+Preview a custom query detection rule (KQL / Lucene)
+
+Options:
+  --interval         Rule run frequency, e.g. \\"5m\\", \\"1h\\"  [string] [default: \\"1h\\"]
+  --timeframe-start  Preview window start as datemath, e.g. \\"now-24h\\"  [string] [default: \\"now-1h\\"]
+  --timeframe-end    Preview window end as datemath  [string] [default: \\"now\\"]
+  --query            KQL / Lucene query (omit to match all documents)  [string]
+  --language         Query language: \\"kuery\\" (KQL, default) or \\"lucene\\"  [string] [choices: \\"kuery\\", \\"lucene\\"] [default: \\"kuery\\"]
+  --index            Index pattern (repeat for multiple)  [array]
+  --data-view-id     Kibana data view ID (alternative to --index)  [string]
+  -h, --help         Show help  [boolean]
+
+Examples:
+   query --query \\"event.category:authentication AND event.outcome:failure\\"",
+}
+`;
+
+exports[`parseRulePreviewCommand — snapshots: help output saved_query --help 1`] = `
+Object {
+  "kind": "help",
+  "text": "  saved_query
+
+Preview a saved query detection rule
+
+Options:
+  --interval         Rule run frequency, e.g. \\"5m\\", \\"1h\\"  [string] [default: \\"1h\\"]
+  --timeframe-start  Preview window start as datemath, e.g. \\"now-24h\\"  [string] [default: \\"now-1h\\"]
+  --timeframe-end    Preview window end as datemath  [string] [default: \\"now\\"]
+  --saved-id         Saved query ID (Kibana saved object)  [string] [required]
+  --query            KQL / Lucene query override  [string]
+  --language         Query language: \\"kuery\\" (KQL, default) or \\"lucene\\"  [string] [choices: \\"kuery\\", \\"lucene\\"] [default: \\"kuery\\"]
+  --index            Index pattern (repeat for multiple)  [array]
+  --data-view-id     Kibana data view ID (alternative to --index)  [string]
+  -h, --help         Show help  [boolean]
+
+Examples:
+   saved_query --saved-id my-saved-query-id",
+}
+`;
+
+exports[`parseRulePreviewCommand — snapshots: help output threat_match --help 1`] = `
+Object {
+  "kind": "help",
+  "text": "  threat_match
+
+Preview a threat indicator match detection rule
+
+Options:
+  --interval               Rule run frequency, e.g. \\"5m\\", \\"1h\\"  [string] [default: \\"1h\\"]
+  --timeframe-start        Preview window start as datemath, e.g. \\"now-24h\\"  [string] [default: \\"now-1h\\"]
+  --timeframe-end          Preview window end as datemath  [string] [default: \\"now\\"]
+  --query                  Source events query  [string] [required]
+  --threat-query           Query against the threat index  [string] [required]
+  --threat-index           Threat intelligence index pattern (repeat for multiple)  [array] [required]
+  --threat-mapping         JSON array of field-mapping entries: '[{\\"entries\\":[{\\"field\\":\\"src.ip\\",\\"type\\":\\"mapping\\",\\"value\\":\\"dst.ip\\"}]}]'  [string] [required]
+  --threat-filters         Additional threat index filters (JSON array)  [string]
+  --threat-indicator-path  Nested path to indicator object (default: \\"threat.indicator\\")  [string]
+  --language               Query language: \\"kuery\\" (KQL, default) or \\"lucene\\"  [string] [choices: \\"kuery\\", \\"lucene\\"] [default: \\"kuery\\"]
+  --index                  Index pattern (repeat for multiple)  [array]
+  --data-view-id           Kibana data view ID (alternative to --index)  [string]
+  -h, --help               Show help  [boolean]
+
+Examples:
+   threat_match --query \\"*:*\\" --threat-query \\"*:*\\" --threat-index logs-ti_* --threat-mapping '[{\\"entries\\":[{\\"field\\":\\"source.ip\\",\\"type\\":\\"mapping\\",\\"value\\":\\"threat.indicator.ip\\"}]}]'",
+}
+`;
+
+exports[`parseRulePreviewCommand — snapshots: help output threshold --help 1`] = `
+Object {
+  "kind": "help",
+  "text": "  threshold
+
+Preview a threshold-based detection rule
+
+Options:
+  --interval         Rule run frequency, e.g. \\"5m\\", \\"1h\\"  [string] [default: \\"1h\\"]
+  --timeframe-start  Preview window start as datemath, e.g. \\"now-24h\\"  [string] [default: \\"now-1h\\"]
+  --timeframe-end    Preview window end as datemath  [string] [default: \\"now\\"]
+  --query            KQL / Lucene query  [string] [required]
+  --threshold-value  Minimum event count to alert (integer ≥ 1)  [number] [required]
+  --threshold-field  Group-by field(s) (repeat for multiple, omit for no grouping)  [array]
+  --language         Query language: \\"kuery\\" (KQL, default) or \\"lucene\\"  [string] [choices: \\"kuery\\", \\"lucene\\"] [default: \\"kuery\\"]
+  --index            Index pattern (repeat for multiple)  [array]
+  --data-view-id     Kibana data view ID (alternative to --index)  [string]
+  -h, --help         Show help  [boolean]
+
+Examples:
+   threshold --query \\"event.category:auth\\" --threshold-value 10 --threshold-field host.name",
+}
+`;

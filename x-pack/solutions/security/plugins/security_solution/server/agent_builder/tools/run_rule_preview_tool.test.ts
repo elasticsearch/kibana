@@ -30,19 +30,6 @@ const getResults = (ret: unknown) => {
   return standard.results;
 };
 
-const validRule = {
-  type: 'esql',
-  language: 'esql',
-  query: 'FROM logs-* | LIMIT 10',
-  name: 'Test ES|QL rule',
-  description: 'A test rule',
-  severity: 'low',
-  risk_score: 21,
-  interval: '5m',
-  from: 'now-6m',
-  to: 'now',
-};
-
 describe('runRulePreviewTool', () => {
   const { mockLogger, mockEsClient, mockRequest } = createToolTestMocks();
 
@@ -85,64 +72,73 @@ describe('runRulePreviewTool', () => {
     expect(tool.id).toBe(SECURITY_RUN_RULE_PREVIEW_TOOL_ID);
   });
 
-  it('applies timeframe defaults in the schema', () => {
-    const parsed = tool.schema.safeParse({ rule: validRule });
+  it('schema accepts a command string', () => {
+    const parsed = tool.schema.safeParse({
+      command: 'esql --query "FROM logs-* | LIMIT 10"',
+    });
     expect(parsed.success).toBe(true);
-    if (parsed.success) {
-      const data = parsed.data as {
-        timeframeStart: string;
-        timeframeEnd: string;
-        enableLoggedRequests: boolean;
-      };
-      expect(data.timeframeStart).toBe('now-1h');
-      expect(data.timeframeEnd).toBe('now');
-      expect(data.enableLoggedRequests).toBe(false);
-    }
   });
 
-  it('requires the ES|QL query in the rule', () => {
-    expect(tool.schema.safeParse({ rule: {} }).success).toBe(false);
+  it('schema requires a command string', () => {
+    const parsed = tool.schema.safeParse({});
+    expect(parsed.success).toBe(false);
   });
 
-  it('accepts a minimal rule containing only a query', () => {
-    expect(tool.schema.safeParse({ rule: { query: 'FROM logs-* | LIMIT 10' } }).success).toBe(true);
-  });
+  // ---------------------------------------------------------------------------
+  // Help path
+  // ---------------------------------------------------------------------------
 
-  it('defaults the non-essential rule fields in the preview body', async () => {
+  it('returns help text when --help is passed', async () => {
     const context = createToolHandlerContext(mockRequest, mockEsClient, mockLogger);
-    (context.prompts.checkConfirmationStatus as jest.Mock).mockReturnValue({
-      status: ConfirmationStatus.accepted,
-    });
-    (context.attachments.add as jest.Mock).mockResolvedValue({
-      id: 'security-rule-preview-preview-123',
-      type: SecurityAgentBuilderAttachments.rulePreview,
-      current_version: 1,
-    });
+    const result = await tool.handler({ command: '--help' }, context);
 
-    await tool.handler(
-      {
-        rule: { query: 'FROM logs-* | LIMIT 10', interval: '5m' },
-        timeframeStart: '2024-01-01T00:00:00.000Z',
-        timeframeEnd: '2024-01-01T01:00:00.000Z',
-        enableLoggedRequests: false,
-      },
-      context
-    );
-
-    const [, passedParams] = runRulePreviewMock.mock.calls[0];
-    expect(passedParams.body).toEqual(
-      expect.objectContaining({
-        type: 'esql',
-        language: 'esql',
-        query: 'FROM logs-* | LIMIT 10',
-        severity: 'low',
-        risk_score: 21,
-        invocationCount: 12,
-      })
-    );
+    expect(runRulePreviewMock).not.toHaveBeenCalled();
+    const [firstResult] = getResults(result);
+    expect(firstResult.type).toBe(ToolResultType.other);
+    const data = (firstResult as { type: string; data: { help: string } }).data;
+    expect(data.help).toContain('Commands:');
   });
 
-  it('runs the preview and creates a rule preview attachment', async () => {
+  it('returns type-specific help for esql --help', async () => {
+    const context = createToolHandlerContext(mockRequest, mockEsClient, mockLogger);
+    const result = await tool.handler({ command: 'esql --help' }, context);
+
+    expect(runRulePreviewMock).not.toHaveBeenCalled();
+    const [firstResult] = getResults(result);
+    expect(firstResult.type).toBe(ToolResultType.other);
+    const data = (firstResult as { type: string; data: { help: string } }).data;
+    expect(data.help).toContain('ES|QL');
+  });
+
+  // ---------------------------------------------------------------------------
+  // Error path
+  // ---------------------------------------------------------------------------
+
+  it('returns an error result for an empty command', async () => {
+    const context = createToolHandlerContext(mockRequest, mockEsClient, mockLogger);
+    const result = await tool.handler({ command: '' }, context);
+
+    expect(runRulePreviewMock).not.toHaveBeenCalled();
+    const [firstResult] = getResults(result);
+    expect(firstResult.type).toBe(ToolResultType.error);
+  });
+
+  it('returns an error result for an unknown flag', async () => {
+    const context = createToolHandlerContext(mockRequest, mockEsClient, mockLogger);
+    const result = await tool.handler({ command: 'esql --query "x" --bogus value' }, context);
+
+    expect(runRulePreviewMock).not.toHaveBeenCalled();
+    const [firstResult] = getResults(result);
+    expect(firstResult.type).toBe(ToolResultType.error);
+    const data = (firstResult as { type: string; data: { message: string } }).data;
+    expect(data.message).toContain('bogus');
+  });
+
+  // ---------------------------------------------------------------------------
+  // Preview path — ES|QL
+  // ---------------------------------------------------------------------------
+
+  it('runs a valid esql preview and creates an attachment', async () => {
     const context = createToolHandlerContext(mockRequest, mockEsClient, mockLogger);
     (context.prompts.checkConfirmationStatus as jest.Mock).mockReturnValue({
       status: ConfirmationStatus.accepted,
@@ -155,10 +151,8 @@ describe('runRulePreviewTool', () => {
 
     const result = await tool.handler(
       {
-        rule: validRule,
-        timeframeStart: '2024-01-01T00:00:00.000Z',
-        timeframeEnd: '2024-01-01T01:00:00.000Z',
-        enableLoggedRequests: false,
+        command:
+          'esql --query "FROM logs-* | LIMIT 10" --timeframe-start 2024-01-01T00:00:00.000Z --timeframe-end 2024-01-01T01:00:00.000Z --interval 5m',
       },
       context
     );
@@ -202,13 +196,74 @@ describe('runRulePreviewTool', () => {
     });
   });
 
+  it('sets from to now-{interval} so per-invocation ES query window matches the interval', async () => {
+    const context = createToolHandlerContext(mockRequest, mockEsClient, mockLogger);
+    (context.prompts.checkConfirmationStatus as jest.Mock).mockReturnValue({
+      status: ConfirmationStatus.accepted,
+    });
+    (context.attachments.add as jest.Mock).mockResolvedValue({
+      id: 'security-rule-preview-preview-123',
+      type: SecurityAgentBuilderAttachments.rulePreview,
+      current_version: 1,
+    });
+
+    await tool.handler(
+      {
+        command:
+          'esql --query "FROM logs-* | LIMIT 10" --timeframe-start 2024-01-01T00:00:00.000Z --timeframe-end 2024-01-01T01:00:00.000Z --interval 5m',
+      },
+      context
+    );
+
+    const [, passedParams] = runRulePreviewMock.mock.calls[0];
+    // from must match the interval so getRuleRangeTuples produces the correct per-invocation window
+    expect(passedParams.body.from).toBe('now-5m');
+    expect(passedParams.body.to).toBe('now');
+    expect(passedParams.enableLoggedRequests).toBe(false);
+  });
+
+  // ---------------------------------------------------------------------------
+  // Preview path — Machine Learning
+  // ---------------------------------------------------------------------------
+
+  it('runs a valid machine_learning preview', async () => {
+    const context = createToolHandlerContext(mockRequest, mockEsClient, mockLogger);
+    (context.prompts.checkConfirmationStatus as jest.Mock).mockReturnValue({
+      status: ConfirmationStatus.accepted,
+    });
+    (context.attachments.add as jest.Mock).mockResolvedValue({
+      id: 'security-rule-preview-preview-123',
+      type: SecurityAgentBuilderAttachments.rulePreview,
+      current_version: 1,
+    });
+
+    await tool.handler(
+      {
+        command:
+          'machine_learning --job-id my-ml-job --anomaly-threshold 75 --timeframe-start 2024-01-01T00:00:00.000Z --timeframe-end 2024-01-01T01:00:00.000Z',
+      },
+      context
+    );
+
+    expect(runRulePreviewMock).toHaveBeenCalledTimes(1);
+    const [, passedParams] = runRulePreviewMock.mock.calls[0];
+    expect(passedParams.body).toEqual(
+      expect.objectContaining({
+        type: 'machine_learning',
+        machine_learning_job_id: 'my-ml-job',
+        anomaly_threshold: 75,
+      })
+    );
+  });
+
+  // ---------------------------------------------------------------------------
+  // HITL confirmation
+  // ---------------------------------------------------------------------------
+
   describe('HITL confirmation for large previews', () => {
-    const highInvocationParams = {
-      rule: validRule,
-      timeframeStart: '2024-01-01T00:00:00.000Z',
-      timeframeEnd: '2024-01-01T01:00:00.000Z',
-      enableLoggedRequests: false,
-    };
+    // 1h window at 5m interval = 12 invocations > threshold of 10
+    const highInvocationCommand =
+      'esql --query "FROM logs-* | LIMIT 10" --interval 5m --timeframe-start 2024-01-01T00:00:00.000Z --timeframe-end 2024-01-01T01:00:00.000Z';
 
     it('returns a confirmation prompt when invocationCount exceeds the threshold', async () => {
       const mockPrompt = { prompt: { type: 'confirmation', id: 'test-prompt' } };
@@ -218,7 +273,7 @@ describe('runRulePreviewTool', () => {
       });
       (context.prompts.askForConfirmation as jest.Mock).mockReturnValue(mockPrompt);
 
-      const result = await tool.handler(highInvocationParams, context);
+      const result = await tool.handler({ command: highInvocationCommand }, context);
 
       expect(runRulePreviewMock).not.toHaveBeenCalled();
       expect(context.prompts.askForConfirmation).toHaveBeenCalledWith(
@@ -241,28 +296,27 @@ describe('runRulePreviewTool', () => {
         current_version: 1,
       });
 
-      const result = await tool.handler(highInvocationParams, context);
+      const result = await tool.handler({ command: highInvocationCommand }, context);
 
       expect(runRulePreviewMock).toHaveBeenCalledTimes(1);
       expect(getResults(result)[0].type).toBe(ToolResultType.other);
     });
 
-    it('returns an error when the user cancels the large preview', async () => {
+    it('returns an error with the original command when the user cancels the large preview', async () => {
       const context = createToolHandlerContext(mockRequest, mockEsClient, mockLogger);
       (context.prompts.checkConfirmationStatus as jest.Mock).mockReturnValue({
         status: ConfirmationStatus.rejected,
       });
 
-      const result = await tool.handler(highInvocationParams, context);
+      const result = await tool.handler({ command: highInvocationCommand }, context);
 
       expect(runRulePreviewMock).not.toHaveBeenCalled();
       const [firstResult] = getResults(result);
       expect(firstResult.type).toBe(ToolResultType.error);
       const errorData = (firstResult as { type: string; data: { message: string } }).data;
       expect(errorData.message).toContain('explicitly rejected');
-      expect(errorData.message).toContain(highInvocationParams.rule.query);
-      expect(errorData.message).toContain(highInvocationParams.timeframeStart);
-      expect(errorData.message).toContain(highInvocationParams.timeframeEnd);
+      // The original command must appear so the LLM can re-run it
+      expect(errorData.message).toContain(highInvocationCommand);
     });
 
     it('does not prompt when invocationCount is within the threshold', async () => {
@@ -273,12 +327,11 @@ describe('runRulePreviewTool', () => {
         current_version: 1,
       });
 
+      // 9 hour window at 1h interval = 9 invocations ≤ threshold of 10
       await tool.handler(
         {
-          rule: { ...validRule, interval: '1h' },
-          timeframeStart: '2024-01-01T00:00:00.000Z',
-          timeframeEnd: '2024-01-01T09:00:00.000Z',
-          enableLoggedRequests: false,
+          command:
+            'esql --query "FROM logs-* | LIMIT 10" --interval 1h --timeframe-start 2024-01-01T00:00:00.000Z --timeframe-end 2024-01-01T09:00:00.000Z',
         },
         context
       );
@@ -288,21 +341,120 @@ describe('runRulePreviewTool', () => {
     });
   });
 
-  it('returns an error result for an invalid timeframe', async () => {
+  // ---------------------------------------------------------------------------
+  // esqlRulesDisabled feature flag
+  // ---------------------------------------------------------------------------
+
+  describe('esqlRulesDisabled feature flag', () => {
+    const esqlDisabledDeps = {
+      ...deps,
+      config: { experimentalFeatures: { esqlRulesDisabled: true } } as never,
+    } as unknown as RunRulePreviewDeps;
+
+    const esqlDisabledTool = runRulePreviewTool(
+      esqlDisabledDeps
+    ) as unknown as BuiltinToolDefinition<z.ZodObject<z.ZodRawShape>>;
+
+    it('returns an error when esqlRulesDisabled and rule type is esql', async () => {
+      const context = createToolHandlerContext(mockRequest, mockEsClient, mockLogger);
+
+      const result = await esqlDisabledTool.handler(
+        { command: 'esql --query "FROM logs-* | LIMIT 10"' },
+        context
+      );
+
+      expect(runRulePreviewMock).not.toHaveBeenCalled();
+      const [firstResult] = getResults(result);
+      expect(firstResult.type).toBe(ToolResultType.error);
+      const data = (firstResult as { type: string; data: { message: string } }).data;
+      expect(data.message).toContain('ES|QL');
+    });
+
+    it('succeeds when esqlRulesDisabled but rule type is eql', async () => {
+      const context = createToolHandlerContext(mockRequest, mockEsClient, mockLogger);
+      (context.prompts.checkConfirmationStatus as jest.Mock).mockReturnValue({
+        status: ConfirmationStatus.accepted,
+      });
+      (context.attachments.add as jest.Mock).mockResolvedValue({
+        id: 'security-rule-preview-preview-123',
+        type: SecurityAgentBuilderAttachments.rulePreview,
+        current_version: 1,
+      });
+
+      await esqlDisabledTool.handler(
+        {
+          command:
+            'eql --query "process where process.name == \\"cmd.exe\\"" --timeframe-start 2024-01-01T00:00:00.000Z --timeframe-end 2024-01-01T01:00:00.000Z',
+        },
+        context
+      );
+
+      expect(runRulePreviewMock).toHaveBeenCalledTimes(1);
+      const [, passedParams] = runRulePreviewMock.mock.calls[0];
+      expect(passedParams.body.type).toBe('eql');
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // Error paths — backend failures
+  // ---------------------------------------------------------------------------
+
+  it('returns a clean error result for an invalid --interval (parseDuration throws)', async () => {
     const context = createToolHandlerContext(mockRequest, mockEsClient, mockLogger);
 
     const result = await tool.handler(
       {
-        rule: validRule,
-        timeframeStart: 'not-a-date',
-        timeframeEnd: 'now',
-        enableLoggedRequests: false,
+        command:
+          'esql --query "FROM logs-* | LIMIT 10" --timeframe-start 2024-01-01T00:00:00.000Z --timeframe-end 2024-01-01T01:00:00.000Z --interval not-a-duration',
       },
       context
     );
 
     expect(runRulePreviewMock).not.toHaveBeenCalled();
-    expect(getResults(result)[0].type).toBe(ToolResultType.error);
+    const [firstResult] = getResults(result);
+    expect(firstResult.type).toBe(ToolResultType.error);
+    const data = (firstResult as { type: string; data: { message: string } }).data;
+    expect(data.message).toContain('not-a-duration');
+  });
+
+  it('returns a clean error for structurally invalid threat_mapping entries that bypass CLI validation', async () => {
+    // The CLI parser only checks Array.isArray(threatMapping). The route Zod schema
+    // also validates entry structure: type must be literal 'mapping'. This test proves
+    // the tool validates the body before calling runRulePreview.
+    const context = createToolHandlerContext(mockRequest, mockEsClient, mockLogger);
+    (context.prompts.checkConfirmationStatus as jest.Mock).mockReturnValue({
+      status: ConfirmationStatus.accepted,
+    });
+
+    const result = await tool.handler(
+      {
+        command:
+          'threat_match --query "*:*" --threat-query "*:*" --threat-index ti-* ' +
+          '--threat-mapping \'[{"entries":[{"field":"src.ip","type":"wrong","value":"dst.ip"}]}]\' ' +
+          '--timeframe-start 2024-01-01T00:00:00.000Z --timeframe-end 2024-01-01T01:00:00.000Z',
+      },
+      context
+    );
+
+    expect(runRulePreviewMock).not.toHaveBeenCalled();
+    const [firstResult] = getResults(result);
+    expect(firstResult.type).toBe(ToolResultType.error);
+  });
+
+  it('returns an error result for an invalid timeframe (unparseable datemath)', async () => {
+    const context = createToolHandlerContext(mockRequest, mockEsClient, mockLogger);
+
+    const result = await tool.handler(
+      {
+        command:
+          'esql --query "FROM logs-* | LIMIT 10" --timeframe-start not-a-date --timeframe-end now',
+      },
+      context
+    );
+
+    expect(runRulePreviewMock).not.toHaveBeenCalled();
+    const [firstResult] = getResults(result);
+    expect(firstResult.type).toBe(ToolResultType.error);
   });
 
   it('returns an error result when no preview id is produced', async () => {
@@ -317,16 +469,13 @@ describe('runRulePreviewTool', () => {
     });
 
     const result = await tool.handler(
-      {
-        rule: validRule,
-        timeframeStart: 'now-1h',
-        timeframeEnd: 'now',
-        enableLoggedRequests: false,
-      },
+      { command: 'esql --query "FROM logs-* | LIMIT 10"' },
       context
     );
 
+    expect(runRulePreviewMock).toHaveBeenCalledTimes(1);
     expect(context.attachments.add).not.toHaveBeenCalled();
-    expect(getResults(result)[0].type).toBe(ToolResultType.error);
+    const [firstResult] = getResults(result);
+    expect(firstResult.type).toBe(ToolResultType.error);
   });
 });

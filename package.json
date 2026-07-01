@@ -1591,6 +1591,7 @@
     "xstate": "5.26.0",
     "xterm": "5.3.0",
     "yaml": "2.8.3",
+    "yargs": "15.4.1",
     "yauzl": "3.4.0",
     "yazl": "3.3.1",
     "zod": "4.4.3",
@@ -2234,7 +2235,6 @@
     "xml-crypto": "6.1.2",
     "xmlbuilder": "15.1.1",
     "yaml-language-server": "1.23.0",
-    "yargs": "15.4.1",
     "yarn-deduplicate": "6.0.2"
   },
   "packageManager": "yarn@1.22.21"
