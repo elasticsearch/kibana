@@ -95,17 +95,19 @@ describe('deleteAllPerSpaceCasesDataViews', () => {
     }
   });
 
-  it('passes namespaces: ["*"] on find so the walk crosses every space', async () => {
+  it('opens the point-in-time finder with namespaces: ["*"] so the walk crosses every space', async () => {
     // Structural lock — the unscoped internal SO client defaults
     // `options.namespaces` to `[DEFAULT_NAMESPACE_STRING]` when
     // omitted, so dropping the `['*']` arg would silently scope the
-    // walk to `default` and miss every other space.
+    // walk to `default` and miss every other space. The walk uses a
+    // point-in-time finder (not page/offset `find`) so it isn't bounded
+    // by `index.max_result_window` at 10K-space scale.
     const soClient = savedObjectsClientMock.create();
     soClient.find.mockResolvedValue({ saved_objects: [], total: 0, per_page: 100, page: 1 });
 
     await deleteAllPerSpaceCasesDataViews(soClient, logger);
 
-    expect(soClient.find).toHaveBeenCalledWith(
+    expect(soClient.createPointInTimeFinder).toHaveBeenCalledWith(
       expect.objectContaining({
         type: 'index-pattern',
         namespaces: ['*'],
@@ -356,6 +358,7 @@ describe('registerCasesAnalyticsV2Routes — enableAdminRoutes gating', () => {
       getTaskManager: () => null,
       getInternalSavedObjectsClient: () => null,
       getWriter: () => null,
+      getActivityWriter: () => null,
       clearDataViewBootstrapCache: jest.fn(),
       enabled: true,
       enableAdminRoutes: false,
@@ -474,6 +477,7 @@ describe('POST /reconcile/run_soon handler', () => {
       getTaskManager: () => null,
       getInternalSavedObjectsClient: () => null,
       getWriter: () => null,
+      getActivityWriter: () => null,
       clearDataViewBootstrapCache: jest.fn(),
       enabled: true,
       enableAdminRoutes: true,

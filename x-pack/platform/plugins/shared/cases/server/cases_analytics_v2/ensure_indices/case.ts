@@ -34,9 +34,15 @@ import { CASE_INDEX_MAPPING } from '../mappings/case';
  *     and `LOOKUP JOIN` is unaffected because it operates on the primary
  *     shard — replicas are transparent read copies.
  *
- * Failure policy: log, don't throw. Bootstrap failure must not block
- * plugin start; cases-analytics is a downstream feature. Administrators
- * see ERROR logs and can re-trigger via `/reset`.
+ * Failure policy: throws on unexpected errors so callers can decide how
+ * to handle them. Plugin start wraps in try-catch and logs (so Kibana
+ * starts even when ES is temporarily over the shard limit); the `/reset`
+ * route lets errors propagate to its own error handler and returns 500
+ * so administrators get an actionable response rather than a silent 202
+ * followed by a writer flood. The one exception is
+ * `resource_already_exists_exception`, which is swallowed here —
+ * two Kibana nodes racing on bootstrap both want the index to exist,
+ * so the loser's "already exists" error is a success.
  */
 export async function ensureCaseIndex({
   esClient,
@@ -66,16 +72,41 @@ export async function ensureCaseIndex({
   } catch (err) {
     // Two Kibana nodes starting in parallel can both pass the `exists`
     // check and race on `create`. The loser gets
-    // `resource_already_exists_exception`, which is a no-op here — the
-    // index exists, that's all that was needed.
+    // `resource_already_exists_exception` — the index exists, which is
+    // exactly what was needed, so swallow and return.
     const errType = err?.body?.error?.type ?? err?.meta?.body?.error?.type;
     if (errType === 'resource_already_exists_exception') {
       logger.debug(`${CASE_INDEX_NAME} already exists (concurrent bootstrap)`);
       return;
     }
 
-    // Anything else: log and continue. Bootstrap can be re-attempted via
-    // the administrator `/reset` endpoint; the plugin must still start.
-    logger.error(`failed to bootstrap ${CASE_INDEX_NAME}: ${err.message}`, { error: err });
+    // Surface shard-limit failures with an actionable message. ES returns
+    // `validation_exception` when `cluster.max_shards_per_node` (default
+    // 1000) is reached. We already minimise our footprint with
+    // `auto_expand_replicas: '0-1'` (1 shard on single-node clusters), but
+    // a busy dev/CI environment may still be at the limit. The fix is a
+    // one-liner in Kibana Dev Tools:
+    //
+    //   PUT _cluster/settings
+    //   { "persistent": { "cluster.max_shards_per_node": 1500 } }
+    if (errType === 'validation_exception') {
+      const reason: string =
+        err?.body?.error?.reason ?? err?.meta?.body?.error?.reason ?? err?.message ?? '';
+      if (reason.includes('shards')) {
+        throw new Error(
+          `Bootstrap of ${CASE_INDEX_NAME} failed: cluster may be at the shard limit. ` +
+            `Increase cluster.max_shards_per_node. ` +
+            `Original error: ${reason}`
+        );
+      }
+    }
+
+    // Rethrow so the caller decides how to handle it:
+    //   - Plugin start: catches, logs at ERROR, and continues (analytics
+    //     is a downstream feature; Kibana must still start).
+    //   - /reset route: lets it propagate to the route's error handler,
+    //     which returns 500 so the administrator knows the reset failed
+    //     rather than getting a silent 202 followed by writer errors.
+    throw err;
   }
 }

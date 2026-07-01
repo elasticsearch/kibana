@@ -487,20 +487,37 @@ export class UserActionPersister {
     try {
       this.context.log.debug(`Attempting to bulk create user actions`);
 
-      return await this.context.unsecuredSavedObjectsClient.bulkCreate<UserActionPersistedAttributes>(
-        actions.map((action) => {
-          const decodedAttributes = decodeOrThrow(UserActionPersistedAttributesRt)(
-            action.parameters.attributes
-          );
+      const response =
+        await this.context.unsecuredSavedObjectsClient.bulkCreate<UserActionPersistedAttributes>(
+          actions.map((action) => {
+            const decodedAttributes = decodeOrThrow(UserActionPersistedAttributesRt)(
+              action.parameters.attributes
+            );
 
-          return {
-            type: CASE_USER_ACTION_SAVED_OBJECT,
-            attributes: decodedAttributes,
-            references: action.parameters.references,
-          };
-        }),
-        { refresh }
-      );
+            return {
+              type: CASE_USER_ACTION_SAVED_OBJECT,
+              attributes: decodedAttributes,
+              references: action.parameters.references,
+            };
+          }),
+          { refresh }
+        );
+
+      // analyticsV2 mirror to `.cases-activity`. Fire-and-forget — the
+      // SO write is the source of truth; the writer logs and lets
+      // reconciliation fix anything that fails. `bulkCreate` returns one
+      // entry per request entry (in the same order); a per-entry
+      // `error` field marks failures, which we skip so we don't mirror
+      // a doc that wasn't actually persisted.
+      const successes: Array<SavedObject<UserActionPersistedAttributes>> = [];
+      for (const so of response.saved_objects) {
+        if (so.error == null) successes.push(so);
+      }
+      if (successes.length > 0) {
+        this.context.analyticsV2ActivityWriter.bulkUpsertActions(successes);
+      }
+
+      return response;
     } catch (error) {
       this.context.log.error(`Error on bulk creating user action: ${error}`);
       throw error;
@@ -628,6 +645,16 @@ export class UserActionPersister {
           refresh,
         }
       );
+
+      // analyticsV2 mirror to `.cases-activity`. Fire-and-forget — see
+      // `bulkCreate` above for the rationale. The cast lines up with the
+      // generic `T`: callers pass `UserActionPersistedAttributes`-shaped
+      // attributes; the Saved Objects API just forwards them through `T`
+      // for consumer convenience, so re-narrowing here is safe.
+      this.context.analyticsV2ActivityWriter.upsertAction(
+        res as unknown as SavedObject<UserActionPersistedAttributes>
+      );
+
       return res;
     } catch (error) {
       this.context.log.error(`Error on POST a new case user action: ${error}`);

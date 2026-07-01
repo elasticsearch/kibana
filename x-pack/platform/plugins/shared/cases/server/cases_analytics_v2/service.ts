@@ -19,6 +19,7 @@ import type {
 } from '@kbn/task-manager-plugin/server';
 import { CasesAnalyticsV2DataViewService } from './data_view/service';
 import { ensureCaseIndex } from './ensure_indices/case';
+import { ensureActivityIndex } from './ensure_indices/activity';
 import { registerReconciliationTask, scheduleReconciliationTask } from './reconciliation';
 import { registerResetTask } from './reconciliation/reset_task';
 import { registerCasesAnalyticsV2Routes } from './routes';
@@ -27,6 +28,11 @@ import {
   V2_NOOP_WRITER,
   type CasesAnalyticsV2WriterContract,
 } from './writer';
+import {
+  CasesActivityV2Writer,
+  V2_NOOP_ACTIVITY_WRITER,
+  type CasesActivityV2WriterContract,
+} from './writer/activity';
 
 interface CasesAnalyticsV2ServiceDeps {
   logger: Logger;
@@ -131,11 +137,11 @@ export const V2_NOOP_DATA_VIEW_REFRESHER: CasesAnalyticsV2DataViewRefresher = ()
  * Gated by `xpack.cases.analyticsV2.enabled`. When disabled, every
  * method is a no-op; v1 (`server/cases_analytics`) is independent.
  *
- * `getWriter()` and `getDataViewRefresher()` return stable references
- * that consumers capture once at plugin `setup()`. Each delegates to a
- * current implementation that is swapped from no-op to real during
- * `start()`, so calls before start (or while the feature flag is off)
- * silently no-op.
+ * `getWriter()`, `getActivityWriter()`, and `getDataViewRefresher()`
+ * return stable references that consumers capture once at plugin
+ * `setup()`. Each delegates to a current implementation that is
+ * swapped from no-op to real during `start()`, so calls before start
+ * (or while the feature flag is off) silently no-op.
  */
 export class CasesAnalyticsV2Service {
   private readonly logger: Logger;
@@ -151,6 +157,8 @@ export class CasesAnalyticsV2Service {
    * `CasesAnalyticsV2Writer` instance once start runs.
    */
   private writer: CasesAnalyticsV2WriterContract = V2_NOOP_WRITER;
+  /** Same lifecycle as `writer`, for the activity surface. */
+  private activityWriter: CasesActivityV2WriterContract = V2_NOOP_ACTIVITY_WRITER;
   /**
    * Stable proxy returned to consumers. Methods delegate to the current
    * `this.writer` at call time, so swapping `writer` from no-op to real
@@ -162,6 +170,17 @@ export class CasesAnalyticsV2Service {
     bulkUpsertCases: (sos) => this.writer.bulkUpsertCases(sos),
     bulkDeleteCases: (ids) => this.writer.bulkDeleteCases(ids),
     bulkUpsertCasesAwait: (sos) => this.writer.bulkUpsertCasesAwait(sos),
+  };
+  /**
+   * Stable proxy for the activity writer. Same lifecycle and semantics
+   * as `writerProxy` — the user-actions service captures this once at
+   * factory time and the proxy delegates to the current implementation.
+   */
+  private readonly activityWriterProxy: CasesActivityV2WriterContract = {
+    upsertAction: (so) => this.activityWriter.upsertAction(so),
+    bulkUpsertActions: (sos) => this.activityWriter.bulkUpsertActions(sos),
+    bulkDeleteActionsByCaseIds: (ids) => this.activityWriter.bulkDeleteActionsByCaseIds(ids),
+    bulkUpsertActionsAwait: (sos) => this.activityWriter.bulkUpsertActionsAwait(sos),
   };
   /**
    * Stable refresher returned to consumers. Captured by the cases
@@ -240,6 +259,7 @@ export class CasesAnalyticsV2Service {
         return {
           savedObjectsClient: this.internalSavedObjectsClient,
           writer: this.writerProxy,
+          activityWriter: this.activityWriterProxy,
         };
       },
     });
@@ -257,21 +277,23 @@ export class CasesAnalyticsV2Service {
         if (
           this.internalSavedObjectsClient == null ||
           this.taskManager == null ||
-          this.writer === V2_NOOP_WRITER
+          this.writer === V2_NOOP_WRITER ||
+          this.activityWriter === V2_NOOP_ACTIVITY_WRITER
         ) {
           // The reset task should never be scheduled before start
-          // completes (the route handler gates on the writer being
-          // non-noop), but if a task SO from a previous boot somehow
-          // fires before start has finished, surface it as a clear
-          // failure rather than walking against a noop writer and
+          // completes (the route handler gates on the same writers
+          // being non-noop), but if a task SO from a previous boot
+          // somehow fires before start has finished, surface it as a
+          // clear failure rather than walking against noop writers and
           // reporting success with zero actual ES writes.
           throw new Error(
-            'cases-analyticsV2: reset task fired before service start completed; writer, SO client, or task manager are not yet available'
+            'cases-analyticsV2: reset task fired before service start completed; writers, SO client, or task manager are not yet available'
           );
         }
         return {
           savedObjectsClient: this.internalSavedObjectsClient,
           writer: this.writerProxy,
+          activityWriter: this.activityWriterProxy,
           taskManager: this.taskManager,
         };
       },
@@ -297,6 +319,8 @@ export class CasesAnalyticsV2Service {
       // reset handler 503s instead of walking against a noop writer
       // and reporting "processed=N" with zero actual ES writes.
       getWriter: () => (this.writer === V2_NOOP_WRITER ? null : this.writerProxy),
+      getActivityWriter: () =>
+        this.activityWriter === V2_NOOP_ACTIVITY_WRITER ? null : this.activityWriterProxy,
       clearDataViewBootstrapCache: () => this.dataViewService?.clearBootstrapCache(),
       enabled: this.enabled,
       enableAdminRoutes: this.enableAdminRoutes,
@@ -306,13 +330,15 @@ export class CasesAnalyticsV2Service {
   /**
    * Plugin start hook. When the flag is off, no-ops at debug level.
    *
-   * When on: bootstraps `.cases`, swaps the no-op writer for the real
-   * one, captures lifecycle references, and schedules the singleton
-   * reconciliation task. Index bootstrap errors are logged inside
-   * `ensureCaseIndex` and never thrown — the cases plugin must keep
-   * starting even if analytics fails to bootstrap. Per-space data
-   * views are bootstrapped lazily on the first cases request per
-   * space, via `ensureDataViewForSpace`.
+   * When on: bootstraps `.cases` and `.cases-activity`, swaps the
+   * no-op writers for the real ones, captures lifecycle references,
+   * and schedules the singleton reconciliation task. `ensure*Index`
+   * throw on unexpected errors (e.g. a shard-limit cluster); the
+   * try/catch here logs and swallows them so the cases plugin keeps
+   * starting even when analytics fails to bootstrap — analytics is a
+   * downstream feature, and administrators can re-bootstrap via
+   * `/reset`. Per-space data views are bootstrapped lazily on the first
+   * cases request per space, via `ensureDataViewForSpace`.
    */
   public async start(deps: CasesAnalyticsV2StartDeps): Promise<void> {
     if (!this.enabled) {
@@ -323,13 +349,32 @@ export class CasesAnalyticsV2Service {
     }
     this.logger.info('cases-analytics v2 starting');
 
-    // Bootstrap the cases index. Idempotent; per-index errors are
-    // logged inside `ensureCaseIndex` and never thrown.
-    await ensureCaseIndex({ esClient: deps.esClient, logger: this.logger });
+    // Bootstrap the cases + activity indices. Idempotent and
+    // independent; running them in parallel halves first-start latency
+    // on a fresh cluster. Errors are caught here (not inside ensure*)
+    // so the plugin still starts even when ES is temporarily at the
+    // shard limit — analytics is a downstream feature, not core.
+    // Administrators can trigger a re-bootstrap via the /reset route.
+    try {
+      await Promise.all([
+        ensureCaseIndex({ esClient: deps.esClient, logger: this.logger }),
+        ensureActivityIndex({ esClient: deps.esClient, logger: this.logger }),
+      ]);
+    } catch (err) {
+      this.logger.error(
+        `cases-analyticsV2: index bootstrap failed at plugin start: ${err?.message ?? err}`,
+        { error: err }
+      );
+    }
 
-    // Swap the no-op writer for the real one. From this point, every
-    // call through `writerProxy` reaches Elasticsearch.
+    // Swap the no-op writers for the real ones. From this point, every
+    // call through `writerProxy` / `activityWriterProxy` reaches
+    // Elasticsearch.
     this.writer = new CasesAnalyticsV2Writer({
+      esClient: deps.esClient,
+      logger: this.logger,
+    });
+    this.activityWriter = new CasesActivityV2Writer({
       esClient: deps.esClient,
       logger: this.logger,
     });
@@ -375,6 +420,14 @@ export class CasesAnalyticsV2Service {
    */
   public getWriter(): CasesAnalyticsV2WriterContract {
     return this.writerProxy;
+  }
+
+  /**
+   * Stable writer reference for the user-actions SO service to capture
+   * once at plugin setup. Same lifecycle as `getWriter()`.
+   */
+  public getActivityWriter(): CasesActivityV2WriterContract {
+    return this.activityWriterProxy;
   }
 
   /**

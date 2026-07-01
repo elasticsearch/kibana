@@ -24,11 +24,11 @@ const INTERNAL_HEADERS = {
 } as const;
 
 /**
- * `/reset` is the administrator escape hatch. It returns 202 and runs
- * the backfill walk asynchronously in a one-shot Task Manager task. The
- * synchronous portion (drop + recreate index, delete data views, clear
- * cache) happens in-handler; only the `O(documents)` walk is moved out.
- * Tests assert both phases.
+ * `/reset` is the administrator escape hatch. It returns 202 and runs the
+ * backfill walk asynchronously in a one-shot Task Manager task. The
+ * synchronous portion (drop + recreate indices, delete data views,
+ * clear cache) happens in-handler; only the `O(documents)` walk is
+ * moved out. Tests assert both phases.
  */
 export default ({ getService }: FtrProviderContext): void => {
   const supertest = getService('supertest');
@@ -137,10 +137,10 @@ export default ({ getService }: FtrProviderContext): void => {
 
       // Without `/reset`, the cursor would now be ahead of
       // `oldCase.created_at` and a periodic tick wouldn't re-emit
-      // oldCase. `/reset` schedules a full backfill (`lastRunAt:
-      // undefined → no filter → walk every case`), so the
-      // pre-existing case lands in `.cases` again after the reset
-      // task completes.
+      // oldCase. `/reset` schedules a full backfill
+      // (lastRunAt: undefined → no filter → walk every case), so
+      // the pre-existing case lands in `.cases` again after the
+      // reset task completes.
       await resetV2(supertest);
 
       await waitForAnalyticsCase(es, oldCase.id, { expect: 'present' });

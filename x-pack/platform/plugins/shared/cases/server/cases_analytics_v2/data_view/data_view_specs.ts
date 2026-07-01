@@ -6,15 +6,19 @@
  */
 
 import type { DataViewSpec } from '@kbn/data-views-plugin/common';
-import { CASE_INDEX_NAME } from '../constants';
+import { ACTIVITY_INDEX_NAME, CASE_INDEX_NAME } from '../constants';
 
 /**
- * Index pattern fed to the data view's `title`. The data views API
- * accepts a comma-separated list, so additional analytics indices can
- * be appended later (`.cases-activity`, `.cases-attachments`, etc.)
- * without breaking the existing view's id or saved-object identity.
+ * Index pattern fed to the data view's `title`. The data views API treats
+ * each comma-separated token as an index pattern, so a single managed view
+ * spans both `.cases` and `.cases-activity` (and any future analytics
+ * index added to this list). Cross-index queries via ES|QL `LOOKUP JOIN`
+ * work against the same view.
+ *
+ * Cases is listed first as the dimension table that the activity surface
+ * joins back to. The data view itself doesn't care about order.
  */
-export const CASE_ANALYTICS_DATA_VIEW_TITLE = CASE_INDEX_NAME;
+export const CASE_ANALYTICS_DATA_VIEW_TITLE = `${CASE_INDEX_NAME},${ACTIVITY_INDEX_NAME}`;
 
 /**
  * Shared prefix for every managed Cases data view id. One data view per

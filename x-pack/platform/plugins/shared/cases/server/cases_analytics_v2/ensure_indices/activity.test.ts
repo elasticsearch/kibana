@@ -7,15 +7,15 @@
 
 import { elasticsearchServiceMock } from '@kbn/core/server/mocks';
 import { loggerMock } from '@kbn/logging-mocks';
-import { CASE_INDEX_NAME } from '../constants';
-import { ensureCaseIndex } from './case';
+import { ACTIVITY_INDEX_NAME } from '../constants';
+import { ensureActivityIndex } from './activity';
 
 const buildDeps = () => ({
   esClient: elasticsearchServiceMock.createElasticsearchClient(),
   logger: loggerMock.create(),
 });
 
-describe('ensureCaseIndex', () => {
+describe('ensureActivityIndex', () => {
   afterEach(() => {
     jest.clearAllMocks();
   });
@@ -25,15 +25,12 @@ describe('ensureCaseIndex', () => {
     (esClient.indices.exists as unknown as jest.Mock).mockResolvedValue(false);
     (esClient.indices.create as unknown as jest.Mock).mockResolvedValue({});
 
-    await ensureCaseIndex({ esClient, logger });
+    await ensureActivityIndex({ esClient, logger });
 
     expect(esClient.indices.create).toHaveBeenCalledTimes(1);
     const call = (esClient.indices.create as unknown as jest.Mock).mock.calls[0][0];
-    expect(call.index).toBe(CASE_INDEX_NAME);
-    expect(call.settings).toMatchObject({
-      'index.hidden': true,
-      'index.mode': 'lookup',
-    });
+    expect(call.index).toBe(ACTIVITY_INDEX_NAME);
+    expect(call.settings).toMatchObject({ 'index.hidden': true });
   });
 
   /**
@@ -50,7 +47,7 @@ describe('ensureCaseIndex', () => {
     (esClient.indices.exists as unknown as jest.Mock).mockResolvedValue(false);
     (esClient.indices.create as unknown as jest.Mock).mockResolvedValue({});
 
-    await ensureCaseIndex({ esClient, logger });
+    await ensureActivityIndex({ esClient, logger });
 
     const call = (esClient.indices.create as unknown as jest.Mock).mock.calls[0][0];
     expect(call.settings['index.auto_expand_replicas']).toBe('0-1');
@@ -60,7 +57,7 @@ describe('ensureCaseIndex', () => {
     const { esClient, logger } = buildDeps();
     (esClient.indices.exists as unknown as jest.Mock).mockResolvedValue(true);
 
-    await ensureCaseIndex({ esClient, logger });
+    await ensureActivityIndex({ esClient, logger });
 
     expect(esClient.indices.create).not.toHaveBeenCalled();
     expect(logger.debug).toHaveBeenCalledWith(
@@ -76,7 +73,7 @@ describe('ensureCaseIndex', () => {
     });
     (esClient.indices.create as unknown as jest.Mock).mockRejectedValue(err);
 
-    await expect(ensureCaseIndex({ esClient, logger })).resolves.toBeUndefined();
+    await expect(ensureActivityIndex({ esClient, logger })).resolves.toBeUndefined();
     expect(logger.error).not.toHaveBeenCalled();
   });
 
@@ -96,7 +93,7 @@ describe('ensureCaseIndex', () => {
     });
     (esClient.indices.create as unknown as jest.Mock).mockRejectedValue(err);
 
-    await expect(ensureCaseIndex({ esClient, logger })).rejects.toThrow(
+    await expect(ensureActivityIndex({ esClient, logger })).rejects.toThrow(
       'cluster.max_shards_per_node'
     );
   });
@@ -107,7 +104,9 @@ describe('ensureCaseIndex', () => {
     const err = new Error('cluster_block_exception');
     (esClient.indices.create as unknown as jest.Mock).mockRejectedValue(err);
 
-    await expect(ensureCaseIndex({ esClient, logger })).rejects.toThrow('cluster_block_exception');
+    await expect(ensureActivityIndex({ esClient, logger })).rejects.toThrow(
+      'cluster_block_exception'
+    );
     expect(logger.error).not.toHaveBeenCalled();
   });
 });

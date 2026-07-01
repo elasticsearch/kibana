@@ -21,7 +21,12 @@ import type { LensServerPluginSetup } from '@kbn/lens-plugin/server';
 
 import { DEFAULT_SPACE_ID } from '@kbn/core-spaces-common';
 import type { IUsageCounter } from '@kbn/usage-collection-plugin/server/usage_counters/usage_counter';
-import { APP_ID, CASE_SAVED_OBJECT, CASE_TEMPLATE_SAVED_OBJECT } from '../common/constants';
+import {
+  APP_ID,
+  CASE_SAVED_OBJECT,
+  CASE_TEMPLATE_SAVED_OBJECT,
+  CASE_USER_ACTION_SAVED_OBJECT,
+} from '../common/constants';
 
 import type { CasesClient } from './client';
 import type {
@@ -59,6 +64,7 @@ import { createCasesAnalyticsIndexes, registerCasesAnalyticsIndexesTasks } from 
 import { scheduleCAISchedulerTask } from './cases_analytics/tasks/scheduler_task';
 import {
   CasesAnalyticsV2Service,
+  V2_NOOP_ACTIVITY_WRITER,
   V2_NOOP_DATA_VIEW_REFRESHER,
   V2_NOOP_WRITER,
 } from './cases_analytics_v2';
@@ -340,17 +346,19 @@ export class CasePlugin
             'Skipping v2 start.'
         );
       } else {
-        // Internal (unscoped) repo for three consumers: the reconciliation
-        // runner (walks `cases` SOs on a timer, no request context), the data
-        // view sub-service (reads `cases-templates` per-space for runtime
-        // fields), and `/reset` (deletes per-space `index-pattern` SOs across
-        // namespaces — a request-scoped client 404s outside its own space).
-        // The hidden cases SO types must be opted in explicitly;
-        // `cases-templates` only when templates is on (else "Missing mappings
-        // for saved objects types"); `index-pattern` grants the
-        // cross-namespace data-view delete `/reset` needs.
+        // Internal (unscoped) repo for four consumers: the cases-surface
+        // reconciliation runner (walks `cases` SOs), the activity-surface
+        // runner (walks `cases-user-actions` SOs), the data view sub-service
+        // (reads `cases-templates` per-space for runtime fields), and `/reset`
+        // (deletes per-space `index-pattern` SOs across namespaces — a
+        // request-scoped client 404s outside its own space). The hidden cases
+        // SO types must be opted in explicitly; `cases-templates` only when
+        // templates is on (else "Missing mappings for saved objects types");
+        // `index-pattern` grants the cross-namespace data-view delete `/reset`
+        // needs.
         const v2InternalRepository = core.savedObjects.createInternalRepository([
           CASE_SAVED_OBJECT,
+          CASE_USER_ACTION_SAVED_OBJECT,
           ...(this.caseConfig.templates?.enabled ? [CASE_TEMPLATE_SAVED_OBJECT] : []),
           'index-pattern',
         ]);
@@ -420,6 +428,10 @@ export class CasePlugin
       // setup() always precedes start() in production, but it keeps
       // start()-in-isolation test harnesses from crashing.
       analyticsV2Writer: this.casesAnalyticsV2Service?.getWriter() ?? V2_NOOP_WRITER,
+      // Activity-surface companion (same lifetime + fallback). Captured by the
+      // user-actions service via the cases client factory.
+      analyticsV2ActivityWriter:
+        this.casesAnalyticsV2Service?.getActivityWriter() ?? V2_NOOP_ACTIVITY_WRITER,
       // Companion refresher proxy (same lifetime + fallback). The templates
       // service calls it fire-and-forget after every template mutation.
       analyticsV2DataViewRefresher:

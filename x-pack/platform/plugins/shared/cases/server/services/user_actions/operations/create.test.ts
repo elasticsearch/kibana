@@ -5,6 +5,7 @@
  * 2.0.
  */
 
+import type { SavedObject } from '@kbn/core/server';
 import { CASE_USER_ACTION_SAVED_OBJECT } from '../../../../common/constants';
 import { createSavedObjectsSerializerMock } from '../../../client/mocks';
 import { savedObjectsClientMock } from '@kbn/core-saved-objects-api-server-mocks';
@@ -57,6 +58,15 @@ describe('UserActionPersister', () => {
   const mockLogger = loggerMock.create();
   const auditMockLocker = auditLoggerMock.create();
   const savedObjectsSerializer = createSavedObjectsSerializerMock();
+  // Spy-able activity writer so the `.cases-activity` mirror assertions
+  // below can inspect the fire-and-forget dispatches. `jest.resetAllMocks`
+  // in `beforeEach` clears call state between tests.
+  const analyticsV2ActivityWriter = {
+    upsertAction: jest.fn(),
+    bulkUpsertActions: jest.fn(),
+    bulkDeleteActionsByCaseIds: jest.fn(),
+    bulkUpsertActionsAwait: jest.fn().mockResolvedValue(undefined),
+  };
 
   let persister: UserActionPersister;
 
@@ -72,6 +82,7 @@ describe('UserActionPersister', () => {
       unsecuredSavedObjectsClient,
       savedObjectsSerializer,
       auditLogger: auditMockLocker,
+      analyticsV2ActivityWriter,
     });
   });
 
@@ -106,6 +117,71 @@ describe('UserActionPersister', () => {
   });
 
   const testUser = { full_name: 'Elastic User', username: 'elastic', email: 'elastic@elastic.co' };
+
+  describe('cases-analytics v2 activity mirror', () => {
+    it('mirrors a single created user action to the activity writer', async () => {
+      unsecuredSavedObjectsClient.create.mockResolvedValue({
+        attributes: createUserActionSO(),
+        id: 'ua-1',
+        type: CASE_USER_ACTION_SAVED_OBJECT,
+        references: [],
+      });
+
+      await persister.createUserAction(getRequest());
+
+      expect(analyticsV2ActivityWriter.upsertAction).toHaveBeenCalledTimes(1);
+      expect(analyticsV2ActivityWriter.upsertAction).toHaveBeenCalledWith(
+        expect.objectContaining({ id: 'ua-1' })
+      );
+    });
+
+    it('mirrors only the successfully-persisted entries on bulk create', async () => {
+      // One success, one per-item failure (409). The failed entry must be
+      // excluded so we never mirror a doc that wasn't actually persisted —
+      // reconciliation can't repair that (a never-persisted user action has
+      // no SO to walk).
+      unsecuredSavedObjectsClient.bulkCreate.mockResolvedValue({
+        saved_objects: [
+          {
+            attributes: createUserActionSO(),
+            id: 'ua-ok',
+            type: CASE_USER_ACTION_SAVED_OBJECT,
+            references: [],
+          },
+          // A per-item failure has `error` and no `attributes`/`references`;
+          // cast to the response element type since the SO API's typed
+          // shape doesn't model the error variant inline.
+          {
+            id: 'ua-bad',
+            type: CASE_USER_ACTION_SAVED_OBJECT,
+            error: { error: 'Conflict', message: 'version conflict', statusCode: 409 },
+          } as unknown as SavedObject<UserActionPersistedAttributes>,
+        ],
+      });
+
+      await persister.bulkCreateUserAction({ userActions: [getRequest().userAction] });
+
+      expect(analyticsV2ActivityWriter.bulkUpsertActions).toHaveBeenCalledTimes(1);
+      const mirrored = analyticsV2ActivityWriter.bulkUpsertActions.mock.calls[0][0];
+      expect(mirrored.map((so: { id: string }) => so.id)).toEqual(['ua-ok']);
+    });
+
+    it('does not dispatch to the activity writer when every bulk entry errored', async () => {
+      unsecuredSavedObjectsClient.bulkCreate.mockResolvedValue({
+        saved_objects: [
+          {
+            id: 'ua-bad',
+            type: CASE_USER_ACTION_SAVED_OBJECT,
+            error: { error: 'Conflict', message: 'version conflict', statusCode: 409 },
+          } as unknown as SavedObject<UserActionPersistedAttributes>,
+        ],
+      });
+
+      await persister.bulkCreateUserAction({ userActions: [getRequest().userAction] });
+
+      expect(analyticsV2ActivityWriter.bulkUpsertActions).not.toHaveBeenCalled();
+    });
+  });
 
   describe('Decoding requests', () => {
     describe('createUserAction', () => {

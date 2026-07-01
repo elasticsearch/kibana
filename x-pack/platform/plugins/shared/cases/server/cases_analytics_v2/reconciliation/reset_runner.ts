@@ -8,8 +8,9 @@
 import type { Logger, SavedObjectsClientContract } from '@kbn/core/server';
 import type { TaskManagerStartContract } from '@kbn/task-manager-plugin/server';
 import type { CasesAnalyticsV2WriterContract } from '../writer';
-import type { RunReconciliationResult } from './runner';
-import { runReconciliation } from './runner';
+import type { CasesActivityV2WriterContract } from '../writer/activity';
+import { runReconciliation, type RunReconciliationResult } from './runner';
+import { runActivityReconciliation, type RunActivityReconciliationResult } from './activity_runner';
 import { resetReconciliationTask } from '.';
 
 /** Inputs for `runFullReset`. */
@@ -18,8 +19,10 @@ export interface RunFullResetDeps {
   savedObjectsClient: SavedObjectsClientContract;
   /** Cases-surface writer. Real instance, not the noop. */
   writer: CasesAnalyticsV2WriterContract;
+  /** Activity-surface writer. Real instance, not the noop. */
+  activityWriter: CasesActivityV2WriterContract;
   /**
-   * Task Manager start contract. Used after the walk completes to
+   * Task Manager start contract. Used after both walks complete to
    * atomically reset the periodic reconciliation task's persisted state.
    * See `resetReconciliationTask` in `./index.ts` for why
    * `bulkUpdateState` is preferred over `remove`+`schedule`.
@@ -31,11 +34,11 @@ export interface RunFullResetDeps {
   /** Periodic-task cadence; threaded through to `resetReconciliationTask`. */
   intervalMinutes: number;
   /**
-   * Inter-page sleep for the reconciliation runner, in milliseconds.
-   * Sourced from `xpack.cases.analyticsV2.resetPageDelayMs`. The runner
-   * defaults to `0` (yield via `setImmediate`); administrators raise
-   * this on busy clusters to throttle bulk-write pressure during the
-   * full backfill.
+   * Inter-page sleep for the reconciliation runners, in milliseconds.
+   * Sourced from `xpack.cases.analyticsV2.resetPageDelayMs`. The runners
+   * default to `0` (yield via `setImmediate`); administrators raise this on
+   * busy clusters to throttle bulk-write pressure during the full
+   * backfill.
    */
   pageDelayMs: number;
   /**
@@ -48,13 +51,14 @@ export interface RunFullResetDeps {
    * `bulkUpdateState`) themselves so the per-page semantics here stay
    * obvious.
    */
-  onProgress?: (info: { phase: 'cases'; processed: number }) => void;
+  onProgress?: (info: { phase: 'cases' | 'activity'; processed: number }) => void;
   logger: Logger;
 }
 
 export interface RunFullResetResult {
-  /** Cases-surface walk outcome. `null` if the walk threw mid-flight. */
+  /** Per-surface walk outcomes. `null` if that surface's walk threw mid-flight. */
   cases: RunReconciliationResult | null;
+  activity: RunActivityReconciliationResult | null;
   /**
    * ISO timestamp seeded into the periodic task's cases-surface
    * cursor on a successful walk, or `null` when the cases walk
@@ -64,13 +68,19 @@ export interface RunFullResetResult {
    */
   casesCursor: string | null;
   /**
+   * ISO timestamp seeded into the periodic task's activity-surface
+   * cursor on a successful walk, or `null` when the activity walk
+   * failed. Same recovery semantics as `casesCursor`.
+   */
+  activityCursor: string | null;
+  /**
    * Per-walk error captured for surface-level isolation. `null` on
    * success. Surfaced so callers can decide whether to log or report a
-   * failure; this function never throws on the cases walk error, so
-   * the cursor-seed step still runs (and seeds `null` for the failed
-   * cursor).
+   * partial failure; this function never throws on a per-surface walk
+   * error, so the successful surface's cursor still gets seeded.
    */
   casesError: unknown;
+  activityError: unknown;
 }
 
 /**
@@ -79,12 +89,17 @@ export interface RunFullResetResult {
  * lets `/reset` return 202 in seconds at large-tenant scale instead of
  * timing out the HTTP request mid-walk.
  *
- * Out of scope here: dropping the index, recreating it, deleting
+ * Out of scope here: dropping indices, recreating indices, deleting
  * per-space data views, and clearing the bootstrap cache. Those steps
  * stay in the `/reset` handler because they're `O(spaces)` (fast) and
- * benefit from running synchronously inside the request so the
- * administrator gets immediate confirmation that destructive cleanup
- * succeeded before the much slower walk begins.
+ * benefit from running synchronously inside the request so the administrator
+ * gets immediate confirmation that destructive cleanup succeeded before
+ * the much slower walk begins.
+ *
+ * Per-surface failure isolation: a failure on one surface logs at WARN,
+ * is captured in the result, and lets the other surface proceed. The
+ * cursor-seed step still runs so the surface that succeeded keeps its
+ * progress.
  *
  * Cursor-seed failure is logged at WARN but does not throw. The
  * worst-case effect is that the periodic task re-walks the whole tenant
@@ -93,12 +108,17 @@ export interface RunFullResetResult {
 export async function runFullReset({
   savedObjectsClient,
   writer,
+  activityWriter,
   taskManager,
   intervalMinutes,
   pageDelayMs,
   onProgress,
   logger,
 }: RunFullResetDeps): Promise<RunFullResetResult> {
+  // Cases first, then activity. Same ordering as the periodic task: a
+  // `LOOKUP JOIN .cases ON cases.id` from any post-activity consumer
+  // sees the joined case row at least as up-to-date as the activity row
+  // that referenced it.
   let casesResult: RunReconciliationResult | null = null;
   let casesError: unknown = null;
   try {
@@ -109,7 +129,8 @@ export async function runFullReset({
       lastRunAt: undefined,
       pageDelayMs,
       // Wrap the surface-agnostic runner callback to attach a phase tag.
-      // Keeps the runner itself unaware of which surface it's serving.
+      // Keeps the runners themselves unaware of which surface they're
+      // serving.
       onPageComplete: ({ processed }) => onProgress?.({ phase: 'cases', processed }),
     });
   } catch (err) {
@@ -121,11 +142,32 @@ export async function runFullReset({
     );
   }
 
+  let activityResult: RunActivityReconciliationResult | null = null;
+  let activityError: unknown = null;
+  try {
+    activityResult = await runActivityReconciliation({
+      savedObjectsClient,
+      activityWriter,
+      logger,
+      lastRunAt: undefined,
+      pageDelayMs,
+      onPageComplete: ({ processed }) => onProgress?.({ phase: 'activity', processed }),
+    });
+  } catch (err) {
+    activityError = err;
+    logger.warn(
+      `reset: full activity re-walk failed mid-flight: ${
+        err instanceof Error ? err.message : String(err)
+      }. Activity index is partially populated; the activity cursor is left unset so the next periodic tick will fall back to a full walk and recover the missing docs.`
+    );
+  }
+
   // Per-surface cursor: the walk's tick-start timestamp on success, or
   // `null` on failure. Seeding `null` clears the persisted cursor so
   // the next periodic tick walks the whole surface and repairs any
   // docs the failed reset left behind.
   const casesCursor = casesResult?.newLastRunAt ?? null;
+  const activityCursor = activityResult?.newLastRunAt ?? null;
 
   if (taskManager != null) {
     // Build the seed state with only the surfaces whose cursor we want
@@ -134,6 +176,7 @@ export async function runFullReset({
     // (see the `lastRunAt ? ... : undefined` filter in `runner.ts`).
     const initialState: Record<string, string> = {};
     if (casesCursor != null) initialState.cases_last_run_at = casesCursor;
+    if (activityCursor != null) initialState.activity_last_run_at = activityCursor;
     try {
       await resetReconciliationTask({
         taskManager,
@@ -152,7 +195,10 @@ export async function runFullReset({
 
   return {
     cases: casesResult,
+    activity: activityResult,
     casesCursor,
+    activityCursor,
     casesError,
+    activityError,
   };
 }

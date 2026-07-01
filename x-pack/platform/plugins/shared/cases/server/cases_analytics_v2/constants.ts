@@ -8,14 +8,22 @@
 import { CASES_INTERNAL_URL } from '../../common/constants';
 
 /**
- * Name of the Elasticsearch index owned by cases-analytics v2's case
- * surface. Cluster-level (one index regardless of spaces or owners),
- * hidden by default, `index.mode: lookup` so downstream surfaces can
- * `LOOKUP JOIN` from ES|QL. Mirrors the source `cases` saved-object
- * type so an administrator reading `_cat/indices` can map back to the
- * source data.
+ * Names of the Elasticsearch indices owned by cases-analytics v2.
+ * Cluster-level (one index per surface, regardless of spaces or
+ * owners) and hidden by default.
+ *
+ * - `.cases`          — current state of every case.
+ *                       `index.mode: lookup` so downstream surfaces
+ *                       can `LOOKUP JOIN` from ES|QL.
+ * - `.cases-activity` — append-only mirror of the
+ *                       `cases-user-actions` SO. Default index mode
+ *                       (fact table); joined to `.cases` via ES|QL.
+ *
+ * Index names mirror their source saved-object types so an
+ * administrator reading `_cat/indices` can map back to the source data.
  */
 export const CASE_INDEX_NAME = '.cases';
+export const ACTIVITY_INDEX_NAME = '.cases-activity';
 
 /**
  * Administrator route URLs. All under `/internal/cases/_analyticsV2/*`

@@ -33,6 +33,8 @@ export default ({ getService }: FtrProviderContext): void => {
       expect(state.index_exists).to.eql(true);
       expect(state.surfaces.cases.index).to.eql('.cases');
       expect(state.surfaces.cases.index_exists).to.eql(true);
+      expect(state.surfaces.activity.index).to.eql('.cases-activity');
+      expect(state.surfaces.activity.index_exists).to.eql(true);
       expect(state.reconciliation.task_type).to.eql('cases.analyticsV2.reconciliation');
       // The reconciliation task may or may not have run yet —
       // accept either. What matters is that `last_run` is

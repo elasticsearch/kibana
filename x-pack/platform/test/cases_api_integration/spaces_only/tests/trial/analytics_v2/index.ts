@@ -7,7 +7,7 @@
 
 import type { FtrProviderContext } from '../../../../common/ftr_provider_context';
 import { createSpaces, deleteSpaces } from '../../../../common/lib/authentication';
-import { waitForCaseIndexExists } from './helpers';
+import { waitForActivityIndexExists, waitForCaseIndexExists } from './helpers';
 
 /**
  * Cases-analytics v2 API integration suite.
@@ -15,9 +15,9 @@ import { waitForCaseIndexExists } from './helpers';
  * Runs only via `config_analytics_v2.ts` (which sets
  * `xpack.cases.analyticsV2.enabled=true`). Tests exercise the
  * end-to-end write path (cases SO → fire-and-forget writer →
- * `.cases`), reconciliation, per-space data view lazy bootstrap, and
- * the administrator routes (`/state`, `/reconcile/run_soon`,
- * `/reset`), plus regression scenarios such as:
+ * `.cases`), reconciliation, per-space data view lazy bootstrap, the
+ * administrator routes (`/state`, `/reconcile/run_soon`, `/reset`), and
+ * regression scenarios such as:
  *   - reconciliation picks up a newly-created case even when
  *     `updated_at` is `null`, via the filter's null branch
  *     (`updated_at IS MISSING AND created_at > lastRunAt`).
@@ -34,10 +34,14 @@ export default ({ loadTestFile, getService }: FtrProviderContext): void => {
 
     before(async () => {
       await createSpaces(getService);
-      // v2's plugin start runs `ensureCaseIndex` asynchronously after
-      // Kibana boots. Wait for `.cases` to exist before any test
-      // fires, so the first test isn't racing the bootstrap.
-      await waitForCaseIndexExists(getService('es'));
+      // v2's plugin start runs `ensure*Index` asynchronously after
+      // Kibana boots. Wait for both `.cases` and `.cases-activity`
+      // to exist before any test fires, so the first test isn't
+      // racing the bootstrap.
+      await Promise.all([
+        waitForCaseIndexExists(getService('es')),
+        waitForActivityIndexExists(getService('es')),
+      ]);
     });
 
     after(async () => {
@@ -49,5 +53,6 @@ export default ({ loadTestFile, getService }: FtrProviderContext): void => {
     loadTestFile(require.resolve('./reconcile'));
     loadTestFile(require.resolve('./reset'));
     loadTestFile(require.resolve('./per_space_data_views'));
+    loadTestFile(require.resolve('./activity'));
   });
 };

@@ -16,19 +16,26 @@
 
 import type {
   SavedObject,
+  SavedObjectReference,
   SavedObjectsClientContract,
   SavedObjectsFindResponse,
 } from '@kbn/core/server';
 import type { savedObjectsClientMock } from '@kbn/core/server/mocks';
 import type { DataView, DataViewSpec, RuntimeFieldSpec } from '@kbn/data-views-plugin/common';
 import type { DataViewsServerPluginStart } from '@kbn/data-views-plugin/server';
-import { CASE_SAVED_OBJECT, CASE_TEMPLATE_SAVED_OBJECT } from '../../../common/constants';
+import {
+  CASE_SAVED_OBJECT,
+  CASE_TEMPLATE_SAVED_OBJECT,
+  CASE_USER_ACTION_SAVED_OBJECT,
+} from '../../../common/constants';
 import {
   CasePersistedSeverity,
   CasePersistedStatus,
   type CasePersistedAttributes,
 } from '../../common/types/case';
+import type { UserActionPersistedAttributes } from '../../common/types/user_actions';
 import type { CasesAnalyticsV2WriterContract } from '../writer';
+import type { CasesActivityV2WriterContract } from '../writer/activity';
 
 // ----- Saved-object factories -----
 
@@ -72,6 +79,49 @@ export const makeCase = (
       settings: { syncAlerts: false },
     } as unknown as CasePersistedAttributes,
   } as SavedObject<CasePersistedAttributes>);
+
+/**
+ * Build a `cases-user-actions` SO with safe defaults, for the activity
+ * surface (writer, runner, doc-builder). Mirrors the real persisted
+ * shape: the parent case lives in `references` (name `associated-cases`)
+ * and, for connector actions, the connector id lives in `references`
+ * under `CONNECTOR_ID_REFERENCE_NAME` (not in the payload).
+ *
+ * Override `namespaces` when a test exercises non-default-space
+ * `space_id` resolution; leave it alone otherwise.
+ */
+export const makeUserAction = (
+  id: string,
+  opts: {
+    type?: string;
+    action?: string;
+    payload?: Record<string, unknown>;
+    owner?: string;
+    createdAt?: string;
+    namespaces?: string[];
+    references?: SavedObjectReference[];
+    createdBy?: UserActionPersistedAttributes['created_by'] | null;
+  } = {}
+): SavedObject<UserActionPersistedAttributes> =>
+  ({
+    type: CASE_USER_ACTION_SAVED_OBJECT,
+    id,
+    namespaces: opts.namespaces ?? ['default'],
+    references: opts.references ?? [
+      { id: 'case-1', type: CASE_SAVED_OBJECT, name: 'associated-cases' },
+    ],
+    attributes: {
+      action: opts.action ?? 'create',
+      type: opts.type ?? 'create_case',
+      payload: opts.payload ?? {},
+      owner: opts.owner ?? 'securitySolution',
+      created_at: opts.createdAt ?? '2026-05-01T00:00:00.000Z',
+      created_by:
+        opts.createdBy === undefined
+          ? { username: 'jane', full_name: 'J', email: 'j@e.com', profile_uid: 'p-1' }
+          : opts.createdBy,
+    } as UserActionPersistedAttributes,
+  } as SavedObject<UserActionPersistedAttributes>);
 
 /**
  * Build a `cases-templates` SO with the persisted shape the
@@ -158,6 +208,20 @@ export const makeWriterMock = (): jest.Mocked<CasesAnalyticsV2WriterContract> =>
   bulkUpsertCasesAwait: jest.fn().mockResolvedValue(undefined),
 });
 
+/**
+ * Mock implementation of the activity writer contract. Same intent as
+ * `makeWriterMock` — for tests asserting the right calls are dispatched
+ * (activity runner, service-layer cascade/mirror hooks). Tests that
+ * exercise the real writer's retry / failure logic construct it directly
+ * — see `writer/activity.test.ts`.
+ */
+export const makeActivityWriterMock = (): jest.Mocked<CasesActivityV2WriterContract> => ({
+  upsertAction: jest.fn(),
+  bulkUpsertActions: jest.fn(),
+  bulkDeleteActionsByCaseIds: jest.fn(),
+  bulkUpsertActionsAwait: jest.fn().mockResolvedValue(undefined),
+});
+
 // ----- Data-views service mocks -----
 
 export interface MockDvService {
@@ -215,7 +279,7 @@ export const makeDataViewWithRuntime = (
     () =>
       ({
         id,
-        title: '.cases',
+        title: '.cases,.cases-activity',
         runtimeFieldMap: { ...dv.__runtimeFieldMap },
       } as DataViewSpec)
   );

@@ -59,7 +59,10 @@ import {
   transformESModelToCase,
 } from './transform';
 import type { AttachmentService } from '../attachments';
-import type { CasesAnalyticsV2WriterContract } from '../../cases_analytics_v2';
+import type {
+  CasesActivityV2WriterContract,
+  CasesAnalyticsV2WriterContract,
+} from '../../cases_analytics_v2';
 import type { AggregationBuilder, AggregationResponse } from '../../client/metrics/types';
 import { createCaseError, isSOError } from '../../common/error';
 import type {
@@ -190,22 +193,32 @@ export class CasesService {
    * primary write path is unaffected.
    */
   private readonly analyticsV2Writer: CasesAnalyticsV2WriterContract;
+  /**
+   * Cases-as-data v2 activity writer. Same lifetime/contract as
+   * `analyticsV2Writer`; consumed here only for cascade-delete on case
+   * removal — every other activity write originates from the user-actions
+   * service.
+   */
+  private readonly analyticsV2ActivityWriter: CasesActivityV2WriterContract;
 
   constructor({
     log,
     unsecuredSavedObjectsClient,
     attachmentService,
     analyticsV2Writer,
+    analyticsV2ActivityWriter,
   }: {
     log: Logger;
     unsecuredSavedObjectsClient: SavedObjectsClientContract;
     attachmentService: AttachmentService;
     analyticsV2Writer: CasesAnalyticsV2WriterContract;
+    analyticsV2ActivityWriter: CasesActivityV2WriterContract;
   }) {
     this.log = log;
     this.unsecuredSavedObjectsClient = unsecuredSavedObjectsClient;
     this.attachmentService = attachmentService;
     this.analyticsV2Writer = analyticsV2Writer;
+    this.analyticsV2ActivityWriter = analyticsV2ActivityWriter;
   }
 
   private buildCaseIdsAggs = (
@@ -564,6 +577,10 @@ export class CasesService {
       // Cases-as-data v2: drop the analytics doc post-success. Fire-and-forget;
       // the writer swallows 404s internally.
       this.analyticsV2Writer.deleteCase(caseId);
+      // Cascade to `.cases-activity`. The case SO delete cascades to its
+      // user-action SOs at the SO layer, but reconciliation can't see the
+      // gap (deleted SOs are gone) — mirror the cascade explicitly here.
+      this.analyticsV2ActivityWriter.bulkDeleteActionsByCaseIds([caseId]);
     } catch (error) {
       this.log.error(`Error on DELETE case ${caseId}: ${error}`);
       throw error;
@@ -612,6 +629,11 @@ export class CasesService {
         }
       }
       this.analyticsV2Writer.bulkDeleteCases(idsToDelete);
+      // Cascade to `.cases-activity` for the same set of case ids — the
+      // SO-layer cascade removes the user-action SOs, and reconciliation
+      // can't see the gap (deleted SOs are gone), so we drop the analytics
+      // mirror explicitly. No-op when `idsToDelete` is empty.
+      this.analyticsV2ActivityWriter.bulkDeleteActionsByCaseIds(idsToDelete);
     } catch (error) {
       this.log.error(`Error bulk deleting case entities ${JSON.stringify(entities)}: ${error}`);
     }

@@ -27,6 +27,7 @@ import type {
   CaseAssignees,
   CaseCustomFields,
 } from '../../../common/types/domain';
+import type { CasesActivityV2WriterContract } from '../../cases_analytics_v2';
 import type {
   UserActionPersistedAttributes,
   UserActionSavedObjectTransformed,
@@ -183,6 +184,13 @@ export interface ServiceContext {
   savedObjectsSerializer: ISavedObjectsSerializer;
   auditLogger: AuditLogger;
   isCasesAttachmentsEnabled?: boolean;
+  /**
+   * Cases-analytics v2 activity writer. Real implementation when v2 is
+   * enabled, `V2_NOOP_ACTIVITY_WRITER` otherwise — every call site stays
+   * unconditional (no `if (writer)` guards). Captured at factory time so
+   * the user-actions service is oblivious to v2's start lifecycle.
+   */
+  analyticsV2ActivityWriter: CasesActivityV2WriterContract;
 }
 
 export interface PushTimeFrameInfo {
