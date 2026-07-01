@@ -9,7 +9,7 @@
 
 import { existsSync, readFileSync } from 'fs';
 import { resolve } from 'path';
-import { load } from 'js-yaml';
+import { parse } from 'yaml';
 
 export interface TerraformApi {
   path: string;
@@ -33,7 +33,7 @@ export const loadTerraformApis = (configPath?: string): TerraformApi[] => {
 
   try {
     const content = readFileSync(path, 'utf-8');
-    const config = load(content) as TerraformApisConfig;
+    const config = parse(content) as TerraformApisConfig;
     return config?.terraform_provider_apis ?? [];
   } catch {
     return [];

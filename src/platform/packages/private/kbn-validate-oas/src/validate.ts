@@ -9,7 +9,7 @@
 import Fs from 'node:fs';
 import Path from 'node:path';
 import { REPO_ROOT } from '@kbn/repo-info';
-import { JSON_SCHEMA, load } from 'js-yaml';
+import { parse } from 'yaml';
 import addFormats from 'ajv-formats';
 import Ajv, { type ErrorObject } from 'ajv-draft-04';
 import { checkRefs } from './resolve';
@@ -17,9 +17,9 @@ import { checkRefs } from './resolve';
 export const OAS_3_0_SCHEMA_PATH = Path.resolve(__dirname, './schema.json');
 
 export function validate(relativePathToYaml: string): { valid: boolean; errors?: ErrorObject[] } {
-  const yaml = load(
+  const yaml = parse(
     Fs.readFileSync(Path.resolve(REPO_ROOT, relativePathToYaml)).toString('utf-8'),
-    { schema: JSON_SCHEMA }
+    { schema: 'core' }
   );
   const schema = JSON.parse(Fs.readFileSync(OAS_3_0_SCHEMA_PATH, 'utf-8'));
   const ajv = new Ajv({ strict: false, allErrors: true });

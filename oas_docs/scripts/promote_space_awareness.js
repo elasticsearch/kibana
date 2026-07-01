@@ -11,7 +11,7 @@ require('@kbn/setup-node-env');
 const path = require('node:path');
 const fs = require('node:fs');
 const { run } = require('@kbn/dev-cli-runner');
-const yaml = require('js-yaml');
+const { Document, parse, isScalar, visit } = require('yaml');
 const { REPO_ROOT } = require('@kbn/repo-info');
 
 const NON_SPACE_PATH_PREFIXES = [
@@ -53,7 +53,7 @@ run(
   async ({ log, flagsReader }) => {
     const [relativeFilePath] = flagsReader.getPositionals();
     const absPath = path.resolve(REPO_ROOT, relativeFilePath);
-    const oasDoc = yaml.load(fs.readFileSync(absPath, 'utf8'));
+    const oasDoc = parse(fs.readFileSync(absPath, 'utf8'));
 
     for (const [_pathName, pathValue] of Object.entries(oasDoc.paths)) {
       const pathName = _pathName.trim();
@@ -77,7 +77,27 @@ run(
     }
 
     log.info(`Writing file with spaces promoted to ${absPath}`);
-    fs.writeFileSync(absPath, yaml.dump(oasDoc, { noRefs: true, lineWidth: -1 }), 'utf8');
+    // Mirror @kbn/openapi-bundler's write_yaml_document.ts serialization so the final
+    // output keeps js-yaml's style: single quotes, yaml-1.1 date/boolean quoting, and
+    // literal blocks for multi-line code samples. Key sorting is intentionally omitted
+    // to preserve the upstream (redocly) ordering. See https://github.com/elastic/kibana/pull/252348
+    // Disable YAML anchors/aliases for human readability.
+    const doc = new Document(oasDoc, { aliasDuplicateObjects: false, schema: 'yaml-1.1' });
+    visit(doc, {
+      Pair(_key, node) {
+        // Preserve exact formatting of multi-line code samples (x-codeSamples `source`).
+        if (
+          isScalar(node.key) &&
+          node.key.value === 'source' &&
+          isScalar(node.value) &&
+          typeof node.value.value === 'string' &&
+          node.value.value.includes('\n')
+        ) {
+          node.value.type = 'BLOCK_LITERAL';
+        }
+      },
+    });
+    fs.writeFileSync(absPath, doc.toString({ singleQuote: true, lineWidth: -1 }), 'utf8');
   },
   {
     description: 'Promote space awareness in OAS documents',

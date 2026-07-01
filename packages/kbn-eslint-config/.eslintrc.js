@@ -28,8 +28,6 @@ const { USES_STYLED_COMPONENTS } = require('@kbn/babel-preset/styled_components_
  */
 const JS_YAML_LEGACY_CONSUMERS = [
   /^\.buildkite[\/\\]/,
-  /^oas_docs[\/\\]scripts[\/\\]/,
-  /^packages[\/\\]kbn-api-contracts[\/\\]/,
   /^packages[\/\\]kbn-docs-utils[\/\\]/,
   /^packages[\/\\]kbn-moon[\/\\]/,
   /^packages[\/\\]kbn-optimizer[\/\\]/,
@@ -38,10 +36,7 @@ const JS_YAML_LEGACY_CONSUMERS = [
   /^src[\/\\]cli[\/\\]/,
   /^src[\/\\]dev[\/\\]/,
   /^src[\/\\]platform[\/\\]kbn-ui[\/\\]_tooling[\/\\]/,
-  /^src[\/\\]platform[\/\\]packages[\/\\]private[\/\\]kbn-apm-config-loader[\/\\]/,
   /^src[\/\\]platform[\/\\]packages[\/\\]private[\/\\]kbn-gen-ai-functional-testing[\/\\]/,
-  /^src[\/\\]platform[\/\\]packages[\/\\]private[\/\\]kbn-validate-oas[\/\\]/,
-  /^src[\/\\]platform[\/\\]packages[\/\\]shared[\/\\]kbn-config[\/\\]src[\/\\]raw[\/\\]/,
   /^src[\/\\]platform[\/\\]packages[\/\\]shared[\/\\]kbn-connector-cli[\/\\]/,
   /^src[\/\\]platform[\/\\]packages[\/\\]shared[\/\\]kbn-edot-collector[\/\\]/,
   /^src[\/\\]platform[\/\\]packages[\/\\]shared[\/\\]kbn-es[\/\\]/,
@@ -52,7 +47,6 @@ const JS_YAML_LEGACY_CONSUMERS = [
   /^src[\/\\]platform[\/\\]packages[\/\\]shared[\/\\]kbn-synthtrace[\/\\]src[\/\\]cli[\/\\]/,
   /^src[\/\\]platform[\/\\]packages[\/\\]shared[\/\\]kbn-test[\/\\]src[\/\\]functional_test_runner[\/\\]/,
   /^src[\/\\]platform[\/\\]plugins[\/\\]private[\/\\]interactive_setup[\/\\]server[\/\\]/,
-  /^src[\/\\]platform[\/\\]plugins[\/\\]shared[\/\\]telemetry[\/\\]server[\/\\]collectors[\/\\]/,
   /^x-pack[\/\\]packages[\/\\]kbn-synthetics-private-location[\/\\]/,
   /^x-pack[\/\\]platform[\/\\]packages[\/\\]shared[\/\\]kbn-data-forge[\/\\]/,
   /^x-pack[\/\\]platform[\/\\]packages[\/\\]shared[\/\\]kbn-evals[\/\\]/,

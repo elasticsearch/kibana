@@ -8,7 +8,7 @@
  */
 
 import { readFileSync } from 'fs';
-import { load } from 'js-yaml';
+import { parse } from 'yaml';
 
 import { set } from '@kbn/safer-lodash-set';
 import { ensureDeepObject } from '@kbn/std';
@@ -16,7 +16,7 @@ import { isPlainObject } from 'lodash';
 
 const readYaml = (path: string) => {
   try {
-    return load(readFileSync(path, 'utf8'));
+    return parse(readFileSync(path, 'utf8'), { version: '1.1' });
   } catch (e) {
     /* tslint:disable:no-empty */
   }

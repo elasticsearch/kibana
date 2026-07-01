@@ -9,7 +9,7 @@
 
 import { resolve } from 'path';
 import { writeFileSync, unlinkSync, mkdirSync, rmdirSync } from 'fs';
-import { dump } from 'js-yaml';
+import { stringify } from 'yaml';
 import { checkTerraformImpact } from './check_terraform_impact';
 import type { BreakingChange } from '../diff/breaking_rules';
 
@@ -42,7 +42,7 @@ describe('check_terraform_impact', () => {
 
   beforeAll(() => {
     mkdirSync(testDir, { recursive: true });
-    writeFileSync(testConfigPath, dump(testConfig));
+    writeFileSync(testConfigPath, stringify(testConfig));
   });
 
   afterAll(() => {

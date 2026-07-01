@@ -8,7 +8,7 @@
  */
 
 import { readFile } from 'fs/promises';
-import { load } from 'js-yaml';
+import { parse } from 'yaml';
 
 export interface OpenAPISpec {
   openapi: string;
@@ -20,7 +20,7 @@ export interface OpenAPISpec {
 
 export async function loadOas(filePath: string): Promise<OpenAPISpec> {
   const fileContent = await readFile(filePath, 'utf-8');
-  const spec = load(fileContent) as OpenAPISpec;
+  const spec = parse(fileContent) as OpenAPISpec;
 
   if (!spec.openapi) {
     throw new Error(`Invalid OpenAPI spec at ${filePath}: missing "openapi" field`);

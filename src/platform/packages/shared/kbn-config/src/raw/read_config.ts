@@ -8,13 +8,13 @@
  */
 
 import { readFileSync } from 'fs';
-import { load } from 'js-yaml';
+import { parse } from 'yaml';
 import { set } from '@kbn/safer-lodash-set';
 import { isPlainObject } from 'lodash';
 import { ensureValidObjectPath } from '@kbn/std';
 import { splitKey, getUnsplittableKey, replaceEnvVarRefs } from './utils';
 
-const readYaml = (path: string) => load(readFileSync(path, 'utf8'));
+const readYaml = (path: string) => parse(readFileSync(path, 'utf8'), { version: '1.1' });
 
 interface YamlEntry {
   path: string[];
