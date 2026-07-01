@@ -1809,32 +1809,37 @@ class PackagePolicyClientImpl implements PackagePolicyClient {
 
     await this.compilePackagePolicyForVersions(soClient, pkgInfo, assetsMap, newPolicy);
 
-    // Bump revision of all associated agent policies (old and new)
+    // Bump revision of all associated agent policies (old and new), unless the
+    // caller opted out via `bumpRevision: false` (e.g. silent updates that must
+    // not trigger agent policy redeployments).
     const associatedPolicyIds = new Set([...oldPackagePolicy.policy_ids, ...newPolicy.policy_ids]);
-    logger.debug(`Bumping revision of associated agent policies ${associatedPolicyIds}`);
-
-    const bumpPromise = this.bumpAgentPoliciesRevision(
-      { soClient, esClient },
-      [...associatedPolicyIds],
-      {
-        user: options?.user,
-        removeProtectionFn: (policyId) => {
-          const isEndpointPolicy = newPolicy.package?.name === 'endpoint';
-
-          if (!isEndpointPolicy) {
-            return undefined;
-          }
-
-          const assignedInOldPolicy = oldPackagePolicy.policy_ids.includes(policyId);
-          const assignedInNewPolicy = newPolicy.policy_ids.includes(policyId);
-
-          return (
-            (assignedInOldPolicy && !assignedInNewPolicy) ||
-            (!assignedInOldPolicy && assignedInNewPolicy)
-          );
-        },
-      }
+    const shouldBumpAgentPolicies = options?.bumpRevision ?? true;
+    logger.debug(
+      `${
+        shouldBumpAgentPolicies ? 'Bumping' : 'Skipping revision bump of'
+      } associated agent policies ${[...associatedPolicyIds]}`
     );
+
+    const bumpPromise = shouldBumpAgentPolicies
+      ? this.bumpAgentPoliciesRevision({ soClient, esClient }, [...associatedPolicyIds], {
+          user: options?.user,
+          removeProtectionFn: (policyId) => {
+            const isEndpointPolicy = newPolicy.package?.name === 'endpoint';
+
+            if (!isEndpointPolicy) {
+              return undefined;
+            }
+
+            const assignedInOldPolicy = oldPackagePolicy.policy_ids.includes(policyId);
+            const assignedInNewPolicy = newPolicy.policy_ids.includes(policyId);
+
+            return (
+              (assignedInOldPolicy && !assignedInNewPolicy) ||
+              (!assignedInOldPolicy && assignedInNewPolicy)
+            );
+          },
+        })
+      : Promise.resolve();
 
     const assetRemovePromise = removeOldAssets({
       soClient,

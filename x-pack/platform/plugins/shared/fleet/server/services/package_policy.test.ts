@@ -4357,6 +4357,108 @@ describe('Package policy service', () => {
         ).rejects.toThrowError(/Input tcp in test is not allowed for deployment mode 'agentless'/);
       });
     });
+
+    describe('bumpRevision option', () => {
+      beforeEach(() => {
+        mockAgentPolicyService.bumpRevision.mockReset();
+        jest.mocked(licenseService.hasAtLeast).mockReturnValue(true);
+      });
+
+      const generateAttributes = (overrides: Record<string, unknown> = {}) => ({
+        name: 'test-package-policy',
+        description: '',
+        namespace: 'default',
+        enabled: true,
+        revision: 1,
+        policy_ids: ['test-agent-policy-1', 'test-agent-policy-2'],
+        package: {
+          name: 'test',
+          title: 'Test',
+          version: '0.9.0',
+        },
+        inputs: [],
+        ...overrides,
+      });
+
+      const generateSO = (overrides: Record<string, unknown> = {}) => ({
+        id: 'existing-package-policy',
+        type: 'ingest-package-policies',
+        references: [],
+        version: '1.0.0',
+        attributes: generateAttributes(overrides),
+      });
+
+      const policyIds = ['test-agent-policy-1', 'test-agent-policy-2'];
+
+      const setupSOClientMocks = (
+        savedObjectsClient: ReturnType<typeof savedObjectsClientMock.create>
+      ) => {
+        savedObjectsClient.bulkGet.mockResolvedValue({
+          saved_objects: [generateSO({ policy_ids: policyIds })],
+        });
+        savedObjectsClient.get.mockResolvedValue(generateSO({ policy_ids: policyIds }));
+        savedObjectsClient.update.mockResolvedValue(generateSO({ policy_ids: policyIds }));
+      };
+
+      const callUpdate = async (
+        savedObjectsClient: ReturnType<typeof savedObjectsClientMock.create>,
+        elasticsearchClient: ElasticsearchClientMock,
+        options?: { bumpRevision?: boolean }
+      ) => {
+        await packagePolicyService.update(
+          savedObjectsClient,
+          elasticsearchClient,
+          generateSO().id,
+          generateAttributes({ policy_ids: policyIds }),
+          options
+        );
+      };
+
+      it('bumps associated agent policy revisions by default', async () => {
+        const savedObjectsClient = createSavedObjectClientMock();
+        const elasticsearchClient = elasticsearchServiceMock.createClusterClient().asInternalUser;
+        setupSOClientMocks(savedObjectsClient);
+
+        await callUpdate(savedObjectsClient, elasticsearchClient);
+
+        expect(mockAgentPolicyService.bumpRevision).toHaveBeenCalledTimes(policyIds.length);
+      });
+
+      it('bumps associated agent policy revisions when bumpRevision is true', async () => {
+        const savedObjectsClient = createSavedObjectClientMock();
+        const elasticsearchClient = elasticsearchServiceMock.createClusterClient().asInternalUser;
+        setupSOClientMocks(savedObjectsClient);
+
+        await callUpdate(savedObjectsClient, elasticsearchClient, { bumpRevision: true });
+
+        expect(mockAgentPolicyService.bumpRevision).toHaveBeenCalledTimes(policyIds.length);
+      });
+
+      it('does not bump associated agent policy revisions when bumpRevision is false', async () => {
+        const savedObjectsClient = createSavedObjectClientMock();
+        const elasticsearchClient = elasticsearchServiceMock.createClusterClient().asInternalUser;
+        setupSOClientMocks(savedObjectsClient);
+
+        await callUpdate(savedObjectsClient, elasticsearchClient, { bumpRevision: false });
+
+        expect(mockAgentPolicyService.bumpRevision).not.toHaveBeenCalled();
+      });
+
+      it('still bumps the package policy own revision when bumpRevision is false', async () => {
+        const savedObjectsClient = createSavedObjectClientMock();
+        const elasticsearchClient = elasticsearchServiceMock.createClusterClient().asInternalUser;
+        setupSOClientMocks(savedObjectsClient);
+
+        await callUpdate(savedObjectsClient, elasticsearchClient, { bumpRevision: false });
+
+        expect(savedObjectsClient.update).toHaveBeenCalledWith(
+          expect.anything(),
+          generateSO().id,
+          expect.objectContaining({ revision: 2 }),
+          expect.anything()
+        );
+      });
+    });
   });
 
   describe('bulkUpdate', () => {
