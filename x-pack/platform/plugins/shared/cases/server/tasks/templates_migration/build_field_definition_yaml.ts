@@ -52,8 +52,12 @@ export const buildFieldDefinitionYaml = (
       }
     }
   } else if (type === CustomFieldTypes.TOGGLE) {
+    // A legacy toggle is a boolean. v2 has no native boolean/switch control, so we map it to a
+    // radio group with true/false options — the EUI-appropriate control for two mutually exclusive
+    // values (a dropdown is an anti-pattern for a boolean). The option/default values stay the
+    // string "true"/"false", matching how toggle values are migrated onto templates.
     fieldDef.type = 'keyword';
-    fieldDef.control = FieldType.SELECT_BASIC;
+    fieldDef.control = FieldType.RADIO_GROUP;
     fieldDef.metadata =
       defaultValue !== null && defaultValue !== undefined
         ? { options: ['true', 'false'], default: String(defaultValue) }

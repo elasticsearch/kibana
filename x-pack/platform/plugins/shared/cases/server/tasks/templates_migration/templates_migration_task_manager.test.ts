@@ -5,6 +5,7 @@
  * 2.0.
  */
 
+import { parse as parseYaml } from 'yaml';
 import type { CoreStart } from '@kbn/core/server';
 import { loggingSystemMock } from '@kbn/core/server/mocks';
 import type { TaskManagerStartContract, RunContext } from '@kbn/task-manager-plugin/server';
@@ -75,12 +76,16 @@ const buildConfigureSO = (
   },
 });
 
-const buildLegacyCustomField = (key: string, type = CustomFieldTypes.TEXT) => ({
+const buildLegacyCustomField = (
+  key: string,
+  type = CustomFieldTypes.TEXT,
+  defaultValue: string | number | boolean | null = null
+) => ({
   key,
   label: `Label for ${key}`,
   type,
   required: false,
-  defaultValue: null,
+  defaultValue,
 });
 
 const buildLegacyTemplate = (name: string, customFieldKeys: string[] = []) => ({
@@ -239,6 +244,71 @@ describe('TemplatesMigrationTaskManager', () => {
         { legacyTemplatesMigrated: true, legacyCustomFieldsMigrated: true },
         expect.anything()
       );
+    });
+
+    it('migrates custom-field default values into the stored field definitions', async () => {
+      // Regression guard for the reported "default values were not migrated" concern: exercise the
+      // full task path (not just the builder) and assert the persisted field-definition YAML
+      // preserves each v1 type's default.
+      const configSO = buildConfigureSO({
+        customFields: [
+          buildLegacyCustomField('cf_text', CustomFieldTypes.TEXT, 'hello'),
+          buildLegacyCustomField('cf_num', CustomFieldTypes.NUMBER, 42),
+          buildLegacyCustomField('cf_toggle', CustomFieldTypes.TOGGLE, true),
+        ],
+        templates: [],
+      });
+
+      repo.find
+        .mockResolvedValueOnce({ saved_objects: [configSO], total: 1 })
+        .mockResolvedValueOnce({ saved_objects: [], total: 0 });
+
+      const manager = await buildAndSchedule();
+      await getTaskRunner(manager).run();
+
+      const fieldDefByName = new Map(
+        repo.create.mock.calls
+          .filter((c) => c[0] === CASE_FIELD_DEFINITION_SAVED_OBJECT)
+          .map((c) => [c[1].name, parseYaml(c[1].definition) as Record<string, unknown>])
+      );
+
+      const textDef = fieldDefByName.get('cf_text') as { metadata?: { default?: unknown } };
+      const numDef = fieldDefByName.get('cf_num') as { metadata?: { default?: unknown } };
+      const toggleDef = fieldDefByName.get('cf_toggle') as {
+        control?: string;
+        metadata?: { default?: unknown };
+      };
+
+      expect(textDef.metadata?.default).toBe('hello');
+      expect(numDef.metadata?.default).toBe(42);
+      expect(toggleDef.control).toBe('RADIO_GROUP');
+      expect(toggleDef.metadata?.default).toBe('true');
+    });
+
+    it('emits a single aggregate summary log line instead of one per configure SO', async () => {
+      // Regression guard for the "overly verbose logging" concern. Three spaces are migrated but
+      // only ONE summary INFO line should be produced for the run; per-SO detail is at debug.
+      const configs = [
+        buildConfigureSO({ id: 'c1', customFields: [buildLegacyCustomField('a')] }),
+        buildConfigureSO({ id: 'c2', customFields: [buildLegacyCustomField('b')] }),
+        buildConfigureSO({ id: 'c3', customFields: [buildLegacyCustomField('c')] }),
+      ];
+      // First find returns the configure list; all later per-SO finds use the default empty mock.
+      repo.find.mockResolvedValueOnce({ saved_objects: configs, total: 3 });
+
+      const manager = await buildAndSchedule();
+      logger.info.mockClear();
+      await getTaskRunner(manager).run();
+
+      const infoMessages = logger.info.mock.calls.map((c) => String(c[0]));
+      const summaryLines = infoMessages.filter((m) =>
+        m.includes('Cases templates v2 migration complete')
+      );
+      const perSoInfoLines = infoMessages.filter((m) => m.includes('Migrated configure SO'));
+
+      expect(summaryLines).toHaveLength(1);
+      expect(perSoInfoLines).toHaveLength(0);
+      expect(summaryLines[0]).toContain('migrated=3');
     });
 
     it('sets isGlobal: true on every migrated field definition', async () => {

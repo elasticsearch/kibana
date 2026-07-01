@@ -8,7 +8,7 @@
 import { parse as parseYaml } from 'yaml';
 import { buildFieldDefinitionYaml } from './build_field_definition_yaml';
 import { CustomFieldTypes } from '../../../common/types/domain/custom_field/v1';
-import { FieldType } from '../../../common/types/domain/template/fields';
+import { FieldType, FieldSchema } from '../../../common/types/domain/template/fields';
 
 interface YamlField {
   name: string;
@@ -150,7 +150,7 @@ describe('buildFieldDefinitionYaml', () => {
   });
 
   describe('TOGGLE custom field', () => {
-    it('maps to keyword / SELECT_BASIC with true/false options', () => {
+    it('maps to keyword / RADIO_GROUP with true/false options', () => {
       const { yaml } = buildFieldDefinitionYaml({
         key: 'cf_toggle',
         label: 'Toggle Field',
@@ -159,8 +159,22 @@ describe('buildFieldDefinitionYaml', () => {
       });
       const parsed = parse(yaml);
       expect(parsed.type).toBe('keyword');
-      expect(parsed.control).toBe(FieldType.SELECT_BASIC);
+      // A legacy boolean toggle maps to a radio group (not a dropdown) — the EUI-appropriate
+      // control for two mutually exclusive values.
+      expect(parsed.control).toBe(FieldType.RADIO_GROUP);
       expect(parsed.metadata?.options).toEqual(['true', 'false']);
+    });
+
+    it('produces a definition that validates as a RADIO_GROUP field', () => {
+      const { yaml } = buildFieldDefinitionYaml({
+        key: 'cf_toggle',
+        label: 'Toggle Field',
+        type: CustomFieldTypes.TOGGLE,
+        required: false,
+        defaultValue: true,
+      });
+      const result = FieldSchema.safeParse(parse(yaml));
+      expect(result.success).toBe(true);
     });
 
     it('includes default when defaultValue is true', () => {
@@ -211,5 +225,32 @@ describe('buildFieldDefinitionYaml', () => {
       expect(parsed.type).toBe('keyword');
       expect(parsed.control).toBe(FieldType.INPUT_TEXT);
     });
+  });
+
+  // Guards the reported "default values were not migrated" concern: every v1 field type must carry
+  // its default into the generated field definition AND produce a schema-valid definition.
+  describe('default value fidelity across all v1 types', () => {
+    const scenarios = [
+      { type: CustomFieldTypes.TEXT, defaultValue: 'hello', expected: 'hello' },
+      { type: CustomFieldTypes.NUMBER, defaultValue: 42, expected: 42 },
+      { type: CustomFieldTypes.TOGGLE, defaultValue: true, expected: 'true' },
+      { type: CustomFieldTypes.TOGGLE, defaultValue: false, expected: 'false' },
+    ];
+
+    it.each(scenarios)(
+      'migrates the default for a $type field and stays schema-valid',
+      ({ type, defaultValue, expected }) => {
+        const { yaml } = buildFieldDefinitionYaml({
+          key: `cf_${type}`,
+          label: `Field ${type}`,
+          type,
+          required: false,
+          defaultValue,
+        });
+        const parsed = parse(yaml);
+        expect(parsed.metadata?.default).toBe(expected);
+        expect(FieldSchema.safeParse(parsed).success).toBe(true);
+      }
+    );
   });
 });

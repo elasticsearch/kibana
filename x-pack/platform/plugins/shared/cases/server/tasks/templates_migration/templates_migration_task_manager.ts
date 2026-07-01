@@ -37,6 +37,13 @@ const MAX_CONCURRENT_MIGRATIONS = 3;
 type LegacyCustomField = NonNullable<ConfigurationPersistedAttributes['customFields']>[number];
 type LegacyTemplate = NonNullable<ConfigurationPersistedAttributes['templates']>[number];
 
+interface MigrationCounts {
+  fieldDefsCreated: number;
+  fieldDefsReused: number;
+  templatesCreated: number;
+  templatesReused: number;
+}
+
 export class TemplatesMigrationTaskManager {
   private readonly logger: Logger;
   private internalRepo?: ISavedObjectsRepository;
@@ -72,12 +79,24 @@ export class TemplatesMigrationTaskManager {
           return {
             run: async () => {
               const executionId = uuidv4();
-              log.info(`[${executionId}] Starting cases templates v2 migration`);
+              log.debug(`[${executionId}] Starting cases templates v2 migration`);
 
               const configures = await this.findAllConfigurations(repo, executionId);
-              log.info(
+              log.debug(
                 `[${executionId}] Found ${configures.length} cases-configure SOs to inspect`
               );
+
+              // Aggregate counters so the whole run produces a single summary INFO line instead of
+              // one per space — keeping the server logs readable on large multi-space deployments.
+              const totals = {
+                skipped: 0,
+                migrated: 0,
+                errored: 0,
+                fieldDefsCreated: 0,
+                fieldDefsReused: 0,
+                templatesCreated: 0,
+                templatesReused: 0,
+              };
 
               await pMap(
                 configures,
@@ -89,6 +108,7 @@ export class TemplatesMigrationTaskManager {
                     log.debug(
                       `[${executionId}] Skipping already-migrated configure SO ${so.id} (owner: ${so.attributes.owner})`
                     );
+                    totals.skipped++;
                     this.migrationUsageCounter?.incrementCounter({
                       counterName: 'configureMigrationSkipped',
                       incrementBy: 1,
@@ -97,12 +117,19 @@ export class TemplatesMigrationTaskManager {
                   }
 
                   try {
-                    await this.migrateOneConfigure(repo, so, executionId, log);
+                    const counts = await this.migrateOneConfigure(repo, so, executionId, log);
+                    totals.migrated++;
+                    totals.fieldDefsCreated += counts.fieldDefsCreated;
+                    totals.fieldDefsReused += counts.fieldDefsReused;
+                    totals.templatesCreated += counts.templatesCreated;
+                    totals.templatesReused += counts.templatesReused;
                     this.migrationUsageCounter?.incrementCounter({
                       counterName: 'configureMigrationSuccess',
                       incrementBy: 1,
                     });
                   } catch (err) {
+                    totals.errored++;
+                    // Per-SO failures stay at error level — they are rare and actionable.
                     log.error(
                       `[${executionId}] Migration failed for configure SO ${so.id} (owner: ${
                         so.attributes.owner
@@ -117,7 +144,13 @@ export class TemplatesMigrationTaskManager {
                 { concurrency: MAX_CONCURRENT_MIGRATIONS }
               );
 
-              log.info(`[${executionId}] Cases templates v2 migration task complete`);
+              log.info(
+                `[${executionId}] Cases templates v2 migration complete: ` +
+                  `${configures.length} configure SOs inspected ` +
+                  `(migrated=${totals.migrated}, skipped=${totals.skipped}, errored=${totals.errored}); ` +
+                  `field definitions created=${totals.fieldDefsCreated}, reused=${totals.fieldDefsReused}; ` +
+                  `templates created=${totals.templatesCreated}, reused=${totals.templatesReused}`
+              );
             },
 
             cancel: async () => {
@@ -371,7 +404,7 @@ export class TemplatesMigrationTaskManager {
     so: SavedObject<ConfigurationPersistedAttributes>,
     executionId: string,
     log: Logger
-  ): Promise<void> {
+  ): Promise<MigrationCounts> {
     const { id: configureId, attributes, namespaces } = so;
     const {
       owner,
@@ -454,10 +487,14 @@ export class TemplatesMigrationTaskManager {
       );
     }
 
-    log.info(
+    // Per-SO detail is logged at debug only — the run() loop aggregates these into a single
+    // summary INFO line so a deployment with many spaces doesn't flood the logs.
+    log.debug(
       `[${executionId}] Migrated configure SO ${configureId} (owner: ${owner}, namespace: ${namespace}): ` +
         `fieldDefsCreated=${fieldDefsCreated}, fieldDefsReused=${fieldDefsReused}, ` +
         `templatesCreated=${templatesCreated}, templatesReused=${templatesReused}`
     );
+
+    return { fieldDefsCreated, fieldDefsReused, templatesCreated, templatesReused };
   }
 }
