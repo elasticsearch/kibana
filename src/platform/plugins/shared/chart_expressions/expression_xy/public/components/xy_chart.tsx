@@ -97,6 +97,7 @@ import {
   validateExtent,
   getOriginalAxisPosition,
   getDecimalsFromFormat,
+  normalizeSharedDurationAxes,
 } from '../helpers';
 import { getXDomain, XyEndzones } from './x_domain';
 import { getLegendAction } from './legend_action';
@@ -312,7 +313,13 @@ export function XYChart({
     [renderComplete]
   );
 
-  const dataLayers: CommonXYDataLayerConfig[] = filteredLayers.filter(isDataLayer);
+  // When several duration metrics share an axis with different input units, normalize the
+  // others into the topmost series' unit so the single axis formatter renders them correctly.
+  // This is a no-op (returns the same layers) unless such a mix is present.
+  const dataLayers: CommonXYDataLayerConfig[] = normalizeSharedDurationAxes(
+    filteredLayers.filter(isDataLayer),
+    yAxisConfigs
+  );
 
   const isTimeViz = isTimeChart(dataLayers);
 

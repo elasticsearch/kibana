@@ -22,6 +22,7 @@ export {
   BytesFormat,
   ColorFormat,
   DurationFormat,
+  convertDurationValue,
   GeoPointFormat,
   IpFormat,
   NumberFormat,

@@ -13,6 +13,7 @@ export * from './state';
 export * from './visualization';
 export * from './fitting_functions';
 export * from './axes_configuration';
+export * from './normalize_duration_axes';
 export * from './validate_extent';
 export * from './icon';
 export * from './color_assignment';

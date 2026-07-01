@@ -1906,6 +1906,92 @@ describe('XYChart component', () => {
       expect(axes).toHaveLength(2);
     });
 
+    test('normalizes duration metrics across layers to the first layer unit', () => {
+      // The first data layer (topmost in the layer list) defines the shared axis unit; metrics
+      // from later layers are converted into it, so layer-order priority matches single-layer
+      // (first metric) priority.
+      const durationFormat = (inputFormat: string) => ({
+        id: 'duration',
+        params: { inputFormat, outputFormat: 'humanize' },
+      });
+      const mkLayer = (
+        layerId: string,
+        accessor: string,
+        inputFormat: string
+      ): DataLayerConfig => ({
+        ...layer,
+        layerId,
+        accessors: [accessor],
+        table: {
+          ...dataWithoutFormats,
+          columns: dataWithoutFormats.columns.map((col) =>
+            col.id === accessor
+              ? { ...col, meta: { ...col.meta, params: durationFormat(inputFormat) } }
+              : col
+          ),
+          rows: [{ a: 1, b: 1000, c: 'I', d: 'Row 1' }],
+        },
+      });
+      const newArgs: XYProps = {
+        ...args,
+        layers: [mkLayer('first', 'a', 'seconds'), mkLayer('second', 'b', 'milliseconds')],
+      };
+      const component = getRenderedComponent(newArgs);
+      const lineSeries = component.find(DataLayers).dive().find(LineSeries);
+
+      // first layer (seconds) is the reference and stays 1; second layer's 1000ms -> 1 second
+      const firstLayerRow = lineSeries.at(0).prop('data')[0] as Record<string, unknown>;
+      const secondLayerRow = lineSeries.at(1).prop('data')[0] as Record<string, unknown>;
+      expect(lineSeries.at(0).prop('yAccessors')).toEqual(['a']);
+      expect(lineSeries.at(1).prop('yAccessors')).toEqual(['b']);
+      expect(firstLayerRow.a).toBe(1);
+      expect(secondLayerRow.b).toBe(1);
+    });
+
+    test('normalizes duration metrics with different input units onto a shared axis', () => {
+      // Regression test for https://github.com/elastic/kibana/issues/240105: foo_ms (1000ms)
+      // and foo_s (1s) both represent 1 second. They share one axis, and the second series'
+      // values are converted into the first series' unit so both render at the same level.
+      const durationFormat = (inputFormat: string) => ({
+        id: 'duration',
+        params: { inputFormat, outputFormat: 'humanize' },
+      });
+      const newArgs: XYProps = {
+        ...args,
+        layers: [
+          {
+            ...layer,
+            accessors: ['a', 'b'],
+            table: {
+              ...dataWithoutFormats,
+              columns: dataWithoutFormats.columns.map((col) => {
+                if (col.id === 'a')
+                  return { ...col, meta: { ...col.meta, params: durationFormat('seconds') } };
+                if (col.id === 'b')
+                  return { ...col, meta: { ...col.meta, params: durationFormat('milliseconds') } };
+                return col;
+              }),
+              rows: [{ a: 1, b: 1000, c: 'I', d: 'Row 1' }],
+            },
+          },
+        ],
+      };
+
+      const component = getRenderedComponent(newArgs);
+
+      // a single shared y-axis (plus the x-axis)
+      expect(component.find(Axis)).toHaveLength(2);
+
+      const lineSeries = component.find(DataLayers).dive().find(LineSeries);
+      expect(lineSeries.at(0).prop('yAccessors')).toEqual(['a']);
+      expect(lineSeries.at(1).prop('yAccessors')).toEqual(['b']);
+      // foo_s stays 1; foo_ms 1000ms is normalized to 1 (second) so both plot at the same level
+      const seriesARow = lineSeries.at(0).prop('data')[0] as Record<string, unknown>;
+      const seriesBRow = lineSeries.at(1).prop('data')[0] as Record<string, unknown>;
+      expect(seriesARow.a).toBe(1);
+      expect(seriesBRow.b).toBe(1);
+    });
+
     test('multiple axes because of config', () => {
       const newArgs: XYProps = {
         ...args,
