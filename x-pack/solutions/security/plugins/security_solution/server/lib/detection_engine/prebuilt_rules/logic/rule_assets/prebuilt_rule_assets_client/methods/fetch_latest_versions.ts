@@ -23,6 +23,7 @@ import {
   getPrebuiltRuleAssetSoId,
   getPrebuiltRuleAssetsSearchNamespace,
 } from '../utils';
+import { fetchDeprecatedRules } from './fetch_deprecated_rules';
 
 /**
  * Fetches the BasicRuleInfo for prebuilt rule assets: rule_id, version and type.
@@ -71,6 +72,16 @@ async function fetchLatestVersionSpecifiers(
   ruleIds?: string[],
   filter?: string
 ) {
+  /**
+   * Fetches deprecated rule assets in order to filter out all versions of the deprecated rules
+   * in the latest version query. Since we fetch the most recent version of the asset, if we filter
+   * out assets using the `type` field, the query would still return the deprecated asset, just one
+   * version older. This filter ensures all rule assets fetched will not contain any rule ids that
+   * have been labeled as deprecated.
+   */
+  const deprecatedRuleAssets = await fetchDeprecatedRules(savedObjectsClient, ruleIds);
+  const deprecatedRuleIds = deprecatedRuleAssets.map((asset) => asset.rule_id);
+
   const latestVersionSpecifiersResult = await savedObjectsClient.search<
     SavedObjectsRawDocSource,
     {
@@ -88,9 +99,7 @@ async function fetchLatestVersionSpecifiers(
     _source: false,
     size: 0,
     query: {
-      bool: {
-        filter: prepareQueryDslFilter(ruleIds, filter),
-      },
+      bool: prepareQueryDslFilter({ ruleIds, excludeRuleIds: deprecatedRuleIds, filter }),
     },
     aggs: {
       rules: {
@@ -132,6 +141,7 @@ async function fetchLatestVersionSpecifiers(
     invariant(hitSource, 'fetchLatestVersionSpecifiers: expected hit source to be defined');
 
     const soAttributes = hitSource[PREBUILT_RULE_ASSETS_SO_TYPE];
+
     return {
       rule_id: soAttributes.rule_id,
       version: soAttributes.version,

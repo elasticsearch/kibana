@@ -27,22 +27,29 @@ export const PREBUILT_RULE_ASSETS_RUNTIME_MAPPINGS: MappingRuntimeFields = {
   },
 };
 
-export function prepareQueryDslFilter(ruleIds?: string[], filter?: string): ESFilter[] {
-  const queryFilter: ESFilter[] = [];
-
-  // Exclude deprecated rules by default from all queries that use this filter.
-  // For existing SOs without a `deprecated` field, the term query matches nothing,
-  // so must_not correctly includes them.
-  queryFilter.push({
-    bool: {
-      must_not: {
-        term: { [`${PREBUILT_RULE_ASSETS_SO_TYPE}.deprecated`]: true },
-      },
-    },
-  });
+/**
+ * Builds the filter clauses for prebuilt rule
+ * asset searches.
+ *
+ * @ruleIds restrict the search to those rule_ids
+ * @filter the caller's KQL filter
+ * @excludeRuleIds rule_ids that must be excluded entirely. Used to
+ * suppress fully-deprecated rule_ids from the latest-version aggregation
+ * the caller is responsible for sourcing the list (typically from `fetchDeprecatedRules`)
+ */
+export function prepareQueryDslFilter({
+  ruleIds,
+  excludeRuleIds,
+  filter,
+}: {
+  ruleIds?: string[];
+  excludeRuleIds?: string[];
+  filter?: string;
+}): { filter: ESFilter[]; must_not?: ESFilter } {
+  const filterClauses: ESFilter[] = [];
 
   if (ruleIds) {
-    queryFilter.push({
+    filterClauses.push({
       terms: {
         [`${PREBUILT_RULE_ASSETS_SO_TYPE}.rule_id`]: ruleIds,
       },
@@ -52,14 +59,25 @@ export function prepareQueryDslFilter(ruleIds?: string[], filter?: string): ESFi
   if (filter) {
     try {
       const kqlDsl = toElasticsearchQuery(fromKueryExpression(filter));
-      queryFilter.push(kqlDsl);
+      filterClauses.push(kqlDsl);
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       throw new Error(`Invalid KQL filter: ${message}`);
     }
   }
 
-  return queryFilter;
+  if (excludeRuleIds && excludeRuleIds.length > 0) {
+    return {
+      filter: filterClauses,
+      must_not: {
+        terms: {
+          [`${PREBUILT_RULE_ASSETS_SO_TYPE}.rule_id`]: excludeRuleIds,
+        },
+      },
+    };
+  }
+
+  return { filter: filterClauses };
 }
 
 export function prepareQueryDslSort(sort?: PrebuiltRuleAssetsSort): Sort | undefined {

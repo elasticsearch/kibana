@@ -319,6 +319,33 @@ export default ({ getService }: FtrProviderContext): void => {
         expect(ruleIds).toContain('rule-a');
         expect(ruleIds).not.toContain('rule-b');
       });
+
+      it('excludes a rule_id from upgrade review when the latest asset is deprecated but an older non-deprecated SO still exists', async () => {
+        // Install rule-a and rule-b at version 1.
+        await createPrebuiltRuleAssetSavedObjects(es, [
+          createRuleAssetSavedObject({ rule_id: 'rule-a', version: 1 }),
+          createRuleAssetSavedObject({ rule_id: 'rule-b', version: 1 }),
+        ]);
+        await installPrebuiltRules(es, supertest);
+
+        await createPrebuiltRuleAssetSavedObjects(es, [
+          createRuleAssetSavedObject({ rule_id: 'rule-a', version: 2 }),
+          createRuleAssetSavedObject({
+            rule_id: 'rule-b',
+            version: 2,
+            name: 'Deprecated - Rule B',
+          }),
+        ]);
+        await createDeprecatedPrebuiltRuleAssetSavedObjects(es, [
+          { rule_id: 'rule-b', version: 3, name: 'Deprecated - Rule B' },
+        ]);
+
+        const response = await reviewPrebuiltRulesToUpgrade(supertest);
+
+        const ruleIds = response.rules.map((r: { rule_id: string }) => r.rule_id);
+        expect(ruleIds).toContain('rule-a');
+        expect(ruleIds).not.toContain('rule-b');
+      });
     });
 
     describe('Granular request shape (filter / search / aggregations / fields / sort)', () => {
