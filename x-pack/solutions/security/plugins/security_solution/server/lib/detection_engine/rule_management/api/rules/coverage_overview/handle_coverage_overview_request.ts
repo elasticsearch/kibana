@@ -18,6 +18,8 @@ import {
 } from '../../../../../../../common/api/detection_engine';
 import type { RuleParams } from '../../../../rule_schema';
 import { findRules } from '../../../logic/search/find_rules';
+import { iterateMitreThreatEntities } from '../../../../../../../common/detection_engine/mitre/iterate_mitre_threat_entities';
+import { findInvalidMitreIds } from '../../../../../../../common/detection_engine/mitre/find_invalid_mitre_ids';
 
 type CoverageOverviewRuleParams = Pick<RuleParams, 'threat'>;
 
@@ -60,6 +62,7 @@ export async function handleCoverageOverviewRequest({
     coverage: {},
     unmapped_rule_ids: [],
     rules_data: {},
+    invalid_mitre_ids: {},
   } as CoverageOverviewResponse);
 }
 
@@ -94,6 +97,11 @@ function appendRuleToResponse(
     response.unmapped_rule_ids.push(rule.id);
   }
 
+  const invalidMitreIds = findInvalidMitreIds(rule.params.threat);
+  if (invalidMitreIds.length > 0) {
+    response.invalid_mitre_ids[rule.id] = invalidMitreIds;
+  }
+
   response.rules_data[rule.id] = {
     name: rule.name,
     activity: rule.enabled
@@ -105,34 +113,14 @@ function appendRuleToResponse(
 }
 
 /**
- * Extracts rule's MITRE ATT&CK™ tactics, techniques and subtechniques
- *
- * @returns an array of MITRE ATT&CK™ tactics, techniques and subtechniques
+ * Extracts a deduplicated list of MITRE ATT&CK™ tactic, technique, and subtechnique IDs
+ * referenced by the rule's threat mappings.
  */
 function extractRuleMitreCategories(rule: SanitizedRule<CoverageOverviewRuleParams>): string[] {
-  if (!rule.params.threat) {
-    return [];
-  }
-
-  // avoid duplications just in case data isn't valid in ES
+  // dedupe in case data isn't valid in ES
   const categories = new Set<string>();
-
-  for (const threatItem of rule.params.threat) {
-    if (threatItem.framework !== 'MITRE ATT&CK') {
-      // eslint-disable-next-line no-continue
-      continue;
-    }
-
-    categories.add(threatItem.tactic.id);
-
-    for (const technique of threatItem.technique ?? []) {
-      categories.add(technique.id);
-
-      for (const subtechnique of technique.subtechnique ?? []) {
-        categories.add(subtechnique.id);
-      }
-    }
+  for (const { id } of iterateMitreThreatEntities(rule.params.threat)) {
+    categories.add(id);
   }
-
   return Array.from(categories);
 }

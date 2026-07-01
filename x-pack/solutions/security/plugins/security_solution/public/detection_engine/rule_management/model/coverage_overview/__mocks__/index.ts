@@ -52,6 +52,10 @@ export const getMockCoverageOverviewDashboard = (): CoverageOverviewDashboard =>
     disabledRules: [],
     availableRules: [],
   },
+  invalidlyMappedRules: {
+    enabledRules: [],
+    disabledRules: [],
+  },
   metrics: {
     totalRulesCount: 3,
     totalEnabledRulesCount: 1,

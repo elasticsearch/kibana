@@ -7,12 +7,28 @@
 
 import expect from '@kbn/expect';
 
-import type { ThreatArray } from '@kbn/security-solution-plugin/common/api/detection_engine';
+import type {
+  CoverageOverviewResponse,
+  ThreatArray,
+} from '@kbn/security-solution-plugin/common/api/detection_engine';
 import {
   CoverageOverviewRuleActivity,
   CoverageOverviewRuleSource,
   RULE_MANAGEMENT_COVERAGE_OVERVIEW_URL,
 } from '@kbn/security-solution-plugin/common/api/detection_engine';
+
+/**
+ * Strips the `invalid_mitre_ids` field from the coverage overview response body
+ * so that existing test assertions for `coverage`, `unmapped_rule_ids`, and `rules_data`
+ * continue to work without being affected by MITRE validation results.
+ * Tests specifically covering `invalid_mitre_ids` use the full response body directly.
+ */
+const omitInvalidMitreIds = (
+  body: CoverageOverviewResponse
+): Omit<CoverageOverviewResponse, 'invalid_mitre_ids'> => {
+  const { invalid_mitre_ids: _, ...rest } = body;
+  return rest;
+};
 import { createRule, deleteAllRules } from '@kbn/detections-response-ftr-services';
 import type { FtrProviderContext } from '../../../../../ftr_provider_context';
 import {
@@ -50,7 +66,7 @@ export default ({ getService }: FtrProviderContext): void => {
 
         const body = await getCoverageOverview(supertest);
 
-        expect(body).to.eql({
+        expect(omitInvalidMitreIds(body)).to.eql({
           coverage: {
             T001: [rule1.id],
             TA001: [rule1.id],
@@ -73,7 +89,7 @@ export default ({ getService }: FtrProviderContext): void => {
         it('returns an empty response if there are no rules', async () => {
           const body = await getCoverageOverview(supertest);
 
-          expect(body).to.eql({
+          expect(omitInvalidMitreIds(body)).to.eql({
             coverage: {},
             unmapped_rule_ids: [],
             rules_data: {},
@@ -89,7 +105,7 @@ export default ({ getService }: FtrProviderContext): void => {
 
           const body = await getCoverageOverview(supertest);
 
-          expect(body).to.eql({
+          expect(omitInvalidMitreIds(body)).to.eql({
             coverage: {
               T001: [rule1.id],
               TA001: [rule1.id],
@@ -114,7 +130,7 @@ export default ({ getService }: FtrProviderContext): void => {
 
           const body = await getCoverageOverview(supertest);
 
-          expect(body).to.eql({
+          expect(omitInvalidMitreIds(body)).to.eql({
             coverage: {},
             unmapped_rule_ids: [rule1.id],
             rules_data: {
@@ -145,7 +161,7 @@ export default ({ getService }: FtrProviderContext): void => {
               search_term: 'TA002',
             });
 
-            expect(body).to.eql({
+            expect(omitInvalidMitreIds(body)).to.eql({
               coverage: {
                 T002: [expectedRule.id],
                 TA002: [expectedRule.id],
@@ -177,7 +193,7 @@ export default ({ getService }: FtrProviderContext): void => {
               search_term: 'T002',
             });
 
-            expect(body).to.eql({
+            expect(omitInvalidMitreIds(body)).to.eql({
               coverage: {
                 T002: [expectedRule.id],
                 TA002: [expectedRule.id],
@@ -209,7 +225,7 @@ export default ({ getService }: FtrProviderContext): void => {
               search_term: 'T002.002',
             });
 
-            expect(body).to.eql({
+            expect(omitInvalidMitreIds(body)).to.eql({
               coverage: {
                 T002: [expectedRule.id],
                 TA002: [expectedRule.id],
@@ -237,7 +253,7 @@ export default ({ getService }: FtrProviderContext): void => {
               search_term: 'rule-2',
             });
 
-            expect(body).to.eql({
+            expect(omitInvalidMitreIds(body)).to.eql({
               coverage: {},
               unmapped_rule_ids: [expectedRule.id],
               rules_data: {
@@ -274,7 +290,7 @@ export default ({ getService }: FtrProviderContext): void => {
               search_term: 'win',
             });
 
-            expect(body1).to.eql({
+            expect(omitInvalidMitreIds(body1)).to.eql({
               coverage: {},
               unmapped_rule_ids: [expectedRule2.id, expectedRule3.id],
               rules_data: {
@@ -293,7 +309,7 @@ export default ({ getService }: FtrProviderContext): void => {
               search_term: '64:IA',
             });
 
-            expect(body2).to.eql({
+            expect(omitInvalidMitreIds(body2)).to.eql({
               coverage: {},
               unmapped_rule_ids: [expectedRule2.id, expectedRule3.id],
               rules_data: {
@@ -312,7 +328,7 @@ export default ({ getService }: FtrProviderContext): void => {
               search_term: 'GNU/Linux',
             });
 
-            expect(body3).to.eql({
+            expect(omitInvalidMitreIds(body3)).to.eql({
               coverage: {},
               unmapped_rule_ids: [expectedRule1.id],
               rules_data: {
@@ -347,7 +363,7 @@ export default ({ getService }: FtrProviderContext): void => {
               search_term: 'User-Agent rule1',
             });
 
-            expect(body1).to.eql({
+            expect(omitInvalidMitreIds(body1)).to.eql({
               coverage: {},
               unmapped_rule_ids: [expectedRule1.id],
               rules_data: {
@@ -362,7 +378,7 @@ export default ({ getService }: FtrProviderContext): void => {
               search_term: 'User Agent rule2',
             });
 
-            expect(body2).to.eql({
+            expect(omitInvalidMitreIds(body2)).to.eql({
               coverage: {},
               unmapped_rule_ids: [expectedRule2.id],
               rules_data: {
@@ -377,7 +393,7 @@ export default ({ getService }: FtrProviderContext): void => {
               search_term: 'User Agent rule',
             });
 
-            expect(body3).to.eql({
+            expect(omitInvalidMitreIds(body3)).to.eql({
               coverage: {},
               unmapped_rule_ids: [],
               rules_data: {},
@@ -400,7 +416,7 @@ export default ({ getService }: FtrProviderContext): void => {
               search_term: 'backslash(\\)',
             });
 
-            expect(body).to.eql({
+            expect(omitInvalidMitreIds(body)).to.eql({
               coverage: {},
               unmapped_rule_ids: [expectedRule.id],
               rules_data: {
@@ -428,7 +444,7 @@ export default ({ getService }: FtrProviderContext): void => {
               search_term: 'index-pattern-2',
             });
 
-            expect(body).to.eql({
+            expect(omitInvalidMitreIds(body)).to.eql({
               coverage: {},
               unmapped_rule_ids: [expectedRule.id],
               rules_data: {
@@ -462,7 +478,7 @@ export default ({ getService }: FtrProviderContext): void => {
               activity: [CoverageOverviewRuleActivity.Disabled],
             });
 
-            expect(body).to.eql({
+            expect(omitInvalidMitreIds(body)).to.eql({
               coverage: {
                 T001: [expectedRule.id],
                 TA001: [expectedRule.id],
@@ -498,7 +514,7 @@ export default ({ getService }: FtrProviderContext): void => {
               activity: [CoverageOverviewRuleActivity.Enabled],
             });
 
-            expect(body).to.eql({
+            expect(omitInvalidMitreIds(body)).to.eql({
               coverage: {
                 T002: [expectedRule.id],
                 TA002: [expectedRule.id],
@@ -543,7 +559,7 @@ export default ({ getService }: FtrProviderContext): void => {
               ],
             });
 
-            expect(body).to.eql({
+            expect(omitInvalidMitreIds(body)).to.eql({
               coverage: {
                 T001: [expectedRule1.id],
                 TA001: [expectedRule1.id],
@@ -590,7 +606,7 @@ export default ({ getService }: FtrProviderContext): void => {
 
             const body = await getCoverageOverview(supertest);
 
-            expect(body).to.eql({
+            expect(omitInvalidMitreIds(body)).to.eql({
               coverage: {
                 T001: [expectedRule1.id],
                 TA001: [expectedRule1.id],
@@ -635,7 +651,7 @@ export default ({ getService }: FtrProviderContext): void => {
               source: [CoverageOverviewRuleSource.Custom],
             });
 
-            expect(body).to.eql({
+            expect(omitInvalidMitreIds(body)).to.eql({
               coverage: {
                 T002: [expectedRule.id],
                 TA002: [expectedRule.id],
@@ -679,7 +695,7 @@ export default ({ getService }: FtrProviderContext): void => {
               source: [CoverageOverviewRuleSource.Prebuilt],
             });
 
-            expect(body).to.eql({
+            expect(omitInvalidMitreIds(body)).to.eql({
               coverage: {
                 T001: [expectedRule.id],
                 TA001: [expectedRule.id],
@@ -717,7 +733,7 @@ export default ({ getService }: FtrProviderContext): void => {
               source: [CoverageOverviewRuleSource.Prebuilt, CoverageOverviewRuleSource.Custom],
             });
 
-            expect(body).to.eql({
+            expect(omitInvalidMitreIds(body)).to.eql({
               coverage: {
                 T001: [expectedPrebuiltRule.id],
                 TA001: [expectedPrebuiltRule.id],
@@ -760,7 +776,7 @@ export default ({ getService }: FtrProviderContext): void => {
 
             const body = await getCoverageOverview(supertest);
 
-            expect(body).to.eql({
+            expect(omitInvalidMitreIds(body)).to.eql({
               coverage: {
                 T001: [expectedPrebuiltRule.id],
                 TA001: [expectedPrebuiltRule.id],
@@ -782,6 +798,100 @@ export default ({ getService }: FtrProviderContext): void => {
               },
             });
           });
+        });
+      });
+
+      describe('invalid_mitre_ids', () => {
+        it('returns empty invalid_mitre_ids when all rules have valid MITRE mappings or no mappings', async () => {
+          await createRule(supertest, log, getCustomQueryRuleParams({ threat: undefined }));
+
+          const body = await getCoverageOverview(supertest);
+
+          expect(body.invalid_mitre_ids).to.eql({});
+        });
+
+        it('populates invalid_mitre_ids for rules with unknown tactic IDs', async () => {
+          const rule = await createRule(
+            supertest,
+            log,
+            getCustomQueryRuleParams({
+              threat: [
+                {
+                  framework: 'MITRE ATT&CK',
+                  tactic: {
+                    id: 'TA9999',
+                    name: 'Nonexistent Tactic',
+                    reference: 'https://attack.mitre.org/tactics/TA9999/',
+                  },
+                  technique: [],
+                },
+              ],
+            })
+          );
+
+          const body = await getCoverageOverview(supertest);
+
+          expect(body.invalid_mitre_ids[rule.id]).to.eql(['TA9999']);
+        });
+
+        it('populates invalid_mitre_ids for rules with unknown technique IDs', async () => {
+          const rule = await createRule(
+            supertest,
+            log,
+            getCustomQueryRuleParams({
+              threat: [
+                {
+                  framework: 'MITRE ATT&CK',
+                  tactic: {
+                    id: 'TA0005',
+                    name: 'Defense Evasion',
+                    reference: 'https://attack.mitre.org/tactics/TA0005/',
+                  },
+                  technique: [
+                    {
+                      id: 'T9999',
+                      name: 'Nonexistent Technique',
+                      reference: 'https://attack.mitre.org/techniques/T9999/',
+                    },
+                  ],
+                },
+              ],
+            })
+          );
+
+          const body = await getCoverageOverview(supertest);
+
+          expect(body.invalid_mitre_ids[rule.id]).to.eql(['T9999']);
+        });
+
+        it('does not add rules with valid MITRE IDs to invalid_mitre_ids', async () => {
+          const rule = await createRule(
+            supertest,
+            log,
+            getCustomQueryRuleParams({
+              threat: [
+                {
+                  framework: 'MITRE ATT&CK',
+                  tactic: {
+                    id: 'TA0005',
+                    name: 'Defense Evasion',
+                    reference: 'https://attack.mitre.org/tactics/TA0005/',
+                  },
+                  technique: [
+                    {
+                      id: 'T1548',
+                      name: 'Abuse Elevation Control Mechanism',
+                      reference: 'https://attack.mitre.org/techniques/T1548/',
+                    },
+                  ],
+                },
+              ],
+            })
+          );
+
+          const body = await getCoverageOverview(supertest);
+
+          expect(body.invalid_mitre_ids[rule.id]).to.be(undefined);
         });
       });
 

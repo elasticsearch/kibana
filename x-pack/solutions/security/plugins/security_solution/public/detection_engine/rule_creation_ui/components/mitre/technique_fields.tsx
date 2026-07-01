@@ -18,7 +18,7 @@ import { kebabCase } from 'lodash/fp';
 import React, { useCallback, useEffect, useState } from 'react';
 import styled, { css } from 'styled-components';
 
-import type { Threats, ThreatTechnique } from '@kbn/securitysolution-io-ts-alerting-types';
+import type { Threat, Threats, ThreatTechnique } from '@kbn/securitysolution-io-ts-alerting-types';
 import * as Rulei18n from '../../../common/translations';
 import type { FieldHook } from '../../../../shared_imports';
 import { MyAddItemButton } from '../add_item_form';
@@ -26,8 +26,11 @@ import * as i18n from './translations';
 import { MitreAttackSubtechniqueFields } from './subtechnique_fields';
 import type {
   MitreSubTechnique,
+  MitreTactic,
   MitreTechnique,
 } from '../../../../../common/detection_engine/mitre/types';
+import { createUnsupportedMitreOption } from './unsupported_mitre_option';
+import { useIsExperimentalFeatureEnabled } from '../../../../common/hooks/use_experimental_features';
 
 const lazyMitreConfiguration = () => {
   /**
@@ -68,14 +71,20 @@ export const MitreAttackTechniqueFields: React.FC<AddTechniqueProps> = ({
   threatIndex,
   onFieldChange,
 }): JSX.Element => {
+  const isMitreAttackUpdatesUIEnabled = useIsExperimentalFeatureEnabled(
+    'mitreAttackUpdatesUIEnabled'
+  );
+
   const values = field.value as Threats;
 
+  const [tacticsOptions, setTacticsOptions] = useState<MitreTactic[]>([]);
   const [techniquesOptions, setTechniquesOptions] = useState<MitreTechnique[]>([]);
   const [subtechniquesOptions, setSubtechniquesOptions] = useState<MitreSubTechnique[]>([]);
 
   useEffect(() => {
     async function getMitre() {
       const mitreConfig = await lazyMitreConfiguration();
+      setTacticsOptions(mitreConfig.tactics);
       setTechniquesOptions(mitreConfig.techniques);
       setSubtechniquesOptions(mitreConfig.subtechniques);
     }
@@ -139,9 +148,72 @@ export const MitreAttackTechniqueFields: React.FC<AddTechniqueProps> = ({
     [field.value, techniquesOptions, threatIndex, onFieldChange]
   );
 
+  const findCurrentTechniqueOption = useCallback(
+    (technique: ThreatTechnique) =>
+      technique.name === 'none' || techniquesOptions.length === 0
+        ? undefined
+        : techniquesOptions.find((t) => t.id === technique.id),
+    [techniquesOptions]
+  );
+
+  const isUnsupportedTechnique = useCallback(
+    (technique: ThreatTechnique) =>
+      isMitreAttackUpdatesUIEnabled &&
+      techniquesOptions.length > 0 &&
+      technique.name !== 'none' &&
+      findCurrentTechniqueOption(technique) === undefined,
+    [findCurrentTechniqueOption, isMitreAttackUpdatesUIEnabled, techniquesOptions]
+  );
+
+  // True when the technique id still exists in the dataset but is no longer
+  // assigned to the parent tactic (e.g. MITRE moved it in a version bump).
+  // Without this signal, the EuiSuperSelect renders blank because its
+  // `valueOfSelected` matches no option in the cascade-filtered list.
+  const isTechniqueReassignedFromTactic = useCallback(
+    (parentTactic: Threat['tactic'], technique: ThreatTechnique) => {
+      if (
+        !isMitreAttackUpdatesUIEnabled ||
+        techniquesOptions.length === 0 ||
+        tacticsOptions.length === 0 ||
+        technique.name === 'none'
+      ) {
+        return false;
+      }
+      const option = findCurrentTechniqueOption(technique);
+      if (!option) {
+        return false;
+      }
+      const currentTactic = tacticsOptions.find((t) => t.id === parentTactic.id);
+      const filterTacticName = kebabCase(currentTactic?.name ?? parentTactic.name);
+      return !option.tactics.includes(filterTacticName);
+    },
+    [findCurrentTechniqueOption, isMitreAttackUpdatesUIEnabled, tacticsOptions, techniquesOptions]
+  );
+
+  const getTechniqueRenamedFromName = useCallback(
+    (technique: ThreatTechnique) => {
+      if (!isMitreAttackUpdatesUIEnabled) return undefined;
+      const matchedOption = findCurrentTechniqueOption(technique);
+      return matchedOption && matchedOption.name !== technique.name ? technique.name : undefined;
+    },
+    [findCurrentTechniqueOption, isMitreAttackUpdatesUIEnabled]
+  );
+
   const getSelectTechnique = useCallback(
-    (tacticName: string, index: number, disabled: boolean, technique: ThreatTechnique) => {
-      const options = techniquesOptions.filter((t) => t.tactics.includes(kebabCase(tacticName)));
+    (
+      parentTactic: Threat['tactic'],
+      index: number,
+      disabled: boolean,
+      technique: ThreatTechnique
+    ) => {
+      // Resolve the cascade filter against the parent tactic's CURRENT name in the
+      // dataset (matched by id), so renames in MITRE upgrades don't blank the list.
+      const currentTactic = tacticsOptions.find((t) => t.id === parentTactic.id);
+      const filterTacticName = kebabCase(currentTactic?.name ?? parentTactic.name);
+      const options = techniquesOptions.filter((t) => t.tactics.includes(filterTacticName));
+      const isUnsupported = isUnsupportedTechnique(technique);
+      const isReassigned = isTechniqueReassignedFromTactic(parentTactic, technique);
+      const reassignedOption = isReassigned ? findCurrentTechniqueOption(technique) : undefined;
       return (
         <>
           <EuiSuperSelect
@@ -154,6 +226,19 @@ export const MitreAttackTechniqueFields: React.FC<AddTechniqueProps> = ({
                       value: 'none',
                       disabled,
                     },
+                  ]
+                : []),
+              ...(isUnsupported
+                ? [createUnsupportedMitreOption({ id: technique.id, name: technique.name })]
+                : []),
+              // Prefer the dataset's current name for reassigned techniques so
+              // the user sees the up-to-date label, falling back to stored.
+              ...(isReassigned
+                ? [
+                    createUnsupportedMitreOption({
+                      id: technique.id,
+                      name: reassignedOption?.name ?? technique.name,
+                    }),
                   ]
                 : []),
               ...options.map((option) => ({
@@ -170,56 +255,83 @@ export const MitreAttackTechniqueFields: React.FC<AddTechniqueProps> = ({
             data-test-subj="mitreAttackTechnique"
             disabled={disabled}
             placeholder={i18n.TECHNIQUE_PLACEHOLDER}
+            isInvalid={isUnsupported || isReassigned}
           />
         </>
       );
     },
-    [field.label, techniquesOptions, updateTechnique]
+    [
+      field.label,
+      findCurrentTechniqueOption,
+      isTechniqueReassignedFromTactic,
+      isUnsupportedTechnique,
+      tacticsOptions,
+      techniquesOptions,
+      updateTechnique,
+    ]
   );
 
   const techniques = values[threatIndex].technique ?? [];
 
   return (
     <TechniqueContainer>
-      {techniques.map((technique, index) => (
-        <div key={index}>
-          <EuiSpacer size="s" />
-          <EuiFormRow
-            fullWidth
-            describedByIds={idAria ? [`${idAria} ${i18n.TECHNIQUE}`] : undefined}
-          >
-            <EuiFlexGroup gutterSize="s" alignItems="center">
-              <EuiFlexItem grow>
-                {getSelectTechnique(values[threatIndex].tactic.name, index, isDisabled, technique)}
-              </EuiFlexItem>
-              <EuiFlexItem grow={false}>
-                <EuiToolTip content={Rulei18n.DELETE} disableScreenReaderOutput>
-                  <EuiButtonIcon
-                    color="danger"
-                    iconType="trash"
-                    isDisabled={isDisabled}
-                    onClick={() => removeTechnique(index)}
-                    aria-label={Rulei18n.DELETE}
-                  />
-                </EuiToolTip>
-              </EuiFlexItem>
-            </EuiFlexGroup>
-          </EuiFormRow>
+      {techniques.map((technique, index) => {
+        const techniqueUnsupported = isUnsupportedTechnique(technique);
+        const techniqueReassigned = isTechniqueReassignedFromTactic(
+          values[threatIndex].tactic,
+          technique
+        );
+        const techniqueRenamedFrom = getTechniqueRenamedFromName(technique);
+        const techniqueErrorMessage = techniqueUnsupported
+          ? i18n.UNSUPPORTED_MITRE_ID_ERROR(technique.id)
+          : techniqueReassigned
+          ? i18n.TECHNIQUE_REASSIGNED_FROM_TACTIC_ERROR(technique.id)
+          : undefined;
+        return (
+          <div key={index}>
+            <EuiSpacer size="s" />
+            <EuiFormRow
+              fullWidth
+              describedByIds={idAria ? [`${idAria} ${i18n.TECHNIQUE}`] : undefined}
+              isInvalid={techniqueUnsupported || techniqueReassigned}
+              error={techniqueErrorMessage}
+              helpText={
+                techniqueRenamedFrom ? i18n.RENAMED_FROM_HINT(techniqueRenamedFrom) : undefined
+              }
+            >
+              <EuiFlexGroup gutterSize="s" alignItems="center">
+                <EuiFlexItem grow>
+                  {getSelectTechnique(values[threatIndex].tactic, index, isDisabled, technique)}
+                </EuiFlexItem>
+                <EuiFlexItem grow={false}>
+                  <EuiToolTip content={Rulei18n.DELETE} disableScreenReaderOutput>
+                    <EuiButtonIcon
+                      color="danger"
+                      iconType="trash"
+                      isDisabled={isDisabled}
+                      onClick={() => removeTechnique(index)}
+                      aria-label={Rulei18n.DELETE}
+                    />
+                  </EuiToolTip>
+                </EuiFlexItem>
+              </EuiFlexGroup>
+            </EuiFormRow>
 
-          <MitreAttackSubtechniqueFields
-            field={field}
-            idAria={idAria}
-            isDisabled={
-              isDisabled ||
-              technique.name === 'none' ||
-              hasSubtechniqueOptions(subtechniquesOptions, technique) === false
-            }
-            threatIndex={threatIndex}
-            techniqueIndex={index}
-            onFieldChange={onFieldChange}
-          />
-        </div>
-      ))}
+            <MitreAttackSubtechniqueFields
+              field={field}
+              idAria={idAria}
+              isDisabled={
+                isDisabled ||
+                technique.name === 'none' ||
+                hasSubtechniqueOptions(subtechniquesOptions, technique) === false
+              }
+              threatIndex={threatIndex}
+              techniqueIndex={index}
+              onFieldChange={onFieldChange}
+            />
+          </div>
+        );
+      })}
       <MyAddItemButton
         data-test-subj="addMitreAttackTechnique"
         onClick={addMitreAttackTechnique}

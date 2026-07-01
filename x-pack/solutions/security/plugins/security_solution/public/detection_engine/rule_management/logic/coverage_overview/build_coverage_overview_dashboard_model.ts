@@ -11,7 +11,10 @@ import type {
 } from '../../../../../common/api/detection_engine';
 import { CoverageOverviewRuleActivity } from '../../../../../common/api/detection_engine';
 
-import type { CoverageOverviewDashboard } from '../../model/coverage_overview/dashboard';
+import type {
+  CoverageOverviewDashboard,
+  CoverageOverviewRuleWithInvalidMitre,
+} from '../../model/coverage_overview/dashboard';
 import type { CoverageOverviewRule } from '../../model/coverage_overview/rule';
 import { buildCoverageOverviewMitreGraph } from './build_coverage_overview_mitre_graph';
 
@@ -58,6 +61,7 @@ export async function buildCoverageOverviewDashboardModel(
   return {
     mitreTactics,
     unmappedRules: buildUnmappedRules(apiResponse),
+    invalidlyMappedRules: buildInvalidlyMappedRules(apiResponse),
     metrics: calcMetrics(apiResponse.rules_data),
   };
 }
@@ -94,6 +98,52 @@ function buildUnmappedRules(
   }
 
   return unmappedRules;
+}
+
+function buildInvalidlyMappedRules(
+  apiResponse: CoverageOverviewResponse
+): CoverageOverviewDashboard['invalidlyMappedRules'] {
+  const invalidlyMappedRules: CoverageOverviewDashboard['invalidlyMappedRules'] = {
+    enabledRules: [],
+    disabledRules: [],
+  };
+
+  for (const [ruleId, invalidMitreIds] of Object.entries(apiResponse.invalid_mitre_ids)) {
+    addRuleWithInvalidMitreIds(
+      invalidlyMappedRules,
+      ruleId,
+      apiResponse.rules_data[ruleId],
+      invalidMitreIds
+    );
+  }
+
+  return invalidlyMappedRules;
+}
+
+function addRuleWithInvalidMitreIds(
+  container: {
+    enabledRules: CoverageOverviewRuleWithInvalidMitre[];
+    disabledRules: CoverageOverviewRuleWithInvalidMitre[];
+  },
+  ruleId: string,
+  ruleData: CoverageOverviewRuleAttributes,
+  invalidMitreIds: string[]
+): void {
+  if (!ruleData) {
+    return;
+  }
+
+  const rule: CoverageOverviewRuleWithInvalidMitre = {
+    id: ruleId,
+    name: ruleData.name,
+    invalidMitreIds,
+  };
+
+  if (ruleData.activity === CoverageOverviewRuleActivity.Enabled) {
+    container.enabledRules.push(rule);
+  } else if (ruleData.activity === CoverageOverviewRuleActivity.Disabled) {
+    container.disabledRules.push(rule);
+  }
 }
 
 function addRule(

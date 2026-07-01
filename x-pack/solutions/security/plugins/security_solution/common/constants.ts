@@ -504,6 +504,11 @@ export const NEW_FEATURES_TOUR_STORAGE_KEYS = {
   DEFAULT_LLM: `elasticAssistant.elasticLLM.costAwarenessTour.assistantHeader.v8.19.default`,
   ATTACKS_PAGE: 'securitySolution.attacksPage.newFeaturesTour.v9.5',
   ATTACKS_PAGE_CALLOUT: 'securitySolution.attacksPage.tourCalloutDismissed.v9.5',
+  // Notifies users that the bundled MITRE ATT&CK® dataset was bumped. Keyed to the
+  // dataset version so each upgrade re-surfaces the callout. Bump the suffix when
+  // `MITRE_ATTACK_VERSION` changes.
+  MITRE_VERSION_UPGRADED_CALLOUT:
+    'securitySolution.rulesManagementPage.mitreVersionUpgradedCallout.v19.1',
 };
 
 export const RULE_DETAILS_EXECUTION_LOG_TABLE_SHOW_METRIC_COLUMNS_STORAGE_KEY =

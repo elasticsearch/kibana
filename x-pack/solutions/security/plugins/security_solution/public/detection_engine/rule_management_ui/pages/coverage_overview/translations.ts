@@ -184,3 +184,77 @@ export const COVERAGE_OVERVIEW_FETCH_ERROR_TITLE = i18n.translate(
     defaultMessage: 'Failed to fetch coverage overview data',
   }
 );
+
+export const INVALID_MITRE_RULES_CALLOUT_TITLE = i18n.translate(
+  'xpack.securitySolution.coverageOverviewDashboard.invalidMitreRulesCallout.title',
+  {
+    defaultMessage: 'Some rules have outdated MITRE ATT&CK\u00AE mappings',
+  }
+);
+
+export const INVALID_MITRE_RULES_CALLOUT_DESCRIPTION_LEARN_MORE = i18n.translate(
+  'xpack.securitySolution.coverageOverviewDashboard.invalidMitreRulesCallout.descriptionLearnMore',
+  {
+    defaultMessage: 'Learn more',
+  }
+);
+
+export const INVALID_MITRE_RULES_CALLOUT_PREBUILT_NOTICE = i18n.translate(
+  'xpack.securitySolution.coverageOverviewDashboard.invalidMitreRulesCallout.prebuiltNotice',
+  {
+    defaultMessage:
+      'Elastic prebuilt rule mappings were updated for this MITRE ATT&CK\u00AE version. Make sure to install the latest prebuilt rule updates so their coverage stays accurate.',
+  }
+);
+
+export const INVALID_MITRE_RULES_VIEW_RULES_BUTTON = i18n.translate(
+  'xpack.securitySolution.coverageOverviewDashboard.invalidMitreRulesCallout.viewRulesButton',
+  {
+    defaultMessage: 'View rules',
+  }
+);
+
+export const INVALID_MITRE_RULES_MODAL_TITLE = i18n.translate(
+  'xpack.securitySolution.coverageOverviewDashboard.invalidMitreRulesModal.title',
+  {
+    defaultMessage: 'Rules with outdated MITRE mappings',
+  }
+);
+
+export const INVALID_MITRE_RULES_MODAL_DESCRIPTION = i18n.translate(
+  'xpack.securitySolution.coverageOverviewDashboard.invalidMitreRulesModal.description',
+  {
+    defaultMessage:
+      'These rules reference MITRE ATT&CK\u00AE tactic, technique, or sub-technique IDs that are not present in the currently supported version. They may not appear correctly in the coverage matrix. Open each rule to update its mappings.',
+  }
+);
+
+export const INVALID_MITRE_RULES_MODAL_CLOSE = i18n.translate(
+  'xpack.securitySolution.coverageOverviewDashboard.invalidMitreRulesModal.closeButton',
+  {
+    defaultMessage: 'Close',
+  }
+);
+
+export const INVALID_MITRE_RULES_MODAL_ENABLED_SECTION = i18n.translate(
+  'xpack.securitySolution.coverageOverviewDashboard.invalidMitreRulesModal.enabledSection',
+  {
+    defaultMessage: 'Enabled rules',
+  }
+);
+
+export const INVALID_MITRE_RULES_MODAL_DISABLED_SECTION = i18n.translate(
+  'xpack.securitySolution.coverageOverviewDashboard.invalidMitreRulesModal.disabledSection',
+  {
+    defaultMessage: 'Disabled rules',
+  }
+);
+
+export const INVALID_MITRE_ID_BADGE_TOOLTIP = (id: string) =>
+  i18n.translate(
+    'xpack.securitySolution.coverageOverviewDashboard.invalidMitreRulesModal.invalidMitreIdBadgeTooltip',
+    {
+      values: { id },
+      defaultMessage: 'Open MITRE ATT&CK\u00AE reference for {id}',
+    }
+  );

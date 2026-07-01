@@ -84,12 +84,18 @@ export const CoverageOverviewResponse = t.exact(
      */
     coverage: t.record(t.string, NonEmptyArray(t.string)),
     /**
-     * Array of unmapped rule ids
+     * Array of rule ids that have no MITRE ATT&CK™ threat mapping at all
      */
     unmapped_rule_ids: t.array(t.string),
     /**
      * Map having ruleId as the key and coverage overview rule data as the value
      */
     rules_data: t.record(t.string, CoverageOverviewRuleAttributes),
+    /**
+     * Map having ruleId as the key and an array of MITRE ATT&CK™ IDs (tactic, technique,
+     * or subtechnique) that are not found in the currently bundled MITRE dataset.
+     * Only present for rules that have at least one such invalid ID.
+     */
+    invalid_mitre_ids: t.record(t.string, NonEmptyArray(t.string)),
   })
 );

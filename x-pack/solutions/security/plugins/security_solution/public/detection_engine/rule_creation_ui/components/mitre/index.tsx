@@ -26,6 +26,8 @@ import { MyAddItemButton } from '../add_item_form';
 import * as i18n from './translations';
 import { MitreAttackTechniqueFields } from './technique_fields';
 import type { MitreTactic } from '../../../../../common/detection_engine/mitre/types';
+import { createUnsupportedMitreOption } from './unsupported_mitre_option';
+import { useIsExperimentalFeatureEnabled } from '../../../../common/hooks/use_experimental_features';
 
 const lazyMitreConfiguration = () => {
   /**
@@ -51,6 +53,10 @@ interface AddItemProps {
 
 // eslint-disable-next-line react/display-name
 export const AddMitreAttackThreat = memo(({ field, idAria, isDisabled }: AddItemProps) => {
+  const isMitreAttackUpdatesUIEnabled = useIsExperimentalFeatureEnabled(
+    'mitreAttackUpdatesUIEnabled'
+  );
+
   const removeTactic = useCallback(
     (index: number) => {
       const values = [...(field.value as Threats)];
@@ -109,9 +115,42 @@ export const AddMitreAttackThreat = memo(({ field, idAria, isDisabled }: AddItem
     return [...(field.value as Threats)];
   }, [field]);
 
+  const findCurrentTacticOption = useCallback(
+    (threat: Threat) =>
+      threat.tactic.name === 'none' || tacticsOptions.length === 0
+        ? undefined
+        : tacticsOptions.find((t) => t.id === threat.tactic.id),
+    [tacticsOptions]
+  );
+
+  const isUnsupportedTactic = useCallback(
+    (threat: Threat) =>
+      isMitreAttackUpdatesUIEnabled &&
+      tacticsOptions.length > 0 &&
+      threat.tactic.name !== 'none' &&
+      findCurrentTacticOption(threat) === undefined,
+    [findCurrentTacticOption, isMitreAttackUpdatesUIEnabled, tacticsOptions]
+  );
+
+  const getRenamedFromName = useCallback(
+    (threat: Threat) => {
+      if (!isMitreAttackUpdatesUIEnabled) return undefined;
+      const matchedOption = findCurrentTacticOption(threat);
+      return matchedOption && matchedOption.name !== threat.tactic.name
+        ? threat.tactic.name
+        : undefined;
+    },
+    [findCurrentTacticOption, isMitreAttackUpdatesUIEnabled]
+  );
+
   const getSelectTactic = useCallback(
     (threat: Threat, index: number, disabled: boolean) => {
       const tacticName = threat.tactic.name;
+      const isUnsupported = isUnsupportedTactic(threat);
+      const matchedOption = findCurrentTacticOption(threat);
+      const valueOfSelected = isUnsupported
+        ? threat.tactic.id
+        : matchedOption?.value ?? camelCase(tacticName);
       return (
         <EuiFlexGroup gutterSize="s" alignItems="center">
           <EuiFlexItem grow>
@@ -127,6 +166,14 @@ export const AddMitreAttackThreat = memo(({ field, idAria, isDisabled }: AddItem
                       },
                     ]
                   : []),
+                ...(isUnsupported
+                  ? [
+                      createUnsupportedMitreOption({
+                        id: threat.tactic.id,
+                        name: threat.tactic.name,
+                      }),
+                    ]
+                  : []),
                 ...tacticsOptions.map((t) => ({
                   inputDisplay: <>{t.label}</>,
                   value: t.value,
@@ -137,9 +184,10 @@ export const AddMitreAttackThreat = memo(({ field, idAria, isDisabled }: AddItem
               aria-label=""
               onChange={updateTactic.bind(null, index)}
               fullWidth={true}
-              valueOfSelected={camelCase(tacticName)}
+              valueOfSelected={valueOfSelected}
               data-test-subj="mitreAttackTactic"
               placeholder={i18n.TACTIC_PLACEHOLDER}
+              isInvalid={isUnsupported}
             />
           </EuiFlexItem>
           <EuiFlexItem grow={false}>
@@ -156,7 +204,16 @@ export const AddMitreAttackThreat = memo(({ field, idAria, isDisabled }: AddItem
         </EuiFlexGroup>
       );
     },
-    [field.label, isDisabled, removeTactic, tacticsOptions, updateTactic, values]
+    [
+      field.label,
+      findCurrentTacticOption,
+      isDisabled,
+      isUnsupportedTactic,
+      removeTactic,
+      tacticsOptions,
+      updateTactic,
+      values,
+    ]
   );
 
   /**
@@ -173,35 +230,51 @@ export const AddMitreAttackThreat = memo(({ field, idAria, isDisabled }: AddItem
 
   return (
     <MitreAttackContainer>
-      {values.map((threat, index) => (
-        <div key={index}>
-          {index === 0 ? (
-            <EuiFormRow
-              fullWidth
-              label={`${field.label} ${i18n.THREATS}`}
-              labelAppend={field.labelAppend}
-              describedByIds={idAria ? [`${idAria} ${i18n.TACTIC}`] : undefined}
-            >
-              <>{getSelectTactic(threat, index, isDisabled)}</>
-            </EuiFormRow>
-          ) : (
-            <EuiFormRow
-              fullWidth
-              describedByIds={idAria ? [`${idAria} ${i18n.TACTIC}`] : undefined}
-            >
-              {getSelectTactic(threat, index, isDisabled)}
-            </EuiFormRow>
-          )}
+      {values.map((threat, index) => {
+        const tacticUnsupported = isUnsupportedTactic(threat);
+        const tacticError = tacticUnsupported
+          ? i18n.UNSUPPORTED_MITRE_ID_ERROR(threat.tactic.id)
+          : undefined;
+        const tacticRenamedFrom = getRenamedFromName(threat);
+        const tacticHelpText = tacticRenamedFrom
+          ? i18n.RENAMED_FROM_HINT(tacticRenamedFrom)
+          : undefined;
+        return (
+          <div key={index}>
+            {index === 0 ? (
+              <EuiFormRow
+                fullWidth
+                label={`${field.label} ${i18n.THREATS}`}
+                labelAppend={field.labelAppend}
+                describedByIds={idAria ? [`${idAria} ${i18n.TACTIC}`] : undefined}
+                isInvalid={tacticUnsupported}
+                error={tacticError}
+                helpText={tacticHelpText}
+              >
+                <>{getSelectTactic(threat, index, isDisabled)}</>
+              </EuiFormRow>
+            ) : (
+              <EuiFormRow
+                fullWidth
+                describedByIds={idAria ? [`${idAria} ${i18n.TACTIC}`] : undefined}
+                isInvalid={tacticUnsupported}
+                error={tacticError}
+                helpText={tacticHelpText}
+              >
+                {getSelectTactic(threat, index, isDisabled)}
+              </EuiFormRow>
+            )}
 
-          <MitreAttackTechniqueFields
-            field={field}
-            threatIndex={index}
-            isDisabled={isDisabled || threat.tactic.name === 'none'}
-            idAria={idAria}
-            onFieldChange={onFieldChange}
-          />
-        </div>
-      ))}
+            <MitreAttackTechniqueFields
+              field={field}
+              threatIndex={index}
+              isDisabled={isDisabled || threat.tactic.name === 'none'}
+              idAria={idAria}
+              onFieldChange={onFieldChange}
+            />
+          </div>
+        );
+      })}
       <MyAddItemButton
         data-test-subj="addMitreAttackTactic"
         onClick={addMitreAttackTactic}

@@ -14,6 +14,8 @@ import { CoverageOverviewTacticPanel } from './tactic_panel';
 import { CoverageOverviewMitreTechniquePanelPopover } from './technique_panel_popover';
 import { CoverageOverviewFiltersPanel } from './filters_panel';
 import { useCoverageOverviewDashboardContext } from './coverage_overview_dashboard_context';
+import { CoverageOverviewInvalidMitreRulesCallout } from './invalid_mitre_rules_callout';
+import { useIsExperimentalFeatureEnabled } from '../../../../common/hooks/use_experimental_features';
 
 const CoverageOverviewHeaderComponent = () => (
   <HeaderPage
@@ -32,10 +34,18 @@ const CoverageOverviewDashboardComponent = () => {
   const {
     state: { data },
   } = useCoverageOverviewDashboardContext();
+  const isMitreAttackUpdatesUIEnabled = useIsExperimentalFeatureEnabled(
+    'mitreAttackUpdatesUIEnabled'
+  );
 
   return (
     <>
       <CoverageOverviewHeader />
+      {isMitreAttackUpdatesUIEnabled && data && (
+        <CoverageOverviewInvalidMitreRulesCallout
+          invalidlyMappedRules={data.invalidlyMappedRules}
+        />
+      )}
       <CoverageOverviewFiltersPanel />
       <EuiSpacer />
       <EuiFlexGroup gutterSize="m" className="eui-xScroll" tabIndex={0}>
