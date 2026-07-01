@@ -200,10 +200,10 @@ download_tmp_artifact() {
   done
 
   if [[ "$use_gcs" == "true" ]]; then
-    "${SCRIPTS_COMMON_DIR}/activate_service_account.sh" "kibana-ci-artifacts-${BUILDKITE_AGENT_GCP_REGION}"
-    if gcloud storage cp \
-      "gs://kibana-ci-artifacts-${BUILDKITE_AGENT_GCP_REGION}/tmp/builds/${build_id}/${artifact_name}" \
-      "${dest_dir}/${artifact_name}"; then
+    if "${SCRIPTS_COMMON_DIR}/activate_service_account.sh" "kibana-ci-artifacts-${BUILDKITE_AGENT_GCP_REGION}" \
+      && gcloud storage cp \
+        "gs://kibana-ci-artifacts-${BUILDKITE_AGENT_GCP_REGION}/tmp/builds/${build_id}/${artifact_name}" \
+        "${dest_dir}/${artifact_name}"; then
       return 0
     fi
     echo "GCS download failed for ${artifact_name} from kibana-ci-artifacts-${BUILDKITE_AGENT_GCP_REGION} (build ${build_id})."
@@ -212,15 +212,40 @@ download_tmp_artifact() {
   echo "Falling back to Buildkite artifact download for ${artifact_name} (build ${build_id})."
   download_artifact "$artifact_name" "$dest_dir" --build "$build_id"
 }
+
 upload_tmp_artifact() {
   local local_path="$1" artifact_name="$2" build_id="$3"
+  local region pids=() failures=0
 
-  "${SCRIPTS_COMMON_DIR}/activate_service_account.sh" "kibana-ci-artifacts-${GCS_CI_ARTIFACT_REGIONS[0]}"
+  if ! "${SCRIPTS_COMMON_DIR}/activate_service_account.sh" "kibana-ci-artifacts-${GCS_CI_ARTIFACT_REGIONS[0]}"; then
+    echo "Service account activation failed; skipping GCS upload of ${artifact_name}. Same-region downloads will fall back to the buildkite artifact." >&2
+    return 0
+  fi
 
-  printf '%s\n' "${GCS_CI_ARTIFACT_REGIONS[@]}" | xargs -P 0 -I{} \
-    env CLOUDSDK_STORAGE_PARALLEL_COMPOSITE_UPLOAD_ENABLED=False gcloud storage cp \
-      "$local_path" \
-      "gs://kibana-ci-artifacts-{}/tmp/builds/${build_id}/${artifact_name}"
+  for region in "${GCS_CI_ARTIFACT_REGIONS[@]}"; do
+    upload_tmp_artifact_to_region "$local_path" "$artifact_name" "$build_id" "$region" &
+    pids+=("$!")
+  done
+
+  for pid in "${pids[@]}"; do
+    if ! wait "$pid"; then
+      failures=$((failures + 1))
+    fi
+  done
+
+  if [[ "$failures" -gt 0 ]]; then
+    echo "GCS upload of ${artifact_name} failed for ${failures}/${#GCS_CI_ARTIFACT_REGIONS[@]} bucket(s); same-region downloads will fall back to the buildkite artifact." >&2
+  fi
+
+  return 0
+}
+
+upload_tmp_artifact_to_region() {
+  local local_path="$1" artifact_name="$2" build_id="$3" region="$4"
+
+  retry 3 5 env CLOUDSDK_STORAGE_PARALLEL_COMPOSITE_UPLOAD_ENABLED=False gcloud storage cp \
+    "$local_path" \
+    "gs://kibana-ci-artifacts-${region}/tmp/builds/${build_id}/${artifact_name}"
 }
 
 print_if_dry_run() {
