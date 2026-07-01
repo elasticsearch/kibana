@@ -45,6 +45,11 @@ describe(
       createRule(rule);
       visit(ALERTS_URL);
       waitForAlertsToPopulate();
+      // Wait for any in-flight alerts search that may have been triggered by a
+      // background rule evaluation immediately after waitForAlertsToPopulate's
+      // 500 ms idle window closed. A second idle check here ensures the spinner
+      // is gone before we try to expand the alert row (fixes #257389).
+      cy.waitForNetworkIdle('/internal/search/privateRuleRegistryAlertsSearchStrategy', 500);
       expandAlertAtIndexExpandableFlyout();
       clickRuleSummaryButton();
     });
