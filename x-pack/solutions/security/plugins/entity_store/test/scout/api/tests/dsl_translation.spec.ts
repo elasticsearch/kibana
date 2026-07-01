@@ -14,7 +14,7 @@ import {
   UPDATES_INDEX,
 } from '../fixtures/constants';
 import { FF_ENABLE_ENTITY_STORE_V2 } from '../../../../common';
-import { clearEntityStoreIndices } from '../fixtures/helpers';
+import { clearEntityStoreIndices, ingestDoc } from '../fixtures/helpers';
 import {
   getEuidDslFilterBasedOnDocument,
   getEuidDslDocumentsContainsIdFilter,
@@ -183,6 +183,40 @@ apiTest.describe('DSL query translation', { tag: ENTITY_STORE_TAGS }, () => {
     apiTest(
       `user.ts DSL: should return a single matching hit for scenario "${scenario.id}"`,
       async ({ esClient }) => {
+        const dsl = getEuidDslFilterBasedOnDocument('user', scenario.dslFilterSource);
+        expect(dsl).toBeDefined();
+
+        const result = await searchWithFilter(esClient, dsl, 10);
+
+        expect(getTotal(result.hits)).toBe(1);
+        expect(result.hits.hits).toHaveLength(1);
+        expect(result.hits.hits[0]._source).toMatchObject(scenario.dslFilterSource);
+        expect(getEuidFromObject('user', result.hits.hits[0])).toBe(scenario.expectedEuid);
+
+        expect(scenario.expectedMeta).toBeDefined();
+        const expectedMeta = scenario.expectedMeta!;
+        expect(deriveUserEntityPreAggMetadata(result.hits.hits[0])).toStrictEqual({
+          namespace: expectedMeta.namespace,
+          confidence: expectedMeta.confidence,
+          entityName: expectedMeta.entityName,
+        });
+      }
+    );
+  }
+
+  const userTsAssetCloudIngestedScenarios = USER_TS_EXTRACTION_CASES.filter(
+    (c) =>
+      c.id.startsWith('asset-cloud-provider-') &&
+      c.ingestSource !== undefined &&
+      c.expectedEuid !== undefined &&
+      !c.expectNoPerDocumentDsl
+  );
+
+  for (const scenario of userTsAssetCloudIngestedScenarios) {
+    apiTest(
+      `user.ts DSL (ingested asset + cloud.provider): single hit for scenario "${scenario.id}"`,
+      async ({ esClient }) => {
+        await ingestDoc(esClient, scenario.ingestSource!);
         const dsl = getEuidDslFilterBasedOnDocument('user', scenario.dslFilterSource);
         expect(dsl).toBeDefined();
 

@@ -1240,6 +1240,143 @@ apiTest.describe('Entity Store Main logs extraction', { tag: ENTITY_STORE_TAGS }
   );
 
   apiTest(
+    'Should route cloud asset users to the correct namespace based on cloud.provider',
+    async ({ apiClient, esClient }) => {
+      const from = '2026-06-01T10:00:00Z';
+      const to = '2026-06-01T12:00:00Z';
+
+      // 1. cloud.provider=aws → namespace aws
+      await ingestDoc(esClient, {
+        '@timestamp': '2026-06-01T10:01:00Z',
+        event: { kind: 'asset', module: 'asset_discovery' },
+        user: { id: 'cloud-aws-user' },
+        cloud: { provider: 'aws' },
+      });
+      // 2. cloud.provider=gcp → namespace gcp
+      await ingestDoc(esClient, {
+        '@timestamp': '2026-06-01T10:02:00Z',
+        event: { kind: 'asset', module: 'asset_discovery' },
+        user: { id: 'cloud-gcp-user' },
+        cloud: { provider: 'gcp' },
+      });
+      // 3. cloud.provider=azure → namespace entra_id (normalised by the mapping)
+      await ingestDoc(esClient, {
+        '@timestamp': '2026-06-01T10:03:00Z',
+        event: { kind: 'asset', module: 'asset_discovery' },
+        user: { id: 'cloud-azure-user' },
+        cloud: { provider: 'azure' },
+      });
+      // 4. cloud.provider not in mapping (ibm) → falls through to source value (event.module)
+      await ingestDoc(esClient, {
+        '@timestamp': '2026-06-01T10:04:00Z',
+        event: { kind: 'asset', module: 'asset_discovery' },
+        user: { id: 'cloud-ibm-user' },
+        cloud: { provider: 'ibm' },
+      });
+      // 5. cloud.provider absent → falls through to source value (event.module)
+      await ingestDoc(esClient, {
+        '@timestamp': '2026-06-01T10:05:00Z',
+        event: { kind: 'asset', module: 'asset_discovery' },
+        user: { id: 'cloud-no-provider-user' },
+      });
+      // 6. event.kind is not 'asset' → field-mapping condition does not fire;
+      //    cloud.provider=aws and event.module=custom-module produce different namespaces so
+      //    the wrong path would yield 'aws' while the correct path yields 'custom-module'.
+      //    IAM event so postAggFilter passes via idpGate (event.category=iam + event.type=user).
+      await ingestDoc(esClient, {
+        '@timestamp': '2026-06-01T10:06:00Z',
+        event: { category: 'iam', type: 'user', module: 'custom-module' },
+        user: { id: 'cloud-non-asset-user' },
+        cloud: { provider: 'aws' },
+      });
+
+      const extractionResponse = await forceLogExtraction(
+        apiClient,
+        internalHeaders,
+        'user',
+        from,
+        to
+      );
+      expect(extractionResponse.statusCode).toBe(200);
+      expect(extractionResponse.body).toMatchObject({ success: true, count: 6 });
+
+      // 1. aws → namespace aws
+      const awsHit = await searchDocById(esClient, 'user:cloud-aws-user@aws');
+      expect(awsHit.hits.hits).toHaveLength(1);
+      expect(awsHit.hits.hits[0]._source).toMatchObject({
+        entity: {
+          id: 'user:cloud-aws-user@aws',
+          namespace: 'aws',
+          confidence: ENTITY_CONFIDENCE.High,
+        },
+        cloud: { provider: 'aws' },
+      });
+
+      // 2. gcp → namespace gcp
+      const gcpHit = await searchDocById(esClient, 'user:cloud-gcp-user@gcp');
+      expect(gcpHit.hits.hits).toHaveLength(1);
+      expect(gcpHit.hits.hits[0]._source).toMatchObject({
+        entity: {
+          id: 'user:cloud-gcp-user@gcp',
+          namespace: 'gcp',
+          confidence: ENTITY_CONFIDENCE.High,
+        },
+      });
+
+      // 3. azure → namespace entra_id
+      const azureHit = await searchDocById(esClient, 'user:cloud-azure-user@entra_id');
+      expect(azureHit.hits.hits).toHaveLength(1);
+      expect(azureHit.hits.hits[0]._source).toMatchObject({
+        entity: {
+          id: 'user:cloud-azure-user@entra_id',
+          namespace: 'entra_id',
+          confidence: ENTITY_CONFIDENCE.High,
+        },
+        cloud: { provider: 'azure' },
+      });
+
+      // 4. ibm not in mapping → source value (event.module = asset_discovery) used as namespace
+      const ibmHit = await searchDocById(esClient, 'user:cloud-ibm-user@asset_discovery');
+      expect(ibmHit.hits.hits).toHaveLength(1);
+      expect(ibmHit.hits.hits[0]._source).toMatchObject({
+        entity: {
+          id: 'user:cloud-ibm-user@asset_discovery',
+          namespace: 'asset_discovery',
+          confidence: ENTITY_CONFIDENCE.High,
+        },
+        cloud: { provider: 'ibm' },
+      });
+
+      // 5. cloud.provider absent → source value used as namespace
+      const noProviderHit = await searchDocById(
+        esClient,
+        'user:cloud-no-provider-user@asset_discovery'
+      );
+      expect(noProviderHit.hits.hits).toHaveLength(1);
+      expect(noProviderHit.hits.hits[0]._source).toMatchObject({
+        entity: {
+          id: 'user:cloud-no-provider-user@asset_discovery',
+          namespace: 'asset_discovery',
+          confidence: ENTITY_CONFIDENCE.High,
+        },
+      });
+
+      // 6. event.kind ≠ 'asset' → cloud.provider mapping condition does not fire;
+      //    namespace comes from event.module ('custom-module'), not from cloud.provider ('aws')
+      const nonAssetHit = await searchDocById(esClient, 'user:cloud-non-asset-user@custom-module');
+      expect(nonAssetHit.hits.hits).toHaveLength(1);
+      expect(nonAssetHit.hits.hits[0]._source).toMatchObject({
+        entity: {
+          id: 'user:cloud-non-asset-user@custom-module',
+          namespace: 'custom-module',
+          confidence: ENTITY_CONFIDENCE.High,
+        },
+        cloud: { provider: 'aws' },
+      });
+    }
+  );
+
+  apiTest(
     'Should succeed when a data stream matched by the data view has a closed backing index',
     async ({ apiClient, esClient }) => {
       const DATA_STREAM = 'logs-closed-smoke';

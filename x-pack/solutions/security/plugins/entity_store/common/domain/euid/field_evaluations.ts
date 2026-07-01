@@ -12,6 +12,7 @@ import type {
   FieldEvaluation,
   FieldEvaluationSource,
   FieldEvaluationWhenClause,
+  FieldEvaluationWhenClauseFieldMappingThen,
 } from '../definitions/entity_schema';
 import { isSingleFieldIdentity } from '../definitions/entity_schema';
 import { evaluateStreamlangCondition } from './commons';
@@ -30,8 +31,24 @@ function isSourceMatchClause(
 
 function isConditionClause(
   clause: FieldEvaluationWhenClause
-): clause is { condition: Condition; then: string } {
+): clause is { condition: Condition; then: string | FieldEvaluationWhenClauseFieldMappingThen } {
   return 'condition' in clause;
+}
+
+function isFieldMappingThen(
+  then: string | FieldEvaluationWhenClauseFieldMappingThen
+): then is FieldEvaluationWhenClauseFieldMappingThen {
+  return typeof then === 'object';
+}
+
+function resolveConditionThen(
+  then: string | FieldEvaluationWhenClauseFieldMappingThen,
+  doc: any
+): string | undefined {
+  if (!isFieldMappingThen(then)) return then;
+  const raw = getFieldValue(doc, then.field);
+  if (!raw) return undefined;
+  return then.mapping[raw];
 }
 
 export function getFieldValue(doc: any, field: string): string | undefined {
@@ -89,7 +106,10 @@ function matchFirstWhenClause(
         return { then: clause.then, matchedSourceValues: clause.sourceMatchesAny };
       }
     } else if (isConditionClause(clause) && evaluateStreamlangCondition(doc, clause.condition)) {
-      return { then: clause.then, winningCondition: clause.condition };
+      const resolved = resolveConditionThen(clause.then, doc);
+      if (resolved !== undefined) {
+        return { then: resolved, winningCondition: clause.condition };
+      }
     }
   }
   return undefined;

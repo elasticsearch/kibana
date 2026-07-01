@@ -43,9 +43,14 @@ const fieldEvaluationWhenClauseSourceMatchSchema = z.object({
   sourceMatchesAny: z.array(z.string()),
   then: z.string(),
 });
+const fieldEvaluationWhenClauseFieldMappingThenSchema = z.object({
+  field: z.string(),
+  mapping: z.record(z.string(), z.string()),
+});
+
 const fieldEvaluationWhenClauseConditionSchema = z.object({
   condition: streamlangConditionSchema,
-  then: z.string(),
+  then: z.union([z.string(), fieldEvaluationWhenClauseFieldMappingThenSchema]),
 });
 const fieldEvaluationWhenClauseSchema = z.union([
   fieldEvaluationWhenClauseSourceMatchSchema,
@@ -171,6 +176,9 @@ export type EuidAttribute = EuidField | EuidSeparator;
 export type EuidRankingBranch = z.infer<typeof euidRankingBranchSchema>;
 export type EuidRanking = z.infer<typeof euidRankingSchema>;
 export type FieldEvaluationWhenClause = z.infer<typeof fieldEvaluationWhenClauseSchema>;
+export type FieldEvaluationWhenClauseFieldMappingThen = z.infer<
+  typeof fieldEvaluationWhenClauseFieldMappingThenSchema
+>;
 export type FieldEvaluationSource = z.infer<typeof fieldEvaluationSourceSchema>;
 export type FieldEvaluation = z.infer<typeof fieldEvaluationSchema>;
 

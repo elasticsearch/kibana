@@ -64,6 +64,11 @@ async function createCcsTestLogsIndex(esClient: EsClient) {
             module: { type: 'keyword' },
           },
         },
+        cloud: {
+          properties: {
+            provider: { type: 'keyword' },
+          },
+        },
         data_stream: {
           properties: {
             dataset: { type: 'keyword' },
@@ -560,6 +565,150 @@ apiTest.describe(
 
         expect(get(hits[1], ['_source', 'entity', 'id'])).toBe('gen-2');
         expect(get(hits[1], ['_source', 'entity', 'name'])).toBe('Generic Two');
+      }
+    );
+
+    apiTest(
+      'Should route cloud asset users to the correct namespace based on cloud.provider via CCS extraction',
+      async ({ apiClient, esClient }) => {
+        await createCcsTestLogsIndex(esClient);
+
+        const CCS_FROM = '2026-06-01T10:00:00Z';
+        const CCS_TO = '2026-06-01T12:00:00Z';
+
+        // 1. cloud.provider=aws → namespace aws
+        await ingestDoc(esClient, CCS_TEST_LOGS_INDEX, {
+          '@timestamp': '2026-06-01T10:01:00Z',
+          event: { kind: 'asset', module: 'asset_discovery' },
+          user: { id: 'ccs-cloud-aws' },
+          cloud: { provider: 'aws' },
+        });
+        // 2. cloud.provider=gcp → namespace gcp
+        await ingestDoc(esClient, CCS_TEST_LOGS_INDEX, {
+          '@timestamp': '2026-06-01T10:02:00Z',
+          event: { kind: 'asset', module: 'asset_discovery' },
+          user: { id: 'ccs-cloud-gcp' },
+          cloud: { provider: 'gcp' },
+        });
+        // 3. cloud.provider=azure → namespace entra_id (normalised by the mapping)
+        await ingestDoc(esClient, CCS_TEST_LOGS_INDEX, {
+          '@timestamp': '2026-06-01T10:03:00Z',
+          event: { kind: 'asset', module: 'asset_discovery' },
+          user: { id: 'ccs-cloud-azure' },
+          cloud: { provider: 'azure' },
+        });
+        // 4. cloud.provider not in mapping (ibm) → falls through to source value (event.module)
+        await ingestDoc(esClient, CCS_TEST_LOGS_INDEX, {
+          '@timestamp': '2026-06-01T10:04:00Z',
+          event: { kind: 'asset', module: 'asset_discovery' },
+          user: { id: 'ccs-cloud-ibm' },
+          cloud: { provider: 'ibm' },
+        });
+        // 5. cloud.provider absent → falls through to source value (event.module)
+        await ingestDoc(esClient, CCS_TEST_LOGS_INDEX, {
+          '@timestamp': '2026-06-01T10:05:00Z',
+          event: { kind: 'asset', module: 'asset_discovery' },
+          user: { id: 'ccs-cloud-no-provider' },
+        });
+        // 6. event.kind is not 'asset' → cloud.provider mapping does not apply;
+        //    cloud.provider=aws and event.module=custom-module produce different values so
+        //    the wrong path yields 'aws' while the correct path yields 'custom-module'.
+        //    IAM event so postAggFilter passes via idpGate (event.category=iam + event.type=user).
+        await ingestDoc(esClient, CCS_TEST_LOGS_INDEX, {
+          '@timestamp': '2026-06-01T10:06:00Z',
+          event: { category: 'iam', type: 'user', module: 'custom-module' },
+          user: { id: 'ccs-cloud-non-asset' },
+          cloud: { provider: 'aws' },
+        });
+
+        const extractResponse = await apiClient.post(
+          ENTITY_STORE_ROUTES.internal.FORCE_REMOTE_EXTRACT_TO_UPDATES('user'),
+          {
+            headers: internalHeaders,
+            responseType: 'json',
+            body: {
+              indexPatterns: [CCS_TEST_LOGS_INDEX],
+              fromDateISO: CCS_FROM,
+              toDateISO: CCS_TO,
+              docsLimit: DOCS_LIMIT,
+            },
+          }
+        );
+        expect(extractResponse.statusCode).toBe(200);
+        expect(extractResponse.body).toMatchObject({ count: 6, pages: 3 });
+        await esClient.indices.refresh({ index: UPDATES_INDEX });
+
+        const logExtractionResponse = await apiClient.post(
+          ENTITY_STORE_ROUTES.internal.FORCE_LOG_EXTRACTION('user'),
+          {
+            headers: internalHeaders,
+            responseType: 'json',
+            body: { fromDateISO: CCS_TO, toDateISO: MAX_DATE_OF_UPDATES },
+          }
+        );
+        expect(logExtractionResponse.statusCode).toBe(200);
+        expect(logExtractionResponse.body.success).toBe(true);
+        await esClient.indices.refresh({ index: LATEST_ALIAS });
+
+        const latestResponse = await esClient.search({
+          index: LATEST_ALIAS,
+          size: 100,
+          query: {
+            bool: {
+              filter: [
+                { term: { 'entity.EngineMetadata.Type': 'user' } },
+                {
+                  terms: {
+                    'entity.id': [
+                      'user:ccs-cloud-aws@aws',
+                      'user:ccs-cloud-gcp@gcp',
+                      'user:ccs-cloud-azure@entra_id',
+                      'user:ccs-cloud-ibm@asset_discovery',
+                      'user:ccs-cloud-no-provider@asset_discovery',
+                      'user:ccs-cloud-non-asset@custom-module',
+                    ],
+                  },
+                },
+              ],
+            },
+          },
+        });
+
+        const byId = Object.fromEntries(
+          latestResponse.hits.hits.map((h) => [get(h._source, ['entity', 'id']), h._source])
+        );
+
+        // 1. aws → namespace aws
+        expect(get(byId['user:ccs-cloud-aws@aws'], ['entity', 'namespace'])).toBe('aws');
+        expect(get(byId['user:ccs-cloud-aws@aws'], ['cloud', 'provider'])).toBe('aws');
+
+        // 2. gcp → namespace gcp
+        expect(get(byId['user:ccs-cloud-gcp@gcp'], ['entity', 'namespace'])).toBe('gcp');
+
+        // 3. azure → namespace entra_id (normalised by the mapping)
+        expect(get(byId['user:ccs-cloud-azure@entra_id'], ['entity', 'namespace'])).toBe(
+          'entra_id'
+        );
+        expect(get(byId['user:ccs-cloud-azure@entra_id'], ['cloud', 'provider'])).toBe('azure');
+
+        // 4. ibm not in mapping → falls through to source value (event.module = asset_discovery)
+        expect(get(byId['user:ccs-cloud-ibm@asset_discovery'], ['entity', 'namespace'])).toBe(
+          'asset_discovery'
+        );
+
+        // 5. cloud.provider absent → falls through to source value
+        expect(
+          get(byId['user:ccs-cloud-no-provider@asset_discovery'], ['entity', 'namespace'])
+        ).toBe('asset_discovery');
+
+        // 6. event.kind ≠ 'asset' → field-mapping condition does not fire;
+        //    namespace comes from event.module ('custom-module'), not from cloud.provider ('aws')
+        expect(get(byId['user:ccs-cloud-non-asset@custom-module'], ['entity', 'namespace'])).toBe(
+          'custom-module'
+        );
+        expect(get(byId['user:ccs-cloud-non-asset@custom-module'], ['cloud', 'provider'])).toBe(
+          'aws'
+        );
       }
     );
 

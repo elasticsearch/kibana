@@ -11,6 +11,7 @@ import type {
   EntityType,
   EuidAttribute,
   FieldEvaluation,
+  FieldEvaluationWhenClauseFieldMappingThen,
 } from '../definitions/entity_schema';
 import { isSingleFieldIdentity } from '../definitions/entity_schema';
 import { getEntityDefinitionWithoutId } from '../definitions/registry';
@@ -312,6 +313,24 @@ function destinationToVarName(destination: string): string {
   return destination.replace(/\./g, '_');
 }
 
+function buildFieldMappingPainless(
+  varName: string,
+  cond: string,
+  then: FieldEvaluationWhenClauseFieldMappingThen
+): string {
+  const fieldEsc = escapePainlessField(then.field);
+  const fieldRead = `(doc.containsKey('${fieldEsc}') && doc['${fieldEsc}'].size() > 0 ? doc['${fieldEsc}'].value : null)`;
+  const branches = Object.entries(then.mapping)
+    .map(
+      ([from, to], i) =>
+        `${i === 0 ? 'if' : 'else if'} (_mappedField == "${escapePainlessString(
+          from
+        )}") { ${varName} = "${escapePainlessString(to)}"; }`
+    )
+    .join(' ');
+  return `if (${varName} == null && (${cond})) { String _mappedField = ${fieldRead}; if (_mappedField != null) { ${branches} } }`;
+}
+
 function buildFieldEvaluationsPreamble(evaluations: FieldEvaluation[]): {
   preamble: string;
   evaluatedVars: Map<string, string>;
@@ -337,40 +356,35 @@ function buildFieldEvaluationsPreamble(evaluations: FieldEvaluation[]): {
       }
     }
 
-    let branchFirst = true;
     for (const clause of ev.whenClauses) {
       if ('sourceMatchesAny' in clause) {
         const conds = clause.sourceMatchesAny
           .map((v) => `_src == "${escapePainlessString(v)}"`)
           .join(' || ');
-        const prefix = branchFirst ? 'if' : 'else if';
         stmts.push(
-          `${prefix} (_src != null && (${conds})) { ${varName} = "${escapePainlessString(
+          `if (${varName} == null && _src != null && (${conds})) { ${varName} = "${escapePainlessString(
             clause.then
           )}"; }`
         );
-        branchFirst = false;
       } else {
         const cond = streamlangConditionToPainlessDoc(clause.condition);
-        const prefix = branchFirst ? 'if' : 'else if';
-        stmts.push(`${prefix} (${cond}) { ${varName} = "${escapePainlessString(clause.then)}"; }`);
-        branchFirst = false;
+        if (typeof clause.then === 'string') {
+          stmts.push(
+            `if (${varName} == null && (${cond})) { ${varName} = "${escapePainlessString(
+              clause.then
+            )}"; }`
+          );
+        } else {
+          stmts.push(buildFieldMappingPainless(varName, cond, clause.then));
+        }
       }
     }
 
-    if (branchFirst) {
-      stmts.push(
-        `if (_src != null) { ${varName} = _src; } else { ${varName} = ${toPainlessNullableStringLiteral(
-          ev.fallbackValue
-        )}; }`
-      );
-    } else {
-      stmts.push(
-        `else if (_src != null) { ${varName} = _src; } else { ${varName} = ${toPainlessNullableStringLiteral(
-          ev.fallbackValue
-        )}; }`
-      );
-    }
+    stmts.push(
+      `if (${varName} == null && _src != null) { ${varName} = _src; } else if (${varName} == null) { ${varName} = ${toPainlessNullableStringLiteral(
+        ev.fallbackValue
+      )}; }`
+    );
 
     parts.push(stmts.join(' '));
   }

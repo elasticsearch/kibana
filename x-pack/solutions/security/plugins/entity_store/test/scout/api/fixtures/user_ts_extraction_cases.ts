@@ -307,6 +307,100 @@ export const USER_TS_EXTRACTION_CASES: readonly UserTsExtractionCase[] = [
       entityName: 'jack.white',
     },
   },
+  // --- Asset + cloud.provider (user.ts fieldEvaluations): namespace from cloud, not event.module ---
+  {
+    id: 'asset-cloud-provider-aws-no-host',
+    query: { term: { 'user.name': 'scout.asset.cloud.aws.user' } },
+    dslFilterSource: {
+      user: { name: 'scout.asset.cloud.aws.user' },
+      event: { kind: 'asset', module: 'inventory.generic', outcome: 'success' },
+      cloud: { provider: 'aws' },
+    },
+    expectedEuid: 'user:scout.asset.cloud.aws.user@aws',
+    expectedMeta: {
+      namespace: 'aws',
+      confidence: ENTITY_CONFIDENCE.High,
+      entityName: 'scout.asset.cloud.aws.user',
+    },
+    ingestSource: {
+      '@timestamp': '2026-01-21T10:00:00.000Z',
+      user: { name: 'scout.asset.cloud.aws.user' },
+      event: { kind: 'asset', module: 'inventory.generic', outcome: 'success' },
+      cloud: { provider: 'aws' },
+    },
+  },
+  {
+    id: 'asset-cloud-provider-gcp-no-host',
+    query: { term: { 'user.name': 'scout.asset.cloud.gcp.user' } },
+    dslFilterSource: {
+      user: { name: 'scout.asset.cloud.gcp.user' },
+      event: { kind: 'asset', module: 'inventory.generic', outcome: 'success' },
+      cloud: { provider: 'gcp' },
+    },
+    expectedEuid: 'user:scout.asset.cloud.gcp.user@gcp',
+    expectedMeta: {
+      namespace: 'gcp',
+      confidence: ENTITY_CONFIDENCE.High,
+      entityName: 'scout.asset.cloud.gcp.user',
+    },
+    ingestSource: {
+      '@timestamp': '2026-01-21T10:01:00.000Z',
+      user: { name: 'scout.asset.cloud.gcp.user' },
+      event: { kind: 'asset', module: 'inventory.generic', outcome: 'success' },
+      cloud: { provider: 'gcp' },
+    },
+  },
+  {
+    id: 'asset-cloud-provider-azure-no-host',
+    query: { term: { 'user.name': 'scout.asset.cloud.azure.user' } },
+    dslFilterSource: {
+      user: { name: 'scout.asset.cloud.azure.user' },
+      event: { kind: 'asset', module: 'inventory.generic', outcome: 'success' },
+      cloud: { provider: 'azure' },
+    },
+    expectedEuid: 'user:scout.asset.cloud.azure.user@entra_id',
+    expectedMeta: {
+      namespace: 'entra_id',
+      confidence: ENTITY_CONFIDENCE.High,
+      entityName: 'scout.asset.cloud.azure.user',
+    },
+    ingestSource: {
+      '@timestamp': '2026-01-21T10:02:00.000Z',
+      user: { name: 'scout.asset.cloud.azure.user' },
+      event: { kind: 'asset', module: 'inventory.generic', outcome: 'success' },
+      cloud: { provider: 'azure' },
+    },
+  },
+  {
+    id: 'asset-cloud-provider-aws-with-host-local',
+    query: {
+      bool: {
+        must: [
+          { term: { 'user.name': 'scout.asset.cloud.aws.local.user' } },
+          { term: { 'host.id': 'scout-host-cloud-aws-local' } },
+        ],
+      },
+    },
+    dslFilterSource: {
+      user: { name: 'scout.asset.cloud.aws.local.user' },
+      host: { id: 'scout-host-cloud-aws-local' },
+      event: { kind: 'asset', module: 'inventory.generic', outcome: 'success' },
+      cloud: { provider: 'aws' },
+    },
+    expectedEuid: 'user:scout.asset.cloud.aws.local.user@scout-host-cloud-aws-local@local',
+    expectedMeta: {
+      namespace: 'local',
+      confidence: ENTITY_CONFIDENCE.Medium,
+      entityName: 'scout.asset.cloud.aws.local.user',
+    },
+    ingestSource: {
+      '@timestamp': '2026-01-21T10:03:00.000Z',
+      user: { name: 'scout.asset.cloud.aws.local.user' },
+      host: { id: 'scout-host-cloud-aws-local' },
+      event: { kind: 'asset', module: 'inventory.generic', outcome: 'success' },
+      cloud: { provider: 'aws' },
+    },
+  },
   // --- IDP: IAM event types (idpEventTypeCondition), not asset kind ---
   {
     id: 'idp-iam-okta-user-id',
