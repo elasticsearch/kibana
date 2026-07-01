@@ -10,7 +10,7 @@ import { of } from 'rxjs';
 import { TestProviders } from '../../../../common/mock';
 import { useKibana } from '../../../../common/lib/kibana';
 import type { EcsSecurityExtension as Ecs } from '@kbn/securitysolution-ecs';
-import { useInvestigateInTimeline } from './use_investigate_in_timeline';
+import { detectionExceptionList, useInvestigateInTimeline } from './use_investigate_in_timeline';
 import * as actions from '../actions';
 import { useAppToasts } from '../../../../common/hooks/use_app_toasts';
 import type { AlertTableContextMenuItem } from '../types';
@@ -254,6 +254,59 @@ const renderContextMenu = (items: AlertTableContextMenuItem[]) => {
     </EuiPopover>
   );
 };
+
+describe('detectionExceptionList', () => {
+  test('returns detection exception lists from canonical array values', () => {
+    const ecsData = {
+      kibana: {
+        alert: {
+          rule: {
+            exceptions_list: [
+              {
+                id: 'exception-list-id',
+                list_id: 'detection-list-id',
+                type: 'detection',
+                namespace_type: 'single',
+              },
+            ],
+          },
+        },
+      },
+    } as unknown as Ecs;
+
+    expect(detectionExceptionList(ecsData)).toEqual([
+      {
+        exception_list_id: 'detection-list-id',
+        namespace_type: 'single',
+      },
+    ]);
+  });
+
+  test('does not throw when rule parameters contain a single exception list object', () => {
+    const ecsData = {
+      kibana: {
+        alert: {
+          rule: {
+            exceptions_list: [],
+            parameters: [
+              JSON.stringify({
+                exceptions_list: {
+                  id: 'exception-list-id',
+                  list_id: 'rule-default-list-id',
+                  type: 'rule_default',
+                  namespace_type: 'single',
+                },
+              }),
+            ],
+          },
+        },
+      },
+    } as unknown as Ecs;
+
+    expect(() => detectionExceptionList(ecsData)).not.toThrow();
+    expect(detectionExceptionList(ecsData)).toEqual([]);
+  });
+});
 
 describe('useInvestigateInTimeline', () => {
   let mockSearchStrategyClient = {

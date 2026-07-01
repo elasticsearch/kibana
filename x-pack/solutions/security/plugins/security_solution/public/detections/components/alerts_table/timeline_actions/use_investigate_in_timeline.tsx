@@ -39,7 +39,7 @@ interface UseInvestigateInTimelineActionProps {
   onInvestigateInTimelineAlertClick?: () => void;
 }
 
-const detectionExceptionList = (ecsData: Ecs): ExceptionListId[] => {
+export const detectionExceptionList = (ecsData: Ecs): ExceptionListId[] => {
   let exceptionsList = getField(ecsData, ALERT_RULE_EXCEPTIONS_LIST) ?? [];
   let detectionExceptionsList: ExceptionListId[] = [];
   try {
@@ -67,6 +67,12 @@ const detectionExceptionList = (ecsData: Ecs): ExceptionListId[] => {
   } catch (error) {
     // do nothing, just fail silently as parametersObject is initialized
   }
+
+  if (!Array.isArray(exceptionsList)) {
+    exceptionsList =
+      exceptionsList != null && typeof exceptionsList === 'object' ? [exceptionsList] : [];
+  }
+
   detectionExceptionsList = exceptionsList.reduce(
     (acc: ExceptionListId[], next: string | object) => {
       // parsed rule.parameters returns an object else use the default string representation

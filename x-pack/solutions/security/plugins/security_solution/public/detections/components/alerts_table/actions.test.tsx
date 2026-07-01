@@ -22,10 +22,13 @@ import {
 } from './actions';
 import {
   defaultTimelineProps,
+  getSuppressedDetectionAlertAADMock,
   getThresholdDetectionAlertAADMock,
   mockAADEcsDataWithAlert,
   mockEcsDataWithAlert,
   mockGetOneTimelineResult,
+  mockSuppressedAlertExceptionList,
+  mockSuppressedDetectionAlertAADSource,
   mockTimelineData,
   mockTimelineDetails,
 } from '../../../common/mock';
@@ -898,6 +901,42 @@ describe('alert actions', () => {
           from: expectedFrom,
           to: expectedTo,
         });
+      });
+    });
+
+    describe('createSuppressedTimeline', () => {
+      test('uses the refetched alert document when building the exception filter', async () => {
+        const originalEcsData = getSuppressedDetectionAlertAADMock();
+
+        fetchMock.mockResolvedValue({
+          hits: {
+            hits: [
+              {
+                _id: originalEcsData._id,
+                _index: 'refetched-alert-index',
+                _source: mockSuppressedDetectionAlertAADSource,
+              },
+            ],
+          },
+        });
+
+        await sendAlertToTimelineAction({
+          createTimeline,
+          ecsData: originalEcsData as unknown as Ecs,
+          searchStrategyClient,
+          getExceptionFilter: mockGetExceptionFilter,
+        });
+
+        const exceptionFilterAlertDoc = mockGetExceptionFilter.mock.calls[0][0];
+
+        expect(exceptionFilterAlertDoc._id).toEqual(originalEcsData._id);
+        expect(exceptionFilterAlertDoc._index).toEqual('refetched-alert-index');
+        expect(exceptionFilterAlertDoc.kibana.alert.rule.exceptions_list).toEqual([
+          mockSuppressedAlertExceptionList,
+        ]);
+        expect(exceptionFilterAlertDoc.kibana.alert.rule.parameters.exceptions_list).toEqual([
+          mockSuppressedAlertExceptionList,
+        ]);
       });
     });
 

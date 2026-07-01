@@ -811,7 +811,7 @@ const createSuppressedTimeline = async (
     const indexNames = getField(alertDoc, ALERT_RULE_INDICES) ?? alertDoc.signal?.rule?.index ?? [];
 
     const { from, to, dataProviders } = getSuppressedAlertData(alertDoc);
-    const exceptionsFilter = await getExceptionFilter(ecsData);
+    const exceptionsFilter = await getExceptionFilter(alertDoc);
 
     const allFilters = (templateValues.filters ?? augmentedFilters).concat(
       !exceptionsFilter ? [] : [exceptionsFilter]
