@@ -469,7 +469,8 @@ describe('ContentListToolbar', () => {
         const lastCall = mockFindItems.mock.calls[mockFindItems.mock.calls.length - 1];
         expect(lastCall[0].searchQuery).toBe('my query');
         expect(lastCall[0].filters.tag).toEqual({
-          include: ['tag-1'],
+          include: [],
+          includeAll: ['tag-1'],
           exclude: [],
         });
       });
@@ -527,7 +528,8 @@ describe('ContentListToolbar', () => {
         const lastCall = mockFindItems.mock.calls[mockFindItems.mock.calls.length - 1];
         expect(lastCall[0].searchQuery).toBe('my query');
         expect(lastCall[0].filters.tag).toEqual({
-          include: ['tag-3'],
+          include: [],
+          includeAll: ['tag-3'],
           exclude: [],
         });
       });
@@ -553,7 +555,11 @@ describe('ContentListToolbar', () => {
       await waitFor(() => {
         const lastCall = mockFindItems.mock.calls[mockFindItems.mock.calls.length - 1];
         expect(lastCall[0].searchQuery).toBe('my query');
-        expect(lastCall[0].filters.tag).toEqual({ include: ['Unknown'], exclude: [] });
+        expect(lastCall[0].filters.tag).toEqual({
+          include: [],
+          includeAll: ['Unknown'],
+          exclude: [],
+        });
       });
     });
   });

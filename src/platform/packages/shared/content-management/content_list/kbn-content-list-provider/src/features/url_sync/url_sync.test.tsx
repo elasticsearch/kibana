@@ -134,13 +134,13 @@ describe('ContentListUrlSync', () => {
 
     await waitFor(() => {
       expect(result.current.state.queryText).toBe(
-        'dashboard createdBy:"jane@example.com" is:starred'
+        'dashboard createdBy:("jane@example.com") is:starred'
       );
       expect(result.current.state.sort).toEqual({ field: 'updatedAt', direction: 'asc' });
     });
 
     expect(parseSearch(history.location.search)).toEqual({
-      q: 'dashboard createdBy:"jane@example.com" is:starred',
+      q: 'dashboard createdBy:("jane@example.com") is:starred',
       sort: 'updatedAt:asc',
       space: 'default',
     });

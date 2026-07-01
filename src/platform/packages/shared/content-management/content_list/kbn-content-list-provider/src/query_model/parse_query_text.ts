@@ -80,55 +80,74 @@ const resolveDisplayValue = (
   return { ids: [displayValue], resolved: false };
 };
 
-/** Extract include/exclude IDs for a field from the parsed query. */
+/**
+ * Extract include/exclude IDs for a field from the parsed query.
+ *
+ * Maps EUI clause structure to filter buckets, faithful to EUI search
+ * semantics (clauses are AND-combined; values inside an OR-group are
+ * OR-combined):
+ *
+ * - An OR-group clause (`field:(a or b)`, or the single-value `field:(a)`) is
+ *   match-any → {@link QueryFilterValue.include}. Keeping each group in this
+ *   bucket preserves the existing OR behavior of `field:(a) field:(b)`.
+ * - A bare scalar clause (`field:a`) is a standalone match-all constraint →
+ *   {@link QueryFilterValue.includeAll}, so `field:a field:b` is AND. A scalar
+ *   that fuzzy-expands to several IDs (`createdBy:jo` → two users) stays
+ *   match-any, since those IDs are one term.
+ *
+ * For a single value match-any and match-all are equivalent, so a lone
+ * `field:a` filters identically whether bucketed as include or includeAll.
+ */
 const extractFieldFilter = (
   query: InstanceType<typeof Query>,
   field: FieldDefinition
 ): { filter: QueryFilterValue | undefined; hasUnresolved: boolean } => {
-  const includeIds: string[] = [];
+  const anyIds: string[] = [];
+  const allIds: string[] = [];
   const excludeIds: string[] = [];
   let hasUnresolved = false;
 
-  const collectResolved = (displayValues: string[], target: string[]) => {
+  const resolve = (displayValues: string[]): string[] => {
+    const ids: string[] = [];
     for (const dv of displayValues) {
       const result = resolveDisplayValue(dv, field);
-      target.push(...result.ids);
+      ids.push(...result.ids);
       if (!result.resolved) {
         hasUnresolved = true;
       }
     }
+    return ids;
   };
 
-  // Simple field clauses: `field:value` or `-field:value`.
-  const simpleClauses = query.ast.getFieldClauses(field.fieldName);
-  if (simpleClauses) {
-    for (const clause of simpleClauses) {
-      const values = toStringArray(clause.value);
-      if (clause.match === 'must') {
-        collectResolved(values, includeIds);
-      } else if (clause.match === 'must_not') {
-        collectResolved(values, excludeIds);
-      }
+  // `getFieldClauses` returns every field clause — scalar (`field:value`) and
+  // array-valued OR-groups (`field:(a or b)`) alike.
+  const clauses = query.ast.getFieldClauses(field.fieldName) ?? [];
+  for (const clause of clauses) {
+    const isGroup = Array.isArray(clause.value);
+    const ids = resolve(toStringArray(clause.value));
+    if (clause.match === 'must') {
+      // A bare scalar that resolves to exactly one ID is a match-all term;
+      // groups and fuzzy-expanded scalars are match-any.
+      const target = isGroup || ids.length > 1 ? anyIds : allIds;
+      target.push(...ids);
+    } else if (clause.match === 'must_not') {
+      excludeIds.push(...ids);
     }
   }
 
-  // OR-field clauses: `field:(A or B)`.
-  const includeOr = query.ast.getOrFieldClause(field.fieldName, undefined, true, 'eq');
-  if (includeOr) {
-    collectResolved(toStringArray(includeOr.value), includeIds);
-  }
-  const excludeOr = query.ast.getOrFieldClause(field.fieldName, undefined, false, 'eq');
-  if (excludeOr) {
-    collectResolved(toStringArray(excludeOr.value), excludeIds);
-  }
-
-  const include = [...new Set(includeIds)];
+  const include = [...new Set(anyIds)];
+  const includeAll = [...new Set(allIds)];
   const exclude = [...new Set(excludeIds)];
 
-  if (include.length === 0 && exclude.length === 0) {
+  if (include.length === 0 && includeAll.length === 0 && exclude.length === 0) {
     return { filter: undefined, hasUnresolved };
   }
-  return { filter: { include, exclude }, hasUnresolved };
+
+  const filter: QueryFilterValue = { include, exclude };
+  if (includeAll.length > 0) {
+    filter.includeAll = includeAll;
+  }
+  return { filter, hasUnresolved };
 };
 
 /**

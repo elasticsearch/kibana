@@ -19,10 +19,14 @@ import { mockFavoritesClient } from './services';
 /** Shape compatible with `ActiveFilters` from `@kbn/content-list-provider`. Defined locally to avoid circular dependency. */
 interface MockFindItemsFilters {
   search?: string;
-  tag?: { include?: string[]; exclude?: string[] };
-  createdBy?: { include?: string[]; exclude?: string[] };
+  tag?: { include?: string[]; includeAll?: string[]; exclude?: string[] };
+  createdBy?: { include?: string[]; includeAll?: string[]; exclude?: string[] };
   starred?: { state: 'include' | 'exclude' };
 }
+
+/** Whether an item carries the given tag id in its references. */
+const itemHasTag = (item: UserContentCommonSchema, tag: string): boolean =>
+  item.references?.some((ref) => ref.id === tag) ?? false;
 
 /**
  * Extracts tag IDs from a `UserContentCommonSchema` item's `references` array.
@@ -112,17 +116,19 @@ export function createMockFindItems<T extends UserContentCommonSchema>(
     const tagFilter = filters.tag;
     const includeTags = tagFilter?.include;
     if (includeTags && includeTags.length > 0) {
-      items = items.filter((item) =>
-        includeTags.some((tag) => item.references?.some((ref) => ref.id === tag))
-      );
+      items = items.filter((item) => includeTags.some((tag) => itemHasTag(item, tag)));
+    }
+
+    // Apply tag match-all (AND) filters
+    const includeAllTags = tagFilter?.includeAll;
+    if (includeAllTags && includeAllTags.length > 0) {
+      items = items.filter((item) => includeAllTags.every((tag) => itemHasTag(item, tag)));
     }
 
     // Apply tag exclude filters
     const excludeTags = tagFilter?.exclude;
     if (excludeTags && excludeTags.length > 0) {
-      items = items.filter(
-        (item) => !excludeTags.some((tag) => item.references?.some((ref) => ref.id === tag))
-      );
+      items = items.filter((item) => !excludeTags.some((tag) => itemHasTag(item, tag)));
     }
 
     // Apply createdBy include filters (UIDs from query model).
@@ -130,6 +136,15 @@ export function createMockFindItems<T extends UserContentCommonSchema>(
     const includeCreators = createdByFilter?.include;
     if (includeCreators && includeCreators.length > 0) {
       items = items.filter((item) => matchesUserFilter(item, includeCreators));
+    }
+
+    // Apply createdBy match-all (AND) filters. Each value must match individually, so
+    // multiple distinct creators yield nothing since an item has a single creator.
+    const includeAllCreators = createdByFilter?.includeAll;
+    if (includeAllCreators && includeAllCreators.length > 0) {
+      items = items.filter((item) =>
+        includeAllCreators.every((creator) => matchesUserFilter(item, [creator]))
+      );
     }
 
     // Apply createdBy exclude filters.
@@ -494,17 +509,19 @@ export const createSimpleMockFindItems = (
     const tagFilter = filters.tag;
     const includeTags = tagFilter?.include;
     if (includeTags && includeTags.length > 0) {
-      items = items.filter((item) =>
-        includeTags.some((tag) => item.references?.some((ref) => ref.id === tag))
-      );
+      items = items.filter((item) => includeTags.some((tag) => itemHasTag(item, tag)));
+    }
+
+    // Apply tag match-all (AND) filters
+    const includeAllTags = tagFilter?.includeAll;
+    if (includeAllTags && includeAllTags.length > 0) {
+      items = items.filter((item) => includeAllTags.every((tag) => itemHasTag(item, tag)));
     }
 
     // Apply tag exclude filters
     const excludeTags = tagFilter?.exclude;
     if (excludeTags && excludeTags.length > 0) {
-      items = items.filter(
-        (item) => !excludeTags.some((tag) => item.references?.some((ref) => ref.id === tag))
-      );
+      items = items.filter((item) => !excludeTags.some((tag) => itemHasTag(item, tag)));
     }
 
     // Apply createdBy include filters (UIDs from query model).
@@ -512,6 +529,15 @@ export const createSimpleMockFindItems = (
     const includeCreators = createdByFilter?.include;
     if (includeCreators && includeCreators.length > 0) {
       items = items.filter((item) => matchesUserFilter(item, includeCreators));
+    }
+
+    // Apply createdBy match-all (AND) filters. Each value must match individually, so
+    // multiple distinct creators yield nothing since an item has a single creator.
+    const includeAllCreators = createdByFilter?.includeAll;
+    if (includeAllCreators && includeAllCreators.length > 0) {
+      items = items.filter((item) =>
+        includeAllCreators.every((creator) => matchesUserFilter(item, [creator]))
+      );
     }
 
     // Apply createdBy exclude filters.

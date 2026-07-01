@@ -198,7 +198,9 @@ const extractTagIds = (refs?: Array<{ type: string; id: string }>): string[] | u
  * Safely narrow an `ActiveFilters` value to an {@link IncludeExcludeFilter}.
  */
 const asIncludeExclude = (value: ActiveFilters[string]): IncludeExcludeFilter | undefined =>
-  value != null && typeof value === 'object' && ('include' in value || 'exclude' in value)
+  value != null &&
+  typeof value === 'object' &&
+  ('include' in value || 'includeAll' in value || 'exclude' in value)
     ? (value as IncludeExcludeFilter)
     : undefined;
 
@@ -243,10 +245,15 @@ export const filterItems = (
       continue;
     }
 
-    const { include, exclude } = fieldFilter;
+    const { include, includeAll, exclude } = fieldFilter;
     if (include?.length) {
       result = result.filter((item) =>
         include.some((filterValue) => matchesFilterValue(item, customFilter, filterValue))
+      );
+    }
+    if (includeAll?.length) {
+      result = result.filter((item) =>
+        includeAll.every((filterValue) => matchesFilterValue(item, customFilter, filterValue))
       );
     }
     if (exclude?.length) {
