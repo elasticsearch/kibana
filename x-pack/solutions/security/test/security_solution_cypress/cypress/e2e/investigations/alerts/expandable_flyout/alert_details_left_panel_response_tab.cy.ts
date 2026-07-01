@@ -8,6 +8,7 @@
 import {
   DOCUMENT_DETAILS_FLYOUT_RESPONSE_DETAILS,
   DOCUMENT_DETAILS_FLYOUT_RESPONSE_EMPTY,
+  DOCUMENT_DETAILS_FLYOUT_RESPONSE_TAB,
 } from '../../../../screens/expandable_flyout/alert_details_left_panel_response_tab';
 import { openResponseTab } from '../../../../tasks/expandable_flyout/alert_details_left_panel_response_tab';
 import { expandDocumentDetailsExpandableFlyoutLeftSection } from '../../../../tasks/expandable_flyout/alert_details_right_panel';
@@ -19,7 +20,6 @@ import { createRule } from '../../../../tasks/api_calls/rules';
 import { getNewRule } from '../../../../objects/rule';
 import { ALERTS_URL } from '../../../../urls/navigation';
 import { waitForAlertsToPopulate } from '../../../../tasks/create_new_rule';
-import { DOCUMENT_DETAILS_FLYOUT_RESPONSE_TAB } from '../../../../screens/expandable_flyout/alert_details_left_panel';
 
 describe(
   'Alert details expandable flyout left panel investigation',
