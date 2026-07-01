@@ -48,6 +48,9 @@ export const AGENT_BUILDER_BUILTIN_TOOLS = [
   `${internalNamespaces.security}.alerts`,
   `${internalNamespaces.security}.get_entity`,
   `${internalNamespaces.security}.search_entities`,
+  `${internalNamespaces.security}.list_leads`,
+  `${internalNamespaces.security}.generate_leads`,
+  `${internalNamespaces.security}.dismiss_lead`,
   `${internalNamespaces.security}.pci_scope_discovery`,
   `${internalNamespaces.security}.pci_compliance`,
   `${internalNamespaces.security}.pci_field_mapper`,
@@ -138,6 +141,7 @@ export const AGENT_BUILDER_BUILTIN_SKILLS = [
   'workflow-authoring',
 
   // Security Solution
+  'entity-analytics-leads',
   'find-security-ml-jobs',
   'automatic_troubleshooting',
   'entity-analytics',

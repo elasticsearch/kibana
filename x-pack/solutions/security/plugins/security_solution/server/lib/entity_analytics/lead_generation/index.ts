@@ -37,6 +37,10 @@ export {
   type RunPipelineResult,
 } from './run_pipeline';
 export {
+  runLeadGenerationInBackground,
+  type RunLeadGenerationInBackgroundArgs,
+} from './run_background_pipeline';
+export {
   registerLeadGenerationTask,
   startLeadGenerationTask,
   removeLeadGenerationTask,

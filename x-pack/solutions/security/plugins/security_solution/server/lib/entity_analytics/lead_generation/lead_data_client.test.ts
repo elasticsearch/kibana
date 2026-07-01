@@ -305,7 +305,7 @@ describe('LeadDataClient', () => {
       expect(esClient.updateByQuery).toHaveBeenCalledWith(
         expect.objectContaining({
           index: allIndices,
-          query: { term: { id: 'lead-1' } },
+          query: { ids: { values: ['lead-1'] } },
         })
       );
     });
@@ -338,7 +338,7 @@ describe('LeadDataClient', () => {
       expect(count).toBe(3);
 
       const [call] = esClient.updateByQuery.mock.calls;
-      expect(call[0].query).toEqual({ terms: { id: ['a', 'b', 'c'] } });
+      expect(call[0].query).toEqual({ ids: { values: ['a', 'b', 'c'] } });
       expect(call[0].script).toEqual(
         expect.objectContaining({
           params: { status: 'dismissed' },
