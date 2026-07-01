@@ -68,7 +68,17 @@ interface DatasetExample extends Example {
     toolCalls?: ToolCallAssertion[];
     attachments?: AttachmentAssertion[];
   };
-  metadata?: { query_intent?: string };
+  metadata?: {
+    query_intent?: string;
+    /**
+     * Annotation-only marker for distractor / negative examples — names the skill
+     * that MUST NOT be invoked. Not enforced by an evaluator (the criteria array
+     * does the actual enforcement); used by reviewers and dataset filters to
+     * recognise an example as a negative test. Keep in sync with the canonical
+     * skill `name` (e.g. `entity-analytics`).
+     */
+    shouldNotActivateSkill?: string;
+  };
 }
 
 interface ChatTaskOutput {
