@@ -21,7 +21,7 @@
  *   2. error propagation from sub-services.
  */
 
-import type { CoreStart, ElasticsearchClient } from '@kbn/core/server';
+import type { CoreSetup, CoreStart, ElasticsearchClient } from '@kbn/core/server';
 import { coreMock } from '@kbn/core/server/mocks';
 import { loggerMock } from '@kbn/logging-mocks';
 import { readWorkflowVersioningEnabled } from '@kbn/workflows/server';
@@ -33,7 +33,7 @@ import { WorkflowCrudService } from '../services/workflow_crud_service';
 import { WorkflowExecutionQueryService } from '../services/workflow_execution_query_service';
 import { WorkflowSearchService } from '../services/workflow_search_service';
 import { WorkflowValidationService } from '../services/workflow_validation_service';
-import type { WorkflowsServerPluginStartDeps } from '../types';
+import type { WorkflowsServerPluginSetupDeps, WorkflowsServerPluginStartDeps } from '../types';
 
 jest.mock('../services/workflow_change_history_service');
 jest.mock('@kbn/workflows/server', () => {
@@ -111,6 +111,16 @@ const makeCoreStart = (esClient: ElasticsearchClient): CoreStart =>
     elasticsearch: { client: { asInternalUser: esClient } },
   } as unknown as CoreStart);
 
+const makeCoreSetup = (
+  startServices: () => Promise<[CoreStart, WorkflowsServerPluginStartDeps]>
+): CoreSetup<WorkflowsServerPluginStartDeps> =>
+  ({
+    getStartServices: startServices,
+  } as unknown as CoreSetup<WorkflowsServerPluginStartDeps>);
+
+const makePluginsSetup = (): WorkflowsServerPluginSetupDeps =>
+  ({} as unknown as WorkflowsServerPluginSetupDeps);
+
 describe('WorkflowsService (facade)', () => {
   let crudSpies: PrototypeSpies;
   let searchSpies: PrototypeSpies;
@@ -120,7 +130,12 @@ describe('WorkflowsService (facade)', () => {
   const buildService = async (): Promise<WorkflowsService> => {
     const coreStart = makeCoreStart(makeEsClient());
     const startServices = jest.fn().mockResolvedValue([coreStart, makePluginsStart()]);
-    const service = new WorkflowsService(startServices as any, loggerMock.create(), '9.0.0');
+    const service = new WorkflowsService(
+      makeCoreSetup(startServices),
+      makePluginsSetup(),
+      loggerMock.create(),
+      '9.0.0'
+    );
     // Wait a tick so initialize() completes.
     await Promise.resolve();
     await Promise.resolve();
@@ -191,7 +206,12 @@ describe('WorkflowsService (facade)', () => {
       const logger = loggerMock.create();
       const service = await (async () => {
         const startServices = jest.fn().mockResolvedValue([coreStart, makePluginsStart()]);
-        const svc = new WorkflowsService(startServices as any, logger, '9.0.0');
+        const svc = new WorkflowsService(
+          makeCoreSetup(startServices),
+          makePluginsSetup(),
+          logger,
+          '9.0.0'
+        );
         await Promise.resolve();
         await Promise.resolve();
         return svc;
@@ -222,7 +242,12 @@ describe('WorkflowsService (facade)', () => {
       const logger = loggerMock.create();
       const service = await (async () => {
         const startServices = jest.fn().mockResolvedValue([coreStart, makePluginsStart()]);
-        const svc = new WorkflowsService(startServices as any, logger, '9.0.0');
+        const svc = new WorkflowsService(
+          makeCoreSetup(startServices),
+          makePluginsSetup(),
+          logger,
+          '9.0.0'
+        );
         await Promise.resolve();
         await Promise.resolve();
         return svc;
@@ -244,7 +269,12 @@ describe('WorkflowsService (facade)', () => {
       );
 
       const startServices = jest.fn().mockReturnValue(startServicesPromise);
-      const service = new WorkflowsService(startServices as any, loggerMock.create(), '9.0.0');
+      const service = new WorkflowsService(
+        makeCoreSetup(startServices),
+        makePluginsSetup(),
+        loggerMock.create(),
+        '9.0.0'
+      );
 
       const call = service.getWorkflow('wf-1', 'default');
       // Give the microtask queue a chance to run — the call must still be pending.

@@ -1,0 +1,10 @@
+{
+  "name": "@kbn/workflows-library",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Shared types, Zod schemas, and YAML parsing for the Workflow Template Library",
+  "license": "Elastic License 2.0 OR AGPL-3.0-only OR SSPL-1.0",
+  "main": "index.ts",
+  "types": "index.ts",
+  "sideEffects": false
+}

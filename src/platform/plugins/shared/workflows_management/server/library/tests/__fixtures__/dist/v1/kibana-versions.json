@@ -1,0 +1,6 @@
+{
+  "versions": [
+    { "id": "9.5", "kibana": "9.5.0", "active": true }
+  ],
+  "latest": "9.5"
+}

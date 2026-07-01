@@ -68,7 +68,11 @@ const parseInvalidSelections = (
   return selectedOptions.filter((selection) => (buckets[String(selection)]?.doc_count ?? 0) === 0);
 };
 
-export function registerExecutionOptionsListRoute({ router, service, spaces }: RouteDependencies) {
+export function registerExecutionOptionsListRoute({
+  router,
+  workflowsService,
+  spaces,
+}: RouteDependencies) {
   router.versioned
     .post({
       path: '/internal/workflows/executions/options_list',
@@ -113,7 +117,7 @@ export function registerExecutionOptionsListRoute({ router, service, spaces }: R
           if (!hasWorkflowExecutionReadPrivilege(request)) {
             return response.forbidden();
           }
-          const coreStart = await service.getCoreStart();
+          const coreStart = await workflowsService.getCoreStart();
           const esClient = coreStart.elasticsearch.client.asInternalUser;
           const spaceId = spaces.getSpaceId(request);
           const optionsListRequest = request.body as OptionsListRequestBody;

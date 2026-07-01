@@ -11,6 +11,35 @@ import type { TypeOf } from '@kbn/config-schema';
 import { schema } from '@kbn/config-schema';
 import type { PluginConfigDescriptor } from '@kbn/core/server';
 
+const librarySchema = schema.object(
+  {
+    /**
+     * URL prefix the HTTP source mode fetches the catalog from. When unset,
+     * the runtime falls back to {@link WORKFLOWS_LIBRARY_DEFAULT_REGISTRY_URL}.
+     * Mutually exclusive with `bundlePath`.
+     */
+    registryUrl: schema.maybe(schema.string({ minLength: 1 })),
+    /**
+     * Filesystem path to a local catalog bundle (air-gapped deployments).
+     * Reserved for the bundle-mode successor task; the HTTP source mode is the
+     * only mode implemented in Phase 2. Mutually exclusive with `registryUrl`.
+     */
+    bundlePath: schema.maybe(schema.string({ minLength: 1 })),
+    /** Interval between background catalog refreshes (HTTP source mode). */
+    ttlMs: schema.number({
+      defaultValue: 10 * 60 * 1000,
+      min: 10 * 1000,
+    }),
+  },
+  {
+    validate: (value) => {
+      if (value.registryUrl !== undefined && value.bundlePath !== undefined) {
+        return '`workflowsManagement.library.registryUrl` and `workflowsManagement.library.bundlePath` cannot both be set.';
+      }
+    },
+  }
+);
+
 const configSchema = schema.object({
   enabled: schema.boolean({ defaultValue: true }),
   logging: schema.object({
@@ -29,6 +58,14 @@ const configSchema = schema.object({
   globalExecutionsView: schema.object({
     enabled: schema.boolean({ defaultValue: false }),
   }),
+  /**
+   * Workflow Template Library — fetches the curated catalog and exposes it at
+   * `/internal/workflows/library/*`. Server-only infrastructure settings; the
+   * tech-preview enable/disable toggle is the `workflowsManagement:library:enabled`
+   * global uiSetting (so browser components can read it without depending on
+   * this plugin).
+   */
+  library: librarySchema,
 });
 
 export type WorkflowsManagementConfig = TypeOf<typeof configSchema>;

@@ -74,11 +74,7 @@ export class WorkflowsPlugin
 
     this.logger.debug('Workflows Management: Creating workflows service');
 
-    const workflowsService = new WorkflowsService(
-      core.getStartServices,
-      this.logger,
-      this.kibanaVersion
-    );
+    const workflowsService = new WorkflowsService(core, plugins, this.logger, this.kibanaVersion);
     this.workflowsService = workflowsService;
 
     const api = new WorkflowsManagementApi(workflowsService, this.config.available);
@@ -103,7 +99,16 @@ export class WorkflowsPlugin
 
     const router = core.http.createRouter<WorkflowsRequestHandlerContext>();
     const audit = new WorkflowManagementAuditLog({ service: workflowsService });
-    defineRoutes(router, api, this.logger, spaces, workflowsService, audit);
+
+    defineRoutes({
+      router,
+      config: this.config,
+      logger: this.logger,
+      api,
+      spaces,
+      workflowsService,
+      audit,
+    });
 
     if (plugins.inbox) {
       this.logger.debug('Workflows Management: registering inbox provider');
