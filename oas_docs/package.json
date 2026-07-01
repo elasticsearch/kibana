@@ -8,7 +8,7 @@
   },
   "dependencies": {
     "bump-cli": "2.9.11",
-    "@redocly/cli": "2.30.4"
+    "@redocly/cli": "2.35.1"
   },
   "overrides": {
     "axios": "1.16.1"
