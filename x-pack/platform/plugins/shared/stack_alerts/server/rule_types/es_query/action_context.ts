@@ -35,7 +35,7 @@ export interface EsQueryRuleActionContext extends AlertInstanceContext {
   // a link to see records that triggered the rule for Discover rule
   // a link which navigates to stack management in case of Elastic query rule
   link: string;
-  sourceFields: string[];
+  sourceFields: Record<string, string[]>;
   grouping?: FieldsObject;
 }
 

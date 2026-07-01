@@ -722,7 +722,7 @@ describe('es_query executor', () => {
           message: 'Document count is 0 in the last 5m. Alert when greater than or equal to 500.',
           title: "rule 'test-rule-name' recovered",
           value: 0,
-          sourceFields: [],
+          sourceFields: {},
         },
         payload: {
           'kibana.alert.evaluation.conditions':
@@ -801,7 +801,7 @@ describe('es_query executor', () => {
             'Document count is 0 in the last 5m for host-1. Alert when greater than or equal to 200.',
           title: "rule 'test-rule-name' recovered",
           value: 0,
-          sourceFields: [],
+          sourceFields: {},
           grouping: {
             host: {
               name: 'host-1',
@@ -831,7 +831,7 @@ describe('es_query executor', () => {
             'Document count is 0 in the last 5m for host-2. Alert when greater than or equal to 200.',
           title: "rule 'test-rule-name' recovered",
           value: 0,
-          sourceFields: [],
+          sourceFields: {},
           grouping: {
             host: {
               name: 'host-2',
@@ -895,7 +895,7 @@ describe('es_query executor', () => {
           message: 'Document count is 0 in the last 5m. Alert when greater than 0.',
           title: "rule 'test-rule-name' recovered",
           value: 0,
-          sourceFields: [],
+          sourceFields: {},
         },
         payload: {
           'kibana.alert.evaluation.conditions': 'Query did NOT match documents',
@@ -909,6 +909,64 @@ describe('es_query executor', () => {
       });
       expect(mockSetLimitReached).toHaveBeenCalledTimes(1);
       expect(mockSetLimitReached).toHaveBeenCalledWith(false);
+    });
+
+    it('should populate sourceFields in recovery context from persisted alert document', async () => {
+      mockGetRecoveredAlerts.mockReturnValueOnce([
+        {
+          alert: {
+            getId: () => 'host-1',
+          },
+          hit: {
+            [ALERT_GROUPING]: { host: { name: 'host-1' } },
+            'host.hostname': ['host-1'],
+            'host.id': ['1'],
+            'host.name': ['host-1'],
+          },
+        },
+      ]);
+      mockFetchEsQuery.mockResolvedValueOnce({
+        parsedResults: { results: [], truncated: false },
+        link: 'https://localhost:5601/app/management/insightsAndAlerting/triggersActions/rule/test-rule-id',
+      });
+
+      const candidateSourceFields = [
+        { label: 'host.hostname', searchPath: 'host.hostname.keyword' },
+        { label: 'host.id', searchPath: 'host.id.keyword' },
+        { label: 'host.name', searchPath: 'host.name.keyword' },
+      ];
+
+      await executor(
+        coreMock,
+        {
+          ...defaultExecutorOptions,
+          // @ts-expect-error
+          params: {
+            ...defaultProps,
+            threshold: [200],
+            thresholdComparator: '>=' as Comparator,
+            groupBy: 'top',
+            termSize: 10,
+            termField: 'host.name',
+          },
+        },
+        candidateSourceFields
+      );
+
+      expect(mockReport).not.toHaveBeenCalled();
+      expect(mockSetAlertData).toHaveBeenCalledTimes(1);
+      expect(mockSetAlertData).toHaveBeenNthCalledWith(1, {
+        id: 'host-1',
+        context: expect.objectContaining({
+          sourceFields: {
+            'host.hostname': ['host-1'],
+            'host.id': ['1'],
+            'host.name': ['host-1'],
+          },
+          grouping: { host: { name: 'host-1' } },
+        }),
+        payload: expect.any(Object),
+      });
     });
 
     it('should correctly handle alerts with sourceFields', async () => {

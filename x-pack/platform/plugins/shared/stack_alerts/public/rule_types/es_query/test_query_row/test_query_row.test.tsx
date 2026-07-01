@@ -26,7 +26,7 @@ const COPIED_QUERY = 'COPIED QUERY';
 const onFetch = () =>
   Promise.resolve({
     testResults: {
-      results: [{ group: 'all documents', hits: [], count: 42, sourceFields: [] }],
+      results: [{ group: 'all documents', hits: [], count: 42, sourceFields: {} }],
       truncated: false,
     },
     isGrouped: false,
@@ -159,7 +159,7 @@ describe('TestQueryRow', () => {
     const newFetch = () =>
       Promise.resolve({
         testResults: {
-          results: [{ group: 'all documents', hits: [], count: 10, sourceFields: [] }],
+          results: [{ group: 'all documents', hits: [], count: 10, sourceFields: {} }],
           truncated: false,
         },
         isGrouped: false,

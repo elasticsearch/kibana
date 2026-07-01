@@ -82,3 +82,26 @@ export const getSourceFields = () => {
       }))
   );
 };
+
+/**
+ * Reads source field values off a persisted alert document (hit) using the candidate
+ * source-field list. Keys are stored as literal dotted strings in the alert _source,
+ * so we use bracket access rather than lodash.get to avoid traversing nested paths.
+ */
+export const getSourceFieldsFromHit = (
+  hit: Record<string, unknown> | undefined,
+  sourceFieldsParams: Array<{ label: string; searchPath: string }>
+): Record<string, string[]> => {
+  if (!hit || sourceFieldsParams.length === 0) {
+    return {};
+  }
+  const result: Record<string, string[]> = {};
+  for (const { label } of sourceFieldsParams) {
+    const raw = hit[label];
+    if (raw == null) {
+      continue;
+    }
+    result[label] = Array.isArray(raw) ? (raw as unknown[]).map(String) : [String(raw)];
+  }
+  return result;
+};

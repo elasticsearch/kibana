@@ -19,7 +19,7 @@ export interface ParsedAggregationGroup {
   group: string;
   count: number;
   hits: Array<SearchHit<unknown>>;
-  sourceFields: string[];
+  sourceFields: Record<string, string[]>;
   groups?: Group[];
   groupingObject?: Record<string, unknown>;
   value?: number;

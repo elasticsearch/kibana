@@ -32,7 +32,7 @@ describe('addMessages', () => {
       conditions: 'count greater than 4',
       hits: [],
       link: 'link-mock',
-      sourceFields: [],
+      sourceFields: {},
     };
     const context = addMessages({
       ruleName: '[rule-name]',
@@ -66,7 +66,7 @@ describe('addMessages', () => {
       conditions: 'count not greater than 4',
       hits: [],
       link: 'link-mock',
-      sourceFields: [],
+      sourceFields: {},
     };
     const context = addMessages({
       ruleName: '[rule-name]',
@@ -101,7 +101,7 @@ describe('addMessages', () => {
       conditions: 'count between 4 and 5',
       hits: [],
       link: 'link-mock',
-      sourceFields: [],
+      sourceFields: {},
     };
     const context = addMessages({
       ruleName: '[rule-name]',
@@ -137,7 +137,7 @@ describe('addMessages', () => {
       conditions: `count for group "host-1" not greater than 4`,
       hits: [],
       link: 'link-mock',
-      sourceFields: [],
+      sourceFields: {},
     };
     const context = addMessages({
       ruleName: '[rule-name]',
@@ -174,7 +174,7 @@ describe('addMessages', () => {
       conditions: 'count greater than 4',
       hits: [],
       link: 'link-mock',
-      sourceFields: [],
+      sourceFields: {},
     };
     const context = addMessages({
       ruleName: '[rule-name]',
@@ -208,7 +208,7 @@ describe('addMessages', () => {
       conditions: 'count greater than 4',
       hits: [],
       link: 'link-mock',
-      sourceFields: [],
+      sourceFields: {},
     };
     const context = addMessages({
       ruleName: '[rule-name]',
@@ -242,7 +242,7 @@ describe('addMessages', () => {
       conditions: 'count greater than 4',
       hits: [],
       link: 'link-mock',
-      sourceFields: [],
+      sourceFields: {},
     };
     const context = addMessages({
       ruleName: '[rule-name]',

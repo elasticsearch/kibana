@@ -15,7 +15,7 @@ describe('useTestQuery', () => {
       initialProps: () =>
         Promise.resolve({
           testResults: {
-            results: [{ group: 'all documents', hits: [], count: 1, sourceFields: [] }],
+            results: [{ group: 'all documents', hits: [], count: 1, sourceFields: {} }],
             truncated: false,
           },
           isGrouped: false,
@@ -46,8 +46,8 @@ describe('useTestQuery', () => {
         Promise.resolve({
           testResults: {
             results: [
-              { group: 'a', count: 1, value: 10, hits: [], sourceFields: [] },
-              { group: 'b', count: 2, value: 20, hits: [], sourceFields: [] },
+              { group: 'a', count: 1, value: 10, hits: [], sourceFields: {} },
+              { group: 'b', count: 2, value: 20, hits: [], sourceFields: {} },
             ],
             truncated: false,
           },
@@ -81,8 +81,8 @@ describe('useTestQuery', () => {
         Promise.resolve({
           testResults: {
             results: [
-              { group: 'a', count: 1, value: 10, hits: [], sourceFields: [] },
-              { group: 'b', count: 2, value: 20, hits: [], sourceFields: [] },
+              { group: 'a', count: 1, value: 10, hits: [], sourceFields: {} },
+              { group: 'b', count: 2, value: 20, hits: [], sourceFields: {} },
             ],
             truncated: false,
           },
@@ -131,8 +131,8 @@ describe('useTestQuery', () => {
         Promise.resolve({
           testResults: {
             results: [
-              { group: 'a', count: 1, value: 10, hits: [], sourceFields: [] },
-              { group: 'b', count: 2, value: 20, hits: [], sourceFields: [] },
+              { group: 'a', count: 1, value: 10, hits: [], sourceFields: {} },
+              { group: 'b', count: 2, value: 20, hits: [], sourceFields: {} },
             ],
             truncated: false,
           },

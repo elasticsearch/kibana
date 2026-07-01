@@ -7,7 +7,12 @@
 
 import type { OnlyEsQueryRuleParams } from './types';
 import type { Comparator } from '../../../common/comparator_types';
-import { getParsedQuery, checkForShardFailures, getSourceFields } from './util';
+import {
+  getParsedQuery,
+  checkForShardFailures,
+  getSourceFields,
+  getSourceFieldsFromHit,
+} from './util';
 
 describe('es_query utils', () => {
   const defaultProps = {
@@ -251,6 +256,70 @@ describe('es_query utils', () => {
           hits: { total: { value: 0, relation: 'eq' }, max_score: 0, hits: [] },
         })
       ).toBeUndefined();
+    });
+  });
+
+  describe('getSourceFieldsFromHit', () => {
+    const candidateFields = [
+      { label: 'host.hostname', searchPath: 'host.hostname' },
+      { label: 'host.id', searchPath: 'host.id' },
+      { label: 'service.name', searchPath: 'service.name' },
+    ];
+
+    it('should return empty object when hit is undefined', () => {
+      expect(getSourceFieldsFromHit(undefined, candidateFields)).toEqual({});
+    });
+
+    it('should return empty object when sourceFieldsParams is empty', () => {
+      expect(getSourceFieldsFromHit({ 'host.hostname': 'host-1' }, [])).toEqual({});
+    });
+
+    it('should return empty object when no matching keys exist on the hit', () => {
+      expect(getSourceFieldsFromHit({ unrelated: 'value' }, candidateFields)).toEqual({});
+    });
+
+    it('should return matched fields as string arrays', () => {
+      const hit = {
+        'host.hostname': 'host-1',
+        'host.id': '42',
+      };
+      expect(getSourceFieldsFromHit(hit, candidateFields)).toEqual({
+        'host.hostname': ['host-1'],
+        'host.id': ['42'],
+      });
+    });
+
+    it('should preserve array values and normalise each element to a string', () => {
+      const hit = {
+        'host.hostname': ['host-1', 'host-2'],
+        'host.id': [1, 2],
+      };
+      expect(getSourceFieldsFromHit(hit, candidateFields)).toEqual({
+        'host.hostname': ['host-1', 'host-2'],
+        'host.id': ['1', '2'],
+      });
+    });
+
+    it('should skip null and undefined values', () => {
+      const hit = {
+        'host.hostname': null,
+        'host.id': undefined,
+        'service.name': 'my-service',
+      };
+      expect(getSourceFieldsFromHit(hit, candidateFields)).toEqual({
+        'service.name': ['my-service'],
+      });
+    });
+
+    it('should use literal dotted bracket access and not traverse nested objects', () => {
+      // Ensure we do NOT mistake a nested object for the dotted key
+      const hit = {
+        host: { hostname: 'should-be-ignored' },
+        'host.hostname': 'correct-value',
+      };
+      expect(getSourceFieldsFromHit(hit, candidateFields)).toEqual({
+        'host.hostname': ['correct-value'],
+      });
     });
   });
 
