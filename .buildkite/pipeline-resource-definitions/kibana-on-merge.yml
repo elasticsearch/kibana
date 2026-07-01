@@ -26,6 +26,7 @@ spec:
         KIBANA_SLACK_NOTIFICATIONS_ENABLED: 'true'
         SLACK_NOTIFICATIONS_SKIP_FOR_RETRIES: 'true'
         SCOUT_REPORTER_ENABLED: 'true'
+        FTR_SMART_RETRY_ENABLED: 'false'
       allow_rebuilds: true
       branch_configuration: main 9.4 9.3 8.19
       default_branch: main

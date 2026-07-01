@@ -3,12 +3,18 @@
 set -euo pipefail
 
 source .buildkite/scripts/steps/functional/common.sh
+source .buildkite/scripts/steps/test/ftr_smart_retry.sh
 
 BUILDKITE_PARALLEL_JOB=${BUILDKITE_PARALLEL_JOB:-}
 FTR_CONFIG_GROUP_KEY=${FTR_CONFIG_GROUP_KEY:-}
 if [ "$FTR_CONFIG_GROUP_KEY" == "" ] && [ "$BUILDKITE_PARALLEL_JOB" == "" ]; then
   echo "Missing FTR_CONFIG_GROUP_KEY env var"
   exit 1
+fi
+
+BAIL_ARG="--bail"
+if [[ "${FTR_SMART_RETRY_ENABLED:-}" =~ ^(1|true)$ ]]; then
+  BAIL_ARG=""
 fi
 
 EXTRA_ARGS=${FTR_EXTRA_ARGS:-}
@@ -52,7 +58,7 @@ while read -r config; do
     continue;
   fi
 
-  FULL_COMMAND="node scripts/functional_tests --bail --config $config $EXTRA_ARGS"
+  FULL_COMMAND="node scripts/functional_tests $BAIL_ARG --config $config $EXTRA_ARGS"
 
   # see if this config has already been executed successfully
   CONFIG_EXECUTION_KEY="${config}_executed"
@@ -90,9 +96,9 @@ while read -r config; do
   # prevent non-zero exit code from breaking the loop
   set +e;
   node ./scripts/functional_tests \
-    --bail \
     --kibana-install-dir "$KIBANA_BUILD_LOCATION" \
     --config="$config" \
+    $BAIL_ARG \
     "$EXTRA_ARGS"
   lastCode=$?
   set -e;
@@ -139,6 +145,18 @@ done <<< "$configs"
 
 if [[ "$failedConfigs" ]]; then
   buildkite-agent meta-data set "$FAILED_CONFIGS_KEY" "$failedConfigs"
+fi
+
+if smart_retry_applicable; then
+  retryCount=${BUILDKITE_RETRY_COUNT:-0}
+
+  if [[ "$retryCount" == "0" ]]; then
+    store_failing_tests
+  fi
+
+  if [[ "$retryCount" == "1" ]]; then
+    apply_smart_retry
+  fi
 fi
 
 echo "--- FTR configs complete"

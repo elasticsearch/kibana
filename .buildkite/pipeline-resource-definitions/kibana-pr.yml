@@ -23,6 +23,7 @@ spec:
         KIBANA_GITHUB_BUILD_COMMIT_STATUS_ENABLED: 'true'
         GITHUB_BUILD_COMMIT_STATUS_CONTEXT: kibana-ci
         SCOUT_REPORTER_ENABLED: 'true'
+        FTR_SMART_RETRY_ENABLED: 'false'
       allow_rebuilds: true
       branch_configuration: ''
       cancel_intermediate_builds: true

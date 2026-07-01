@@ -8,4 +8,4 @@
  */
 
 require('@kbn/setup-node-env');
-require('@kbn/failed-test-reporter-cli').runFailedTestsReporterCli();
+require('@kbn/failed-test-reporter-cli').runRetryResultCheckerCli();
