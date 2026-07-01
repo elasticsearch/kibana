@@ -15,7 +15,7 @@ import { DEFAULT_ENTITY_STORE_PERMISSIONS } from '../constants';
 import type { EntityStorePluginRouter } from '../../types';
 import { wrapMiddlewares } from '../middleware';
 import type { EntityStoreStatus, GetStatusSuccessResult } from '../../domain/types';
-import type { LogExtractionConfig } from '../../domain/saved_objects';
+import type { EntityStorePreferences, LogExtractionConfig } from '../../domain/saved_objects';
 import { capAtMaxLogsPerWindow } from '../../domain/logs_extraction/effective_page_limits';
 import { ENTITY_STORE_STATUS } from '../../domain/constants';
 
@@ -50,6 +50,7 @@ type StatusEngine = Omit<
 export interface EntityStoreStatusResponseBody {
   status: EntityStoreStatus;
   engines: StatusEngine[];
+  preferences: Pick<EntityStorePreferences, 'autoInstall'>;
 }
 
 const querySchema = z.object({
@@ -132,11 +133,13 @@ export function registerStatus(router: EntityStorePluginRouter) {
           const { logger, assetManagerClient: assetManager } = entityStoreCtx;
           logger.debug('Status API invoked');
           const withComponents = req.query.include_components;
-          const { status, engines, ...rest } = await assetManager.getStatus(withComponents);
+          const { status, engines, preferences, ...rest } = await assetManager.getStatus(
+            withComponents
+          );
 
           if (status === ENTITY_STORE_STATUS.NOT_INSTALLED) {
             return res.ok({
-              body: { status, engines: [] },
+              body: { status, engines: [], preferences },
             });
           }
 
@@ -146,6 +149,7 @@ export function registerStatus(router: EntityStorePluginRouter) {
             body: {
               status,
               engines: engines.map((engine) => toPublicEngine(engine, logsExtractionConfig)),
+              preferences,
             },
           });
         }

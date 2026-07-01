@@ -14,6 +14,7 @@ import { createRemoteLogsExtractionClient } from '../domain/logs_extraction/remo
 import {
   EngineDescriptorClient,
   EntityStoreGlobalStateClient,
+  EntityStorePreferencesClient,
   type RemoteLogExtractionStateClient,
 } from '../domain/saved_objects';
 import type { TelemetryReporter } from '../telemetry/events';
@@ -105,6 +106,7 @@ export async function createAssetManagerClient({
   const soClient = coreStart.savedObjects.getScopedClient(fakeRequest);
   const engineDescriptorClient = new EngineDescriptorClient(soClient, namespace, logger);
   const globalStateClient = new EntityStoreGlobalStateClient(soClient, namespace, logger);
+  const preferencesClient = new EntityStorePreferencesClient(soClient, namespace, logger);
 
   const { logsExtractionClient, remoteLogExtractionStateClient } = await createLogsExtractionClient(
     {
@@ -124,6 +126,7 @@ export async function createAssetManagerClient({
       taskManager: pluginsStart.taskManager,
       engineDescriptorClient,
       globalStateClient,
+      preferencesClient,
       remoteLogExtractionStateClient,
       namespace,
       isServerless,

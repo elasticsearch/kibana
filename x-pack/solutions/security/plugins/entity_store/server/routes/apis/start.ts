@@ -58,6 +58,7 @@ export function registerStart(router: EntityStorePluginRouter) {
           logger,
           assetManagerClient: assetManager,
           entityMaintainersClient,
+          preferencesClient,
         } = entityStoreCtx;
         const { entityTypes } = req.body;
         logger.debug('Start API invoked');
@@ -74,6 +75,9 @@ export function registerStart(router: EntityStorePluginRouter) {
         if (toStart.length > 0) {
           await entityMaintainersClient.startAll(req);
         }
+
+        // Starting the store is an explicit intent to keep it enabled.
+        await preferencesClient.set('autoInstall', true);
 
         return res.ok({
           body: {
