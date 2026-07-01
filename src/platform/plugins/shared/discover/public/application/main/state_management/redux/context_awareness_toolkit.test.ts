@@ -15,24 +15,7 @@ import { createDiscoverServicesMock } from '../../../../__mocks__/services';
 import { getPersistedTabMock } from './__mocks__/internal_state.mocks';
 import { createContextAwarenessToolkit } from './context_awareness_toolkit';
 import { createTabItem, internalStateActions, selectAllTabs, selectTab, type TabState } from '.';
-import { type ProfileStateDefinition, ProfileStateType } from '../../../../context_awareness';
-
-interface TestProfileState {
-  color: string;
-  rowsPerPage: number;
-}
-
-const TEST_PROFILE_STATE_DEF: ProfileStateDefinition<TestProfileState> = {
-  key: 'testProfileState',
-  descriptor: {
-    color: { type: ProfileStateType.Ui },
-    rowsPerPage: { type: ProfileStateType.Ui },
-  },
-  defaultState: {
-    color: 'default',
-    rowsPerPage: 25,
-  },
-};
+import { TEST_PROFILE_STATE_DEF } from '../../../../context_awareness/__mocks__/profile_state';
 
 describe('createContextAwarenessToolkit', () => {
   const setup = async () => {
@@ -178,14 +161,19 @@ describe('createContextAwarenessToolkit', () => {
     expect(stateAdapter.getState()).toEqual(TEST_PROFILE_STATE_DEF.defaultState);
     expect(selectTab(internalState.getState(), tabId).profileState).toEqual({});
 
-    stateAdapter.setState({ color: 'primary', rowsPerPage: 50 });
-    expect(stateAdapter.getState()).toEqual({ color: 'primary', rowsPerPage: 50 });
+    const firstState = {
+      ...TEST_PROFILE_STATE_DEF.defaultState,
+      uiValue: 'primary',
+      nestedValue: { count: 50 },
+    };
+    stateAdapter.setState(firstState);
+    expect(stateAdapter.getState()).toEqual(firstState);
     expect(selectTab(internalState.getState(), tabId).profileState).toEqual({
-      testProfileState: { color: 'primary', rowsPerPage: 50 },
+      testProfileState: firstState,
     });
 
-    stateAdapter.updateState({ rowsPerPage: 100 });
-    expect(stateAdapter.getState()).toEqual({ color: 'primary', rowsPerPage: 100 });
+    stateAdapter.updateState({ nestedValue: { count: 100 } });
+    expect(stateAdapter.getState()).toEqual({ ...firstState, nestedValue: { count: 100 } });
   });
 
   it('emits profile state updates', async () => {
@@ -199,14 +187,19 @@ describe('createContextAwarenessToolkit', () => {
     const emittedValues: TabState['profileState'][string][] = [];
     const subscription = stateAdapter.getState$().subscribe((state) => emittedValues.push(state));
 
-    stateAdapter.setState({ color: 'primary', rowsPerPage: 50 });
-    stateAdapter.updateState({ rowsPerPage: 100 });
+    const firstState = {
+      ...TEST_PROFILE_STATE_DEF.defaultState,
+      uiValue: 'primary',
+      nestedValue: { count: 50 },
+    };
+    stateAdapter.setState(firstState);
+    stateAdapter.updateState({ nestedValue: { count: 100 } });
     subscription.unsubscribe();
 
     expect(emittedValues).toEqual([
       TEST_PROFILE_STATE_DEF.defaultState,
-      { color: 'primary', rowsPerPage: 50 },
-      { color: 'primary', rowsPerPage: 100 },
+      firstState,
+      { ...firstState, nestedValue: { count: 100 } },
     ]);
   });
 
@@ -234,9 +227,14 @@ describe('createContextAwarenessToolkit', () => {
       tabId: otherTab.id,
     }).getStateAdapter(TEST_PROFILE_STATE_DEF);
 
-    firstTabStateAdapter.setState({ color: 'primary', rowsPerPage: 50 });
+    const firstState = {
+      ...TEST_PROFILE_STATE_DEF.defaultState,
+      uiValue: 'primary',
+      nestedValue: { count: 50 },
+    };
+    firstTabStateAdapter.setState(firstState);
 
-    expect(firstTabStateAdapter.getState()).toEqual({ color: 'primary', rowsPerPage: 50 });
+    expect(firstTabStateAdapter.getState()).toEqual(firstState);
     expect(otherTabStateAdapter.getState()).toEqual(TEST_PROFILE_STATE_DEF.defaultState);
     expect(selectTab(internalState.getState(), otherTab.id).profileState).toEqual({});
   });

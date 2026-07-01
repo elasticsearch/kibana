@@ -16,6 +16,7 @@ import {
 } from '@kbn/kibana-utils-plugin/public';
 import type { TabItem } from '@kbn/unified-tabs';
 import type { DiscoverSession } from '@kbn/saved-search-plugin/common';
+import { ProfileStateType, type ProfileStateRegistry } from '../../../context_awareness';
 import { NEW_TAB_ID, TAB_STATE_URL_KEY } from '../../../../common/constants';
 import {
   createTabItem,
@@ -36,6 +37,7 @@ export type TabStateInLocalStorage = Pick<TabState, 'id' | 'label'> & {
   attributes: TabState['attributes'] | undefined;
   appState: DiscoverAppState | undefined;
   globalState: TabState['globalState'] | undefined;
+  profileState: TabState['profileState'] | undefined;
 };
 
 type RecentlyClosedTabStateInLocalStorage = TabStateInLocalStorage &
@@ -78,7 +80,7 @@ export interface TabsStorageManager {
     tabId: string,
     tabState: Pick<
       TabStateInLocalStorage,
-      'internalState' | 'attributes' | 'appState' | 'globalState'
+      'internalState' | 'attributes' | 'appState' | 'globalState' | 'profileState'
     >
   ) => void;
   loadLocally: (props: {
@@ -99,10 +101,12 @@ export interface TabsStorageManager {
 export const createTabsStorageManager = ({
   urlStateStorage,
   storage,
+  profileStateRegistry,
   enabled,
 }: {
   urlStateStorage: IKbnUrlStateStorage;
   storage: Storage;
+  profileStateRegistry: ProfileStateRegistry;
   enabled?: boolean;
 }): TabsStorageManager => {
   const urlStateContainer = createStateContainer<TabsUrlState>({});
@@ -183,7 +187,6 @@ export const createTabsStorageManager = ({
   ): TabStateInLocalStorage => {
     const getInternalStateForTabWithoutRuntimeState = (tabId: string) =>
       getInternalState?.(tabId) || tabState.initialInternalState;
-
     return {
       id: tabState.id,
       label: tabState.label,
@@ -191,6 +194,7 @@ export const createTabsStorageManager = ({
       attributes: tabState.attributes,
       appState: tabState.appState,
       globalState: tabState.globalState,
+      profileState: getPersistentProfileState(tabState.profileState),
     };
   };
 
@@ -204,12 +208,20 @@ export const createTabsStorageManager = ({
     };
   };
 
-  const getDefinedStateOnly = <T>(state: T | undefined): T | undefined => {
+  const getDefinedStateOnly = <T extends object>(state: T | undefined): T | undefined => {
     if (!state || !Object.keys(state).length) {
       return undefined;
     }
     return state;
   };
+
+  const getPersistentProfileState = (profileState: TabState['profileState'] | undefined) =>
+    getDefinedStateOnly(
+      profileStateRegistry.pickStateByType({
+        profileState,
+        stateType: ProfileStateType.Persistent,
+      })
+    );
 
   const toTabState = (
     tabStateInStorage: TabStateInLocalStorage,
@@ -220,6 +232,13 @@ export const createTabsStorageManager = ({
     const appState = getDefinedStateOnly(tabStateInStorage.appState);
     const globalState = getDefinedStateOnly(
       tabStateInStorage.globalState || defaultTabState.globalState
+    );
+    const profileState = getDefinedStateOnly(
+      profileStateRegistry.pickStateByType({
+        profileState: tabStateInStorage.profileState,
+        stateType: ProfileStateType.Persistent,
+        shouldMergeDefaults: true,
+      })
     );
 
     let controlGroupState = attributes?.controlGroupState
@@ -251,6 +270,7 @@ export const createTabsStorageManager = ({
       },
       appState: appState || {},
       globalState: globalState || {},
+      profileState: profileState || defaultTabState.profileState,
       esqlVariables,
     };
 
@@ -375,6 +395,7 @@ export const createTabsStorageManager = ({
             attributes: tabStatePartial.attributes,
             appState: tabStatePartial.appState,
             globalState: tabStatePartial.globalState,
+            profileState: getPersistentProfileState(tabStatePartial.profileState),
           };
         }
         return tab;

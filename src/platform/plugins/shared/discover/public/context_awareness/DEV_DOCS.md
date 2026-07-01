@@ -207,9 +207,9 @@ Definitions live near the providers that use them and are registered from `profi
 
 ### State types and lifetime
 
-`ProfileStateType` is a field-level lifetime preference: `Ui` for ephemeral UI state, `Url` for future URL sync, and `Persistent` for future persistence. The current implementation stores state ephemerally only.
+`ProfileStateType` is a field-level lifetime preference: `Ui` for ephemeral UI state, `Url` for future URL sync, and `Persistent` for local tab storage. The current implementation locally persists only `Persistent` fields.
 
-- Main Discover stores state in `TabState.profileState`, scoped to a tab. Fresh tabs start with raw `profileState: {}`, duplicated tabs copy profile state, and restored or locally reloaded tabs reset it.
+- Main Discover stores state in `TabState.profileState`, scoped to a tab. Fresh tabs start with raw `profileState: {}`, duplicated tabs copy full profile state, and restored or locally reloaded tabs hydrate only `Persistent` fields from local tab storage merged over the definition `defaultState`.
 - Simplified hosts (document route, surrounding documents page, embeddables) use `createInMemoryContextAwarenessToolkit()`, storing all profile state in memory for that scoped host instance. `Url` and `Persistent` fields are accepted there but do not change the lifetime.
 - Adapters return `definition.defaultState` until state has been written.
 

@@ -32,6 +32,7 @@ export default function ({ getService, getPageObjects }: FtrProviderContext) {
   const retry = getService('retry');
   const testSubjects = getService('testSubjects');
   const timestampColorSelectTestSubj = 'exampleProfileStateTimestampColorSelect';
+  const rowControlColorSelectTestSubj = 'exampleProfileStateRowControlColorSelect';
 
   const expectRowHeight = async (expectedValue: string, expectedCustomHeight?: number) => {
     await discover.waitUntilTabIsLoaded();
@@ -95,6 +96,45 @@ export default function ({ getService, getPageObjects }: FtrProviderContext) {
   const changeTimestampColor = async (nextValue: string) => {
     await testSubjects.selectValue(timestampColorSelectTestSubj, nextValue);
     await expectTimestampColor(nextValue);
+  };
+
+  const getRowControlColor = async () => {
+    return await testSubjects.getAttribute(rowControlColorSelectTestSubj, 'value');
+  };
+
+  const expectRowControlColor = async (expectedValue: string) => {
+    await retry.try(async () => {
+      expect(await getRowControlColor()).to.be(expectedValue);
+    });
+  };
+
+  const changeRowControlColor = async (nextValue: string) => {
+    await testSubjects.selectValue(rowControlColorSelectTestSubj, nextValue);
+    await expectRowControlColor(nextValue);
+  };
+
+  const openProfileStateDocView = async () => {
+    await dataGrid.clickRowToggle({
+      rowIndex: 0,
+      defaultTabId: 'doc_view_profile_state_example',
+    });
+  };
+
+  const waitForPersistentProfileStateInStorage = async (expectedValue: string) => {
+    await retry.try(async () => {
+      const storedTabs = (await browser.getLocalStorageItem('discover.tabs')) ?? '';
+      expect(storedTabs).to.contain('rowControlColor');
+      expect(storedTabs).to.contain(expectedValue);
+    });
+  };
+
+  const waitForRecentlyClosedProfileStateInStorage = async (expectedValue: string) => {
+    await retry.try(async () => {
+      const storedTabs = (await browser.getLocalStorageItem('discover.tabs')) ?? '';
+      expect(storedTabs).to.contain('closedAt');
+      expect(storedTabs).to.contain('rowControlColor');
+      expect(storedTabs).to.contain(expectedValue);
+    });
   };
 
   const modeDefinitions: ModeDefinition[] = [
@@ -186,20 +226,49 @@ export default function ({ getService, getPageObjects }: FtrProviderContext) {
           await mode.loadDefaultProfile();
           await unifiedFieldList.clickFieldListItemAdd('@timestamp');
           await discover.waitUntilTabIsLoaded();
-          await dataGrid.clickRowToggle({
-            rowIndex: 0,
-            defaultTabId: 'doc_view_profile_state_example',
-          });
+          await openProfileStateDocView();
           await expectTimestampColor('hollow');
 
           await changeTimestampColor('danger');
 
           await dataGrid.closeFlyout();
-          await dataGrid.clickRowToggle({
-            rowIndex: 0,
-            defaultTabId: 'doc_view_profile_state_example',
-          });
+          await openProfileStateDocView();
           await expectTimestampColor('danger');
+        });
+
+        it('persists persistent profile state across refresh and recently closed tabs', async () => {
+          await mode.loadDefaultProfile();
+          await unifiedFieldList.clickFieldListItemAdd('@timestamp');
+          await discover.waitUntilTabIsLoaded();
+          await openProfileStateDocView();
+          await expectTimestampColor('hollow');
+          await expectRowControlColor('text');
+
+          await changeTimestampColor('danger');
+          await changeRowControlColor('warning');
+          await waitForPersistentProfileStateInStorage('warning');
+
+          await dataGrid.closeFlyout();
+          await browser.refresh();
+          await discover.waitUntilTabIsLoaded();
+          await openProfileStateDocView();
+          await expectTimestampColor('hollow');
+          await expectRowControlColor('warning');
+
+          await dataGrid.closeFlyout();
+          await unifiedTabs.createNewTab();
+          await discover.waitUntilTabIsLoaded();
+          await unifiedTabs.closeTab(0);
+          await discover.waitUntilTabIsLoaded();
+          await waitForRecentlyClosedProfileStateInStorage('warning');
+
+          await browser.refresh();
+          await discover.waitUntilTabIsLoaded();
+          await unifiedTabs.restoreRecentlyClosedTab(0);
+          await discover.waitUntilTabIsLoaded();
+          await openProfileStateDocView();
+          await expectTimestampColor('hollow');
+          await expectRowControlColor('warning');
         });
       });
     }

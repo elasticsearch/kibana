@@ -311,11 +311,13 @@ Define a `ProfileStateDefinition<TState>` near the profile provider that uses it
  */
 
 import type { ProfileStateDefinition, ProfileStateRegistry } from '../../profile_state';
+import type { RowControlProps } from '@kbn/discover-utils';
 import { ProfileStateType } from '../../profile_state';
 
 // Define the state shape shared across profiles and extension point implementations
 interface ExampleProfileState {
   timestampColor: string;
+  rowControlColor: NonNullable<RowControlProps['color']>;
 }
 
 // Define a unique state key, field lifetime metadata, and the default typed state
@@ -323,9 +325,11 @@ const EXAMPLE_PROFILE_STATE_DEF: ProfileStateDefinition<ExampleProfileState> = {
   key: 'exampleProfileState',
   descriptor: {
     timestampColor: { type: ProfileStateType.Ui },
+    rowControlColor: { type: ProfileStateType.Persistent },
   },
   defaultState: {
     timestampColor: 'hollow',
+    rowControlColor: 'text',
   },
 };
 

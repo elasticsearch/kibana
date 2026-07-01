@@ -33,30 +33,15 @@ import type {
 } from './types';
 import {
   EMPTY_CONTEXT_AWARENESS_TOOLKIT,
-  type ProfileStateDefinition,
-  ProfileStateType,
   SolutionType,
   type ContextAwarenessToolkit,
 } from '../context_awareness';
+import { TEST_PROFILE_STATE_DEF } from '../context_awareness/__mocks__/profile_state';
 import { mockInitializeDrilldownsManager } from '@kbn/embeddable-plugin/public/mocks';
 import { renderWithI18n } from '@kbn/test-jest-helpers';
 import { initializeDrilldownsManager } from '@kbn/embeddable-plugin/public/drilldowns/drilldowns_manager';
 
 jest.mock('./utils/serialization_utils', () => ({}));
-
-interface TestProfileState {
-  color: string;
-}
-
-const TEST_PROFILE_STATE_DEF: ProfileStateDefinition<TestProfileState> = {
-  key: 'searchEmbeddableTestProfileState',
-  descriptor: {
-    color: { type: ProfileStateType.Ui },
-  },
-  defaultState: {
-    color: 'default',
-  },
-};
 
 describe('saved search embeddable', () => {
   const dataViewMock = buildDataViewMock({ name: 'the-data-view', fields: deepMockedFields });
@@ -651,10 +636,13 @@ describe('saved search embeddable', () => {
       const stateAdapter = capturedToolkit.getStateAdapter(TEST_PROFILE_STATE_DEF);
       expect(stateAdapter.getState()).toEqual(TEST_PROFILE_STATE_DEF.defaultState);
 
-      stateAdapter.setState({ color: 'primary' });
-      stateAdapter.updateState({ color: 'success' });
+      stateAdapter.setState({ ...TEST_PROFILE_STATE_DEF.defaultState, uiValue: 'primary' });
+      stateAdapter.updateState({ uiValue: 'success' });
 
-      expect(stateAdapter.getState()).toEqual({ color: 'success' });
+      expect(stateAdapter.getState()).toEqual({
+        ...TEST_PROFILE_STATE_DEF.defaultState,
+        uiValue: 'success',
+      });
     });
 
     it('should not expose addFilter through the toolkit when filters are disabled', async () => {

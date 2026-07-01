@@ -20,27 +20,10 @@ import { useDataView } from '../../hooks/use_data_view';
 import { useRootProfile } from '../../context_awareness/hooks/use_root_profile';
 import type { ContextAppProps } from './context_app';
 import { popularizeField } from '@kbn/unified-data-table';
-import {
-  type ContextAwarenessToolkit,
-  type ProfileStateDefinition,
-  ProfileStateType,
-} from '../../context_awareness';
+import { type ContextAwarenessToolkit } from '../../context_awareness';
+import { TEST_PROFILE_STATE_DEF } from '../../context_awareness/__mocks__/profile_state';
 
 let mockContextAppProps: ContextAppProps | undefined;
-
-interface TestProfileState {
-  color: string;
-}
-
-const TEST_PROFILE_STATE_DEF: ProfileStateDefinition<TestProfileState> = {
-  key: 'contextRouteTestProfileState',
-  descriptor: {
-    color: { type: ProfileStateType.Ui },
-  },
-  defaultState: {
-    color: 'default',
-  },
-};
 
 jest.mock('./context_app', () => ({
   ContextApp: (props: ContextAppProps) => {
@@ -118,10 +101,13 @@ describe('ContextAppRoute', () => {
     const stateAdapter = capturedToolkit.getStateAdapter(TEST_PROFILE_STATE_DEF);
     expect(stateAdapter.getState()).toEqual(TEST_PROFILE_STATE_DEF.defaultState);
 
-    stateAdapter.setState({ color: 'primary' });
-    stateAdapter.updateState({ color: 'success' });
+    stateAdapter.setState({ ...TEST_PROFILE_STATE_DEF.defaultState, uiValue: 'primary' });
+    stateAdapter.updateState({ uiValue: 'success' });
 
-    expect(stateAdapter.getState()).toEqual({ color: 'success' });
+    expect(stateAdapter.getState()).toEqual({
+      ...TEST_PROFILE_STATE_DEF.defaultState,
+      uiValue: 'success',
+    });
   });
 
   it('dispatches addFilter side effects', () => {

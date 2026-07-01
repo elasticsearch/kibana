@@ -124,11 +124,17 @@ export class ProfileStateRegistry {
   public pickStateByType({
     profileState,
     stateType,
+    shouldMergeDefaults = false,
   }: {
-    profileState: Record<string, object | undefined>;
+    profileState: Record<string, object | undefined> | undefined;
     stateType: ProfileStateType;
+    shouldMergeDefaults?: boolean;
   }): Record<string, object | undefined> {
     const filteredProfileState: Record<string, object | undefined> = {};
+
+    if (!profileState) {
+      return filteredProfileState;
+    }
 
     for (const [rawKey, state] of Object.entries(profileState)) {
       if (!state) {
@@ -150,7 +156,9 @@ export class ProfileStateRegistry {
       }
 
       if (Object.keys(filteredState).length > 0) {
-        filteredProfileState[rawKey] = filteredState;
+        filteredProfileState[rawKey] = shouldMergeDefaults
+          ? { ...definition.defaultState, ...filteredState }
+          : filteredState;
       }
     }
 

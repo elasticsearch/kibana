@@ -14,26 +14,9 @@ import { Route } from '@kbn/shared-ux-router';
 import { dataViewMock } from '@kbn/discover-utils/src/__mocks__';
 import { createDiscoverServicesMock } from '../../__mocks__/services';
 import { DiscoverTestProvider } from '../../__mocks__/test_provider';
-import {
-  type ContextAwarenessToolkit,
-  type ProfileStateDefinition,
-  ProfileStateType,
-} from '../../context_awareness';
+import { type ContextAwarenessToolkit } from '../../context_awareness';
+import { TEST_PROFILE_STATE_DEF } from '../../context_awareness/__mocks__/profile_state';
 import { SingleDocRoute } from './single_doc_route';
-
-interface TestProfileState {
-  color: string;
-}
-
-const TEST_PROFILE_STATE_DEF: ProfileStateDefinition<TestProfileState> = {
-  key: 'singleDocRouteTestProfileState',
-  descriptor: {
-    color: { type: ProfileStateType.Ui },
-  },
-  defaultState: {
-    color: 'default',
-  },
-};
 
 describe('SingleDocRoute', () => {
   it('provides an in-memory profile state toolkit', async () => {
@@ -65,9 +48,12 @@ describe('SingleDocRoute', () => {
     const stateAdapter = capturedToolkit!.getStateAdapter(TEST_PROFILE_STATE_DEF);
     expect(stateAdapter.getState()).toEqual(TEST_PROFILE_STATE_DEF.defaultState);
 
-    stateAdapter.setState({ color: 'primary' });
-    stateAdapter.updateState({ color: 'success' });
+    stateAdapter.setState({ ...TEST_PROFILE_STATE_DEF.defaultState, uiValue: 'primary' });
+    stateAdapter.updateState({ uiValue: 'success' });
 
-    expect(stateAdapter.getState()).toEqual({ color: 'success' });
+    expect(stateAdapter.getState()).toEqual({
+      ...TEST_PROFILE_STATE_DEF.defaultState,
+      uiValue: 'success',
+    });
   });
 });

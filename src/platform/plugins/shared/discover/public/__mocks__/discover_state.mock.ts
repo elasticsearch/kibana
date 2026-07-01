@@ -94,6 +94,7 @@ function createInternalStateStoreMock({
   const tabsStorageManager = createTabsStorageManager({
     urlStateStorage: stateStorageContainer,
     storage: services.storage,
+    profileStateRegistry: services.profileStateRegistry,
   });
   const searchSessionManager = new DiscoverSearchSessionManager({
     history: services.history,

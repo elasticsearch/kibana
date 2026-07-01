@@ -9,40 +9,13 @@
 
 import { createInMemoryContextAwarenessToolkit } from './in_memory_toolkit';
 import {
-  type ProfileStateDefinition,
-  ProfileStateRegistry,
-  ProfileStateType,
-} from './profile_state';
-
-interface TestProfileState {
-  uiValue: string;
-  urlValue: string;
-  persistentValue: string;
-  nestedValue: {
-    count: number;
-  };
-}
-
-const TEST_PROFILE_STATE_DEF: ProfileStateDefinition<TestProfileState> = {
-  key: 'testProfileState',
-  descriptor: {
-    uiValue: { type: ProfileStateType.Ui },
-    urlValue: { type: ProfileStateType.Url },
-    persistentValue: { type: ProfileStateType.Persistent },
-    nestedValue: { type: ProfileStateType.Ui },
-  },
-  defaultState: {
-    uiValue: 'defaultUi',
-    urlValue: 'defaultUrl',
-    persistentValue: 'defaultPersistent',
-    nestedValue: { count: 0 },
-  },
-};
+  createRegisteredTestProfileStateRegistry,
+  TEST_PROFILE_STATE_DEF,
+  type TestProfileState,
+} from './__mocks__/profile_state';
 
 const createRegisteredRegistry = () => {
-  const profileStateRegistry = new ProfileStateRegistry();
-  profileStateRegistry.registerDefinition(TEST_PROFILE_STATE_DEF);
-  return profileStateRegistry;
+  return createRegisteredTestProfileStateRegistry();
 };
 
 describe('createInMemoryContextAwarenessToolkit', () => {

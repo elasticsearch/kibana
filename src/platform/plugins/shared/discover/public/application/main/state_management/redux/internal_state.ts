@@ -669,6 +669,7 @@ const createMiddleware = (options: InternalStateDependencies) => {
             attributes: tab.attributes,
             appState: tab.appState,
             globalState: tab.globalState,
+            profileState: tab.profileState,
           });
         });
       },

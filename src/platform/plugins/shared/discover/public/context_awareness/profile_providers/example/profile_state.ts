@@ -7,21 +7,25 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
+import type { RowControlProps } from '@kbn/discover-utils';
 import type { ProfileStateDefinition, ProfileStateRegistry } from '../../profile_state';
 import { ProfileStateType } from '../../profile_state';
 
 export interface ExampleProfileState {
   timestampColor: string;
+  rowControlColor: NonNullable<RowControlProps['color']>;
 }
 
 export const EXAMPLE_PROFILE_STATE_DEFAULTS: ExampleProfileState = {
   timestampColor: 'hollow',
+  rowControlColor: 'text',
 };
 
 export const EXAMPLE_PROFILE_STATE_DEF: ProfileStateDefinition<ExampleProfileState> = {
   key: 'exampleProfileState',
   descriptor: {
     timestampColor: { type: ProfileStateType.Ui },
+    rowControlColor: { type: ProfileStateType.Persistent },
   },
   defaultState: EXAMPLE_PROFILE_STATE_DEFAULTS,
 };

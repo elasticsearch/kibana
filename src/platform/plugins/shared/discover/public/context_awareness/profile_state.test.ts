@@ -14,26 +14,7 @@ import {
   ProfileStateRegistry,
   ProfileStateType,
 } from './profile_state';
-
-interface TestProfileState {
-  uiValue: string;
-  urlValue: string;
-  persistentValue: string;
-}
-
-const TEST_PROFILE_STATE_DEF: ProfileStateDefinition<TestProfileState> = {
-  key: 'testProfileState',
-  descriptor: {
-    uiValue: { type: ProfileStateType.Ui },
-    urlValue: { type: ProfileStateType.Url },
-    persistentValue: { type: ProfileStateType.Persistent },
-  },
-  defaultState: {
-    uiValue: 'defaultUi',
-    urlValue: 'defaultUrl',
-    persistentValue: 'defaultPersistent',
-  },
-};
+import { TEST_PROFILE_STATE_DEF } from './__mocks__/profile_state';
 
 describe('ProfileStateRegistry', () => {
   it('registers and matches definitions', () => {
@@ -118,6 +99,18 @@ describe('ProfileStateRegistry', () => {
     ).toEqual({});
   });
 
+  it('returns an empty object when picking state by type from undefined state', () => {
+    const registry = new ProfileStateRegistry();
+    registry.registerDefinition(TEST_PROFILE_STATE_DEF);
+
+    expect(
+      registry.pickStateByType({
+        profileState: undefined,
+        stateType: ProfileStateType.Persistent,
+      })
+    ).toEqual({});
+  });
+
   it('ignores sparse and unregistered fields when picking state by type', () => {
     const registry = new ProfileStateRegistry();
     registry.registerDefinition(TEST_PROFILE_STATE_DEF);
@@ -140,6 +133,51 @@ describe('ProfileStateRegistry', () => {
         uiValue: 'ui',
       },
     });
+  });
+
+  it('picks state by type merged over defaults', () => {
+    const registry = new ProfileStateRegistry();
+    registry.registerDefinition(TEST_PROFILE_STATE_DEF);
+
+    expect(
+      registry.pickStateByType({
+        profileState: {
+          testProfileState: {
+            uiValue: 'ui',
+            persistentValue: 'persistent',
+          },
+        },
+        stateType: ProfileStateType.Persistent,
+        shouldMergeDefaults: true,
+      })
+    ).toEqual({
+      testProfileState: {
+        uiValue: 'defaultUi',
+        urlValue: 'defaultUrl',
+        persistentValue: 'persistent',
+        nestedValue: { count: 0 },
+      },
+    });
+  });
+
+  it('picks no merged state when no registered fields match the requested type', () => {
+    const registry = new ProfileStateRegistry();
+    registry.registerDefinition(TEST_PROFILE_STATE_DEF);
+
+    expect(
+      registry.pickStateByType({
+        profileState: {
+          testProfileState: {
+            uiValue: 'ui',
+          },
+          unregisteredProfileState: {
+            persistentValue: 'ignored',
+          },
+        },
+        stateType: ProfileStateType.Persistent,
+        shouldMergeDefaults: true,
+      })
+    ).toEqual({});
   });
 });
 

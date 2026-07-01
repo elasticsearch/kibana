@@ -9,5 +9,6 @@
 
 export * from './context_awareness';
 export * from './profile_provider_services';
+export * from './profile_state';
 export * from './data_table_record_with_context';
 export * from './profiles';

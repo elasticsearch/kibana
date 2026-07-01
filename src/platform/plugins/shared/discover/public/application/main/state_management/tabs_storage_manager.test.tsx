@@ -27,6 +27,7 @@ import {
 } from './redux/__mocks__/internal_state.mocks';
 import { savedSearchMock } from '../../../__mocks__/saved_search';
 import type { SerializedSearchSourceFields } from '@kbn/data-plugin/common';
+import { TEST_PROFILE_STATE_DEF } from '../../../context_awareness/__mocks__/profile_state';
 
 const mockUserId = 'testUserId';
 const mockSpaceId = 'testSpaceId';
@@ -95,6 +96,7 @@ describe('TabsStorageManager', () => {
     const urlStateStorage = createKbnUrlStateStorage();
     const services = createDiscoverServicesMock();
     services.storage = new Storage(localStorage);
+    services.profileStateRegistry.registerDefinition(TEST_PROFILE_STATE_DEF);
 
     return {
       services,
@@ -102,6 +104,7 @@ describe('TabsStorageManager', () => {
       tabsStorageManager: createTabsStorageManager({
         urlStateStorage,
         storage: services.storage,
+        profileStateRegistry: services.profileStateRegistry,
         enabled: true,
       }),
     };
@@ -116,6 +119,7 @@ describe('TabsStorageManager', () => {
     attributes: tab.attributes,
     appState: tab.appState,
     globalState: tab.globalState,
+    profileState: undefined,
     ...('closedAt' in tab ? { closedAt: tab.closedAt } : {}),
   });
 
@@ -233,6 +237,71 @@ describe('TabsStorageManager', () => {
     });
   });
 
+  it('should persist only persistent profile state to local storage', async () => {
+    const {
+      services: { storage },
+      tabsStorageManager,
+    } = create();
+
+    tabsStorageManager.loadLocally({
+      userId: mockUserId,
+      spaceId: mockSpaceId,
+      defaultTabState: DEFAULT_TAB_STATE,
+    });
+
+    jest.spyOn(storage, 'set');
+
+    const tabWithProfileState: TabState = {
+      ...mockTab1,
+      profileState: {
+        testProfileState: {
+          uiValue: 'ui',
+          persistentValue: 'persistent',
+        },
+        unregisteredProfileState: {
+          persistentValue: 'ignored',
+        },
+      },
+    };
+    const closedTabWithProfileState: RecentlyClosedTabState = {
+      ...mockRecentlyClosedTab,
+      profileState: tabWithProfileState.profileState,
+    };
+
+    await tabsStorageManager.persistLocally(
+      {
+        allTabs: [tabWithProfileState],
+        recentlyClosedTabs: [closedTabWithProfileState],
+      },
+      mockGetInternalState,
+      undefined
+    );
+
+    const expectedProfileState = {
+      testProfileState: {
+        persistentValue: 'persistent',
+      },
+    };
+
+    expect(storage.set).toHaveBeenCalledWith(TABS_LOCAL_STORAGE_KEY, {
+      userId: mockUserId,
+      spaceId: mockSpaceId,
+      openTabs: [
+        {
+          ...toStoredTab(tabWithProfileState),
+          profileState: expectedProfileState,
+        },
+      ],
+      closedTabs: [
+        {
+          ...toStoredTab(closedTabWithProfileState),
+          profileState: expectedProfileState,
+        },
+      ],
+      discoverSessionId: undefined,
+    });
+  });
+
   it('should load tabs state from local storage and select one of open tabs', () => {
     const {
       tabsStorageManager,
@@ -271,6 +340,67 @@ describe('TabsStorageManager', () => {
     expect(storage.get).toHaveBeenCalledWith(TABS_LOCAL_STORAGE_KEY);
     expect(urlStateStorage.set).not.toHaveBeenCalled();
     expect(storage.set).not.toHaveBeenCalled();
+  });
+
+  it('should restore persistent profile state from local storage merged with defaults', () => {
+    const {
+      tabsStorageManager,
+      urlStateStorage,
+      services: { storage },
+    } = create();
+    const storedProfileState = {
+      testProfileState: {
+        uiValue: 'ignoredUi',
+        persistentValue: 'restoredPersistent',
+      },
+      unregisteredProfileState: {
+        persistentValue: 'ignored',
+      },
+    };
+
+    storage.set(TABS_LOCAL_STORAGE_KEY, {
+      userId: mockUserId,
+      spaceId: mockSpaceId,
+      openTabs: [
+        {
+          ...toStoredTab(mockTab1),
+          profileState: storedProfileState,
+        },
+      ],
+      closedTabs: [
+        {
+          ...toStoredTab(mockRecentlyClosedTab),
+          profileState: storedProfileState,
+        },
+      ],
+    });
+
+    urlStateStorage.set(TAB_STATE_URL_KEY, {
+      tabId: mockTab1.id,
+    });
+
+    const loadedProps = tabsStorageManager.loadLocally({
+      userId: mockUserId,
+      spaceId: mockSpaceId,
+      defaultTabState: DEFAULT_TAB_STATE,
+    });
+
+    expect(loadedProps.allTabs[0].profileState).toEqual({
+      testProfileState: {
+        uiValue: 'defaultUi',
+        urlValue: 'defaultUrl',
+        persistentValue: 'restoredPersistent',
+        nestedValue: { count: 0 },
+      },
+    });
+    expect(loadedProps.recentlyClosedTabs[0].profileState).toEqual({
+      testProfileState: {
+        uiValue: 'defaultUi',
+        urlValue: 'defaultUrl',
+        persistentValue: 'restoredPersistent',
+        nestedValue: { count: 0 },
+      },
+    });
   });
 
   it('should load tabs state from local storage and migrate the legacy props from internalState', () => {
@@ -625,6 +755,7 @@ describe('TabsStorageManager', () => {
       globalState: {
         refreshInterval: { pause: false, value: 300 },
       },
+      profileState: undefined,
     };
 
     tabsStorageManager.updateTabStateLocally(mockTab1.id, updatedTabState);
@@ -640,6 +771,112 @@ describe('TabsStorageManager', () => {
         toStoredTab(mockTab2),
       ],
       closedTabs: [toStoredTab(mockRecentlyClosedTab)],
+    });
+  });
+
+  it('should update persistent profile state in local storage', () => {
+    const {
+      tabsStorageManager,
+      services: { storage },
+    } = create();
+
+    storage.set(TABS_LOCAL_STORAGE_KEY, {
+      userId: mockUserId,
+      spaceId: mockSpaceId,
+      openTabs: [
+        {
+          ...toStoredTab(mockTab1),
+          profileState: {
+            testProfileState: {
+              persistentValue: 'stalePersistent',
+            },
+          },
+        },
+      ],
+      closedTabs: [],
+    });
+
+    jest.spyOn(storage, 'set');
+
+    tabsStorageManager.updateTabStateLocally(mockTab1.id, {
+      internalState: mockTab1.initialInternalState,
+      attributes: mockTab1.attributes,
+      appState: mockTab1.appState,
+      globalState: mockTab1.globalState,
+      profileState: {
+        testProfileState: {
+          uiValue: 'ui',
+          persistentValue: 'updatedPersistent',
+        },
+      },
+    });
+
+    expect(storage.set).toHaveBeenCalledWith(TABS_LOCAL_STORAGE_KEY, {
+      userId: mockUserId,
+      spaceId: mockSpaceId,
+      discoverSessionId: undefined,
+      openTabs: [
+        {
+          ...toStoredTab(mockTab1),
+          internalState: undefined,
+          profileState: {
+            testProfileState: {
+              persistentValue: 'updatedPersistent',
+            },
+          },
+        },
+      ],
+      closedTabs: [],
+    });
+  });
+
+  it('should clear stale persistent profile state in local storage', () => {
+    const {
+      tabsStorageManager,
+      services: { storage },
+    } = create();
+
+    storage.set(TABS_LOCAL_STORAGE_KEY, {
+      userId: mockUserId,
+      spaceId: mockSpaceId,
+      openTabs: [
+        {
+          ...toStoredTab(mockTab1),
+          profileState: {
+            testProfileState: {
+              persistentValue: 'stalePersistent',
+            },
+          },
+        },
+      ],
+      closedTabs: [],
+    });
+
+    jest.spyOn(storage, 'set');
+
+    tabsStorageManager.updateTabStateLocally(mockTab1.id, {
+      internalState: mockTab1.initialInternalState,
+      attributes: mockTab1.attributes,
+      appState: mockTab1.appState,
+      globalState: mockTab1.globalState,
+      profileState: {
+        testProfileState: {
+          uiValue: 'ui',
+        },
+      },
+    });
+
+    expect(storage.set).toHaveBeenCalledWith(TABS_LOCAL_STORAGE_KEY, {
+      userId: mockUserId,
+      spaceId: mockSpaceId,
+      discoverSessionId: undefined,
+      openTabs: [
+        {
+          ...toStoredTab(mockTab1),
+          internalState: undefined,
+        },
+      ],
+      closedTabs: [],
     });
   });
 
