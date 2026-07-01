@@ -7,9 +7,5 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
-import { resolve } from 'path';
-import { REPO_ROOT as KIBANA_ROOT } from '@kbn/repo-info';
-
-export const REPO_ROOT = KIBANA_ROOT;
-export const ASSET_DIR = resolve(KIBANA_ROOT, 'built_assets/storybook');
-export const DOCS_ASSET_DIR = resolve(KIBANA_ROOT, 'built_assets/storybook-docs');
+export { createDocsRegistry } from './registry';
+export type { DocsRegistry, MountStoryOptions, CreateDocsRegistryOptions } from './types';

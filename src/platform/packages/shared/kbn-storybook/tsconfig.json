@@ -3,6 +3,7 @@
   "compilerOptions": {
     "outDir": "target/types",
     "types": [
+      "jest",
       "node",
       "@kbn/ambient-storybook-types"
     ]

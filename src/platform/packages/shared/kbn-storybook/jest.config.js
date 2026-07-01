@@ -7,9 +7,8 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
-import { resolve } from 'path';
-import { REPO_ROOT as KIBANA_ROOT } from '@kbn/repo-info';
-
-export const REPO_ROOT = KIBANA_ROOT;
-export const ASSET_DIR = resolve(KIBANA_ROOT, 'built_assets/storybook');
-export const DOCS_ASSET_DIR = resolve(KIBANA_ROOT, 'built_assets/storybook-docs');
+module.exports = {
+  preset: '@kbn/test/jest_node',
+  rootDir: '../../../../..',
+  roots: ['<rootDir>/src/platform/packages/shared/kbn-storybook'],
+};

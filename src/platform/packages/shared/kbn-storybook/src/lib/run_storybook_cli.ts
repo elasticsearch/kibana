@@ -18,7 +18,7 @@ import * as constants from './constants';
 type StorybookCliOptions = CLIOptions & BuilderOptions & LoadOptions & { mode: 'dev' | 'static' };
 
 // Convert the flags to a Storybook loglevel
-function getLogLevelFromFlags(flags: Flags) {
+export function getLogLevelFromFlags(flags: Flags) {
   if (flags.debug) {
     return 'silly';
   }
@@ -34,34 +34,53 @@ function getLogLevelFromFlags(flags: Flags) {
   return 'info';
 }
 
+export async function buildStorybook({
+  configDir,
+  name,
+  site = false,
+  loglevel = 'info',
+}: {
+  configDir: string;
+  name: string;
+  site?: boolean;
+  loglevel?: StorybookCliOptions['loglevel'];
+}) {
+  const config: StorybookCliOptions = {
+    configDir,
+    mode: site ? 'static' : 'dev',
+    port: 9001,
+    loglevel,
+  };
+
+  if (site) {
+    config.outputDir = join(constants.ASSET_DIR, name);
+    process.env.NODE_ENV = 'production';
+  } else {
+    // required for react refresh
+    process.env.NODE_ENV = 'development';
+  }
+
+  try {
+    // Some transitive deps of addon-docs are ESM and not loading properly
+    // See: https://github.com/storybookjs/storybook/issues/29467
+    require('fix-esm').require('react-docgen');
+    await build(config);
+  } finally {
+    require('fix-esm').unregister();
+  }
+}
+
 export function runStorybookCli({ configDir, name }: { configDir: string; name: string }) {
   run(
     async ({ flags, log }) => {
       log.debug('Global config:\n', constants);
 
-      const config: StorybookCliOptions = {
+      await buildStorybook({
         configDir,
-        mode: flags.site ? 'static' : 'dev',
-        port: 9001,
+        name,
+        site: Boolean(flags.site),
         loglevel: getLogLevelFromFlags(flags),
-      };
-
-      if (flags.site) {
-        config.outputDir = join(constants.ASSET_DIR, name);
-        process.env.NODE_ENV = 'production';
-      } else {
-        // required for react refresh
-        process.env.NODE_ENV = 'development';
-      }
-
-      try {
-        // Some transitive deps of addon-docs are ESM and not loading properly
-        // See: https://github.com/storybookjs/storybook/issues/29467
-        require('fix-esm').require('react-docgen');
-        await build(config);
-      } finally {
-        require('fix-esm').unregister();
-      }
+      });
 
       // Line is only reached when building the static version
       if (flags.site) process.exit();

@@ -22,6 +22,7 @@ import { KibanaRootContextProvider } from '@kbn/react-kibana-context-root';
 import { i18n } from '@kbn/i18n';
 
 import { DEFAULT_THEME, getKibanaTheme } from './themes';
+import { EMBEDDABLE_RESIZE_EVENT, EMBEDDABLE_STORYBOOK_TAG } from './embeddable';
 
 const theme$ = new BehaviorSubject<CoreTheme>(getKibanaTheme(DEFAULT_THEME));
 const userProfile = { getUserProfile$: () => of(null) };
@@ -56,4 +57,41 @@ const KibanaContextDecorator: Decorator = (storyFn, { globals }) => {
   );
 };
 
-export const decorators = [KibanaContextDecorator];
+/**
+ * When an embeddable story renders inside an iframe (the docs-builder fallback),
+ * report the measured height to the parent via {@link EMBEDDABLE_RESIZE_EVENT}
+ * so the host can auto-size the iframe.
+ */
+const EmbeddableResize: React.FC<{ storyId: string; children: React.ReactNode }> = ({
+  storyId,
+  children,
+}) => {
+  useEffect(() => {
+    if (typeof window === 'undefined' || window.parent === window) {
+      return;
+    }
+
+    const root = document.documentElement;
+    const post = () => {
+      const height = Math.ceil(root.getBoundingClientRect().height);
+      window.parent.postMessage({ type: EMBEDDABLE_RESIZE_EVENT, storyId, height }, '*');
+    };
+    const observer = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(post) : undefined;
+
+    observer?.observe(root);
+    post();
+
+    return () => observer?.disconnect();
+  }, [storyId]);
+
+  return <>{children}</>;
+};
+
+const EmbeddableResizeDecorator: Decorator = (storyFn, { id, tags }) =>
+  tags?.includes(EMBEDDABLE_STORYBOOK_TAG) ? (
+    <EmbeddableResize storyId={id}>{storyFn()}</EmbeddableResize>
+  ) : (
+    storyFn()
+  );
+
+export const decorators = [KibanaContextDecorator, EmbeddableResizeDecorator];
