@@ -23,7 +23,7 @@ import type { EncryptedSavedObjectsClient } from '@kbn/encrypted-saved-objects-p
 import { withApmSpan } from '@kbn/apm-data-access-plugin/server/utils/with_apm_span';
 import { isEmpty, isEqual } from 'lodash';
 import type { Logger } from '@kbn/logging';
-import { SavedObjectsErrorHelpers } from '@kbn/core-saved-objects-server';
+import { isSavedObjectErrorResult, SavedObjectsErrorHelpers } from '@kbn/core-saved-objects-server';
 import { MONITOR_SEARCH_FIELDS } from '../routes/common';
 import {
   legacyMonitorAttributes,
@@ -67,7 +67,10 @@ export class MonitorConfigRepository {
       { type: syntheticsMonitorSavedObjectType, id },
       { type: legacySyntheticsMonitorTypeSingle, id },
     ]);
-    const resolved = results.saved_objects.find((obj) => obj?.attributes);
+    const resolved = results.saved_objects.find(
+      (obj): obj is SavedObject<EncryptedSyntheticsMonitorAttributes> =>
+        !isSavedObjectErrorResult(obj)
+    );
     if (!resolved) {
       throw SavedObjectsErrorHelpers.createGenericNotFoundError(
         syntheticsMonitorSavedObjectType,
@@ -107,7 +110,10 @@ export class MonitorConfigRepository {
     const { saved_objects: results } = await soClient.bulkGet<EncryptedSyntheticsMonitorAttributes>(
       bulkObjects
     );
-    const resolved = results.find((obj) => obj?.attributes && !obj.error);
+    const resolved = results.find(
+      (obj): obj is SavedObject<EncryptedSyntheticsMonitorAttributes> =>
+        !isSavedObjectErrorResult(obj)
+    );
     if (!resolved) {
       throw SavedObjectsErrorHelpers.createGenericNotFoundError(
         syntheticsMonitorSavedObjectType,

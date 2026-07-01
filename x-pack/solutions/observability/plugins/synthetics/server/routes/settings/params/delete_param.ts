@@ -7,7 +7,8 @@
 
 import { schema } from '@kbn/config-schema';
 import { i18n } from '@kbn/i18n';
-import type { SavedObjectsClientContract } from '@kbn/core-saved-objects-api-server';
+import type { SavedObject, SavedObjectsClientContract } from '@kbn/core-saved-objects-api-server';
+import { isSavedObjectErrorResult } from '@kbn/core-saved-objects-server';
 import type { SyntheticsRestApiRouteFactory } from '../../types';
 import { syntheticsParamType } from '../../../../common/types/saved_objects';
 import { SYNTHETICS_API_URLS } from '../../../../common/constants';
@@ -95,7 +96,10 @@ export async function getExistingParamsInfo(
   );
 
   const keys = existingParam.saved_objects
-    .filter((obj) => obj.attributes?.key)
+    .filter(
+      (obj): obj is SavedObject<SyntheticsParams> =>
+        !isSavedObjectErrorResult(obj) && !!obj.attributes?.key
+    )
     .map((obj) => obj.attributes.key);
 
   return { spaces, keys };
