@@ -572,7 +572,6 @@ If the user declines a confirmation, do NOT retry the same step. Acknowledge the
         ),
     }),
     tags: ['workflows', 'yaml', 'execution', 'testing'],
-    experimental: true,
     handler: async (
       { stepName, yaml: inlineYaml, contextOverride, confirmation_body: confirmationBody },
       context

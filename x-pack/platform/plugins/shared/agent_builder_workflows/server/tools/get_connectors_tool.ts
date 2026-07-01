@@ -42,7 +42,6 @@ The connector \`id\` is what you put in the \`connector-id\` field of a workflow
       search: z.string().optional().describe('Search term to match against connector names'),
     }),
     tags: ['workflows', 'connectors'],
-    experimental: true,
     handler: async ({ actionTypeId, stepType, search }, { spaceId, request }) => {
       const { connectorTypes, totalConnectors } = await api.getAvailableConnectors(
         spaceId,

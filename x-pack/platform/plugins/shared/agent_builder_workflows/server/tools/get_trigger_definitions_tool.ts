@@ -39,7 +39,6 @@ Returns built-in trigger types (manual, scheduled, alert) plus event-driven trig
         ),
     }),
     tags: ['workflows', 'yaml', 'triggers'],
-    experimental: true,
     handler: async ({ triggerType }) => ({
       results: [
         {

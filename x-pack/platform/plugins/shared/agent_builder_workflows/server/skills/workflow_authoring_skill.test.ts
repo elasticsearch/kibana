@@ -16,10 +16,6 @@ describe('workflowAuthoringSkill', () => {
     await expect(validateSkillDefinition(workflowAuthoringSkill)).resolves.toBeDefined();
   });
 
-  it('is marked as experimental', () => {
-    expect(workflowAuthoringSkill.experimental).toBe(true);
-  });
-
   describe('getRegistryTools', () => {
     it('includes all surviving workflow tools, generate_workflow, and execute_workflow', () => {
       const tools = workflowAuthoringSkill.getRegistryTools!();

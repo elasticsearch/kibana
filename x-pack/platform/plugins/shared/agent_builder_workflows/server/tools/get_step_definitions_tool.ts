@@ -215,7 +215,6 @@ Set includeFullSchema=true to get the full JSON Schema for step input params (us
         ),
     }),
     tags: ['workflows', 'yaml', 'steps'],
-    experimental: true,
     handler: async (
       { stepType, search, category, includeDeprecated, includeOutputSummary, includeFullSchema },
       { spaceId, request }

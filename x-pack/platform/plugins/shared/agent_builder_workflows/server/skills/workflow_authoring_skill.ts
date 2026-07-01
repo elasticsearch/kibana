@@ -13,7 +13,6 @@ import { workflowTools } from '../../common/constants';
 export const workflowAuthoringSkill = defineSkillType({
   id: 'workflow-authoring',
   name: 'workflow-authoring',
-  experimental: true,
   basePath: 'skills/platform/workflows',
   description:
     'Elastic Workflow knowledge & discovery: deep YAML syntax, Liquid templating, trigger event schemas, step/connector inspection, validation error debugging, and execution debugging. Load when the user asks how workflows work, requests advanced syntax help, debugs an execution, or asks to inspect the step/connector/example libraries. **Not required for creating, editing, or running workflows** — call `platform.core.generate_workflow` or `platform.core.execute_workflow` directly.',

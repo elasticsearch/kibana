@@ -43,7 +43,6 @@ export const executeWorkflowTool = ({
   return {
     id: platformCoreTools.executeWorkflow,
     type: ToolType.builtin,
-    experimental: true,
     description: cleanPrompt(`Execute an Elastic workflow.
 
 Use this tool when:

@@ -60,7 +60,6 @@ export const generateWorkflowTool = ({
   return {
     id: platformCoreTools.generateWorkflow,
     type: ToolType.builtin,
-    experimental: true,
     description:
       cleanPrompt(`Generate or update an Elastic workflow definition based on a natural-language description.
 

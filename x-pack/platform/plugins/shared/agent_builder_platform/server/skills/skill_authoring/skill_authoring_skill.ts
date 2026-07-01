@@ -21,7 +21,6 @@ export const skillAuthoringSkill = defineSkillType({
   id: 'skill-authoring',
   name: 'skill-authoring',
   basePath: 'skills/platform/agent-builder',
-  experimental: true,
   description:
     'Author a new Agent Builder skill from a chat description. Use when the user asks to create, build, generate, or design a skill, capability, or expertise area for an agent.',
   content: dedent(`

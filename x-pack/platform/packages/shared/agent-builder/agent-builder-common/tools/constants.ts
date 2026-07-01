@@ -118,6 +118,8 @@ export const defaultAgentToolIds = [
   platformCoreTools.getWorkflowExecutionStatus,
   platformCoreTools.resumeWorkflowExecution,
   platformCoreTools.listWorkflowExecutions,
+  platformCoreTools.generateWorkflow,
+  platformCoreTools.executeWorkflow,
   platformCoreTools.smlSearch,
   platformCoreTools.smlAttach,
   platformCoreTools.executeConnectorSubAction,

@@ -42,9 +42,8 @@ export const registerInferenceFeatures = ({
   searchInferenceEndpoints.features.register({
     parentFeatureId: AGENT_BUILDER_PARENT_INFERENCE_FEATURE_ID,
     featureId: AGENT_BUILDER_FAST_INFERENCE_FEATURE_ID,
-    featureName: 'Fast models (experimental)',
-    featureDescription:
-      'Models used for fast and low effort tasks (experimental - only used when the `agentBuilder:experimentalFeatures` uiSetting is enabled)',
+    featureName: 'Fast models',
+    featureDescription: 'Models used for fast and low effort tasks',
     taskType: 'chat_completion',
     recommendedEndpoints: AGENT_BUILDER_FAST_RECOMMENDED_ENDPOINTS,
   });

@@ -97,7 +97,6 @@ If validation fails, fix the issues and re-validate until the YAML is valid.`,
       yaml: z.string().describe('The complete workflow YAML string to validate'),
     }),
     tags: ['workflows', 'yaml', 'validation'],
-    experimental: true,
     handler: async ({ yaml }, { spaceId, request }) => {
       const result = await api.validateWorkflow(yaml, spaceId, request);
 
