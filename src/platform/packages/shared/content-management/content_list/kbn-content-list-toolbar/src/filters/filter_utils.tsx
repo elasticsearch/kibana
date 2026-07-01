@@ -12,6 +12,7 @@ import {
   EuiPopoverFooter,
   EuiFlexGroup,
   EuiFlexItem,
+  EuiIcon,
   EuiText,
   EuiTextColor,
   EuiBadge,
@@ -36,11 +37,26 @@ export const isExcludeModifier = (e: { metaKey: boolean; ctrlKey: boolean }): bo
   return (isMac && e.metaKey) || (!isMac && e.ctrlKey);
 };
 
+/**
+ * Checks if the match-all modifier key (Shift) is pressed.
+ *
+ * @param e - An event object containing a `shiftKey` property.
+ * @returns `true` if Shift is pressed.
+ */
+export const isMatchAllModifier = (e: { shiftKey: boolean }): boolean => e.shiftKey;
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Filter types and utilities.
 // ─────────────────────────────────────────────────────────────────────────────
 
-export type FilterType = 'include' | 'exclude';
+/**
+ * The boolean mode applied to a single filter value:
+ *
+ * - `'include'` — match-any (OR), written as an OR-group clause (`tag:(a or b)`).
+ * - `'includeAll'` — match-all (AND), written as a bare scalar clause (`tag:a`).
+ * - `'exclude'` — negated, written as a negated OR-group (`-tag:(a)`).
+ */
+export type FilterType = 'include' | 'includeAll' | 'exclude';
 export type FilterSelection = Record<string, FilterType>;
 
 /**
@@ -51,18 +67,62 @@ const toArray = (item: unknown): unknown[] => (Array.isArray(item) ? item : [ite
 /**
  * Maps filter state to `EuiSelectable` checked state.
  *
- * - `'include'` → `'on'` (green checkmark).
- * - `'exclude'` → `'off'` (red X).
+ * Both match modes report `'on'` so the option counts as selected; the visual
+ * distinction (check vs. green plus) is drawn by {@link FilterStateIcon}.
+ *
+ * - `'include'` / `'includeAll'` → `'on'`.
+ * - `'exclude'` → `'off'`.
  * - `undefined` → `undefined` (no indicator).
  */
 export const getCheckedState = (state: FilterType | null | undefined): 'on' | 'off' | undefined => {
-  if (state === 'include') {
+  if (state === 'include' || state === 'includeAll') {
     return 'on';
   }
   if (state === 'exclude') {
     return 'off';
   }
   return undefined;
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// `FilterStateIcon` component.
+// Leading status icon rendered per option (the list hides EUI's default icons).
+// ─────────────────────────────────────────────────────────────────────────────
+
+const filterStateIconLabels = {
+  include: i18n.translate('contentManagement.contentList.filter.includeIconLabel', {
+    defaultMessage: 'Included (match any)',
+  }),
+  includeAll: i18n.translate('contentManagement.contentList.filter.includeAllIconLabel', {
+    defaultMessage: 'Required (match all)',
+  }),
+  exclude: i18n.translate('contentManagement.contentList.filter.excludeIconLabel', {
+    defaultMessage: 'Excluded',
+  }),
+};
+
+/**
+ * Leading status icon for a filter option: a check for match-any, a green plus
+ * for match-all, a cross for exclude, and an empty spacer when inactive (so
+ * rows stay aligned).
+ */
+export const FilterStateIcon = ({ state }: { state: FilterType | null | undefined }) => {
+  if (state === 'includeAll') {
+    return (
+      <EuiIcon
+        type="plusInCircleFilled"
+        color="success"
+        aria-label={filterStateIconLabels.includeAll}
+      />
+    );
+  }
+  if (state === 'include') {
+    return <EuiIcon type="check" color="success" aria-label={filterStateIconLabels.include} />;
+  }
+  if (state === 'exclude') {
+    return <EuiIcon type="cross" color="danger" aria-label={filterStateIconLabels.exclude} />;
+  }
+  return <EuiIcon type="empty" aria-hidden={true} />;
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -126,7 +186,8 @@ export const useFieldQueryFilter = ({
 
     const result: FilterSelection = {};
 
-    // Read OR-field clauses (`field:(A or B)`) — the primary format written by the UI.
+    // OR-group clauses (`field:(A or B)`) are match-any/exclude — the format the
+    // popover writes for plain and Cmd/Ctrl clicks.
     const includeOrClause = parsedQuery.ast.getOrFieldClause(fieldName, undefined, true, 'eq');
     if (includeOrClause) {
       toArray(includeOrClause.value).forEach((v) => {
@@ -141,20 +202,20 @@ export const useFieldQueryFilter = ({
       });
     }
 
-    // Also read simple field clauses (`field:value` or `-field:value`) so that
-    // values typed manually by the user are reflected as active in the popover.
-    // Only write if the key isn't already captured by an OR-field clause above —
-    // OR-clauses are the primary format written by the UI and take precedence.
+    // Bare scalar clauses (`field:value`) are match-all (written by Shift+click,
+    // or typed manually); negated scalars are exclude. OR-groups above win when
+    // the same value appears in both forms.
     const simpleClauses = parsedQuery.ast.getFieldClauses(fieldName);
     if (simpleClauses) {
       simpleClauses.forEach((clause) => {
-        const type: FilterType = clause.match === 'must' ? 'include' : 'exclude';
-        toArray(clause.value).forEach((v) => {
-          const key = String(v);
-          if (!result[key]) {
-            result[key] = type;
-          }
-        });
+        if (Array.isArray(clause.value)) {
+          return;
+        }
+        const type: FilterType = clause.match === 'must' ? 'includeAll' : 'exclude';
+        const key = String(clause.value);
+        if (!result[key]) {
+          result[key] = type;
+        }
       });
     }
 
@@ -191,7 +252,12 @@ export const useFieldQueryFilter = ({
       }
 
       if (currentState !== targetType) {
-        q = q.addOrFieldValue(fieldName, value, targetType === 'include', 'eq');
+        // Match-all is a bare scalar clause (`field:value`); match-any and
+        // exclude are OR-group clauses (`field:(value)` / `-field:(value)`).
+        q =
+          targetType === 'includeAll'
+            ? q.addSimpleFieldValue(fieldName, value, true, 'eq')
+            : q.addOrFieldValue(fieldName, value, targetType === 'include', 'eq');
       }
 
       onChange?.(q);
@@ -225,14 +291,18 @@ export const useFieldQueryFilter = ({
  * Props for the {@link ModifierKeyTip} component.
  */
 export interface ModifierKeyTipProps {
+  /** Whether to show the Shift = match all hint. @default true */
+  showMatchAll?: boolean;
   /** Optional additional content to display below the tip. */
   children?: React.ReactNode;
 }
 
 /**
- * Footer component that displays the modifier key shortcut for exclude.
+ * Footer component that displays the modifier-key shortcuts: Cmd/Ctrl+click to
+ * exclude and (when {@link ModifierKeyTipProps.showMatchAll} is set) Shift+click
+ * to require a value (match all).
  */
-export const ModifierKeyTip = ({ children }: ModifierKeyTipProps) => {
+export const ModifierKeyTip = ({ showMatchAll = true, children }: ModifierKeyTipProps) => {
   return (
     <EuiPopoverFooter paddingSize="m">
       <EuiFlexGroup direction="column" alignItems="center" gutterSize="s" responsive={false}>
@@ -246,6 +316,17 @@ export const ModifierKeyTip = ({ children }: ModifierKeyTipProps) => {
             </EuiTextColor>
           </EuiText>
         </EuiFlexItem>
+        {showMatchAll && (
+          <EuiFlexItem>
+            <EuiText size="xs">
+              <EuiTextColor color="subdued">
+                {i18n.translate('contentManagement.contentList.filter.matchAllKeyHelpText', {
+                  defaultMessage: '⇧ + click match all',
+                })}
+              </EuiTextColor>
+            </EuiText>
+          </EuiFlexItem>
+        )}
         {children}
       </EuiFlexGroup>
     </EuiPopoverFooter>

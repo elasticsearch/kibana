@@ -96,8 +96,11 @@ export const TagFilterRenderer = ({
   const panelMinWidth = euiTheme.base * 24;
 
   const renderOption = useCallback(
-    (option: SelectableFilterOption<Tag>, state: { isActive: boolean }) => (
-      <StandardFilterOption count={option.count} isActive={state.isActive}>
+    (
+      option: SelectableFilterOption<Tag>,
+      { isActive, state }: { isActive: boolean; state?: 'include' | 'includeAll' | 'exclude' }
+    ) => (
+      <StandardFilterOption count={option.count} isActive={isActive} state={state}>
         <EuiFlexGroup gutterSize="xs" alignItems="center" responsive={false}>
           <EuiFlexItem grow={false}>
             <EuiHealth

@@ -165,4 +165,118 @@ describe('SelectableFilterPopover', () => {
 
     expect(onChange.mock.calls[0][0].text).toContain('-tag:(Production)');
   });
+
+  it('uses Shift to add a match-all (bare scalar) filter', async () => {
+    const onChange = jest.fn();
+
+    render(
+      <SelectableFilterPopover
+        fieldName="tag"
+        title="Tags"
+        query={Query.parse('')}
+        onChange={onChange}
+        options={options}
+        renderOption={(option) => <span>{option.label}</span>}
+      />
+    );
+
+    fireEvent.click(screen.getByText('Tags'));
+
+    const productionOption = await screen.findByText('Production');
+
+    fireEvent.mouseDown(productionOption, { shiftKey: true });
+    fireEvent.click(productionOption, { shiftKey: true });
+
+    await waitFor(() => {
+      expect(onChange).toHaveBeenCalled();
+    });
+
+    // Match-all is written as a bare scalar clause, not an OR-group.
+    expect(onChange.mock.calls[0][0].text).toBe('tag:Production');
+  });
+
+  it('falls back to match-any when Shift is used but allowMatchAll is false', async () => {
+    const onChange = jest.fn();
+
+    render(
+      <SelectableFilterPopover
+        fieldName="createdBy"
+        title="Creators"
+        query={Query.parse('')}
+        onChange={onChange}
+        options={options}
+        allowMatchAll={false}
+        renderOption={(option) => <span>{option.label}</span>}
+      />
+    );
+
+    fireEvent.click(screen.getByText('Creators'));
+
+    const productionOption = await screen.findByText('Production');
+
+    fireEvent.mouseDown(productionOption, { shiftKey: true });
+    fireEvent.click(productionOption, { shiftKey: true });
+
+    await waitFor(() => {
+      expect(onChange).toHaveBeenCalled();
+    });
+
+    expect(onChange.mock.calls[0][0].text).toBe('createdBy:(Production)');
+  });
+
+  it('renders a lone match-all value as a plain include (no green plus)', async () => {
+    render(
+      <SelectableFilterPopover
+        fieldName="tag"
+        title="Tags"
+        query={Query.parse('tag:Production')}
+        options={options}
+        renderOption={(option, { state }) => <span>{`${option.label}=${state ?? 'none'}`}</span>}
+      />
+    );
+
+    fireEvent.click(screen.getByText('Tags'));
+
+    // A single required value is indistinguishable from match-any, so it shows
+    // as `include` rather than `includeAll`.
+    expect(await screen.findByText('Production=include')).toBeInTheDocument();
+    expect(screen.getByText('Archived=none')).toBeInTheDocument();
+  });
+
+  it('renders match-all values as includeAll once a field has two or more', async () => {
+    render(
+      <SelectableFilterPopover
+        fieldName="tag"
+        title="Tags"
+        query={Query.parse('tag:Production tag:Archived')}
+        options={options}
+        renderOption={(option, { state }) => <span>{`${option.label}=${state ?? 'none'}`}</span>}
+      />
+    );
+
+    fireEvent.click(screen.getByText('Tags'));
+
+    expect(await screen.findByText('Production=includeAll')).toBeInTheDocument();
+    expect(screen.getByText('Archived=includeAll')).toBeInTheDocument();
+  });
+
+  it('omits the match-all hint when allowMatchAll is false', async () => {
+    render(
+      <SelectableFilterPopover
+        fieldName="createdBy"
+        title="Creators"
+        query={Query.parse('')}
+        options={options}
+        allowMatchAll={false}
+        renderOption={(option) => <span>{option.label}</span>}
+      />
+    );
+
+    fireEvent.click(screen.getByText('Creators'));
+
+    await waitFor(() => {
+      expect(screen.getByText(/\+ click exclude/)).toBeInTheDocument();
+    });
+    expect(screen.queryByText(/\+ click match all/)).not.toBeInTheDocument();
+  });
 });

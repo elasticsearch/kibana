@@ -21,9 +21,11 @@ import { FilterPopoverHeader } from './filter_popover_header';
 import {
   useFieldQueryFilter,
   isExcludeModifier,
+  isMatchAllModifier,
   getCheckedState,
   ModifierKeyTip,
   FilterCountBadge,
+  FilterStateIcon,
   type FilterType,
 } from './filter_utils';
 
@@ -67,6 +69,8 @@ export interface SelectableFilterPopoverProps<T extends object = Record<string, 
     state: {
       checked: 'on' | 'off' | undefined;
       isActive: boolean;
+      /** The value's filter mode, or `undefined` when inactive. */
+      state: FilterType | undefined;
     }
   ) => React.ReactNode;
   /**
@@ -76,6 +80,13 @@ export interface SelectableFilterPopoverProps<T extends object = Record<string, 
    * @default false
    */
   singleSelection?: boolean;
+  /**
+   * Allow Shift+click to mark a value as match-all (AND). Disable for fields
+   * where match-all is meaningless (e.g. a single-valued `createdBy`).
+   *
+   * @default true
+   */
+  allowMatchAll?: boolean;
   /** Whether the options are loading. */
   isLoading?: boolean;
   /** Empty state message to display. */
@@ -154,6 +165,7 @@ export const SelectableFilterPopover = <T extends object = Record<string, unknow
   options,
   renderOption,
   singleSelection = false,
+  allowMatchAll = true,
   isLoading,
   emptyMessage,
   noMatchesMessage,
@@ -189,12 +201,15 @@ export const SelectableFilterPopover = <T extends object = Record<string, unknow
   });
 
   // Track the modifier key state from the most recent user interaction so
-  // `handleSelectChange` can distinguish include from exclude. Capture-phase
-  // handlers fire before `EuiSelectable` processes the event, guaranteeing
-  // the ref is set before `onChange` runs.
-  const lastModifierRef = useRef(false);
+  // `handleSelectChange` can distinguish include / match-all / exclude.
+  // Capture-phase handlers fire before `EuiSelectable` processes the event,
+  // guaranteeing the ref is set before `onChange` runs.
+  const lastModifierRef = useRef<{ exclude: boolean; matchAll: boolean }>({
+    exclude: false,
+    matchAll: false,
+  });
   const handleInteractionCapture = useCallback((e: React.MouseEvent | React.KeyboardEvent) => {
-    lastModifierRef.current = isExcludeModifier(e);
+    lastModifierRef.current = { exclude: isExcludeModifier(e), matchAll: isMatchAllModifier(e) };
   }, []);
 
   // The badge count is derived from the parsed query (`selection`), so it must
@@ -215,12 +230,23 @@ export const SelectableFilterPopover = <T extends object = Record<string, unknow
     return selectedKeys.filter((value) => validOptionValues.has(value)).length;
   }, [selection, validOptionValues, options.length]);
 
+  // For a single value, match-all and match-any are identical, so the green
+  // plus only carries meaning once a field has 2+ required values. Below that,
+  // (or when match-all is disabled) match-all clauses render as a plain include.
+  const matchAllCount = useMemo(
+    () => Object.values(selection).filter((type) => type === 'includeAll').length,
+    [selection]
+  );
+
   // Build selectable options with view rendering.
   const selectableOptions = useMemo((): Array<InternalSelectableOption<T>> => {
+    const showMatchAllIcon = allowMatchAll && matchAllCount >= 2;
     return options.map((option) => {
       const queryValue = option.value ?? option.key;
       const selectedValue = selection[queryValue] ? queryValue : option.key;
-      const state: FilterType | undefined = selection[queryValue] ?? selection[option.key];
+      const rawState: FilterType | undefined = selection[queryValue] ?? selection[option.key];
+      const state: FilterType | undefined =
+        rawState === 'includeAll' && !showMatchAllIcon ? 'include' : rawState;
       const checked = getCheckedState(state);
       const isActive = checked !== undefined;
       const count = option.count ?? 0;
@@ -232,10 +258,10 @@ export const SelectableFilterPopover = <T extends object = Record<string, unknow
         checked,
         data: option.data,
         count,
-        view: renderOption(option, { checked, isActive }),
+        view: renderOption(option, { checked, isActive, state }),
       };
     });
-  }, [options, selection, renderOption]);
+  }, [options, selection, renderOption, allowMatchAll, matchAllCount]);
 
   // Build a lookup from key → checked state for stable comparison that
   // doesn't rely on index alignment (safe if `EuiSelectable` reorders options).
@@ -249,8 +275,15 @@ export const SelectableFilterPopover = <T extends object = Record<string, unknow
   // `lastModifierRef` to support Cmd/Ctrl+click for exclude.
   const handleSelectChange = useCallback(
     (updatedOptions: Array<InternalSelectableOption<T>>) => {
-      const filterType: FilterType =
-        !singleSelection && lastModifierRef.current ? 'exclude' : 'include';
+      const { exclude, matchAll } = lastModifierRef.current;
+      let filterType: FilterType = 'include';
+      if (!singleSelection) {
+        if (exclude) {
+          filterType = 'exclude';
+        } else if (matchAll && allowMatchAll) {
+          filterType = 'includeAll';
+        }
+      }
 
       if (singleSelection) {
         const newlyChecked = updatedOptions.find(
@@ -275,7 +308,7 @@ export const SelectableFilterPopover = <T extends object = Record<string, unknow
         }
       }
     },
-    [prevCheckedByKey, toggleValue, singleSelection]
+    [prevCheckedByKey, toggleValue, singleSelection, allowMatchAll]
   );
 
   // Don't show count badge on button for single-select (only one value can be selected).
@@ -307,6 +340,7 @@ export const SelectableFilterPopover = <T extends object = Record<string, unknow
           onChange={handleSelectChange}
           searchable
           searchProps={{ compressed: true }}
+          listProps={singleSelection ? undefined : { showIcons: false }}
           data-test-subj={`${dataTestSubj}-list`}
           aria-label={title}
         >
@@ -336,7 +370,9 @@ export const SelectableFilterPopover = <T extends object = Record<string, unknow
         </EuiSelectable>
       </div>
       {/* Only show modifier key tip for multi-select (exclude not supported in single-select). */}
-      {!singleSelection && <ModifierKeyTip>{footerContent}</ModifierKeyTip>}
+      {!singleSelection && (
+        <ModifierKeyTip showMatchAll={allowMatchAll}>{footerContent}</ModifierKeyTip>
+      )}
       {singleSelection && footerContent}
     </FilterPopover>
   );
@@ -356,18 +392,33 @@ export interface StandardOptionRenderProps {
   count?: number;
   /** Whether the filter is active. */
   isActive: boolean;
+  /**
+   * The value's filter mode, used to draw the leading status icon (check for
+   * match-any, green plus for match-all, cross for exclude). The popover hides
+   * EUI's default icons in favor of this.
+   */
+  state?: FilterType;
 }
 
 /**
- * Standard option layout with content and optional count badge.
+ * Standard option layout with a leading status icon, content, and optional
+ * count badge.
  *
- * Include/exclude is handled by `SelectableFilterPopover`'s modifier key
- * tracking — no click handler is needed on individual options.
+ * Include / match-all / exclude is handled by `SelectableFilterPopover`'s
+ * modifier-key tracking — no click handler is needed on individual options.
  */
-export const StandardFilterOption = ({ children, count, isActive }: StandardOptionRenderProps) => {
+export const StandardFilterOption = ({
+  children,
+  count,
+  isActive,
+  state,
+}: StandardOptionRenderProps) => {
   return (
-    <EuiFlexGroup gutterSize="s" justifyContent="spaceBetween" alignItems="center">
-      <EuiFlexItem grow={false}>{children}</EuiFlexItem>
+    <EuiFlexGroup gutterSize="s" alignItems="center" responsive={false}>
+      <EuiFlexItem grow={false}>
+        <FilterStateIcon state={state} />
+      </EuiFlexItem>
+      <EuiFlexItem>{children}</EuiFlexItem>
       {count !== undefined && (
         <EuiFlexItem grow={false}>
           <FilterCountBadge count={count} isActive={isActive} />

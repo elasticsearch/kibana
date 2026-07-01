@@ -105,7 +105,10 @@ export const UserFieldFilterRenderer = ({
   );
 
   const renderOption = useCallback(
-    (option: SelectableFilterOption<UserProfileEntry>, state: { isActive: boolean }) => {
+    (
+      option: SelectableFilterOption<UserProfileEntry>,
+      { isActive, state }: { isActive: boolean; state?: 'include' | 'includeAll' | 'exclude' }
+    ) => {
       const testSubj = `${fieldName}-searchbar-option-${option.key}`;
       const isSentinel = SENTINEL_KEYS.has(option.key);
       const avatar = isSentinel ? (
@@ -121,7 +124,7 @@ export const UserFieldFilterRenderer = ({
       );
 
       return (
-        <StandardFilterOption count={option.count} isActive={state.isActive}>
+        <StandardFilterOption count={option.count} isActive={isActive} state={state}>
           <EuiFlexGroup gutterSize="xs" alignItems="center" responsive={false}>
             <EuiFlexItem grow={false}>{avatar}</EuiFlexItem>
             <EuiFlexItem grow={false}>
@@ -146,6 +149,7 @@ export const UserFieldFilterRenderer = ({
       onChange={onChange}
       options={options}
       renderOption={renderOption}
+      allowMatchAll={false}
       isLoading={facetsQuery.isLoading}
       emptyMessage={emptyMessage}
       noMatchesMessage={noMatchesMessage}
