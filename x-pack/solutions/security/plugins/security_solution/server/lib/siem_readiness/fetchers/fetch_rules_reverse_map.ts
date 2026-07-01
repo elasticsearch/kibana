@@ -12,6 +12,7 @@ import type { DataViewsService } from '@kbn/data-views-plugin/common';
 import type { SortResults } from '@elastic/elasticsearch/lib/api/types';
 import type {
   RuleIndexEntry,
+  RequiredField,
   IndexToRulesMap,
   PipelineToIndicesMap,
   CategoryToIndicesMap,
@@ -221,6 +222,7 @@ export const fetchRulesReverseMap = async ({
   const categoryToIndices: CategoryToIndicesMap = new Map();
   const tacticTotals: TacticTotals = new Map();
   const mlRules: MachineLearningRuleIndex = [];
+  const ruleRequiredFields: Map<string, RequiredField[]> = new Map();
   const errors: ReverseMapErrors = { pipelineMap: false, categoryMap: false, rulesPartial: false };
 
   // 1. Build pipeline -> indices map from index settings
@@ -297,6 +299,14 @@ export const fetchRulesReverseMap = async ({
       });
 
       for (const ruleData of result.data) {
+        // Capture required_fields so fetch_rule_field_caps can check mapping coverage.
+        // The alerting framework stores this as camelCase requiredFields inside params
+        // (convert_rule_response_to_alerting_rule maps required_fields → requiredFields).
+        const rule = ruleData as unknown as AlertingRule;
+        const requiredFields =
+          (rule.params as { requiredFields?: RequiredField[] }).requiredFields ?? [];
+        ruleRequiredFields.set(rule.id, requiredFields);
+
         const anyFailed = await processRule(ruleData, ruleCtx);
         if (anyFailed) {
           errors.rulesPartial = true;
@@ -317,5 +327,13 @@ export const fetchRulesReverseMap = async ({
     throw err;
   }
 
-  return { indexToRules, pipelineToIndices, categoryToIndices, tacticTotals, mlRules, errors };
+  return {
+    indexToRules,
+    pipelineToIndices,
+    categoryToIndices,
+    tacticTotals,
+    mlRules,
+    ruleRequiredFields,
+    errors,
+  };
 };

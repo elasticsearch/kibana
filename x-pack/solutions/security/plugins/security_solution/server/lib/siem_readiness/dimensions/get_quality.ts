@@ -79,7 +79,7 @@ export const getQuality = async ({
 
   const summary = buildQualitySummary(status, qualityResults.length, actionableFindings.length);
 
-  return { status, summary, items: qualityResults, actionableFindings };
+  return { status, summary, items: qualityResults, actionableFindings, missingFieldsByRule: [] };
 };
 
 const buildQualitySummary = (

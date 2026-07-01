@@ -121,6 +121,7 @@ Rules:
 - Always show all three blast radius fields for every finding, even if some are empty ("—" or "none").
 - Do NOT merge the blast radius into prose — keep it as explicit labeled sub-bullets.
 - If \`affectedPlatform\` is undefined in the data, show "—".
+- **Exception — \`missingField\` findings**: omit the Affected Platform / Rules / Tactics sub-bullets entirely. These findings already name the affected rule directly in the message text ("Rule X requires field Y…"). Blast radius is not applicable — the rule IS the problem, not a collateral victim of a data issue.
 - If \`blastRadiusStatus === 'unavailable'\`, show "unavailable (lookup failed)" for all three fields — never "none".
 - If \`blastRadiusStatus === 'partial'\`, append "(may be incomplete)" to Affected Rules and Affected Tactics labels.
 
@@ -219,8 +220,16 @@ Playbook guidance:
 - \`items\`: array of ECS quality results for **categorized indices only** — includes \`indexName\`, \`incompatibleFieldCount\`, \`incompatibleFieldMappingItems\`, \`ecsFieldCount\`, \`totalFieldCount\`
   - Only indices whose data maps to one of the five main SIEM categories are included. Uncategorized system indices are excluded.
   - The count in \`summary\` reflects the number of categorized indices checked, not total ES indices.
-- \`actionableFindings\`: array of \`{ category, severity, message, resource }\`
+- \`actionableFindings\`: array of \`{ category, severity, message, resource, type }\`
+  - ECS incompatibility findings: \`type\` is absent; \`resource\` is the index name
+  - Missing-field findings: \`type === 'missingField'\`; \`resource\` is the unmapped field name; \`message\` names the rule and field
+- \`missingFieldsByRule\`: array of \`{ ruleId, ruleName, missingFields: string[] }\` — enabled rules whose \`required_fields\` are not mapped in the indices they query. These rules **silently match nothing** — they run without errors but produce zero alerts for events that should trigger them. Distinct from sparse fields (Ticket F): a missing field is absent from the mapping entirely; a sparse field is mapped but rarely populated in actual data.
 - When reporting: "N of M checked indices have incompatible fields" — N and M are both counts of categorized indices only.
+- When reporting missing fields: group by rule name, list each unmapped field. Example: "Rule 'Suspicious PowerShell Execution' requires process.command_line — not mapped in logs-endpoint.events.process-*".
+
+### Investigation examples (Quality)
+- "Which rules have required fields not mapped in my endpoint indices?" → call \`get_quality\`, inspect \`missingFieldsByRule\`, filter by rules whose indices match \`logs-endpoint.*\`
+- "Are any of my detection rules silently broken due to field mapping gaps?" → call \`get_quality\`, inspect \`missingFieldsByRule\`; a non-empty array means rules are running but cannot match
 
 ### Continuity (\`get_continuity\`)
 - \`status\`: \`healthy | actionsRequired | noData\`

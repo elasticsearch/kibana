@@ -12,13 +12,14 @@ import { getToolResultId } from '@kbn/agent-builder-server/tools';
 import type { Logger } from '@kbn/logging';
 import type { MainCategories } from '@kbn/siem-readiness';
 import { getIndexCategoryMap, isQualityIncompatible, enrichFindings } from '@kbn/siem-readiness';
-import { getAgentBuilderResourceAvailability } from '../../utils/get_agent_builder_resource_availability';
-import type { SecuritySolutionPluginCoreSetupDependencies } from '../../../plugin_contract';
-import { getQuality } from '../../../lib/siem_readiness/dimensions';
 import {
+  fetchRuleFieldCaps,
   getSiemReadinessSharedContext,
   fetchSiemReadinessSharedContext,
 } from '../../../lib/siem_readiness/fetchers';
+import { getAgentBuilderResourceAvailability } from '../../utils/get_agent_builder_resource_availability';
+import type { SecuritySolutionPluginCoreSetupDependencies } from '../../../plugin_contract';
+import { getQuality } from '../../../lib/siem_readiness/dimensions';
 import { SIEM_READINESS_QUALITY_TOOL_ID } from './tool_ids';
 
 const schema = z.object({});
@@ -30,7 +31,7 @@ export const getQualityTool = (
   id: SIEM_READINESS_QUALITY_TOOL_ID,
   type: ToolType.builtin,
   description:
-    'Retrieves SIEM data quality health based on ECS (Elastic Common Schema) compatibility check results. Returns indices with incompatible field mappings including field-level details — filtered to categorized SIEM indices. Includes an overall health status (healthy / actionsRequired / noData) and actionable findings. Note: results are only available after running a data quality check from the Security > Data Quality dashboard. Each actionable finding includes blast radius data. When presenting any finding, always show these as explicit labeled fields: Affected Platform, Affected Rules, Affected Tactics.',
+    'Retrieves SIEM data quality health across two signals: (1) ECS field compatibility check results from the Data Quality dashboard — indices with incompatible field mappings; (2) rule required-field coverage — detection rules whose declared required_fields are not mapped in the indices they query, meaning those rules silently match nothing. Returns an overall health status (healthy / actionsRequired / noData), actionable findings, and a missingFieldsByRule array listing each silently-broken rule and its unmapped fields. Each finding includes blast radius data. When presenting findings, always show Affected Platform, Affected Rules, and Affected Tactics as explicit labeled fields.',
   schema,
   tags: ['security', 'siem-readiness', 'quality'],
   availability: {
@@ -65,12 +66,35 @@ export const getQualityTool = (
         logger: handlerLogger,
       });
 
-      // Phase 3: blast radius enrichment
-      const allEnrichedFindings = enrichFindings(payload.actionableFindings ?? [], {
+      // Phase 2.5: rule required-field coverage check
+      // Identifies rules whose required_fields are not mapped in the indices they query —
+      // these rules silently match nothing despite running without errors.
+      const { ruleRequiredFields, indexToRules } = reverseMapResult;
+      const missingFieldsByRule = await fetchRuleFieldCaps({
+        esClient: esClient.asCurrentUser,
+        indexToRules,
+        ruleRequiredFields,
+      });
+
+      const missingFieldFindings = missingFieldsByRule.flatMap((entry) =>
+        entry.missingFields.map((field) => ({
+          severity: 'WARNING' as const,
+          type: 'missingField' as const,
+          message: `Rule "${entry.ruleName}" requires field "${field}" which is not mapped in the queried indices`,
+          resource: field,
+        }))
+      );
+
+      // Phase 3: blast radius enrichment — ECS quality findings only.
+      // missingField findings already name the affected rule directly in the message;
+      // blast radius is circular and always empty for field-name resources.
+      const enrichedEcsFindings = enrichFindings(payload.actionableFindings ?? [], {
         ...reverseMapResult,
         indexToPlatform,
         dimension: 'quality',
       });
+
+      const allEnrichedFindings = [...enrichedEcsFindings, ...missingFieldFindings];
 
       const indexToCategoryMap = getIndexCategoryMap(categoriesResult);
 
@@ -78,28 +102,42 @@ export const getQualityTool = (
         indexToCategoryMap.has(result.indexName)
       );
 
+      // ECS findings are keyed by index name — filter to categorized indices and attach category.
+      // Missing-field findings are keyed by field name (not index) — pass through without filtering.
       const enrichedFindings = allEnrichedFindings
-        .filter((finding) => indexToCategoryMap.has(finding.resource))
         .map((finding) => {
+          if (finding.type === 'missingField') return finding;
           const category = indexToCategoryMap.get(finding.resource) as MainCategories | undefined;
           return category ? { ...finding, category } : finding;
-        });
+        })
+        .filter(
+          (finding) => finding.type === 'missingField' || indexToCategoryMap.has(finding.resource)
+        );
 
       const incompatibleCount = categorizedItems.filter((item) =>
         isQualityIncompatible(item.incompatibleFieldCount)
       ).length;
+      const missingFieldCount = missingFieldsByRule.length;
       const filteredStatus =
-        categorizedItems.length === 0
+        categorizedItems.length === 0 && missingFieldCount === 0
           ? ('noData' as const)
-          : incompatibleCount > 0
+          : incompatibleCount > 0 || missingFieldCount > 0
           ? ('actionsRequired' as const)
           : ('healthy' as const);
+
+      const parts: string[] = [];
+      if (incompatibleCount > 0)
+        parts.push(
+          `${incompatibleCount} of ${categorizedItems.length} indices have incompatible ECS field mappings`
+        );
+      if (missingFieldCount > 0)
+        parts.push(
+          `${missingFieldCount} rule(s) have required fields not mapped in their queried indices`
+        );
       const filteredSummary =
         filteredStatus === 'noData'
-          ? 'No quality check results available for categorized indices.'
-          : incompatibleCount > 0
-          ? `${incompatibleCount} of ${categorizedItems.length} indices have incompatible ECS field mappings.`
-          : `All ${categorizedItems.length} checked indices have compatible ECS field mappings.`;
+          ? 'No quality check results available. Run the Data Quality dashboard or enable rules with required_fields to see results.'
+          : `${parts.join('; ')}.`;
 
       return {
         results: [
@@ -112,6 +150,7 @@ export const getQualityTool = (
               summary: filteredSummary,
               items: categorizedItems,
               actionableFindings: enrichedFindings,
+              missingFieldsByRule,
             },
           },
         ],

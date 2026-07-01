@@ -14,9 +14,3 @@ export { filterPipelinesByCategories } from './src/filter_pipelines_by_categorie
 export { filterRetentionItemsByCategories } from './src/filter_retention_items_by_categories';
 export { enrichFinding, enrichFindings } from './src/enrich_finding';
 export type { EnrichmentContext, Dimension } from './src/enrich_finding';
-export {
-  recommendedActionsRegistry,
-  getDefaultActions,
-  getDimensionActions,
-  buildRecommendedActions,
-} from './src/recommended_actions';
