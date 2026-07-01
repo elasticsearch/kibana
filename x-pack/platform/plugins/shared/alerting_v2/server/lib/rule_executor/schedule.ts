@@ -44,7 +44,7 @@ export async function ensureRuleExecutorTaskScheduled({
       scope: ['alerting'],
       enabled: true,
     },
-    { request }
+    { request, cloneApiKey: true }
   );
 
   return { id };

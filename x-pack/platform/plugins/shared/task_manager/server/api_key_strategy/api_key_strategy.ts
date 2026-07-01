@@ -18,7 +18,7 @@ import { INVALIDATE_API_KEY_SO_NAME } from '../saved_objects';
 export type { ApiKeyType } from '../config';
 
 export interface ApiKeySOFields {
-  apiKey: string;
+  apiKey?: string;
   uiamApiKey?: string;
   userScope: TaskUserScope;
 }
@@ -27,6 +27,11 @@ export interface ApiKeySOFields {
 export interface GrantApiKeysOpts {
   /** When true, grant only the Elasticsearch API key (skip UIAM). */
   onEsKey?: boolean;
+  /**
+   * When true, clone the caller's API key credentials instead of reusing them directly.
+   * See {@link ApiKeyOptions.cloneApiKey}.
+   */
+  cloneApiKey?: boolean;
 }
 
 export interface InvalidationTarget {

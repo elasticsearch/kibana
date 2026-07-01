@@ -313,12 +313,10 @@ export class TaskStore {
     }
 
     try {
-      return await this.apiKeyStrategy.grantApiKeys(
-        taskInstances,
-        request,
-        this.security,
-        options?.onEsKey === true ? { onEsKey: true } : undefined
-      );
+      return await this.apiKeyStrategy.grantApiKeys(taskInstances, request, this.security, {
+        ...(options?.onEsKey === true ? { onEsKey: true } : {}),
+        ...(options?.cloneApiKey === true ? { cloneApiKey: true } : {}),
+      });
     } catch (e) {
       this.errors$.next(e);
       throw e;

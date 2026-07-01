@@ -14,7 +14,12 @@ import type {
 import { ApiKeyType } from '../config';
 import type { ConcreteTaskInstance, TaskInstance } from '../task';
 import { getApiKeyAndUserScope } from '../lib/api_key_utils';
-import type { ApiKeySOFields, ApiKeyStrategy, InvalidationTarget } from './api_key_strategy';
+import type {
+  ApiKeySOFields,
+  ApiKeyStrategy,
+  GrantApiKeysOpts,
+  InvalidationTarget,
+} from './api_key_strategy';
 import { markApiKeysForInvalidation } from './api_key_strategy';
 
 export class EsApiKeyStrategy implements ApiKeyStrategy {
@@ -24,9 +29,10 @@ export class EsApiKeyStrategy implements ApiKeyStrategy {
   async grantApiKeys(
     taskInstances: TaskInstance[],
     request: KibanaRequest,
-    security: SecurityServiceStart
+    security: SecurityServiceStart,
+    opts?: GrantApiKeysOpts
   ): Promise<Map<string, ApiKeySOFields>> {
-    return getApiKeyAndUserScope(taskInstances, request, security);
+    return getApiKeyAndUserScope(taskInstances, request, security, opts);
   }
 
   getApiKeyForFakeRequest(taskInstance: ConcreteTaskInstance): string | undefined {

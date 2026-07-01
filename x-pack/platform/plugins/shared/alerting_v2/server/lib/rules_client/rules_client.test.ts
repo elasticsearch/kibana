@@ -1769,7 +1769,7 @@ describe('RulesClient', () => {
             enabled: true,
           }),
         ],
-        expect.objectContaining({ request })
+        expect.objectContaining({ request, cloneApiKey: true })
       );
 
       expect(res.rules).toHaveLength(1);
