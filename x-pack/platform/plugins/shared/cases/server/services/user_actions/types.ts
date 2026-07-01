@@ -36,7 +36,7 @@ import type { PatchCasesArgs } from '../cases/types';
 import type {
   AttachmentRequestV2,
   CasePostRequest,
-  UserActionFindRequest,
+  UserActionInternalFindRequest,
 } from '../../../common/types/api';
 import type { ObservablesActionType } from '../../../common/types/domain/user_action/observables/v1';
 import type {
@@ -347,7 +347,7 @@ export interface GetUsersResponse {
   assignedAndUnassignedUsers: Set<string>;
 }
 
-export interface FindOptions extends UserActionFindRequest {
+export interface FindOptions extends UserActionInternalFindRequest {
   caseId: string;
   filter?: KueryNode;
 }

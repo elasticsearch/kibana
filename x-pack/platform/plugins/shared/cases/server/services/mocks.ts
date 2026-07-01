@@ -120,6 +120,7 @@ const createUserActionPersisterServiceMock = (): CaseUserActionPersisterServiceM
 const createUserActionFinderServiceMock = (): CaseUserActionFinderServiceMock => {
   const service: PublicMethodsOf<UserActionFinder> = {
     find: jest.fn(),
+    findAll: jest.fn(),
     findStatusChanges: jest.fn(),
   };
 

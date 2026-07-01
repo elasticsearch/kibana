@@ -52,7 +52,7 @@ import type {
   GetRelatedCasesByAlertResponse,
   SimilarCasesSearchRequest,
   UpdateObservableRequest,
-  UserActionFindRequest,
+  UserActionInternalFindRequest,
   UserActionInternalFindResponse,
 } from '@kbn/cases-plugin/common/types/api';
 import {
@@ -934,7 +934,7 @@ export const findInternalCaseUserActions = async ({
 }: {
   supertest: SuperTest.Agent;
   caseID: string;
-  options?: UserActionFindRequest;
+  options?: UserActionInternalFindRequest;
   expectedHttpCode?: number;
   auth?: { user: User; space: string | null };
 }): Promise<UserActionInternalFindResponse> => {

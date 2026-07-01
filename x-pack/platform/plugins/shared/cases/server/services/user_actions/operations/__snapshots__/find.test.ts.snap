@@ -37,6 +37,38 @@ Object {
 }
 `;
 
+exports[`UserActionsService: Finder Decoding: findAll strips out excess attributes 1`] = `
+Array [
+  Object {
+    "attributes": Object {
+      "action": "create",
+      "comment_id": null,
+      "created_at": "abc",
+      "created_by": Object {
+        "email": "a",
+        "full_name": "abc",
+        "username": "b",
+      },
+      "owner": "securitySolution",
+      "payload": Object {
+        "title": "a new title",
+      },
+      "type": "title",
+    },
+    "id": "100",
+    "references": Array [
+      Object {
+        "id": "1",
+        "name": "associated-cases",
+        "type": "cases",
+      },
+    ],
+    "score": 0,
+    "type": "cases-user-actions",
+  },
+]
+`;
+
 exports[`UserActionsService: Finder Decoding: findStatusChanges strips out excess attributes 1`] = `
 Array [
   Object {

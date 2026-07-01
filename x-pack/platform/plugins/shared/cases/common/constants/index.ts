@@ -189,6 +189,8 @@ export const MAX_TAGS_PER_TEMPLATE = 10 as const;
 export const MAX_FIELD_DEFINITIONS_PER_OWNER = 200 as const;
 export const MAX_FILENAME_LENGTH = 160 as const;
 export const MAX_CUSTOM_OBSERVABLE_TYPES_LABEL_LENGTH = 50 as const;
+export const MAX_USER_ACTION_SEARCH_LENGTH = 256 as const;
+export const MAX_USER_ACTION_AUTHOR_LENGTH = 256 as const;
 
 /**
  * Cases features

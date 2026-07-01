@@ -50,6 +50,7 @@ describe('UserActionsService: Finder', () => {
     [keyof UserActionFinder, (soFindRes: SavedObjectsFindResponse) => void]
   > = [
     ['find', mockFind],
+    ['findAll', mockFinder],
     ['findStatusChanges', mockFinder],
   ];
 
@@ -105,6 +106,105 @@ describe('UserActionsService: Finder', () => {
           })
         );
       });
+    });
+
+    describe('author filter', () => {
+      beforeEach(() => {
+        const userAction = createUserActionSO();
+        const soFindRes = createSOFindResponse([createUserActionFindSO(userAction)]);
+        mockFind(soFindRes);
+      });
+
+      it('applies author filter on created_by.username', async () => {
+        await finder.find({ caseId: '1', author: 'testuser' });
+
+        expect(unsecuredSavedObjectsClient.find).toHaveBeenCalledWith(
+          expect.objectContaining({
+            filter: expect.objectContaining({
+              type: 'function',
+              function: 'is',
+              arguments: expect.arrayContaining([
+                expect.objectContaining({
+                  value: 'cases-user-actions.attributes.created_by.username',
+                }),
+                expect.objectContaining({
+                  value: 'testuser',
+                }),
+              ]),
+            }),
+          })
+        );
+      });
+
+      it('does not apply author filter when author is not provided', async () => {
+        await finder.find({ caseId: '1' });
+
+        const callFilter = unsecuredSavedObjectsClient.find.mock.calls[0][0].filter;
+        expect(callFilter).toBeUndefined();
+      });
+    });
+  });
+
+  describe('findAll', () => {
+    it('uses createPointInTimeFinder to fetch all user actions', async () => {
+      const userAction = createUserActionSO();
+      const soFindRes = createSOFindResponse([createUserActionFindSO(userAction)]);
+      mockFinder(soFindRes);
+
+      const res = await finder.findAll({ caseId: '1' });
+
+      expect(unsecuredSavedObjectsClient.createPointInTimeFinder).toHaveBeenCalled();
+      expect(res).toHaveLength(1);
+    });
+
+    it('applies author filter in findAll', async () => {
+      const userAction = createUserActionSO();
+      const soFindRes = createSOFindResponse([createUserActionFindSO(userAction)]);
+      mockFinder(soFindRes);
+
+      await finder.findAll({ caseId: '1', author: 'testuser' });
+
+      expect(unsecuredSavedObjectsClient.createPointInTimeFinder).toHaveBeenCalledWith(
+        expect.objectContaining({
+          filter: expect.objectContaining({
+            type: 'function',
+            function: 'is',
+            arguments: expect.arrayContaining([
+              expect.objectContaining({
+                value: 'cases-user-actions.attributes.created_by.username',
+              }),
+              expect.objectContaining({
+                value: 'testuser',
+              }),
+            ]),
+          }),
+        })
+      );
+    });
+
+    it('applies types filter in findAll', async () => {
+      const userAction = createUserActionSO();
+      const soFindRes = createSOFindResponse([createUserActionFindSO(userAction)]);
+      mockFinder(soFindRes);
+
+      await finder.findAll({ caseId: '1', types: ['status'] });
+
+      expect(unsecuredSavedObjectsClient.createPointInTimeFinder).toHaveBeenCalledWith(
+        expect.objectContaining({
+          filter: expect.objectContaining({
+            type: 'function',
+            function: 'is',
+            arguments: expect.arrayContaining([
+              expect.objectContaining({
+                value: 'cases-user-actions.attributes.type',
+              }),
+              expect.objectContaining({
+                value: 'status',
+              }),
+            ]),
+          }),
+        })
+      );
     });
   });
 

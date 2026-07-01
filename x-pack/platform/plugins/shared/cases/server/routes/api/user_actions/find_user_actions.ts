@@ -5,11 +5,14 @@
  * 2.0.
  */
 
+import { castArray } from 'lodash';
 import { schema } from '@kbn/config-schema';
 import type { userActionApiV1 } from '../../../../common/types/api';
+import { UserActionFindRequestRt } from '../../../../common/types/api';
 
 import { CASE_FIND_USER_ACTIONS_URL } from '../../../../common/constants';
 import { createCaseError } from '../../../common/error';
+import { decodeWithExcessOrThrow } from '../../../common/runtime_types';
 import { createCasesRoute } from '../create_cases_route';
 import { DEFAULT_CASES_ROUTE_SECURITY } from '../constants';
 
@@ -36,7 +39,12 @@ export const findUserActionsRoute = createCasesRoute({
       const caseContext = await context.cases;
       const casesClient = await caseContext.getCasesClient();
       const caseId = request.params.case_id;
-      const options = request.query as userActionApiV1.UserActionFindRequest;
+      const query = request.query as Record<string, unknown>;
+      const { types, ...restQuery } = query;
+      const options = decodeWithExcessOrThrow(UserActionFindRequestRt)({
+        ...restQuery,
+        ...(types != null ? { types: castArray(types) } : {}),
+      });
 
       const res: userActionApiV1.UserActionFindResponse = await casesClient.userActions.find({
         caseId,

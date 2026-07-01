@@ -6,7 +6,11 @@
  */
 
 import { z } from '@kbn/zod/v4';
-import { MAX_USER_ACTIONS_PER_PAGE } from '../../../constants';
+import {
+  MAX_USER_ACTIONS_PER_PAGE,
+  MAX_USER_ACTION_SEARCH_LENGTH,
+  MAX_USER_ACTION_AUTHOR_LENGTH,
+} from '../../../constants';
 import { paginationSchema } from '../../../schema_zod';
 import { UserActionsSchema } from '../../domain_zod/user_action/v1';
 import { UserActionTypes } from '../../domain/user_action/action/v1';
@@ -46,6 +50,11 @@ export const UserActionFindRequestSchema = paginationSchema({
   sortOrder: z.enum(['desc', 'asc']).optional(),
 });
 
+export const UserActionInternalFindRequestSchema = UserActionFindRequestSchema.extend({
+  author: z.string().max(MAX_USER_ACTION_AUTHOR_LENGTH).optional(),
+  search: z.string().max(MAX_USER_ACTION_SEARCH_LENGTH).optional(),
+});
+
 export const UserActionFindResponseSchema = z.object({
   userActions: UserActionsSchema,
   page: z.number(),
@@ -55,4 +64,5 @@ export const UserActionFindResponseSchema = z.object({
 
 export type CaseUserActionStats = z.infer<typeof CaseUserActionStatsSchema>;
 export type UserActionFindRequest = z.infer<typeof UserActionFindRequestSchema>;
+export type UserActionInternalFindRequest = z.infer<typeof UserActionInternalFindRequestSchema>;
 export type UserActionFindResponse = z.infer<typeof UserActionFindResponseSchema>;

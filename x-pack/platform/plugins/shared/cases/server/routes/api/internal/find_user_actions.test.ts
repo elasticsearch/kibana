@@ -181,7 +181,7 @@ describe('findUserActionsRoute', () => {
       params: {
         case_id: 'my_fake_case_id',
       },
-      query: '',
+      query: {},
     };
 
     // @ts-expect-error: mocking necessary properties for handler logic only, no Kibana platform
@@ -244,7 +244,7 @@ describe('findUserActionsRoute', () => {
       params: {
         case_id: 'my_fake_case_id',
       },
-      query: '',
+      query: {},
     };
 
     // @ts-expect-error: Kibana platform types are mocked for testing, only implementing necessary properties for handler logic
@@ -274,7 +274,7 @@ describe('findUserActionsRoute', () => {
       params: {
         case_id: 'my_fake_case_id',
       },
-      query: '',
+      query: {},
     };
 
     // @ts-expect-error: mocking necessary properties for handler logic only, no Kibana platform

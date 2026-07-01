@@ -7,7 +7,10 @@
 
 import type { KueryNode } from '@kbn/es-query';
 import { fromKueryExpression } from '@kbn/es-query';
-import type { SavedObjectsFindResponse } from '@kbn/core-saved-objects-api-server';
+import type {
+  SavedObjectsCreatePointInTimeFinderOptions,
+  SavedObjectsFindResponse,
+} from '@kbn/core-saved-objects-api-server';
 import type { UserActionFindRequestTypes } from '../../../../common/types/api';
 import { DEFAULT_PAGE, DEFAULT_PER_PAGE } from '../../../routes/api';
 import { defaultSortField } from '../../../common/utils';
@@ -46,11 +49,16 @@ export class UserActionFinder {
     page,
     perPage,
     filter,
+    author,
   }: FindOptions): Promise<SavedObjectsFindResponse<UserActionTransformedAttributes>> {
     try {
       this.context.log.debug(`Attempting to find user actions for case id: ${caseId}`);
 
-      const finalFilter = combineFilters([filter, UserActionFinder.buildFilter(types)]);
+      const finalFilter = combineFilters([
+        filter,
+        UserActionFinder.buildFilter(types),
+        UserActionFinder.buildAuthorFilter(author),
+      ]);
 
       const userActions =
         await this.context.unsecuredSavedObjectsClient.find<UserActionPersistedAttributes>({
@@ -79,6 +87,43 @@ export class UserActionFinder {
       };
     } catch (error) {
       this.context.log.error(`Error finding user actions for case id: ${caseId}: ${error}`);
+      throw error;
+    }
+  }
+
+  /**
+   * Fetches all user actions for a case using a point-in-time finder.
+   * The `search` field from FindOptions is intentionally excluded — text search
+   * is handled via in-memory filtering at the client layer.
+   */
+  public async findAll({
+    caseId,
+    sortOrder,
+    types,
+    filter,
+    author,
+  }: Omit<FindOptions, 'page' | 'perPage' | 'search'>): Promise<
+    UserActionSavedObjectTransformed[]
+  > {
+    try {
+      this.context.log.debug(`Attempting to find all user actions for case id: ${caseId}`);
+
+      const finalFilter = combineFilters([
+        filter,
+        UserActionFinder.buildFilter(types),
+        UserActionFinder.buildAuthorFilter(author),
+      ]);
+
+      return await this.collectFromPIT({
+        type: CASE_USER_ACTION_SAVED_OBJECT,
+        hasReference: { type: CASE_SAVED_OBJECT, id: caseId },
+        sortField: defaultSortField,
+        sortOrder: sortOrder ?? 'asc',
+        filter: finalFilter,
+        perPage: MAX_DOCS_PER_PAGE,
+      });
+    } catch (error) {
+      this.context.log.error(`Error finding all user actions for case id: ${caseId}: ${error}`);
       throw error;
     }
   }
@@ -177,6 +222,19 @@ export class UserActionFinder {
     );
   }
 
+  private static buildAuthorFilter(author?: string): KueryNode | undefined {
+    if (!author) {
+      return undefined;
+    }
+
+    return buildFilter({
+      filters: [author],
+      field: 'created_by.username',
+      operator: 'or',
+      type: CASE_USER_ACTION_SAVED_OBJECT,
+    });
+  }
+
   private static buildGenericTypeFilter(type: UserActionType): KueryNode | undefined {
     return buildFilter({
       filters: [type],
@@ -212,39 +270,42 @@ export class UserActionFinder {
 
       const combinedFilters = combineFilters([updateActionFilter, statusChangeFilter, filter]);
 
-      const finder =
-        this.context.unsecuredSavedObjectsClient.createPointInTimeFinder<UserActionPersistedAttributes>(
-          {
-            type: CASE_USER_ACTION_SAVED_OBJECT,
-            hasReference: { type: CASE_SAVED_OBJECT, id: caseId },
-            sortField: defaultSortField,
-            sortOrder: 'asc',
-            filter: combinedFilters,
-            perPage: MAX_DOCS_PER_PAGE,
-          }
-        );
-
-      let userActions: UserActionSavedObjectTransformed[] = [];
-
-      for await (const findResults of finder.find()) {
-        userActions = userActions.concat(
-          findResults.saved_objects.map((so) => {
-            const res = transformToExternalModel(so);
-
-            const decodeRes = decodeOrThrow(UserActionTransformedAttributesRt)(res.attributes);
-
-            return {
-              ...res,
-              attributes: decodeRes,
-            };
-          })
-        );
-      }
-
-      return userActions;
+      return await this.collectFromPIT({
+        type: CASE_USER_ACTION_SAVED_OBJECT,
+        hasReference: { type: CASE_SAVED_OBJECT, id: caseId },
+        sortField: defaultSortField,
+        sortOrder: 'asc',
+        filter: combinedFilters,
+        perPage: MAX_DOCS_PER_PAGE,
+      });
     } catch (error) {
       this.context.log.error(`Error finding status changes: ${error}`);
       throw error;
     }
+  }
+
+  private async collectFromPIT(
+    options: SavedObjectsCreatePointInTimeFinderOptions
+  ): Promise<UserActionSavedObjectTransformed[]> {
+    const finder =
+      this.context.unsecuredSavedObjectsClient.createPointInTimeFinder<UserActionPersistedAttributes>(
+        options
+      );
+
+    let results: UserActionSavedObjectTransformed[] = [];
+
+    for await (const batch of finder.find()) {
+      results = results.concat(
+        batch.saved_objects.map((so) => {
+          const res = transformToExternalModel(so);
+          return {
+            ...res,
+            attributes: decodeOrThrow(UserActionTransformedAttributesRt)(res.attributes),
+          };
+        })
+      );
+    }
+
+    return results;
   }
 }
