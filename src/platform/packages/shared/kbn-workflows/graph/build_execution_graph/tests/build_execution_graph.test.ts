@@ -17,6 +17,7 @@ import {
   type KibanaStep,
   type LoopBreakStep,
   type LoopContinueStep,
+  type WaitForApprovalStep,
   type WaitStep,
   type WhileStep,
   type WorkflowYaml,
@@ -1339,6 +1340,59 @@ describe('convertToWorkflowGraph', () => {
       expect(breakNode.type).toBe('loop-break');
       expect(breakNode.loopExitNodeId).toBe('exitForeach_inner_loop');
       expect(breakNode.loopStepId).toBe('inner_loop');
+    });
+  });
+
+  describe('waitForApproval step', () => {
+    it('should build a graph without entering an infinite timeout recursion', () => {
+      const workflowDefinition = {
+        steps: [
+          {
+            name: 'request-approval',
+            type: 'waitForApproval',
+            timeout: '24h',
+            with: {
+              message: 'Approve?',
+            },
+          } as WaitForApprovalStep,
+        ],
+      } as Partial<WorkflowYaml>;
+
+      expect(() => convertToWorkflowGraph(workflowDefinition as WorkflowYaml)).not.toThrow();
+
+      const graph = convertToWorkflowGraph(workflowDefinition as WorkflowYaml);
+      expect(graph.node('request-approval')).toEqual(
+        expect.objectContaining({
+          type: 'waitForApproval',
+          configuration: expect.objectContaining({
+            timeout: '24h',
+          }),
+        })
+      );
+    });
+
+    it('should default approval timeout when omitted', () => {
+      const workflowDefinition = {
+        steps: [
+          {
+            name: 'request-approval',
+            type: 'waitForApproval',
+            with: {
+              message: 'Approve?',
+            },
+          } as WaitForApprovalStep,
+        ],
+      } as Partial<WorkflowYaml>;
+
+      const graph = convertToWorkflowGraph(workflowDefinition as WorkflowYaml);
+
+      expect(graph.node('request-approval')).toEqual(
+        expect.objectContaining({
+          configuration: expect.objectContaining({
+            timeout: '24h',
+          }),
+        })
+      );
     });
   });
 });

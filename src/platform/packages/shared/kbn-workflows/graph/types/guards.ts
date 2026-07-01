@@ -12,6 +12,7 @@ import type {
   DataSetGraphNode,
   ElasticsearchGraphNode,
   KibanaGraphNode,
+  WaitForApprovalGraphNode,
   WaitForInputGraphNode,
   WaitGraphNode,
   WorkflowOutputGraphNode,
@@ -65,6 +66,9 @@ export const isWait = (node: GraphNodeUnion): node is WaitGraphNode => node.type
 
 export const isWaitForInput = (node: GraphNodeUnion): node is WaitForInputGraphNode =>
   node.type === 'waitForInput';
+
+export const isWaitForApproval = (node: GraphNodeUnion): node is WaitForApprovalGraphNode =>
+  node.type === 'waitForApproval';
 
 export const isDataSet = (node: GraphNodeUnion): node is DataSetGraphNode =>
   node.type === 'data.set';

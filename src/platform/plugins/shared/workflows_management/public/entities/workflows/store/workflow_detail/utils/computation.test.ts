@@ -55,6 +55,30 @@ steps:
     });
   });
 
+  describe('waitForApproval step', () => {
+    it('should parse workflow with waitForApproval step and build graph', () => {
+      const yaml = `name: test
+enabled: false
+triggers:
+  - type: manual
+steps:
+  - name: request-approval
+    type: waitForApproval
+    timeout: 24h
+    with:
+      message: "Approve?"
+      approveLabel: Approve
+      rejectLabel: Decline`;
+
+      const result = performComputation(yaml);
+
+      expect(result.yamlDocument).toBeDefined();
+      expect(result.workflowLookup?.steps).toHaveProperty('request-approval');
+      expect(result.workflowDefinition?.steps?.[0]?.type).toBe('waitForApproval');
+      expect(result.workflowGraph).toBeDefined();
+    });
+  });
+
   describe('multi-line JSON object in YAML value (issue #15420)', () => {
     it('should parse workflow with multi-line JSON schema and preserve all downstream steps', () => {
       const yaml = `name: AI Steps Demo

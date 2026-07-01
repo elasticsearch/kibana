@@ -35,4 +35,4 @@ steps:
   - name: log_decision
     type: console
     with:
-      message: "Triage: escalate={{ steps.ask_triage_decision.output.escalate }} severity={{ steps.ask_triage_decision.output.severity }}"
+      message: "Triage: escalate={{ steps.ask_triage_decision.output.response.escalate }} severity={{ steps.ask_triage_decision.output.response.severity }}"

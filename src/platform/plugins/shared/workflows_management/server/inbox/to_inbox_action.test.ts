@@ -154,6 +154,18 @@ describe('toInboxAction', () => {
     );
     expect(action.input_schema).toBeUndefined();
   });
+
+  it('uses approval-specific fallback title for waitForApproval steps', () => {
+    const action = toInboxAction(
+      buildStep({
+        stepType: 'waitForApproval',
+        input: {
+          schema: { type: 'object', properties: { approved: { type: 'boolean' } } },
+        },
+      })
+    );
+    expect(action.title).toBe('Step "wait_approval" is waiting for approval');
+  });
 });
 
 describe('toInboxHistoryAction', () => {

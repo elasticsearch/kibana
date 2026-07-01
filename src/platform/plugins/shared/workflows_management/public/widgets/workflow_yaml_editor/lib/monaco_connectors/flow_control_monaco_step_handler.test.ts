@@ -29,9 +29,10 @@ describe('FlowControlMonacoStepHandler', () => {
   });
 
   describe('canHandle', () => {
-    it('should handle wait and waitForInput', () => {
+    it('should handle wait, waitForInput, and waitForApproval', () => {
       expect(handler.canHandle('wait')).toBe(true);
       expect(handler.canHandle('waitForInput')).toBe(true);
+      expect(handler.canHandle('waitForApproval')).toBe(true);
     });
 
     it('should not handle other step types', () => {
@@ -86,6 +87,12 @@ describe('FlowControlMonacoStepHandler', () => {
       const result = handler.getExamples('waitForInput');
       expect(result?.snippet).toContain('type: waitForInput');
       expect(result?.snippet).toContain('message: "Please approve before continuing"');
+    });
+
+    it('should return examples for waitForApproval', () => {
+      const result = handler.getExamples('waitForApproval');
+      expect(result?.snippet).toContain('type: waitForApproval');
+      expect(result?.snippet).toContain('approveLabel: Approve');
     });
   });
 });

@@ -7,7 +7,7 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
-import { monaco } from '@kbn/monaco';
+import { monaco } from '@kbn/code-editor';
 import type { BuiltInStepType, ConnectorTypeInfo, WorkflowOutput } from '@kbn/workflows';
 import {
   DataSetStepSchema,
@@ -18,6 +18,7 @@ import {
   MergeStepSchema,
   ParallelStepSchema,
   SwitchStepSchema,
+  WaitForApprovalStepSchema,
   WaitForInputStepSchema,
   WaitStepSchema,
   WhileStepSchema,
@@ -280,6 +281,11 @@ function getBuiltInStepTypesFromSchema(): Array<{
     {
       schema: WaitForInputStepSchema,
       description: 'Pause execution until external input is provided (human-in-the-loop)',
+      icon: monaco.languages.CompletionItemKind.Event,
+    },
+    {
+      schema: WaitForApprovalStepSchema,
+      description: 'Pause execution until approval or rejection is received (human-in-the-loop)',
       icon: monaco.languages.CompletionItemKind.Event,
     },
     {

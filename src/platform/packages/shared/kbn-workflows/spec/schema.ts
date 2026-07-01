@@ -17,6 +17,10 @@ import {
   isManualTrigger,
   LegacyWorkflowInputSchema,
 } from './schema/triggers/manual_trigger_schema';
+import {
+  HITL_EXTERNAL_FORM_LINK_CONTEXT_KEY,
+  HITL_EXTERNAL_QUERY_LINK_CONTEXT_KEY,
+} from '../common/hitl';
 
 export const DurationSchema = z.string().regex(/^\d+(ms|[smhdw])$/, 'Invalid duration format');
 
@@ -227,19 +231,74 @@ export const WaitStepSchema = BaseStepSchema.extend({
 });
 export type WaitStep = z.infer<typeof WaitStepSchema>;
 
+export const WaitForApprovalSlackChannelSchema = z.object({
+  'connector-id': z
+    .string()
+    .min(1)
+    .describe('Slack webhook connector saved object id or name (posts to the webhook channel)'),
+  message: z
+    .string()
+    .optional()
+    .describe(
+      'Optional notification template. Use {{context.hitl.externalFormLink}} for the external input form link.'
+    ),
+});
+
+export const WaitForApprovalSlackApiChannelSchema = z.object({
+  'connector-id': z.string().min(1).describe('Slack API connector saved object id or name'),
+  channels: z
+    .array(z.string().min(1))
+    .min(1)
+    .describe('Slack channel ids to post approval actions to'),
+  message: z
+    .string()
+    .optional()
+    .describe(
+      'Optional notification template. Use {{context.hitl.externalFormLink}} for the external input form link.'
+    ),
+});
+
+export const WaitForApprovalChannelsSchema = z
+  .object({
+    slack: WaitForApprovalSlackChannelSchema.optional(),
+    slack_api: WaitForApprovalSlackApiChannelSchema.optional(),
+  })
+  .optional()
+  .describe('Optional external notification channels for HITL response links');
+
+export const HitlExternalChannelsSchema = WaitForApprovalChannelsSchema;
+
 export const WaitForInputStepInputSchema = z
   .object({
     message: z.string().optional().describe('Message displayed to the user when waiting for input'),
     schema: JsonModelSchema.optional().describe(
       'JSON Schema describing the expected input payload. Used for validation, autocomplete, and default values in the resume UI'
     ),
+    channels: HitlExternalChannelsSchema,
   })
   .optional();
 export const WaitForInputStepSchema = BaseStepSchema.extend({
   type: z.literal('waitForInput').describe('Pause execution until external input is provided'),
   with: WaitForInputStepInputSchema,
-});
+}).merge(TimeoutPropSchema);
 export type WaitForInputStep = z.infer<typeof WaitForInputStepSchema>;
+
+export const WaitForApprovalStepInputSchema = z
+  .object({
+    message: z.string().optional().describe('Message displayed to approvers'),
+    approveLabel: z.string().optional().describe('Label for the approve action (default: Approve)'),
+    rejectLabel: z.string().optional().describe('Label for the reject action (default: Decline)'),
+    channels: WaitForApprovalChannelsSchema,
+  })
+  .optional();
+
+export const WaitForApprovalStepSchema = BaseStepSchema.extend({
+  type: z
+    .literal('waitForApproval')
+    .describe('Pause execution until approval or rejection is received'),
+  with: WaitForApprovalStepInputSchema,
+}).merge(TimeoutPropSchema);
+export type WaitForApprovalStep = z.infer<typeof WaitForApprovalStepSchema>;
 
 export const DataSetStepInputSchema = z
   .record(z.string(), z.unknown())
@@ -692,6 +751,7 @@ const StepSchema = z.lazy(() =>
     SwitchStepSchema,
     WaitStepSchema,
     WaitForInputStepSchema,
+    WaitForApprovalStepSchema,
     DataSetStepSchema,
     ElasticsearchStepSchema,
     KibanaStepSchema,
@@ -723,6 +783,7 @@ export const BuiltInStepTypes = [
   DataSetStepSchema.shape.type.value,
   WaitStepSchema.shape.type.value,
   WaitForInputStepSchema.shape.type.value,
+  WaitForApprovalStepSchema.shape.type.value,
   WorkflowExecuteStepSchema.shape.type.value,
   WorkflowExecuteAsyncStepSchema.shape.type.value,
   WorkflowOutputStepSchema.shape.type.value,
@@ -891,7 +952,29 @@ const WorkflowInputValueSchema: z.ZodType<unknown> = z.lazy(() =>
   ])
 );
 
+export const WorkflowHitlTemplateContextSchema = z.object({
+  [HITL_EXTERNAL_FORM_LINK_CONTEXT_KEY]: z
+    .string()
+    .optional()
+    .describe('External waitForInput form URL, available while the step is waiting'),
+  [HITL_EXTERNAL_QUERY_LINK_CONTEXT_KEY]: z
+    .string()
+    .optional()
+    .describe(
+      'External GET resume URL with apiKey set. Append `&<field>=<value>` per with.schema.'
+    ),
+});
+
+export const WorkflowTemplatePersistedContextSchema = z.object({
+  hitl: WorkflowHitlTemplateContextSchema.optional(),
+});
+
 export const WorkflowContextSchema = z.object({
+  /**
+   * Persisted execution-context values exposed to templates as `context.*`
+   * (for example `context.hitl.externalFormLink` during external waitForInput).
+   */
+  context: WorkflowTemplatePersistedContextSchema.optional(),
   /**
    * Alias for the inputs defined on the manual trigger (`triggers[type=manual].inputs`) or
    * workflow call trigger (`triggers[type=workflow_call].inputs`). Populated from the trigger's

@@ -50,7 +50,9 @@ responses:
                   input:
                     message: 'Approve change to production?'
                   output:
-                    approved: true
+                    response:
+                      approved: true
+                    respondedBy: alice
                   hitl:
                     respondedBy: alice
                     respondedAt: '2025-11-20T12:05:29.000Z'

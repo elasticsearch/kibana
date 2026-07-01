@@ -8,8 +8,60 @@
  */
 
 import { type Document, isPair, isScalar, type LineCounter, visit } from 'yaml';
+import { WAIT_FOR_APPROVAL_CHANNEL_CONNECTOR_TYPES } from '@kbn/workflows';
 import { getPathFromAncestors } from '../../../../common/lib/yaml';
 import type { ConnectorIdItem } from '../model/types';
+
+function isConnectorIdValue(node: unknown, lastAncestor: unknown): boolean {
+  return isPair(lastAncestor) && lastAncestor.value === node;
+}
+
+function findConnectorTypeFromStepAncestor(ancestors: readonly unknown[]): string | undefined {
+  for (let i = ancestors.length - 1; i >= 0; i--) {
+    const ancestor = ancestors[i];
+    if (ancestor && typeof ancestor === 'object' && 'items' in ancestor) {
+      const items = (ancestor as { items?: unknown[] }).items;
+      if (Array.isArray(items)) {
+        let hasType = false;
+        let hasConnectorId = false;
+        let typeValue: unknown;
+
+        for (const item of items) {
+          if (isPair(item) && isScalar(item.key)) {
+            if (item.key.value === 'type' && isScalar(item.value)) {
+              hasType = true;
+              typeValue = item.value.value;
+            } else if (item.key.value === 'connector-id') {
+              hasConnectorId = true;
+            }
+          }
+        }
+
+        if (hasType && hasConnectorId && typeof typeValue === 'string') {
+          return typeValue;
+        }
+      }
+    }
+  }
+
+  return undefined;
+}
+
+function findConnectorTypeFromChannelsPath(path: readonly unknown[]): string | undefined {
+  const channelsIdx = path.indexOf('channels');
+  if (
+    channelsIdx < 0 ||
+    path[channelsIdx + 2] !== 'connector-id' ||
+    typeof path[channelsIdx + 1] !== 'string'
+  ) {
+    return undefined;
+  }
+
+  const channelKey = path[
+    channelsIdx + 1
+  ] as keyof typeof WAIT_FOR_APPROVAL_CHANNEL_CONNECTOR_TYPES;
+  return WAIT_FOR_APPROVAL_CHANNEL_CONNECTOR_TYPES[channelKey];
+}
 
 export function collectAllConnectorIds(
   yamlDocument: Document,
@@ -33,55 +85,17 @@ export function collectAllConnectorIds(
         isScalar(lastAncestor.key) &&
         lastAncestor.key.value === 'connector-id';
 
-      if (!isConnectorIdProp || !node.value) {
+      if (!isConnectorIdProp || !node.value || !isConnectorIdValue(node, lastAncestor)) {
         return;
       }
 
-      // Make sure we're looking at the VALUE of a connector-id property, not the key itself
-      const isConnectorIdValue = isPair(lastAncestor) && lastAncestor.value === node;
-
-      if (!isConnectorIdValue) {
-        return;
-      }
-
-      let connectorType = 'unknown';
-
-      // Walk up the ancestors to find the step node (should contain both 'type' and 'connector-id')
-      for (let i = ancestors.length - 1; i >= 0; i--) {
-        const ancestor = ancestors[i];
-        if (ancestor && typeof ancestor === 'object' && 'items' in ancestor) {
-          // Check if this node has both 'type' and 'connector-id' properties
-          const items = (ancestor as any).items; // eslint-disable-line @typescript-eslint/no-explicit-any
-          if (Array.isArray(items)) {
-            let hasType = false;
-            let hasConnectorId = false;
-            let typeValue = null;
-
-            for (const item of items) {
-              if (isPair(item) && isScalar(item.key)) {
-                if (item.key.value === 'type' && isScalar(item.value)) {
-                  hasType = true;
-                  typeValue = item.value.value;
-                } else if (item.key.value === 'connector-id') {
-                  hasConnectorId = true;
-                }
-              }
-            }
-
-            if (hasType && hasConnectorId && typeValue) {
-              connectorType = typeValue as string;
-              break;
-            }
-          }
-        }
-      }
-
-      // Get the path to determine the yamlPath
       const path = getPathFromAncestors(ancestors);
+      const connectorType =
+        findConnectorTypeFromStepAncestor(ancestors ?? []) ??
+        findConnectorTypeFromChannelsPath(path) ??
+        'unknown';
 
       const [startOffset, endOffset] = node.range;
-
-      // Use LineCounter to convert byte offsets to line/column positions
       const startPos = lineCounter.linePos(startOffset);
       const endPos = lineCounter.linePos(endOffset);
 

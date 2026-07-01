@@ -30,4 +30,4 @@ steps:
   - name: log_approval
     type: console
     with:
-      message: "Approved? {{ steps.ask_approval.output.approved }}"
+      message: "Approved? {{ steps.ask_approval.output.response.approved }}"

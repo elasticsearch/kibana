@@ -7,7 +7,7 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
-import type { monaco } from '@kbn/monaco';
+import type { monaco } from '@kbn/code-editor';
 import type { ConnectorTypeInfo } from '@kbn/workflows';
 import { getFakeAutocompleteContextParams } from '../context/build_autocomplete_context.test';
 import { getCompletionItemProvider } from '../get_completion_item_provider';
@@ -74,6 +74,7 @@ steps:
     expect(suggestions.map((s) => s.label).sort()).toEqual(
       [
         'consts',
+        'context',
         'event',
         'kibanaUrl',
         'metadata',
@@ -97,6 +98,7 @@ steps:
         '"{{ workflow$0 }}"',
         '"{{ inputs$0 }}"',
         '"{{ consts$0 }}"',
+        '"{{ context$0 }}"',
         '"{{ now$0 }}"',
         '"{{ parent$0 }}"',
         '"{{ steps$0 }}"',
@@ -128,6 +130,7 @@ steps:
         '{{ workflow$0 }}',
         '{{ inputs$0 }}',
         '{{ consts$0 }}',
+        '{{ context$0 }}',
         '{{ now$0 }}',
         '{{ parent$0 }}',
         '{{ steps$0 }}',

@@ -41,4 +41,4 @@ steps:
   - name: log_tactics
     type: console
     with:
-      message: "Tactics = {{ steps.ask_tags.output.tactics }}"
+      message: "Tactics = {{ steps.ask_tags.output.response.tactics }}"

@@ -14,6 +14,7 @@ import {
   ForEachStepConfigSchema,
   IfStepConfigSchema,
   SwitchStepConfigSchema,
+  WaitForApprovalStepInputSchema,
   WaitForInputStepInputSchema,
   WaitStepInputSchema,
   WhileStepConfigSchema,
@@ -245,7 +246,10 @@ export const builtInStepDefinitions: BaseStepDefinition[] = [
     description: 'Pause execution until external input is provided (human-in-the-loop)',
     category: StepCategory.FlowControl,
     inputSchema: WaitForInputStepInputSchema,
-    outputSchema: z.unknown(),
+    outputSchema: z.object({
+      response: z.record(z.string(), z.unknown()),
+      respondedBy: z.string(),
+    }),
     documentation: {
       examples: [
         `- name: wait_for_approval
@@ -266,6 +270,34 @@ export const builtInStepDefinitions: BaseStepDefinition[] = [
           default: medium
       required:
         - reason`,
+      ],
+    },
+  },
+  {
+    id: 'waitForApproval',
+    label: 'Wait For Approval',
+    description: 'Pause execution until approval or rejection is received (human-in-the-loop)',
+    category: StepCategory.FlowControl,
+    inputSchema: WaitForApprovalStepInputSchema,
+    outputSchema: z.object({
+      response: z.object({ approved: z.boolean() }),
+      respondedBy: z.string(),
+    }),
+    documentation: {
+      examples: [
+        `- name: request-approval
+  type: waitForApproval
+  timeout: 24h
+  with:
+    message: "Approve isolation for {{ inputs.hostname }}?"
+    approveLabel: Approve
+    rejectLabel: Decline
+    channels:
+      slack:
+        connector-id: my-slack-webhook-connector
+      slack_api:
+        connector-id: my-slack-api-connector
+        channels: ['C0123456789']`,
       ],
     },
   },

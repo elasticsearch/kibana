@@ -1,0 +1,19 @@
+responses:
+  200:
+    description: 'HTML form page for submitting external input to a paused waitForInput step'
+    content:
+      text/html:
+        schema:
+          type: string
+        examples:
+          externalResumeFormExample:
+            description: 'Form page for external input submission'
+            value: '<!DOCTYPE html><html><body><h1>Submit your response</h1><form method="POST"><button type="submit">Submit</button></form></body></html>'
+x-codeSamples:
+  - lang: curl
+    source: |
+      curl \
+        -X GET "${KIBANA_URL}/api/workflows/executions/{executionId}/resume/external/form?apiKey=${ENCODED_API_KEY}"
+  - lang: Console
+    source: |
+      GET kbn://api/workflows/executions/{executionId}/resume/external/form?apiKey={encodedApiKey}

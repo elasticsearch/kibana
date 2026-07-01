@@ -118,6 +118,8 @@ dependsOn:
   - '@kbn/datemath'
   - '@kbn/controls-plugin'
   - '@kbn/controls-schemas'
+  - '@kbn/core-http-server-utils'
+  - '@kbn/core-spaces-common'
 tags:
   - plugin
   - prod

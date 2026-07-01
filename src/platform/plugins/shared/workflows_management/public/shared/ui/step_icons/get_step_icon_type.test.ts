@@ -33,6 +33,7 @@ describe('getStepIconType', () => {
     ['database', 'data.set'],
     ['clock', 'wait'],
     ['user', 'waitForInput'],
+    ['user', 'waitForApproval'],
     ['branch', 'if'],
     ['tokenBoolean', 'if-branch'],
     ['refresh', 'foreach'],

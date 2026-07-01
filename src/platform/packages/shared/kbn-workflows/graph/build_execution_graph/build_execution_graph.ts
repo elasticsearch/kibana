@@ -9,6 +9,7 @@
 
 import { graphlib } from '@dagrejs/dagre';
 import { omit } from 'lodash';
+import { DEFAULT_WAIT_FOR_APPROVAL_TIMEOUT } from '../../common/wait_for_approval';
 import { DEFAULT_LOOP_MAX_ITERATIONS } from '../../spec/schema';
 import type {
   BaseStep,
@@ -26,6 +27,7 @@ import type {
   StepWithOnFailure,
   SwitchStep,
   TimeoutProp,
+  WaitForApprovalStep,
   WaitForInputStep,
   WaitStep,
   WhileStep,
@@ -69,6 +71,7 @@ import type {
   LoopBreakNode,
   LoopContinueNode,
   LoopEnterNode,
+  WaitForApprovalGraphNode,
   WaitForInputGraphNode,
   WorkflowGraphType,
   WorkflowOutputGraphNode,
@@ -116,7 +119,8 @@ function getStepId(node: BaseStep, context: GraphBuildContext): string {
   return parts.join('_');
 }
 
-function visitAbstractStep(currentStep: BaseStep, context: GraphBuildContext): WorkflowGraphType {
+function visitAbstractStep(originalStep: BaseStep, context: GraphBuildContext): WorkflowGraphType {
+  const currentStep = originalStep;
   if ((currentStep as StepWithOnFailure)['on-failure']) {
     const stepLevelOnFailureGraph = handleStepLevelOnFailure(currentStep, context);
 
@@ -133,6 +137,28 @@ function visitAbstractStep(currentStep: BaseStep, context: GraphBuildContext): W
     }
   }
 
+  return visitTypedAbstractStep(currentStep, context);
+}
+
+function tryVisitHitlWaitStep(
+  currentStep: BaseStep,
+  context: GraphBuildContext
+): WorkflowGraphType | undefined {
+  if (currentStep.type === 'waitForInput') {
+    return visitWaitForInputStep(currentStep as WaitForInputStep, context);
+  }
+
+  if (currentStep.type === 'waitForApproval') {
+    return visitWaitForApprovalStep(currentStep as WaitForApprovalStep, context);
+  }
+
+  return undefined;
+}
+
+function visitTypedAbstractStep(
+  currentStep: BaseStep,
+  context: GraphBuildContext
+): WorkflowGraphType {
   if ((currentStep as StepWithIfCondition).if) {
     return createIfGraphForIfStepLevel(currentStep as StepWithIfCondition, context);
   }
@@ -151,6 +177,13 @@ function visitAbstractStep(currentStep: BaseStep, context: GraphBuildContext): W
 
   if (currentStep.type === 'loop.continue') {
     return visitLoopContinueStep(currentStep as LoopContinueStep, context);
+  }
+
+  // HITL wait steps are not wrapped in enter-timeout-zone nodes. waitForApproval and
+  // waitForInput schedule their idle deadlines via handleExecutionDelay.
+  const hitlWaitGraph = tryVisitHitlWaitStep(currentStep, context);
+  if (hitlWaitGraph) {
+    return hitlWaitGraph;
   }
 
   if ((currentStep as TimeoutProp).timeout) {
@@ -178,10 +211,6 @@ function visitAbstractStep(currentStep: BaseStep, context: GraphBuildContext): W
 
   if (currentStep.type === 'wait') {
     return visitWaitStep(currentStep as WaitStep, context);
-  }
-
-  if (currentStep.type === 'waitForInput') {
-    return visitWaitForInputStep(currentStep as WaitForInputStep, context);
   }
 
   if (currentStep.type === 'data.set') {
@@ -270,6 +299,27 @@ export function visitWaitForInputStep(
     },
   };
   graph.setNode(waitForInputNode.id, waitForInputNode);
+
+  return graph;
+}
+
+export function visitWaitForApprovalStep(
+  currentStep: WaitForApprovalStep,
+  context: GraphBuildContext
+): WorkflowGraphType {
+  const stepId = getStepId(currentStep, context);
+  const graph = createTypedGraph({ directed: true });
+  const waitForApprovalNode: WaitForApprovalGraphNode = {
+    id: stepId,
+    type: 'waitForApproval',
+    stepId,
+    stepType: currentStep.type,
+    configuration: {
+      ...currentStep,
+      timeout: currentStep.timeout ?? DEFAULT_WAIT_FOR_APPROVAL_TIMEOUT,
+    },
+  };
+  graph.setNode(waitForApprovalNode.id, waitForApprovalNode);
 
   return graph;
 }

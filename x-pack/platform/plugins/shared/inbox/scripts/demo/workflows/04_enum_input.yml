@@ -29,4 +29,4 @@ steps:
   - name: log_disposition
     type: console
     with:
-      message: "Disposition = {{ steps.ask_disposition.output.disposition }}"
+      message: "Disposition = {{ steps.ask_disposition.output.response.disposition }}"

@@ -29,6 +29,7 @@ import type {
   ExitWhileNode,
   LoopBreakNode,
   LoopContinueNode,
+  WaitForApprovalGraphNode,
   WaitForInputGraphNode,
   WaitGraphNode,
   WorkflowExecuteAsyncGraphNode,
@@ -80,6 +81,7 @@ import {
   ExitStepTimeoutZoneNodeImpl,
   ExitWorkflowTimeoutZoneNodeImpl,
 } from './timeout_zone_step';
+import { WaitForApprovalStepImpl } from './wait_for_approval_step/wait_for_approval_step';
 import { WaitForInputStepImpl } from './wait_for_input_step/wait_for_input_step';
 import { WaitStepImpl } from './wait_step/wait_step';
 import { EnterWhileNodeImpl, ExitWhileNodeImpl } from './while_step';
@@ -353,7 +355,18 @@ export class NodesFactory {
           node as WaitForInputGraphNode,
           stepExecutionRuntime,
           this.workflowRuntime,
-          stepLogger
+          stepLogger,
+          this.connectorExecutor,
+          this.dependencies
+        );
+      case 'waitForApproval':
+        return new WaitForApprovalStepImpl(
+          node as WaitForApprovalGraphNode,
+          stepExecutionRuntime,
+          this.workflowRuntime,
+          stepLogger,
+          this.connectorExecutor,
+          this.dependencies
         );
       case 'atomic':
         return new AtomicStepImpl(

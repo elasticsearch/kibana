@@ -7,6 +7,7 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
+import { getBuiltInStepDefinition } from '@kbn/workflows';
 import type { GraphNodeUnion } from '@kbn/workflows/graph';
 import { isAtomic } from '@kbn/workflows/graph';
 import { z } from '@kbn/zod/v4';
@@ -33,12 +34,27 @@ export const getOutputSchemaForStepType = (node: GraphNodeUnion): z.ZodSchema =>
     if (jsonSchema) {
       try {
         const zodSchema = fromJSONSchema(jsonSchema);
-        if (zodSchema) return zodSchema as z.ZodSchema;
+        if (zodSchema) {
+          return z.object({
+            response: zodSchema as z.ZodSchema,
+            respondedBy: z.string(),
+          });
+        }
       } catch {
         // fall through to permissive fallback
       }
     }
-    return waitForInputFallbackSchema;
+    return z.object({
+      response: waitForInputFallbackSchema,
+      respondedBy: z.string(),
+    });
+  }
+
+  if (node.stepType === 'waitForApproval') {
+    const outputSchema = getBuiltInStepDefinition('waitForApproval')?.outputSchema;
+    if (outputSchema) {
+      return outputSchema as z.ZodSchema;
+    }
   }
 
   if (isAtomic(node)) {

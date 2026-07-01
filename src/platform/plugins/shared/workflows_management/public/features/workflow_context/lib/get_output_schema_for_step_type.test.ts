@@ -467,8 +467,14 @@ describe('getOutputSchemaForStepType', () => {
       const result = getOutputSchemaForStepType(mockNode as any);
 
       // Should produce a typed Zod schema, not the permissive record fallback.
-      const valid = result.safeParse({ approved: true });
-      const invalid = result.safeParse({ approved: 'not-a-boolean' });
+      const valid = result.safeParse({
+        response: { approved: true },
+        respondedBy: 'external-user',
+      });
+      const invalid = result.safeParse({
+        response: { approved: 'not-a-boolean' },
+        respondedBy: 'external-user',
+      });
       expect(valid.success).toBe(true);
       expect(invalid.success).toBe(false);
     });
@@ -484,7 +490,9 @@ describe('getOutputSchemaForStepType', () => {
 
       const result = getOutputSchemaForStepType(mockNode as any);
 
-      expect(result.safeParse({ anything: true }).success).toBe(true);
+      expect(
+        result.safeParse({ response: { anything: true }, respondedBy: 'external-user' }).success
+      ).toBe(true);
     });
   });
 });

@@ -69,14 +69,21 @@ steps:
       const exec = fixture.workflowExecutionRepositoryMock.workflowExecutions.get(
         'fake_workflow_execution_id'
       )!;
-      exec.context = { ...exec.context, resumeInput: { approved: true, note: 'ok' } };
+      exec.context = {
+        ...exec.context,
+        resumeInput: { approved: true, note: 'ok' },
+        resumedBy: 'test-user',
+      };
       fixture.workflowExecutionRepositoryMock.workflowExecutions.set(exec.id, exec);
 
       await fixture.resumeWorkflow();
 
       const steps = Array.from(fixture.stepExecutionRepositoryMock.stepExecutions.values());
       const askStep = steps.find((s) => s.stepId === 'ask');
-      expect(askStep?.output).toEqual({ approved: true, note: 'ok' });
+      expect(askStep?.output).toEqual({
+        response: { approved: true, note: 'ok' },
+        respondedBy: 'test-user',
+      });
       expect(askStep?.status).toBe(ExecutionStatus.COMPLETED);
     });
   });
@@ -183,9 +190,9 @@ steps:
         .sort((a, b) => (a.stepExecutionIndex ?? 0) - (b.stepExecutionIndex ?? 0));
 
       expect(askSteps.length).toBe(3);
-      expect(askSteps[0].output).toEqual({ val: 'a' });
-      expect(askSteps[1].output).toEqual({ val: 'b' });
-      expect(askSteps[2].output).toEqual({ val: 'c' });
+      expect(askSteps[0].output).toEqual({ response: { val: 'a' }, respondedBy: 'unknown' });
+      expect(askSteps[1].output).toEqual({ response: { val: 'b' }, respondedBy: 'unknown' });
+      expect(askSteps[2].output).toEqual({ response: { val: 'c' }, respondedBy: 'unknown' });
     });
   });
 
@@ -234,7 +241,10 @@ steps:
       const step = Array.from(fixture.stepExecutionRepositoryMock.stepExecutions.values()).find(
         (s) => s.stepId === 'get_info'
       );
-      expect(step?.output).toEqual({ ticket: 'T-42', priority: 'high' });
+      expect(step?.output).toEqual({
+        response: { ticket: 'T-42', priority: 'high' },
+        respondedBy: 'unknown',
+      });
     });
   });
 
