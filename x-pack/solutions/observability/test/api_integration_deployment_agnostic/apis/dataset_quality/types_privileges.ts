@@ -137,5 +137,64 @@ export default function ({ getService }: DeploymentAgnosticFtrProviderContext) {
         );
       });
     });
+
+    // The wildcard canMonitor (from getDatasetPrivileges) maps from view_index_metadata,
+    // so a role with view_index_metadata but no monitor still gets canMonitor: true here.
+    describe('Read + view_index_metadata user (no monitor)', () => {
+      let supertestReadViewMetaWithCookieCredentials: SupertestWithRoleScopeType;
+      let roleAuthc: RoleCredentials;
+
+      before(async () => {
+        await saml.setCustomRole(customRoles.readAndViewMetadataUserRole);
+        supertestReadViewMetaWithCookieCredentials =
+          await customRoleScopedSupertest.getSupertestWithCustomRoleScope({
+            useCookieHeader: true,
+            withInternalHeaders: true,
+          });
+        roleAuthc = await saml.createM2mApiKeyWithCustomRoleScope();
+      });
+
+      after(async () => {
+        await saml.invalidateM2mApiKeyWithRoleScope(roleAuthc);
+        await saml.deleteCustomRole();
+      });
+
+      it('reports canRead and canMonitor true for view_index_metadata without monitor', async () => {
+        const resp = await callApiAs(supertestReadViewMetaWithCookieCredentials, ['logs']);
+
+        expect(resp.body.datasetTypesPrivileges['logs-*-*'].canRead).to.be(true);
+        expect(resp.body.datasetTypesPrivileges['logs-*-*'].canMonitor).to.be(true);
+      });
+    });
+
+    // Documents the intentional divergence for negated/complement roles: the wildcard
+    // `logs-*-*` privilege check reports `canRead: false`, yet the user can still read
+    // individual logs data streams (verified by the stats/total_docs endpoints). The
+    // client must therefore not rely on this wildcard check to drop the whole type.
+    describe('Negated logs role', () => {
+      let supertestNegatedWithCookieCredentials: SupertestWithRoleScopeType;
+      let roleAuthc: RoleCredentials;
+
+      before(async () => {
+        await saml.setCustomRole(customRoles.negatedLogsUserRole);
+        supertestNegatedWithCookieCredentials =
+          await customRoleScopedSupertest.getSupertestWithCustomRoleScope({
+            useCookieHeader: true,
+            withInternalHeaders: true,
+          });
+        roleAuthc = await saml.createM2mApiKeyWithCustomRoleScope();
+      });
+
+      after(async () => {
+        await saml.invalidateM2mApiKeyWithRoleScope(roleAuthc);
+        await saml.deleteCustomRole();
+      });
+
+      it('reports canRead false for the logs wildcard even though individual streams are readable', async () => {
+        const resp = await callApiAs(supertestNegatedWithCookieCredentials, ['logs']);
+
+        expect(resp.body.datasetTypesPrivileges['logs-*-*'].canRead).to.be(false);
+      });
+    });
   });
 }

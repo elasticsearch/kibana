@@ -23,7 +23,7 @@ import type {
   UpdateFailureStoreResponse,
   UpdateFieldLimitResponse,
 } from '../../../common/api_types';
-import { datasetQualityPrivileges } from '../../services';
+import { datasetQualityPrivileges, dataStreamService } from '../../services';
 import { rangeRt, typeRt, typesRt } from '../../types/default_api_types';
 import { createDatasetQualityESClient } from '../../utils';
 import { createDatasetQualityServerRoute } from '../create_datasets_quality_server_route';
@@ -238,19 +238,35 @@ const totalDocsRoute = createDatasetQualityServerRoute({
 
     const esClient = coreContext.elasticsearch.client.asCurrentUser;
 
-    await datasetQualityPrivileges.throwIfCannotReadDataset(
+    const { type, start, end } = params.query;
+    const indexPattern = `${type}-*-*`;
+
+    // Authorization is enforced per data stream by Elasticsearch. The wildcard
+    // `_has_privileges` read check (e.g. `logs-*-*`) returns `false` for roles built
+    // with negated/complement index patterns, even when individual data streams of
+    // that type are readable. We therefore resolve the data streams the user can
+    // actually access; only when none are accessible AND the wildcard read privilege
+    // is denied do we treat the user as unauthorized. Otherwise the aggregation runs
+    // and Elasticsearch returns counts for just the accessible data streams.
+    const accessibleDataStreams = await dataStreamService.getMatchingDataStreams(
       esClient,
-      isSecurityEnabled,
-      params.query.type
+      indexPattern
     );
 
-    const { type, start, end } = params.query;
+    if (accessibleDataStreams.length === 0) {
+      await datasetQualityPrivileges.throwIfCannotReadDataset(esClient, isSecurityEnabled, type);
 
+      return {
+        totalDocs: [],
+      };
+    }
+
+    // Use the wildcard; ES enforces per-stream auth and only counts accessible docs.
     const totalDocs = await getAggregatedDatasetPaginatedResults({
       esClient,
       start,
       end,
-      index: `${type}-*-*`,
+      index: indexPattern,
     });
 
     return {

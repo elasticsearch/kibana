@@ -38,17 +38,6 @@ export async function getDataStreams(options: {
     isSecurityEnabled
   );
 
-  const canMonitor = Object.values(datasetUserPrivileges.datasetsPrivilages).some(
-    (privileges) => privileges.canMonitor
-  );
-
-  if (!canMonitor) {
-    return {
-      dataStreams: [],
-      datasetUserPrivileges,
-    };
-  }
-
   const allDataStreams = await dataStreamService.getMatchingDataStreams(
     esClient,
     datasetNames.join(',')

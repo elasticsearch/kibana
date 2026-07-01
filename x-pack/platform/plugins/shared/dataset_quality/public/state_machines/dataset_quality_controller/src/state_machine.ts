@@ -185,18 +185,6 @@ const createPureDatasetQualityControllerStateMachine = (
       updateFailureStore: getPlaceholderFor(createUpdateFailureStoreActor),
     },
     guards: {
-      hasAuthorizedTypes: ({ event }) => {
-        if (!('output' in event) || typeof event.output !== 'object' || !event.output) {
-          return false;
-        }
-
-        const output = event.output as GetDataStreamsTypesPrivilegesResponse;
-
-        return (
-          'datasetTypesPrivileges' in output &&
-          extractAuthorizedDatasetTypes(output.datasetTypesPrivileges).length > 0
-        );
-      },
       checkIfActionForbidden: ({ event }) => {
         if (!('error' in event) || typeof event.error !== 'object' || event.error === null) {
           return false;
@@ -227,16 +215,10 @@ const createPureDatasetQualityControllerStateMachine = (
       initializing: {
         invoke: {
           src: 'loadDatasetTypesPrivileges',
-          onDone: [
-            {
-              target: 'main',
-              actions: ['storeAuthorizedDatasetTypes'],
-              guard: 'hasAuthorizedTypes',
-            },
-            {
-              target: 'emptyState',
-            },
-          ],
+          onDone: {
+            target: 'main',
+            actions: ['storeAuthorizedDatasetTypes'],
+          },
           onError: {
             target: 'initializationFailed',
             actions: ['notifyFetchDatasetTypesPrivilegesFailed'],
@@ -244,7 +226,6 @@ const createPureDatasetQualityControllerStateMachine = (
         },
       },
       initializationFailed: {},
-      emptyState: {},
       main: {
         type: 'parallel',
         states: {
@@ -553,6 +534,12 @@ export const createDatasetQualityControllerStateMachine = ({
 
         const output = event.output as GetDataStreamsTypesPrivilegesResponse;
 
+        // `authorizedDatasetTypes` only drives the types filter UI, so it reflects the
+        // wildcard privilege check (a type whose `${type}-*-*` check passes). Roles built
+        // with ES negated/complement patterns fail the wildcard check for the negated type
+        // even though individual data streams of that type are readable; those streams are
+        // still discovered because stats are queried for all known types (see
+        // `getValidDatasetTypes`), so the page lists them regardless of this list.
         const authorizedDatasetTypes = extractAuthorizedDatasetTypes(output.datasetTypesPrivileges);
 
         const filterTypes = context.filters.types as DataStreamType[];
@@ -697,11 +684,10 @@ export type DatasetQualityControllerStateService = ActorRefFrom<
   ReturnType<typeof createDatasetQualityControllerStateMachine>
 >;
 
-const extractAuthorizedDatasetTypes = (datasetTypesPrivileges: DatasetTypesPrivileges) =>
-  Object.entries(datasetTypesPrivileges)
-    .filter(([_type, priv]) => priv.canMonitor || priv.canRead)
-    .map(([type, _priv]) => type.replace(/-\*-\*$/, '')) as DataStreamType[];
-
+// When no explicit type filter is set we query all known types rather than only the
+// wildcard-authorized ones. This ensures data streams of a type whose `${type}-*-*`
+// privilege check fails (ES negated/complement roles) are still discovered; the server
+// enforces per-data-stream authorization and returns only the accessible ones.
 const getValidDatasetTypes = (
   context: DatasetQualityControllerContext,
   isDatasetQualityAllSignalsAvailable: boolean
@@ -709,12 +695,17 @@ const getValidDatasetTypes = (
   (isDatasetQualityAllSignalsAvailable
     ? context.filters.types.length
       ? context.filters.types
-      : context.authorizedDatasetTypes
+      : KNOWN_TYPES
     : [DEFAULT_DATASET_TYPE]) as DataStreamType[];
 
 const isTypeSelected = (type: DataStreamType, context: DatasetQualityControllerContext) =>
-  (context.filters.types.length === 0 && context.authorizedDatasetTypes.includes(type)) ||
+  (context.filters.types.length === 0 && KNOWN_TYPES.includes(type)) ||
   context.filters.types.includes(type);
+
+const extractAuthorizedDatasetTypes = (datasetTypesPrivileges: DatasetTypesPrivileges) =>
+  Object.entries(datasetTypesPrivileges)
+    .filter(([_type, priv]) => priv.canMonitor || priv.canRead)
+    .map(([type, _priv]) => type.replace(/-\*-\*$/, '')) as DataStreamType[];
 
 interface ActorDeps {
   dataStreamStatsClient: IDataStreamsStatsClient;
@@ -755,7 +746,14 @@ const createLoadDataStreamDocsStatsActor = ({ dataStreamStatsClient }: ActorDeps
 
         sendBack({ type: 'SAVE_TOTAL_DOCS_STATS', data: totalDocsStats, dataStreamType: type });
       } catch (e) {
-        sendBack({ type: 'NOTIFY_TOTAL_DOCS_STATS_FAILED', error: e as Error });
+        const error = e as Error & { statusCode?: number };
+        if (error.statusCode === 403) {
+          // The user has no access to this type (e.g. a logs-only user requesting metrics).
+          // Treat as an empty result so the page remains functional for accessible types.
+          sendBack({ type: 'SAVE_TOTAL_DOCS_STATS', data: [], dataStreamType: type });
+        } else {
+          sendBack({ type: 'NOTIFY_TOTAL_DOCS_STATS_FAILED', error });
+        }
       }
     };
     fetchDocs();

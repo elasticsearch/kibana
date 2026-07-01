@@ -25,7 +25,7 @@ class DataStreamService {
 
       return dataStreamsInfo;
     } catch (e) {
-      if (e.statusCode === 404) {
+      if (e.statusCode === 404 || e.statusCode === 403) {
         return [];
       }
       throw e;

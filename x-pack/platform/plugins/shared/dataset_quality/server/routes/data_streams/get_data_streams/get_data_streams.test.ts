@@ -78,6 +78,74 @@ describe('getDataStreams', () => {
     expect(result.datasetUserPrivileges.datasetsPrivilages['logs-*-*'].canMonitor).toBe(true);
   });
 
+  it('requests only monitor (not view_index_metadata) per stream and maps canMonitor from it', async () => {
+    const esClientMock = elasticsearchServiceMock.createElasticsearchClient();
+    const result = await getDataStreams({
+      esClient: esClientMock,
+      types: ['logs'],
+      uncategorisedOnly: false,
+      isSecurityEnabled: true,
+    });
+
+    expect(datasetQualityPrivileges.getHasIndexPrivileges).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.any(Array),
+      expect.arrayContaining(['monitor']),
+      true
+    );
+    expect(datasetQualityPrivileges.getHasIndexPrivileges).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.any(Array),
+      expect.not.arrayContaining(['view_index_metadata']),
+      true
+    );
+
+    result.dataStreams.forEach((stream) => {
+      expect(stream.userPrivileges.canMonitor).toBe(true);
+    });
+  });
+
+  it('sets canMonitor false when monitor privilege is absent', async () => {
+    mockGetMockDataStreamPrivileges.mockResolvedValueOnce(
+      Object.fromEntries(MATCHING_DATA_STREAMS.map(({ name }) => [name, { monitor: false }]))
+    );
+
+    const esClientMock = elasticsearchServiceMock.createElasticsearchClient();
+    const result = await getDataStreams({
+      esClient: esClientMock,
+      types: ['logs'],
+      uncategorisedOnly: false,
+      isSecurityEnabled: true,
+    });
+
+    result.dataStreams.forEach((stream) => {
+      expect(stream.userPrivileges.canMonitor).toBe(false);
+    });
+  });
+
+  it('Returns data streams even when wildcard canMonitor is false', async () => {
+    mockGetDatasetPrivileges.mockResolvedValueOnce({
+      datasetsPrivilages: {
+        'logs-*-*': {
+          canRead: true,
+          canMonitor: false,
+          canReadFailureStore: false,
+        },
+      },
+    });
+
+    const esClientMock = elasticsearchServiceMock.createElasticsearchClient();
+    const result = await getDataStreams({
+      esClient: esClientMock,
+      types: ['logs'],
+      uncategorisedOnly: false,
+      isSecurityEnabled: true,
+    });
+
+    expect(result.dataStreams.length).toBe(5);
+    expect(dataStreamService.getMatchingDataStreams).toHaveBeenCalled();
+  });
+
   describe('uncategorized only option', () => {
     it('Returns the correct number of results when true', async () => {
       const esClientMock = elasticsearchServiceMock.createElasticsearchClient();
@@ -192,7 +260,6 @@ const MATCHING_DATA_STREAMS = [
 ];
 
 const DATA_STREAMS_PRIVILEGES = Object.values(MATCHING_DATA_STREAMS).reduce((acc, stream) => {
-  acc[stream.name] = true;
-
+  acc[stream.name] = { monitor: true };
   return acc;
-}, {} as Record<string, boolean>);
+}, {} as Record<string, { monitor: boolean }>);

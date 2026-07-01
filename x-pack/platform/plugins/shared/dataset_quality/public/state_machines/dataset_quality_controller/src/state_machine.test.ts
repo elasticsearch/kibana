@@ -140,6 +140,37 @@ const noPrivilegesResponse = {
   },
 };
 
+const partialPrivilegesResponse = {
+  datasetTypesPrivileges: {
+    // Wildcard check fails for logs (e.g. role with a negated/complement index
+    // pattern), even though individual logs data streams are accessible.
+    'logs-*-*': {
+      canMonitor: false,
+      canRead: false,
+      canReadFailureStore: false,
+      canManageFailureStore: false,
+    },
+    'metrics-*-*': {
+      canMonitor: true,
+      canRead: true,
+      canReadFailureStore: false,
+      canManageFailureStore: false,
+    },
+    'traces-*-*': {
+      canMonitor: true,
+      canRead: true,
+      canReadFailureStore: false,
+      canManageFailureStore: false,
+    },
+    'synthetics-*-*': {
+      canMonitor: true,
+      canRead: true,
+      canReadFailureStore: false,
+      canManageFailureStore: false,
+    },
+  },
+};
+
 const defaultDataStreamStatsResponse: DataStreamStatServiceResponse = {
   dataStreamsStats: [],
   datasetUserPrivileges: {
@@ -226,7 +257,7 @@ describe('DatasetQualityControllerStateMachine', () => {
       actor.stop();
     });
 
-    it('should transition to emptyState when no types are authorized', async () => {
+    it('should transition to main and fallback to all known types when no types are authorized at wildcard level', async () => {
       const { machine } = buildStateMachine({
         dataStreamStatsClient: createMockDataStreamStatsClient({
           getDataStreamsTypesPrivileges: jest.fn().mockResolvedValue(noPrivilegesResponse),
@@ -235,9 +266,13 @@ describe('DatasetQualityControllerStateMachine', () => {
       const actor = createActor(machine);
       actor.start();
 
-      await waitForPredicate(actor, (state) => state.value === 'emptyState');
+      await waitForPredicate(
+        actor,
+        (state) => typeof state.value === 'object' && 'main' in state.value
+      );
 
-      expect(actor.getSnapshot().value).toBe('emptyState');
+      const snapshot = actor.getSnapshot();
+      expect(typeof snapshot.value === 'object' && 'main' in snapshot.value).toBe(true);
 
       actor.stop();
     });
@@ -273,6 +308,63 @@ describe('DatasetQualityControllerStateMachine', () => {
       expect(authorizedDatasetTypes).toEqual(
         expect.arrayContaining(['logs', 'metrics', 'traces', 'synthetics'])
       );
+
+      actor.stop();
+    });
+
+    it('should still query a type whose wildcard privilege check fails (negated role) while excluding it from the types filter', async () => {
+      const dataStreamStatsClient = createMockDataStreamStatsClient({
+        getDataStreamsTypesPrivileges: jest.fn().mockResolvedValue(partialPrivilegesResponse),
+      });
+      const { machine } = buildStateMachine({ dataStreamStatsClient });
+      const actor = createActor(machine);
+      actor.start();
+
+      await waitForState(actor, 'main.stats.datasets.loaded');
+
+      // `logs` is excluded from the authorized types (the types filter UI) because its
+      // wildcard `logs-*-*` privilege check fails for a negated/complement role.
+      const { authorizedDatasetTypes } = actor.getSnapshot().context;
+      expect(authorizedDatasetTypes).not.toContain('logs');
+      expect(authorizedDatasetTypes).toEqual(
+        expect.arrayContaining(['metrics', 'traces', 'synthetics'])
+      );
+
+      // `logs` is still queried so its accessible data streams are discovered and listed;
+      // authorization is enforced per data stream server-side.
+      expect(dataStreamStatsClient.getDataStreamsStats).toHaveBeenCalledWith(
+        expect.objectContaining({ types: expect.arrayContaining(['logs']) })
+      );
+
+      actor.stop();
+    });
+
+    it('should still fetch total docs for a type whose wildcard privilege check fails (negated role)', async () => {
+      const dataStreamStatsClient = createMockDataStreamStatsClient({
+        getDataStreamsTypesPrivileges: jest.fn().mockResolvedValue(partialPrivilegesResponse),
+      });
+
+      const { machine } = buildStateMachine({
+        initialContext: {
+          ...DEFAULT_CONTEXT,
+          filters: {
+            ...DEFAULT_CONTEXT.filters,
+            types: [], // empty means all authorized types are selected
+          },
+        },
+        dataStreamStatsClient,
+      });
+      const actor = createActor(machine);
+      actor.start();
+
+      await waitForState(actor, 'main.stats.docsStats.loaded');
+
+      // `logs` total docs must still be requested even though its `logs-*-*`
+      // wildcard privilege is false; the server returns only accessible streams.
+      expect(dataStreamStatsClient.getDataStreamsTotalDocs).toHaveBeenCalledWith(
+        expect.objectContaining({ type: 'logs' })
+      );
+      expect(dataStreamStatsClient.getDataStreamsTotalDocs).toHaveBeenCalledTimes(4);
 
       actor.stop();
     });
@@ -624,21 +716,41 @@ describe('DatasetQualityControllerStateMachine', () => {
         actor.stop();
       });
 
-      it('should transition docsStats to unauthorized on 403 error from any type', async () => {
+      it('should treat per-type 403 as empty result and still reach loaded', async () => {
+        // A negated-role user (e.g. access to everything except logs-apm*) passes
+        // the wildcard check for no type, so all 4 types are fetched. metrics/
+        // traces/synthetics 403, but logs succeeds.
+        // 403s are absorbed as empty results so the machine reaches loaded state
+        // and logs doc counts are preserved for correct quality scoring.
+        const logsDocs: DataStreamDocsStat[] = [{ dataset: 'logs-test-default', count: 100 }];
+
         const { machine } = buildStateMachine({
+          initialContext: {
+            ...DEFAULT_CONTEXT,
+            filters: { ...DEFAULT_CONTEXT.filters, types: [] },
+          },
           dataStreamStatsClient: createMockDataStreamStatsClient({
             getDataStreamsTotalDocs: jest.fn().mockImplementation(({ type }) => {
-              if (type === 'logs') return Promise.reject(createForbiddenError());
-              return Promise.resolve([]);
+              if (type === 'logs') return Promise.resolve(logsDocs);
+              // simulates a negated-role user: metrics/traces/synthetics are inaccessible
+              return Promise.reject(createForbiddenError());
             }),
           }),
         });
         const actor = createActor(machine);
         actor.start();
 
-        await waitForState(actor, 'main.stats.docsStats.unauthorized');
+        await waitForState(actor, 'main.stats.docsStats.loaded');
 
-        expect(stateMatches(actor.getSnapshot(), 'main.stats.docsStats.unauthorized')).toBe(true);
+        expect(stateMatches(actor.getSnapshot(), 'main.stats.docsStats.loaded')).toBe(true);
+
+        const { totalDocsStats } = actor.getSnapshot().context;
+        // logs doc counts are preserved → quality percentage is computed correctly
+        expect(totalDocsStats.logs).toEqual(logsDocs);
+        // inaccessible types silently resolve as empty — not an error
+        expect(totalDocsStats.metrics).toEqual([]);
+        expect(totalDocsStats.traces).toEqual([]);
+        expect(totalDocsStats.synthetics).toEqual([]);
 
         actor.stop();
       });

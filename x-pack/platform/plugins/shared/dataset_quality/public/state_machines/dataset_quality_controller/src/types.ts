@@ -94,10 +94,6 @@ export type DatasetQualityControllerTypeState =
       context: DefaultDatasetQualityStateContext;
     }
   | {
-      value: 'emptyState';
-      context: DefaultDatasetQualityStateContext;
-    }
-  | {
       value: 'main.stats.datasets.fetching';
       context: DefaultDatasetQualityStateContext;
     }

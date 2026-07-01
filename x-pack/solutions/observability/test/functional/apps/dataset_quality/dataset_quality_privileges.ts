@@ -299,5 +299,66 @@ export default function ({ getService, getPageObjects }: DatasetQualityFtrProvid
         });
       });
     });
+
+    // A role built with a Lucene complement (negated) index pattern that excludes
+    // `logs-apache*` can still read the other logs data streams. The wildcard
+    // `logs-*-*` privilege check fails for such a role, but the page must remain
+    // usable and list the accessible datasets while omitting the negated ones.
+    describe('User has a negated index pattern role', function () {
+      // Failure store privileges are not available in ES 9.0, which the server
+      // privilege check requests; this mirrors the guard used by sibling suites.
+      this.onlyEsVersion('8.19 || >=9.1');
+
+      before(async () => {
+        // Index logs for synth-* (accessible) and apache.access (negated) datasets
+        await synthtrace.index(getInitialTestLogs({ to, count: 4 }));
+        await synthtrace.index(
+          getLogsForDataset({ to, count: 4, dataset: apacheAccessDatasetName })
+        );
+
+        await createDatasetQualityUserWithRole(security, 'fullAccess', [
+          {
+            names: ['/~(([.]|ilm-history-|logs-apache).*)/'],
+            privileges: ['read', 'monitor', 'view_index_metadata'],
+          },
+        ]);
+
+        // Logout in order to re-login with a different user
+        await PageObjects.security.forceLogout();
+        await PageObjects.security.login('fullAccess', 'fullAccess-password', {
+          expectSpaceSelector: false,
+        });
+
+        await PageObjects.datasetQuality.navigateTo();
+      });
+
+      after(async () => {
+        await synthtrace.clean();
+        await PageObjects.security.forceLogout();
+        await deleteDatasetQualityUserWithRole(security, 'fullAccess');
+      });
+
+      it('lists accessible datasets and omits negated ones despite the wildcard check failing', async function () {
+        await waitUntilDatasetQualityTableOrTimeoutWithFallback(PageObjects, logger, () =>
+          this.skip()
+        );
+
+        // The page is usable: the no-privileges empty state is not shown.
+        await testSubjects.missingOrFail(
+          PageObjects.datasetQuality.testSubjectSelectors.datasetQualityNoPrivilegesEmptyState
+        );
+
+        const cols = await PageObjects.datasetQuality.parseDatasetTable();
+        const datasetNameCol = cols[PageObjects.datasetQuality.texts.datasetNameColumn];
+        const datasetNameColCellTexts = await datasetNameCol.getCellTexts();
+
+        // Accessible synth datasets are listed.
+        expect(datasetNameColCellTexts).to.contain(datasetNames[0]);
+
+        // The negated `logs-apache*` dataset is not listed.
+        expect(datasetNameColCellTexts).to.not.contain(apacheAccessDatasetName);
+        expect(datasetNameColCellTexts).to.not.contain(apacheAccessDatasetHumanName);
+      });
+    });
   });
 }
