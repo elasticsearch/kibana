@@ -15,7 +15,7 @@ import { METRIC_TYPES } from '..';
 
 export const aggCumulativeSumFnName = 'aggCumulativeSum';
 
-type Input = any;
+type Input = unknown;
 type AggArgs = AggExpressionFunctionArgs<typeof METRIC_TYPES.CUMULATIVE_SUM>;
 type Arguments = Assign<AggArgs, { customMetric?: AggExpressionType }>;
 type Output = AggExpressionType;

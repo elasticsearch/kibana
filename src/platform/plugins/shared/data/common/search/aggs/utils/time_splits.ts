@@ -225,7 +225,11 @@ export function mergeTimeShifts(
               baseBucketMap[String(bucket.key)] = bucket;
             });
             buckets.forEach((bucket) => {
-              const bucketKey = bucketAgg.type.getShiftedKey(bucketAgg, bucket.key, shift);
+              const bucketKey = bucketAgg.type.getShiftedKey(
+                bucketAgg,
+                bucket.key as string | number,
+                shift
+              );
               // if a bucket is missing in the map, create an empty one
               if (!baseBucketMap[bucketKey]) {
                 baseBucketMap[String(bucketKey)] = {

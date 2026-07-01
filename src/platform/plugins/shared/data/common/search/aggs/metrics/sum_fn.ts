@@ -14,7 +14,7 @@ import { METRIC_TYPES } from '..';
 
 export const aggSumFnName = 'aggSum';
 
-type Input = any;
+type Input = unknown;
 type AggArgs = AggExpressionFunctionArgs<typeof METRIC_TYPES.SUM>;
 type Output = AggExpressionType;
 type FunctionDefinition = ExpressionFunctionDefinition<typeof aggSumFnName, Input, AggArgs, Output>;

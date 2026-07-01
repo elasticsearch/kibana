@@ -269,6 +269,22 @@ describe('SearchSource', () => {
       expect(searchSource.getField('aggs')).toStrictEqual({ i: 5 });
     });
 
+    test('resolves function-valued fields with search source context', () => {
+      const resolveFilter = jest.fn(function (
+        this: SearchSource,
+        currentSearchSource?: SearchSource
+      ): Filter[] {
+        expect(this).toBe(searchSource);
+        expect(currentSearchSource).toBe(searchSource);
+        return [];
+      });
+
+      searchSource.setField('filter', resolveFilter);
+      searchSource.getSearchRequestBody();
+
+      expect(resolveFilter).toHaveBeenCalledTimes(1);
+    });
+
     test('sets the value for the property with AggConfigs', () => {
       const typesRegistry = mockAggTypesRegistry();
 
@@ -357,7 +373,7 @@ describe('SearchSource', () => {
 
         const request = searchSource.getSearchRequestBody();
         expect(request).toHaveProperty('docvalue_fields');
-        expect(request._source.includes).toEqual(['c', 'a', 'b', 'd']);
+        expect((request._source as { includes: string[] }).includes).toEqual(['c', 'a', 'b', 'd']);
         expect(request.docvalue_fields).toEqual([{ field: 'b', format: 'date_time' }]);
         expect(request.fields).toEqual(['c', { field: 'a', format: 'date_time' }]);
       });
@@ -1180,7 +1196,7 @@ describe('SearchSource', () => {
       searchSource.setField('projectRouting', '_alias:_origin');
       const request = searchSource.getSearchRequestBody();
       // projectRouting is now passed as an option, not in the request body
-      expect(request.project_routing).toBeUndefined();
+      expect('project_routing' in request).toBe(false);
     });
   });
 
@@ -1225,6 +1241,19 @@ describe('SearchSource', () => {
         expect(complete).toBeCalledTimes(1);
         expect(complete2).toBeCalledTimes(1);
         expect(searchSourceDependencies.search).toHaveBeenCalledTimes(1);
+      });
+
+      test('uses index field as indexPattern fallback when flattened index is a string', async () => {
+        searchSource = new SearchSource({ index: indexPattern }, searchSourceDependencies);
+        const flattenSpy = jest
+          .spyOn(searchSource as unknown as { flatten: () => unknown }, 'flatten')
+          .mockReturnValue({ body: {}, index: 'legacy-index-id' });
+        const options: SearchSourceSearchOptions = {};
+
+        await firstValueFrom(searchSource.fetch$(options));
+
+        expect(options.indexPattern).toBe(indexPattern);
+        flattenSpy.mockRestore();
       });
     });
 

@@ -15,7 +15,7 @@ import { METRIC_TYPES } from '..';
 
 export const aggDerivativeFnName = 'aggDerivative';
 
-type Input = any;
+type Input = unknown;
 type AggArgs = AggExpressionFunctionArgs<typeof METRIC_TYPES.DERIVATIVE>;
 type Arguments = Assign<AggArgs, { customMetric?: AggExpressionType }>;
 type Output = AggExpressionType;

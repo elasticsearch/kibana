@@ -48,8 +48,12 @@ const getParams = (filter: PhraseFilter) => {
   };
 };
 
-export const isMapPhraseFilter = (filter: any): filter is PhraseFilter =>
-  isPhraseFilter(filter) || isScriptedPhraseFilter(filter);
+export const isMapPhraseFilter = (filter: unknown): filter is PhraseFilter => {
+  if (typeof filter !== 'object' || filter === null) {
+    return false;
+  }
+  return isPhraseFilter(filter as Filter) || isScriptedPhraseFilter(filter as Filter);
+};
 
 export const mapPhrase = (filter: Filter) => {
   if (!isMapPhraseFilter(filter)) {

@@ -12,18 +12,18 @@ import type { Observable } from 'rxjs';
 import { BehaviorSubject, defer, finalize, map } from 'rxjs';
 import type { IStorageWrapper } from '@kbn/kibana-utils-plugin/public';
 
-const defaultIsDuplicate = (oldItem: any, newItem: any) => {
+const defaultIsDuplicate = (oldItem: unknown, newItem: unknown) => {
   return isEqual(oldItem, newItem);
 };
 
-interface PersistedLogOptions<T = any> {
+interface PersistedLogOptions<T = unknown> {
   maxLength?: number | string;
   filterDuplicates?: boolean;
   isDuplicate?: (oldItem: T, newItem: T) => boolean;
   enableBrowserTabsSync?: boolean;
 }
 
-export class PersistedLog<T = any> {
+export class PersistedLog<T = unknown> {
   public name: string;
   public maxLength?: number;
   public filterDuplicates?: boolean;
@@ -82,7 +82,7 @@ export class PersistedLog<T = any> {
     }
   }
 
-  public add(val: any) {
+  public add(val: T) {
     if (val == null) {
       return this.items;
     }

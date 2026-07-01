@@ -15,7 +15,7 @@ import { METRIC_TYPES } from '..';
 
 export const aggBucketAvgFnName = 'aggBucketAvg';
 
-type Input = any;
+type Input = unknown;
 type AggArgs = AggExpressionFunctionArgs<typeof METRIC_TYPES.AVG_BUCKET>;
 type Arguments = Assign<
   AggArgs,

@@ -9,7 +9,10 @@
 
 import type { DateRange } from '../../../expressions';
 
-export function convertDateRangeToString({ from, to }: DateRange, format: (val: any) => string) {
+export function convertDateRangeToString(
+  { from, to }: DateRange,
+  format: (val: string | number) => string
+) {
   if (!from) {
     return 'Before ' + format(to);
   } else if (!to) {

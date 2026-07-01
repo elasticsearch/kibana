@@ -14,7 +14,7 @@ import { METRIC_TYPES } from '..';
 
 export const aggSinglePercentileRankFnName = 'aggSinglePercentileRank';
 
-type Input = any;
+type Input = unknown;
 type AggArgs = AggExpressionFunctionArgs<typeof METRIC_TYPES.SINGLE_PERCENTILE_RANK>;
 type Output = AggExpressionType;
 type FunctionDefinition = ExpressionFunctionDefinition<

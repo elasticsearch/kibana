@@ -17,7 +17,7 @@ import { BUCKET_TYPES } from '..';
 
 export const aggDateHistogramFnName = 'aggDateHistogram';
 
-type Input = any;
+type Input = unknown;
 type AggArgs = AggExpressionFunctionArgs<typeof BUCKET_TYPES.DATE_HISTOGRAM>;
 
 type Arguments = Assign<

@@ -14,7 +14,7 @@ import { METRIC_TYPES } from '..';
 
 export const aggMedianFnName = 'aggMedian';
 
-type Input = any;
+type Input = unknown;
 type AggArgs = AggExpressionFunctionArgs<typeof METRIC_TYPES.MEDIAN>;
 type Output = AggExpressionType;
 type FunctionDefinition = ExpressionFunctionDefinition<

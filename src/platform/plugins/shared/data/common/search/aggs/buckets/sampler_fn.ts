@@ -14,7 +14,7 @@ import { SAMPLER_AGG_NAME } from './sampler';
 
 export const aggSamplerFnName = 'aggSampler';
 
-type Input = any;
+type Input = unknown;
 type Arguments = AggExpressionFunctionArgs<typeof BUCKET_TYPES.SAMPLER>;
 
 type Output = AggExpressionType;

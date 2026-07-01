@@ -48,7 +48,7 @@ interface EqlStartDependencies {
 export const getEqlFn = ({
   getStartDependencies,
 }: {
-  getStartDependencies: (getKibanaRequest: any) => Promise<EqlStartDependencies>;
+  getStartDependencies: (getKibanaRequest: unknown) => Promise<EqlStartDependencies>;
 }) => {
   const eql: EqlExpressionFunctionDefinition = {
     name,

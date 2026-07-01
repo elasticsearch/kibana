@@ -14,7 +14,7 @@ import { METRIC_TYPES } from '..';
 
 export const aggSinglePercentileFnName = 'aggSinglePercentile';
 
-type Input = any;
+type Input = unknown;
 type AggArgs = AggExpressionFunctionArgs<typeof METRIC_TYPES.SINGLE_PERCENTILE>;
 type Output = AggExpressionType;
 type FunctionDefinition = ExpressionFunctionDefinition<

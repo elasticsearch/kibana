@@ -14,7 +14,7 @@ import { METRIC_TYPES } from '..';
 
 export const aggCountFnName = 'aggCount';
 
-type Input = any;
+type Input = unknown;
 type AggArgs = AggExpressionFunctionArgs<typeof METRIC_TYPES.COUNT>;
 type Output = AggExpressionType;
 type FunctionDefinition = ExpressionFunctionDefinition<

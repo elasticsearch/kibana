@@ -8,6 +8,13 @@
  */
 
 import type { DataViewLazy } from '@kbn/data-views-plugin/common';
+
+/**
+ * Minimal {@link DataViewLazy} surface used by {@link queryToFields}.
+ */
+export type DataViewLazyQueryToFields = Pick<DataViewLazy, 'getFields' | 'getSourceFiltering'> & {
+  timeFieldName?: string;
+};
 import {
   fromKueryExpression,
   getFilterField,
@@ -42,7 +49,7 @@ export async function queryToFields({
   sort,
   request,
 }: {
-  dataView: DataViewLazy;
+  dataView: DataViewLazyQueryToFields;
   sort?: EsQuerySortValue | EsQuerySortValue[];
   request: SearchRequest;
 }) {

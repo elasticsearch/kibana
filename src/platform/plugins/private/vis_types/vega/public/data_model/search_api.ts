@@ -61,17 +61,20 @@ export class SearchAPI {
 
   search(searchRequests: SearchRequest[]) {
     const { search, indexPatterns } = this.dependencies;
-    const requestResponders: any = {};
+    const requestResponders: Record<string, RequestResponder> = {};
 
     return combineLatest(
       searchRequests.map((request) => {
         const { name: requestId, body, ...restRequest } = request;
 
+        // Vega flattens body params to the top level so that getSearchParamsFromRequest
+        // passes them directly to the ES client (which expects e.g. runtime_mappings at
+        // the top level, not nested under body). Root-level params take precedence.
         const requestParams = getSearchParamsFromRequest(
           {
             ...body,
             ...restRequest,
-          },
+          } as SearchRequest,
           {
             getConfig: this.dependencies.uiSettings.get.bind(this.dependencies.uiSettings),
           }
@@ -139,7 +142,7 @@ export class SearchAPI {
     }>
   ) {
     const { search } = this.dependencies;
-    const requestResponders: any = {};
+    const requestResponders: Record<string, RequestResponder> = {};
 
     return combineLatest(
       esqlRequests.map((request) => {

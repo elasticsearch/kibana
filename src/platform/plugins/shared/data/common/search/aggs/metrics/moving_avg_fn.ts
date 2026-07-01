@@ -15,7 +15,7 @@ import { METRIC_TYPES } from '..';
 
 export const aggMovingAvgFnName = 'aggMovingAvg';
 
-type Input = any;
+type Input = unknown;
 type AggArgs = AggExpressionFunctionArgs<typeof METRIC_TYPES.MOVING_FN>;
 type Arguments = Assign<AggArgs, { customMetric?: AggExpressionType }>;
 type Output = AggExpressionType;

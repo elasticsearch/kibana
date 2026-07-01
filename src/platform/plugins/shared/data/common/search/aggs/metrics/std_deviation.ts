@@ -108,7 +108,10 @@ export const getStdDeviationMetricAgg = () => {
       }
       const ValueAggConfig = getResponseAggConfigClass(agg, responseAggConfigProps);
 
-      return [new ValueAggConfig('std_lower'), new ValueAggConfig('std_upper')];
+      return [
+        new ValueAggConfig('std_lower') as IStdDevAggConfig,
+        new ValueAggConfig('std_upper') as IStdDevAggConfig,
+      ];
     },
 
     getValueBucketPath(aggConfig) {

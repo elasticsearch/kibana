@@ -14,7 +14,7 @@ import { BUCKET_TYPES } from '..';
 
 export const aggGeoTileFnName = 'aggGeoTile';
 
-type Input = any;
+type Input = unknown;
 type AggArgs = AggExpressionFunctionArgs<typeof BUCKET_TYPES.GEOTILE_GRID>;
 
 type Output = AggExpressionType;

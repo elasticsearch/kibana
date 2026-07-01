@@ -14,7 +14,7 @@ import { METRIC_TYPES } from '..';
 
 export const aggCardinalityFnName = 'aggCardinality';
 
-type Input = any;
+type Input = unknown;
 type AggArgs = AggExpressionFunctionArgs<typeof METRIC_TYPES.CARDINALITY>;
 type Output = AggExpressionType;
 type FunctionDefinition = ExpressionFunctionDefinition<

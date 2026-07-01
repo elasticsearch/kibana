@@ -18,7 +18,7 @@ import { BUCKET_TYPES } from '..';
 
 export const aggFilterFnName = 'aggFilter';
 
-type Input = any;
+type Input = unknown;
 type AggArgs = AggExpressionFunctionArgs<typeof BUCKET_TYPES.FILTER>;
 
 type Arguments = Assign<

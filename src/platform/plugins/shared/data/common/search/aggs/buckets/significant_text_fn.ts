@@ -14,7 +14,7 @@ import { BUCKET_TYPES } from '..';
 
 export const aggSignificantTextFnName = 'aggSignificantText';
 
-type Input = any;
+type Input = unknown;
 type AggArgs = AggExpressionFunctionArgs<typeof BUCKET_TYPES.SIGNIFICANT_TEXT>;
 
 type Arguments = AggArgs;

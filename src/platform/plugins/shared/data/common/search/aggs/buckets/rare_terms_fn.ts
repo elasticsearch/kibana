@@ -14,7 +14,7 @@ import { BUCKET_TYPES } from '..';
 
 export const aggRareTermsFnName = 'aggRareTerms';
 
-type Input = any;
+type Input = unknown;
 type AggArgs = AggExpressionFunctionArgs<typeof BUCKET_TYPES.RARE_TERMS>;
 
 type Output = AggExpressionType;

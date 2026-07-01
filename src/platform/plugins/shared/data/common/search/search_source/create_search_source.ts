@@ -16,6 +16,11 @@ import { SearchSource } from './search_source';
 import type { SerializedSearchSourceFields } from '../..';
 import type { SearchSourceFields } from './types';
 
+type CreateSearchSourceDataViews = Pick<
+  DataViewsContract,
+  'get' | 'create' | 'getDataViewLazy' | 'createDataViewLazy'
+>;
+
 /**
  * Deserializes a json string and a set of referenced objects to a `SearchSource` instance.
  * Use this method to re-create the search source serialized using `searchSource.serialize`.
@@ -34,7 +39,7 @@ import type { SearchSourceFields } from './types';
  *
  * @public */
 export const createSearchSource = (
-  indexPatterns: DataViewsContract,
+  indexPatterns: CreateSearchSourceDataViews,
   searchSourceDependencies: SearchSourceDependencies
 ) => {
   let dataViewLazy: DataViewLazy | undefined;
@@ -42,9 +47,10 @@ export const createSearchSource = (
     searchSourceFields: SerializedSearchSourceFields = {},
     useDataViewLazy = false
   ) => {
-    const { index, parent, ...restOfFields } = searchSourceFields;
+    const { index, parent, query, ...restOfFields } = searchSourceFields;
     const fields: SearchSourceFields = {
       ...restOfFields,
+      ...(typeof query !== 'undefined' ? { query: migrateLegacyQuery(query) } : {}),
     };
 
     // hydrating index pattern
@@ -91,12 +97,6 @@ export const createSearchSource = (
     const fields = await createFields(searchSourceFields, !!useDataViewLazy);
     const searchSource = new SearchSource(fields, searchSourceDependencies);
 
-    // todo: move to migration script .. create issue
-    const query = searchSource.getOwnField('query');
-
-    if (typeof query !== 'undefined') {
-      searchSource.setField('query', migrateLegacyQuery(query));
-    }
     // using the dataViewLazy check as a type guard
     if (useDataViewLazy && dataViewLazy) {
       const dataViewFields = await searchSource.loadDataViewFields(dataViewLazy);

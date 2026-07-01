@@ -11,7 +11,21 @@ import { siblingPipelineType } from '../../../..';
 import type { IMetricAggConfig } from '../metric_agg_type';
 import { METRIC_TYPES } from '../metric_agg_types';
 
-export const siblingPipelineAggWriter = (agg: IMetricAggConfig, output: Record<string, any>) => {
+interface SiblingPipelineAggOutput {
+  params?: {
+    buckets_path?: string;
+    [key: string]: unknown;
+  };
+  subAggs?: IMetricAggConfig[];
+  parentAggs?: IMetricAggConfig[];
+  [key: string]: unknown;
+}
+
+export const siblingPipelineAggWriter = (
+  agg: IMetricAggConfig,
+  output: SiblingPipelineAggOutput
+) => {
+  output.params = output.params ?? {};
   const metricAgg = agg.getParam('customMetric');
   const bucketAgg = agg.getParam('customBucket');
   if (!metricAgg) return;

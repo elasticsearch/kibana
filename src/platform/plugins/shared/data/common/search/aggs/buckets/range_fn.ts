@@ -17,7 +17,7 @@ import { BUCKET_TYPES } from '..';
 
 export const aggRangeFnName = 'aggRange';
 
-type Input = any;
+type Input = unknown;
 type AggArgs = AggExpressionFunctionArgs<typeof BUCKET_TYPES.RANGE>;
 
 type Arguments = Assign<AggArgs, { ranges?: NumericalRangeOutput[] }>;

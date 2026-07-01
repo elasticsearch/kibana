@@ -99,7 +99,7 @@ import type {
   SearchSourceSearchOptions,
 } from './types';
 import { getSearchParamsFromRequest, RequestFailure } from './fetch';
-import type { FetchHandlers, SearchRequest } from './fetch';
+import type { FetchHandlers, SearchRequestBody, StrictSearchRequest } from './fetch';
 import { getRequestInspectorStats, getResponseInspectorStats } from './inspect';
 
 import { getEsQueryConfig, isRunningResponse, UI_SETTINGS } from '../..';
@@ -126,10 +126,15 @@ export const searchSourceRequiredUiSettings = [
   UI_SETTINGS.SORT_OPTIONS,
 ];
 
+type SearchSourceDataViewsDependencies = Pick<
+  DataViewsContract,
+  'getMetaFields' | 'getShortDotsEnable'
+>;
+
 export interface SearchSourceDependencies extends FetchHandlers {
   aggs: AggsStart;
   search: ISearchGeneric;
-  dataViews: DataViewsContract;
+  dataViews: SearchSourceDataViewsDependencies;
   scriptedFieldsEnabled: boolean;
 }
 
@@ -154,7 +159,7 @@ export class SearchSource {
     (searchSource: SearchSource, options?: SearchSourceSearchOptions) => Promise<unknown>
   > = [];
   private inheritOptions: SearchSourceOptions = {};
-  public history: SearchRequest[] = [];
+  public history: StrictSearchRequest[] = [];
   private fields: SearchSourceFields;
   private readonly dependencies: SearchSourceDependencies;
 
@@ -360,8 +365,16 @@ export class SearchSource {
       switchMap(() => {
         const searchRequest = this.flatten();
         this.history = [searchRequest];
-        if (searchRequest.index) {
-          options.indexPattern = searchRequest.index;
+        const indexPatternFromRequest =
+          searchRequest.index != null && typeof searchRequest.index !== 'string'
+            ? searchRequest.index
+            : undefined;
+        const indexField = this.getField('index');
+        const indexPatternFromField =
+          indexField != null && typeof indexField !== 'string' ? indexField : undefined;
+        const resolvedIndexPattern = indexPatternFromRequest ?? indexPatternFromField;
+        if (resolvedIndexPattern) {
+          options.indexPattern = resolvedIndexPattern;
         }
 
         return this.fetchSearch$(searchRequest, options);
@@ -404,7 +417,7 @@ export class SearchSource {
   /**
    * Returns body contents of the search request, often referred as query DSL.
    */
-  getSearchRequestBody() {
+  getSearchRequestBody(): SearchRequestBody {
     return this.flatten().body;
   }
 
@@ -532,7 +545,7 @@ export class SearchSource {
    * Run a search using the search service
    */
   private fetchSearch$(
-    searchRequest: SearchRequest,
+    searchRequest: StrictSearchRequest,
     options: SearchSourceSearchOptions
   ): Observable<IKibanaSearchResponse<unknown>> {
     const { search, getConfig, onResponse } = this.dependencies;
@@ -618,24 +631,33 @@ export class SearchSource {
    * @param  {*} key - The key of `val`
    */
   private mergeProp<K extends keyof SearchSourceFields>(
-    data: SearchRequest,
+    data: StrictSearchRequest,
     val: SearchSourceFields[K],
     key: K
   ): false | void {
-    val = typeof val === 'function' ? val(this) : val;
+    if (typeof val === 'function') {
+      // Historically, function-valued fields were invoked as `fn(this)` so callbacks
+      // could receive the SearchSource. Preserve that contract (including `this` binding).
+      const fn = val as unknown as (
+        this: SearchSource,
+        searchSource: SearchSource
+      ) => SearchSourceFields[K];
+      val = fn.call(this, this);
+    }
     if (val == null || !key) return;
 
     const addToRoot = (rootKey: string, value: unknown) => {
-      data[rootKey] = value;
+      (data as unknown as Record<string, unknown>)[rootKey] = value;
     };
 
     /**
      * Add the key and val to the body of the request
      */
     const addToBody = (bodyKey: string, value: unknown) => {
+      const body = data.body as Record<string, unknown>;
       // ignore if we already have a value
-      if (data.body[bodyKey] == null) {
-        data.body[bodyKey] = value;
+      if (body[bodyKey] == null) {
+        body[bodyKey] = value;
       }
     };
 
@@ -643,14 +665,18 @@ export class SearchSource {
 
     switch (key) {
       case 'filter':
-        return addToRoot(
-          'filters',
-          (typeof data.filters === 'function' ? data.filters() : data.filters ?? []).concat(val)
-        );
+        const filters = typeof data.filters === 'function' ? data.filters() : data.filters ?? [];
+        return addToRoot('filters', filters.concat(val as Filter | Filter[]));
       case 'nonHighlightingFilters':
-        return addToRoot('nonHighlightingFilters', (data.nonHighlightingFilters ?? []).concat(val));
+        return addToRoot(
+          'nonHighlightingFilters',
+          (data.nonHighlightingFilters ?? []).concat(val as Filter | Filter[])
+        );
       case 'query':
-        return addToRoot(key, (data.query ?? []).concat(val));
+        return addToRoot(
+          key,
+          (data.query ?? []).concat(val as NonNullable<SearchSourceFields['query']>)
+        );
       case 'fields':
         // This will pass the passed in parameters to the new fields API.
         // Also if will only return scripted fields that are part of the specified
@@ -661,12 +687,17 @@ export class SearchSource {
         return addToBody('fields', val);
       case 'fieldsFromSource':
         // preserves legacy behavior
-        const fields = [...new Set((data.fieldsFromSource || []).concat(val))];
+        // Cast is needed because TypeScript doesn't narrow the generic K through switch cases.
+        // val is estypes.Fields (string | string[]) which is assignable to SearchFieldValue[].
+        const nextFieldsFromSource = (Array.isArray(val) ? val : [val]) as SearchFieldValue[];
+        const fields = [...new Set((data.fieldsFromSource || []).concat(nextFieldsFromSource))];
         return addToRoot(key, fields);
       case 'index':
       case 'type':
       case 'highlightAll':
-        return key && data[key] == null && addToRoot(key, val);
+        return (
+          key && (data as unknown as Record<string, unknown>)[key] == null && addToRoot(key, val)
+        );
       case 'searchAfter':
         return addToBody('search_after', val);
       case 'trackTotalHits':
@@ -675,7 +706,7 @@ export class SearchSource {
         return addToBody('_source', val);
       case 'sort':
         const sort = normalizeSortRequest(
-          val,
+          val as EsQuerySortValue | EsQuerySortValue[],
           this.getField('index'),
           getConfig(UI_SETTINGS.SORT_OPTIONS)
         );
@@ -683,7 +714,7 @@ export class SearchSource {
       case 'pit':
         return addToRoot(key, val);
       case 'aggs':
-        if ((val as unknown) instanceof AggConfigs) {
+        if (val instanceof AggConfigs) {
           return addToBody('aggs', val.toDsl());
         } else {
           return addToBody('aggs', val);
@@ -700,7 +731,10 @@ export class SearchSource {
    * flat representation (taking into account merging rules)
    * @resolved {Object|null} - the flat data of the SearchSource
    */
-  private mergeProps(root = this, searchRequest: SearchRequest = { body: {} }): SearchRequest {
+  private mergeProps(
+    root = this,
+    searchRequest: StrictSearchRequest = { body: {} }
+  ): StrictSearchRequest {
     Object.entries(this.fields).forEach(([key, value]) => {
       this.mergeProp(searchRequest, value, key as keyof SearchSourceFields);
     });
@@ -787,7 +821,7 @@ export class SearchSource {
     return await queryToFields({ dataView, request });
   }
 
-  private flatten() {
+  private flatten(): StrictSearchRequest {
     const { getConfig } = this.dependencies;
     const metaFields = getConfig<string[]>(UI_SETTINGS.META_FIELDS) ?? [];
 
@@ -801,7 +835,7 @@ export class SearchSource {
       'body',
       'timezone',
     ]);
-    const body = { ...bodyParams, ...searchRequest.body };
+    const body = { ...(bodyParams as Record<string, unknown>), ...searchRequest.body };
     const dataView = this.getDataView(searchRequest.index);
 
     // get some special field types from the index pattern
@@ -819,7 +853,8 @@ export class SearchSource {
         : body._source;
 
     // get filter if data view specified, otherwise null filter
-    const filter = this.getFieldFilter({ bodySourceExcludes: _source?.excludes, metaFields });
+    const sourceExcludes = this.extractSourceExcludes(_source);
+    const filter = this.getFieldFilter({ bodySourceExcludes: sourceExcludes, metaFields });
 
     const fieldsFromSource = filter(searchRequest.fieldsFromSource || []);
     // apply source filters from index pattern if specified by the user
@@ -827,16 +862,21 @@ export class SearchSource {
 
     const sourceFieldsProvided = !!fieldsFromSource.length;
 
+    const requestFields = Array.isArray(body.fields) ? (body.fields as SearchFieldValue[]) : [];
     const fields =
-      fieldListProvided || sourceFieldsProvided
-        ? filter(body.fields || [])
-        : filteredDocvalueFields;
+      fieldListProvided || sourceFieldsProvided ? filter(requestFields) : filteredDocvalueFields;
 
     const uniqFieldNames = this.getUniqueFieldNames({ fields, fieldsFromSource });
 
     const scriptedFields = (() => {
-      const flds = this.dependencies.scriptedFieldsEnabled
-        ? { ...body.script_fields, ...scriptFields }
+      const bodyScriptFields =
+        typeof body.script_fields === 'object' &&
+        body.script_fields !== null &&
+        !Array.isArray(body.script_fields)
+          ? (body.script_fields as Record<string, estypes.ScriptField>)
+          : {};
+      const flds: Record<string, estypes.ScriptField> = this.dependencies.scriptedFieldsEnabled
+        ? { ...bodyScriptFields, ...scriptFields }
         : {};
 
       // specific fields were provided, so we need to exclude any others
@@ -854,7 +894,7 @@ export class SearchSource {
       uniqFieldNames,
       scriptFields: scriptedFields,
       runtimeFields,
-      _source,
+      _source: _source as estypes.MappingSourceField,
     });
 
     // For testing shard failure messages in the UI, follow these steps:
@@ -901,7 +941,6 @@ export class SearchSource {
       index: searchRequest.index,
       query: searchRequest.query,
       filters: allFilters,
-      getConfig,
       sort: body.sort,
     });
 
@@ -913,7 +952,6 @@ export class SearchSource {
             index: searchRequest.index,
             query: searchRequest.query,
             filters: filterArray,
-            getConfig,
             sort: body.sort,
           })
         : undefined;
@@ -940,7 +978,9 @@ export class SearchSource {
       fields: this.getFieldsList({
         index: dataView,
         fields,
-        docvalueFields: body.docvalue_fields,
+        docvalueFields: Array.isArray(body.docvalue_fields)
+          ? (body.docvalue_fields as Array<{ field: string; format?: string } | string>)
+          : [],
         fieldsFromSource,
         filteredDocvalueFields,
         metaFields,
@@ -961,7 +1001,7 @@ export class SearchSource {
       indexType: this.getIndexType(searchRequest.index),
       highlightAll:
         searchRequest.highlightAll && builtQuery ? undefined : searchRequest.highlightAll,
-    });
+    }) as unknown as StrictSearchRequest;
   }
 
   private getFieldFilter({
@@ -974,6 +1014,15 @@ export class SearchSource {
     const filter = fieldWildcardFilter(bodySourceExcludes, metaFields);
     return (fieldsToFilter: SearchFieldValue[]) =>
       fieldsToFilter.filter((fld) => filter(this.getFieldName(fld)));
+  }
+
+  private extractSourceExcludes(_source: unknown): string[] {
+    return typeof _source === 'object' &&
+      _source !== null &&
+      'excludes' in _source &&
+      Array.isArray((_source as { excludes?: unknown }).excludes)
+      ? (_source as { excludes: string[] }).excludes ?? []
+      : [];
   }
 
   private getUniqueFieldNames({
@@ -1003,14 +1052,22 @@ export class SearchSource {
         );
   }
 
-  private getBuiltEsQuery({ index, query = [], filters = [], getConfig, sort }: SearchRequest) {
+  private getBuiltEsQuery({
+    index,
+    query = [],
+    filters = [],
+    sort,
+  }: Pick<StrictSearchRequest, 'index' | 'query' | 'filters' | 'sort'>) {
     // If sorting by _score, build queries in the "must" clause instead of "filter" clause to enable scoring
-    const filtersInMustClause = (sort ?? []).some((srt: EsQuerySortValue[]) =>
-      Object.hasOwn(srt, '_score')
+    const sortValues = Array.isArray(sort) ? sort : sort ? [sort] : [];
+    const filtersInMustClause = sortValues.some(
+      (srt) =>
+        srt === '_score' ||
+        (typeof srt === 'object' && srt !== null && Object.hasOwn(srt, '_score'))
     );
     const overwriteTimezone = this.getField('timezone');
     const esQueryConfigs = {
-      ...getEsQueryConfig({ get: getConfig }),
+      ...getEsQueryConfig({ get: this.dependencies.getConfig }),
       filtersInMustClause,
       ...(overwriteTimezone ? { dateFormatTZ: overwriteTimezone } : {}),
     };
@@ -1055,7 +1112,7 @@ export class SearchSource {
   }: {
     index?: DataView;
     fields: SearchFieldValue[];
-    docvalueFields: Array<{ field: string; format: string }>;
+    docvalueFields: Array<{ field: string; format?: string } | string>;
     fieldsFromSource: SearchFieldValue[];
     filteredDocvalueFields: SearchFieldValue[];
     metaFields: string[];
@@ -1255,7 +1312,7 @@ export class SearchSource {
     } else {
       ast.chain.push(
         buildExpressionFunction<EsdslExpressionFunctionDefinition>('esdsl', {
-          size: body?.size,
+          size: body?.size as number,
           dsl: JSON.stringify({}),
           index: typeof index === 'string' ? index : `${dataView?.id}`,
         }).toAst()

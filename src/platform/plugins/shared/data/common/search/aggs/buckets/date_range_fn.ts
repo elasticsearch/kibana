@@ -17,7 +17,7 @@ import { BUCKET_TYPES } from '..';
 
 export const aggDateRangeFnName = 'aggDateRange';
 
-type Input = any;
+type Input = unknown;
 type AggArgs = AggExpressionFunctionArgs<typeof BUCKET_TYPES.DATE_RANGE>;
 
 type Arguments = Assign<AggArgs, { ranges?: DateRangeOutput[] }>;

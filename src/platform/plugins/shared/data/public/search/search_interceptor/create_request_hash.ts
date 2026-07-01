@@ -19,7 +19,7 @@ import { stableStringify } from '@kbn/std';
  * (Preference is used to ensure all queries go to the same set of shards and it doesn't need to be hashed
  * https://www.elastic.co/guide/en/elasticsearch/reference/current/search-shard-routing.html#shard-and-node-preference)
  */
-function createRequestHash(keys: Record<string, any>) {
+function createRequestHash(keys: Record<string, unknown>) {
   const { preference, ...rest } = keys;
   const hash = new Sha256().update(stableStringify(rest), 'utf8').digest('hex');
   return hash;
@@ -35,7 +35,7 @@ export const createRequestHashForClientCache = createRequestHash;
  *
  * Ignores sessionId for compatibility with background searches created before https://github.com/elastic/kibana/pull/237191
  */
-export const createRequestHashForBackgroundSearches = (keys: Record<string, any>) => {
+export const createRequestHashForBackgroundSearches = (keys: Record<string, unknown>) => {
   // exclude additional parameters that are not relevant for server-side caching
   const { sessionId, ...rest } = keys;
   return createRequestHash(rest);

@@ -9,8 +9,10 @@
 
 import type { IKibanaSearchResponse } from '@kbn/search-types';
 import type { DataView } from '@kbn/data-views-plugin/common';
+import type { estypes } from '@elastic/elasticsearch';
 import type { AggregateQuery, Filter, Query } from '@kbn/es-query';
 import type { SearchSourceSearchOptions } from '../../..';
+import type { SearchFieldValue, SearchSourceFields } from '../types';
 import type { GetConfigFn } from '../../../types';
 
 /**
@@ -21,11 +23,49 @@ import type { GetConfigFn } from '../../../types';
  * where `ISearchRequestParams` is used externally instead.
  * FIXME: replace with estypes.SearchRequest?
  */
-export type SearchRequest<T extends Record<string, any> = Record<string, any>> = {
+export interface SearchRequestBody {
+  aggs?: estypes.SearchRequest['aggs'];
+  fields?: estypes.SearchRequest['fields'] | SearchFieldValue[];
+  docvalue_fields?: estypes.SearchRequest['docvalue_fields'];
+  script_fields?: estypes.SearchRequest['script_fields'];
+  stored_fields?: estypes.SearchRequest['stored_fields'];
+  runtime_mappings?: estypes.SearchRequest['runtime_mappings'];
+  _source?: estypes.SearchRequest['_source'];
+  search_after?: estypes.SearchRequest['search_after'];
+  sort?: estypes.SearchRequest['sort'];
+  track_total_hits?: estypes.SearchRequest['track_total_hits'];
+  query?: estypes.QueryDslQueryContainer;
+  highlight?: estypes.SearchRequest['highlight'];
+  size?: number;
+  from?: number;
+  version?: boolean;
+  timeout?: string;
+  terminate_after?: number;
+  pit?: estypes.SearchPointInTimeReference;
+}
+
+export interface SearchRequestCore {
   index?: DataView | string;
   query?: Array<Query | AggregateQuery>;
   filters?: Filter[] | (() => Filter[]);
-} & Omit<T, 'index' | 'query' | 'filters'>;
+  nonHighlightingFilters?: Filter[];
+  fieldsFromSource?: SearchFieldValue[];
+  highlightAll?: boolean;
+  body?: SearchRequestBody;
+  id?: string;
+  ms?: number;
+  indexType?: string;
+  preference?: string;
+  track_total_hits?: boolean | number;
+  getConfig?: GetConfigFn;
+  pit?: SearchSourceFields['pit'];
+  sort?: SearchSourceFields['sort'] | estypes.SearchRequest['sort'];
+  name?: string;
+}
+
+export type StrictSearchRequest = SearchRequestCore & { body: SearchRequestBody };
+export type SearchRequest<T extends object = {}> = SearchRequestCore &
+  Omit<T, keyof SearchRequestCore>;
 
 export interface FetchHandlers {
   getConfig: GetConfigFn;

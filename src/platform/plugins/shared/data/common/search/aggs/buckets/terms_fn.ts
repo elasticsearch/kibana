@@ -15,7 +15,7 @@ import { BUCKET_TYPES } from '..';
 
 export const aggTermsFnName = 'aggTerms';
 
-type Input = any;
+type Input = unknown;
 type AggArgs = AggExpressionFunctionArgs<typeof BUCKET_TYPES.TERMS>;
 
 // Since the orderAgg param is an agg nested in a subexpression, we need to

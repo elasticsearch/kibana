@@ -123,7 +123,6 @@ describe('SearchAPI', () => {
       const searchRequest: SearchRequest<estypes.SearchRequest> = {
         index: 'test-index',
         body: {
-          // @ts-expect-error - testing deprecated body params
           runtime_mappings: {},
         },
       };
@@ -143,7 +142,6 @@ describe('SearchAPI', () => {
       const searchRequest: SearchRequest<estypes.SearchRequest> = {
         index: 'test-index',
         body: {
-          // @ts-expect-error - testing deprecated body params
           runtime_mappings: {
             test: { type: 'keyword' },
           },

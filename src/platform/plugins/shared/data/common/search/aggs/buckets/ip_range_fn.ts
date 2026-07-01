@@ -17,7 +17,7 @@ import type { CidrOutput, IpRangeOutput } from '../../expressions';
 
 export const aggIpRangeFnName = 'aggIpRange';
 
-type Input = any;
+type Input = unknown;
 type AggArgs = AggExpressionFunctionArgs<typeof BUCKET_TYPES.IP_RANGE>;
 
 type Arguments = Assign<

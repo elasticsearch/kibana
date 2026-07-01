@@ -8,12 +8,12 @@
  */
 
 // adopted from http://stackoverflow.com/questions/3109978/php-display-number-with-ordinal-suffix
-export function ordinalSuffix(num: any): string {
+export function ordinalSuffix(num: string | number): string {
   return num + '' + suffix(num);
 }
 
-function suffix(num: any): string {
-  const int = Math.floor(parseFloat(num));
+function suffix(num: string | number): string {
+  const int = Math.floor(parseFloat(String(num)));
 
   const hunth = int % 100;
   if (hunth >= 11 && hunth <= 13) return 'th';

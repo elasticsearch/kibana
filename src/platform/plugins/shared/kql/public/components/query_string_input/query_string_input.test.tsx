@@ -21,8 +21,10 @@ import userEvent from '@testing-library/user-event';
 import { coreMock } from '@kbn/core/public/mocks';
 import { dataPluginMock } from '@kbn/data-plugin/public/mocks';
 import { stubIndexPattern } from '@kbn/data-plugin/public/stubs';
-import { QueryStringInput } from './query_string_input';
+import { QueryStringInput, type QueryStringInputProps } from './query_string_input';
+import type { DataViewByIdOrTitle } from './fetch_index_patterns';
 import { autocompleteStartMock } from '../../autocomplete/mocks';
+import type { IStorageWrapper } from '@kbn/kibana-utils-plugin/public';
 
 jest.useFakeTimers({ legacyFakeTimers: true });
 
@@ -59,27 +61,33 @@ const createMockStorage = () => ({
   clear: jest.fn(),
 });
 
-function wrapQueryStringInputInContext(testProps: any, storage?: any) {
+function wrapQueryStringInputInContext(
+  testProps: Partial<QueryStringInputProps>,
+  storage?: IStorageWrapper
+) {
   const mockDataPlugin = dataPluginMock.createStartContract();
 
-  const defaultOptions = {
+  const baseProps: QueryStringInputProps = {
     screenTitle: 'Another Screen',
-    intl: null as any,
+    appName: 'test',
+    indexPatterns: [],
+    query: kqlQuery,
     deps: {
       autocomplete: autocompleteStartMock,
       data: mockDataPlugin,
-      appName: testProps.appName || 'test',
-      storage: storage || createMockStorage(),
+      storage: storage ?? createMockStorage(),
       usageCollection: { reportUiCounter: () => {} },
       uiSettings: startMock.uiSettings,
       http: startMock.http,
       docLinks: startMock.docLinks,
+      notifications: startMock.notifications,
+      dataViews: mockDataPlugin.dataViews,
     },
   };
 
   return (
     <I18nProvider>
-      <QueryStringInput {...defaultOptions} {...testProps} />
+      <QueryStringInput {...baseProps} {...testProps} />
     </I18nProvider>
   );
 }
@@ -342,7 +350,7 @@ describe('QueryStringInput', () => {
         onSubmit: noop,
         indexPatterns: [stubIndexPattern],
         disableAutoFocus: true,
-        persistedLog: mockPersistedLog,
+        persistedLog: mockPersistedLog as unknown as QueryStringInputProps['persistedLog'],
       })
     );
 
@@ -357,6 +365,25 @@ describe('QueryStringInput', () => {
     await waitFor(() => {
       expect(mockPersistedLog.get).toHaveBeenCalled();
     });
+  });
+
+  it('Should not refetch when index patterns are already full objects', async () => {
+    mockFetchIndexPatterns.mockClear();
+
+    render(
+      wrapQueryStringInputInContext({
+        query: kqlQuery,
+        onSubmit: noop,
+        indexPatterns: [stubIndexPattern],
+        disableAutoFocus: true,
+      })
+    );
+
+    await waitFor(() => {
+      expect(screen.getByDisplayValue(kqlQuery.query)).toBeInTheDocument();
+    });
+
+    expect(mockFetchIndexPatterns).not.toHaveBeenCalled();
   });
 
   it('Should accept index pattern strings and fetch the full object', async () => {
@@ -380,7 +407,7 @@ describe('QueryStringInput', () => {
   });
 
   it('Should accept index pattern ids and fetch the full object', async () => {
-    const idStrings = [{ type: 'id', value: '1' }];
+    const idStrings: DataViewByIdOrTitle[] = [{ type: 'id', value: '1' }];
     mockFetchIndexPatterns.mockClear();
 
     render(
@@ -398,7 +425,7 @@ describe('QueryStringInput', () => {
   });
 
   it('Should accept a mix of full objects, title and ids and fetch only missing index pattern objects', async () => {
-    const patternStrings = [
+    const patternStrings: QueryStringInputProps['indexPatterns'] = [
       'logstash-*',
       { type: 'id', value: '1' },
       { type: 'title', value: 'my-fake-index-pattern' },

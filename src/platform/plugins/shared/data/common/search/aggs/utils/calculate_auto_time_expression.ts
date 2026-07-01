@@ -15,7 +15,34 @@ import { TimeBuckets } from '../buckets/lib/time_buckets';
 import { toAbsoluteDates } from './date_interval_utils';
 import { autoInterval } from '../buckets/_interval_options';
 
-export function getCalculateAutoTimeExpression(getConfig: (key: string) => any) {
+export function getCalculateAutoTimeExpression(getConfig: (key: string) => unknown) {
+  const getNumberConfig = (key: string): number => {
+    const value = getConfig(key);
+    if (typeof value === 'number') {
+      return value;
+    }
+    if (typeof value === 'string') {
+      const parsed = Number(value);
+      if (Number.isFinite(parsed)) {
+        return parsed;
+      }
+    }
+    throw new Error(`Expected a numeric value for config key "${key}", got ${typeof value}`);
+  };
+  const getStringConfig = (key: string): string => {
+    const value = getConfig(key);
+    if (typeof value === 'string') {
+      return value;
+    }
+    if (value == null) {
+      return '';
+    }
+    return String(value);
+  };
+  const getScaledDateFormatsConfig = (key: string): string[][] => {
+    const value = getConfig(key);
+    return Array.isArray(value) ? (value as string[][]) : [];
+  };
   function calculateAutoTimeExpression(range: TimeRange): string | undefined;
   function calculateAutoTimeExpression(
     range: TimeRange,
@@ -44,10 +71,10 @@ export function getCalculateAutoTimeExpression(getConfig: (key: string) => any) 
     }
 
     const buckets = new TimeBuckets({
-      'histogram:maxBars': getConfig(UI_SETTINGS.HISTOGRAM_MAX_BARS),
-      'histogram:barTarget': getConfig(UI_SETTINGS.HISTOGRAM_BAR_TARGET),
-      dateFormat: getConfig('dateFormat'),
-      'dateFormat:scaled': getConfig('dateFormat:scaled'),
+      'histogram:maxBars': getNumberConfig(UI_SETTINGS.HISTOGRAM_MAX_BARS),
+      'histogram:barTarget': getNumberConfig(UI_SETTINGS.HISTOGRAM_BAR_TARGET),
+      dateFormat: getStringConfig('dateFormat'),
+      'dateFormat:scaled': getScaledDateFormatsConfig('dateFormat:scaled'),
     });
 
     buckets.setInterval(interval);

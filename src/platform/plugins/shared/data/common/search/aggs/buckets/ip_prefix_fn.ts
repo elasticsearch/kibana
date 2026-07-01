@@ -16,7 +16,7 @@ import { BUCKET_TYPES } from '..';
 
 export const aggIpPrefixFnName = 'aggIpPrefix';
 
-type Input = any;
+type Input = unknown;
 type AggArgs = AggExpressionFunctionArgs<typeof BUCKET_TYPES.IP_PREFIX>;
 
 type Arguments = Assign<AggArgs, { ipPrefix?: IpPrefixOutput }>;

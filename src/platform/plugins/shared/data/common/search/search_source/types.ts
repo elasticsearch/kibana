@@ -91,7 +91,7 @@ export interface SearchSourceFields {
    * {@link EsQuerySortValue}
    */
   sort?: EsQuerySortValue | EsQuerySortValue[];
-  highlight?: any;
+  highlight?: SerializableRecord;
   highlightAll?: boolean;
   trackTotalHits?: boolean | number;
   /**
@@ -136,9 +136,9 @@ export interface SearchSourceFields {
 export type SerializedSearchSourceFields = {
   type?: string;
   /**
-   * {@link Query}
+   * {@link Query}. Legacy saved objects may also store a bare Lucene string, which is normalized when hydrating a search source.
    */
-  query?: Query | AggregateQuery;
+  query?: Query | AggregateQuery | string;
   /**
    * {@link Filter}
    */

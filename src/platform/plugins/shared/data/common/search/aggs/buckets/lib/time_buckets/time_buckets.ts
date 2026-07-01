@@ -47,7 +47,7 @@ function isDurationInterval(i: any): i is moment.Duration {
   return moment.isDuration(i) && Boolean(+i);
 }
 
-export interface TimeBucketsConfig extends Record<string, any> {
+export interface TimeBucketsConfig extends Record<string, unknown> {
   'histogram:maxBars': number;
   'histogram:barTarget': number;
   dateFormat: string;
@@ -69,7 +69,7 @@ export class TimeBuckets {
   private _i?: moment.Duration | 'auto';
 
   // because other parts of Kibana arbitrarily add properties
-  [key: string]: any;
+  [key: string]: unknown;
 
   constructor(timeBucketConfig: TimeBucketsConfig) {
     this._timeBucketConfig = timeBucketConfig;

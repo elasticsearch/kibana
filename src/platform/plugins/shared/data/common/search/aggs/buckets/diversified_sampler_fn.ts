@@ -14,7 +14,7 @@ import { DIVERSIFIED_SAMPLER_AGG_NAME } from './diversified_sampler';
 
 export const aggDiversifiedSamplerFnName = 'aggDiversifiedSampler';
 
-type Input = any;
+type Input = unknown;
 type Arguments = AggExpressionFunctionArgs<typeof BUCKET_TYPES.DIVERSIFIED_SAMPLER>;
 
 type Output = AggExpressionType;

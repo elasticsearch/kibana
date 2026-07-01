@@ -14,7 +14,7 @@ import { METRIC_TYPES } from '..';
 
 export const aggGeoBoundsFnName = 'aggGeoBounds';
 
-type Input = any;
+type Input = unknown;
 type AggArgs = AggExpressionFunctionArgs<typeof METRIC_TYPES.GEO_BOUNDS>;
 type Output = AggExpressionType;
 type FunctionDefinition = ExpressionFunctionDefinition<

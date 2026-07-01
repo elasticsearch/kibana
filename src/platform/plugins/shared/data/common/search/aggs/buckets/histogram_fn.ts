@@ -17,7 +17,7 @@ import { BUCKET_TYPES } from '..';
 
 export const aggHistogramFnName = 'aggHistogram';
 
-type Input = any;
+type Input = unknown;
 type AggArgs = AggExpressionFunctionArgs<typeof BUCKET_TYPES.HISTOGRAM>;
 
 type Arguments = Assign<AggArgs, { extended_bounds?: ExtendedBoundsOutput }>;

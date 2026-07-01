@@ -14,7 +14,7 @@ import { BUCKET_TYPES } from '..';
 
 export const aggTimeSeriesFnName = 'aggTimeSeries';
 
-type Input = any;
+type Input = unknown;
 type Output = AggExpressionType;
 type AggArgs = AggExpressionFunctionArgs<typeof BUCKET_TYPES.TIME_SERIES>;
 

@@ -9,12 +9,17 @@
 
 import { createSearchSource as createSearchSourceFactory } from './create_search_source';
 import type { SearchSourceDependencies } from './search_source';
-import type { DataView, DataViewsContract, DataViewLazy } from '@kbn/data-views-plugin/common';
-import type { Filter } from '@kbn/es-query';
+import type { DataViewsContract, DataViewLazy } from '@kbn/data-views-plugin/common';
+import { createStubDataView } from '@kbn/data-views-plugin/common/data_views/data_view.stub';
+
+type CreateSearchSourceDataViews = Pick<
+  DataViewsContract,
+  'get' | 'create' | 'getDataViewLazy' | 'createDataViewLazy'
+>;
 
 describe('createSearchSource', () => {
-  const indexPatternMock: DataView = {} as DataView;
-  let indexPatternContractMock: jest.Mocked<DataViewsContract>;
+  const indexPatternMock = createStubDataView({ spec: { title: 'test-pattern' } });
+  let indexPatternContractMock: CreateSearchSourceDataViews;
   let dependencies: SearchSourceDependencies;
   let createSearchSource: ReturnType<typeof createSearchSourceFactory>;
 
@@ -26,14 +31,17 @@ describe('createSearchSource', () => {
       onResponse: (req, res) => res,
       scriptedFieldsEnabled: true,
       dataViews: {
-        getMetaFields: jest.fn(),
-        getShortDotsEnable: jest.fn(),
-      } as unknown as DataViewsContract,
+        getMetaFields: jest.fn().mockResolvedValue([]),
+        getShortDotsEnable: jest.fn().mockResolvedValue(false),
+      },
     };
 
     indexPatternContractMock = {
-      get: jest.fn().mockReturnValue(Promise.resolve(indexPatternMock)),
-    } as unknown as jest.Mocked<DataViewsContract>;
+      get: jest.fn().mockResolvedValue(indexPatternMock),
+      create: jest.fn(),
+      getDataViewLazy: jest.fn(),
+      createDataViewLazy: jest.fn(),
+    };
 
     createSearchSource = createSearchSourceFactory(indexPatternContractMock, dependencies);
   });
@@ -76,33 +84,34 @@ describe('createSearchSource', () => {
         },
       ],
     });
-    const filters = searchSource.getOwnField('filter') as Filter[];
-    expect(filters[0]).toMatchInlineSnapshot(`
-      Object {
-        "meta": Object {
-          "alias": null,
-          "disabled": false,
-          "index": "123-456",
-          "key": "category.keyword",
-          "negate": false,
-          "params": Object {
-            "query": "Men's Clothing",
+    expect(searchSource.getOwnField('filter')).toMatchInlineSnapshot(`
+      Array [
+        Object {
+          "meta": Object {
+            "alias": null,
+            "disabled": false,
+            "index": "123-456",
+            "key": "category.keyword",
+            "negate": false,
+            "params": Object {
+              "query": "Men's Clothing",
+            },
+            "type": "phrase",
           },
-          "type": "phrase",
-        },
-        "query": Object {
-          "match_phrase": Object {
-            "category.keyword": "Men's Clothing",
+          "query": Object {
+            "match_phrase": Object {
+              "category.keyword": "Men's Clothing",
+            },
           },
         },
-      }
+      ]
     `);
   });
 
   it('should migrate legacy queries on the fly', async () => {
     const searchSource = await createSearchSource({
       highlightAll: true,
-      query: 'a:b' as any,
+      query: 'a:b',
     });
     expect(searchSource.getOwnField('query')).toEqual({
       query: 'a:b',
@@ -111,18 +120,13 @@ describe('createSearchSource', () => {
   });
 
   it('uses DataViews.get', async () => {
-    const dataViewMock: DataView = {
-      toSpec: jest.fn().mockReturnValue(Promise.resolve({})),
-      getSourceFiltering: jest.fn().mockReturnValue({
-        excludes: [],
-      }),
-    } as unknown as DataView;
-    const get = jest.fn().mockReturnValue(Promise.resolve(dataViewMock));
+    const dataViewMock = createStubDataView({ spec: { id: '123-456', title: 'dv' } });
+    jest.spyOn(dataViewMock, 'getSourceFiltering').mockReturnValue({ excludes: [] });
+    const get = jest.fn().mockResolvedValue(dataViewMock);
+    const create = jest.fn();
     const getDataViewLazy = jest.fn();
-    indexPatternContractMock = {
-      get,
-      getDataViewLazy,
-    } as unknown as jest.Mocked<DataViewsContract>;
+    const createDataViewLazy = jest.fn();
+    indexPatternContractMock = { get, create, getDataViewLazy, createDataViewLazy };
 
     createSearchSource = createSearchSourceFactory(indexPatternContractMock, dependencies);
 
@@ -139,18 +143,15 @@ describe('createSearchSource', () => {
   });
 
   it('uses DataViews.getDataViewLazy when flag is passed', async () => {
-    const dataViewLazyMock: DataViewLazy = {
-      toSpec: jest.fn().mockReturnValue(Promise.resolve({})),
-      getSourceFiltering: jest.fn().mockReturnValue({
-        excludes: [],
-      }),
-    } as unknown as DataViewLazy;
+    const dataViewLazyMock: Pick<DataViewLazy, 'toSpec' | 'getSourceFiltering'> = {
+      toSpec: jest.fn().mockResolvedValue({}),
+      getSourceFiltering: jest.fn().mockReturnValue({ excludes: [] }),
+    };
     const get = jest.fn();
-    const getDataViewLazy = jest.fn().mockReturnValue(Promise.resolve(dataViewLazyMock));
-    indexPatternContractMock = {
-      get,
-      getDataViewLazy,
-    } as unknown as jest.Mocked<DataViewsContract>;
+    const create = jest.fn();
+    const getDataViewLazy = jest.fn().mockResolvedValue(dataViewLazyMock as DataViewLazy);
+    const createDataViewLazy = jest.fn();
+    indexPatternContractMock = { get, create, getDataViewLazy, createDataViewLazy };
 
     createSearchSource = createSearchSourceFactory(indexPatternContractMock, dependencies);
 

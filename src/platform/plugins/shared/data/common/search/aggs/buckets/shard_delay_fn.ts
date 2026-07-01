@@ -15,7 +15,7 @@ import { SHARD_DELAY_AGG_NAME } from './shard_delay';
 
 export const aggShardDelayFnName = 'aggShardDelay';
 
-type Input = any;
+type Input = unknown;
 type Arguments = AggParamsShardDelay & Pick<AggConfigSerialized, 'id' | 'enabled' | 'schema'>;
 
 type Output = AggExpressionType;

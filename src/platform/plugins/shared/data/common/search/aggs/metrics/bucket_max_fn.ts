@@ -15,7 +15,7 @@ import { METRIC_TYPES } from '..';
 
 export const aggBucketMaxFnName = 'aggBucketMax';
 
-type Input = any;
+type Input = unknown;
 type AggArgs = AggExpressionFunctionArgs<typeof METRIC_TYPES.MAX_BUCKET>;
 type Arguments = Assign<
   AggArgs,

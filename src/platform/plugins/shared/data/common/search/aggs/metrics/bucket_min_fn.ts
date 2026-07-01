@@ -15,7 +15,7 @@ import { METRIC_TYPES } from '..';
 
 export const aggBucketMinFnName = 'aggBucketMin';
 
-type Input = any;
+type Input = unknown;
 type AggArgs = AggExpressionFunctionArgs<typeof METRIC_TYPES.MIN_BUCKET>;
 type Arguments = Assign<
   AggArgs,

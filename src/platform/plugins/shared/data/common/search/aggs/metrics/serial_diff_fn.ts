@@ -15,7 +15,7 @@ import { METRIC_TYPES } from '..';
 
 export const aggSerialDiffFnName = 'aggSerialDiff';
 
-type Input = any;
+type Input = unknown;
 type AggArgs = AggExpressionFunctionArgs<typeof METRIC_TYPES.SERIAL_DIFF>;
 type Arguments = Assign<AggArgs, { customMetric?: AggExpressionType }>;
 type Output = AggExpressionType;

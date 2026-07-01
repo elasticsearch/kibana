@@ -24,7 +24,7 @@ import {
 import { createStubDataView } from '@kbn/data-views-plugin/common/data_views/data_view.stub';
 import { stubLogstashFieldSpecMap } from '@kbn/data-views-plugin/common/field.stub';
 import type { ISearchClient, IKibanaSearchResponse } from '@kbn/search-types';
-import type { ISearchStartSearchSource } from '@kbn/data-plugin/common';
+import type { ISearchStartSearchSource, SearchSourceFields } from '@kbn/data-plugin/common';
 import { searchSourceInstanceMock } from '@kbn/data-plugin/common/search/search_source/mocks';
 import {
   type IScopedSearchClient,
@@ -161,14 +161,15 @@ describe('CsvGenerator', () => {
 
     dataView.getFormatterForField = jest.fn();
 
-    searchSourceMock.getField = jest.fn((key: string) => {
-      switch (key) {
-        case 'pit':
-          return { id: mockCursorId };
-        case 'index':
-          return dataView;
+    searchSourceMock.getField = jest.fn((key: keyof SearchSourceFields) => {
+      if (key === 'pit') {
+        return { id: mockCursorId };
       }
-    });
+      if (key === 'index') {
+        return dataView;
+      }
+      return undefined;
+    }) as unknown as typeof searchSourceMock.getField;
 
     mockLogger = loggingSystemMock.createLogger();
   });

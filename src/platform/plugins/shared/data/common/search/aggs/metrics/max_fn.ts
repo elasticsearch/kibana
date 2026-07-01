@@ -14,7 +14,7 @@ import { METRIC_TYPES } from '..';
 
 export const aggMaxFnName = 'aggMax';
 
-type Input = any;
+type Input = unknown;
 type AggArgs = AggExpressionFunctionArgs<typeof METRIC_TYPES.MAX>;
 type Output = AggExpressionType;
 type FunctionDefinition = ExpressionFunctionDefinition<typeof aggMaxFnName, Input, AggArgs, Output>;

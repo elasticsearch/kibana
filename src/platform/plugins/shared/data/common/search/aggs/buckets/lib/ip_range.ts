@@ -20,7 +20,7 @@ export interface RangeIpRangeAggKey {
 
 export type IpRangeKey = CidrMaskIpRangeAggKey | RangeIpRangeAggKey;
 
-export const convertIPRangeToString = (range: IpRangeKey, format: (val: any) => string) => {
+export const convertIPRangeToString = (range: IpRangeKey, format: (val: string) => string) => {
   if (range.type === 'mask') {
     return format(range.mask);
   }
