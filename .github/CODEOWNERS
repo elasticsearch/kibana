@@ -3373,6 +3373,7 @@ x-pack/solutions/security/plugins/elastic_assistant/server/routes/defend_insight
 /x-pack/solutions/security/packages/test-api-clients/supertest/endpoint_management.gen.ts @elastic/security-defend-workflows
 /x-pack/solutions/security/packages/test-api-clients/supertest/osquery.gen.ts @elastic/security-defend-workflows
 /x-pack/solutions/security/plugins/security_solution/server/agent_builder/skills/automatic_troubleshooting @elastic/security-defend-workflows
+/x-pack/solutions/security/plugins/security_solution/server/agent_builder/skills/endpoint_response_actions @elastic/security-defend-workflows
 /x-pack/solutions/security/plugins/security_solution/server/agent_builder/skills/entity_analytics @elastic/security-entity-analytics
 /x-pack/solutions/security/plugins/security_solution/server/agent_builder/tools/entity_analytics @elastic/security-entity-analytics
 /src/platform/packages/shared/kbn-scout/src/servers/configs/config_sets/evals_endpoint @elastic/security-defend-workflows
