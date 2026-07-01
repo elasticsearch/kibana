@@ -2070,7 +2070,7 @@
     "backport": "11.0.2",
     "blob-polyfill": "9.0.20240710",
     "browserslist": "4.28.0",
-    "buildkite-test-collector": "1.8.1",
+    "buildkite-test-collector": "1.9.7",
     "cache-manager": "7.0.0",
     "cache-manager-fs-hash": "2.0.0",
     "callsites": "4.2.0",
