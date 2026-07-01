@@ -54,6 +54,13 @@ export const NewsfeedNavButton = ({ newsfeedApi, hasCustomBranding$, isServerles
     setFlyoutVisible(!flyoutVisible);
   }, [newsfeedApi, newsFetchResult, flyoutVisible]);
 
+  const hasFeedItems = Boolean(newsFetchResult && newsFetchResult.feedItems.length > 0);
+
+  // Hide the menu icon entirely when there are no news items to show
+  if (!hasFeedItems) {
+    return null;
+  }
+
   return (
     <NewsfeedContext.Provider value={{ setFlyoutVisible, newsFetchResult }}>
       <>

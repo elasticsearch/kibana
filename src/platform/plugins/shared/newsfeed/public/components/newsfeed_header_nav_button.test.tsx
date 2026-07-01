@@ -105,4 +105,26 @@ describe('NewsfeedNavButton', () => {
     });
     expect(screen.getByTestId('newsfeedAllRead')).toBeInTheDocument();
   });
+
+  test('does not render the button when there are no feed items', () => {
+    renderComponent(createFetchResult({ feedItems: [], hasNew: false }));
+    expect(screen.queryByTestId('newsfeedHasUnread')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('newsfeedAllRead')).not.toBeInTheDocument();
+  });
+
+  test('does not render the button before results are fetched', () => {
+    renderComponent(null);
+    expect(screen.queryByTestId('newsfeedHasUnread')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('newsfeedAllRead')).not.toBeInTheDocument();
+  });
+
+  test('renders the button once feed items arrive', () => {
+    const { fetchResults$ } = renderComponent(null);
+    expect(screen.queryByTestId('newsfeedHasUnread')).not.toBeInTheDocument();
+
+    act(() => {
+      fetchResults$.next(createFetchResult());
+    });
+    expect(screen.getByTestId('newsfeedHasUnread')).toBeInTheDocument();
+  });
 });
