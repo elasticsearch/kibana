@@ -8,8 +8,12 @@
  */
 
 import type { ESQLAstCommand } from '@elastic/esql/types';
-import { Parser } from '@elastic/esql';
-import { esqlCommandRegistry, type ESQLCommandSummary } from '@kbn/esql-language';
+import { Builder, Parser } from '@elastic/esql';
+import {
+  esqlCommandRegistry,
+  unwrapExpressionParens,
+  type ESQLCommandSummary,
+} from '@kbn/esql-language';
 import type { FieldSummary } from '@kbn/esql-language/src/commands/registry/types';
 
 function processCommand(
@@ -58,6 +62,7 @@ function processCommand(
  */
 export function getQuerySummary(query: string): ESQLCommandSummary {
   const { root } = Parser.parse(query);
+  unwrapExpressionParens(root);
 
   const allNewColumns = new Set<string>();
   const allRenamedColumnsPairs = new Set<[string, string]>();
@@ -93,6 +98,7 @@ export function getQuerySummaryPerCommandType(
   commandType: string
 ): ESQLCommandSummary[] {
   const { root } = Parser.parseQuery(query);
+  unwrapExpressionParens(root);
   const summaries: ESQLCommandSummary[] = [];
 
   for (const command of root.commands) {
@@ -130,13 +136,18 @@ export function getQuerySummaryPerCommandType(
  * Analyzes a specific command within an ES|QL query and returns a summary of it.
  */
 export function getSummaryPerCommand(query: string, command: ESQLAstCommand): ESQLCommandSummary {
+  // unwrapExpressionParens mutates its input. This command belongs to the caller's AST,
+  // so clone it and wrap it in a real query node;
+  const normalizedRoot = Builder.expression.query([structuredClone(command)]);
+  unwrapExpressionParens(normalizedRoot);
+  const [normalizedCommand] = normalizedRoot.commands;
   const allNewColumns = new Set<string>();
   const allRenamedColumnsPairs = new Set<[string, string]>();
   const allMetadataColumns = new Set<string>();
   const allAggregates = new Set<FieldSummary>();
   const allGroupings = new Set<FieldSummary>();
 
-  processCommand(command, query, {
+  processCommand(normalizedCommand, query, {
     newColumns: allNewColumns,
     renamedColumnsPairs: allRenamedColumnsPairs,
     metadataColumns: allMetadataColumns,

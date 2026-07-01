@@ -12,6 +12,7 @@ import { BasicPrettyPrinter, SOURCE_COMMANDS } from '@elastic/esql';
 import { UnmappedFieldsStrategy } from '../commands/registry/types';
 import { type ESQLColumnData, type ESQLPolicy } from '../commands/registry/types';
 import { getCurrentQueryAvailableColumns, getFieldsFromES } from './helpers';
+import { unwrapExpressionParens } from '../commands/definitions/utils/ast';
 import { getUnmappedFieldsStrategy } from '../commands/definitions/utils/settings';
 
 export const NOT_SUGGESTED_TYPES = ['unsupported'];
@@ -82,7 +83,8 @@ export class QueryColumns {
       invalidateColumnsCache?: boolean;
     }
   ) {
-    this.unmappedFieldsStrategy = getUnmappedFieldsStrategy(query.header);
+    unwrapExpressionParens(this.query);
+    this.unmappedFieldsStrategy = getUnmappedFieldsStrategy(this.query.header);
   }
 
   /**

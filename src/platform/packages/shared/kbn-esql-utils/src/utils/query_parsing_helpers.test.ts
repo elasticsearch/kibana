@@ -157,6 +157,14 @@ describe('esql query helpers', () => {
       ).toBe('event.timefield');
     });
 
+    it('should return the time field when the bucket argument is parenthesized', () => {
+      expect(
+        getTimeFieldFromESQLQuery(
+          'from a | stats meow = avg(bytes) by bucket((event.timefield), 200, ?_tstart, ?_tend)'
+        )
+      ).toBe('event.timefield');
+    });
+
     it('should return the time field if the column is casted', () => {
       expect(
         getTimeFieldFromESQLQuery(
@@ -963,6 +971,12 @@ describe('esql query helpers', () => {
       const expected: string[] = [];
       expect(getCategorizeColumns(esql)).toEqual(expected);
     });
+
+    it('should return the categorize columns when the BY expression is parenthesized', () => {
+      const esql = 'FROM index | STATS COUNT() BY (categorize(field1))';
+      const expected = ['categorize(field1)'];
+      expect(getCategorizeColumns(esql)).toEqual(expected);
+    });
   });
 
   describe('replaceColumnNameIfRenamed', () => {
@@ -1134,6 +1148,14 @@ describe('esql query helpers', () => {
       const esql =
         'FROM employees | INLINE STATS avg_height = AVG(height) BY gender | STATS s1 = SPARKLINE(AVG(salary), hire_date, 20, "1985-01-01T00:00:00Z", "1985-12-31T00:00:00Z")';
       expect(getSparklineColumns(esql)).toEqual(['s1']);
+    });
+
+    it('should return the bare SPARKLINE expression when the aggregate is parenthesized', () => {
+      const esql =
+        'FROM index | STATS (SPARKLINE(COUNT(*), @timestamp, 10, ?_tstart, ?_tend)) BY Pattern=CATEGORIZE(msg)';
+      expect(getSparklineColumns(esql)).toEqual([
+        'SPARKLINE(COUNT(*), @timestamp, 10, ?_tstart, ?_tend)',
+      ]);
     });
   });
 

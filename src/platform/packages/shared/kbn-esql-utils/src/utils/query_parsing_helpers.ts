@@ -21,6 +21,7 @@ import {
   esqlCommandRegistry,
   getPromqlBracketsToClose,
   TRANSFORMATIONAL_COMMANDS,
+  unwrapExpressionParens,
 } from '@kbn/esql-language';
 import type { PromQLLabel } from '@elastic/esql';
 import type {
@@ -211,6 +212,7 @@ export function convertTimeseriesCommandToFrom(esql?: string): string {
  */
 export const getTimeFieldFromESQLQuery = (esql: string) => {
   const { root } = Parser.parse(esql);
+  unwrapExpressionParens(root);
   const functions: ESQLFunction[] = [];
 
   walk(root.commands, {
@@ -499,6 +501,7 @@ export const fixESQLQueryWithVariables = (
 
 export const getCategorizeColumns = (esql: string): string[] => {
   const { root } = Parser.parse(esql);
+  unwrapExpressionParens(root);
   const statsCommand = root.commands.find(({ name }) => name === 'stats');
   if (!statsCommand) {
     return [];
@@ -540,6 +543,7 @@ export const getCategorizeColumns = (esql: string): string[] => {
 
 export const getSparklineColumns = (esql: string): string[] => {
   const { root } = Parser.parse(esql);
+  unwrapExpressionParens(root);
   // SPARKLINE can appear in both STATS and INLINE STATS commands
   const statsCommands = root.commands.filter(
     ({ name }) => name === 'stats' || name === 'inline stats'
