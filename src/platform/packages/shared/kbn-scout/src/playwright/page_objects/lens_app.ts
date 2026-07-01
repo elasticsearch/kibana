@@ -10,6 +10,19 @@
 import type { ScoutPage } from '..';
 import { EuiComboBoxWrapper, expect } from '..';
 
+const normalizeComputedColor = (color: string | undefined): string | undefined => {
+  if (!color) {
+    return undefined;
+  }
+
+  const rgbMatch = color.match(/^rgb\((\d+),\s*(\d+),\s*(\d+)\)$/);
+  if (rgbMatch) {
+    return `rgba(${rgbMatch[1]}, ${rgbMatch[2]}, ${rgbMatch[3]}, 1)`;
+  }
+
+  return color;
+};
+
 export class LensApp {
   private readonly lensApp;
   private readonly chartSwitchPopover;
@@ -140,7 +153,7 @@ export class LensApp {
     palette?: { mode: 'legacy' | 'colorMapping'; id: string };
     keepOpen?: boolean;
   }) {
-    await this.openDimensionEditor(opts.dimension);
+    await this.openDimensionSelector(opts.dimension);
     await this.selectOperation(opts.operation);
     if (opts.field) {
       await this.selectField(opts.field);
@@ -153,12 +166,65 @@ export class LensApp {
     }
   }
 
-  async openDimensionEditorFor(dimension: string) {
-    await this.openDimensionEditor(dimension);
-  }
-
   async closeDimensionEditorPanel() {
     await this.closeDimensionEditor();
+  }
+
+  /** Closes the open dimension editor flyout. */
+  async closeDimensionEditor() {
+    await this.closeDimensionEditorButton.click();
+    await this.closeDimensionEditorButton.waitFor({ state: 'hidden' });
+  }
+
+  /**
+   * Activates the layer tab at `index`. Requires the tabs row to be visible (multi-layer charts).
+   * Tab `data-test-subj` values use layer ids (not numeric indices), so tabs are resolved by order.
+   */
+  async activateLayerTab(index: number) {
+    const tabs = await this.page.locator('[data-test-subj^="unifiedTabs_tab_"]').all();
+    const tab = tabs[index];
+    if (!tab) {
+      throw new Error(`Layer tab not found at index ${index}`);
+    }
+
+    await tab.click();
+    await this.page.testSubj.locator(`lns-layerPanel-${index}`).waitFor({ state: 'visible' });
+  }
+
+  /** Returns the selected axis side label from an open dimension editor. */
+  async getSelectedAxisSide(): Promise<string> {
+    const axisSideButtons = await this.page
+      .locator('[data-test-subj^="lnsXY_axisSide_groups_"]')
+      .all();
+
+    for (const button of axisSideButtons) {
+      if ((await button.getAttribute('aria-pressed')) === 'true') {
+        const text = (await button.innerText()).trim();
+        if (!text) {
+          throw new Error('Axis side button text not yet rendered');
+        }
+        return text;
+      }
+    }
+
+    throw new Error('No axis side button is selected');
+  }
+
+  /** Returns the selected bar orientation from the style settings flyout. */
+  async getSelectedBarOrientationSetting(): Promise<string> {
+    await this.openStyleSettingsFlyout();
+
+    const orientationButtons = await this.page
+      .locator('[data-test-subj^="lns_barOrientation_"]')
+      .all();
+
+    for (const button of orientationButtons) {
+      if ((await button.getAttribute('aria-pressed')) === 'true') {
+        return (await button.innerText()).trim();
+      }
+    }
+
+    throw new Error('No bar orientation button is selected');
   }
 
   async setTermsNumberOfValues(value: number) {
@@ -203,14 +269,36 @@ export class LensApp {
     ).toBeHidden();
   }
 
-  private async openDimensionEditor(dimension: string) {
+  private async openDimensionSelector(dimension: string) {
     await this.page.testSubj.locator(dimension).click();
-    await expect(this.closeDimensionEditorButton).toBeVisible();
+    await this.closeDimensionEditorButton.waitFor({ state: 'visible' });
   }
 
-  private async closeDimensionEditor() {
-    await this.closeDimensionEditorButton.click();
-    await expect(this.closeDimensionEditorButton).toBeHidden();
+  /** Opens a dimension editor flyout from a dimension trigger inside a layer panel. */
+  async openDimensionEditor(dimension: string, layerIndex = 0, dimensionIndex = 0) {
+    const editors = await this.page.testSubj
+      .locator(`lns-layerPanel-${layerIndex} > ${dimension}`)
+      .all();
+    const editor = editors[dimensionIndex];
+    if (!editor) {
+      throw new Error(
+        `Dimension editor not found at index ${dimensionIndex} for "${dimension}" in layer ${layerIndex}`
+      );
+    }
+    await editor.click();
+    await this.closeDimensionEditorButton.waitFor({ state: 'visible' });
+  }
+
+  /** Returns the selected option labels from an EUI combo box test subject. */
+  async getComboBoxSelectedOptions(comboBoxTestSubj: string): Promise<string[]> {
+    const comboBox = new EuiComboBoxWrapper(this.page, comboBoxTestSubj);
+    const selectedOptions = await comboBox.getSelectedMultiOptions();
+    if (selectedOptions.length > 0) {
+      return selectedOptions;
+    }
+
+    const value = await comboBox.getSelectedValue();
+    return value ? [value] : [];
   }
 
   private async selectOperation(operation: string, isPreviousIncompatible = false) {
@@ -272,5 +360,181 @@ export class LensApp {
 
   getEditInLensButton() {
     return this.page.getByTestId('navigateToLensEditorLink');
+  }
+
+  /**
+   * Waits for the Lens visualization workspace to finish rendering.
+   * Polls `data-rendering-count` on the visualization container until it
+   * stabilises across two consecutive reads (500 ms apart).
+   */
+  async waitForVisualization(chartSubj = 'lnsVisualizationContainer') {
+    const workspace = this.page.testSubj.locator('lnsWorkspace');
+    await workspace.waitFor({ state: 'visible', timeout: 30_000 });
+
+    const container = workspace.getByTestId(chartSubj);
+    await container.waitFor({ state: 'visible', timeout: 30_000 });
+
+    await this.page.waitForFunction(
+      ({ workspaceSubj, chartSubj: subj }) => {
+        const workspaceEl = document.querySelector(`[data-test-subj="${workspaceSubj}"]`);
+        if (!workspaceEl) {
+          return false;
+        }
+        const el = workspaceEl.querySelector(`[data-test-subj="${subj}"]`);
+        if (!el) {
+          return false;
+        }
+        const count = el.getAttribute('data-rendering-count');
+        if (count === null) {
+          return true;
+        }
+        if (count === '0') {
+          return false;
+        }
+        const prev = el.getAttribute('data-lns-prev-count');
+        el.setAttribute('data-lns-prev-count', count);
+        return prev === count;
+      },
+      { workspaceSubj: 'lnsWorkspace', chartSubj },
+      { timeout: 30_000, polling: 500 }
+    );
+  }
+
+  /** Returns the number of layers in the Lens editor (unified-tabs row is hidden for a single layer). */
+  async getLayerCount(): Promise<number> {
+    const tabs = await this.page.locator('[data-test-subj^="unifiedTabs_tab_"]').count();
+    return tabs === 0 ? 1 : tabs;
+  }
+
+  /** Locator for all dimension-trigger buttons in the Lens config panel. */
+  getDimensionTriggerLocator() {
+    return this.page.testSubj.locator('lns-dimensionTrigger');
+  }
+
+  /** Returns all dimension-trigger button locators currently rendered in the editor. */
+  getDimensionTriggers() {
+    return this.getDimensionTriggerLocator().all();
+  }
+
+  /** Returns visible labels for all dimension triggers inside a dimension panel. */
+  private async getDimensionTriggersTexts(dimension: string): Promise<string[]> {
+    const triggers = await this.page.testSubj.locator(`${dimension} > lns-dimensionTrigger`).all();
+    const texts = await Promise.all(triggers.map((trigger) => trigger.innerText()));
+    // Lens inserts zero-width spaces around dots in field names for line-breaking.
+    return texts.map((text) => text.replace(/\u200b/g, '').trim());
+  }
+
+  /** Returns the visible label of a dimension trigger inside a dimension panel. */
+  async getDimensionTriggerText(dimension: string, index = 0): Promise<string> {
+    const dimensionTexts = await this.getDimensionTriggersTexts(dimension);
+    const text = dimensionTexts[index];
+    if (text === undefined) {
+      throw new Error(`Dimension trigger not found at index ${index} for "${dimension}"`);
+    }
+    return text;
+  }
+
+  /** Returns the chart type label shown in the chart switcher popover. */
+  async getChartSwitchType(): Promise<string> {
+    await this.chartSwitchPopover.waitFor({ state: 'visible' });
+    return (await this.chartSwitchPopover.innerText()).trim();
+  }
+
+  private async openStyleSettingsFlyout() {
+    await this.page.locator('button[data-test-subj="style"]').click();
+    await this.page.locator('#lnsDimensionContainerTitle').waitFor({ state: 'visible' });
+  }
+
+  /** Reads the selected donut hole size from the style settings flyout. */
+  async getDonutHoleSize(): Promise<string> {
+    await this.openStyleSettingsFlyout();
+    const comboBox = new EuiComboBoxWrapper(this.page, 'lnsEmptySizeRatioOption');
+    const selectedOptions = await comboBox.getSelectedMultiOptions();
+    if (selectedOptions.length > 0) {
+      return selectedOptions[0];
+    }
+
+    return comboBox.getSelectedValue();
+  }
+
+  /**
+   * Hovers over a dimension-trigger button so that metric tiles are in their
+   * default (un-hovered) state before asserting colors.
+   */
+  async hoverOverDimensionButton(index = 0) {
+    const triggers = await this.getDimensionTriggerLocator().all();
+    const trigger = triggers[index];
+    if (!trigger) {
+      throw new Error(`Dimension trigger not found at index ${index}`);
+    }
+    await trigger.hover();
+    // Move the pointer off the metric tiles so hover styles do not affect color assertions.
+    await this.page.testSubj.locator('lns-layerPanel-0').hover();
+  }
+
+  /** Reads the current state of every metric tile inside `[data-test-subj="mtrVis"]`. */
+  async getMetricVisualizationData() {
+    const tiles = await this.page.locator('[data-test-subj="mtrVis"] .echChart li').all();
+    const showingBar = (await this.page.locator('.echSingleMetricProgress').count()) > 0;
+
+    return Promise.all(
+      tiles.map(async (tile) => {
+        const getText = async (selector: string) => {
+          const el = tile.locator(selector);
+          if ((await el.count()) === 0) return undefined;
+          return el.evaluate((node) => (node as HTMLElement).innerText);
+        };
+        const getColor = async (selector: string) => {
+          const el = tile.locator(selector);
+          if ((await el.count()) === 0) return undefined;
+          const color = await el.evaluate((node) => getComputedStyle(node).backgroundColor);
+          return normalizeComputedColor(color);
+        };
+
+        return {
+          title: await getText('h2'),
+          subtitle: await getText('.echMetricText__subtitle'),
+          extraText: await getText('.echMetricText__extraBlock'),
+          value: await getText('.echMetricText__valueBlock'),
+          color: await getColor('.echMetric'),
+          trendlineColor: await (async () => {
+            const el = tile.locator('.echSingleMetricSparkline__svg > rect');
+            if ((await el.count()) === 0) return undefined;
+            return (await el.getAttribute('fill')) ?? undefined;
+          })(),
+          showingTrendline: (await tile.locator('.echSingleMetricSparkline').count()) > 0,
+          showingBar,
+        };
+      })
+    );
+  }
+
+  /** Opens the palette panel for the currently active dimension. */
+  async openPalettePanel() {
+    await this.page.testSubj.click('lns_colorEditing_trigger');
+    await this.page.testSubj.locator('lns-palettePanelFlyout').waitFor({
+      state: 'visible',
+      timeout: 10_000,
+    });
+  }
+
+  /** Reads color-stop values and colors from the currently open palette panel. */
+  async getPaletteColorStops() {
+    const stopInputs = await this.page
+      .locator('[data-test-subj^="lnsPalettePanel_dynamicColoring_range_value_"]')
+      .all();
+    const colorAnchors = await this.page.testSubj.locator('euiColorPickerAnchor').all();
+
+    return Promise.all(
+      stopInputs.map(async (input, i) => ({
+        stop: await input.getAttribute('value'),
+        color:
+          colorAnchors[i] != null
+            ? normalizeComputedColor(
+                await colorAnchors[i].evaluate((node) => getComputedStyle(node).backgroundColor)
+              )
+            : undefined,
+      }))
+    );
   }
 }
