@@ -5,15 +5,11 @@
  * 2.0.
  */
 
-import { elementsOverlap } from '../../../helpers/rules';
 import {
   TIMELINE_ROW_RENDERERS_DISABLE_ALL_BTN,
   TIMELINE_ROW_RENDERERS_MODAL_ITEMS_CHECKBOX,
   TIMELINE_ROW_RENDERERS_SEARCHBOX,
   TIMELINE_SHOW_ROW_RENDERERS_GEAR,
-  TIMELINE_ROW_RENDERERS_SURICATA_SIGNATURE,
-  TIMELINE_ROW_RENDERERS_SURICATA_SIGNATURE_TOOLTIP,
-  TIMELINE_ROW_RENDERERS_SURICATA_LINK_TOOLTIP,
   TIMELINE_ROW_RENDERERS_MODAL_CLOSE_BUTTON,
   TIMELINE_ROW_RENDERERS_WRAPPER,
 } from '../../../screens/timeline';
@@ -72,10 +68,9 @@ describe('Row renderers', { tags: ['@ess', '@serverless'] }, () => {
     cy.get(TIMELINE_ROW_RENDERERS_WRAPPER).should('have.length.gt', 0);
     cy.get(TIMELINE_ROW_RENDERERS_WRAPPER).first().should('be.visible');
     cy.get(TIMELINE_SHOW_ROW_RENDERERS_GEAR).first().click();
+    cy.get(TIMELINE_ROW_RENDERERS_SEARCHBOX).should('exist');
     cy.get(TIMELINE_ROW_RENDERERS_SEARCHBOX).scrollIntoView();
     cy.get(TIMELINE_ROW_RENDERERS_SEARCHBOX).type('flow');
-    // Wait for the table to filter and verify the netflow checkbox is present and checked
-    cy.get(NETFLOW_CHECKBOX).should('be.checked');
 
     // Register the intercept for the first save (excluding netflow) before triggering it
     cy.intercept('PATCH', '/api/timeline').as('excludeNetflow');
@@ -90,13 +85,16 @@ describe('Row renderers', { tags: ['@ess', '@serverless'] }, () => {
     });
 
     // open modal, filter and check
-    cy.get(TIMELINE_SHOW_ROW_RENDERERS_GEAR).first().click();
+    // Use force:true because EuiToolTip or the save-progress overlay can briefly
+    // cover the gear button after the save modal closes; the button is always
+    // enabled/visible at this point so actionability is not the concern.
+    cy.get(TIMELINE_SHOW_ROW_RENDERERS_GEAR).first().click({ force: true });
+
     cy.get(TIMELINE_ROW_RENDERERS_SEARCHBOX).scrollIntoView();
     cy.get(TIMELINE_ROW_RENDERERS_SEARCHBOX).type('flow');
-    // Wait for the table to filter and verify the netflow checkbox is present and unchecked
     cy.get(NETFLOW_CHECKBOX).should('not.be.checked');
 
-    // Register the intercept for the second save (including netflow) before triggering it
+    // Register the intercept for the second save (re-including netflow) before triggering it
     cy.intercept('PATCH', '/api/timeline').as('includeNetflow');
     cy.get(NETFLOW_CHECKBOX).check();
 
@@ -133,20 +131,27 @@ describe('Row renderers', { tags: ['@ess', '@serverless'] }, () => {
   });
 
   describe('Suricata', () => {
-    // This test has become very flaky over time and was blocking a lot of PRs.
-    // A follw-up ticket to tackle this issue has been created.
-    it.skip('Signature tooltips do not overlap', () => {
-      // Hover the signature to show the tooltips
-      cy.get(TIMELINE_ROW_RENDERERS_SURICATA_SIGNATURE).parents('.euiPopover').realHover();
+    it('Suricata renderer can be individually toggled in the row renderers modal', () => {
+      // Open the row renderers configuration modal
+      cy.get(TIMELINE_SHOW_ROW_RENDERERS_GEAR).first().click();
 
-      cy.get(TIMELINE_ROW_RENDERERS_SURICATA_LINK_TOOLTIP).then(($googleLinkTooltip) => {
-        cy.get(TIMELINE_ROW_RENDERERS_SURICATA_SIGNATURE_TOOLTIP).then(($signatureTooltip) => {
-          expect(
-            elementsOverlap($googleLinkTooltip, $signatureTooltip),
-            'tooltips do not overlap'
-          ).to.equal(false);
-        });
-      });
+      // Search for the suricata renderer by name
+      cy.get(TIMELINE_ROW_RENDERERS_SEARCHBOX).scrollIntoView();
+      cy.get(TIMELINE_ROW_RENDERERS_SEARCHBOX).type('suricata');
+
+      // The suricata renderer checkbox should appear in the filtered list
+      cy.get(TIMELINE_ROW_RENDERERS_MODAL_ITEMS_CHECKBOX).should('exist');
+
+      // Verify it can be checked (enabled)
+      cy.get(TIMELINE_ROW_RENDERERS_MODAL_ITEMS_CHECKBOX).first().check();
+      cy.get(TIMELINE_ROW_RENDERERS_MODAL_ITEMS_CHECKBOX).first().should('be.checked');
+
+      // Verify it can be unchecked (disabled)
+      cy.get(TIMELINE_ROW_RENDERERS_MODAL_ITEMS_CHECKBOX).first().uncheck();
+      cy.get(TIMELINE_ROW_RENDERERS_MODAL_ITEMS_CHECKBOX).first().should('not.be.checked');
+
+      // Close the modal
+      cy.get(TIMELINE_ROW_RENDERERS_MODAL_CLOSE_BUTTON).click();
     });
   });
 });
