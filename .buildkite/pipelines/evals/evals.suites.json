@@ -263,6 +263,15 @@
       "ciLabels": ["evals:security-alert-triage"]
     },
     {
+      "id": "skill-selection-benchmark",
+      "name": "Skill Selection Benchmark",
+      "slackChannel": "#agent-builder-alerts",
+      "configPath": "x-pack/platform/packages/shared/agent-builder/kbn-evals-suite-agent-builder/skill_selection.playwright.config.ts",
+      "tags": ["platform", "agent-builder", "skill-selection"],
+      "ciLabels": ["evals:skill-selection-benchmark"],
+      "serverConfigSet": "evals_skill_selection"
+    },
+    {
       "id": "siem-readiness",
       "name": "SIEM Readiness",
       "slackChannel": "#siem-readiness",

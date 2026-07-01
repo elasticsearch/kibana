@@ -1,0 +1,168 @@
+skill_id,category,query,query_type,expected_skill,notes
+visualization-creation,platform,Create a line chart of HTTP 5xx error counts over time from the nginx access logs,direct,visualization-creation,
+visualization-creation,platform,Build a metric visualization showing average CPU utilization across all hosts,direct,visualization-creation,
+visualization-creation,platform,Show me a breakdown of event counts by log level for the last 6 hours,indirect,visualization-creation,
+visualization-creation,platform,Set up a monitoring dashboard with three panels: error rate plus latency plus throughput,distractor,dashboard-management,AMBIGUOUS: standalone viz vs multi-panel dashboard hard to distinguish from query alone
+graph-creation,platform,Create a dependency graph showing how my microservices are connected to each other,direct,graph-creation,
+graph-creation,platform,Visualize the relationships between hosts and the users accessing them as a node graph,direct,graph-creation,
+graph-creation,platform,I want to see which services talk to which other services and where the bottlenecks might be,indirect,graph-creation,
+graph-creation,platform,Map out the network topology of my AWS accounts and the resources they contain,indirect,graph-creation,
+graph-creation,platform,Show me a pie chart of alert severity distribution across all active alerts,distractor,visualization-creation,Distractor: pie chart is a chart not a relationship graph; targets visualization-creation
+skill-authoring,platform,Create a new skill for my agent that can query our internal JIRA ticketing system,direct,skill-authoring,
+skill-authoring,platform,I want to build a skill that knows how to navigate our internal runbook wiki and surface relevant procedures,direct,skill-authoring,
+skill-authoring,platform,My agent does not know how to handle on-call escalation requests — can you add that capability?,indirect,skill-authoring,
+skill-authoring,platform,I want to teach my agent about our internal deployment process so it can guide engineers step by step,indirect,skill-authoring,
+skill-authoring,platform,Build an automated workflow that triggers a Slack notification whenever a critical alert fires,distractor,,Distractor: workflow creation calls generate_workflow directly — no skill loads; tests skill-authoring precision
+dashboard-management,platform,Create a new Kibana dashboard for our SRE team showing service health metrics and error rates,direct,dashboard-management,
+dashboard-management,platform,Add a panel to my existing Ops Overview dashboard showing disk usage by host over 7 days,direct,dashboard-management,
+dashboard-management,platform,I need a central place to monitor all my microservices — can you set something up for the team?,indirect,dashboard-management,
+dashboard-management,platform,Build a view that gives our security team a quick overview of active alerts and recent detections,indirect,dashboard-management,
+dashboard-management,platform,Plot CPU usage versus memory usage for all hosts as a scatter chart,distractor,visualization-creation,Distractor: standalone scatter chart with no multi-panel layout should route to visualization-creation not dashboard-management
+workflow-authoring,platform,Create a workflow that sends a Slack message whenever a critical alert fires in Kibana,direct,workflow-authoring,
+workflow-authoring,platform,I need a workflow that automatically opens a PagerDuty incident when my SLO breach alert triggers,direct,workflow-authoring,
+workflow-authoring,platform,Whenever our checkout service goes down I want the on-call engineer to get notified automatically,indirect,workflow-authoring,
+workflow-authoring,platform,Set up an automated response so that when high-severity security events appear they get routed to the right Slack channel,indirect,workflow-authoring,
+workflow-authoring,platform,Set up an automated response so that whenever suspicious PowerShell activity is detected on an endpoint the offending process gets blocked and the host is isolated,distractor,detection-rule-edit,Distractor: automated security response sounds like a workflow but the action (block + isolate on detection) maps to detection-rule-edit response actions not workflow automation
+rule-management,platform,Create an alerting rule that fires when the error rate exceeds 5 percent for more than 10 minutes,direct,rule-management,
+rule-management,platform,Update my CPU spike alert rule to notify via PagerDuty instead of email,direct,rule-management,
+rule-management,platform,I need to get paged when my database response time stays above 500ms for 5 minutes straight,indirect,rule-management,
+rule-management,platform,Set up a notification so my team knows when disk usage hits 80 percent on any production host,indirect,rule-management,
+rule-management,platform,Show me all the detection rules currently enabled in my security environment,distractor,find-security-rules,Distractor: listing rules sounds like rule-management but security detection rules belong to find-rules
+significant-events-memory,streams,Search the significant events knowledge base for what we know about the payments service architecture,direct,significant-events-memory,
+significant-events-memory,streams,Add a knowledge base entry describing the normal traffic patterns of our auth microservice,direct,significant-events-memory,
+significant-events-memory,streams,What does the system know about our Kafka cluster and its typical behavior?,indirect,significant-events-memory,
+significant-events-memory,streams,Update the memory with the fact that our order-service was migrated to Kubernetes last week,indirect,significant-events-memory,
+significant-events-memory,streams,Find recent significant events related to latency spikes in the checkout service,distractor,significant-events-management,AMBIGUOUS: knowledge base read vs event search are easy to confuse; distractor targets significant-events-management
+streams-management,streams,Show me the schema and field mappings for the logs.otel stream,direct,streams-management,
+streams-management,streams,Update the retention policy on the logs.ecs.android stream to 90 days,direct,streams-management,
+streams-management,streams,Some of my log events are being dropped at ingestion — what is going wrong with my pipeline?,indirect,streams-management,
+streams-management,streams,Why is the data quality for my web access logs so poor and how do I fix the field mapping issues?,indirect,streams-management,
+streams-management,streams,My checkout service has been throwing a lot of 500 errors lately — what is causing the slowdowns?,distractor,investigation,Distractor: service health question maps to observability.investigation not streams-management
+significant-events-management,streams,Create a new significant event to record the Kafka outage that started yesterday at 14:00 UTC,direct,significant-events-management,
+significant-events-management,streams,Search for all significant events related to the payments service in the last 30 days,direct,significant-events-management,
+significant-events-management,streams,Log that we had a major database failover last Tuesday that affected the order processing pipeline,indirect,significant-events-management,
+significant-events-management,streams,Find all recorded incidents that impacted the auth service this quarter,indirect,significant-events-management,
+significant-events-management,streams,What does the system know about our database cluster's normal behavior patterns?,distractor,significant-events-memory,AMBIGUOUS: event search vs knowledge base read are structurally similar; distractor targets significant-events-memory
+knowledge-indicators-management,streams,Create a new knowledge indicator that tracks the p95 latency of the checkout service,direct,knowledge-indicators-management,
+knowledge-indicators-management,streams,List all existing knowledge indicators for the payments domain,direct,knowledge-indicators-management,
+knowledge-indicators-management,streams,I want the system to automatically flag unusual patterns in our auth service login rate,indirect,knowledge-indicators-management,
+knowledge-indicators-management,streams,Set up a feature that lets us detect anomalies in order processing throughput over time,indirect,knowledge-indicators-management,
+knowledge-indicators-management,streams,Start the automatic discovery process to identify interesting patterns in my logs.otel stream,distractor,ki-identification-management,AMBIGUOUS: manual KI creation vs running the background discovery task; distractor targets ki-identification-management
+ki-identification-management,streams,Run the KI identification task on the logs.ecs stream to find patterns worth monitoring,direct,ki-identification-management,
+ki-identification-management,streams,Check the status of the knowledge indicator discovery job I started earlier,direct,ki-identification-management,
+ki-identification-management,streams,I want the system to scan my event data and automatically surface what is worth monitoring,indirect,ki-identification-management,
+ki-identification-management,streams,Kick off the background process that finds monitoring-worthy patterns in my stream data,indirect,ki-identification-management,
+ki-identification-management,streams,Add a knowledge indicator to track weekly login volume for our admin accounts,distractor,knowledge-indicators-management,AMBIGUOUS: managing KIs vs running discovery; distractor targets knowledge-indicators-management
+alert-analysis,security,Help me triage the critical alert for Potential Credential Dumping via Mimikatz on host WIN-DC01,direct,alert-analysis,AMBIGUOUS with entity-analytics: both involve alerts and risk scores
+alert-analysis,security,Show me all unacknowledged high-severity security alerts from the last 4 hours,direct,alert-analysis,AMBIGUOUS with entity-analytics: both involve alerts and risk scores
+alert-analysis,security,Something suspicious just fired in our environment — can you pull it up and tell me if it is worth investigating?,indirect,alert-analysis,AMBIGUOUS with threat-hunting: reactive triage vs proactive hunt can look identical in natural language
+alert-analysis,security,I got paged about an alert on a server in the finance network — what should I look at first?,indirect,alert-analysis,
+alert-analysis,security,What is the risk score for user john.doe@company.com and what unusual behaviors is he showing?,distractor,entity-analytics,Distractor: entity risk lookup maps to entity-analytics not alert-analysis
+threat-hunting,security,Hunt for signs of lateral movement using Windows event logs over the past 7 days,direct,threat-hunting,AMBIGUOUS with alert-analysis: fired-alert triage vs proactive hunt hard to separate in natural language
+threat-hunting,security,Write ES|QL queries to find processes that are communicating with rare external IP addresses,direct,threat-hunting,
+threat-hunting,security,I suspect someone might be moving around our network without triggering any alerts — how do I find that?,indirect,threat-hunting,
+threat-hunting,security,Look for statistically rare process executions across our endpoints that might indicate malware,indirect,threat-hunting,
+threat-hunting,security,I have a fired alert for lateral movement on host CORP-WKS-042 — help me investigate it and find related activity,distractor,alert-analysis,Distractor: reacting to a fired alert maps to alert-analysis not threat-hunting
+entity-analytics,security,Look up the entity risk score for host dc01.corp.local and show me its recent alert contributions,direct,entity-analytics,AMBIGUOUS with alert-analysis: both deal with alerts and risk
+entity-analytics,security,Which users in our environment have the highest risk scores right now?,direct,entity-analytics,
+entity-analytics,security,Something feels off about this user account — can you tell me if they have been flagged for anything unusual?,indirect,entity-analytics,
+entity-analytics,security,Find me the riskiest hosts in the finance network segment based on recent behavior,indirect,entity-analytics,
+entity-analytics,security,Are there any ML anomaly detection jobs finding unusual behavior patterns in my environment?,distractor,find-security-ml-jobs,Distractor: ML job discovery maps to find-security-ml-jobs not entity-analytics
+detection-rule-edit,security,Create a new detection rule that fires when a user runs whoami followed by net user within 60 seconds,direct,detection-rule-edit,
+detection-rule-edit,security,Update the severity of the Suspicious PowerShell Execution rule from medium to high and add the persistence MITRE tag,direct,detection-rule-edit,
+detection-rule-edit,security,I want to start catching brute force login attempts against our Active Directory — set something up for that,indirect,detection-rule-edit,
+detection-rule-edit,security,The rule monitoring our AWS root account logins is not firing correctly — can you fix the detection query?,indirect,detection-rule-edit,
+detection-rule-edit,security,List all detection rules tagged with Credential Access that are currently enabled,distractor,find-security-rules,Distractor: read-only rule discovery maps to find-rules not detection-rule-edit
+find-security-rules,security,Show me all enabled detection rules that cover MITRE technique T1078 Valid Accounts,direct,find-security-rules,
+find-security-rules,security,How many detection rules do I have covering the Lateral Movement tactic?,direct,find-security-rules,
+find-security-rules,security,I want to know what detection coverage I have for ransomware before my security audit next week,indirect,find-security-rules,
+find-security-rules,security,Can you summarize which MITRE ATT&CK techniques we are currently monitoring for?,indirect,find-security-rules,
+find-security-rules,security,Set up a new rule to detect when a process creates a scheduled task on a Windows host,distractor,detection-rule-edit,Distractor: creating a rule maps to detection-rule-edit not find-rules
+find-security-ml-jobs,security,Find all ML jobs that are detecting anomalous user behavior in my security environment,direct,find-security-ml-jobs,AMBIGUOUS with entity-analytics: both surface unusual entity behavior
+find-security-ml-jobs,security,Which machine learning jobs are currently running for security anomaly detection?,direct,find-security-ml-jobs,
+find-security-ml-jobs,security,Are there any automated jobs looking for unusual login patterns or off-hours access by privileged accounts?,indirect,find-security-ml-jobs,
+find-security-ml-jobs,security,I want to know if the system is automatically detecting anything suspicious about service account behavior,indirect,find-security-ml-jobs,
+find-security-ml-jobs,security,Show me users with high risk scores and unusual behavioral signals this week,distractor,entity-analytics,Distractor: entity risk and behavior lookup maps to entity-analytics not find-security-ml-jobs
+elastic-defend-configuration-troubleshooting,security,My Elastic Defend policy is not blocking ransomware samples — help me troubleshoot the endpoint configuration,direct,elastic-defend-configuration-troubleshooting,
+elastic-defend-configuration-troubleshooting,security,A trusted application exception I added for our backup agent is not being applied on Windows hosts,direct,elastic-defend-configuration-troubleshooting,
+elastic-defend-configuration-troubleshooting,security,Elastic Defend keeps quarantining our internal monitoring tool even though we listed it as allowed,indirect,elastic-defend-configuration-troubleshooting,
+elastic-defend-configuration-troubleshooting,security,Agents on a subset of our Windows endpoints are not enforcing the correct policy — how do I debug this?,indirect,elastic-defend-configuration-troubleshooting,
+elastic-defend-configuration-troubleshooting,security,Are there any high-severity alerts triggered by Elastic Defend on production endpoints in the last hour?,distractor,alert-analysis,Distractor: security alert triage maps to alert-analysis not endpoint policy troubleshooting
+siem-readiness,security,Run a SIEM readiness assessment and tell me what data coverage gaps we have across log categories,direct,siem-readiness,
+siem-readiness,security,Check whether our ECS field compatibility is sufficient to support the out-of-the-box detection rules,direct,siem-readiness,
+siem-readiness,security,Before our security audit I need to know how complete our log coverage is and whether ingestion pipelines are healthy,indirect,siem-readiness,
+siem-readiness,security,We are onboarding a new SOC team — how healthy is our security data pipeline for running detections?,indirect,siem-readiness,
+siem-readiness,security,Is our environment meeting PCI DSS requirements for logging and audit trail retention?,distractor,pci-compliance,Distractor: PCI-specific compliance maps to pci-compliance not siem-readiness
+pci-compliance,security,Run a PCI DSS v4.0 compliance assessment on our cardholder data environment,direct,pci-compliance,
+pci-compliance,security,Check whether our logging and access control meets PCI DSS requirement 10 for audit trail completeness,direct,pci-compliance,
+pci-compliance,security,We are getting audited for card payment security next month — can you check our current compliance posture?,indirect,pci-compliance,
+pci-compliance,security,Our compliance team needs to know if we are meeting access monitoring standards for payment processing systems,indirect,pci-compliance,
+pci-compliance,security,Do we have enough detection and log coverage across our network and endpoint data sources?,distractor,siem-readiness,Distractor: general detection coverage maps to siem-readiness not pci-compliance
+observability.investigation,observability,Investigate why the checkout service has had elevated error rates for the last 30 minutes,direct,investigation,AMBIGUOUS with observability.rca: investigation vs root cause analysis hard to distinguish without deeper phrasing analysis
+observability.investigation,observability,Show me all firing observability alerts for services in the payments namespace,direct,investigation,
+observability.investigation,observability,Something is wrong with our order flow — customers are reporting slow checkouts and intermittent failures,indirect,investigation,AMBIGUOUS with observability.rca: both handle degradation reports
+observability.investigation,observability,My SLO is breaching — which service is the likely cause and what does the recent metrics data show?,indirect,investigation,
+observability.investigation,observability,Why did our checkout service start failing at 14:32 UTC today — trace back exactly what broke and why,distractor,rca,Distractor: root-cause phrasing maps to observability.rca not general investigation
+observability.rca,observability,Perform a root cause analysis for the payment service outage that occurred between 02:00 and 03:15 UTC today,direct,rca,AMBIGUOUS with observability.investigation: both handle service failures; RCA targets causal chain not general health
+observability.rca,observability,Why is the order-service throwing NullPointerExceptions — trace the failure back to its originating cause,direct,rca,
+observability.rca,observability,Our database connection pool exhausted at midnight last night — what actually triggered that cascade failure?,indirect,rca,
+observability.rca,observability,Users are seeing errors but I do not know where the breakage is in the system — help me trace it to the source,indirect,rca,
+observability.rca,observability,Show me all current APM alerts and their statuses for services in the production environment,distractor,investigation,Distractor: listing current alerts maps to observability.investigation not root cause analysis
+service-map,observability,Show me the APM service map for our production environment,direct,service-map,
+service-map,observability,Display the service topology of all services connected to the payments-api in APM,direct,service-map,
+service-map,observability,Which downstream services does the order API call and are any of them currently showing latency increases?,indirect,service-map,
+service-map,observability,I want to understand the full call chain from our frontend to the database for the checkout flow,indirect,service-map,
+service-map,observability,Show me how the services in my environment are connected to each other and which ones are upstream and downstream dependencies,distractor,graph-creation,Distractor: service dependency topology sounds like APM service-map but the request is for a general dependency graph attachment — maps to graph-creation not service-map
+search.elasticsearch-onboarding,search,I want to get started with Elasticsearch — walk me through setting up my first index and running search queries,direct,elasticsearch-onboarding,AMBIGUOUS with search.elasticsearch-tutorial: onboarding (end-to-end build) vs tutorial (topic-focused learning)
+search.elasticsearch-onboarding,search,Help me go from zero to a working search feature for my application using Elasticsearch,direct,elasticsearch-onboarding,
+search.elasticsearch-onboarding,search,I am new to Elastic and want to build a search bar for my website — where do I start?,indirect,elasticsearch-onboarding,
+search.elasticsearch-onboarding,search,We just set up our Elasticsearch cluster and need to build search into our app — what is the right approach?,indirect,elasticsearch-onboarding,
+search.elasticsearch-onboarding,search,Teach me how analyzers and tokenizers work in Elasticsearch with hands-on examples I can run in Dev Console,distractor,elasticsearch-tutorial,Distractor: focused concept tutorial maps to search.elasticsearch-tutorial not full onboarding
+search.elasticsearch-tutorial,search,Walk me through how the bool query works in Elasticsearch with examples I can run in Dev Tools,direct,elasticsearch-tutorial,AMBIGUOUS with search.elasticsearch-onboarding: topic tutorial vs end-to-end guide
+search.elasticsearch-tutorial,search,Give me a tutorial on how Elasticsearch aggregations work using sample data I can follow along with,direct,elasticsearch-tutorial,
+search.elasticsearch-tutorial,search,Teach me about semantic_text fields and how they differ from regular text fields — with runnable examples,indirect,elasticsearch-tutorial,
+search.elasticsearch-tutorial,search,Show me step by step how to set up an ingest pipeline with Grok parsing on sample log data,indirect,elasticsearch-tutorial,
+search.elasticsearch-tutorial,search,I want to add full-text search with filters and autocomplete to my product catalog app — what should I use?,distractor,keyword-search,Distractor: building a real feature maps to search.keyword-search not a learning tutorial
+search.keyword-search,search,How do I build full-text search with filters and facets for a document management system using Elasticsearch?,direct,keyword-search,
+search.keyword-search,search,Set up keyword search with autocomplete and did-you-mean suggestions for our internal knowledge base,direct,keyword-search,
+search.keyword-search,search,Users need to search our support ticket database by keyword and filter results by status and date range,indirect,keyword-search,
+search.keyword-search,search,Our site has a search box and results are poor for partial matches and common misspellings — how do I improve relevance?,indirect,keyword-search,
+search.keyword-search,search,I want users to be able to search by meaning and intent rather than exact keyword matches,distractor,vector-hybrid-search,Distractor: semantic search intent maps to search.vector-hybrid-search not keyword search
+search.vector-hybrid-search,search,Set up semantic search using dense_vector and kNN in Elasticsearch for my document corpus,direct,vector-hybrid-search,
+search.vector-hybrid-search,search,Combine BM25 keyword search with vector search using RRF to get better relevance for my product catalog,direct,vector-hybrid-search,
+search.vector-hybrid-search,search,My users search in natural language and exact keyword matching is not giving good results — how do I fix this?,indirect,vector-hybrid-search,
+search.vector-hybrid-search,search,I want to use Elasticsearch as a vector database to power AI-driven similarity search for my content platform,indirect,vector-hybrid-search,
+search.vector-hybrid-search,search,Build a chatbot that can answer questions from my internal documentation using Elasticsearch and an LLM,distractor,rag-chatbot,Distractor: LLM-powered Q&A over documents maps to search.rag-chatbot not vector search setup
+search.rag-chatbot,search,Build a RAG chatbot that answers questions from our internal documentation stored in Elasticsearch,direct,rag-chatbot,
+search.rag-chatbot,search,Set up a Q&A system using Elasticsearch as the retrieval layer and Claude as the generation model,direct,rag-chatbot,
+search.rag-chatbot,search,I want users to ask questions in natural language and get answers sourced directly from our knowledge base,indirect,rag-chatbot,
+search.rag-chatbot,search,Help me build an AI assistant that uses our product manuals as its knowledge source to answer customer questions,indirect,rag-chatbot,
+search.rag-chatbot,search,How do I implement hybrid BM25 and vector search with a cross-encoder reranker for better relevance?,distractor,vector-hybrid-search,Distractor: retrieval technique question maps to search.vector-hybrid-search not chatbot building
+search.catalog-ecommerce,search,Build product search for my e-commerce store with facets for category and brand and price range,direct,catalog-ecommerce,
+search.catalog-ecommerce,search,Implement autocomplete and did-you-mean suggestions for our online shop using Elasticsearch,direct,catalog-ecommerce,
+search.catalog-ecommerce,search,Our shoppers are not finding the products they want — we need better search with multi-attribute filtering,indirect,catalog-ecommerce,
+search.catalog-ecommerce,search,Set up search for our inventory system so warehouse staff can filter products by multiple attributes simultaneously,indirect,catalog-ecommerce,
+search.catalog-ecommerce,search,I want customers to search by describing what they want in plain language rather than typing exact product names,distractor,vector-hybrid-search,Distractor: natural language product search maps to search.vector-hybrid-search not catalog faceted search
+search.use-case-library,search,What can I build with Elasticsearch — give me an overview of the different use cases it supports,direct,use-case-library,AMBIGUOUS with search.elasticsearch-onboarding: exploration vs guided build
+search.use-case-library,search,What are the different types of search applications that enterprises typically build on Elasticsearch?,direct,use-case-library,
+search.use-case-library,search,I am evaluating Elasticsearch for our company — what problems is it best at solving?,indirect,use-case-library,
+search.use-case-library,search,I do not know where to start with Elastic — show me what kinds of applications people actually build with it,indirect,use-case-library,AMBIGUOUS with search.elasticsearch-onboarding: exploration vs getting started
+search.use-case-library,search,How do I get started building my first search application in Elasticsearch from scratch?,distractor,elasticsearch-onboarding,Distractor: ready-to-build intent maps to search.elasticsearch-onboarding not use-case exploration
+observability.investigation,observability,what alerts do i have,indirect,investigation,source=obs_alerts_spec; AMBIGUOUS without screen context: routes to investigation on observability screen but may route to alert-analysis on neutral screen
+observability.investigation,observability,We are seeing errors on the cart service. Can you investigate what is happening?,indirect,investigation,source=cart_failure_spec
+observability.investigation,observability,Users are reporting that checkout is failing. Can you investigate?,indirect,investigation,source=payment_failure_spec
+observability.investigation,observability,The email service appears to be consuming increasing amounts of memory. Can you investigate what might be causing it?,indirect,investigation,source=email_memory_leak_spec
+observability.investigation,observability,Fraud-detection service seems to be running slowly. Can you investigate why?,indirect,investigation,source=kafka_queue_problems_spec
+observability.investigation,observability,We are seeing a large spike in traffic to the frontend. Can you investigate what is causing it?,indirect,investigation,source=load_generator_flood_homepage_spec
+observability.investigation,observability,Investigate what is causing issues with the checkout service.,indirect,investigation,source=payment_unreachable_spec
+observability.investigation,observability,Are there any active alerts? Investigate whatever you find.,indirect,investigation,source=alert_time_window_spec; AMBIGUOUS: without screen context may route to security alert-analysis
+service-map,observability,Show me the service map for checkout,direct,service-map,source=service_map_skill_spec
+service-map,observability,Visualize the topology around the payment service,direct,service-map,source=service_map_skill_spec
+service-map,observability,Show the service map for frontend,direct,service-map,source=service_map_skill_spec
+service-map,observability,Map out the dependencies for the cart service,indirect,service-map,source=service_map_skill_spec
+dashboard-management,platform,Create a dashboard showing my sample log data. Decide on visualizations and layout.,direct,dashboard-management,source=dashboard_management_spec
+dashboard-management,platform,Create a dashboard using kibana_sample_data_logs with 6 compact metric panels in a single row: total requests and error count and average bytes and unique hosts and p95 bytes and max memory.,direct,dashboard-management,source=dashboard_management_spec
+dashboard-management,platform,Create a dashboard using kibana_sample_data_logs with 4 KPI metric panels across the top row and one full-width time series panel directly below them.,direct,dashboard-management,source=dashboard_management_spec
+visualization-creation,platform,Create a bar chart showing the distribution of response codes in kibana_sample_data_logs.,direct,visualization-creation,source=dashboard_management_spec (negative test — loaded as viz-without-dashboard case)
+dashboard-management,platform,Help me write an ES|QL query to find slow transactions,distractor,threat-hunting,source=dashboard_management_spec; corrected from empty — ES|QL query authoring for performance investigation maps to threat-hunting not dashboard; tests dashboard precision
+dashboard-management,platform,What fields are available in the logs-* index?,distractor,streams-management,source=dashboard_management_spec; corrected from empty — field/schema discovery for logs-* maps to streams-management not dashboard; tests dashboard precision
