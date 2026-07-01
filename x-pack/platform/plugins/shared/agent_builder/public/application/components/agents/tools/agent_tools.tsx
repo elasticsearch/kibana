@@ -11,10 +11,13 @@ import {
   EuiBadge,
   EuiButton,
   EuiButtonEmpty,
+  EuiContextMenuItem,
+  EuiContextMenuPanel,
   EuiFieldSearch,
   EuiFlexGroup,
   EuiFlexItem,
   EuiLoadingSpinner,
+  EuiPopover,
   EuiSpacer,
   EuiText,
   EuiTitle,
@@ -129,6 +132,7 @@ export const AgentTools: React.FC = () => {
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedToolId, setSelectedToolId] = useQueryState<string>(searchParamNames.toolId);
+  const [isAddMenuOpen, setIsAddMenuOpen] = useState(false);
   const {
     isOpen: isLibraryOpen,
     openFlyout: openLibraryFlyout,
@@ -138,6 +142,16 @@ export const AgentTools: React.FC = () => {
   const openLibrary = useCallback(() => {
     openLibraryFlyout();
   }, [openLibraryFlyout]);
+
+  const handleAddFromLibrary = useCallback(() => {
+    setIsAddMenuOpen(false);
+    openLibraryFlyout();
+  }, [openLibraryFlyout]);
+
+  const handleCreateNewTool = useCallback(() => {
+    setIsAddMenuOpen(false);
+    // TODO(#15039): open inline create panel
+  }, []);
 
   const agentToolSelections = useMemo(
     () => agent?.configuration?.tools ?? [],
@@ -270,20 +284,56 @@ export const AgentTools: React.FC = () => {
                   </EuiFlexItem>
                   {canEditAgent && (
                     <EuiFlexItem grow={false}>
-                      <EuiButton
-                        fill
-                        iconType="plusInCircle"
-                        iconSide="left"
-                        onClick={openLibrary}
-                        {...getEbtProps({
-                          element: AGENT_BUILDER_UI_EBT.element.pageContent,
-                          action:
-                            AGENT_BUILDER_UI_EBT.action.agentCustomization.ENTITY_ADD_FROM_LIBRARY,
-                          detail: AGENT_BUILDER_UI_EBT.entity.TOOL,
-                        })}
+                      <EuiPopover
+                        aria-label={labels.agentTools.addToolButton}
+                        button={
+                          <EuiButton
+                            fill
+                            iconType="plusInCircle"
+                            iconSide="left"
+                            onClick={() => setIsAddMenuOpen((prev) => !prev)}
+                            data-test-subj="agentBuilderAddToolButton"
+                          >
+                            {labels.agentTools.addToolButton}
+                          </EuiButton>
+                        }
+                        isOpen={isAddMenuOpen}
+                        closePopover={() => setIsAddMenuOpen(false)}
+                        anchorPosition="downLeft"
+                        panelPaddingSize="none"
                       >
-                        {labels.agentTools.addToolButton}
-                      </EuiButton>
+                        <EuiContextMenuPanel
+                          items={[
+                            <EuiContextMenuItem
+                              key="createNewTool"
+                              icon="plusInCircle"
+                              onClick={handleCreateNewTool}
+                              {...getEbtProps({
+                                element: AGENT_BUILDER_UI_EBT.element.pageContent,
+                                action:
+                                  AGENT_BUILDER_UI_EBT.action.agentCustomization.ENTITY_CREATE_NEW,
+                                detail: AGENT_BUILDER_UI_EBT.entity.TOOL,
+                              })}
+                            >
+                              {labels.agentTools.createNewToolMenuItem}
+                            </EuiContextMenuItem>,
+                            <EuiContextMenuItem
+                              key="fromLibrary"
+                              icon="importAction"
+                              onClick={handleAddFromLibrary}
+                              {...getEbtProps({
+                                element: AGENT_BUILDER_UI_EBT.element.pageContent,
+                                action:
+                                  AGENT_BUILDER_UI_EBT.action.agentCustomization
+                                    .ENTITY_ADD_FROM_LIBRARY,
+                                detail: AGENT_BUILDER_UI_EBT.entity.TOOL,
+                              })}
+                            >
+                              {labels.agentTools.fromLibraryMenuItem}
+                            </EuiContextMenuItem>,
+                          ]}
+                        />
+                      </EuiPopover>
                     </EuiFlexItem>
                   )}
                 </EuiFlexGroup>
