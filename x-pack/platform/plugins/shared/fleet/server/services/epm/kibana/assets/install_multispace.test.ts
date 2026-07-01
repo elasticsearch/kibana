@@ -32,6 +32,12 @@ jest.mock('../../..', () => ({
       enableAgentStatusAlerting: false,
       enableSloTemplates: false,
     }),
+    getSavedObjects: jest.fn().mockReturnValue({
+      getUnsafeInternalClient: jest.fn().mockReturnValue({
+        find: jest.fn().mockResolvedValue({ total: 0, page: 1, per_page: 100, saved_objects: [] }),
+        bulkDelete: jest.fn().mockResolvedValue({}),
+      }),
+    }),
   },
 }));
 
