@@ -94,18 +94,21 @@ export const updateConversation$ = ({
           ? roundCompletedEvent.data.workspace_id
           : undefined;
 
-      return conversationClient.update({
-        id: conversation.id,
-        title,
-        rounds: updatedRound,
-        state: conversation_state,
-        status: round.status,
-        read: false,
-        ...(roundCompletedEvent.data.attachments !== undefined
-          ? { attachments: roundCompletedEvent.data.attachments }
-          : {}),
-        ...(newWorkspaceId ? { workspace_id: newWorkspaceId } : {}),
-      });
+      return conversationClient.update(
+        {
+          id: conversation.id,
+          title,
+          rounds: updatedRound,
+          state: conversation_state,
+          status: round.status,
+          read: false,
+          ...(roundCompletedEvent.data.attachments !== undefined
+            ? { attachments: roundCompletedEvent.data.attachments }
+            : {}),
+          ...(newWorkspaceId ? { workspace_id: newWorkspaceId } : {}),
+        },
+        { access: 'converse' }
+      );
     }),
     switchMap((updatedConversation) => {
       return of(createConversationUpdatedEvent(updatedConversation));

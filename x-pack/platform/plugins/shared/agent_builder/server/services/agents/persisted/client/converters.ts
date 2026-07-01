@@ -15,7 +15,7 @@ import type { AgentAccessControl, UserIdAndName } from '@kbn/agent-builder-commo
 import type { AgentCreateRequest, AgentUpdateRequest } from '../../../../../common/agents';
 import type { AgentConfigurationProperties, AgentProperties } from './storage';
 import type { PersistedAgentDefinition } from '../types';
-import { normalizeAccessControl } from '../../access_control/persisted';
+import { normalizeAccessControl } from '../../access_control/document_access';
 
 export type Document = Pick<GetResponse<AgentProperties>, '_id' | '_source'>;
 

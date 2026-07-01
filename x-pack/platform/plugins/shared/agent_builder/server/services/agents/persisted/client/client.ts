@@ -52,7 +52,6 @@ import { runSkillRefCleanup } from '../skill_reference_cleanup';
 import { runToolRefCleanup } from '../tool_reference_cleanup';
 import { runPluginRefCleanup } from '../plugin_reference_cleanup';
 import {
-  buildReadAccessFilter,
   getAgentPermissions,
   hasDeleteAccess,
   hasManageAccessControlAccess,
@@ -62,7 +61,8 @@ import {
   normalizeAccessControl,
   redactAccessControlForCaller,
   validateAccessControlUpdateAccess,
-} from '../../access_control/persisted';
+} from '../../access_control/document_access';
+import { buildReadAccessFilter } from '../../access_control/query';
 import { validateAccessControlUpdate } from '../../access_control/update_validation';
 import { hasRequiredDocumentFields } from './utils/helper';
 

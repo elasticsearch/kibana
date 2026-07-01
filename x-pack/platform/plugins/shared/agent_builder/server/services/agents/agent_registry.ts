@@ -9,6 +9,7 @@ import type { MaybePromise } from '@kbn/utility-types';
 import type { KibanaRequest } from '@kbn/core-http-server';
 import {
   createAgentNotFoundError,
+  createAgentUnavailableError,
   createBadRequestError,
   type AgentAccessControl,
 } from '@kbn/agent-builder-common';
@@ -117,7 +118,7 @@ class AgentRegistryImpl implements AgentRegistry {
       if (await provider.has(agentId)) {
         const agent = await provider.get(agentId, opts);
         if (!(await this.isAvailable(agent))) {
-          throw createBadRequestError(`Agent ${agentId} is not available`);
+          throw createAgentUnavailableError({ agentId });
         }
         return agent;
       }

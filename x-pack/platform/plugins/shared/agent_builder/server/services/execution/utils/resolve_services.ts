@@ -12,6 +12,7 @@ import type { SavedObjectsServiceStart } from '@kbn/core-saved-objects-server';
 import type { InferenceServerStart } from '@kbn/inference-plugin/server';
 import type { SearchInferenceEndpointsPluginStart } from '@kbn/search-inference-endpoints/server';
 import type { ConnectorTelemetryMetadata } from '@kbn/inference-common';
+import { createAgentNotFoundError } from '@kbn/agent-builder-common';
 import type { ConversationService } from '../../conversation';
 import type { AgentsServiceStart } from '../../agents';
 import { resolveSelectedConnectorId } from '../../../utils/resolve_selected_connector_id';
@@ -60,7 +61,10 @@ export const resolveServices = async ({
     .then((agentRegistry) => agentRegistry.has(agentId));
 
   if (!hasAgent) {
-    throw new Error(`Agent "${agentId}" not found or not available`);
+    throw createAgentNotFoundError({
+      agentId,
+      customMessage: `Agent "${agentId}" not found or not available`,
+    });
   }
 
   const modelProvider = createModelProvider({

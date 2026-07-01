@@ -12,7 +12,17 @@ import {
   type UserIdAndName,
   type Conversation,
   createConversationNotFoundError,
+  isAgentNotFoundError,
+  isAgentUnavailableError,
+  isConversationNotFoundError,
 } from '@kbn/agent-builder-common';
+import type { AgentRegistry } from '../../agents/agent_registry';
+import {
+  hasConversationConverseAccess,
+  hasConversationOwnerAccess,
+  type ConversationAccess,
+} from '../access_control';
+import { buildReadAccessFilter } from '../access_control/query';
 import type {
   ConversationCreateRequest,
   ConversationUpdateRequest,
@@ -34,7 +44,10 @@ export interface ConversationClient {
   get(conversationId: string): Promise<Conversation>;
   exists(conversationId: string): Promise<boolean>;
   create(conversation: ConversationCreateRequest): Promise<Conversation>;
-  update(conversation: ConversationUpdateRequest): Promise<Conversation>;
+  update(
+    conversation: ConversationUpdateRequest,
+    options?: { access: ConversationAccess }
+  ): Promise<Conversation>;
   list(options?: ConversationListOptions): Promise<ConversationWithoutRounds[]>;
   delete(conversationId: string): Promise<boolean>;
 }
@@ -44,37 +57,51 @@ export const createClient = ({
   logger,
   esClient,
   user,
+  agentRegistry,
 }: {
   space: string;
   logger: Logger;
   esClient: ElasticsearchClient;
   user: UserIdAndName;
+  agentRegistry: AgentRegistry;
 }): ConversationClient => {
   const storage = createStorage({ logger, esClient });
-  return new ConversationClientImpl({ storage, user, space });
+  return new ConversationClientImpl({ storage, user, space, agentRegistry });
 };
 
 class ConversationClientImpl implements ConversationClient {
   private readonly space: string;
   private readonly storage: ConversationStorage;
   private readonly user: UserIdAndName;
+  private readonly agentRegistry: AgentRegistry;
 
   constructor({
     storage,
     user,
     space,
+    agentRegistry,
   }: {
     storage: ConversationStorage;
     user: UserIdAndName;
     space: string;
+    agentRegistry: AgentRegistry;
   }) {
     this.storage = storage;
     this.user = user;
     this.space = space;
+    this.agentRegistry = agentRegistry;
   }
 
   async list(options: ConversationListOptions = {}): Promise<ConversationWithoutRounds[]> {
     const { agentId } = options;
+    const agents = await this.agentRegistry.list();
+    const accessibleAgentIds = agents.map(({ id }) => id);
+
+    if (accessibleAgentIds.length === 0 || (agentId && !accessibleAgentIds.includes(agentId))) {
+      return [];
+    }
+
+    const agentIds = agentId ? [agentId] : accessibleAgentIds;
 
     const response = await this.storage.getClient().search({
       track_total_hits: false,
@@ -92,12 +119,9 @@ class ConversationClientImpl implements ConversationClient {
       ],
       query: {
         bool: {
-          filter: [createSpaceDslFilter(this.space)],
-          must: [
-            {
-              term: { user_name: this.user.username },
-            },
-            ...(agentId ? [{ term: { agent_id: agentId } }] : []),
+          filter: [
+            createSpaceDslFilter(this.space),
+            buildReadAccessFilter({ user: this.user, agentIds }),
           ],
         },
       },
@@ -107,24 +131,22 @@ class ConversationClientImpl implements ConversationClient {
   }
 
   async get(conversationId: string): Promise<Conversation> {
-    const document = await this._get(conversationId);
-    if (!document) {
-      throw createConversationNotFoundError({ conversationId });
-    }
-
-    if (!hasAccess({ conversation: document, user: this.user })) {
-      throw createConversationNotFoundError({ conversationId });
-    }
+    const document = await this.getDocumentWithAccess({ conversationId, access: 'converse' });
 
     return fromEs(document);
   }
 
   async exists(conversationId: string): Promise<boolean> {
-    const document = await this._get(conversationId);
-    if (!document) {
-      return false;
+    try {
+      await this.getDocumentWithAccess({ conversationId, access: 'converse' });
+      return true;
+    } catch (error) {
+      if (isConversationNotFoundError(error)) {
+        return false;
+      }
+
+      throw error;
     }
-    return hasAccess({ conversation: document, user: this.user });
   }
 
   async create(conversation: ConversationCreateRequest): Promise<Conversation> {
@@ -146,17 +168,14 @@ class ConversationClientImpl implements ConversationClient {
     return this.get(id);
   }
 
-  async update(conversationUpdate: ConversationUpdateRequest): Promise<Conversation> {
+  async update(
+    conversationUpdate: ConversationUpdateRequest,
+    options: { access: ConversationAccess } = { access: 'owner' }
+  ): Promise<Conversation> {
     const { id: conversationId } = conversationUpdate;
+    const { access } = options;
     const now = new Date();
-    const document = await this._get(conversationUpdate.id);
-    if (!document) {
-      throw createConversationNotFoundError({ conversationId });
-    }
-
-    if (!hasAccess({ conversation: document, user: this.user })) {
-      throw createConversationNotFoundError({ conversationId });
-    }
+    const document = await this.getDocumentWithAccess({ conversationId, access });
 
     const storedConversation = fromEs(document);
     const updatedConversation = updateConversation({
@@ -175,18 +194,11 @@ class ConversationClientImpl implements ConversationClient {
       if_primary_term: document._primary_term,
     });
 
-    return this.get(conversationUpdate.id);
+    return updatedConversation;
   }
 
   async delete(conversationId: string): Promise<boolean> {
-    const document = await this._get(conversationId);
-    if (!document) {
-      throw createConversationNotFoundError({ conversationId });
-    }
-
-    if (!hasAccess({ conversation: document, user: this.user })) {
-      throw createConversationNotFoundError({ conversationId });
-    }
+    await this.getDocumentWithAccess({ conversationId, access: 'owner' });
 
     const { result } = await this.storage.getClient().delete({ id: conversationId });
     return result === 'deleted';
@@ -209,17 +221,58 @@ class ConversationClientImpl implements ConversationClient {
       return response.hits.hits[0] as Document;
     }
   }
-}
 
-const hasAccess = ({
-  conversation,
-  user,
-}: {
-  conversation: Pick<Document, '_source'>;
-  user: UserIdAndName;
-}) => {
-  if (user.id && conversation._source!.user_id === user.id) {
-    return true;
+  /**
+   * Fetches a conversation and applies the requested access gate. Converse access
+   * requires current use access to the underlying agent even for conversation
+   * owners; all denials are masked as not-found responses so callers cannot
+   * distinguish inaccessible conversations.
+   */
+  private async getDocumentWithAccess({
+    conversationId,
+    access,
+  }: {
+    conversationId: string;
+    access: ConversationAccess;
+  }): Promise<Document> {
+    const document = await this._get(conversationId);
+
+    if (!document) {
+      throw createConversationNotFoundError({ conversationId });
+    }
+
+    let allowed = false;
+    const conversation = document._source!;
+
+    switch (access) {
+      case 'converse':
+        allowed = hasConversationConverseAccess({ conversation, user: this.user });
+
+        if (allowed) {
+          try {
+            await this.agentRegistry.get(conversation.agent_id, { access: 'use' });
+          } catch (error) {
+            if (
+              !isAgentNotFoundError(error) &&
+              !isAgentUnavailableError(error, conversation.agent_id)
+            ) {
+              throw error;
+            }
+
+            allowed = false;
+          }
+        }
+        break;
+
+      case 'owner':
+        allowed = hasConversationOwnerAccess({ conversation, user: this.user });
+        break;
+    }
+
+    if (!allowed) {
+      throw createConversationNotFoundError({ conversationId });
+    }
+
+    return document;
   }
-  return conversation._source!.user_name === user.username;
-};
+}

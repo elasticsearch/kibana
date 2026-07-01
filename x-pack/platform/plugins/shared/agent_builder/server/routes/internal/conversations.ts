@@ -81,10 +81,13 @@ export function registerInternalConversationRoutes({
       const { read } = request.body;
 
       const client = await conversationsService.getScopedClient({ request });
-      const updatedConversation = await client.update({
-        id: conversationId,
-        read,
-      });
+      const updatedConversation = await client.update(
+        {
+          id: conversationId,
+          read,
+        },
+        { access: 'converse' }
+      );
 
       return response.ok<MarkReadConversationResponse>({
         body: {

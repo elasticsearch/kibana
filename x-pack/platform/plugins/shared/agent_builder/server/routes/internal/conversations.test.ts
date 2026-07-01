@@ -66,14 +66,14 @@ describe('registerInternalConversationRoutes - _mark_read', () => {
     routeHandler = routeHandlers[MARK_READ_PATH];
   });
 
-  it('calls client.update and returns id and read on success', async () => {
+  it('updates read state using conversation accessor permissions', async () => {
     const response = await routeHandler(
       createMockContext() as any,
       createRequest(),
       kibanaResponseFactory
     );
 
-    expect(update).toHaveBeenCalledWith({ id: 'conv-1', read: true });
+    expect(update).toHaveBeenCalledWith({ id: 'conv-1', read: true }, { access: 'converse' });
     expect(response.status).toBe(200);
     expect(response.payload).toMatchObject({ id: 'conv-1', read: true });
   });

@@ -170,7 +170,8 @@ describe('conversations utils', () => {
             rounds: [newRound],
             read: false,
             status: newRound.status,
-          })
+          }),
+          { access: 'converse' }
         );
       });
 
@@ -208,7 +209,8 @@ describe('conversations utils', () => {
             rounds: [existingRound, newRound],
             read: false,
             status: newRound.status,
-          })
+          }),
+          { access: 'converse' }
         );
       });
 
@@ -247,7 +249,8 @@ describe('conversations utils', () => {
             rounds: [newRound],
             read: false,
             status: newRound.status,
-          })
+          }),
+          { access: 'converse' }
         );
       });
     });

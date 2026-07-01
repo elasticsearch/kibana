@@ -19,6 +19,7 @@ export enum AgentBuilderErrorCode {
   toolNotFound = 'toolNotFound',
   skillNotFound = 'skillNotFound',
   agentNotFound = 'agentNotFound',
+  agentUnavailable = 'agentUnavailable',
   conversationNotFound = 'conversationNotFound',
   pluginNotFound = 'pluginNotFound',
   agentExecutionError = 'agentExecutionError',
@@ -154,7 +155,7 @@ export const createSkillNotFoundError = ({
 };
 
 /**
- * Error thrown when trying to retrieve or execute a tool not present or available in the current context.
+ * Error thrown when trying to retrieve an agent not present in the current context.
  */
 export type AgentBuilderAgentNotFoundError = AgentBuilderError<AgentBuilderErrorCode.agentNotFound>;
 
@@ -178,6 +179,35 @@ export const createAgentNotFoundError = ({
     AgentBuilderErrorCode.agentNotFound,
     customMessage ?? `Agent ${agentId} not found`,
     { ...meta, agentId, statusCode: 404 }
+  );
+};
+
+/**
+ * Error thrown when trying to retrieve an agent that exists but is not currently available.
+ */
+export type AgentBuilderAgentUnavailableError =
+  AgentBuilderError<AgentBuilderErrorCode.agentUnavailable>;
+
+export const isAgentUnavailableError = (
+  err: unknown,
+  _agentId?: string
+): err is AgentBuilderAgentUnavailableError => {
+  return isAgentBuilderError(err) && err.code === AgentBuilderErrorCode.agentUnavailable;
+};
+
+export const createAgentUnavailableError = ({
+  agentId,
+  customMessage,
+  meta = {},
+}: {
+  agentId: string;
+  customMessage?: string;
+  meta?: Record<string, any>;
+}): AgentBuilderAgentUnavailableError => {
+  return new AgentBuilderError(
+    AgentBuilderErrorCode.agentUnavailable,
+    customMessage ?? `Agent ${agentId} is not available`,
+    { ...meta, agentId, statusCode: 400 }
   );
 };
 
@@ -385,6 +415,7 @@ export const AgentBuilderErrorUtils = {
   isToolNotFoundError,
   isSkillNotFoundError,
   isAgentNotFoundError,
+  isAgentUnavailableError,
   isConversationNotFoundError,
   isPluginNotFoundError,
   isWorkflowAbortedError,
@@ -395,6 +426,7 @@ export const AgentBuilderErrorUtils = {
   createToolNotFoundError,
   createSkillNotFoundError,
   createAgentNotFoundError,
+  createAgentUnavailableError,
   createConversationNotFoundError,
   createPluginNotFoundError,
   createWorkflowAbortedError,
