@@ -9,6 +9,8 @@ import { stringify as stringifyYaml } from 'yaml';
 import type { Logger } from '@kbn/core/server';
 import type { CaseCustomField } from '../../../common/types/domain/custom_field/v1';
 import { CustomFieldTypes } from '../../../common/types/domain/custom_field/v1';
+import type { CaseConnector } from '../../../common/types/domain/connector/v1';
+import { ConnectorTypes } from '../../../common/types/domain/connector/v1';
 
 interface LegacyCaseFields {
   description?: string;
@@ -16,6 +18,8 @@ interface LegacyCaseFields {
   tags?: string[];
   category?: string | null;
   customFields?: CaseCustomField[];
+  connector?: CaseConnector;
+  settings?: { syncAlerts: boolean; extractObservables?: boolean };
 }
 
 interface LegacyTemplate {
@@ -56,6 +60,17 @@ export const buildTemplateYaml = (
 
   if (caseFields?.category !== undefined) {
     templateDef.category = caseFields.category;
+  }
+
+  // Carry the default connector across, dropping the redundant `name` (resolved from `id` at
+  // create time). The `.none` connector is the implicit default, so we omit it to keep the YAML clean.
+  if (caseFields?.connector && caseFields.connector.type !== ConnectorTypes.none) {
+    const { id, type, fields: connectorFields } = caseFields.connector;
+    templateDef.connector = { type, id, fields: connectorFields };
+  }
+
+  if (caseFields?.settings) {
+    templateDef.settings = caseFields.settings;
   }
 
   const fields: Array<Record<string, unknown>> = (caseFields?.customFields ?? []).flatMap((cf) => {

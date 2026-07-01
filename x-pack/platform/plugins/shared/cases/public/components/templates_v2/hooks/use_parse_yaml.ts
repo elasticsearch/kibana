@@ -8,6 +8,8 @@
 import { useCallback } from 'react';
 import { z } from '@kbn/zod/v4';
 import { FieldSchema } from '../../../../common/types/domain/template/fields';
+import { TemplateSettingsSchema } from '../../../../common/types/domain/template/v1';
+import { CaseConnectorWithoutNameSchema } from '../../../../common/types/domain_zod/connector/v1';
 import { MAX_TEMPLATES_PER_FILE, MAX_TOTAL_IMPORT_TEMPLATES } from '../constants';
 import { checkTemplateExists } from '../utils';
 import type { ValidatedFile } from './use_validate_yaml';
@@ -31,6 +33,8 @@ const ImportedTemplateSchema = z.object({
   tags: z.array(z.string()).nullable().optional(),
   severity: z.string().optional(),
   category: z.string().nullable().optional(),
+  connector: CaseConnectorWithoutNameSchema.optional(),
+  settings: TemplateSettingsSchema.optional(),
   author: z.string().optional(),
   templateVersion: z.number().optional(),
   isDefault: z.boolean().optional(),
@@ -47,6 +51,8 @@ export interface ParsedTemplateEntry {
   tags?: string[];
   severity?: string;
   category?: string | null;
+  connector?: ImportedTemplate['connector'];
+  settings?: ImportedTemplate['settings'];
   author?: string;
   definition?: ImportedTemplate['definition'];
   sourceFileName: string;
@@ -95,6 +101,8 @@ export const useParseYaml = () => {
               tags: result.data.tags ?? undefined,
               severity: result.data.severity,
               category: result.data.category,
+              connector: result.data.connector,
+              settings: result.data.settings,
               author: result.data.author,
               definition: result.data.definition,
               sourceFileName: file.name,

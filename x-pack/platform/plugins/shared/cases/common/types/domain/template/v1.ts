@@ -7,6 +7,19 @@
 
 import { z } from '@kbn/zod/v4';
 import { FieldSchema, isRefField } from './fields';
+import { CaseConnectorWithoutNameSchema } from '../../domain_zod/connector/v1';
+
+/**
+ * Default case settings a template can pre-apply when creating a case.
+ * Mirrors `CaseSettings` (`common/types/domain/case/v1.ts`); both fields are optional so a
+ * template can set either independently.
+ */
+export const TemplateSettingsSchema = z.object({
+  syncAlerts: z.boolean().optional(),
+  extractObservables: z.boolean().optional(),
+});
+
+export type TemplateSettings = z.infer<typeof TemplateSettingsSchema>;
 
 /**
  * Template schema for case templates
@@ -112,6 +125,16 @@ export const ParsedTemplateDefinitionSchema = z.object({
   tags: z.array(z.string()).optional(),
   severity: z.enum(['low', 'medium', 'high', 'critical']).optional(),
   category: z.string().nullable().optional(),
+  /**
+   * Default connector pre-selected when creating a case from this template. `type` + `id` +
+   * per-type `fields`; `name` is resolved from `id` at create time. A first-class case concept,
+   * kept separate from the `fields` (extended fields) system.
+   */
+  connector: CaseConnectorWithoutNameSchema.optional(),
+  /**
+   * Default case settings (syncAlerts / extractObservables) applied when creating a case.
+   */
+  settings: TemplateSettingsSchema.optional(),
   fields: z.array(FieldSchema).refine(
     (fields) => {
       const fieldNames = new Set(

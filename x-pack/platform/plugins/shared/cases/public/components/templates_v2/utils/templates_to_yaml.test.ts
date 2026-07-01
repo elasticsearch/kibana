@@ -5,7 +5,9 @@
  * 2.0.
  */
 
+import { parse as parseYaml } from 'yaml';
 import type { ParsedTemplate } from '../../../../common/types/domain/template/v1';
+import { ConnectorTypes } from '../../../../common/types/domain';
 import { templateToYaml, templatesToYaml } from './templates_to_yaml';
 
 describe('templatesToYaml', () => {
@@ -869,5 +871,61 @@ describe('templateToYaml', () => {
     expect(yaml).toContain('# Template: My template');
     expect(yaml).toContain('templateId: "template-1"');
     expect(yaml).toContain('author: "alice"');
+  });
+});
+
+describe('connector and settings serialization', () => {
+  const buildTemplate = (definition: Partial<ParsedTemplate['definition']>): ParsedTemplate => ({
+    templateId: 'template-1',
+    name: 'My template',
+    owner: 'securitySolution',
+    templateVersion: 1,
+    latestVersion: 1,
+    isLatest: true,
+    deletedAt: null,
+    definitionString: '',
+    definition: {
+      name: 'My template',
+      fields: [],
+      ...definition,
+    },
+  });
+
+  it('emits a connector block and round-trips its per-type fields losslessly', () => {
+    const template = buildTemplate({
+      connector: {
+        type: ConnectorTypes.jira,
+        id: 'jira-1',
+        fields: { issueType: '10001', priority: 'High', parent: null },
+      },
+    });
+
+    const yaml = templateToYaml(template);
+    const parsed = parseYaml(yaml);
+
+    expect(parsed.connector).toEqual({
+      type: '.jira',
+      id: 'jira-1',
+      fields: { issueType: '10001', priority: 'High', parent: null },
+    });
+  });
+
+  it('emits a settings block that round-trips', () => {
+    const template = buildTemplate({
+      settings: { syncAlerts: false, extractObservables: true },
+    });
+
+    const yaml = templateToYaml(template);
+    const parsed = parseYaml(yaml);
+
+    expect(parsed.settings).toEqual({ syncAlerts: false, extractObservables: true });
+  });
+
+  it('omits connector and settings when the definition has neither', () => {
+    const yaml = templateToYaml(buildTemplate({}));
+    const parsed = parseYaml(yaml);
+
+    expect(parsed).not.toHaveProperty('connector');
+    expect(parsed).not.toHaveProperty('settings');
   });
 });

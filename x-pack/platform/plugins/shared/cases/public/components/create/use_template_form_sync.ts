@@ -11,6 +11,8 @@ import { parse as parseYaml } from 'yaml';
 import { useFormContext, useFormData } from '@kbn/es-ui-shared-plugin/static/forms/hook_form_lib';
 import type { ParsedTemplate } from '../../../common/types/domain/template/v1';
 import { CASE_EXTENDED_FIELDS } from '../../../common/constants';
+import { ConnectorTypes } from '../../../common/types/domain';
+import type { CaseConnectorWithoutName } from '../../../common/types/domain_zod/connector/v1';
 import { useGetTemplate } from '../templates_v2/hooks/use_get_template';
 import { getFieldSnakeKey } from '../../../common/utils';
 import { getYamlDefaultAsString } from '../templates_v2/utils';
@@ -21,6 +23,39 @@ import {
 } from '../../../common/types/domain/template/fields';
 import type { InlineField } from '../../../common/types/domain/template/fields';
 import { useGetFieldDefinitions } from '../field_library/hooks/use_get_field_definitions';
+import { useGetSupportedActionConnectors } from '../../containers/configure/use_get_supported_action_connectors';
+
+/**
+ * Default form values restored when a template that had set the connector / settings is cleared.
+ * These mirror the create form schema defaults (`case_form_fields/schema.tsx`).
+ */
+const NONE_CONNECTOR_ID = 'none';
+const DEFAULT_SYNC_ALERTS = true;
+const DEFAULT_EXTRACT_OBSERVABLES = true;
+
+/**
+ * Writes a template's default connector into the create-case form (`connectorId` + per-type
+ * `fields`). Resolves the connector `id` against the supported connectors and, when it cannot be
+ * resolved to a connector of the same type (deleted, unauthorized, or space-scoped away), falls
+ * back to the `.none` connector without erroring.
+ */
+const applyTemplateConnector = (
+  connector: CaseConnectorWithoutName,
+  connectors: Array<{ id: string; actionTypeId: string }>,
+  setFieldValue: (path: string, value: unknown) => void
+): void => {
+  const resolved =
+    connector.type !== ConnectorTypes.none &&
+    connectors.some((c) => c.id === connector.id && c.actionTypeId === connector.type);
+
+  if (resolved) {
+    setFieldValue('connectorId', connector.id);
+    setFieldValue('fields', connector.fields);
+  } else {
+    setFieldValue('connectorId', NONE_CONNECTOR_ID);
+    setFieldValue('fields', null);
+  }
+};
 
 interface UseTemplateFormSyncReturn {
   template: ParsedTemplate | undefined;
@@ -51,7 +86,15 @@ export const useTemplateFormSync = (
   const { data: fieldDefsData, isLoading: isLoadingFieldDefs } = useGetFieldDefinitions({
     owner: template?.owner,
   });
+  // Supported connectors are needed to resolve a template's default connector `id` and fall back
+  // to the `.none` connector when it no longer exists. Shares react-query cache with the form.
+  const { data: connectors = [], isLoading: isLoadingConnectors } =
+    useGetSupportedActionConnectors();
   const appliedRef = useRef<string | undefined>(undefined);
+  // Track whether the applied template set the connector / settings, so clearing the template only
+  // reverts what a template actually changed (preserving the configuration's default connector).
+  const didApplyConnectorRef = useRef(false);
+  const didApplySettingsRef = useRef(false);
 
   useEffect(() => {
     if (!templateId) {
@@ -71,6 +114,19 @@ export const useTemplateFormSync = (
           Object.entries(current).filter(([k]) => globalFieldKeys.has(k))
         );
         innerForm.reset({ [CASE_EXTENDED_FIELDS]: preserved });
+      }
+
+      // Only revert connector / settings if a template actually set them, so we don't clobber the
+      // configuration's default connector when no connector-bearing template was ever applied.
+      if (didApplyConnectorRef.current) {
+        didApplyConnectorRef.current = false;
+        setFieldValue('connectorId', NONE_CONNECTOR_ID);
+        setFieldValue('fields', null);
+      }
+      if (didApplySettingsRef.current) {
+        didApplySettingsRef.current = false;
+        setFieldValue('syncAlerts', DEFAULT_SYNC_ALERTS);
+        setFieldValue('extractObservables', DEFAULT_EXTRACT_OBSERVABLES);
       }
       return;
     }
@@ -99,9 +155,30 @@ export const useTemplateFormSync = (
       }
     }
 
-    // Wait for field definitions to load before applying extended field defaults.
-    // Do NOT set appliedRef.current yet — the effect must re-run once defs are available.
-    if (isLoadingFieldDefs) return;
+    // Apply the template's default case settings. Each setting is independent — only the ones the
+    // template declares are applied; the rest keep the form's current value.
+    if (definition.settings) {
+      if (definition.settings.syncAlerts !== undefined) {
+        setFieldValue('syncAlerts', definition.settings.syncAlerts);
+      }
+      if (definition.settings.extractObservables !== undefined) {
+        setFieldValue('extractObservables', definition.settings.extractObservables);
+      }
+      didApplySettingsRef.current = true;
+    }
+
+    // Wait for field definitions AND supported connectors to load before finishing. Connectors are
+    // needed to resolve the template's default connector; field defs to resolve $ref field defaults.
+    // Do NOT set appliedRef.current yet — the effect must re-run once both are available.
+    if (isLoadingFieldDefs || isLoadingConnectors) return;
+
+    // Apply the template's default connector. If the connector id no longer resolves to a supported
+    // connector of the same type, fall back to the `.none` connector (no error) — mirroring the
+    // form serializer's fallback and the legacy template system's resilience.
+    if (definition.connector) {
+      applyTemplateConnector(definition.connector, connectors, setFieldValue);
+      didApplyConnectorRef.current = true;
+    }
 
     // Resolve all fields — inline fields pass through, ref fields are looked up in the library
     const libraryDefs = fieldDefsData?.fieldDefinitions ?? [];
@@ -147,6 +224,8 @@ export const useTemplateFormSync = (
     fieldDefsData,
     isLoadingFieldDefs,
     globalFieldKeys,
+    connectors,
+    isLoadingConnectors,
   ]);
 
   return { template, isLoading };

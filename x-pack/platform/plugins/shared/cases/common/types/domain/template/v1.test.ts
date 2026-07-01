@@ -8,6 +8,7 @@
 import {
   TemplateSchema,
   ParsedTemplateSchema,
+  ParsedTemplateDefinitionSchema,
   CreateTemplateInputSchema,
   UpdateTemplateInputSchema,
   PatchTemplateInputSchema,
@@ -308,6 +309,166 @@ describe('ParsedTemplateSchema', () => {
     const result = ParsedTemplateSchema.safeParse(templateWithDuplicateFields);
 
     expect(result.success).toBe(false);
+  });
+});
+
+describe('ParsedTemplateDefinitionSchema', () => {
+  const baseDefinition = {
+    name: 'template-definition-name',
+    fields: [],
+  };
+
+  it('validates a definition without connector or settings (both optional)', () => {
+    const result = ParsedTemplateDefinitionSchema.safeParse(baseDefinition);
+
+    expect(result.success).toBe(true);
+  });
+
+  describe('connector', () => {
+    it('validates a Jira connector with its dynamic fields', () => {
+      const result = ParsedTemplateDefinitionSchema.safeParse({
+        ...baseDefinition,
+        connector: {
+          type: '.jira',
+          id: 'my-jira-id',
+          fields: { issueType: '10001', priority: 'High', parent: null },
+        },
+      });
+
+      expect(result.success).toBe(true);
+    });
+
+    it('validates a ServiceNow ITSM connector', () => {
+      const result = ParsedTemplateDefinitionSchema.safeParse({
+        ...baseDefinition,
+        connector: {
+          type: '.servicenow',
+          id: 'sn-id',
+          fields: {
+            impact: '2',
+            severity: '1',
+            urgency: '2',
+            category: 'software',
+            subcategory: null,
+          },
+        },
+      });
+
+      expect(result.success).toBe(true);
+    });
+
+    it('validates the .none connector', () => {
+      const result = ParsedTemplateDefinitionSchema.safeParse({
+        ...baseDefinition,
+        connector: { type: '.none', id: 'none', fields: null },
+      });
+
+      expect(result.success).toBe(true);
+    });
+
+    it('does not require name on the connector', () => {
+      const result = ParsedTemplateDefinitionSchema.safeParse({
+        ...baseDefinition,
+        connector: {
+          type: '.jira',
+          id: 'my-jira-id',
+          fields: { issueType: '10001', priority: 'High', parent: null },
+        },
+      });
+
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.connector).not.toHaveProperty('name');
+      }
+    });
+
+    it('rejects a wrong-typed value for a known connector field', () => {
+      const result = ParsedTemplateDefinitionSchema.safeParse({
+        ...baseDefinition,
+        connector: {
+          type: '.jira',
+          id: 'my-jira-id',
+          // issueType must be string | null, not a number
+          fields: { issueType: 123, priority: 'High', parent: null },
+        },
+      });
+
+      expect(result.success).toBe(false);
+    });
+
+    it('strips a field key that does not belong to the connector type (structural union)', () => {
+      // Runtime Zod parse strips unknown keys; the Monaco editor rejects them via the generated
+      // JSON schema (`additionalProperties: false`) — covered in template_json_schema.test.ts.
+      const result = ParsedTemplateDefinitionSchema.safeParse({
+        ...baseDefinition,
+        connector: {
+          type: '.jira',
+          id: 'my-jira-id',
+          // `impact` belongs to ServiceNow, not Jira
+          fields: { issueType: '10001', priority: 'High', parent: null, impact: '2' },
+        },
+      });
+
+      expect(result.success).toBe(true);
+      if (result.success && result.data.connector?.type === '.jira') {
+        expect(result.data.connector.fields).not.toHaveProperty('impact');
+      }
+    });
+
+    it('rejects a connector missing the id', () => {
+      const result = ParsedTemplateDefinitionSchema.safeParse({
+        ...baseDefinition,
+        connector: {
+          type: '.jira',
+          fields: { issueType: '10001', priority: 'High', parent: null },
+        },
+      });
+
+      expect(result.success).toBe(false);
+    });
+
+    it('rejects an unknown connector type', () => {
+      const result = ParsedTemplateDefinitionSchema.safeParse({
+        ...baseDefinition,
+        connector: { type: '.not-a-connector', id: 'x', fields: null },
+      });
+
+      expect(result.success).toBe(false);
+    });
+  });
+
+  describe('settings', () => {
+    it('validates syncAlerts and extractObservables', () => {
+      const result = ParsedTemplateDefinitionSchema.safeParse({
+        ...baseDefinition,
+        settings: { syncAlerts: true, extractObservables: false },
+      });
+
+      expect(result.success).toBe(true);
+    });
+
+    it('allows either setting independently', () => {
+      const syncOnly = ParsedTemplateDefinitionSchema.safeParse({
+        ...baseDefinition,
+        settings: { syncAlerts: false },
+      });
+      const extractOnly = ParsedTemplateDefinitionSchema.safeParse({
+        ...baseDefinition,
+        settings: { extractObservables: true },
+      });
+
+      expect(syncOnly.success).toBe(true);
+      expect(extractOnly.success).toBe(true);
+    });
+
+    it('rejects a non-boolean setting value', () => {
+      const result = ParsedTemplateDefinitionSchema.safeParse({
+        ...baseDefinition,
+        settings: { syncAlerts: 'yes' },
+      });
+
+      expect(result.success).toBe(false);
+    });
   });
 });
 

@@ -72,6 +72,52 @@ describe('useParseYaml', () => {
     expect(output.templates[1].severity).toBe('high');
   });
 
+  it('parses and carries a connector and settings block', async () => {
+    const { result } = renderHook(() => useParseYaml());
+    const file = makeValidatedFile('connector.yaml', [
+      {
+        name: 'Connector Template',
+        connector: {
+          type: '.jira',
+          id: 'jira-1',
+          fields: { issueType: '10001', priority: 'High', parent: null },
+        },
+        settings: { syncAlerts: false, extractObservables: true },
+      },
+    ]);
+
+    const output = await result.current.parseFiles([file]);
+
+    expect(output.errors).toHaveLength(0);
+    expect(output.templates).toHaveLength(1);
+    expect(output.templates[0].connector).toEqual({
+      type: '.jira',
+      id: 'jira-1',
+      fields: { issueType: '10001', priority: 'High', parent: null },
+    });
+    expect(output.templates[0].settings).toEqual({ syncAlerts: false, extractObservables: true });
+  });
+
+  it('rejects a connector whose field value is the wrong type', async () => {
+    const { result } = renderHook(() => useParseYaml());
+    const file = makeValidatedFile('bad-connector.yaml', [
+      {
+        name: 'Bad Connector Template',
+        // issueType must be string | null
+        connector: {
+          type: '.jira',
+          id: 'jira-1',
+          fields: { issueType: 5, priority: 'High', parent: null },
+        },
+      },
+    ]);
+
+    const output = await result.current.parseFiles([file]);
+
+    expect(output.templates).toHaveLength(0);
+    expect(output.errors).toHaveLength(1);
+  });
+
   it('reports errors for invalid documents', async () => {
     const { result } = renderHook(() => useParseYaml());
     const file = makeValidatedFile('bad.yaml', [{ description: 'missing name field' }]);

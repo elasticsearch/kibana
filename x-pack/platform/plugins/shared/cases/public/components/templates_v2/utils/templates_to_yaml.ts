@@ -59,9 +59,29 @@ const serializeTemplateHeader = (out: string[], template: ParsedTemplate) => {
     out.push(`category: ${yamlString(template.definition.category)}`);
   }
 
+  // connector and settings also live inside the parsed definition. Emit them via the YAML library
+  // (nested structured values) so per-type connector fields round-trip losslessly on re-import.
+  if (template.definition.connector) {
+    serializeNestedBlock(out, 'connector', template.definition.connector);
+  }
+  if (template.definition.settings) {
+    serializeNestedBlock(out, 'settings', template.definition.settings);
+  }
+
   out.push('tags:');
   for (const tag of template.tags ?? []) {
     out.push(`  - ${yamlString(tag)}`);
+  }
+};
+
+/**
+ * Serializes a structured value as a top-level YAML block (key + indented body). Used for
+ * `connector` and `settings`, whose nested shapes are simplest to render via the YAML library.
+ */
+const serializeNestedBlock = (out: string[], key: string, value: object) => {
+  const rendered = yamlStringify({ [key]: value }, { lineWidth: 0 }).trimEnd();
+  for (const line of rendered.split('\n')) {
+    out.push(line);
   }
 };
 

@@ -8,6 +8,8 @@
 import { parse as parseYaml } from 'yaml';
 import { buildTemplateYaml } from './build_template_yaml';
 import { CustomFieldTypes } from '../../../common/types/domain/custom_field/v1';
+import { ConnectorTypes } from '../../../common/types/domain/connector/v1';
+import { ParsedTemplateDefinitionSchema } from '../../../common/types/domain/template/v1';
 import { loggingSystemMock } from '@kbn/core/server/mocks';
 
 const logger = loggingSystemMock.createLogger();
@@ -25,6 +27,8 @@ interface ParsedTemplate {
   tags?: string[];
   severity?: string;
   category?: string | null;
+  connector?: { type: string; id: string; fields: Record<string, unknown> | null };
+  settings?: { syncAlerts: boolean; extractObservables?: boolean };
   fields: ParsedField[];
 }
 
@@ -122,6 +126,130 @@ describe('buildTemplateYaml', () => {
     it('omits category when absent', () => {
       const yaml = buildTemplateYaml({ key: 'k', name: 'T', caseFields: null }, new Map());
       expect(parse(yaml)).not.toHaveProperty('category');
+    });
+  });
+
+  describe('connector', () => {
+    it('carries a Jira connector across as type + id + fields (dropping name)', () => {
+      const yaml = buildTemplateYaml(
+        {
+          key: 'k',
+          name: 'T',
+          caseFields: {
+            connector: {
+              id: 'jira-1',
+              name: 'My Jira',
+              type: ConnectorTypes.jira,
+              fields: { issueType: '10001', priority: 'High', parent: null },
+            },
+          },
+        },
+        new Map()
+      );
+      expect(parse(yaml).connector).toEqual({
+        type: '.jira',
+        id: 'jira-1',
+        fields: { issueType: '10001', priority: 'High', parent: null },
+      });
+      expect(parse(yaml).connector).not.toHaveProperty('name');
+    });
+
+    it('carries a ServiceNow ITSM connector with its fields', () => {
+      const yaml = buildTemplateYaml(
+        {
+          key: 'k',
+          name: 'T',
+          caseFields: {
+            connector: {
+              id: 'sn-1',
+              name: 'My SN',
+              type: ConnectorTypes.serviceNowITSM,
+              fields: {
+                impact: '2',
+                severity: '1',
+                urgency: '2',
+                category: 'software',
+                subcategory: null,
+              },
+            },
+          },
+        },
+        new Map()
+      );
+      expect(parse(yaml).connector?.type).toBe('.servicenow');
+      expect(parse(yaml).connector?.id).toBe('sn-1');
+    });
+
+    it('omits the .none connector (it is the implicit default)', () => {
+      const yaml = buildTemplateYaml(
+        {
+          key: 'k',
+          name: 'T',
+          caseFields: {
+            connector: { id: 'none', name: 'None', type: ConnectorTypes.none, fields: null },
+          },
+        },
+        new Map()
+      );
+      expect(parse(yaml)).not.toHaveProperty('connector');
+    });
+
+    it('omits connector when absent', () => {
+      const yaml = buildTemplateYaml({ key: 'k', name: 'T', caseFields: null }, new Map());
+      expect(parse(yaml)).not.toHaveProperty('connector');
+    });
+  });
+
+  describe('settings', () => {
+    it('carries syncAlerts and extractObservables across', () => {
+      const yaml = buildTemplateYaml(
+        {
+          key: 'k',
+          name: 'T',
+          caseFields: { settings: { syncAlerts: false, extractObservables: true } },
+        },
+        new Map()
+      );
+      expect(parse(yaml).settings).toEqual({ syncAlerts: false, extractObservables: true });
+    });
+
+    it('omits settings when absent', () => {
+      const yaml = buildTemplateYaml({ key: 'k', name: 'T', caseFields: null }, new Map());
+      expect(parse(yaml)).not.toHaveProperty('settings');
+    });
+  });
+
+  describe('round-trips through ParsedTemplateDefinitionSchema', () => {
+    it('produces a definition that parses with connector + settings preserved', () => {
+      const yaml = buildTemplateYaml(
+        {
+          key: 'k',
+          name: 'T',
+          caseFields: {
+            severity: 'high',
+            connector: {
+              id: 'jira-1',
+              name: 'My Jira',
+              type: ConnectorTypes.jira,
+              fields: { issueType: '10001', priority: 'High', parent: null },
+            },
+            settings: { syncAlerts: true, extractObservables: false },
+          },
+        },
+        new Map()
+      );
+
+      const result = ParsedTemplateDefinitionSchema.safeParse(parseYaml(yaml));
+
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.connector).toEqual({
+          type: '.jira',
+          id: 'jira-1',
+          fields: { issueType: '10001', priority: 'High', parent: null },
+        });
+        expect(result.data.settings).toEqual({ syncAlerts: true, extractObservables: false });
+      }
     });
   });
 

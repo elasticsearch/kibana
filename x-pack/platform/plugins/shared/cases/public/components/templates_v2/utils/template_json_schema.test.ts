@@ -255,4 +255,96 @@ describe('getTemplateDefinitionJsonSchema', () => {
     });
     expect(inputNumberEntry).toBeDefined();
   });
+
+  describe('connector', () => {
+    const getConnectorBranches = (schema: JsonSchemaObject): JsonSchemaObject[] => {
+      const connectorSchema = (schema.properties as JsonSchemaObject)
+        ?.connector as JsonSchemaObject;
+      expect(connectorSchema).toBeDefined();
+      const branches =
+        (connectorSchema.oneOf as JsonSchemaObject[] | undefined) ??
+        (connectorSchema.anyOf as JsonSchemaObject[] | undefined);
+      expect(Array.isArray(branches)).toBe(true);
+      return branches as JsonSchemaObject[];
+    };
+
+    const findBranchByType = (branches: JsonSchemaObject[], type: string) =>
+      branches.find((b) => {
+        const typeProp = (b.properties as JsonSchemaObject)?.type as JsonSchemaObject;
+        return typeProp?.const === type;
+      });
+
+    it('exposes a per-type connector union with type, id and fields', () => {
+      const schema = getTemplateDefinitionJsonSchema() as JsonSchemaObject;
+      const branches = getConnectorBranches(schema);
+
+      const jira = findBranchByType(branches, '.jira');
+      expect(jira).toBeDefined();
+      const jiraProps = jira!.properties as JsonSchemaObject;
+      expect(jiraProps.id).toBeDefined();
+      expect(jiraProps.fields).toBeDefined();
+      expect(jiraProps.type).toBeDefined();
+    });
+
+    it('does not require a name on any connector branch', () => {
+      const schema = getTemplateDefinitionJsonSchema() as JsonSchemaObject;
+      const branches = getConnectorBranches(schema);
+
+      for (const branch of branches) {
+        expect((branch.properties as JsonSchemaObject).name).toBeUndefined();
+        expect(branch.required as string[]).not.toContain('name');
+      }
+    });
+
+    it('rejects unknown field keys per connector type via additionalProperties: false', () => {
+      const schema = getTemplateDefinitionJsonSchema() as JsonSchemaObject;
+      const branches = getConnectorBranches(schema);
+
+      const jira = findBranchByType(branches, '.jira');
+      // additionalProperties: false is what makes the Monaco editor flag connector fields that do
+      // not belong to the selected connector type at authoring time.
+      expect(jira!.additionalProperties).toBe(false);
+    });
+
+    it('covers every supported connector type', () => {
+      const schema = getTemplateDefinitionJsonSchema() as JsonSchemaObject;
+      const branches = getConnectorBranches(schema);
+      const types = branches
+        .map((b) => ((b.properties as JsonSchemaObject)?.type as JsonSchemaObject)?.const)
+        .filter(Boolean);
+
+      expect(types).toEqual(
+        expect.arrayContaining([
+          '.jira',
+          '.servicenow',
+          '.servicenow-sir',
+          '.resilient',
+          '.swimlane',
+          '.thehive',
+          '.cases-webhook',
+          '.none',
+        ])
+      );
+    });
+  });
+
+  describe('settings', () => {
+    it('exposes syncAlerts and extractObservables as booleans', () => {
+      const schema = getTemplateDefinitionJsonSchema() as JsonSchemaObject;
+      const settingsSchema = (schema.properties as JsonSchemaObject)?.settings as JsonSchemaObject;
+
+      expect(settingsSchema).toBeDefined();
+      const props = settingsSchema.properties as JsonSchemaObject;
+      expect((props.syncAlerts as JsonSchemaObject).type).toBe('boolean');
+      expect((props.extractObservables as JsonSchemaObject).type).toBe('boolean');
+    });
+  });
+
+  it('keeps connector and settings optional (only name and fields are required)', () => {
+    const schema = getTemplateDefinitionJsonSchema() as JsonSchemaObject;
+    const required = (schema.required as string[]) ?? [];
+
+    expect(required).not.toContain('connector');
+    expect(required).not.toContain('settings');
+  });
 });
