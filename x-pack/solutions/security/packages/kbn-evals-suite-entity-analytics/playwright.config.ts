@@ -8,6 +8,6 @@ import { createPlaywrightEvalsConfig } from '@kbn/evals';
 
 export default createPlaywrightEvalsConfig({
   testDir: `${__dirname}/evals/v1`,
-  repetitions: 1,
+  repetitions: Number(process.env.EVALUATION_REPETITIONS ?? 1),
   timeout: 60 * 60_000,
 });
