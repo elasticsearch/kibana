@@ -6,7 +6,10 @@
  */
 
 import { calcDateMathDiff } from '@kbn/securitysolution-utils/date_math';
-import { TimeDuration as TimeDurationUtil } from '@kbn/securitysolution-utils/time_duration';
+import {
+  TimeDuration as TimeDurationUtil,
+  getTimeDurationUnit,
+} from '@kbn/securitysolution-utils/time_duration';
 import type { RuleSchedule, SimpleRuleSchedule } from './rule_schedule';
 
 /**
@@ -25,8 +28,12 @@ export function toSimpleRuleSchedule(ruleSchedule: RuleSchedule): SimpleRuleSche
     return undefined;
   }
 
+  // Preserve the unit used in `from` (e.g. `now-360s`) so the look-back is
+  // displayed in the exact format the user entered instead of being normalized.
+  const fromUnit = getTimeDurationUnit(ruleSchedule.from);
+
   return {
     interval: ruleSchedule.interval,
-    lookback: TimeDurationUtil.fromMilliseconds(lookBackMs).toString(),
+    lookback: TimeDurationUtil.fromMilliseconds(lookBackMs, fromUnit).toString(),
   };
 }

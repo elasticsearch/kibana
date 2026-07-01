@@ -32,7 +32,7 @@ import type {
 
 import type { ActionTypeRegistryContract } from '@kbn/triggers-actions-ui-plugin/public';
 
-import { TimeDuration } from '@kbn/securitysolution-utils/time_duration';
+import { TimeDuration, getTimeDurationUnit } from '@kbn/securitysolution-utils/time_duration';
 import { assertUnreachable } from '../../../../../common/utility_types';
 import {
   transformAlertToRuleAction,
@@ -556,8 +556,12 @@ export const formatScheduleStepData = (scheduleData: ScheduleStepRule): Schedule
   const lookBack = TimeDuration.parse(formatScheduleData.from ?? '');
 
   if (interval !== undefined && lookBack !== undefined) {
+    // Preserve the unit entered by the user (the `from` field holds the raw
+    // look-back string here) so the chosen format isn't normalized away.
+    const lookBackUnit = getTimeDurationUnit(formatScheduleData.from ?? '');
     const fromOffset = TimeDuration.fromMilliseconds(
-      interval.toMilliseconds() + lookBack.toMilliseconds()
+      interval.toMilliseconds() + lookBack.toMilliseconds(),
+      lookBackUnit
     ).toString();
 
     formatScheduleData.from = `now-${fromOffset}`;

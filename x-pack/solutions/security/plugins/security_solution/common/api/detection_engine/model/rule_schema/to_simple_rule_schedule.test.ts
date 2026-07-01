@@ -39,15 +39,19 @@ describe('toSimpleRuleSchedule', () => {
     ],
     [
       { interval: '1m', from: 'now-120s', to: 'now' },
-      { interval: '1m', lookback: '1m' },
+      { interval: '1m', lookback: '60s' },
     ],
     [
       { interval: '1h', from: 'now-7200s', to: 'now' },
-      { interval: '1h', lookback: '1h' },
+      { interval: '1h', lookback: '3600s' },
     ],
     [
       { interval: '1h', from: 'now-120m', to: 'now' },
-      { interval: '1h', lookback: '1h' },
+      { interval: '1h', lookback: '60m' },
+    ],
+    [
+      { interval: '5m', from: 'now-660s', to: 'now' },
+      { interval: '5m', lookback: '360s' },
     ],
     [
       { interval: '90s', from: 'now-90s', to: 'now' },

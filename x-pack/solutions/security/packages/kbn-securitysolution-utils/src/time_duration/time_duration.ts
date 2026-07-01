@@ -16,9 +16,22 @@
  */
 export class TimeDuration {
   /**
-   * Constructs a time duration from milliseconds. The output is normalized.
+   * Constructs a time duration from milliseconds.
+   *
+   * When `preferredUnit` is provided and `ms` is a non-zero exact multiple of
+   * that unit, the result is expressed in `preferredUnit` without normalization.
+   * This allows preserving the unit chosen by the user (e.g. `360000ms` stays
+   * `360s` instead of being collapsed to `6m`). Otherwise the output is normalized.
    */
-  static fromMilliseconds(ms: number): TimeDuration {
+  static fromMilliseconds(ms: number, preferredUnit?: TimeDurationUnits): TimeDuration {
+    if (ms !== 0 && preferredUnit !== undefined) {
+      const unitMs = new TimeDuration(1, preferredUnit).toMilliseconds();
+
+      if (unitMs !== undefined && ms % unitMs === 0) {
+        return new TimeDuration(ms / unitMs, preferredUnit);
+      }
+    }
+
     return new TimeDuration(Math.round(ms / 1000), 's').toNormalizedTimeDuration();
   }
 
@@ -116,6 +129,17 @@ export class TimeDuration {
 }
 
 const TimeDurationUnits = ['s', 'm', 'h', 'd'] as const;
-type TimeDurationUnits = (typeof TimeDurationUnits)[number];
+export type TimeDurationUnits = (typeof TimeDurationUnits)[number];
 
 const TIME_DURATION_REGEX = new RegExp(`^((?:\\-|\\+)?[0-9]+)(${TimeDurationUnits.join('|')})$`);
+
+/**
+ * Extracts the time duration unit from the end of a string. Works for both
+ * plain durations (e.g. `360s` -> `s`) and date-math strings (e.g. `now-360s`
+ * -> `s`). Returns `undefined` when no supported unit is found (e.g. `now`).
+ */
+export function getTimeDurationUnit(input: string): TimeDurationUnits | undefined {
+  const matchArray = input.match(new RegExp(`(${TimeDurationUnits.join('|')})$`));
+
+  return matchArray ? (matchArray[1] as TimeDurationUnits) : undefined;
+}
