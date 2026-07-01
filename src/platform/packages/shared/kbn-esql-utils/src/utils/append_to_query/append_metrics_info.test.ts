@@ -28,13 +28,30 @@ describe('buildMetricsInfoQuery', () => {
     expect(buildMetricsInfoQuery(withLimit)).toBe(withLimit);
   });
 
+  it('does not inject dimension filters when METRICS_INFO is already user-authored', () => {
+    const userQuery = 'TS INDEX | METRICS_INFO';
+    expect(buildMetricsInfoQuery(userQuery, ['environment', 'station.name'])).toBe(userQuery);
+  });
+
   it('does not add dimension filter when dimensionFieldNames is empty', () => {
     expect(buildMetricsInfoQuery('TS INDEX', [])).toBe(`TS INDEX\n | METRICS_INFO`);
   });
 
   it('add WHERE dimension filter when multiple dimension names', () => {
     expect(buildMetricsInfoQuery('TS INDEX', ['environment', 'station.name'])).toBe(
-      `TS INDEX\n| WHERE TO_STRING(\`environment\`) IS NOT NULL AND TO_STRING(\`station.name\`) IS NOT NULL | METRICS_INFO`
+      `TS INDEX\n| WHERE TO_STRING(\`environment\`) IS NOT NULL AND TO_STRING(\`station.name\`) IS NOT NULL | METRICS_INFO | WHERE MV_CONTAINS(dimension_fields, "environment") AND MV_CONTAINS(dimension_fields, "station.name")`
+    );
+  });
+
+  it('adds a single MV_CONTAINS membership filter for one dimension', () => {
+    expect(buildMetricsInfoQuery('TS INDEX', ['environment'])).toBe(
+      `TS INDEX\n| WHERE TO_STRING(\`environment\`) IS NOT NULL | METRICS_INFO | WHERE MV_CONTAINS(dimension_fields, "environment")`
+    );
+  });
+
+  it('escapes quotes and backslashes in the MV_CONTAINS string literal', () => {
+    expect(buildMetricsInfoQuery('TS INDEX', ['weird"name', 'back\\slash'])).toBe(
+      `TS INDEX\n| WHERE TO_STRING(\`weird"name\`) IS NOT NULL AND TO_STRING(\`back\\slash\`) IS NOT NULL | METRICS_INFO | WHERE MV_CONTAINS(dimension_fields, "weird\\"name") AND MV_CONTAINS(dimension_fields, "back\\\\slash")`
     );
   });
 
@@ -42,7 +59,7 @@ describe('buildMetricsInfoQuery', () => {
     expect(
       buildMetricsInfoQuery('TS INDEX | WHERE region == eu', ['environment', 'station.name'])
     ).toBe(
-      'TS INDEX | WHERE region == eu\n| WHERE TO_STRING(`environment`) IS NOT NULL AND TO_STRING(`station.name`) IS NOT NULL | METRICS_INFO'
+      'TS INDEX | WHERE region == eu\n| WHERE TO_STRING(`environment`) IS NOT NULL AND TO_STRING(`station.name`) IS NOT NULL | METRICS_INFO | WHERE MV_CONTAINS(dimension_fields, "environment") AND MV_CONTAINS(dimension_fields, "station.name")'
     );
   });
 
@@ -75,7 +92,7 @@ describe('buildMetricsInfoQuery', () => {
         ['environment', 'station.name']
       )
     ).toBe(
-      `FROM metrics-* | WHERE timestamp > now - 1h\n| WHERE TO_STRING(\`environment\`) IS NOT NULL AND TO_STRING(\`station.name\`) IS NOT NULL | METRICS_INFO | LIMIT 100`
+      `FROM metrics-* | WHERE timestamp > now - 1h\n| WHERE TO_STRING(\`environment\`) IS NOT NULL AND TO_STRING(\`station.name\`) IS NOT NULL | METRICS_INFO | WHERE MV_CONTAINS(dimension_fields, "environment") AND MV_CONTAINS(dimension_fields, "station.name") | LIMIT 100`
     );
   });
 });

@@ -30,7 +30,11 @@ jest.mock('../utils/get_esql_query', () => ({
 }));
 jest.mock('@kbn/esql-utils', () => ({
   buildMetricsInfoQuery: jest.fn((esql: string, dims?: string[]) =>
-    dims?.length ? `${esql} | WHERE dim IS NOT NULL | METRICS_INFO` : `${esql} | METRICS_INFO`
+    dims?.length
+      ? `${esql} | WHERE dim IS NOT NULL | METRICS_INFO | WHERE ${dims
+          .map((dim) => `MV_CONTAINS(dimension_fields, "${dim}")`)
+          .join(' AND ')}`
+      : `${esql} | METRICS_INFO`
   ),
   hasTransformationalCommand: jest.fn(() => false),
 }));
@@ -153,7 +157,11 @@ describe('useFetchMetricsData', () => {
     const { buildMetricsInfoQuery, hasTransformationalCommand } =
       jest.requireMock('@kbn/esql-utils');
     buildMetricsInfoQuery.mockImplementation((esql: string, dims?: string[]) =>
-      dims?.length ? `${esql} | WHERE dim IS NOT NULL | METRICS_INFO` : `${esql} | METRICS_INFO`
+      dims?.length
+        ? `${esql} | WHERE dim IS NOT NULL | METRICS_INFO | WHERE ${dims
+            .map((dim) => `MV_CONTAINS(dimension_fields, "${dim}")`)
+            .join(' AND ')}`
+        : `${esql} | METRICS_INFO`
     );
     hasTransformationalCommand.mockImplementation(() => false);
 

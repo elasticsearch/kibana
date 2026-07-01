@@ -10,6 +10,9 @@
 import { expect } from '@kbn/scout/ui';
 import { spaceTest, testData, DEFAULT_TIME_RANGE } from '../../fixtures/metrics_experience';
 
+const { SHARED_DIMENSION, PARTIAL_DIMENSION, FULL_METRIC, ONLY_METRIC } =
+  testData.PARTIAL_DIMENSION_SCENARIO;
+
 spaceTest.describe(
   'Metrics in Discover - Breakdown by dimension',
   {
@@ -53,6 +56,36 @@ spaceTest.describe(
 
         await spaceTest.step('keep metrics grid rendered after selecting breakdown', async () => {
           await expect(metricsExperience.grid).toBeVisible();
+        });
+      }
+    );
+
+    // A metric must hide when it does not declare every selected dimension,
+    // even if its documents carry a value for that field.
+    spaceTest(
+      'hides metrics that do not declare every selected dimension',
+      async ({ pageObjects }) => {
+        const { discover, metricsExperience } = pageObjects;
+        const fullMetricTitle = metricsExperience.grid.getByText(FULL_METRIC, { exact: true });
+        const onlyMetricTitle = metricsExperience.grid.getByText(ONLY_METRIC, { exact: true });
+
+        await discover.writeAndSubmitEsqlQuery(testData.ESQL_QUERIES.TS_PARTIAL);
+        await expect(metricsExperience.grid).toBeVisible();
+
+        await spaceTest.step('both metrics render before any dimension filter', async () => {
+          await expect(fullMetricTitle).toBeVisible();
+          await expect(onlyMetricTitle).toBeVisible();
+        });
+
+        await spaceTest.step('select the shared and the partial dimension', async () => {
+          await metricsExperience.breakdownSelector.selectDimension(SHARED_DIMENSION);
+          await metricsExperience.breakdownSelector.selectDimension(PARTIAL_DIMENSION);
+        });
+
+        await spaceTest.step('only the metric that declares both dimensions remains', async () => {
+          await expect(fullMetricTitle).toBeVisible();
+          await expect(onlyMetricTitle).toHaveCount(0);
+          await expect(metricsExperience.cards).toHaveCount(1);
         });
       }
     );

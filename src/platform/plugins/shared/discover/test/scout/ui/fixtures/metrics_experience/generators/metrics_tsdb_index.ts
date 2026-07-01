@@ -10,7 +10,13 @@
 import type { EsClient } from '@kbn/scout';
 import type { MappingTimeSeriesMetricType } from '@elastic/elasticsearch/lib/api/types';
 import { errors } from '@elastic/elasticsearch';
-import { METRICS_TEST_INDEX_NAME, METRICS_TEST_INDEX_NAME_OTHER } from '../constants';
+import {
+  METRICS_TEST_INDEX_NAME,
+  METRICS_TEST_INDEX_NAME_OTHER,
+  METRICS_TEST_INDEX_PARTIAL_FULL,
+  METRICS_TEST_INDEX_PARTIAL_ONLY,
+  PARTIAL_DIMENSION_SCENARIO,
+} from '../constants';
 
 export interface MetricDefinition {
   readonly name: string;
@@ -25,6 +31,8 @@ export interface DimensionDefinition {
 export interface MetricsIndexConfig {
   readonly indexName: string;
   readonly dimensions: readonly DimensionDefinition[];
+  /** Keyword fields written with values but NOT mapped as `time_series_dimension`. */
+  readonly plainKeywords?: readonly DimensionDefinition[];
   readonly metrics: readonly MetricDefinition[];
   readonly timeRange: {
     readonly from: string;
@@ -73,6 +81,28 @@ export const DIMENSIONS_WIPE_CONFIG: MetricsIndexConfig = {
   timeRange: INDEX_TIME_RANGE,
 };
 
+/**
+ * Companion indices where the partial dimension is a real `time_series_dimension`
+ * only in FULL; in ONLY it is a plain keyword value.
+ */
+export const PARTIAL_DIM_FULL_CONFIG: MetricsIndexConfig = {
+  indexName: METRICS_TEST_INDEX_PARTIAL_FULL,
+  dimensions: [
+    { name: PARTIAL_DIMENSION_SCENARIO.SHARED_DIMENSION, values: ['host-1', 'host-2'] },
+    { name: PARTIAL_DIMENSION_SCENARIO.PARTIAL_DIMENSION, values: ['red', 'green'] },
+  ],
+  metrics: [{ name: PARTIAL_DIMENSION_SCENARIO.FULL_METRIC, type: 'gauge' }],
+  timeRange: INDEX_TIME_RANGE,
+};
+
+export const PARTIAL_DIM_ONLY_CONFIG: MetricsIndexConfig = {
+  indexName: METRICS_TEST_INDEX_PARTIAL_ONLY,
+  dimensions: [{ name: PARTIAL_DIMENSION_SCENARIO.SHARED_DIMENSION, values: ['host-1', 'host-2'] }],
+  plainKeywords: [{ name: PARTIAL_DIMENSION_SCENARIO.PARTIAL_DIMENSION, values: ['blue'] }],
+  metrics: [{ name: PARTIAL_DIMENSION_SCENARIO.ONLY_METRIC, type: 'gauge' }],
+  timeRange: INDEX_TIME_RANGE,
+};
+
 export const TOTAL_METRIC_FIELDS = DEFAULT_CONFIG.metrics.length;
 
 export const PAGINATION = {
@@ -116,6 +146,10 @@ function buildMappingProperties(config: MetricsIndexConfig): Record<string, EsMa
 
   for (const dim of config.dimensions) {
     properties[dim.name] = { type: 'keyword', time_series_dimension: true };
+  }
+
+  for (const keywordField of config.plainKeywords ?? []) {
+    properties[keywordField.name] = { type: 'keyword' };
   }
 
   for (const metric of config.metrics) {
@@ -231,10 +265,13 @@ function buildDocument(
   baseTime: number,
   config: MetricsIndexConfig
 ): Record<string, unknown> {
-  const { dimensions, metrics } = config;
+  const { dimensions, plainKeywords, metrics } = config;
   return {
     '@timestamp': new Date(baseTime + index * 60_000).toISOString(),
     ...Object.fromEntries(dimensions.map((d) => [d.name, d.values[index % d.values.length]])),
+    ...Object.fromEntries(
+      (plainKeywords ?? []).map((k) => [k.name, k.values[index % k.values.length]])
+    ),
     ...Object.fromEntries(metrics.map((m) => [m.name, generateValue(m)])),
   };
 }

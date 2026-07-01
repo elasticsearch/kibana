@@ -12,6 +12,8 @@ import { getSynthtraceClient } from '@kbn/scout-synthtrace';
 import {
   createMetricsTestIndexIfNeeded,
   DIMENSIONS_WIPE_CONFIG,
+  PARTIAL_DIM_FULL_CONFIG,
+  PARTIAL_DIM_ONLY_CONFIG,
 } from '../fixtures/metrics_experience';
 import {
   TRACES,
@@ -85,6 +87,14 @@ globalSetupHook(
         ? '[setup:metrics] companion metrics test index created successfully'
         : '[setup:metrics] companion metrics test index already exists, skipping'
     );
+
+    // Companion indices where a dimension is only a plain keyword on one metric
+    log.debug(
+      '[setup:metrics] creating partial-dimension metrics test indices (only if they do not exist)...'
+    );
+    await createMetricsTestIndexIfNeeded(esClient, PARTIAL_DIM_FULL_CONFIG);
+    await createMetricsTestIndexIfNeeded(esClient, PARTIAL_DIM_ONLY_CONFIG);
+    log.debug('[setup:metrics] partial-dimension metrics test indices ready');
 
     // Traces Experience setup (not supported in serverless security or search - no Fleet/APM privileges)
     const hasFleetSupport = !config.serverless || config.projectType === 'oblt';

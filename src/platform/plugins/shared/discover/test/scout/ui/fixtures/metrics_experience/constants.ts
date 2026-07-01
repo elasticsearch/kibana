@@ -14,6 +14,24 @@ export const METRICS_TEST_INDEX_NAME = 'test-metrics-experience';
 export const METRICS_TEST_INDEX_NAME_OTHER = 'test-metrics-experience-other';
 export const METRICS_TEST_INDEX_PATTERN = 'test-metrics-*';
 
+// Companion indices for the partial-dimension scenario. Both match
+// METRICS_TEST_INDEX_PATTERN, so the existing read privileges cover them.
+export const METRICS_TEST_INDEX_PARTIAL_FULL = 'test-metrics-partial-full';
+export const METRICS_TEST_INDEX_PARTIAL_ONLY = 'test-metrics-partial-only';
+export const METRICS_TEST_INDEX_PARTIAL_PATTERN = 'test-metrics-partial-*';
+
+/**
+ * Shared/partial dimension names and metric ids used by the partial-dimension
+ * regression scenario. `PARTIAL_DIMENSION` is a real dimension only on
+ * `FULL_METRIC`; on `ONLY_METRIC` it exists as a plain keyword value.
+ */
+export const PARTIAL_DIMENSION_SCENARIO = {
+  SHARED_DIMENSION: 'host.name',
+  PARTIAL_DIMENSION: 'color',
+  FULL_METRIC: 'partial_full',
+  ONLY_METRIC: 'partial_only',
+} as const;
+
 // The Security serverless viewer role only grants read access to `metrics-endpoint.metadata_current_*`.
 // Our test index doesn't match that pattern. Instead of renaming the index to fit, we prefer a custom role that explicitly grants read access.
 const METRICS_ES_INDEX_PRIVILEGES = [
@@ -40,6 +58,7 @@ export const ESQL_QUERIES = {
   TS: `TS ${METRICS_TEST_INDEX_NAME}`,
   TS_OTHER: `TS ${METRICS_TEST_INDEX_NAME_OTHER}`,
   TS_WILDCARD: `TS ${METRICS_TEST_INDEX_PATTERN}`,
+  TS_PARTIAL: `TS ${METRICS_TEST_INDEX_PARTIAL_PATTERN}`,
   FROM: `FROM ${METRICS_TEST_INDEX_NAME}`,
 };
 
