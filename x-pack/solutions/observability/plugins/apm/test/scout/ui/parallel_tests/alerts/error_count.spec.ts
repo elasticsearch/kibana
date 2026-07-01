@@ -130,7 +130,9 @@ test.describe('Alerts', () => {
 
       await test.step('create the rule', async () => {
         await alertsControls.addRuleFlyout.saveRule({ saveEmptyActions: true });
-        await expect(page.getByTestId('euiToastHeader')).toHaveText(`Created rule "${RULE_NAME}"`);
+        await expect(page.getByTestId('euiToastHeader__title')).toHaveText(
+          `Created rule "${RULE_NAME}"`
+        );
       });
     }
   );

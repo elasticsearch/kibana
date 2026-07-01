@@ -116,7 +116,10 @@ export class ToastsService extends FtrService {
 
   public async getTitleByIndex(index: number): Promise<string> {
     const resultToast = await this.getElementByIndex(index);
-    const titleElement = await this.testSubjects.findDescendant('euiToastHeader', resultToast);
+    const titleElement = await this.testSubjects.findDescendant(
+      'euiToastHeader__title',
+      resultToast
+    );
     const title: string = await titleElement.getVisibleText();
     return title;
   }

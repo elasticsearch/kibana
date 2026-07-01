@@ -152,17 +152,17 @@ export const RULE_IMPORT_MODAL_BUTTON = '[data-test-subj="import-data-modal-butt
 
 export const INPUT_FILE = 'input[type=file]';
 
-export const TOASTER = '[data-test-subj="euiToastHeader"]';
+export const TOASTER = '[data-test-subj="euiToastHeader__title"]';
 
 export const TOASTER_MESSAGE = '[data-test-subj="errorToastMessage"]';
 
 export const SUCCESS_TOASTER_HEADER =
-  '[class*="euiToast-success"] [data-test-subj="euiToastHeader"]';
+  '[class*="euiToast--success"] [data-test-subj="euiToastHeader__title"]';
 
 export const TOASTER_BODY = '[data-test-subj="globalToastList"] [data-test-subj="euiToastBody"]';
 
 export const SUCCESS_TOASTER_BODY =
-  '[data-test-subj="globalToastList"] [class*="euiToast-success"] [data-test-subj="euiToastBody"]';
+  '[data-test-subj="globalToastList"] [class*="euiToast--success"] [data-test-subj="euiToastBody"]';
 
 export const TOASTER_ERROR_BTN = '[data-test-subj="errorToastBtn"]';
 
