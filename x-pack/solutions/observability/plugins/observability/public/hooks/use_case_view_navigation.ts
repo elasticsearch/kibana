@@ -6,8 +6,8 @@
  */
 
 import { generatePath } from 'react-router-dom';
-import useObservable from 'react-use/lib/useObservable';
 import { useCallback } from 'react';
+import { observabilityAppId } from '../../common';
 import { useKibana } from '../utils/kibana_react';
 
 export type NavigateToCaseView = (pathParams: { caseId: string }) => void;
@@ -20,18 +20,16 @@ const generateCaseViewPath = (caseId: string): string => {
 
 export const useCaseViewNavigation = () => {
   const {
-    application: { navigateToApp, currentAppId$ },
+    application: { navigateToApp },
   } = useKibana().services;
-
-  const currentAppId = useObservable(currentAppId$) ?? '';
 
   const navigateToCaseView = useCallback<NavigateToCaseView>(
     (pathParams) =>
-      navigateToApp(currentAppId, {
+      navigateToApp(observabilityAppId, {
         deepLinkId: CASE_DEEP_LINK_ID,
         path: generateCaseViewPath(pathParams.caseId),
       }),
-    [navigateToApp, currentAppId]
+    [navigateToApp]
   );
 
   return { navigateToCaseView };
