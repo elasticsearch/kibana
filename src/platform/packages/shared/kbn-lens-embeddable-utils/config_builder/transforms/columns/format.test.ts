@@ -104,8 +104,8 @@ describe('Format Transforms', () => {
           id: 'duration',
           params: {
             decimals: 2,
-            fromUnit: 'ms',
-            toUnit: 's',
+            fromUnit: 'milliseconds',
+            toUnit: 'asSeconds',
           },
         });
       });
@@ -121,9 +121,57 @@ describe('Format Transforms', () => {
           id: 'duration',
           params: {
             decimals: 2,
-            fromUnit: 'ms',
-            toUnit: 's',
+            fromUnit: 'milliseconds',
+            toUnit: 'asSeconds',
             suffix: ' elapsed',
+          },
+        });
+      });
+
+      it('should transform friendly approximate duration format', () => {
+        const input: LensApiMetricOperation['format'] = {
+          type: 'duration',
+          from: 's',
+          to: 'humanize',
+        };
+        expect(fromFormatAPIToLensState(input)).toEqual({
+          id: 'duration',
+          params: {
+            decimals: 2,
+            fromUnit: 'seconds',
+            toUnit: 'humanize',
+          },
+        });
+      });
+
+      it('should transform friendly precise duration format', () => {
+        const input: LensApiMetricOperation['format'] = {
+          type: 'duration',
+          from: 'ms',
+          to: 'humanizePrecise',
+        };
+        expect(fromFormatAPIToLensState(input)).toEqual({
+          id: 'duration',
+          params: {
+            decimals: 2,
+            fromUnit: 'milliseconds',
+            toUnit: 'humanizePrecise',
+          },
+        });
+      });
+
+      it('should transform fine-grained DSL input units', () => {
+        const input: LensApiMetricOperation['format'] = {
+          type: 'duration',
+          from: 'us',
+          to: 'ms',
+        };
+        expect(fromFormatAPIToLensState(input)).toEqual({
+          id: 'duration',
+          params: {
+            decimals: 2,
+            fromUnit: 'microseconds',
+            toUnit: 'asMilliseconds',
           },
         });
       });
@@ -208,8 +256,8 @@ describe('Format Transforms', () => {
           id: 'duration',
           params: {
             decimals: 2,
-            fromUnit: 'ms',
-            toUnit: 's',
+            fromUnit: 'milliseconds',
+            toUnit: 'asSeconds',
             suffix: ' elapsed',
           },
         };
@@ -219,6 +267,79 @@ describe('Format Transforms', () => {
           to: 's',
           suffix: ' elapsed',
         });
+      });
+
+      it('should apply defaults when duration units are missing', () => {
+        const input: ValueFormatConfig = {
+          id: 'duration',
+          params: {
+            decimals: 0,
+            compact: true,
+          },
+        };
+        expect(fromFormatLensStateToAPI(input)).toEqual({
+          type: 'duration',
+          from: 's',
+          to: 'humanize',
+        });
+      });
+
+      it('should transform friendly approximate duration format', () => {
+        const input: ValueFormatConfig = {
+          id: 'duration',
+          params: {
+            decimals: 0,
+            compact: true,
+            fromUnit: 'seconds',
+            toUnit: 'humanize',
+          },
+        };
+        expect(fromFormatLensStateToAPI(input)).toEqual({
+          type: 'duration',
+          from: 's',
+          to: 'humanize',
+        });
+      });
+
+      it('should transform friendly precise duration format', () => {
+        const input: ValueFormatConfig = {
+          id: 'duration',
+          params: {
+            decimals: 2,
+            fromUnit: 'milliseconds',
+            toUnit: 'humanizePrecise',
+          },
+        };
+        expect(fromFormatLensStateToAPI(input)).toEqual({
+          type: 'duration',
+          from: 'ms',
+          to: 'humanizePrecise',
+        });
+      });
+
+      it('should apply default from unit when only to unit is set', () => {
+        const input: ValueFormatConfig = {
+          id: 'duration',
+          params: {
+            decimals: 0,
+            toUnit: 'humanizePrecise',
+          },
+        };
+        expect(fromFormatLensStateToAPI(input)).toEqual({
+          type: 'duration',
+          from: 's',
+          to: 'humanizePrecise',
+        });
+      });
+
+      it('should round-trip friendly duration formats', () => {
+        const apiFormat: LensApiMetricOperation['format'] = {
+          type: 'duration',
+          from: 's',
+          to: 'humanizePrecise',
+        };
+        const lensFormat = fromFormatAPIToLensState(apiFormat);
+        expect(fromFormatLensStateToAPI(lensFormat)).toEqual(apiFormat);
       });
     });
 

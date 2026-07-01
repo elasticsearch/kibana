@@ -11,7 +11,7 @@ import type { TypeOf } from '@kbn/config-schema';
 import { schema } from '@kbn/config-schema';
 import { omit } from 'lodash';
 import { filterSchema } from './filter';
-import { formatSchema } from './format';
+import { esqlFormatSchema, formatSchema } from './format';
 import {
   LENS_LAST_VALUE_DEFAULT_MULTI_VALUE,
   LENS_MOVING_AVERAGE_DEFAULT_WINDOW,
@@ -143,7 +143,7 @@ export const esqlColumnSchema = schema.object({
   ...labelSharedProp,
 });
 
-export const esqlColumnWithFormatSchema = esqlColumnSchema.extends(formatSchema);
+export const esqlColumnWithFormatSchema = esqlColumnSchema.extends(esqlFormatSchema);
 
 export const metricOperationSharedSchema =
   genericOperationOptionsSchema.extends(advancedOperationSettings);

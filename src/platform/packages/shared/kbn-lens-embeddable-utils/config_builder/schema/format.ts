@@ -9,6 +9,7 @@
 
 import { schema } from '@kbn/config-schema';
 import { LENS_FORMAT_NUMBER_DECIMALS_DEFAULT, LENS_FORMAT_COMPACT_DEFAULT } from './constants';
+import { dslDurationFormatSchema, esqlDurationFormatSchema } from './duration_units';
 
 const numericFormatSchema = schema.object(
   {
@@ -91,47 +92,6 @@ const byteFormatSchema = schema.object(
   }
 );
 
-const durationFormatSchema = schema.object(
-  {
-    type: schema.literal('duration'),
-    /**
-     * From
-     */
-    from: schema.string({
-      meta: {
-        description:
-          'Source time unit for conversion, for example `milliseconds`, `seconds`, `minutes`, `hours`, or `days`.',
-      },
-    }),
-    /**
-     * To
-     */
-    to: schema.string({
-      meta: {
-        description:
-          'Display time unit after conversion, for example `seconds`, `minutes`, `hours`, or `days`.',
-      },
-    }),
-    /**
-     * Suffix
-     */
-    suffix: schema.maybe(
-      schema.string({
-        meta: {
-          description: 'Suffix appended to the formatted value.',
-        },
-      })
-    ),
-  },
-  {
-    meta: {
-      id: 'durationFormat',
-      title: 'Duration Format',
-      description: 'Duration format between time units.',
-    },
-  }
-);
-
 const customFormatSchema = schema.object(
   {
     type: schema.literal('custom'),
@@ -154,10 +114,10 @@ const customFormatSchema = schema.object(
 );
 
 /**
- * Format configuration
+ * Format configuration for DSL-based visualizations.
  */
 export const formatTypeSchema = schema.oneOf(
-  [numericFormatSchema, byteFormatSchema, durationFormatSchema, customFormatSchema],
+  [numericFormatSchema, byteFormatSchema, dslDurationFormatSchema, customFormatSchema],
   {
     meta: {
       id: 'formatType',
@@ -167,9 +127,30 @@ export const formatTypeSchema = schema.oneOf(
   }
 );
 
+/**
+ * Format configuration for ES|QL-based visualizations.
+ */
+export const esqlFormatTypeSchema = schema.oneOf(
+  [numericFormatSchema, byteFormatSchema, esqlDurationFormatSchema, customFormatSchema],
+  {
+    meta: {
+      id: 'esqlFormatType',
+      title: 'ES|QL Format Type',
+      description: 'Number display format for ES|QL dimension values.',
+    },
+  }
+);
+
 export const formatSchema = {
   /**
    * Format configuration
    */
   format: schema.maybe(formatTypeSchema),
+};
+
+export const esqlFormatSchema = {
+  /**
+   * Format configuration for ES|QL columns
+   */
+  format: schema.maybe(esqlFormatTypeSchema),
 };

@@ -9,6 +9,7 @@
 
 import type { ValueFormatConfig } from '@kbn/lens-common';
 import type { LensApiMetricOperation } from '../../schema/metric_ops';
+import { durationInputUnitCompat, durationOutputUnitCompat } from './duration_units';
 
 export function fromFormatAPIToLensState(
   format: LensApiMetricOperation['format']
@@ -41,8 +42,8 @@ export function fromFormatAPIToLensState(
       params: {
         // doesn't matter, it's will be ignored but want to make TS happy
         decimals: 2,
-        fromUnit: format.from,
-        toUnit: format.to,
+        fromUnit: durationInputUnitCompat.toState(format.from),
+        toUnit: durationOutputUnitCompat.toState(format.to),
         ...(format.suffix ? { suffix: format.suffix } : {}),
       },
     };
@@ -80,11 +81,11 @@ export function fromFormatLensStateToAPI(
       ...(format.params?.suffix ? { suffix: format.params.suffix } : {}),
     } as LensApiMetricOperation['format'];
   }
-  if (format.id === 'duration' && format.params?.fromUnit && format.params?.toUnit) {
+  if (format.id === 'duration') {
     return {
       type: format.id,
-      from: format.params?.fromUnit,
-      to: format.params?.toUnit,
+      from: durationInputUnitCompat.toAPI(format.params?.fromUnit),
+      to: durationOutputUnitCompat.toAPI(format.params?.toUnit),
       ...(format.params?.suffix ? { suffix: format.params.suffix } : {}),
     };
   }

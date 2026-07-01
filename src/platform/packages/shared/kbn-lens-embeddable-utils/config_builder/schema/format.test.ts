@@ -8,7 +8,7 @@
  */
 
 import { schema } from '@kbn/config-schema';
-import { formatTypeSchema, formatSchema } from './format';
+import { esqlFormatTypeSchema, formatTypeSchema, formatSchema } from './format';
 
 describe('Format Schemas', () => {
   describe('numericFormat', () => {
@@ -100,11 +100,77 @@ describe('Format Schemas', () => {
       const input = {
         type: 'duration' as const,
         from: 'ms',
-        to: 'min',
+        to: 'm',
       };
 
       const validated = formatTypeSchema.validate(input);
       expect(validated).toEqual(input);
+    });
+
+    it('validates friendly approximate duration format', () => {
+      const input = {
+        type: 'duration' as const,
+        from: 's',
+        to: 'humanize',
+      };
+
+      const validated = formatTypeSchema.validate(input);
+      expect(validated).toEqual(input);
+    });
+
+    it('validates friendly precise duration format', () => {
+      const input = {
+        type: 'duration' as const,
+        from: 'ms',
+        to: 'humanizePrecise',
+      };
+
+      const validated = formatTypeSchema.validate(input);
+      expect(validated).toEqual(input);
+    });
+
+    it('validates fine-grained DSL input units', () => {
+      const input = {
+        type: 'duration' as const,
+        from: 'us',
+        to: 'ms',
+      };
+
+      const validated = formatTypeSchema.validate(input);
+      expect(validated).toEqual(input);
+    });
+
+    it('rejects long-form unit names', () => {
+      const input = {
+        type: 'duration' as const,
+        from: 'seconds',
+        to: 'humanize',
+      };
+
+      expect(() => formatTypeSchema.validate(input)).toThrow();
+    });
+  });
+
+  describe('esqlDurationFormat', () => {
+    it('validates ES|QL duration format', () => {
+      const input = {
+        type: 'duration' as const,
+        from: 'mo',
+        to: 'humanize',
+      };
+
+      const validated = esqlFormatTypeSchema.validate(input);
+      expect(validated).toEqual(input);
+    });
+
+    it('rejects fine-grained units for ES|QL', () => {
+      const input = {
+        type: 'duration' as const,
+        from: 'us',
+        to: 'ms',
+      };
+
+      expect(() => esqlFormatTypeSchema.validate(input)).toThrow();
     });
 
     it('throws on missing required fields', () => {
@@ -113,7 +179,7 @@ describe('Format Schemas', () => {
         from: 'ms',
       };
 
-      expect(() => formatTypeSchema.validate(input)).toThrow(/\[2.to\]: expected value of type/);
+      expect(() => formatTypeSchema.validate(input)).toThrow(/\[2.to\]:/);
     });
   });
 
