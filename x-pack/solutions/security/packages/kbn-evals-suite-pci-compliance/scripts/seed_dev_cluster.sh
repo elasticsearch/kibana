@@ -6,25 +6,54 @@
 #   ./scripts/seed_dev_cluster.sh              # seed data
 #   ./scripts/seed_dev_cluster.sh --cleanup    # delete indices
 #
-# Reads credentials from x-pack/.env (Elasticsearch URL + basic auth).
+# Auth resolution (in priority order):
+#   1. Environment variables already exported in the current shell:
+#        ES_URL                       — full Elasticsearch URL (required)
+#        ES_API_KEY                   — base64-encoded API key (preferred)
+#        ES_USERNAME / ES_PASSWORD    — basic auth (fallback)
+#   2. .env file at the kibana repo root (resolved via `git rev-parse --show-toplevel`).
+#      Same variable names as above.
+#
+# This follows the kibana-wide convention documented in the `first-class-ux`
+# and `security-first` rules: API key over basic auth, standard variable
+# names, no per-package .env files.
 
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-ENV_FILE="${SCRIPT_DIR}/../../../../../.env"
 
-if [[ ! -f "$ENV_FILE" ]]; then
-  echo "ERROR: .env file not found at $ENV_FILE"
-  exit 1
+# Resolve the kibana repo root robustly. Falls back to a fixed traversal if
+# the script ever runs outside a git checkout (e.g. extracted tarball).
+if REPO_ROOT="$(git -C "$SCRIPT_DIR" rev-parse --show-toplevel 2>/dev/null)"; then
+  :
+else
+  REPO_ROOT="$(cd "${SCRIPT_DIR}/../../../../../.." && pwd)"
 fi
 
-# shellcheck source=/dev/null
-source "$ENV_FILE"
+ENV_FILE="${REPO_ROOT}/.env"
+if [[ -f "$ENV_FILE" ]]; then
+  # shellcheck source=/dev/null
+  set -a
+  source "$ENV_FILE"
+  set +a
+fi
 
-ES_URL="${Elasticsearch:?Elasticsearch URL not set in .env}"
-ES_USER="${username:-elastic}"
-ES_PASS="${password:?password not set in .env}"
-AUTH="${ES_USER}:${ES_PASS}"
+ES_URL="${ES_URL:?ES_URL not set. Export it or define it in ${ENV_FILE}.}"
+
+# Build a single -H "Authorization: …" header so the rest of the script does
+# not have to branch between auth modes. API key beats basic auth.
+declare -a AUTH_HEADER
+if [[ -n "${ES_API_KEY:-}" ]]; then
+  AUTH_HEADER=(-H "Authorization: ApiKey ${ES_API_KEY}")
+  AUTH_LABEL="ApiKey"
+elif [[ -n "${ES_USERNAME:-}" && -n "${ES_PASSWORD:-}" ]]; then
+  basic_token=$(printf '%s' "${ES_USERNAME}:${ES_PASSWORD}" | base64 | tr -d '\n')
+  AUTH_HEADER=(-H "Authorization: Basic ${basic_token}")
+  AUTH_LABEL="Basic ${ES_USERNAME}"
+else
+  echo "ERROR: no auth available. Set ES_API_KEY (preferred) or ES_USERNAME + ES_PASSWORD." >&2
+  exit 1
+fi
 
 INDICES=(
   "logs-pci-auth-eval"
@@ -47,9 +76,9 @@ cleanup() {
   echo "Deleting PCI eval data streams..."
   for idx in "${INDICES[@]}"; do
     local code
-    code=$(curl -s -o /dev/null -w "%{http_code}" -u "$AUTH" -X DELETE "${ES_URL}/_data_stream/${idx}")
+    code=$(curl -s -o /dev/null -w "%{http_code}" "${AUTH_HEADER[@]}" -X DELETE "${ES_URL}/_data_stream/${idx}")
     if [[ "$code" == "404" ]]; then
-      code=$(curl -s -o /dev/null -w "%{http_code}" -u "$AUTH" -X DELETE "${ES_URL}/${idx}?ignore_unavailable=true")
+      code=$(curl -s -o /dev/null -w "%{http_code}" "${AUTH_HEADER[@]}" -X DELETE "${ES_URL}/${idx}?ignore_unavailable=true")
     fi
     echo "  $idx → HTTP $code"
   done
@@ -59,7 +88,7 @@ cleanup() {
 seed() {
   echo "Seeding PCI compliance eval data..."
   echo "  ES: $ES_URL"
-  echo "  User: $ES_USER"
+  echo "  Auth: $AUTH_LABEL"
   echo ""
 
   # --- Auth index ---
@@ -95,7 +124,7 @@ seed() {
 '
 
   echo "  Indexing auth events..."
-  curl -s -u "$AUTH" -X POST "${ES_URL}/_bulk?refresh=true" \
+  curl -s "${AUTH_HEADER[@]}" -X POST "${ES_URL}/_bulk?refresh=true" \
     -H 'Content-Type: application/x-ndjson' \
     --data-binary "$auth_body" | jq -r '"    errors: \(.errors), items: \(.items | length)"'
 
@@ -124,7 +153,7 @@ seed() {
   done
 
   echo "  Indexing network events..."
-  curl -s -u "$AUTH" -X POST "${ES_URL}/_bulk?refresh=true" \
+  curl -s "${AUTH_HEADER[@]}" -X POST "${ES_URL}/_bulk?refresh=true" \
     -H 'Content-Type: application/x-ndjson' \
     --data-binary "$net_body" | jq -r '"    errors: \(.errors), items: \(.items | length)"'
 
@@ -148,7 +177,7 @@ seed() {
 '
 
   echo "  Indexing vulnerability/IDS events..."
-  curl -s -u "$AUTH" -X POST "${ES_URL}/_bulk?refresh=true" \
+  curl -s "${AUTH_HEADER[@]}" -X POST "${ES_URL}/_bulk?refresh=true" \
     -H 'Content-Type: application/x-ndjson' \
     --data-binary "$vuln_body" | jq -r '"    errors: \(.errors), items: \(.items | length)"'
 
@@ -164,7 +193,7 @@ seed() {
 '
 
   echo "  Indexing endpoint events..."
-  curl -s -u "$AUTH" -X POST "${ES_URL}/_bulk?refresh=true" \
+  curl -s "${AUTH_HEADER[@]}" -X POST "${ES_URL}/_bulk?refresh=true" \
     -H 'Content-Type: application/x-ndjson' \
     --data-binary "$ep_body" | jq -r '"    errors: \(.errors), items: \(.items | length)"'
 
@@ -188,7 +217,7 @@ seed() {
 '
 
   echo "  Indexing custom legacy events..."
-  curl -s -u "$AUTH" -X POST "${ES_URL}/_bulk?refresh=true" \
+  curl -s "${AUTH_HEADER[@]}" -X POST "${ES_URL}/_bulk?refresh=true" \
     -H 'Content-Type: application/x-ndjson' \
     --data-binary "$custom_body" | jq -r '"    errors: \(.errors), items: \(.items | length)"'
 
@@ -198,7 +227,7 @@ seed() {
   echo "Indices:"
   for idx in "${INDICES[@]}"; do
     local count
-    count=$(curl -s -u "$AUTH" "${ES_URL}/${idx}/_count" | jq -r '.count // "N/A"')
+    count=$(curl -s "${AUTH_HEADER[@]}" "${ES_URL}/${idx}/_count" | jq -r '.count // "N/A"')
     echo "  $idx → $count docs"
   done
 }

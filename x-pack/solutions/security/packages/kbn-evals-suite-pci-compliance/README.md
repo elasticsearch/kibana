@@ -11,10 +11,12 @@ evaluator fields are directly comparable across security eval suites.
 
 ## Prerequisites
 
-- The feature flag `pciComplianceAgentBuilder` must be enabled on the Kibana
-  test server. This is handled automatically when the suite runs through the
-  `evals_pci_compliance` Scout `serverConfigSet`
-  (`src/platform/packages/shared/kbn-scout/src/servers/configs/config_sets/evals_pci_compliance`).
+- The `pciComplianceAgentBuilder` experimental flag must be on for the Kibana
+  test server. The `evals_pci_compliance` Scout `serverConfigSet`
+  (`src/platform/packages/shared/kbn-scout/src/servers/configs/config_sets/evals_pci_compliance`)
+  enables it explicitly, so the suite does not depend on the global default
+  in `experimental_features.ts` and works whether the flag ships on or off
+  by default.
 - An AI connector must be available (see the `@kbn/evals` docs for the
   standard connector setup).
 - The Agent Builder experimental features UI setting is also enabled by that
@@ -42,7 +44,11 @@ All evaluation specs live under [`evals/pci_compliance`](./evals/pci_compliance)
 To import the eval data into a remote dev cluster (e.g. Elastic Cloud):
 
 ```sh
-# Requires x-pack/.env with: Elasticsearch=<url>, username=<user>, password=<pass>
+# Auth via API key (preferred) or basic auth. Either:
+#   export ES_URL=https://my-cluster.es.io:9243
+#   export ES_API_KEY=<base64-api-key>
+# OR drop a .env file at the kibana repo root containing those variables.
+# Basic auth (ES_USERNAME / ES_PASSWORD) is supported as a fallback.
 ./scripts/seed_dev_cluster.sh            # seed data
 ./scripts/seed_dev_cluster.sh --cleanup  # delete data streams
 ```
@@ -96,6 +102,8 @@ Scenario-specific criteria layer on top of the baseline.
 - **Scope-claim parity**: Every PCI tool response ships a scope claim with
   DSS version, indices, time range, evaluated requirements, checked fields,
   and a disclaimer. The suite asserts on this for every scenario.
-- **Feature flag isolation**: The `pciComplianceAgentBuilder` flag is
-  off-by-default in Kibana; the `evals_pci_compliance` config set isolates
-  the suite from the rest of the eval runners.
+- **Feature flag isolation**: The `evals_pci_compliance` config set
+  explicitly enables `pciComplianceAgentBuilder` for the Kibana test server,
+  so the suite is decoupled from whatever the global default is in
+  `experimental_features.ts` and the run cannot be silently skipped if that
+  default changes.

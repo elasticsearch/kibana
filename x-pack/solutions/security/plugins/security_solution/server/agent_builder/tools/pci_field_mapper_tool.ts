@@ -189,8 +189,13 @@ export const pciFieldMapperTool = (
         };
       }
 
+      // Treat any field outside the requested ECS-target set as a mapping candidate, including
+      // dotted/namespaced custom fields like `myorg.user_id`. The previous filter excluded any
+      // field with a `.` in it, which silently dropped hierarchical non-ECS shapes that real
+      // customers ingest from custom pipelines.
+      const ecsTargetSet = new Set(ecsTargets);
       const nonEcsFields = allFields.filter(
-        (f) => !f.startsWith('@') && !f.startsWith('_') && !f.includes('.')
+        (f) => !f.startsWith('@') && !f.startsWith('_') && !ecsTargetSet.has(f)
       );
 
       const ecsFieldsPresent = allFields.filter((f) => ecsTargets.includes(f));
@@ -205,15 +210,22 @@ export const pciFieldMapperTool = (
 
       for (const field of nonEcsFields) {
         if (!isSensitiveField(field)) {
+          const lowerField = field.toLowerCase();
           for (const ecsTarget of ecsMissing) {
-            const match = matchFieldToEcs(field, ecsTarget);
-            if (match && match.score >= 0.5) {
-              mappings.push({
-                sourceField: field,
-                suggestedEcsField: ecsTarget,
-                confidence: match.score,
-                reason: match.reason,
-              });
+            // Skip fields that already live in the same ECS namespace as the missing target
+            // (e.g. don't suggest `process.pid → process.name`); those are ECS-shaped already.
+            const ecsNamespace = ecsTarget.split('.')[0];
+            const sharesEcsNamespace = lowerField.startsWith(`${ecsNamespace}.`);
+            if (!sharesEcsNamespace) {
+              const match = matchFieldToEcs(field, ecsTarget);
+              if (match && match.score >= 0.5) {
+                mappings.push({
+                  sourceField: field,
+                  suggestedEcsField: ecsTarget,
+                  confidence: match.score,
+                  reason: match.reason,
+                });
+              }
             }
           }
         }

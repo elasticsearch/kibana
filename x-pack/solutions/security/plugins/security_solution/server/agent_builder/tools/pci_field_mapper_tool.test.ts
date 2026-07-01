@@ -5,8 +5,8 @@
  * 2.0.
  */
 
-import { ToolResultType } from '@kbn/agent-builder-common';
-import type { ToolHandlerStandardReturn } from '@kbn/agent-builder-server/tools';
+import { ToolResultType } from '../../../../../../../../../ao-plan-detection-emulation-retir-20fd3f/x-pack/platform/packages/shared/agent-builder/agent-builder-common';
+import type { ToolHandlerStandardReturn } from '../../../../../../../../../ao-plan-detection-emulation-retir-20fd3f/x-pack/platform/packages/shared/agent-builder/agent-builder-server/tools';
 import { createToolHandlerContext, createToolTestMocks } from '../__mocks__/test_helpers';
 import { pciFieldMapperTool, PCI_FIELD_MAPPER_TOOL_ID } from './pci_field_mapper_tool';
 
@@ -96,6 +96,55 @@ describe('pciFieldMapperTool', () => {
       const userNameMapping = payload.suggestedMappings.find((m) => m.sourceField === 'username');
       expect(userNameMapping?.suggestedEcsField).toBe('user.name');
       expect(userNameMapping?.confidence).toBeGreaterThanOrEqual(0.5);
+    });
+
+    it('maps hierarchical non-ECS fields (e.g. myorg.user_id, app.src_ip) to ECS targets', async () => {
+      mockEsClient.asCurrentUser.fieldCaps.mockResolvedValue({
+        fields: {
+          'myorg.user_id': { keyword: { type: 'keyword' } },
+          'app.src_ip': { ip: { type: 'ip' } },
+          'svc.hostname': { keyword: { type: 'keyword' } },
+          '@timestamp': { date: { type: 'date' } },
+        },
+      } as never);
+      mockEsClient.asCurrentUser.search.mockResolvedValue({ hits: { hits: [] } } as never);
+
+      const result = (await tool.handler(
+        { indexPattern: 'logs-myorg*' },
+        createToolHandlerContext(mockRequest, mockEsClient, mockLogger)
+      )) as ToolHandlerStandardReturn;
+
+      const payload = result.results[0].data as {
+        suggestedMappings: Array<{ sourceField: string; suggestedEcsField: string }>;
+      };
+      const sourceFields = payload.suggestedMappings.map((m) => m.sourceField);
+      expect(sourceFields).toEqual(
+        expect.arrayContaining(['myorg.user_id', 'app.src_ip', 'svc.hostname'])
+      );
+    });
+
+    it('does not propose ECS-namespace mappings (e.g. process.pid → process.name)', async () => {
+      mockEsClient.asCurrentUser.fieldCaps.mockResolvedValue({
+        fields: {
+          'process.pid': { long: { type: 'long' } },
+          'process.executable': { keyword: { type: 'keyword' } },
+          '@timestamp': { date: { type: 'date' } },
+        },
+      } as never);
+      mockEsClient.asCurrentUser.search.mockResolvedValue({ hits: { hits: [] } } as never);
+
+      const result = (await tool.handler(
+        { indexPattern: 'logs-ecs-shaped*' },
+        createToolHandlerContext(mockRequest, mockEsClient, mockLogger)
+      )) as ToolHandlerStandardReturn;
+
+      const payload = result.results[0].data as {
+        suggestedMappings: Array<{ sourceField: string; suggestedEcsField: string }>;
+      };
+      const intoProcess = payload.suggestedMappings.filter(
+        (m) => m.suggestedEcsField === 'process.name'
+      );
+      expect(intoProcess).toHaveLength(0);
     });
 
     it('redacts sensitive fields from mapping suggestions', async () => {
