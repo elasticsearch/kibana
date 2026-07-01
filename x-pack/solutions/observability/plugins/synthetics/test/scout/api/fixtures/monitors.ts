@@ -396,6 +396,31 @@ export async function bulkResetMonitors(
 }
 
 /**
+ * `PUT /api/synthetics/monitors/_bulk_update` — partial-update many monitors in
+ * one request. Each `updates` entry carries its own `{ id, attributes }` patch,
+ * so a single request can apply a different change per monitor. Public versioned
+ * route, so we send `elastic-api-version` like the other monitor helpers; the
+ * internal-origin header set by `mergeSyntheticsApiHeaders` is what actually lets
+ * the versioned router resolve the call without per-call version negotiation.
+ */
+export async function bulkUpdateMonitors(
+  apiClient: ApiClientFixture,
+  headers: Record<string, string>,
+  body: { updates: Array<{ id: string; attributes: Record<string, unknown> }> },
+  opts: { spaceId?: string; statusCode?: number } = {}
+) {
+  const { spaceId, statusCode = 200 } = opts;
+  const path = `${monitorsPath(spaceId)}/_bulk_update`;
+  const res = await apiClient.put(path, {
+    headers: withPublicApiVersion(headers),
+    body,
+    responseType: 'json',
+  });
+  expect(res).toHaveStatusCode(statusCode);
+  return res;
+}
+
+/**
  * `POST /internal/synthetics/service/monitor/inspect` — inspects a monitor and
  * returns the would-be Fleet policy. Mirrors the FTR
  * `SyntheticsMonitorTestService.inspectMonitor`: it strips the server-generated

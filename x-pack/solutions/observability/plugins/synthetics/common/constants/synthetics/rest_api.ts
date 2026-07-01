@@ -14,6 +14,7 @@ export enum SYNTHETICS_API_URLS {
   // public apis
   SYNTHETICS_MONITORS = '/api/synthetics/monitors',
   GET_SYNTHETICS_MONITOR = '/api/synthetics/monitors/{monitorId}',
+  SYNTHETICS_MONITORS_BULK_UPDATE = '/api/synthetics/monitors/_bulk_update',
   PRIVATE_LOCATIONS = `/api/synthetics/private_locations`,
   PARAMS = `/api/synthetics/params`,
   LATEST_TEST_RUN = '/api/synthetics/latest_test_run',

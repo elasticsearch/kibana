@@ -497,6 +497,46 @@ describe('validateMonitor', () => {
     });
   });
 
+  // Partial updates validate the *merged* monitor (previous + patch), not the patch alone.
+  describe('merged partial-update gate', () => {
+    const mergedWith = (patch: Record<string, unknown>) =>
+      ({ ...testHTTPFields, ...patch } as unknown as MonitorFields);
+
+    it('accepts a valid partial patch on a known field', () => {
+      const result = validateMonitor(mergedWith({ [ConfigKey.ENABLED]: false }), 'default');
+      expect(result.valid).toBe(true);
+    });
+
+    it('rejects an out-of-range value on a known field (schedule)', () => {
+      const result = validateMonitor(
+        mergedWith({ [ConfigKey.SCHEDULE]: { number: '4', unit: ScheduleUnit.MINUTES } }),
+        'default'
+      );
+      expect(result).toMatchObject({ valid: false, reason: 'Monitor schedule is invalid' });
+    });
+
+    it('rejects a wrong-typed value on a known field (timeout)', () => {
+      const result = validateMonitor(mergedWith({ [ConfigKey.TIMEOUT]: '3m' }), 'default');
+      expect(result).toMatchObject({
+        valid: false,
+        reason: `Monitor is not a valid monitor of type ${MonitorTypeEnum.HTTP}`,
+      });
+    });
+
+    it('strips unknown/foreign fields rather than rejecting (io-ts t.exact)', () => {
+      const result = validateMonitor(
+        mergedWith({ notAMonitorField: 'nope', anotherBogusKey: 123 }),
+        'default'
+      );
+      // foreign keys do not fail validation...
+      expect(result.valid).toBe(true);
+      // ...but they are dropped from what actually gets persisted.
+      expect(result.decodedMonitor).toBeDefined();
+      expect(result.decodedMonitor).not.toHaveProperty('notAMonitorField');
+      expect(result.decodedMonitor).not.toHaveProperty('anotherBogusKey');
+    });
+  });
+
   describe('should validate payload', () => {
     it('when parsed from serialized JSON', () => {
       const testMonitor = getJsonPayload() as MonitorFields;
