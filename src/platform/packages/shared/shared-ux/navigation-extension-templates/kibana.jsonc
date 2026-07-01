@@ -1,0 +1,10 @@
+{
+    "type": "shared-common",
+    "id": "@kbn/shared-ux-navigation-extension-templates",
+    "owner": [
+      "@elastic/appex-sharedux"
+    ],
+    "group": "platform",
+    "visibility": "shared"
+  }
+  

@@ -2382,6 +2382,8 @@
       "@kbn/shared-ux-markdown-mocks/*": ["src/platform/packages/shared/shared-ux/markdown/mocks/*"],
       "@kbn/shared-ux-markdown-types": ["src/platform/packages/shared/shared-ux/markdown/types"],
       "@kbn/shared-ux-markdown-types/*": ["src/platform/packages/shared/shared-ux/markdown/types/*"],
+      "@kbn/shared-ux-navigation-extension-templates": ["src/platform/packages/shared/shared-ux/navigation-extension-templates"],
+      "@kbn/shared-ux-navigation-extension-templates/*": ["src/platform/packages/shared/shared-ux/navigation-extension-templates/*"],
       "@kbn/shared-ux-page-analytics-no-data": ["src/platform/packages/shared/shared-ux/page/analytics_no_data/impl"],
       "@kbn/shared-ux-page-analytics-no-data/*": ["src/platform/packages/shared/shared-ux/page/analytics_no_data/impl/*"],
       "@kbn/shared-ux-page-analytics-no-data-mocks": ["src/platform/packages/shared/shared-ux/page/analytics_no_data/mocks"],

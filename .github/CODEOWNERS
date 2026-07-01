@@ -786,6 +786,7 @@ src/platform/packages/shared/shared-ux/markdown/impl @elastic/appex-sharedux
 src/platform/packages/shared/shared-ux/markdown/mocks @elastic/appex-sharedux
 src/platform/packages/shared/shared-ux/markdown/types @elastic/appex-sharedux
 src/platform/packages/shared/shared-ux/modal/tabbed @elastic/appex-sharedux
+src/platform/packages/shared/shared-ux/navigation-extension-templates @elastic/appex-sharedux
 src/platform/packages/shared/shared-ux/page/analytics_no_data/impl @elastic/appex-sharedux
 src/platform/packages/shared/shared-ux/page/analytics_no_data/mocks @elastic/appex-sharedux
 src/platform/packages/shared/shared-ux/page/analytics_no_data/types @elastic/appex-sharedux

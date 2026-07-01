@@ -9229,6 +9229,10 @@
   version "0.0.0"
   uid ""
 
+"@kbn/shared-ux-navigation-extension-templates@link:src/platform/packages/shared/shared-ux/navigation-extension-templates":
+  version "0.0.0"
+  uid ""
+
 "@kbn/shared-ux-page-analytics-no-data-mocks@link:src/platform/packages/shared/shared-ux/page/analytics_no_data/mocks":
   version "0.0.0"
   uid ""
