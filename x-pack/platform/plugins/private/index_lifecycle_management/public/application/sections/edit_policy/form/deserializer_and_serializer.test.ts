@@ -229,8 +229,7 @@ describe('deserializer and serializer', () => {
     expect(result.phases.cold!.actions.readonly).toBeUndefined();
   });
 
-  it('allows force merge and readonly actions to be configured in hot with default rollover enabled', () => {
-    formInternal._meta.hot.isUsingDefaultRollover = true;
+  it('allows force merge and readonly actions to be configured in hot with rollover enabled', () => {
     formInternal._meta.hot.bestCompression = false;
     formInternal.phases.hot!.actions.forcemerge = undefined;
     formInternal._meta.hot.readonlyEnabled = false;
@@ -266,9 +265,6 @@ describe('deserializer and serializer', () => {
   });
 
   it('removes forcemerge, readonly, and rollover config when rollover is disabled in hot phase', () => {
-    // These two toggles jointly control whether rollover is enabled since the default is
-    // for rollover to be enabled.
-    formInternal._meta.hot.isUsingDefaultRollover = false;
     formInternal._meta.hot.customRollover.enabled = false;
 
     const result = serializer(formInternal);
@@ -280,17 +276,22 @@ describe('deserializer and serializer', () => {
 
   it('adds default rollover configuration when enabled, but previously not configured', () => {
     delete formInternal.phases.hot!.actions.rollover;
-    formInternal._meta.hot.isUsingDefaultRollover = true;
+    formInternal.phases.hot!.actions.rollover = {
+      max_age: '30',
+      max_primary_shard_size: '50',
+    };
+    formInternal._meta.hot.customRollover.triggerFields = ['max_primary_shard_size', 'max_age'];
+    formInternal._meta.hot.customRollover.maxAgeUnit = 'd';
+    formInternal._meta.hot.customRollover.maxPrimaryShardSizeUnit = 'gb';
 
     const result = serializer(formInternal);
 
     expect(result.phases.hot!.actions.rollover).toEqual(defaultRolloverAction);
   });
 
-  it('preserves rollover fields the UI does not manage when using default rollover', () => {
-    formInternal._meta.hot.isUsingDefaultRollover = true;
+  it('preserves unknown rollover fields the UI does not manage', () => {
     formInternal.phases.hot!.actions.rollover!.min_primary_shard_size = '5gb';
-    // @ts-expect-error - this is an unknown field that should be preserved by the serializer even when using default rollover
+    // @ts-expect-error - this is an unknown field that should be preserved by the serializer
     formInternal.phases.hot!.actions.rollover!.unknown_setting = 123;
 
     const result = serializer(formInternal);
@@ -298,17 +299,16 @@ describe('deserializer and serializer', () => {
 
     expect(rollover).toEqual(
       expect.objectContaining({
-        ...defaultRolloverAction,
-        min_primary_shard_size: '5gb',
         unknown_setting: 123,
       })
     );
-    expect(rollover!.max_docs).toBeUndefined();
-    expect(rollover!.max_primary_shard_docs).toBeUndefined();
-    expect(rollover!.max_size).toBeUndefined();
+    expect(rollover!.min_primary_shard_size).toBeUndefined();
+    expect(rollover!.max_docs).toBe(1000);
+    expect(rollover!.max_primary_shard_docs).toBe(12);
+    expect(rollover!.max_size).toBe('10gb');
   });
 
-  it('does not drop rollover min_* fields on save when using default rollover', () => {
+  it('does not drop active rollover min_* fields on save', () => {
     const policyWithRolloverMinFields: SerializedPolicy = {
       name: 'policyWithRolloverMinFields',
       phases: {

@@ -208,11 +208,13 @@ export const POLICY_WITH_KNOWN_AND_UNKNOWN_FIELDS = {
       },
       delete: {
         min_age: '15d',
-        wait_for_snapshot: {
-          policy: SNAPSHOT_POLICY_NAME,
-        },
-        delete: {
-          delete_searchable_snapshot: true,
+        actions: {
+          wait_for_snapshot: {
+            policy: SNAPSHOT_POLICY_NAME,
+          },
+          delete: {
+            delete_searchable_snapshot: true,
+          },
         },
       },
     },

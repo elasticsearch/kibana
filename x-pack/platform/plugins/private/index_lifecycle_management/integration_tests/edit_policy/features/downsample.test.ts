@@ -9,7 +9,6 @@ import { screen } from '@testing-library/react';
 import { setupEnvironment } from '../../helpers/setup_environment';
 import { renderEditPolicy } from '../../helpers/render_edit_policy';
 import { createDownsampleActions } from '../../helpers/actions/downsample_actions';
-import { createRolloverActions } from '../../helpers/actions/rollover_actions';
 import { createTogglePhaseAction } from '../../helpers/actions/toggle_phase_action';
 
 describe('<EditPolicy /> downsample', () => {
@@ -33,10 +32,8 @@ describe('<EditPolicy /> downsample', () => {
 
     await screen.findByTestId('savePolicyButton');
 
-    const rolloverActions = createRolloverActions();
     const togglePhase = createTogglePhaseAction();
 
-    rolloverActions.rollover.toggleDefault();
     await togglePhase('warm');
     await togglePhase('cold');
   });

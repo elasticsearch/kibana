@@ -159,6 +159,66 @@ export const i18nTexts = {
     maxSizeLabel: i18n.translate('xpack.indexLifecycleMgmt.hotPhase.maximumIndexSizeLabel', {
       defaultMessage: 'Maximum index size',
     }),
+    minPrimaryShardSizeLabel: i18n.translate(
+      'xpack.indexLifecycleMgmt.hotPhase.minimumPrimaryShardSizeLabel',
+      {
+        defaultMessage: 'Minimum primary shard size',
+      }
+    ),
+    minPrimaryShardDocsLabel: i18n.translate(
+      'xpack.indexLifecycleMgmt.hotPhase.minimumPrimaryShardDocsLabel',
+      {
+        defaultMessage: 'Minimum docs in the primary shard',
+      }
+    ),
+    minRolloverAgeLabel: i18n.translate('xpack.indexLifecycleMgmt.hotPhase.minimumAgeLabel', {
+      defaultMessage: 'Minimum age',
+    }),
+    minDocsLabel: i18n.translate('xpack.indexLifecycleMgmt.hotPhase.minimumDocumentsLabel', {
+      defaultMessage: 'Minimum documents',
+    }),
+    minSizeLabel: i18n.translate('xpack.indexLifecycleMgmt.hotPhase.minimumIndexSizeLabel', {
+      defaultMessage: 'Minimum index size',
+    }),
+    triggerRolloverLabel: i18n.translate('xpack.indexLifecycleMgmt.hotPhase.triggerRolloverLabel', {
+      defaultMessage: 'Trigger rollover',
+    }),
+    restrictRolloverLabel: i18n.translate(
+      'xpack.indexLifecycleMgmt.hotPhase.restrictRolloverLabel',
+      {
+        defaultMessage: 'Restrict rollover',
+      }
+    ),
+    addRolloverTriggerLabel: i18n.translate(
+      'xpack.indexLifecycleMgmt.hotPhase.addRolloverTriggerLabel',
+      {
+        defaultMessage: 'Add trigger',
+      }
+    ),
+    addRolloverRestrictionLabel: i18n.translate(
+      'xpack.indexLifecycleMgmt.hotPhase.addRolloverRestrictionLabel',
+      {
+        defaultMessage: 'Add restriction',
+      }
+    ),
+    restoreRecommendedRolloverDefaultsLabel: i18n.translate(
+      'xpack.indexLifecycleMgmt.hotPhase.restoreRecommendedRolloverDefaultsLabel',
+      {
+        defaultMessage: 'Restore recommended defaults',
+      }
+    ),
+    allRolloverTriggersInUseLabel: i18n.translate(
+      'xpack.indexLifecycleMgmt.hotPhase.allRolloverTriggersInUseLabel',
+      {
+        defaultMessage: 'All trigger attributes are already in use.',
+      }
+    ),
+    allRolloverRestrictionsInUseLabel: i18n.translate(
+      'xpack.indexLifecycleMgmt.hotPhase.allRolloverRestrictionsInUseLabel',
+      {
+        defaultMessage: 'All restriction attributes are already in use.',
+      }
+    ),
     downsampleLabel: i18n.translate('xpack.indexLifecycleMgmt.editPolicy.downsampleTitle', {
       defaultMessage: 'Downsample',
     }),
@@ -267,11 +327,16 @@ export const i18nTexts = {
         body: i18n.translate(
           'xpack.indexLifecycleMgmt.editPolicy.errors.rolloverConfigurationError.body',
           {
-            defaultMessage:
-              'A value for one of maximum primary shard size, maximum documents, maximum age or maximum index size is required.',
+            defaultMessage: 'A value for at least one rollover trigger is required.',
           }
         ),
       },
+      rolloverRestrictionGreaterThanTrigger: i18n.translate(
+        'xpack.indexLifecycleMgmt.editPolicy.errors.rolloverRestrictionGreaterThanTrigger',
+        {
+          defaultMessage: 'Restriction must be less than or equal to the corresponding trigger.',
+        }
+      ),
       nonNegativeNumberRequired: i18n.translate(
         'xpack.indexLifecycleMgmt.editPolicy.errors.nonNegativeNumberRequiredError',
         {

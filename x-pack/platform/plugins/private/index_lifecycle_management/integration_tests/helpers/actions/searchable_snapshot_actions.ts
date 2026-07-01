@@ -28,13 +28,6 @@ export const createSearchableSnapshotActions = (phase: Phase) => {
   };
   const ensurePhasePreconditions = async () => {
     if (phase === 'hot') {
-      const defaultSwitch = screen.queryByTestId('useDefaultRolloverSwitch');
-      if (defaultSwitch && defaultSwitch.getAttribute('aria-checked') !== 'true') {
-        fireEvent.click(defaultSwitch);
-        await waitFor(() => {
-          expect(defaultSwitch.getAttribute('aria-checked')).toBe('true');
-        });
-      }
       const rolloverSwitch = screen.queryByTestId('rolloverSwitch');
       if (rolloverSwitch && rolloverSwitch.getAttribute('aria-checked') !== 'true') {
         fireEvent.click(rolloverSwitch);

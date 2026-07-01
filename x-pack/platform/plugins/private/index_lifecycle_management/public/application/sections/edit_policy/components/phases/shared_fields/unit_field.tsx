@@ -7,11 +7,12 @@
 
 import type { FunctionComponent } from 'react';
 import React, { useState } from 'react';
-import { EuiPopover, EuiButtonEmpty, EuiSelectable } from '@elastic/eui';
+import { EuiPopover, EuiButtonEmpty, EuiSelectable, type EuiButtonEmptyProps } from '@elastic/eui';
 import { UseField } from '../../../form';
 
 interface Props {
   path: string;
+  buttonColor?: EuiButtonEmptyProps['color'];
   euiFieldProps?: Record<string, any>;
   options: Array<{
     value: string;
@@ -19,7 +20,12 @@ interface Props {
   }>;
 }
 
-export const UnitField: FunctionComponent<Props> = ({ path, options, euiFieldProps }) => {
+export const UnitField: FunctionComponent<Props> = ({
+  path,
+  buttonColor = 'text',
+  options,
+  euiFieldProps,
+}) => {
   const [open, setOpen] = useState(false);
 
   return (
@@ -35,7 +41,7 @@ export const UnitField: FunctionComponent<Props> = ({ path, options, euiFieldPro
             button={
               <EuiButtonEmpty
                 size="xs"
-                color="text"
+                color={buttonColor}
                 iconSide="right"
                 iconType="chevronSingleDown"
                 onClick={() => setOpen((x) => !x)}

@@ -10,7 +10,17 @@ import moment from 'moment';
 import type { ValidationFunc, ValidationConfig, ValidationError } from '../../../../shared_imports';
 import { fieldValidators } from '../../../../shared_imports';
 
-import { ROLLOVER_FORM_PATHS } from '../constants';
+import {
+  DEFAULT_ROLLOVER_TRIGGER_FIELDS,
+  ROLLOVER_FORM_PATHS,
+  ROLLOVER_RESTRICTION_FIELD_PATHS,
+  ROLLOVER_RESTRICTION_TO_TRIGGER_FIELD,
+  ROLLOVER_TRIGGER_FIELD_PATHS,
+  ROLLOVER_UNIT_PATHS,
+  type RolloverField,
+  type RolloverRestrictionField,
+  type RolloverTriggerField,
+} from '../constants';
 
 import { i18nTexts } from '../i18n_texts';
 import type {
@@ -60,7 +70,28 @@ export const ROLLOVER_VALUE_REQUIRED_VALIDATION_CODE = 'ROLLOVER_VALUE_REQUIRED_
 
 export const DATA_PHASE_REQUIRED_VALIDATION_CODE = 'DATA_PHASE_REQUIRED_VALIDATION_CODE';
 
-const rolloverFieldPaths = Object.values(ROLLOVER_FORM_PATHS);
+const rolloverTriggerFieldPaths = Object.values(ROLLOVER_TRIGGER_FIELD_PATHS);
+
+const getFieldValue = <T = unknown>(formData: Record<string, any>, path: string): T | undefined => {
+  const value = formData[path];
+  if (value !== undefined) {
+    return value;
+  }
+
+  return path.split('.').reduce<unknown>((acc, key) => {
+    if (acc == null || typeof acc !== 'object') {
+      return undefined;
+    }
+    return (acc as Record<string, unknown>)[key];
+  }, formData) as T | undefined;
+};
+
+const getActiveTriggerFields = (formData: FormInternal): RolloverTriggerField[] => {
+  return (
+    getFieldValue<RolloverTriggerField[]>(formData, '_meta.hot.customRollover.triggerFields') ??
+    DEFAULT_ROLLOVER_TRIGGER_FIELDS
+  );
+};
 
 /**
  * An ILM policy requires that for rollover a value must be set for one of the threshold values.
@@ -68,11 +99,13 @@ const rolloverFieldPaths = Object.values(ROLLOVER_FORM_PATHS);
  * This validator checks that and updates form values by setting errors states imperatively to
  * indicate this error state.
  */
-export const rolloverThresholdsValidator: ValidationFunc = ({ form, path }) => {
+export const rolloverThresholdsValidator: ValidationFunc = ({ form, path, formData }) => {
   const fields = form.getFields();
+  const formInternalData = formData as FormInternal;
+  const activeTriggerFields = getActiveTriggerFields(formInternalData);
   // At least one rollover field needs a value specified for this action.
-  const someRolloverFieldHasAValue = rolloverFieldPaths.some((rolloverFieldPath) =>
-    Boolean(fields[rolloverFieldPath]?.value)
+  const someRolloverFieldHasAValue = activeTriggerFields.some((rolloverField) =>
+    Boolean(getFieldValue(formInternalData, ROLLOVER_TRIGGER_FIELD_PATHS[rolloverField]))
   );
   if (!someRolloverFieldHasAValue) {
     const errorToReturn: ValidationError = {
@@ -97,11 +130,97 @@ export const rolloverThresholdsValidator: ValidationFunc = ({ form, path }) => {
     }
     return errorToReturn;
   } else {
-    rolloverFieldPaths.forEach((rolloverFieldPath) => {
+    rolloverTriggerFieldPaths.forEach((rolloverFieldPath) => {
       fields[rolloverFieldPath]?.clearErrors(ROLLOVER_VALUE_REQUIRED_VALIDATION_CODE);
     });
   }
 };
+
+const byteUnitToBytes: Record<string, number> = {
+  b: 1,
+  kb: 1024,
+  mb: 1024 ** 2,
+  gb: 1024 ** 3,
+  tb: 1024 ** 4,
+  pb: 1024 ** 5,
+};
+
+const convertRolloverFieldValue = (
+  field: RolloverField,
+  value: unknown,
+  formData: Record<string, any>
+): number | undefined => {
+  if (value === undefined || value === null || value === '') {
+    return undefined;
+  }
+
+  const numericValue = Number(value);
+  if (!Number.isFinite(numericValue)) {
+    return undefined;
+  }
+
+  const unitPath = ROLLOVER_UNIT_PATHS[field];
+  const unit = unitPath ? getFieldValue<string>(formData, unitPath) : undefined;
+
+  if (field === 'max_age' || field === 'min_age') {
+    return moment
+      .duration(numericValue, (unit ?? 'd') as moment.unitOfTime.DurationConstructor)
+      .asMilliseconds();
+  }
+
+  if (
+    field === 'max_size' ||
+    field === 'min_size' ||
+    field === 'max_primary_shard_size' ||
+    field === 'min_primary_shard_size'
+  ) {
+    return numericValue * (byteUnitToBytes[unit ?? 'gb'] ?? 1);
+  }
+
+  return numericValue;
+};
+
+export const rolloverRestrictionLessThanTriggerValidator =
+  (restrictionField: RolloverRestrictionField): ValidationFunc =>
+  ({ formData }) => {
+    const triggerField = ROLLOVER_RESTRICTION_TO_TRIGGER_FIELD[restrictionField];
+    const activeTriggerFields =
+      getFieldValue<RolloverTriggerField[]>(formData, '_meta.hot.customRollover.triggerFields') ??
+      DEFAULT_ROLLOVER_TRIGGER_FIELDS;
+    const activeRestrictionFields =
+      getFieldValue<RolloverRestrictionField[]>(
+        formData,
+        '_meta.hot.customRollover.restrictionFields'
+      ) ?? [];
+
+    if (
+      !activeTriggerFields.includes(triggerField) ||
+      !activeRestrictionFields.includes(restrictionField)
+    ) {
+      return;
+    }
+
+    const triggerValue = convertRolloverFieldValue(
+      triggerField,
+      getFieldValue(formData, ROLLOVER_TRIGGER_FIELD_PATHS[triggerField]),
+      formData
+    );
+    const restrictionValue = convertRolloverFieldValue(
+      restrictionField,
+      getFieldValue(formData, ROLLOVER_RESTRICTION_FIELD_PATHS[restrictionField]),
+      formData
+    );
+
+    if (
+      triggerValue !== undefined &&
+      restrictionValue !== undefined &&
+      restrictionValue > triggerValue
+    ) {
+      return {
+        message: i18nTexts.editPolicy.errors.rolloverRestrictionGreaterThanTrigger,
+      };
+    }
+  };
 
 export const dataPhaseEnabledPaths = [
   '_meta.hot.enabled',

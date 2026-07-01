@@ -7,12 +7,42 @@
 
 import { cloneDeep } from 'lodash';
 
-import type { SerializedPolicy } from '../../../../../common/types';
+import type { RolloverAction, SerializedPolicy } from '../../../../../common/types';
 import { splitSizeAndUnits } from '../../../lib/policies';
-import { determineDataTierAllocationType, isUsingDefaultRollover } from '../../../lib';
+import { determineDataTierAllocationType } from '../../../lib';
 import { getDefaultRepository } from '../lib';
 import type { FormInternal } from '../types';
-import { CLOUD_DEFAULT_REPO } from '../constants';
+import {
+  CLOUD_DEFAULT_REPO,
+  DEFAULT_ROLLOVER_TRIGGER_FIELDS,
+  ROLLOVER_RESTRICTION_FIELDS,
+  ROLLOVER_TRIGGER_FIELDS,
+  type RolloverRestrictionField,
+  type RolloverTriggerField,
+} from '../constants';
+
+const getInitialRolloverTriggerFields = (rollover?: RolloverAction): RolloverTriggerField[] => {
+  if (!rollover) {
+    return DEFAULT_ROLLOVER_TRIGGER_FIELDS;
+  }
+
+  const triggerFields = ROLLOVER_TRIGGER_FIELDS.filter((field) => rollover[field] !== undefined);
+  const isUsingOnlyRecommendedTriggers =
+    triggerFields.length === DEFAULT_ROLLOVER_TRIGGER_FIELDS.length &&
+    DEFAULT_ROLLOVER_TRIGGER_FIELDS.every((field) => triggerFields.includes(field));
+
+  return isUsingOnlyRecommendedTriggers ? DEFAULT_ROLLOVER_TRIGGER_FIELDS : triggerFields;
+};
+
+const getInitialRolloverRestrictionFields = (
+  rollover?: RolloverAction
+): RolloverRestrictionField[] => {
+  if (!rollover) {
+    return [];
+  }
+
+  return ROLLOVER_RESTRICTION_FIELDS.filter((field) => rollover[field] !== undefined);
+};
 
 export const createDeserializer =
   (isCloudEnabled: boolean) =>
@@ -31,12 +61,14 @@ export const createDeserializer =
       defaultRepository = CLOUD_DEFAULT_REPO;
     }
 
+    const rollover = hot?.actions?.rollover;
     const _meta: FormInternal['_meta'] = {
       hot: {
         enabled: Boolean(hot),
-        isUsingDefaultRollover: isUsingDefaultRollover(policy),
         customRollover: {
-          enabled: Boolean(hot?.actions?.rollover),
+          enabled: Boolean(rollover),
+          triggerFields: getInitialRolloverTriggerFields(rollover),
+          restrictionFields: getInitialRolloverRestrictionFields(rollover),
         },
         bestCompression: hot?.actions?.forcemerge?.index_codec === 'best_compression',
         readonlyEnabled: Boolean(hot?.actions?.readonly),
@@ -105,6 +137,26 @@ export const createDeserializer =
         const maxAge = splitSizeAndUnits(result.phases.hot.actions.rollover.max_age);
         result.phases.hot.actions.rollover.max_age = maxAge.size;
         result._meta.hot.customRollover.maxAgeUnit = maxAge.units;
+      }
+
+      if (result.phases.hot.actions.rollover.min_size) {
+        const minSize = splitSizeAndUnits(result.phases.hot.actions.rollover.min_size);
+        result.phases.hot.actions.rollover.min_size = minSize.size;
+        result._meta.hot.customRollover.minStorageSizeUnit = minSize.units;
+      }
+
+      if (result.phases.hot.actions.rollover.min_primary_shard_size) {
+        const minPrimaryShardSize = splitSizeAndUnits(
+          result.phases.hot.actions.rollover.min_primary_shard_size
+        );
+        result.phases.hot.actions.rollover.min_primary_shard_size = minPrimaryShardSize.size;
+        result._meta.hot.customRollover.minPrimaryShardSizeUnit = minPrimaryShardSize.units;
+      }
+
+      if (result.phases.hot.actions.rollover.min_age) {
+        const minAge = splitSizeAndUnits(result.phases.hot.actions.rollover.min_age);
+        result.phases.hot.actions.rollover.min_age = minAge.size;
+        result._meta.hot.customRollover.minAgeUnit = minAge.units;
       }
     }
     if (result.phases.hot?.actions.shrink?.max_primary_shard_size) {

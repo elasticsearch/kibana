@@ -71,7 +71,6 @@ describe('<EditPolicy /> hot phase validation', () => {
 
   describe('rollover', () => {
     test(`doesn't allow no max primary shard size, no max primary docs, no max age, no max docs, no max index size`, async () => {
-      actions.rollover.toggleDefault();
       expect(actions.rollover.hasSettingRequiredCallout()).toBeFalsy();
 
       await actions.rollover.setMaxPrimaryShardSize('');
@@ -85,14 +84,12 @@ describe('<EditPolicy /> hot phase validation', () => {
 
     describe('max primary shard size', () => {
       test(`doesn't allow -1`, async () => {
-        actions.rollover.toggleDefault();
         await actions.rollover.setMaxPrimaryShardSize('-1');
 
         await expectErrorMessages([i18nTexts.editPolicy.errors.numberGreatThan0Required]);
       });
 
       test(`doesn't allow 0`, async () => {
-        actions.rollover.toggleDefault();
         await actions.rollover.setMaxPrimaryShardSize('0');
 
         await expectErrorMessages([i18nTexts.editPolicy.errors.numberGreatThan0Required]);
@@ -101,21 +98,18 @@ describe('<EditPolicy /> hot phase validation', () => {
 
     describe('max primary docs size', () => {
       test(`doesn't allow -1`, async () => {
-        actions.rollover.toggleDefault();
         await actions.rollover.setMaxPrimaryShardDocs('-1');
 
         await expectErrorMessages([i18nTexts.editPolicy.errors.numberGreatThan0Required]);
       });
 
       test(`doesn't allow 0`, async () => {
-        actions.rollover.toggleDefault();
         await actions.rollover.setMaxPrimaryShardDocs('0');
 
         await expectErrorMessages([i18nTexts.editPolicy.errors.numberGreatThan0Required]);
       });
 
       test(`doesn't allow decimals`, async () => {
-        actions.rollover.toggleDefault();
         await actions.rollover.setMaxPrimaryShardDocs('5.5');
 
         await expectErrorMessages([i18nTexts.editPolicy.errors.integerRequired]);
@@ -124,14 +118,12 @@ describe('<EditPolicy /> hot phase validation', () => {
 
     describe('max size', () => {
       test(`doesn't allow -1`, async () => {
-        actions.rollover.toggleDefault();
         await actions.rollover.setMaxSize('-1');
 
         await expectErrorMessages([i18nTexts.editPolicy.errors.numberGreatThan0Required]);
       });
 
       test(`doesn't allow 0`, async () => {
-        actions.rollover.toggleDefault();
         await actions.rollover.setMaxSize('0');
 
         await expectErrorMessages([i18nTexts.editPolicy.errors.numberGreatThan0Required]);
@@ -140,21 +132,18 @@ describe('<EditPolicy /> hot phase validation', () => {
 
     describe('max age', () => {
       test(`doesn't allow -1`, async () => {
-        actions.rollover.toggleDefault();
         await actions.rollover.setMaxAge('-1');
 
         await expectErrorMessages([i18nTexts.editPolicy.errors.numberGreatThan0Required]);
       });
 
       test(`doesn't allow 0`, async () => {
-        actions.rollover.toggleDefault();
         await actions.rollover.setMaxAge('0');
 
         await expectErrorMessages([i18nTexts.editPolicy.errors.numberGreatThan0Required]);
       });
 
       test(`doesn't allow decimals`, async () => {
-        actions.rollover.toggleDefault();
         await actions.rollover.setMaxAge('5.5');
 
         await expectErrorMessages([i18nTexts.editPolicy.errors.integerRequired]);
@@ -163,24 +152,50 @@ describe('<EditPolicy /> hot phase validation', () => {
 
     describe('max docs', () => {
       test(`doesn't allow -1`, async () => {
-        actions.rollover.toggleDefault();
         await actions.rollover.setMaxDocs('-1');
 
         await expectErrorMessages([i18nTexts.editPolicy.errors.numberGreatThan0Required]);
       });
 
       test(`doesn't allow 0`, async () => {
-        actions.rollover.toggleDefault();
         await actions.rollover.setMaxDocs('0');
 
         await expectErrorMessages([i18nTexts.editPolicy.errors.numberGreatThan0Required]);
       });
 
       test(`doesn't allow decimals`, async () => {
-        actions.rollover.toggleDefault();
         await actions.rollover.setMaxDocs('5.5');
 
         await expectErrorMessages([i18nTexts.editPolicy.errors.integerRequired]);
+      });
+    });
+
+    describe('min values', () => {
+      test(`doesn't allow a minimum age greater than maximum age`, async () => {
+        await actions.rollover.setMaxAge('10', 'd');
+        await actions.rollover.setMinAge('11', 'd');
+
+        await expectErrorMessages([
+          i18nTexts.editPolicy.errors.rolloverRestrictionGreaterThanTrigger,
+        ]);
+      });
+
+      test(`doesn't allow decimals for minimum docs`, async () => {
+        await actions.rollover.setMinDocs('5.5');
+
+        await expectErrorMessages([i18nTexts.editPolicy.errors.integerRequired]);
+      });
+
+      test(`doesn't allow negative minimum docs`, async () => {
+        await actions.rollover.setMinDocs('-1');
+
+        await expectErrorMessages([i18nTexts.editPolicy.errors.nonNegativeNumberRequired]);
+      });
+
+      test(`allows 0 for minimum docs`, async () => {
+        await actions.rollover.setMinDocs('0');
+
+        await expectErrorMessages([]);
       });
     });
   });

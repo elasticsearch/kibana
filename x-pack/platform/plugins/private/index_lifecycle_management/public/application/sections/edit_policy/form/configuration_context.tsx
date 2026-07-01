@@ -11,11 +11,7 @@ import React, { createContext, useContext } from 'react';
 
 import { useFormData } from '../../../../shared_imports';
 
-import {
-  isUsingDefaultRolloverPath,
-  isUsingCustomRolloverPath,
-  isUsingDownsamplePath,
-} from '../constants';
+import { isUsingCustomRolloverPath, isUsingDownsamplePath } from '../constants';
 
 export interface Configuration {
   /**
@@ -60,23 +56,17 @@ export const ConfigurationProvider: FunctionComponent<{ children?: React.ReactNo
       pathToHotPhaseSearchableSnapshot,
       pathToColdPhaseSearchableSnapshot,
       isUsingCustomRolloverPath,
-      isUsingDefaultRolloverPath,
       isUsingDownsamplePath('hot'),
       isUsingDownsamplePath('warm'),
       isUsingDownsamplePath('cold'),
     ],
   });
   const hotEnabled = Boolean(get(formData, pathToHotPhaseEnabled, true));
-  const isUsingDefaultRollover = get(formData, isUsingDefaultRolloverPath);
   // Provide default value, as path may become undefined if removed from the DOM
   const isUsingCustomRollover = get(formData, isUsingCustomRolloverPath, true);
 
   const context: Configuration = {
-    isUsingRollover: hotEnabled
-      ? isUsingDefaultRollover === false
-        ? isUsingCustomRollover
-        : true
-      : false,
+    isUsingRollover: hotEnabled ? isUsingCustomRollover : false,
     isUsingSearchableSnapshotInHotPhase:
       hotEnabled && get(formData, pathToHotPhaseSearchableSnapshot) != null,
     isUsingSearchableSnapshotInColdPhase: get(formData, pathToColdPhaseSearchableSnapshot) != null,

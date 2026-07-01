@@ -6,11 +6,9 @@
  */
 
 import { i18n } from '@kbn/i18n';
-import type { PhaseWithDownsample } from '../../../../common/types';
+import type { PhaseWithDownsample, RolloverAction } from '../../../../common/types';
 
 export const isUsingCustomRolloverPath = '_meta.hot.customRollover.enabled';
-
-export const isUsingDefaultRolloverPath = '_meta.hot.isUsingDefaultRollover';
 
 export const isUsingDownsamplePath = (phase: PhaseWithDownsample) =>
   `_meta.${phase}.downsample.enabled`;
@@ -27,6 +25,83 @@ export const ROLLOVER_FORM_PATHS = {
   maxPrimaryShardDocs: 'phases.hot.actions.rollover.max_primary_shard_docs',
 };
 
+export type RolloverTriggerField = Extract<
+  keyof RolloverAction,
+  'max_age' | 'max_docs' | 'max_primary_shard_size' | 'max_primary_shard_docs' | 'max_size'
+>;
+
+export type RolloverRestrictionField = Extract<
+  keyof RolloverAction,
+  'min_age' | 'min_docs' | 'min_primary_shard_size' | 'min_primary_shard_docs' | 'min_size'
+>;
+
+export type RolloverField = RolloverTriggerField | RolloverRestrictionField;
+
+export const ROLLOVER_TRIGGER_FIELD_PATHS: Record<RolloverTriggerField, string> = {
+  max_age: ROLLOVER_FORM_PATHS.maxAge,
+  max_docs: ROLLOVER_FORM_PATHS.maxDocs,
+  max_primary_shard_size: ROLLOVER_FORM_PATHS.maxPrimaryShardSize,
+  max_primary_shard_docs: ROLLOVER_FORM_PATHS.maxPrimaryShardDocs,
+  max_size: ROLLOVER_FORM_PATHS.maxSize,
+};
+
+export const ROLLOVER_RESTRICTION_FIELD_PATHS: Record<RolloverRestrictionField, string> = {
+  min_age: 'phases.hot.actions.rollover.min_age',
+  min_docs: 'phases.hot.actions.rollover.min_docs',
+  min_primary_shard_size: 'phases.hot.actions.rollover.min_primary_shard_size',
+  min_primary_shard_docs: 'phases.hot.actions.rollover.min_primary_shard_docs',
+  min_size: 'phases.hot.actions.rollover.min_size',
+};
+
+export const ROLLOVER_FIELD_PATHS: Record<RolloverField, string> = {
+  ...ROLLOVER_TRIGGER_FIELD_PATHS,
+  ...ROLLOVER_RESTRICTION_FIELD_PATHS,
+};
+
+export const ROLLOVER_TRIGGER_FIELDS: RolloverTriggerField[] = [
+  'max_age',
+  'max_primary_shard_size',
+  'max_docs',
+  'max_size',
+  'max_primary_shard_docs',
+];
+
+export const ROLLOVER_RESTRICTION_FIELDS: RolloverRestrictionField[] = [
+  'min_age',
+  'min_docs',
+  'min_size',
+  'min_primary_shard_docs',
+  'min_primary_shard_size',
+];
+
+export const DEFAULT_ROLLOVER_TRIGGER_FIELDS: RolloverTriggerField[] = [
+  'max_age',
+  'max_primary_shard_size',
+];
+
+export const ROLLOVER_TRIGGER_FIELD_PATH = '_meta.hot.customRollover.triggerFields';
+export const ROLLOVER_RESTRICTION_FIELD_PATH = '_meta.hot.customRollover.restrictionFields';
+
+export const ROLLOVER_UNIT_PATHS: Partial<Record<RolloverField, string>> = {
+  max_age: '_meta.hot.customRollover.maxAgeUnit',
+  max_primary_shard_size: '_meta.hot.customRollover.maxPrimaryShardSizeUnit',
+  max_size: '_meta.hot.customRollover.maxStorageSizeUnit',
+  min_age: '_meta.hot.customRollover.minAgeUnit',
+  min_primary_shard_size: '_meta.hot.customRollover.minPrimaryShardSizeUnit',
+  min_size: '_meta.hot.customRollover.minStorageSizeUnit',
+};
+
+export const ROLLOVER_RESTRICTION_TO_TRIGGER_FIELD: Record<
+  RolloverRestrictionField,
+  RolloverTriggerField
+> = {
+  min_age: 'max_age',
+  min_docs: 'max_docs',
+  min_size: 'max_size',
+  min_primary_shard_size: 'max_primary_shard_size',
+  min_primary_shard_docs: 'max_primary_shard_docs',
+};
+
 /**
  * This repository is provisioned by Elastic Cloud and will always
  * exist as a "managed" repository.
@@ -38,18 +113,6 @@ export const CLOUD_DEFAULT_REPO = 'found-snapshots';
  */
 export const byteSizeUnits = [
   {
-    value: 'gb',
-    text: i18n.translate('xpack.indexLifecycleMgmt.editPolicy.byteSizeUnits.gigabytesLabel', {
-      defaultMessage: 'gigabytes',
-    }),
-  },
-  {
-    value: 'mb',
-    text: i18n.translate('xpack.indexLifecycleMgmt.editPolicy.byteSizeUnits.megabytesLabel', {
-      defaultMessage: 'megabytes',
-    }),
-  },
-  {
     value: 'b',
     text: i18n.translate('xpack.indexLifecycleMgmt.editPolicy.byteSizeUnits.bytesLabel', {
       defaultMessage: 'bytes',
@@ -59,6 +122,18 @@ export const byteSizeUnits = [
     value: 'kb',
     text: i18n.translate('xpack.indexLifecycleMgmt.editPolicy.byteSizeUnits.kilobytesLabel', {
       defaultMessage: 'kilobytes',
+    }),
+  },
+  {
+    value: 'mb',
+    text: i18n.translate('xpack.indexLifecycleMgmt.editPolicy.byteSizeUnits.megabytesLabel', {
+      defaultMessage: 'megabytes',
+    }),
+  },
+  {
+    value: 'gb',
+    text: i18n.translate('xpack.indexLifecycleMgmt.editPolicy.byteSizeUnits.gigabytesLabel', {
+      defaultMessage: 'gigabytes',
     }),
   },
   {
@@ -80,9 +155,9 @@ export const byteSizeUnits = [
  */
 export const timeUnits = [
   {
-    value: 'd',
-    text: i18n.translate('xpack.indexLifecycleMgmt.editPolicy.timeUnits.daysLabel', {
-      defaultMessage: 'days',
+    value: 'm',
+    text: i18n.translate('xpack.indexLifecycleMgmt.editPolicy.timeUnits.minutesLabel', {
+      defaultMessage: 'minutes',
     }),
   },
   {
@@ -92,9 +167,9 @@ export const timeUnits = [
     }),
   },
   {
-    value: 'm',
-    text: i18n.translate('xpack.indexLifecycleMgmt.editPolicy.timeUnits.minutesLabel', {
-      defaultMessage: 'minutes',
+    value: 'd',
+    text: i18n.translate('xpack.indexLifecycleMgmt.editPolicy.timeUnits.daysLabel', {
+      defaultMessage: 'days',
     }),
   },
 ];

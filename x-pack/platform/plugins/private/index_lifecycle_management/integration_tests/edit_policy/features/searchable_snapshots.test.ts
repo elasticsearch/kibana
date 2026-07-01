@@ -180,12 +180,11 @@ describe('<EditPolicy /> searchable snapshots', () => {
     expect(actions.cold.downsample.exists()).toBeFalsy();
   }, 10000);
 
-  test('disabling rollover toggle, but enabling default rollover', async () => {
+  test('disabling and re-enabling rollover', async () => {
     await setup();
     const actions = createActions();
-    actions.rollover.toggleDefault();
     actions.rollover.toggle();
-    actions.rollover.toggleDefault();
+    actions.rollover.toggle();
 
     expect(actions.hot.forceMergeExists()).toBeTruthy();
     expect(actions.hot.shrinkExists()).toBeTruthy();

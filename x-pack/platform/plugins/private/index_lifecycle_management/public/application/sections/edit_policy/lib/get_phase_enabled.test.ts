@@ -24,10 +24,11 @@ const createFormData = (metaOverrides: MetaOverrides = {}): FormInternal => {
   const defaultMeta: FormInternal['_meta'] = {
     hot: {
       enabled: undefined,
-      isUsingDefaultRollover: false,
       readonlyEnabled: false,
       customRollover: {
         enabled: false,
+        triggerFields: [],
+        restrictionFields: [],
       },
       bestCompression: false,
       shrink: {

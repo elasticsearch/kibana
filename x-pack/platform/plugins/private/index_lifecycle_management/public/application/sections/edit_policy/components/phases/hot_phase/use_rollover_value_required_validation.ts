@@ -9,10 +9,13 @@ import { useState, useEffect } from 'react';
 import { get } from 'lodash';
 import type { ValidationError } from '../../../../../../shared_imports';
 import { useFormData, useFormContext } from '../../../../../../shared_imports';
-import { ROLLOVER_FORM_PATHS } from '../../../constants';
+import { ROLLOVER_TRIGGER_FIELD_PATHS, ROLLOVER_TRIGGER_FIELD_PATH } from '../../../constants';
 import { ROLLOVER_VALUE_REQUIRED_VALIDATION_CODE } from '../../../form';
 
-const rolloverFieldPaths = Object.values(ROLLOVER_FORM_PATHS);
+const rolloverFieldPaths = [
+  ROLLOVER_TRIGGER_FIELD_PATH,
+  ...Object.values(ROLLOVER_TRIGGER_FIELD_PATHS),
+];
 
 export const useRolloverValueRequiredValidation = (): boolean => {
   const [isValid, setIsValid] = useState(false);
@@ -20,11 +23,10 @@ export const useRolloverValueRequiredValidation = (): boolean => {
   const { getFields } = useFormContext();
 
   useEffect(() => {
-    // We check just the ROLLOVER_FORM_PATHS.maxPrimaryShardSize field because if
-    // it has the ROLLOVER_VALUE_REQUIRED_VALIDATION_CODE error, all the other rollover
-    // fields should too.
-    const rolloverFieldErrors: ValidationError[] =
-      get(getFields(), ROLLOVER_FORM_PATHS.maxPrimaryShardSize)?.errors ?? [];
+    const fields = getFields();
+    const rolloverFieldErrors: ValidationError[] = Object.values(
+      ROLLOVER_TRIGGER_FIELD_PATHS
+    ).flatMap((rolloverFieldPath) => get(fields, rolloverFieldPath)?.errors ?? []);
 
     setIsValid(
       rolloverFieldErrors.some(

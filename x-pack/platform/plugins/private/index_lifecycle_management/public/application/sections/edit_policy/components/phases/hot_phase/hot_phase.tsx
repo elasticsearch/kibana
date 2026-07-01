@@ -7,20 +7,17 @@
 
 import type { FunctionComponent } from 'react';
 import React from 'react';
-import { get } from 'lodash';
 import { FormattedMessage } from '@kbn/i18n-react';
 import { i18n } from '@kbn/i18n';
 import { EuiSpacer, EuiCallOut, EuiTextColor, EuiSwitch, EuiText } from '@elastic/eui';
 
-import { useFormData, useKibana } from '../../../../../../shared_imports';
+import { useKibana } from '../../../../../../shared_imports';
 
 import { i18nTexts } from '../../../i18n_texts';
 
 import { useConfiguration, UseField } from '../../../form';
 
 import { useEditPolicyContext } from '../../../edit_policy_context';
-
-import { ROLLOVER_FORM_PATHS, isUsingDefaultRolloverPath } from '../../../constants';
 
 import { LearnMoreLink, DescribedFormRow } from '../..';
 
@@ -35,23 +32,11 @@ import {
 import { Phase } from '../phase';
 
 import { useRolloverValueRequiredValidation } from './use_rollover_value_required_validation';
-import {
-  MaxPrimaryShardSizeField,
-  MaxPrimaryShardDocsField,
-  MaxAgeField,
-  MaxDocumentCountField,
-  MaxIndexSizeField,
-} from './components';
-
-const rolloverFieldPaths = Object.values(ROLLOVER_FORM_PATHS);
+import { RolloverFields } from './components';
 
 export const HotPhase: FunctionComponent = () => {
   const { license } = useEditPolicyContext();
-  const [formData] = useFormData({
-    watch: [isUsingDefaultRolloverPath, ...rolloverFieldPaths],
-  });
   const { isUsingRollover, isUsingDownsampleInHotPhase } = useConfiguration();
-  const isUsingDefaultRollover: boolean = get(formData, isUsingDefaultRolloverPath);
 
   const showEmptyRolloverFieldsError = useRolloverValueRequiredValidation();
 
@@ -93,75 +78,39 @@ export const HotPhase: FunctionComponent = () => {
               </p>
             </EuiTextColor>
             <EuiSpacer />
-            <UseField<boolean> path={isUsingDefaultRolloverPath}>
+            <UseField<boolean> path="_meta.hot.customRollover.enabled">
               {(field) => (
-                <>
-                  <EuiText color="default">
-                    <EuiSwitch
-                      label={field.label}
-                      checked={field.value}
-                      onChange={(e) => field.setValue(e.target.checked)}
-                      data-test-subj="useDefaultRolloverSwitch"
-                    />
-                  </EuiText>
-                  <EuiSpacer size="s" />
-                  <FormattedMessage
-                    id="xpack.indexLifecycleMgmt.editPolicy.hotPhase.rolloverDefaultsTipContent"
-                    defaultMessage="Roll over when an index is 30 days old or any primary shard reaches 50 gigabytes."
+                <EuiText color="default">
+                  <EuiSwitch
+                    label={field.label}
+                    checked={field.value}
+                    onChange={(e) => field.setValue(e.target.checked)}
+                    data-test-subj="rolloverSwitch"
                   />
-                </>
+                </EuiText>
               )}
             </UseField>
           </>
         }
         fullWidth
       >
-        {isUsingDefaultRollover === false ? (
+        {isUsingRollover ? (
           <div aria-live="polite" role="region">
-            <UseField<boolean> path="_meta.hot.customRollover.enabled">
-              {(field) => (
-                <EuiSwitch
-                  label={field.label}
-                  checked={field.value}
-                  onChange={(e) => field.setValue(e.target.checked)}
-                  data-test-subj="rolloverSwitch"
-                />
-              )}
-            </UseField>
-            {isUsingRollover && (
+            {showEmptyRolloverFieldsError && (
               <>
-                <EuiSpacer size="m" />
-                {showEmptyRolloverFieldsError && (
-                  <>
-                    <EuiCallOut
-                      announceOnMount={false}
-                      size="s"
-                      title={i18nTexts.editPolicy.errors.rollOverConfigurationCallout.title}
-                      data-test-subj="rolloverSettingsRequired"
-                      color="danger"
-                    >
-                      <div>{i18nTexts.editPolicy.errors.rollOverConfigurationCallout.body}</div>
-                    </EuiCallOut>
-                    <EuiSpacer size="s" />
-                  </>
-                )}
-
-                <MaxPrimaryShardSizeField />
-                <EuiSpacer />
-
-                <MaxPrimaryShardDocsField />
-                <EuiSpacer />
-
-                <MaxAgeField />
-                <EuiSpacer />
-
-                <MaxDocumentCountField />
-                <EuiSpacer />
-
-                {/* This field is currently deprecated and will be removed in v8+ of the stack */}
-                <MaxIndexSizeField />
+                <EuiCallOut
+                  announceOnMount={false}
+                  size="s"
+                  title={i18nTexts.editPolicy.errors.rollOverConfigurationCallout.title}
+                  data-test-subj="rolloverSettingsRequired"
+                  color="danger"
+                >
+                  <div>{i18nTexts.editPolicy.errors.rollOverConfigurationCallout.body}</div>
+                </EuiCallOut>
+                <EuiSpacer size="s" />
               </>
             )}
+            <RolloverFields />
           </div>
         ) : (
           <div />

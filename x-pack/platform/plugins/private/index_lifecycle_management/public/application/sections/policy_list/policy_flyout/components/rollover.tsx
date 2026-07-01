@@ -67,6 +67,51 @@ export const Rollover = ({ phase, phases }: ActionComponentProps) => {
     );
   }
 
+  if (rollover?.min_primary_shard_size) {
+    descriptionItems.push(
+      <>
+        {`${i18nTexts.editPolicy.minPrimaryShardSizeLabel}: `}
+        <strong>{rollover.min_primary_shard_size}</strong>
+      </>
+    );
+  }
+
+  if (rollover?.min_primary_shard_docs) {
+    descriptionItems.push(
+      <>
+        {`${i18nTexts.editPolicy.minPrimaryShardDocsLabel}: `}
+        <strong>{rollover.min_primary_shard_docs}</strong>
+      </>
+    );
+  }
+
+  if (rollover?.min_age) {
+    descriptionItems.push(
+      <>
+        {`${i18nTexts.editPolicy.minRolloverAgeLabel}: `}
+        <strong>{rollover.min_age}</strong>
+      </>
+    );
+  }
+
+  if (rollover?.min_docs !== undefined) {
+    descriptionItems.push(
+      <>
+        {`${i18nTexts.editPolicy.minDocsLabel}: `}
+        <strong>{rollover.min_docs}</strong>
+      </>
+    );
+  }
+
+  if (rollover?.min_size) {
+    descriptionItems.push(
+      <>
+        {`${i18nTexts.editPolicy.minSizeLabel}: `}
+        <strong>{rollover.min_size}</strong>
+      </>
+    );
+  }
+
   return rollover ? (
     <ActionDescription
       title={i18nTexts.editPolicy.rolloverLabel}

@@ -90,10 +90,6 @@ export interface RolloverAction {
    */
   max_size?: string;
 
-  /**
-   * Currently we do not yet support configuring min_* values in the UI
-   * but they are accepted by the API.
-   */
   min_age?: string;
   min_docs?: number;
   min_size?: string;
