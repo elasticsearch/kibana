@@ -1,0 +1,7 @@
+summary: The requested resource was not found.
+value:
+  {
+    "error": "Not Found",
+    "message": "Saved object [cases-template/9da1ea2a-09f8-4d0e-bf9d-09bf8c9d0f42] not found",
+    "statusCode": 404
+  }

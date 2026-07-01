@@ -6,6 +6,7 @@
  */
 
 import type { DocLinksServiceSetup } from '@kbn/core/server';
+import type { ConfigType } from '../../config';
 import { getCasesByAlertIdRoute } from './cases/alerts/get_cases';
 import { deleteCaseRoute } from './cases/delete_cases';
 import { findCaseRoute } from './cases/find_cases';
@@ -29,13 +30,16 @@ import { postCaseConfigureRoute } from './configure/post_configure';
 import { getAllAlertsAttachedToCaseRoute } from './comments/get_alerts';
 import { findUserActionsRoute } from './user_actions/find_user_actions';
 import { postFileRoute } from './files/post_file';
+import { getPublicTemplateRoutes } from './templates';
 
 export const getExternalRoutes = ({
   isServerless,
   docLinks,
+  config,
 }: {
   isServerless?: boolean;
   docLinks: DocLinksServiceSetup;
+  config: ConfigType;
 }) =>
   [
     deleteCaseRoute,
@@ -61,4 +65,5 @@ export const getExternalRoutes = ({
     postCaseConfigureRoute,
     getAllAlertsAttachedToCaseRoute,
     postFileRoute,
+    ...getPublicTemplateRoutes(config),
   ] as CaseRoute[];

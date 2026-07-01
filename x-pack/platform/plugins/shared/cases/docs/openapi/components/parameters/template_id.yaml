@@ -1,0 +1,8 @@
+in: path
+name: template_id
+description: The identifier for the template.
+required: true
+schema:
+  type: string
+  maxLength: 36
+example: 9da1ea2a-09f8-4d0e-bf9d-09bf8c9d0f42

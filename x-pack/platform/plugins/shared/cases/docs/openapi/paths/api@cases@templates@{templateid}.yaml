@@ -1,0 +1,39 @@
+get:
+  summary: Get a case template by ID
+  operationId: getCaseTemplateDefaultSpace
+  description: >
+    Returns the details of a case template.
+    Requires the Cases feature to be enabled in the space.
+  tags:
+    - cases
+  parameters:
+    - $ref: '../components/parameters/template_id.yaml'
+    - $ref: '../components/parameters/template_version.yaml'
+  responses:
+    '200':
+      description: Indicates a successful call.
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas/template_v2_response.yaml'
+          examples:
+            getCaseTemplateResponse:
+              $ref: '../components/examples/get_case_template_response.yaml'
+    '404':
+      description: The template was not found.
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas/response_4xx.yaml'
+          examples:
+            response404:
+              $ref: '../components/examples/response_404.yaml'
+    '401':
+      description: Authorization information is missing or invalid.
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas/response_4xx.yaml'
+          examples:
+            response401:
+              $ref: '../components/examples/response_401.yaml'

@@ -1,0 +1,94 @@
+type: object
+description: A case template (v2).
+required:
+  - templateId
+  - name
+  - owner
+  - definition
+  - definitionString
+  - templateVersion
+  - deletedAt
+  - isLatest
+  - latestVersion
+properties:
+  templateId:
+    type: string
+    maxLength: 36
+    description: The unique identifier of the template, shared across all versions.
+  name:
+    type: string
+    maxLength: 100
+    description: The display name of the template.
+  owner:
+    type: string
+    maxLength: 50
+    description: The owning solution (e.g. cases, observability, securitySolution).
+  definition:
+    description: The parsed template definition.
+  definitionString:
+    type: string
+    maxLength: 30000
+    description: The raw YAML definition string.
+  templateVersion:
+    type: integer
+    description: The version number of this template revision.
+  deletedAt:
+    type: string
+    format: date-time
+    nullable: true
+    description: The date the template was soft-deleted, or null if active.
+  description:
+    type: string
+    maxLength: 30000
+    description: A human-readable description of the template.
+  tags:
+    $ref: 'template_tags.yaml'
+  author:
+    type: string
+    maxLength: 1000
+    description: The username of the template author.
+  usageCount:
+    type: integer
+    description: The number of times this template has been used to create a case.
+  fieldCount:
+    type: integer
+    description: The number of fields defined in the template.
+  fieldNames:
+    type: array
+    description: Metadata about each field defined in the template.
+    items:
+      type: object
+      required:
+        - name
+        - label
+        - type
+        - control
+      properties:
+        name:
+          type: string
+          maxLength: 256
+        label:
+          type: string
+          maxLength: 256
+        type:
+          type: string
+          maxLength: 50
+        control:
+          type: string
+          maxLength: 50
+  lastUsedAt:
+    type: string
+    format: date-time
+    description: The date the template was last used to create a case.
+  isDefault:
+    type: boolean
+    description: Whether this is the default template for its owner.
+  isLatest:
+    type: boolean
+    description: Whether this is the latest version of the template.
+  isEnabled:
+    type: boolean
+    description: Whether the template is enabled.
+  latestVersion:
+    type: integer
+    description: The latest version number of this template.

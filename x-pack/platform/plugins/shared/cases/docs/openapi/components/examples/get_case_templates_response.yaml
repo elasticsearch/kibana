@@ -1,0 +1,21 @@
+summary: A paginated list of case templates.
+value:
+  {
+    "page": 1,
+    "perPage": 20,
+    "total": 1,
+    "templates": [
+      {
+        "templateId": "9da1ea2a-09f8-4d0e-bf9d-09bf8c9d0f42",
+        "name": "My Template",
+        "owner": "cases",
+        "definition": {},
+        "definitionString": "fields: []",
+        "templateVersion": 1,
+        "deletedAt": null,
+        "isLatest": true,
+        "latestVersion": 1,
+        "fieldSearchMatches": false
+      }
+    ]
+  }

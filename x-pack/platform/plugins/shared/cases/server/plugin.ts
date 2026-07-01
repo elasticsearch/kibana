@@ -220,7 +220,11 @@ export class CasePlugin
     registerRoutes({
       router,
       routes: [
-        ...getExternalRoutes({ isServerless: this.isServerless, docLinks: core.docLinks }),
+        ...getExternalRoutes({
+          isServerless: this.isServerless,
+          docLinks: core.docLinks,
+          config: this.caseConfig,
+        }),
         ...getInternalRoutes(this.userProfileService, this.caseConfig),
       ],
       logger: this.logger,

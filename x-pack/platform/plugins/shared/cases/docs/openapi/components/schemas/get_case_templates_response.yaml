@@ -1,0 +1,29 @@
+type: object
+description: Response returned by the get all case templates API.
+required:
+  - templates
+  - page
+  - perPage
+  - total
+properties:
+  templates:
+    type: array
+    items:
+      allOf:
+        - $ref: 'template_v2_response.yaml'
+        - type: object
+          required:
+            - fieldSearchMatches
+          properties:
+            fieldSearchMatches:
+              type: boolean
+              description: Whether the search query matched a field name in this template.
+  page:
+    type: integer
+    description: The page number of the returned results.
+  perPage:
+    type: integer
+    description: The number of results per page.
+  total:
+    type: integer
+    description: The total number of templates matching the query.

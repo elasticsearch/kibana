@@ -29,6 +29,10 @@ paths:
     $ref: 'paths/api@cases@reporters.yaml'
   '/api/cases/tags':
     $ref: 'paths/api@cases@tags.yaml'
+  '/api/cases/templates':
+    $ref: 'paths/api@cases@templates.yaml'
+  '/api/cases/templates/{template_id}':
+    $ref: 'paths/api@cases@templates@{templateid}.yaml'
   '/api/cases/{caseId}':
     $ref: 'paths/api@cases@{caseid}.yaml'
   '/api/cases/{caseId}/alerts':

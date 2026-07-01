@@ -1,0 +1,8 @@
+in: query
+name: version
+description: The version number of the template to retrieve. If omitted, the latest version is returned.
+required: false
+schema:
+  type: integer
+  minimum: 1
+example: 1

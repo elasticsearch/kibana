@@ -1103,6 +1103,124 @@ export const UpdateCaseConfigurationRequest = lazySchema(() =>
 export type UpdateCaseConfigurationRequest = z.infer<typeof UpdateCaseConfigurationRequest>;
 
 /**
+ * A case template (v2).
+ */
+export const TemplateV2Response = lazySchema(() =>
+  z.object({
+    /**
+     * The unique identifier of the template, shared across all versions.
+     */
+    templateId: z.string().max(36),
+    /**
+     * The display name of the template.
+     */
+    name: z.string().max(100),
+    /**
+     * The owning solution (e.g. cases, observability, securitySolution).
+     */
+    owner: z.string().max(50),
+    /**
+     * The parsed template definition.
+     */
+    definition: z.unknown(),
+    /**
+     * The raw YAML definition string.
+     */
+    definitionString: z.string().max(30000),
+    /**
+     * The version number of this template revision.
+     */
+    templateVersion: z.number().int(),
+    /**
+     * The date the template was soft-deleted, or null if active.
+     */
+    deletedAt: z.string().datetime().nullable(),
+    /**
+     * A human-readable description of the template.
+     */
+    description: z.string().max(30000).optional(),
+    tags: TemplateTags.optional(),
+    /**
+     * The username of the template author.
+     */
+    author: z.string().max(1000).optional(),
+    /**
+     * The number of times this template has been used to create a case.
+     */
+    usageCount: z.number().int().optional(),
+    /**
+     * The number of fields defined in the template.
+     */
+    fieldCount: z.number().int().optional(),
+    /**
+     * Metadata about each field defined in the template.
+     */
+    fieldNames: z
+      .array(
+        z.object({
+          name: z.string().max(256),
+          label: z.string().max(256),
+          type: z.string().max(50),
+          control: z.string().max(50),
+        })
+      )
+      .optional(),
+    /**
+     * The date the template was last used to create a case.
+     */
+    lastUsedAt: z.string().datetime().optional(),
+    /**
+     * Whether this is the default template for its owner.
+     */
+    isDefault: z.boolean().optional(),
+    /**
+     * Whether this is the latest version of the template.
+     */
+    isLatest: z.boolean(),
+    /**
+     * Whether the template is enabled.
+     */
+    isEnabled: z.boolean().optional(),
+    /**
+     * The latest version number of this template.
+     */
+    latestVersion: z.number().int(),
+  })
+);
+export type TemplateV2Response = z.infer<typeof TemplateV2Response>;
+
+/**
+ * Response returned by the get all case templates API.
+ */
+export const GetCaseTemplatesResponse = lazySchema(() =>
+  z.object({
+    templates: z.array(
+      TemplateV2Response.merge(
+        z.object({
+          /**
+           * Whether the search query matched a field name in this template.
+           */
+          fieldSearchMatches: z.boolean(),
+        })
+      )
+    ),
+    /**
+     * The page number of the returned results.
+     */
+    page: z.number().int(),
+    /**
+     * The number of results per page.
+     */
+    perPage: z.number().int(),
+    /**
+     * The total number of templates matching the query.
+     */
+    total: z.number().int(),
+  })
+);
+export type GetCaseTemplatesResponse = z.infer<typeof GetCaseTemplatesResponse>;
+
+/**
   * Case details returned by the get case API. The comments property is not included in the response. Use the find case comments API to retrieve comments. totalComment reflects the actual number of user comments.
 
   */
