@@ -996,7 +996,7 @@
     },
     {
       "groupName": "polyfills",
-      "matchDepNames": ["blob-polyfill", "core-js", "qs"],
+      "matchDepNames": ["core-js", "qs"],
       "matchDepPatterns": ["polyfill"],
       "reviewers": ["team:kibana-operations"],
       "matchBaseBranches": ["main"],

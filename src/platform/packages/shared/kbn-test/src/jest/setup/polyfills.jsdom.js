@@ -24,12 +24,30 @@ if (!Object.hasOwn(global, 'TextEncoder')) {
   global.TextDecoder = customTextEncoding.TextDecoder;
 }
 
-// NOTE: We should evaluate removing this once we upgrade to Node 18 and find out if loaders.gl already fixed this usage
-// or instead check if we can use the official Blob implementation.
-// This is needed for x-pack/platform/plugins/private/file_upload/public/importer/geo/geojson_importer/geojson_importer.test.js
-//
-// https://github.com/jsdom/jsdom/issues/2555
-global.Blob = require('blob-polyfill').Blob;
+// JSDOM 20's Blob lacks .arrayBuffer() and .text() (jsdom#2555).
+// Patch the missing methods with a FileReader rather than pulling in blob-polyfill.
+if (typeof Blob !== 'undefined') {
+  if (!Blob.prototype.arrayBuffer) {
+    Blob.prototype.arrayBuffer = function () {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsArrayBuffer(this);
+      });
+    };
+  }
+  if (!Blob.prototype.text) {
+    Blob.prototype.text = function () {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsText(this);
+      });
+    };
+  }
+}
 
 if (!Object.hasOwn(global, 'ResizeObserver')) {
   global.ResizeObserver = class ResizeObserver {

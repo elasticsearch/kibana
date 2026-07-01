@@ -2068,7 +2068,6 @@
     "babel-plugin-transform-require-default": "0.1.7",
     "babel-plugin-transform-typescript-metadata": "0.3.2",
     "backport": "11.0.2",
-    "blob-polyfill": "9.0.20240710",
     "browserslist": "4.28.0",
     "buildkite-test-collector": "1.8.1",
     "cache-manager": "7.0.0",
