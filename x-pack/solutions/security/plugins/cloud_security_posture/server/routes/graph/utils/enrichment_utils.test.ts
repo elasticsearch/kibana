@@ -5,8 +5,47 @@
  * 2.0.
  */
 
-import { rebuildDocData } from './enrichment_utils';
+import { rebuildDocData, addValuesToSet } from './enrichment_utils';
 import type { EntityEnrichmentFields } from '../fetch_entity_enrichment';
+
+describe('addValuesToSet', () => {
+  it('adds a scalar value', () => {
+    const set = new Set<string>();
+    addValuesToSet(set, 'a', { dropEmpty: false });
+    expect([...set]).toEqual(['a']);
+  });
+
+  it('adds every element of an array value', () => {
+    const set = new Set<string>();
+    addValuesToSet(set, ['a', 'b'], { dropEmpty: false });
+    expect([...set]).toEqual(['a', 'b']);
+  });
+
+  it('unions into an existing set and deduplicates', () => {
+    const set = new Set<string>(['a']);
+    addValuesToSet(set, ['a', 'b'], { dropEmpty: false });
+    expect([...set]).toEqual(['a', 'b']);
+  });
+
+  it('ignores null and undefined values', () => {
+    const set = new Set<string>();
+    addValuesToSet(set, null, { dropEmpty: false });
+    addValuesToSet(set, undefined, { dropEmpty: false });
+    expect([...set]).toEqual([]);
+  });
+
+  it('keeps empty strings when dropEmpty is false', () => {
+    const set = new Set<string>();
+    addValuesToSet(set, ['', 'a'], { dropEmpty: false });
+    expect([...set]).toEqual(['', 'a']);
+  });
+
+  it('drops the empty-string sentinel when dropEmpty is true', () => {
+    const set = new Set<string>();
+    addValuesToSet(set, ['', 'a'], { dropEmpty: true });
+    expect([...set]).toEqual(['a']);
+  });
+});
 
 describe('rebuildDocData', () => {
   it('returns empty array for empty input', () => {

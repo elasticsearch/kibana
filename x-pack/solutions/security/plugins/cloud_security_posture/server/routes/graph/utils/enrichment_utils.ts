@@ -22,6 +22,24 @@ export const hashIds = (ids: string[]): string =>
     .digest('hex');
 
 /**
+ * Unions an ES|QL multi-value column (scalar | array | null | undefined) into a target Set.
+ * Used by the regroup* functions to merge the VALUES(...) aggregates of pre-aggregated rows.
+ * `dropEmpty` additionally excludes the empty-string sentinel ES|QL emits for missing values —
+ * set it for doc id / doc-data columns to match the original `if (record.x)` falsy guards.
+ */
+export const addValuesToSet = (
+  set: Set<string>,
+  value: string | string[] | null | undefined,
+  { dropEmpty }: { dropEmpty: boolean }
+): void => {
+  for (const v of castArray(value ?? [])) {
+    if (v == null) continue;
+    if (dropEmpty && v === '') continue;
+    set.add(v);
+  }
+};
+
+/**
  * Checks if the entities latest index exists.
  * Previously checked for lookup mode (required for LOOKUP JOIN), but since
  * enrichment now uses follow-up queries, only existence matters.

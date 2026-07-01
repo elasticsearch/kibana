@@ -1588,3 +1588,101 @@
     }
   }
 }
+
+{
+  "type": "doc",
+  "value": {
+    "id": "48",
+    "index": ".entities.v2.latest.security_default-00001",
+    "source": {
+      "@timestamp": "2024-09-01T12:00:00.000Z",
+      "entity": {
+        "EngineMetadata": { "Type": "user" },
+        "id": "user:platform-admin-role",
+        "name": "platform-admin-role",
+        "source": "manual",
+        "sub_type": "AWS IAM Role",
+        "type": "IAM Role",
+        "relationships": {
+          "supervises": {
+            "ids": ["user:app-team-lead", "user:db-team-lead"]
+          }
+        }
+      },
+      "user": { "name": "platform-admin-role", "id": "platform-admin-role" },
+      "host": { "ip": ["10.0.3.1"] },
+      "event": { "ingested": "2024-09-01T12:00:00.000Z" }
+    }
+  }
+}
+
+{
+  "type": "doc",
+  "value": {
+    "id": "49",
+    "index": ".entities.v2.latest.security_default-00001",
+    "source": {
+      "@timestamp": "2024-09-01T12:00:00.000Z",
+      "entity": {
+        "EngineMetadata": { "Type": "user" },
+        "id": "user:security-admin-group",
+        "name": "security-admin-group",
+        "source": "manual",
+        "sub_type": "AWS IAM Group",
+        "type": "IAM Group",
+        "relationships": {
+          "supervises": {
+            "ids": ["user:app-team-lead", "user:db-team-lead"]
+          }
+        }
+      },
+      "user": { "name": "security-admin-group", "id": "security-admin-group" },
+      "host": { "ip": ["10.0.3.2"] },
+      "event": { "ingested": "2024-09-01T12:00:00.000Z" }
+    }
+  }
+}
+
+{
+  "type": "doc",
+  "value": {
+    "id": "50",
+    "index": ".entities.v2.latest.security_default-00001",
+    "source": {
+      "@timestamp": "2024-09-01T12:00:00.000Z",
+      "entity": {
+        "EngineMetadata": { "Type": "user" },
+        "id": "user:app-team-lead",
+        "name": "app-team-lead",
+        "source": "manual",
+        "sub_type": "AWS IAM User",
+        "type": "User"
+      },
+      "user": { "name": "app-team-lead", "id": "app-team-lead" },
+      "host": { "ip": ["10.0.3.3"] },
+      "event": { "ingested": "2024-09-01T12:00:00.000Z" }
+    }
+  }
+}
+
+{
+  "type": "doc",
+  "value": {
+    "id": "51",
+    "index": ".entities.v2.latest.security_default-00001",
+    "source": {
+      "@timestamp": "2024-09-01T12:00:00.000Z",
+      "entity": {
+        "EngineMetadata": { "Type": "user" },
+        "id": "user:db-team-lead",
+        "name": "db-team-lead",
+        "source": "manual",
+        "sub_type": "AWS IAM User",
+        "type": "User"
+      },
+      "user": { "name": "db-team-lead", "id": "db-team-lead" },
+      "host": { "ip": ["10.0.3.4"] },
+      "event": { "ingested": "2024-09-01T12:00:00.000Z" }
+    }
+  }
+}

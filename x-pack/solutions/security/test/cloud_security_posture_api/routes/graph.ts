@@ -285,7 +285,7 @@ export default function (providerContext: FtrProviderContext) {
         expect(response.body).not.to.have.property('messages');
       });
 
-      describe.skip('Pinning', () => {
+      describe('Pinning', () => {
         const groupAction = 'test.pin.group';
         const soloAction = 'test.pin.solo';
         const groupEventIds = [
@@ -3489,7 +3489,7 @@ export default function (providerContext: FtrProviderContext) {
               });
             });
 
-            it.skip('should isolate the pinned origin entity and produce correct grouping when showing relationships of a target', async () => {
+            it('should isolate the pinned origin entity and produce correct grouping when showing relationships of a target', async () => {
               // Scenario: user opens the entity flyout for origin-pinned-server (origin/pinned).
               // Then clicks "show entity relationships" on relationship-target-server.
               // The graph API receives:
@@ -3584,7 +3584,7 @@ export default function (providerContext: FtrProviderContext) {
               });
             });
 
-            it.skip('should produce one relationship node when two actors of the same type share the same relationship', async () => {
+            it('should produce one relationship node when two actors of the same type share the same relationship', async () => {
               await retry.tryForTime(enrichmentRetryTimeout, async () => {
                 const response = await postGraph(
                   supertest,

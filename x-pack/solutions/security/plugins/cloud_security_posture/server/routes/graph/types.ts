@@ -79,24 +79,29 @@ export interface EventEdge extends GraphEdge {
 }
 
 /**
- * Raw per-triple row returned by the events ES|QL query before TypeScript
- * regrouping. One row per (event _id × MV_EXPAND'd actor × MV_EXPAND'd target);
- * all aggregation (badge, uniqueEventsCount, etc.) happens later in regroupEvents.
+ * Row returned by the events ES|QL query AFTER in-query STATS pre-aggregation.
+ * One row per (action × actorEntityId × targetEntityId × isOrigin × isOriginAlert × pinned)
+ * group. Multi-value aggregate columns (docs, docIds, sourceIps, …) collapse the many raw
+ * documents that share that key. regroupEvents performs the final merge by entity type/sub-type
+ * (which is only known after the follow-up enrichment query).
  */
 export interface EventEsqlRow {
-  _id: string;
   action: string;
-  actorEntityId: string;
-  targetEntityId: string | null;
+  actorEntityId: string | string[];
+  targetEntityId: string | string[] | null;
   isOrigin: boolean;
   isOriginAlert: boolean;
   isAlert: boolean;
   pinned: string | null;
-  docData: string;
+  badge: number;
+  docs: string | string[];
+  docIds: string | string[] | null;
+  alertDocIds: string | string[] | null;
+  nonAlertDocIds: string | string[] | null;
   sourceIps?: string | string[] | null;
   sourceCountryCodes?: string | string[] | null;
-  actorDocData: string;
-  targetDocData: string;
+  actorDocData: string | string[];
+  targetDocData: string | string[];
 }
 
 /**
@@ -115,21 +120,25 @@ export interface RelationshipEdge extends GraphEdge {
 }
 
 /**
- * Raw per-triple row returned by the relationships ES|QL query before TypeScript
- * regrouping. One row per (entity.id × relationship leaf × _target_id) tuple;
- * aggregation (badge, *IdsCount) happens later in regroupRelationships.
+ * Row returned by the relationships ES|QL query AFTER in-query STATS pre-aggregation.
+ * One row per (actorEntityType × actorEntitySubType × relationship × targetId × pinned)
+ * group — same-type actors are already merged here, so `actorIds` is the multi-value set of
+ * their entity IDs. `badge` is the count of raw FORK/MV_EXPAND rows collapsed into the row.
+ * regroupRelationships performs the final merge by target type/sub-type (only known after the
+ * follow-up enrichment query).
  */
 export interface RelationshipEsqlRow {
-  actorId: string;
+  actorIds: string | string[];
   actorEntityType?: string | null;
   actorEntitySubType?: string | null;
   actorEntityName?: string | string[] | null;
   actorHostIps?: string[] | string | null;
-  actorDocData: string;
+  actorDocData: string | string[];
   relationship: string;
-  relationshipNodeId: string;
   targetId: string;
-  targetDocData: string;
+  targetDocData: string | string[];
+  pinned?: string | null;
+  badge: number;
 }
 
 export interface EntityRecord {

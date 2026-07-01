@@ -5,7 +5,6 @@
  * 2.0.
  */
 
-import { castArray } from 'lodash';
 import type { Logger, IScopedClusterClient } from '@kbn/core/server';
 import type { EsqlToRecords } from '@elastic/elasticsearch/lib/helpers';
 import { getEntitiesLatestIndexName } from '@kbn/cloud-security-posture-common/utils/helpers';
@@ -25,6 +24,7 @@ import {
   concatJsonObjectPropertyEsqlExprAsString,
   hashIds,
   rebuildDocData,
+  addValuesToSet,
 } from './utils';
 import type { EntityId, EntityRecord, RelationshipEdge, RelationshipEsqlRow } from './types';
 import type { EntityEnrichmentFields } from './fetch_entity_enrichment';
@@ -32,6 +32,7 @@ import type { EntityEnrichmentFields } from './fetch_entity_enrichment';
 interface BuildRelationshipsEsqlQueryParams {
   indexName: string;
   relationshipFields: readonly string[];
+  pinnedIds?: string[];
 }
 
 const RESOLUTION_RELATIONSHIP_FIELD = 'resolution.resolved_to' as const;
@@ -56,9 +57,27 @@ const buildRelationshipTargetsEval = (field: string): string => {
  * The filter is applied via the DSL filter parameter.
  * Target enrichment is applied later in TypeScript via fetchEntityEnrichment.
  */
+/**
+ * Generates the EVAL statement that marks whether the entity is pinned.
+ */
+const buildPinnedEsql = (pinnedIds?: string[]): string => {
+  if (!pinnedIds || pinnedIds.length === 0) {
+    return '| EVAL pinned = TO_STRING(null)';
+  }
+  const pinnedParamsStr = pinnedIds.map((_id, idx) => `?pinned_id${idx}`).join(', ');
+  // A pinned entity is isolated whether it appears as the actor OR the target of a
+  // relationship, so it always renders as its own node (never merged into a same-type group).
+  return `| EVAL pinned = CASE(
+    actorId IN (${pinnedParamsStr}), actorId,
+    targetId IN (${pinnedParamsStr}), targetId,
+    null
+  )`;
+};
+
 const buildRelationshipsEsqlQuery = ({
   indexName,
   relationshipFields,
+  pinnedIds,
 }: BuildRelationshipsEsqlQueryParams): string => {
   const targetsEval = relationshipFields
     .map((field) => buildRelationshipTargetsEval(field))
@@ -112,18 +131,35 @@ ${forkBranches}
     ${concatJsonObjectPropertyEsqlExprSafe('id', '_target_id')},
     ${JSON_OBJECT_SEPARATOR}, ${concatJsonObjectPropertyString('type', 'entity')},
   ${JSON_OBJECT_END})
-// Per-triple rows. All grouping (actor × relationship × target type/sub_type) happens in
-// TypeScript via regroupRelationships. STATS … BY (entity.id, relationship, _target_id)
-// would inflate row count beyond ES|QL's 10,000-row hard cap on dense entity stores.
 | EVAL actorId = TO_STRING(entity.id),
-  targetId = TO_STRING(_target_id),
-  relationshipNodeId = CONCAT(TO_STRING(entity.id), "-", relationship)
+  targetId = TO_STRING(_target_id)
 | RENAME \`entity.type\` AS actorEntityType,
   \`entity.sub_type\` AS actorEntitySubType,
   \`entity.name\` AS actorEntityName,
   \`host.ip\` AS actorHostIps
-| KEEP actorId, actorEntityType, actorEntitySubType, actorEntityName, actorHostIps, actorDocData, relationship, relationshipNodeId, targetId, targetDocData
-| SORT relationship ASC`;
+${buildPinnedEsql(pinnedIds)}
+// Pre-aggregate by the actor TYPE dimensions (NOT raw actorId — entity.id is unique per
+// actor, so keying on it would never merge same-type actors). Two actors of the same
+// type/sub-type sharing a relationship and target collapse into ONE row here, matching the
+// final TypeScript group key minus the enrichment-only target type/sub-type (the target is a
+// separate entity, enriched in the follow-up query; targetId is kept as its refinement and
+// regroupRelationships performs the final target-type merge). actorIds is collected via
+// VALUES so the merged node's actorNodeId/actorIds[] can be rebuilt. actorEntityName uses
+// MV_FIRST to preserve the prior single-name-per-node output.
+| STATS badge = COUNT(*),
+  actorIds = VALUES(actorId),
+  actorEntityName = MV_FIRST(VALUES(actorEntityName)),
+  actorHostIps = VALUES(actorHostIps),
+  actorDocData = VALUES(actorDocData),
+  targetDocData = VALUES(targetDocData)
+    BY actorEntityType,
+      actorEntitySubType,
+      relationship,
+      targetId,
+      pinned
+| EVAL pinnedSort = CASE(pinned IS NULL, 1, 0)
+| SORT relationship ASC, pinnedSort ASC
+| DROP pinnedSort`;
 };
 
 /**
@@ -186,12 +222,14 @@ export const fetchEntityRelationships = async ({
   entityIds,
   spaceId,
   entityStoreIndexExists,
+  pinnedIds,
 }: {
   esClient: IScopedClusterClient;
   logger: Logger;
   entityIds: EntityId[];
   spaceId: string;
   entityStoreIndexExists: boolean;
+  pinnedIds?: string[];
 }): Promise<EsqlToRecords<RelationshipEsqlRow>> => {
   if (!entityStoreIndexExists) {
     return { columns: [], records: [] };
@@ -203,6 +241,7 @@ export const fetchEntityRelationships = async ({
   const query = buildRelationshipsEsqlQuery({
     indexName,
     relationshipFields: ENTITY_RELATIONSHIP_FIELDS,
+    pinnedIds,
   });
   const filter = buildRelationshipDslFilter(entityIds);
 
@@ -214,6 +253,7 @@ export const fetchEntityRelationships = async ({
       columnar: false,
       filter,
       query,
+      params: (pinnedIds ?? []).map((id, idx) => ({ [`pinned_id${idx}`]: id })),
     })
     .toRecords<RelationshipEsqlRow>();
 
@@ -347,6 +387,9 @@ interface RelationshipGroup {
  * targetType, targetSubType) — NOT by raw actorId. Two actors of the same type sharing the
  * same relationship and target type produce one relationship node instead of two.
  *
+ * Pinned actors are always isolated into their own group (never merged with others) so that
+ * pinned entities always appear as individual nodes in the graph.
+ *
  * Actor type/sub_type and name come directly off the row (the entity store IS the actor source).
  * All aggregation (badge, actorIdsCount, targetIdsCount, targetIds collection, host IPs) is
  * computed in TypeScript.
@@ -361,8 +404,6 @@ export const regroupRelationships = (
   const groups = new Map<string, RelationshipGroup>();
 
   for (const record of records) {
-    const actorId = record.actorId;
-    if (!actorId) continue;
     const targetId = record.targetId;
     if (!targetId) continue;
 
@@ -370,7 +411,12 @@ export const regroupRelationships = (
     const targetType = targetEnrichment?.type ?? null;
     const targetSubType = targetEnrichment?.subType ?? null;
 
+    // Pinned actors are isolated into their own group via the ES|QL pinned column —
+    // same pattern as regroupEvents in fetch_events_graph.ts.
+    const pinned = record.pinned ?? null;
+
     const groupKey = JSON.stringify([
+      pinned,
       record.actorEntityType ?? null,
       record.actorEntitySubType ?? null,
       record.relationship,
@@ -385,10 +431,8 @@ export const regroupRelationships = (
         actorEntityType: record.actorEntityType,
         actorEntitySubType: record.actorEntitySubType,
         actorEntityName: record.actorEntityName,
-        actorHostIps: new Set(
-          castArray(record.actorHostIps ?? []).filter((v): v is string => v != null)
-        ),
-        actorsDocData: record.actorDocData ? new Set([record.actorDocData]) : new Set(),
+        actorHostIps: new Set(),
+        actorsDocData: new Set(),
         relationship: record.relationship,
         targetType,
         targetSubType,
@@ -399,14 +443,17 @@ export const regroupRelationships = (
       groups.set(groupKey, group);
     }
 
-    group.actorIds.add(actorId);
-    group.badge += 1;
+    // Each ES|QL row is already pre-aggregated per (actorType, relationship, target, pinned),
+    // so it carries the multi-value set of same-type actor IDs. The TS merge only adds the
+    // final target-type dimension (enrichment-only). Sum the collapsed counts and union the
+    // multi-value columns; doc-data drops the empty-string sentinel, host IPs keep the
+    // historical null-only guard.
+    group.badge += record.badge;
+    addValuesToSet(group.actorIds, record.actorIds, { dropEmpty: true });
     group.targetIds.add(targetId);
-    if (record.targetDocData) group.targetsDocData.add(record.targetDocData);
-    if (record.actorDocData) group.actorsDocData.add(record.actorDocData);
-    for (const ip of castArray(record.actorHostIps ?? []).filter((v): v is string => v != null)) {
-      group.actorHostIps.add(ip);
-    }
+    addValuesToSet(group.actorsDocData, record.actorDocData, { dropEmpty: true });
+    addValuesToSet(group.targetsDocData, record.targetDocData, { dropEmpty: true });
+    addValuesToSet(group.actorHostIps, record.actorHostIps, { dropEmpty: false });
   }
 
   return Array.from(groups.values()).map((group): RelationshipEdge => {

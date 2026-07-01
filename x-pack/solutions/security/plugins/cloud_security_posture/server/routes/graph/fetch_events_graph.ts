@@ -5,7 +5,6 @@
  * 2.0.
  */
 
-import { castArray } from 'lodash';
 import type { Logger, IScopedClusterClient } from '@kbn/core/server';
 import {
   DOCUMENT_TYPE_ALERT,
@@ -32,6 +31,7 @@ import {
   concatJsonObjectPropertyString,
   hashIds,
   rebuildDocData,
+  addValuesToSet,
 } from './utils';
 import {
   type EuidSourceFields,
@@ -481,10 +481,27 @@ ${buildPinnedEsql(pinnedIds)}
         : ''
     }
   "}")
-// Per-triple rows. All grouping (action × actor/target type × origin/pinned)
-// happens in TypeScript via regroupEvents. STATS … BY (action, actorEntityId, targetEntityId, …)
-// would inflate row count beyond ES|QL's 10,000-row hard cap on dense graphs.
-| KEEP _id, action, actorEntityId, targetEntityId, isOrigin, isOriginAlert, isAlert, pinned, docData, sourceIps, sourceCountryCodes, actorDocData, targetDocData
+// Pre-aggregate by the dimensions available WITHOUT entity-store enrichment:
+// action, isOrigin/isOriginAlert/pinned. Actor/target entity IDs and type/sub-type
+// are NOT used here as group keys — IDs are collected via VALUES() and type/sub-type
+// are not available (entity-store join is CPS-unsafe). The follow-up enrichment query
+// supplies type/sub-type and regroupEvents performs the final type-level merge in TypeScript.
+| STATS badge = COUNT(*),
+  isAlert = MV_MAX(VALUES(isAlert)),
+  docs = VALUES(docData),
+  docIds = VALUES(_id),
+  alertDocIds = VALUES(CASE(isAlert, _id, null)),
+  nonAlertDocIds = VALUES(CASE(isAlert, null, _id)),
+  sourceIps = MV_DEDUPE(VALUES(sourceIps)),
+  sourceCountryCodes = MV_DEDUPE(VALUES(sourceCountryCodes)),
+  actorEntityId = MV_DEDUPE(VALUES(actorEntityId)),
+  targetEntityId = MV_DEDUPE(VALUES(targetEntityId)),
+  actorDocData = VALUES(actorDocData),
+  targetDocData = VALUES(targetDocData)
+    BY action,
+      isOrigin,
+      isOriginAlert,
+      pinned
 | EVAL pinnedSort = CASE(pinned IS NULL, 1, 0)
 | SORT action DESC, pinnedSort ASC, isOrigin
 | LIMIT 1000
@@ -517,11 +534,224 @@ interface EventGroup {
 }
 
 /**
- * Groups per-triple ESQL rows by (action, actorType, actorSubType, targetType, targetSubType,
- * isOrigin, isOriginAlert, pinned) using entity-store enrichment for type/sub_type. All
- * aggregation (badge, uniqueEventsCount, uniqueAlertsCount, sourceIps/countries, docs/dedupe,
- * actor/target node IDs, host IP collection) happens here in TypeScript — the ES|QL query
- * intentionally returns raw triples to keep row count below the 10,000-row hard cap.
+ * Creates an empty EventGroup seeded with the group-key dimensions for a record.
+ */
+const createEventGroup = (
+  record: EventEsqlRow,
+  actorType: string | null,
+  actorSubType: string | null,
+  targetType: string | null,
+  targetSubType: string | null,
+  pinned: string | null
+): EventGroup => ({
+  action: record.action,
+  actorType,
+  actorSubType,
+  targetType,
+  targetSubType,
+  isOrigin: record.isOrigin,
+  isOriginAlert: record.isOriginAlert,
+  pinned,
+  badge: 0,
+  isAlert: false,
+  docIds: new Set(),
+  alertDocIds: new Set(),
+  nonAlertDocIds: new Set(),
+  docs: new Set(),
+  sourceIps: new Set(),
+  sourceCountryCodes: new Set(),
+  actorEntityIds: new Set(),
+  targetEntityIds: new Set(),
+  actorsDocData: new Set(),
+  targetsDocData: new Set(),
+});
+
+/**
+ * Filters a multi-value doc-data column (JSON strings built by the ES|QL CONCAT expression)
+ * to only the entries whose embedded "id" field is in the allowed set.
+ * Each entry has the shape: {"id":"<entityId>","type":"entity",...}
+ */
+const filterDocDataToIds = (
+  docData: string | string[],
+  allowedIds: Set<string>
+): string | string[] => {
+  const entries = Array.isArray(docData) ? docData : docData ? [docData] : [];
+  return entries.filter((entry) => {
+    if (!entry) return false;
+    try {
+      const parsed = JSON.parse(entry) as { id?: string };
+      return parsed.id != null && allowedIds.has(parsed.id);
+    } catch {
+      return false;
+    }
+  });
+};
+
+/**
+ * Merges one row's contribution into a group: adds the badge, unions every multi-value
+ * column, and records the actor/target IDs that belong to this group from this row.
+ * actorDocData / targetDocData are filtered to only the IDs in this group's type bucket
+ * so that a row shared across multiple type-groups doesn't leak doc data across groups.
+ * Doc id / doc-data columns drop the empty-string sentinel; source IP / country keep
+ * the historical null-only guard.
+ */
+const accumulateEventRecord = (
+  group: EventGroup,
+  record: EventEsqlRow,
+  actorIdsForGroup: string[],
+  targetIdsForGroup: string[]
+): void => {
+  group.badge += record.badge;
+  group.isAlert = group.isAlert || Boolean(record.isAlert);
+
+  addValuesToSet(group.docIds, record.docIds, { dropEmpty: true });
+  addValuesToSet(group.alertDocIds, record.alertDocIds, { dropEmpty: true });
+  addValuesToSet(group.nonAlertDocIds, record.nonAlertDocIds, { dropEmpty: true });
+  addValuesToSet(group.docs, record.docs, { dropEmpty: true });
+
+  const actorIdSet = new Set(actorIdsForGroup);
+  const targetIdSet = new Set(targetIdsForGroup);
+  addValuesToSet(group.actorsDocData, filterDocDataToIds(record.actorDocData, actorIdSet), {
+    dropEmpty: true,
+  });
+  addValuesToSet(group.targetsDocData, filterDocDataToIds(record.targetDocData, targetIdSet), {
+    dropEmpty: true,
+  });
+
+  addValuesToSet(group.sourceIps, record.sourceIps, { dropEmpty: false });
+  addValuesToSet(group.sourceCountryCodes, record.sourceCountryCodes, { dropEmpty: false });
+
+  for (const id of actorIdsForGroup) group.actorEntityIds.add(id);
+  for (const id of targetIdsForGroup) group.targetEntityIds.add(id);
+};
+
+/**
+ * Returns the entity type derived from the EUID prefix (e.g. "user" for "user:alice"),
+ * or null for generic EUIDs that have no typed prefix.
+ * Used as a grouping fallback when enrichment is unavailable.
+ */
+const getEuidType = (euid: string): string | null => {
+  const prefix = TYPED_ENTITY_PREFIXES.find((p) => euid.startsWith(`${p}:`));
+  return prefix ?? null;
+};
+
+/**
+ * Buckets the pre-aggregated ES|QL rows into their final EventGroups, keyed by
+ * (action, actorType, actorSubType, targetType, targetSubType, isOrigin, isOriginAlert, pinned).
+ *
+ * Each ES|QL row now covers a full (action, isOrigin, isOriginAlert, pinned) bucket and carries
+ * all actor/target entity IDs as multi-value columns. We fan out over the distinct
+ * (actorType×targetType) combinations present in the row's entity IDs, contributing
+ * record.badge once per combination to avoid double-counting.
+ */
+const groupEventRecords = (
+  records: EventEsqlRow[],
+  enrichmentMap: Map<string, EntityEnrichmentFields>
+): EventGroup[] => {
+  const groups = new Map<string, EventGroup>();
+
+  for (const record of records) {
+    const rawActorIds = Array.isArray(record.actorEntityId)
+      ? record.actorEntityId
+      : record.actorEntityId
+      ? [record.actorEntityId]
+      : [];
+    if (rawActorIds.length === 0) continue;
+
+    const rawTargetIds = Array.isArray(record.targetEntityId)
+      ? record.targetEntityId
+      : record.targetEntityId
+      ? [record.targetEntityId]
+      : [];
+
+    const pinned = record.pinned ?? null;
+
+    // Group actor IDs by their (type, subType).
+    // Prefer enrichment-supplied type; fall back to the EUID prefix (e.g. "user", "host",
+    // "service") so typed-but-unenriched entities don't collapse with generic ones.
+    const actorsByTypeKey = new Map<
+      string,
+      { type: string | null; subType: string | null; ids: string[] }
+    >();
+    for (const actorId of rawActorIds) {
+      if (!actorId) continue;
+      const enrichment = enrichmentMap.get(actorId);
+      const actorType = enrichment?.type ?? getEuidType(actorId);
+      const actorSubType = enrichment?.subType ?? null;
+      const key = `${actorType}\0${actorSubType}`;
+      let entry = actorsByTypeKey.get(key);
+      if (!entry) {
+        entry = { type: actorType, subType: actorSubType, ids: [] };
+        actorsByTypeKey.set(key, entry);
+      }
+      entry.ids.push(actorId);
+    }
+
+    // Group target IDs by their (type, subType) — same EUID-prefix fallback.
+    const targetsByTypeKey = new Map<
+      string,
+      { type: string | null; subType: string | null; ids: string[] }
+    >();
+    if (rawTargetIds.length === 0) {
+      targetsByTypeKey.set('null\0null', { type: null, subType: null, ids: [] });
+    } else {
+      for (const targetId of rawTargetIds) {
+        if (!targetId) continue;
+        const enrichment = enrichmentMap.get(targetId);
+        const targetType = enrichment?.type ?? getEuidType(targetId);
+        const targetSubType = enrichment?.subType ?? null;
+        const key = `${targetType}\0${targetSubType}`;
+        let entry = targetsByTypeKey.get(key);
+        if (!entry) {
+          entry = { type: targetType, subType: targetSubType, ids: [] };
+          targetsByTypeKey.set(key, entry);
+        }
+        entry.ids.push(targetId);
+      }
+    }
+
+    // For each (actorType × targetType) combination, contribute to a group
+    for (const actorEntry of actorsByTypeKey.values()) {
+      for (const targetEntry of targetsByTypeKey.values()) {
+        const groupKey = JSON.stringify([
+          record.action,
+          actorEntry.type,
+          actorEntry.subType,
+          targetEntry.type,
+          targetEntry.subType,
+          record.isOrigin,
+          record.isOriginAlert,
+          pinned,
+        ]);
+
+        let group = groups.get(groupKey);
+        if (!group) {
+          group = createEventGroup(
+            record,
+            actorEntry.type,
+            actorEntry.subType,
+            targetEntry.type,
+            targetEntry.subType,
+            pinned
+          );
+          groups.set(groupKey, group);
+        }
+
+        accumulateEventRecord(group, record, actorEntry.ids, targetEntry.ids);
+      }
+    }
+  }
+
+  return [...groups.values()];
+};
+
+/**
+ * Re-groups the STATS-pre-aggregated ES|QL rows by (action, actorType, actorSubType,
+ * targetType, targetSubType, isOrigin, isOriginAlert, pinned) using entity-store enrichment
+ * for type/sub_type. The ES|QL query already pre-aggregates per entity-pair (badge counts,
+ * multi-value docs/docIds/sourceIps/…) to keep row count below the 10,000-row hard cap; this
+ * function performs the final merge by entity type/sub-type — which is only known after the
+ * follow-up enrichment query — summing badges and unioning the multi-value columns.
  *
  * Does NOT rebuild docData — raw ESQL JSON strings are passed through as-is. Use
  * enrichEventDocData afterwards to apply entity-store enrichment to docData payloads.
@@ -530,82 +760,7 @@ export const regroupEvents = (
   records: EventEsqlRow[],
   enrichmentMap: Map<string, EntityEnrichmentFields>
 ): EventEdge[] => {
-  const groups = new Map<string, EventGroup>();
-
-  for (const record of records) {
-    const actorId = record.actorEntityId;
-    if (!actorId) continue; // actorEntityId is required
-    const targetId = record.targetEntityId ?? null;
-
-    const actorEnrichment = enrichmentMap.get(actorId);
-    const targetEnrichment = targetId ? enrichmentMap.get(targetId) : undefined;
-
-    const actorType = actorEnrichment?.type ?? null;
-    const actorSubType = actorEnrichment?.subType ?? null;
-    const targetType = targetEnrichment?.type ?? null;
-    const targetSubType = targetEnrichment?.subType ?? null;
-
-    const pinned = record.pinned ?? null;
-    const groupKey = JSON.stringify([
-      record.action,
-      actorType,
-      actorSubType,
-      targetType,
-      targetSubType,
-      record.isOrigin,
-      record.isOriginAlert,
-      pinned,
-    ]);
-
-    let group = groups.get(groupKey);
-    if (!group) {
-      group = {
-        action: record.action,
-        actorType,
-        actorSubType,
-        targetType,
-        targetSubType,
-        isOrigin: record.isOrigin,
-        isOriginAlert: record.isOriginAlert,
-        pinned,
-        badge: 0,
-        isAlert: false,
-        docIds: new Set(),
-        alertDocIds: new Set(),
-        nonAlertDocIds: new Set(),
-        docs: new Set(),
-        sourceIps: new Set(),
-        sourceCountryCodes: new Set(),
-        actorEntityIds: new Set(),
-        targetEntityIds: new Set(),
-        actorsDocData: new Set(),
-        targetsDocData: new Set(),
-      };
-      groups.set(groupKey, group);
-    }
-
-    group.badge += 1;
-    group.isAlert = group.isAlert || Boolean(record.isAlert);
-    if (record._id) {
-      group.docIds.add(record._id);
-      (record.isAlert ? group.alertDocIds : group.nonAlertDocIds).add(record._id);
-    }
-    if (record.docData) group.docs.add(record.docData);
-    for (const ip of castArray(record.sourceIps ?? []).filter((v): v is string => v != null)) {
-      group.sourceIps.add(ip);
-    }
-    for (const cc of castArray(record.sourceCountryCodes ?? []).filter(
-      (v): v is string => v != null
-    )) {
-      group.sourceCountryCodes.add(cc);
-    }
-    group.actorEntityIds.add(actorId);
-    if (targetId) group.targetEntityIds.add(targetId);
-    if (record.actorDocData) group.actorsDocData.add(record.actorDocData);
-    if (record.targetDocData) group.targetsDocData.add(record.targetDocData);
-  }
-
-  const result = Array.from(groups.values()).map((group): EventEdge => {
+  const result = groupEventRecords(records, enrichmentMap).map((group): EventEdge => {
     const actorEntityIds = [...group.actorEntityIds];
     const targetEntityIds = [...group.targetEntityIds];
 
@@ -618,8 +773,9 @@ export const regroupEvents = (
         : hashIds(targetEntityIds);
 
     const docIds = [...group.docIds];
-    const labelNodeId =
-      docIds.length === 0 ? '' : docIds.length === 1 ? docIds[0] : hashIds(docIds);
+    // Include targetNodeId in the label hash so two groups that share the same documents
+    // but target different entity-type groups produce distinct label nodes.
+    const labelNodeId = hashIds([...docIds, targetNodeId ?? '']);
 
     const actorNames = actorEntityIds
       .map((id) => enrichmentMap.get(id)?.name)
