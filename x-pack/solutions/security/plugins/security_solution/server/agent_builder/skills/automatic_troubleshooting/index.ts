@@ -42,7 +42,7 @@ This skill diagnoses and resolves Elastic Defend configuration issues on endpoin
 ## When to use this skill (REQUIRED)
 
 You MUST use this skill when the user mentions ANY of these:
-- "Elastic Defend" configuration issues
+- "Elastic Defend" configuration failures, errors, or policy not applying
 - Endpoint troubleshooting or diagnostics
 - Endpoint or Defend hosts that are unhealthy, degraded, warning, failing, or not applying policy
 - Endpoint not showing up, not reporting, or missing from the endpoint list
@@ -52,7 +52,7 @@ You MUST use this skill when the user mentions ANY of these:
 - Agent enrollment or check-in problems related to Elastic Defend
 - Endpoint protection not applying or not updating
 - Protection artifacts, artifact snapshots, global artifacts, manifest versions, or protection updates
-- Elastic Defend package configuration questions
+- Elastic Defend package errors, warnings, or install failures
 - Endpoint isolation, response action, or policy sync issues
 - Endpoint exceptions, trusted apps, trusted devices, event filters, blocklists, or host isolation exceptions not working as expected
 - Security alerts or events still appearing despite a configured endpoint exception or allowlist
@@ -204,7 +204,10 @@ Use exact terms from the user's request and queried endpoint evidence when calli
     name: NAME,
     basePath: BASE_PATH,
     description:
-      "Troubleshoot Elastic Defend endpoint health, degraded hosts, policy response failures, protection updates, artifacts, endpoint exceptions, trusted apps, blocklists, conflicting/incompatible antivirus or security software on a host, Elastic Defend's own endpoint output/event-shipping failures (endpoint Logstash/Kafka/Elasticsearch output errors or dropped endpoint events), etc.",
+      'Use to diagnose observed Elastic Defend endpoint behavior and operational outcomes: endpoint health or degraded hosts; ' +
+      'a policy not taking effect or not being enforced; protection not blocking; unexpected quarantine or allow behavior; ' +
+      'policy response failures; or failures involving protection updates, trusted applications, exceptions, blocklists, ' +
+      'antivirus compatibility, and endpoint event output.',
     content: systemInstructions,
     referencedContent: [
       {

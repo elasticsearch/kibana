@@ -114,6 +114,7 @@ export const createMockEndpointAppContextService = (
     fleetStartServices,
     savedObjectsServiceStart,
     exceptionListsClient,
+    productFeaturesService,
   } = createMockEndpointAppContextServiceStartContract();
   const fleetServices = createEndpointFleetServicesFactoryMock({
     fleetDependencies: fleetStartServices,
@@ -169,6 +170,7 @@ export const createMockEndpointAppContextService = (
     getMessageSigningService: jest.fn().mockReturnValue(messageSigningService),
     getFleetActionsClient: jest.fn(async () => fleetActionsClientMock),
     getTelemetryService: jest.fn().mockReturnValue(telemetryServiceMock),
+    getProductFeaturesService: jest.fn().mockReturnValue(productFeaturesService),
     getInternalResponseActionsClient: jest.fn((_) => {
       return responseActionsClientMock.create();
     }),

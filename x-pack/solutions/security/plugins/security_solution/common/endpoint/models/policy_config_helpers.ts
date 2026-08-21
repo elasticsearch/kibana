@@ -8,7 +8,7 @@
 import { get } from 'lodash';
 import { set } from '@kbn/safer-lodash-set';
 import { DefaultPolicyNotificationMessage } from './policy_config';
-import type { PolicyConfig } from '../types';
+import type { PolicyConfig, UIPolicyConfig } from '../types';
 import {
   PolicyOperatingSystem,
   ProtectionModes,
@@ -361,4 +361,173 @@ export const removeLinuxDnsEvents = (policy: PolicyConfig): PolicyConfig => {
       },
     },
   };
+};
+
+export const POLICY_COUPLING_PROTECTIONS = [
+  'malware',
+  'ransomware',
+  'memory_protection',
+  'behavior_protection',
+] as const;
+
+export type PolicyCouplingProtection = (typeof POLICY_COUPLING_PROTECTIONS)[number];
+
+export const POLICY_COUPLING_MALWARE_BOOLEAN_FIELDS = ['blocklist', 'on_write_scan'] as const;
+
+export type PolicyCouplingMalwareBooleanField =
+  (typeof POLICY_COUPLING_MALWARE_BOOLEAN_FIELDS)[number];
+
+const forEachCouplingOs = (
+  osList: readonly (keyof UIPolicyConfig)[],
+  write: (os: keyof UIPolicyConfig) => void
+) => {
+  for (const os of osList) {
+    write(os);
+  }
+};
+
+export const setProtectionModeAndPopup = ({
+  policy,
+  protection,
+  osList,
+  mode,
+  syncPopupEnabled,
+  popupEnabled,
+}: {
+  policy: PolicyConfig;
+  protection: PolicyCouplingProtection;
+  osList: readonly (keyof UIPolicyConfig)[];
+  mode: ProtectionModes;
+  syncPopupEnabled: boolean;
+  popupEnabled: boolean;
+}): PolicyConfig => {
+  forEachCouplingOs(osList, (os) => {
+    set(policy, `${os}.${protection}.mode`, mode);
+    if (syncPopupEnabled) {
+      set(policy, `${os}.popup.${protection}.enabled`, popupEnabled);
+    }
+  });
+  return policy;
+};
+
+export const setBehaviorReputationService = (
+  policy: PolicyConfig,
+  value: boolean
+): PolicyConfig => {
+  policy.windows.behavior_protection.reputation_service = value;
+  policy.mac.behavior_protection.reputation_service = value;
+  policy.linux.behavior_protection.reputation_service = value;
+  return policy;
+};
+
+export const setMalwareBoolean = (
+  policy: PolicyConfig,
+  field: PolicyCouplingMalwareBooleanField,
+  value: boolean,
+  osList: readonly (keyof UIPolicyConfig)[]
+): PolicyConfig => {
+  forEachCouplingOs(osList, (os) => {
+    policy[os].malware[field] = value;
+  });
+  return policy;
+};
+
+export const setDeviceControlSwitch = (policy: PolicyConfig, value: boolean): PolicyConfig => {
+  if (value === false) {
+    policy.windows.device_control = {
+      enabled: false,
+      usb_storage: DeviceControlAccessLevel.audit,
+    };
+    policy.windows.popup.device_control = {
+      enabled: false,
+      message: policy.windows.popup.device_control?.message || '',
+    };
+
+    policy.mac.device_control = {
+      enabled: false,
+      usb_storage: DeviceControlAccessLevel.audit,
+    };
+    policy.mac.popup.device_control = {
+      enabled: false,
+      message: policy.mac.popup.device_control?.message || '',
+    };
+
+    return policy;
+  }
+
+  policy.windows.device_control = {
+    enabled: true,
+    usb_storage: DeviceControlAccessLevel.deny_all,
+  };
+  policy.windows.popup = policy.windows.popup || {};
+  policy.windows.popup.device_control = {
+    enabled: true,
+    message: policy.windows.popup.device_control?.message || '',
+  };
+
+  policy.mac.device_control = {
+    enabled: true,
+    usb_storage: DeviceControlAccessLevel.deny_all,
+  };
+  policy.mac.popup = policy.mac.popup || {};
+  policy.mac.popup.device_control = {
+    enabled: true,
+    message: policy.mac.popup.device_control?.message || '',
+  };
+
+  return policy;
+};
+
+export const setDeviceControlUsbStorage = (
+  policy: PolicyConfig,
+  value: DeviceControlAccessLevel
+): PolicyConfig => {
+  if (!policy.windows.device_control) {
+    policy.windows.device_control = { enabled: true, usb_storage: value };
+  } else {
+    policy.windows.device_control.usb_storage = value;
+  }
+
+  if (!policy.mac.device_control) {
+    policy.mac.device_control = { enabled: true, usb_storage: value };
+  } else {
+    policy.mac.device_control.usb_storage = value;
+  }
+
+  if (value === DeviceControlAccessLevel.deny_all) {
+    if (policy.windows.popup.device_control) {
+      policy.windows.popup.device_control.enabled = true;
+    }
+    if (policy.mac.popup.device_control) {
+      policy.mac.popup.device_control.enabled = true;
+    }
+  } else {
+    if (policy.windows.popup.device_control) {
+      policy.windows.popup.device_control.enabled = false;
+    }
+    if (policy.mac.popup.device_control) {
+      policy.mac.popup.device_control.enabled = false;
+    }
+  }
+
+  return policy;
+};
+
+export const constrainLinuxTtyIo = (policy: PolicyConfig): PolicyConfig => {
+  if (policy.linux.events.session_data === false) {
+    policy.linux.events.tty_io = false;
+  }
+  return policy;
+};
+
+export const setPopupEnabled = (
+  policy: PolicyConfig,
+  protection: PolicyCouplingProtection,
+  osList: readonly (keyof UIPolicyConfig)[],
+  enabled: boolean
+): PolicyConfig => {
+  forEachCouplingOs(osList, (os) => {
+    set(policy, `${os}.popup.${protection}.enabled`, enabled);
+  });
+  return policy;
 };

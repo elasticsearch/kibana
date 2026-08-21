@@ -19,6 +19,7 @@ import type {
   DeviceControlAccessLevel,
 } from '../../../../../../../common/endpoint/types';
 import { DeviceControlAccessLevel as DeviceControlAccessLevelEnum } from '../../../../../../../common/endpoint/types';
+import { setDeviceControlUsbStorage } from '../../../../../../../common/endpoint/models/policy_config_helpers';
 import type { DeviceControlOSes } from '../../../types';
 
 const ALLOW_ALL_LABEL = i18n.translate(
@@ -189,41 +190,7 @@ const DeviceControlAccessRadio = React.memo(
 
     const handleRadioChange = useCallback(() => {
       const newPayload = cloneDeep(policy);
-
-      if (!newPayload.windows.device_control) {
-        newPayload.windows.device_control = {
-          enabled: true,
-          usb_storage: accessLevel,
-        };
-      } else {
-        newPayload.windows.device_control.usb_storage = accessLevel;
-      }
-
-      if (!newPayload.mac.device_control) {
-        newPayload.mac.device_control = {
-          enabled: true,
-          usb_storage: accessLevel,
-        };
-      } else {
-        newPayload.mac.device_control.usb_storage = accessLevel;
-      }
-
-      // Manage notifications based on access level
-      if (accessLevel === DeviceControlAccessLevelEnum.deny_all) {
-        if (newPayload.windows.popup.device_control) {
-          newPayload.windows.popup.device_control.enabled = true;
-        }
-        if (newPayload.mac.popup.device_control) {
-          newPayload.mac.popup.device_control.enabled = true;
-        }
-      } else {
-        if (newPayload.windows.popup.device_control) {
-          newPayload.windows.popup.device_control.enabled = false;
-        }
-        if (newPayload.mac.popup.device_control) {
-          newPayload.mac.popup.device_control.enabled = false;
-        }
-      }
+      setDeviceControlUsbStorage(newPayload, accessLevel);
 
       onChange({ isValid: true, updatedPolicy: newPayload });
     }, [accessLevel, onChange, policy]);

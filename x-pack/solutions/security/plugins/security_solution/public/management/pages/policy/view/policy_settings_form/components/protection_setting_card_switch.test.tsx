@@ -15,7 +15,7 @@ import { licenseService as licenseServiceMocked } from '../../../../../../common
 import type { ProtectionSettingCardSwitchProps } from './protection_setting_card_switch';
 import { ProtectionSettingCardSwitch } from './protection_setting_card_switch';
 import { exactMatchText, expectIsViewOnly, setMalwareMode } from '../mocks';
-import { ProtectionModes } from '../../../../../../../common/endpoint/types';
+import { ProtectionModes, PolicyOperatingSystem } from '../../../../../../../common/endpoint/types';
 import { cloneDeep } from 'lodash';
 import { set } from '@kbn/safer-lodash-set';
 import userEvent from '@testing-library/user-event';
@@ -41,7 +41,11 @@ describe('Policy form ProtectionSettingCardSwitch component', () => {
       protection: 'malware',
       selected: true,
       protectionLabel: 'Malware',
-      osList: ['windows', 'mac', 'linux'],
+      osList: [
+        PolicyOperatingSystem.windows,
+        PolicyOperatingSystem.mac,
+        PolicyOperatingSystem.linux,
+      ],
     };
 
     render = () => {

@@ -27,8 +27,9 @@ const RESTRICTED_INDICES = ['.fleet-agents'];
  * Suite id namespaces MUST stay disjoint: neither prefix may be a prefix of the
  * other, or an ES `prefix` delete on one reclaims the other suite's documents.
  */
-const TROUBLESHOOTING_AGENT_ID_PREFIX = 'eval-agent-ts-';
-const FORENSIC_AGENT_ID_PREFIX = 'eval-agent-forensic-';
+export const TROUBLESHOOTING_AGENT_ID_PREFIX = 'eval-agent-ts-';
+export const FORENSIC_AGENT_ID_PREFIX = 'eval-agent-forensic-';
+export const POLICY_MANAGEMENT_AGENT_ID_PREFIX = 'eval-agent-pm-';
 
 interface CleanupClients {
   esClient: Client;
@@ -64,4 +65,8 @@ export async function cleanupTroubleshootingData(clients: CleanupClients): Promi
 
 export async function cleanupForensicData(clients: CleanupClients): Promise<void> {
   return cleanupSeededData({ ...clients, agentIdPrefix: FORENSIC_AGENT_ID_PREFIX });
+}
+
+export async function cleanupPolicyManagementSeededData(clients: CleanupClients): Promise<void> {
+  return cleanupSeededData({ ...clients, agentIdPrefix: POLICY_MANAGEMENT_AGENT_ID_PREFIX });
 }

@@ -520,6 +520,13 @@ export class EndpointAppContextService {
     return this.startDependencies.licenseService;
   }
 
+  public getProductFeaturesService(): ProductFeaturesService {
+    if (this.startDependencies == null) {
+      throw new EndpointAppContentServicesNotStartedError();
+    }
+    return this.startDependencies.productFeaturesService;
+  }
+
   public async getCasesClient(req: KibanaRequest): Promise<CasesClient> {
     if (this.startDependencies?.cases == null) {
       throw new EndpointAppContentServicesNotStartedError();

@@ -5,4 +5,11 @@
  * 2.0.
  */
 
-export { getEndpointAuthzInitialState, calculateEndpointAuthz } from './authz';
+export {
+  getEndpointAuthzInitialState,
+  calculateEndpointAuthz,
+  satisfiesEndpointAuthzRequirement,
+  ENDPOINT_METADATA_LIST_REQUIRED_AUTHZ,
+  ENDPOINT_POLICY_READ_REQUIRED_AUTHZ,
+} from './authz';
+export type { EndpointAuthzRequirement } from './authz';

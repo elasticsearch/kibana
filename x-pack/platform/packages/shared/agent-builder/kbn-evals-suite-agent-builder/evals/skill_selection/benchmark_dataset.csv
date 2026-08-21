@@ -90,6 +90,12 @@ elastic-defend-configuration-troubleshooting,security,A trusted application exce
 elastic-defend-configuration-troubleshooting,security,Elastic Defend keeps quarantining our internal monitoring tool even though we listed it as allowed,indirect,elastic-defend-configuration-troubleshooting,
 elastic-defend-configuration-troubleshooting,security,Agents on a subset of our Windows endpoints are not enforcing the correct policy — how do I debug this?,indirect,elastic-defend-configuration-troubleshooting,
 elastic-defend-configuration-troubleshooting,security,Are there any high-severity alerts triggered by Elastic Defend on production endpoints in the last hour?,distractor,alert-analysis,Distractor: security alert triage maps to alert-analysis not endpoint policy troubleshooting
+elastic-defend-policy-management,security,Should ransomware be on prevent for servers?,direct,elastic-defend-policy-management,Decision intent: protection-level choice not a broken host
+elastic-defend-policy-management,security,What does an advanced malware threshold setting do?,direct,elastic-defend-policy-management,Decision intent: explain a setting not diagnose a break
+elastic-defend-policy-management,security,Help me choose a baseline for a new server policy,indirect,elastic-defend-policy-management,Decision intent: new policy baseline choice
+elastic-defend-policy-management,security,Ransomware isn't blocking on host-42,distractor,elastic-defend-configuration-troubleshooting,Broken-host diagnosis routes through troubleshooting
+elastic-defend-policy-management,security,Should we stage a detect-to-prevent rollout for malware?,direct,elastic-defend-policy-management,Decision intent: detect-to-prevent staged rollout choice not a broken host
+elastic-defend-policy-management,security,"We moved host-17 to our malware prevent policy, but it still appears to be running in detect mode. Why didn't the change take effect?",distractor,elastic-defend-configuration-troubleshooting,Broken-host diagnosis routes through troubleshooting
 siem-readiness,security,Run a SIEM readiness assessment and tell me what data coverage gaps we have across log categories,direct,siem-readiness,
 siem-readiness,security,Check whether our ECS field compatibility is sufficient to support the out-of-the-box detection rules,direct,siem-readiness,
 siem-readiness,security,Before our security audit I need to know how complete our log coverage is and whether ingestion pipelines are healthy,indirect,siem-readiness,

@@ -41,6 +41,7 @@ export const servers: ScoutServerConfig = {
         'automaticTroubleshootingSkill',
         'dexAiSkillFindRules',
         'investigateRuleSkill',
+        'elasticDefendPolicyManagementSkill',
       ])}`,
     ],
   },

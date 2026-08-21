@@ -14,4 +14,5 @@ export { getDetectionRuleEditSkill } from './detection_rule_edit';
 export { createFindRulesSkill } from './find_rules';
 export { createRecommendPrebuiltRulesSkill } from './recommend_prebuilt_rules';
 export { createDetectionCoverageSkill } from './detection_coverage';
+export { createElasticDefendPolicyManagementSkill } from './elastic_defend_policy_management';
 export { registerSkills } from './register_skills';

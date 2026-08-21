@@ -22,6 +22,7 @@ import {
   KI_IDENTIFICATION_MANAGEMENT_EXAMPLES,
   KNOWLEDGE_INDICATORS_MANAGEMENT_EXAMPLES,
   OBSERVABILITY_INVESTIGATION_EXAMPLES,
+  POLICY_MANAGEMENT_EXAMPLES,
   SEARCH_CATALOG_ECOMMERCE_EXAMPLES,
   SEARCH_ELASTICSEARCH_ONBOARDING_EXAMPLES,
   SEARCH_ELASTICSEARCH_TUTORIAL_EXAMPLES,
@@ -212,6 +213,13 @@ evaluate.describe(
         });
       }
     );
+
+    evaluate('elastic-defend-policy-management routing', async ({ evaluateBenchmark }) => {
+      await evaluateBenchmark({
+        skillId: 'elastic-defend-policy-management',
+        examples: POLICY_MANAGEMENT_EXAMPLES,
+      });
+    });
 
     evaluate('siem-readiness routing', async ({ evaluateBenchmark }) => {
       await evaluateBenchmark({ skillId: 'siem-readiness', examples: SIEM_READINESS_EXAMPLES });

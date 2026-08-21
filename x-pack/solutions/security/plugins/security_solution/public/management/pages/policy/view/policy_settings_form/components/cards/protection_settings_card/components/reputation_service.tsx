@@ -24,6 +24,7 @@ import { SettingCardHeader } from '../../../setting_card';
 import type { PolicyProtection } from '../../../../../../types';
 import type { PolicyFormComponentCommonProps } from '../../../../types';
 import { ProtectionModes } from '../../../../../../../../../../common/endpoint/types';
+import { setBehaviorReputationService } from '../../../../../../../../../../common/endpoint/models/policy_config_helpers';
 
 interface ReputationServiceProps extends PolicyFormComponentCommonProps {
   protection: PolicyProtection;
@@ -52,9 +53,7 @@ export const ReputationService = React.memo(
     const handleChange = useCallback<EuiCheckboxProps['onChange']>(
       (event) => {
         const newPayload = cloneDeep(policy);
-        newPayload.windows.behavior_protection.reputation_service = event.target.checked;
-        newPayload.mac.behavior_protection.reputation_service = event.target.checked;
-        newPayload.linux.behavior_protection.reputation_service = event.target.checked;
+        setBehaviorReputationService(newPayload, event.target.checked);
 
         onChange({ isValid: true, updatedPolicy: newPayload });
       },

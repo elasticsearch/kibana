@@ -719,6 +719,31 @@ describe('policy_config and licenses', () => {
     });
   });
 
+  describe('policyFactoryWithSupportedFeatures', () => {
+    it('preserves each OS behavior_protection values while marking supported true', () => {
+      const policy = policyFactory();
+      policy.windows.behavior_protection.mode = ProtectionModes.off;
+      policy.windows.behavior_protection.reputation_service = false;
+      policy.mac.behavior_protection.mode = ProtectionModes.detect;
+      policy.mac.behavior_protection.reputation_service = true;
+      policy.linux.behavior_protection.mode = ProtectionModes.prevent;
+      policy.linux.behavior_protection.reputation_service = false;
+
+      const supported = policyFactoryWithSupportedFeatures(policy);
+
+      expect(supported.mac.behavior_protection).toEqual({
+        mode: ProtectionModes.detect,
+        reputation_service: true,
+        supported: true,
+      });
+      expect(supported.linux.behavior_protection).toEqual({
+        mode: ProtectionModes.prevent,
+        reputation_service: false,
+        supported: true,
+      });
+    });
+  });
+
   describe('isEndpointDeviceControlPolicyValidForLicense', () => {
     it('allows any device control configuration with Enterprise license', () => {
       const policy = policyFactory();

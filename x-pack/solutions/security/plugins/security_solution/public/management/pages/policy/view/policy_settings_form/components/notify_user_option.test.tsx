@@ -17,7 +17,7 @@ import { NotifyUserOption } from './notify_user_option';
 import { expectIsViewOnly, exactMatchText } from '../mocks';
 import { cloneDeep } from 'lodash';
 import { set } from '@kbn/safer-lodash-set';
-import { ProtectionModes } from '../../../../../../../common/endpoint/types';
+import { ProtectionModes, PolicyOperatingSystem } from '../../../../../../../common/endpoint/types';
 import userEvent from '@testing-library/user-event';
 import {
   NOTIFY_USER_SECTION_TITLE,
@@ -48,7 +48,11 @@ describe('Policy form Notify User option component', () => {
       mode: 'edit',
       'data-test-subj': 'test',
       protection: 'malware',
-      osList: ['windows', 'mac', 'linux'],
+      osList: [
+        PolicyOperatingSystem.windows,
+        PolicyOperatingSystem.mac,
+        PolicyOperatingSystem.linux,
+      ],
     };
 
     render = () => {

@@ -10,6 +10,7 @@ import { OperatingSystem } from '@kbn/securitysolution-utils';
 import { i18n } from '@kbn/i18n';
 import type { PolicyFormComponentCommonProps } from '../../types';
 import type { UIPolicyConfig } from '../../../../../../../../common/endpoint/types';
+import { constrainLinuxTtyIo } from '../../../../../../../../common/endpoint/models/policy_config_helpers';
 import type { EventFormOption, SupplementalEventFormOption } from '../event_collection_card';
 import { EventCollectionCard } from '../event_collection_card';
 import { useIsExperimentalFeatureEnabled } from '../../../../../../../common/hooks/use_experimental_features';
@@ -130,8 +131,8 @@ export const LinuxEventCollectionCard = memo<LinuxEventCollectionCardProps>(
 
     const changeHandler: PolicyFormComponentCommonProps['onChange'] = useCallback(
       ({ isValid, updatedPolicy }) => {
-        if (isValid && updatedPolicy.linux.events.session_data === false) {
-          updatedPolicy.linux.events.tty_io = false;
+        if (isValid) {
+          constrainLinuxTtyIo(updatedPolicy);
         }
 
         onChange({ isValid, updatedPolicy });

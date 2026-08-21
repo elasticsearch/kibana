@@ -26,7 +26,9 @@ describe('createAutomaticTroubleshootingSkill', () => {
       expect(skill.id).toBe('automatic_troubleshooting');
       expect(skill.name).toBe('elastic-defend-configuration-troubleshooting');
       expect(skill.basePath).toBe('skills/security/endpoint');
-      expect(skill.description).toContain('Troubleshoot Elastic Defend endpoint health');
+      expect(skill.description).toContain(
+        'observed Elastic Defend endpoint behavior and operational outcomes'
+      );
       expect(skill.content).toContain('Elastic Defend Configuration Troubleshooting');
     });
 

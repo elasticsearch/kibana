@@ -14,7 +14,7 @@ import { DetectPreventProtectionLevel } from './detect_prevent_protection_level'
 import userEvent from '@testing-library/user-event';
 import { cloneDeep } from 'lodash';
 import { set } from '@kbn/safer-lodash-set';
-import { ProtectionModes } from '../../../../../../../common/endpoint/types';
+import { ProtectionModes, PolicyOperatingSystem } from '../../../../../../../common/endpoint/types';
 import { expectIsViewOnly, exactMatchText } from '../mocks';
 import { createLicenseServiceMock } from '../../../../../../../common/license/mocks';
 import { licenseService as licenseServiceMocked } from '../../../../../../common/hooks/__mocks__/use_license';
@@ -47,7 +47,11 @@ describe('Policy form Detect Prevent Protection level component', () => {
       mode: 'edit',
       'data-test-subj': 'test',
       protection: 'malware',
-      osList: ['windows', 'mac', 'linux'],
+      osList: [
+        PolicyOperatingSystem.windows,
+        PolicyOperatingSystem.mac,
+        PolicyOperatingSystem.linux,
+      ],
     };
 
     render = () => {
@@ -84,7 +88,7 @@ describe('Policy form Detect Prevent Protection level component', () => {
   });
 
   it('should allow prevent mode to be selected', async () => {
-    formProps.osList = ['windows'];
+    formProps.osList = [PolicyOperatingSystem.windows];
     set(formProps.policy, 'windows.malware.mode', ProtectionModes.detect);
     const expectedPolicyUpdate = cloneDeep(formProps.policy);
     set(expectedPolicyUpdate, 'windows.malware.mode', ProtectionModes.prevent);
