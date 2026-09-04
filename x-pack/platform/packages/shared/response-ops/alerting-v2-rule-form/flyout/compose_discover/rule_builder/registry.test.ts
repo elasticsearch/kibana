@@ -25,8 +25,8 @@ const makeValues = (overrides: Partial<ThresholdFormValues> = {}): ThresholdForm
 });
 
 describe('RULE_BUILDER_REGISTRY', () => {
-  it('exposes createFlyoutTitle for the threshold builder', () => {
-    expect(RULE_BUILDER_REGISTRY.threshold.createFlyoutTitle).toBe('Create Threshold rule');
+  it('exposes flyoutTitle for the threshold builder', () => {
+    expect(RULE_BUILDER_REGISTRY.threshold.createOption?.flyoutTitle).toBe('Create Threshold rule');
   });
 });
 

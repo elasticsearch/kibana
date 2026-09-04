@@ -201,7 +201,9 @@ const getFlyoutTitle = ({
     });
   }
   if (builderType) {
-    return RULE_BUILDER_REGISTRY[builderType]?.createFlyoutTitle ?? CREATE_RULE_FALLBACK_TITLE;
+    return (
+      RULE_BUILDER_REGISTRY[builderType]?.createOption?.flyoutTitle ?? CREATE_RULE_FALLBACK_TITLE
+    );
   }
   return CREATE_ESQL_TITLE;
 };
@@ -966,10 +968,26 @@ export function ComposeDiscoverFlyout({
         return;
       }
     }
+
+    const resolvedBuilderFields = (() => {
+      if (!builderType || builderState == null) return undefined;
+      const definition = RULE_BUILDER_REGISTRY[builderType];
+      if (!definition?.toFields) return undefined;
+      const raw = definition.toFields(builderState);
+      return raw != null && typeof raw === 'object' ? (raw as Record<string, unknown>) : undefined;
+    })();
+
     if (isCreate) {
-      onCreateRule(composeFormToCreateRequest(values, builderType), values.notifications);
+      onCreateRule(
+        composeFormToCreateRequest(values, builderType, resolvedBuilderFields),
+        values.notifications
+      );
     } else if (ruleId && onUpdateRule) {
-      onUpdateRule(ruleId, composeFormToUpdateRequest(values, builderType), values.notifications);
+      onUpdateRule(
+        ruleId,
+        composeFormToUpdateRequest(values, builderType, resolvedBuilderFields),
+        values.notifications
+      );
     }
   });
 

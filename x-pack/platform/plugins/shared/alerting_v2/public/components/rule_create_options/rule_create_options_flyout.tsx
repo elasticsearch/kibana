@@ -18,6 +18,7 @@ import {
 } from '@elastic/eui';
 import { i18n } from '@kbn/i18n';
 import { FormattedMessage } from '@kbn/i18n-react';
+import type { RuleBuilderCreateOptionItem } from '@kbn/alerting-v2-rule-form';
 import { RuleCreateOptionsPanel, type LegacyRuleTypeItem } from './rule_create_options_panel';
 
 const FLYOUT_TITLE_ID = 'ruleCreateOptionsFlyoutTitle';
@@ -36,7 +37,8 @@ export interface RuleCreateOptionsFlyoutProps {
    * prerequisite). Shown on hover/focus regardless of whether the option is disabled.
    */
   createWithAgentTooltipText?: string;
-  onCreateThresholdRule?: () => void;
+  builderOptions?: RuleBuilderCreateOptionItem[];
+  onCreateBuilderRule?: (builderType: string) => void;
   legacyRuleTypes?: LegacyRuleTypeItem[];
 }
 
@@ -46,7 +48,8 @@ export const RuleCreateOptionsFlyout = ({
   onCreateWithAgent,
   createWithAgentDisabled,
   createWithAgentTooltipText,
-  onCreateThresholdRule,
+  builderOptions,
+  onCreateBuilderRule,
   legacyRuleTypes,
 }: RuleCreateOptionsFlyoutProps) => {
   return (
@@ -98,7 +101,8 @@ export const RuleCreateOptionsFlyout = ({
           onCreateWithAgent={onCreateWithAgent}
           createWithAgentDisabled={createWithAgentDisabled}
           createWithAgentTooltipText={createWithAgentTooltipText}
-          onCreateThresholdRule={onCreateThresholdRule}
+          builderOptions={builderOptions}
+          onCreateBuilderRule={onCreateBuilderRule}
           legacyRuleTypes={legacyRuleTypes}
         />
       </EuiFlyoutBody>

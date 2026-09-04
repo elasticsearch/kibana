@@ -113,9 +113,36 @@ export function resolveCreateRuleBuilder(
   const { builder_type: builderType, builder_fields: builderFields } = data.metadata;
 
   if (builderType && builderFields) {
+    const generated = adaptToKind(
+      registry.generate(builderType, builderFields),
+      data.kind,
+      builderType
+    );
+
+    const hasGeneratedRecovery =
+      generated.query.format === 'composed' && generated.query.recovery != null;
+    let effectiveGenerated = generated;
+    let effectiveStrategy = data.recovery_strategy;
+
+    if (hasGeneratedRecovery) {
+      if (effectiveStrategy === undefined) {
+        effectiveStrategy = 'query';
+      } else if (effectiveStrategy !== 'query') {
+        effectiveGenerated = {
+          ...generated,
+          query: { ...generated.query, recovery: undefined },
+        };
+      }
+    }
+
     const resolved = withGenerated(
-      data,
-      adaptToKind(registry.generate(builderType, builderFields), data.kind, builderType)
+      {
+        ...data,
+        ...(effectiveStrategy !== data.recovery_strategy
+          ? { recovery_strategy: effectiveStrategy }
+          : {}),
+      },
+      effectiveGenerated
     );
     assertGeneratedQueryIsValid(resolved, builderType);
     return resolved;
@@ -189,9 +216,32 @@ export function resolveUpdateRuleBuilder(
       existing.kind,
       effectiveType
     );
+
+    const hasGeneratedRecovery =
+      generated.query.format === 'composed' && generated.query.recovery != null;
+    let effectiveGenerated = generated;
+    let effectiveStrategy = data.recovery_strategy ?? existing.recovery_strategy;
+
+    if (hasGeneratedRecovery) {
+      if (effectiveStrategy === undefined || effectiveStrategy === null) {
+        effectiveStrategy = 'query';
+      } else if (effectiveStrategy !== 'query') {
+        effectiveGenerated = {
+          ...generated,
+          query: { ...generated.query, recovery: undefined },
+        };
+      }
+    }
+
     return withGenerated(
-      { ...data, metadata: { ...data.metadata, builder_type: effectiveType } },
-      generated
+      {
+        ...data,
+        metadata: { ...data.metadata, builder_type: effectiveType },
+        ...(effectiveStrategy !== data.recovery_strategy
+          ? { recovery_strategy: effectiveStrategy }
+          : {}),
+      },
+      effectiveGenerated
     );
   }
 

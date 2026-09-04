@@ -36,6 +36,7 @@ import { ActionPoliciesApp } from './action_policies_app';
 import { EpisodesApp } from './episodes_app';
 import { ExecutionHistoryApp } from './execution_history_app';
 import { BreadcrumbProvider } from './breadcrumb_context';
+import { applyRuleBuilderRegistrations } from '../lib/rule_builder_registrations';
 import type { AlertEpisodesKibanaServices } from '../episodes_kibana_services';
 
 interface AlertingV2MountParams {
@@ -56,6 +57,10 @@ export const mountAlertingV2App = async ({
   const { element, history, setBreadcrumbs } = params;
 
   const queryClient = new QueryClient();
+
+  // Builders contributed by other plugins must be in the registry before the create and edit
+  // flows read it.
+  await applyRuleBuilderRegistrations();
 
   ReactDOM.render(
     coreStart.rendering.addContext(
@@ -89,6 +94,8 @@ export const mountRuleLibraryApp = async ({
   const { element, history, setBreadcrumbs } = params;
 
   const queryClient = new QueryClient();
+
+  await applyRuleBuilderRegistrations();
 
   ReactDOM.render(
     coreStart.rendering.addContext(
@@ -221,6 +228,8 @@ export const mountExecutionHistoryApp = async ({
   const { element, history, setBreadcrumbs } = params;
 
   const queryClient = new QueryClient();
+
+  await applyRuleBuilderRegistrations();
 
   ReactDOM.render(
     coreStart.rendering.addContext(

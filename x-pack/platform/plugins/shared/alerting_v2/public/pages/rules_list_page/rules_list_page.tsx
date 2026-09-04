@@ -5,8 +5,9 @@
  * 2.0.
  */
 
-import React, { useCallback } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import { EuiEmptyPrompt } from '@elastic/eui';
+import { getRuleBuilderCreateOptions } from '@kbn/alerting-v2-rule-form';
 import { ContentList, ContentListProvider, ContentListToolbar } from '@kbn/content-list';
 import { CoreStart, useService } from '@kbn/core-di-browser';
 import { i18n } from '@kbn/i18n';
@@ -79,10 +80,14 @@ export const RulesListPage = () => {
     closeCreateOptionsFlyout();
     navigateToAgentBuilder();
   };
-  const onCreateThresholdRuleFromOptionsFlyout = () => {
-    closeCreateOptionsFlyout();
-    openCreateBuilderFlyout('threshold');
-  };
+  const onCreateBuilderRuleFromOptionsFlyout = useCallback(
+    (builderType: string) => {
+      closeCreateOptionsFlyout();
+      openCreateBuilderFlyout(builderType);
+    },
+    [closeCreateOptionsFlyout, openCreateBuilderFlyout]
+  );
+  const builderOptions = useMemo(() => getRuleBuilderCreateOptions(), []);
 
   const emptyState = canWrite ? (
     <RuleCreateOptionsPanel
@@ -90,7 +95,8 @@ export const RulesListPage = () => {
       onCreateWithAgent={navigateToAgentBuilder}
       createWithAgentDisabled={!areAgentBuilderSkillsAvailable}
       createWithAgentTooltipText={createWithAgentTooltipText}
-      onCreateThresholdRule={onCreateThresholdRuleFromOptionsFlyout}
+      builderOptions={builderOptions}
+      onCreateBuilderRule={onCreateBuilderRuleFromOptionsFlyout}
     />
   ) : (
     <EuiEmptyPrompt
@@ -195,7 +201,8 @@ export const RulesListPage = () => {
           onCreateWithAgent={onCreateWithAgentFromOptionsFlyout}
           createWithAgentDisabled={!areAgentBuilderSkillsAvailable}
           createWithAgentTooltipText={createWithAgentTooltipText}
-          onCreateThresholdRule={onCreateThresholdRuleFromOptionsFlyout}
+          builderOptions={builderOptions}
+          onCreateBuilderRule={onCreateBuilderRuleFromOptionsFlyout}
         />
       ) : null}
       {flyout}

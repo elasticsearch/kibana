@@ -15,6 +15,27 @@ import {
   CONFIRM_BUILDER_TO_ESQL_VARIANT,
 } from '../components/confirm_builder_to_esql_modal';
 
+/**
+ * Reconstructs builder form state from `metadata.builder_fields` using the
+ * registered `fromFields` adapter, or the fields themselves when the form shape
+ * matches the stored shape (no adapter needed).
+ */
+const tryRestoreFromBuilderFields = (
+  type: string,
+  builderFields: Record<string, unknown>
+): BuilderState | null => {
+  const definition = RULE_BUILDER_REGISTRY[type];
+  if (!definition) return null;
+  if (definition.fromFields) {
+    return definition.fromFields(builderFields);
+  }
+  return builderFields;
+};
+
+/**
+ * Legacy path: reconstructs builder form state by parsing the ES|QL query text.
+ * Only used for rules saved before `metadata.builder_fields` existed.
+ */
 const tryParseBuilderState = (
   type: string,
   query: string,
@@ -52,6 +73,22 @@ export const useBuilderToEsqlTransition = ({
       if (!rule.metadata.builder_type) {
         return 'esql';
       }
+
+      // Primary path: restore from stored builder_fields (new rules).
+      if (rule.metadata.builder_fields) {
+        const state = tryRestoreFromBuilderFields(
+          rule.metadata.builder_type,
+          rule.metadata.builder_fields
+        );
+        if (state && typeof state === 'object') {
+          return {
+            builderType: rule.metadata.builder_type,
+            initialBuilderState: state,
+          };
+        }
+      }
+
+      // Legacy path: parse builder state from the ES|QL query text (pre-builder_fields rules).
       const query = rule.query ? getBreachEsqlQuery(rule.query) : '';
       const recoveryQuery = rule.query
         ? getRecoverEsqlQuery(rule.query, rule.recovery_strategy)
