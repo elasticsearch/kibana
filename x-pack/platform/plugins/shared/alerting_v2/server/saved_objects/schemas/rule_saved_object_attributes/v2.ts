@@ -18,8 +18,10 @@ import {
  * rules created before v3 (which have no counter yet) remain valid; readers
  * fall back to `RULE_VERSION_FALLBACK`.
  */
+export const ruleMetadataSchema = ruleMetadataSchemaV1.extends({
+  version: schema.maybe(schema.number()),
+});
+
 export const ruleSavedObjectAttributesSchema = ruleSavedObjectAttributesSchemaV1.extends({
-  metadata: ruleMetadataSchemaV1.extends({
-    version: schema.maybe(schema.number()),
-  }),
+  metadata: ruleMetadataSchema,
 });

@@ -28,8 +28,19 @@ import { useCreateRule } from './use_create_rule';
 import { useSetupRuleNotifications } from './use_setup_rule_notifications';
 import { useUpdateRule } from './use_update_rule';
 
+/**
+ * A template whose rule carries builder fields has no query of its own — the
+ * server generates it on save — so seed an empty one in the kind's own format
+ * to open the editor the form would otherwise refuse to show.
+ */
+const emptyQueryFor = (kind: RuleApiResponse['kind']): RuleApiResponse['query'] =>
+  kind === 'signal'
+    ? { format: 'standalone', breach: { query: '' } }
+    : { format: 'composed', base: '' };
+
 const templateToSyntheticRule = (template: RuleTemplateResponse): RuleApiResponse => ({
   ...template.rule,
+  query: template.rule.query ?? emptyQueryFor(template.rule.kind),
   id: '',
   enabled: false,
   created_by: null,

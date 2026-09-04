@@ -33,6 +33,16 @@ export const ALERTING_ERROR_CODES = {
   INVALID_RULE_DATA: 'INVALID_RULE_DATA',
   /** A registered artifact's `data` failed its type-specific schema validation. */
   INVALID_ARTIFACT_DATA: 'INVALID_ARTIFACT_DATA',
+  /** `metadata.builder_type` does not match any registered rule builder. */
+  UNKNOWN_BUILDER_TYPE: 'UNKNOWN_BUILDER_TYPE',
+  /** `metadata.builder_fields` failed the schema registered for its `builder_type`. */
+  INVALID_BUILDER_FIELDS: 'INVALID_BUILDER_FIELDS',
+  /**
+   * A builder accepted its fields but could not turn them into a valid query —
+   * e.g. an ES|QL fragment the bounded schema accepts as a string but the
+   * parser rejects.
+   */
+  BUILDER_QUERY_GENERATION_FAILED: 'BUILDER_QUERY_GENERATION_FAILED',
   /** `state_transition` cannot be applied to the rule's `kind`. */
   INVALID_STATE_TRANSITION: 'INVALID_STATE_TRANSITION',
   /** A signal rule's merged shape violates signal constraints. */

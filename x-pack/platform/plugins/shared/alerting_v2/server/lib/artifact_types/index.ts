@@ -13,7 +13,6 @@ export type {
 export { ArtifactTypeRegistry } from './artifact_type_registry';
 export type { ArtifactTypeRegistryContract } from './artifact_type_registry';
 export { assertValidDefinition } from './assert_valid_definition';
-export { assertBoundedSchema } from './assert_bounded_schema';
 export {
   buildArtifactReferenceName,
   parseArtifactReferenceName,

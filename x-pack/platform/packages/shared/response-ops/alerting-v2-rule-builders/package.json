@@ -1,0 +1,8 @@
+{
+  "name": "@kbn/alerting-v2-rule-builders",
+  "description": "Alerting v2 rule builder type definitions: builder_fields schemas and server-side ES|QL query generation.",
+  "private": true,
+  "version": "1.0.0",
+  "license": "Elastic License 2.0",
+  "sideEffects": false
+}

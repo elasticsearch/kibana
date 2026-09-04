@@ -9,8 +9,13 @@ import Boom from '@hapi/boom';
 import { injectable } from 'inversify';
 import { stringifyZodError } from '@kbn/zod-helpers/v4';
 import { treeifyError } from '@kbn/zod/v4';
+import {
+  MAX_ARTIFACT_ARRAY_ITEMS,
+  MAX_ARTIFACT_DATA_BYTES,
+  MAX_ARTIFACT_STRING_LENGTH,
+} from '@kbn/alerting-v2-constants';
 import { ALERTING_ERROR_CODES } from '../errors/error_codes';
-import { assertBoundedSchema } from './assert_bounded_schema';
+import { assertBoundedSchema } from '../bounded_schema';
 import { assertValidDefinition } from './assert_valid_definition';
 import type { ArtifactTypeDefinition, RuleArtifactLike } from './types';
 
@@ -39,7 +44,16 @@ export class ArtifactTypeRegistry {
 
   public register(def: ArtifactTypeDefinition): void {
     assertValidDefinition(def);
-    assertBoundedSchema(def.dataSchema, def.type);
+    assertBoundedSchema(def.dataSchema, def.type, {
+      kind: 'Artifact type',
+      schemaProperty: 'dataSchema',
+      rootPath: 'data',
+      limits: {
+        stringLength: MAX_ARTIFACT_STRING_LENGTH,
+        arrayItems: MAX_ARTIFACT_ARRAY_ITEMS,
+        totalBytes: MAX_ARTIFACT_DATA_BYTES,
+      },
+    });
 
     if (this.types.has(def.type)) {
       throw new Error(`Artifact type "${def.type}" is already registered`);

@@ -14,6 +14,7 @@ import type {
   DryRunResponse,
   FindRulesResponse,
   FindRulesSortField,
+  Query,
   RuleResponse,
   UpdateRuleData,
 } from '@kbn/alerting-v2-schemas';
@@ -35,6 +36,19 @@ export type {
 };
 
 export type BulkOperationError = BulkResponse['errors'][number];
+
+/**
+ * Create data whose `query` is settled — either generated from
+ * `metadata.builder_fields` or supplied by the caller. The create schema
+ * accepts exactly one of the two, so resolution always produces a query.
+ */
+export type ResolvedCreateRuleData = CreateRuleData & { query: Query };
+
+/**
+ * Update data whose builder metadata has been normalized and whose `query` has
+ * been regenerated if the builder fields changed.
+ */
+export type ResolvedUpdateRuleData = UpdateRuleData;
 
 /** An enabled rule whose executor task API key is a candidate for rotation. */
 export interface RotationCandidate {

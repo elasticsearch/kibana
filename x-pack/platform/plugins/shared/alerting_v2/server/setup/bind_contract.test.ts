@@ -14,6 +14,7 @@ import { RulesClient } from '../lib/rules_client';
 import { ActionPolicyClient } from '../lib/action_policy_client';
 import { AlertEventsClient } from '../lib/alert_events_client';
 import { ArtifactTypeRegistry } from '../lib/artifact_types';
+import { BuilderTypeRegistry } from '../lib/builder_types';
 import { RequestSpaceIdToken } from '../lib/services/spaces_service/tokens';
 import type { AlertingServerSetup, AlertingServerStart } from '../types';
 import { bindContract } from './bind_contract';
@@ -46,6 +47,7 @@ describe('bindContract', () => {
       getContainer: jest.fn(() => container),
     } as never);
     container.bind(ArtifactTypeRegistry).toSelf().inSingletonScope();
+    container.bind(BuilderTypeRegistry).toSelf().inSingletonScope();
 
     container.load(new ContainerModule((options) => bindContract(options)));
   });

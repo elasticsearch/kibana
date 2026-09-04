@@ -1,0 +1,7 @@
+{
+  "type": "shared-common",
+  "id": "@kbn/alerting-v2-rule-builders",
+  "owner": "@elastic/rna-project-team",
+  "group": "platform",
+  "visibility": "shared"
+}

@@ -23,7 +23,7 @@ import { TaskStatus } from '@kbn/task-manager-plugin/server';
 import { type RuleSavedObjectAttributes } from '../../saved_objects';
 import { ALERTING_ERROR_CODES } from '../errors/error_codes';
 import { RULE_VERSION_FALLBACK } from '../rule_changes_history';
-import type { BulkOperationError, RotationCandidate } from './types';
+import type { BulkOperationError, ResolvedCreateRuleData, RotationCandidate } from './types';
 
 /**
  * Maps a saved-object status code to the stable, machine-readable bulk-error
@@ -209,7 +209,7 @@ function nullToEmptyArray<T>(
  * or a zero-downtime upgrade — and `find` fails as a whole rather than per
  * document, so one such rule would break the entire rules list.
  */
-const toStoredQuery = (query: Query): RuleSavedObjectAttributes['query'] =>
+export const toStoredQuery = (query: Query): RuleSavedObjectAttributes['query'] =>
   query.format === 'composed'
     ? { ...query, breach: { segment: query.breach?.segment ?? '' } }
     : query;
@@ -224,10 +224,12 @@ const toApiQuery = (query: RuleSavedObjectAttributes['query']): Query => {
 };
 
 /**
- * Converts a create-rule API body into saved object attributes.
+ * Converts a create-rule API body into saved object attributes. The body's
+ * query must already be settled by `resolveCreateRuleBuilder`, since a
+ * builder-authored body carries its parameters instead of a query.
  */
 export function transformCreateRuleBodyToRuleSoAttributes(
-  data: CreateRuleData,
+  data: ResolvedCreateRuleData,
   serverFields: {
     enabled: boolean;
     createdBy: string | null;
@@ -246,6 +248,7 @@ export function transformCreateRuleBodyToRuleSoAttributes(
       owner: data.metadata.owner,
       tags: data.metadata.tags,
       builder_type: data.metadata.builder_type,
+      builder_fields: data.metadata.builder_fields,
       version,
     },
     time_field: data.time_field,
@@ -261,41 +264,6 @@ export function transformCreateRuleBodyToRuleSoAttributes(
     artifacts: data.artifacts,
     ...restServerFields,
   };
-}
-
-/**
- * Resolves `metadata.builder_type` for an update.
- *
- * Builder rules require an explicit `metadata.builder_type: null` in the request
- * to clear the field when the query changes.
- */
-function resolveBuilderType(
-  updateData: UpdateRuleData,
-  existingAttrs: RuleSavedObjectAttributes
-): string | undefined {
-  if (updateData.metadata?.builder_type !== undefined) {
-    return updateData.metadata.builder_type ?? undefined;
-  }
-
-  // Compare in stored shape so an unchanged conditionless query (`breach`
-  // omitted in the body, empty segment on disk) does not read as a change.
-  const queryChanged =
-    updateData.query !== undefined &&
-    !isEqual(toStoredQuery(updateData.query), existingAttrs.query);
-
-  if (queryChanged && existingAttrs.metadata.builder_type) {
-    throw Boom.badRequest(
-      'Cannot update the query on a builder rule without explicitly clearing ' +
-        'metadata.builder_type. Send metadata.builder_type: null to confirm the transition to ES|QL mode.',
-      { code: ALERTING_ERROR_CODES.BUILDER_TYPE_NOT_CLEARED }
-    );
-  }
-
-  if (queryChanged) {
-    return undefined;
-  }
-
-  return existingAttrs.metadata.builder_type;
 }
 
 /**
@@ -320,7 +288,17 @@ export function buildUpdateRuleAttributes(
     metadata: {
       ...existingAttrs.metadata,
       ...updateData.metadata,
-      builder_type: resolveBuilderType(updateData, existingAttrs),
+      // `null` → clear (undefined): the SO schema uses `maybe()` without
+      // `nullable()`. Builder resolution has already rejected the combinations
+      // that would leave the pair inconsistent.
+      builder_type: nullToUndefined(
+        updateData.metadata?.builder_type,
+        existingAttrs.metadata.builder_type
+      ),
+      builder_fields: nullToUndefined(
+        updateData.metadata?.builder_fields,
+        existingAttrs.metadata.builder_fields
+      ),
       // `null` clears all tags. The SO schema is `maybe(...)` without
       // `nullable()`, so the cleared value must be stored as `undefined`.
       tags: nullToUndefined(updateData.metadata?.tags, existingAttrs.metadata.tags),
@@ -443,6 +421,7 @@ export function transformRuleSoAttributesToRuleApiResponse(
       owner: attrs.metadata.owner,
       tags: attrs.metadata.tags,
       builder_type: attrs.metadata.builder_type,
+      builder_fields: attrs.metadata.builder_fields,
       version: attrs.metadata.version ?? RULE_VERSION_FALLBACK,
     },
     time_field: attrs.time_field,

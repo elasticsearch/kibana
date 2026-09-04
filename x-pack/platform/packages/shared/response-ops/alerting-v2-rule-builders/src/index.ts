@@ -5,10 +5,12 @@
  * 2.0.
  */
 
-export * from './advanced_settings';
-export * from './agent_builder';
-export * from './artifacts';
-export * from './esql_params';
-export * from './labels';
-export * from './rule_builders';
-export * from './rule_kind';
+export type {
+  BuilderTypeDefinition,
+  RegisteredBuilderType,
+  OpaqueBuilderFields,
+  GeneratedQuery,
+} from './types';
+export { defineBuilderType } from './types';
+
+export { BuilderQueryGenerationError } from './errors';

@@ -255,6 +255,7 @@
     "@kbn/alerting-v2-constants": "workspace:*",
     "@kbn/alerting-v2-episodes-ui": "workspace:*",
     "@kbn/alerting-v2-plugin": "workspace:*",
+    "@kbn/alerting-v2-rule-builders": "workspace:*",
     "@kbn/alerting-v2-rule-form": "workspace:*",
     "@kbn/alerting-v2-schemas": "workspace:*",
     "@kbn/alerting-v2-utils": "workspace:*",

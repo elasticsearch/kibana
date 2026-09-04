@@ -1145,6 +1145,7 @@ x-pack/platform/packages/shared/response-ops/alerting-v2-browser-shared @elastic
 x-pack/platform/packages/shared/response-ops/alerting-v2-common-queries @elastic/rna-project-team
 x-pack/platform/packages/shared/response-ops/alerting-v2-constants @elastic/rna-project-team
 x-pack/platform/packages/shared/response-ops/alerting-v2-episodes-ui @elastic/rna-project-team
+x-pack/platform/packages/shared/response-ops/alerting-v2-rule-builders @elastic/rna-project-team
 x-pack/platform/packages/shared/response-ops/alerting-v2-rule-form @elastic/rna-project-team
 x-pack/platform/packages/shared/response-ops/alerting-v2-schemas @elastic/rna-project-team
 x-pack/platform/packages/shared/response-ops/alerting-v2-utils @elastic/rna-project-team
