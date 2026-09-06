@@ -3199,6 +3199,11 @@
       "id": "50643b60-3dd3-11e8-b2b9-5d5dc1715159"
     },
     {
+      "name":"ffc13252-56b4-4e3f-847e-61373fa0be86:kibanaSavedObjectMeta.searchSourceJSON.index",
+      "type":"index-pattern",
+      "id":"a0f483a0-3dc9-11e8-8660-4d65aa086b3c"
+    },
+    {
       "name": "controlGroup_41827e70-5285-4d44-8375-4c498449b9a7:optionsListControlDataView",
       "type": "index-pattern",
       "id": "a0f483a0-3dc9-11e8-8660-4d65aa086b3c"

@@ -16,9 +16,9 @@ import {
 } from '@kbn/presentation-publishing';
 import { MaybePromise } from '@kbn/utility-types';
 import { Observable, combineLatestWith, debounceTime, map, of } from 'rxjs';
+import { isEqual, sortBy } from 'lodash';
 import { apiHasLastSavedChildState } from '../last_saved_child_state';
 import { PresentationContainer } from '../presentation_container';
-
 const UNSAVED_CHANGES_DEBOUNCE = 100;
 
 export const initializeUnsavedChanges = <StateType extends object = object>({
@@ -29,6 +29,7 @@ export const initializeUnsavedChanges = <StateType extends object = object>({
   defaultState,
   serializeState,
   anyStateChange$,
+  checkRefEquality,
 }: {
   uuid: string;
   parentApi: unknown;
@@ -37,6 +38,7 @@ export const initializeUnsavedChanges = <StateType extends object = object>({
   getComparators: () => StateComparators<StateType>;
   defaultState?: Partial<StateType>;
   onReset: (lastSavedPanelState?: SerializedPanelState<StateType>) => MaybePromise<void>;
+  checkRefEquality?: boolean;
 }): PublishesUnsavedChanges => {
   if (!apiHasLastSavedChildState<StateType>(parentApi)) {
     return {
@@ -46,16 +48,25 @@ export const initializeUnsavedChanges = <StateType extends object = object>({
   }
 
   const hasUnsavedChanges$ = anyStateChange$.pipe(
-    combineLatestWith(
-      parentApi.lastSavedStateForChild$(uuid).pipe(map((panelState) => panelState?.rawState))
-    ),
+    combineLatestWith(parentApi.lastSavedStateForChild$(uuid)),
     debounceTime(UNSAVED_CHANGES_DEBOUNCE),
     map(([, lastSavedState]) => {
-      const currentState = serializeState().rawState;
+      const currentState = serializeState();
+
+      // check ref equality
+      if (checkRefEquality) {
+        const lastSavedRefs = sortBy(lastSavedState?.references ?? [], 'id');
+        const currentRefs = sortBy(currentState?.references ?? [], 'id');
+        const equalRefs = isEqual(lastSavedRefs, currentRefs);
+
+        if (!equalRefs) return true;
+      }
+
+      // check state equality
       return !areComparatorsEqual(
         getComparators(),
-        lastSavedState,
-        currentState,
+        lastSavedState?.rawState,
+        currentState.rawState,
         defaultState,
         (key: string) => {
           const childApi = (parentApi as Partial<PresentationContainer>).children$?.getValue()[
