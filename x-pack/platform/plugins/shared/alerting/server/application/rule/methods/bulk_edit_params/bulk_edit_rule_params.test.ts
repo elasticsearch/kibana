@@ -421,6 +421,61 @@ describe('bulkEditRuleParamsWithReadAuth()', () => {
         { overwrite: true }
       );
     });
+
+    test('runs the rule type params authorizer', async () => {
+      ruleTypeRegistry.get.mockReturnValue({
+        id: 'myType',
+        name: 'Test',
+        actionGroups: [{ id: 'default', name: 'Default' }],
+        defaultActionGroupId: 'default',
+        minimumLicenseRequired: 'basic',
+        isExportable: true,
+        recoveryActionGroup: RecoveredActionGroup,
+        async executor() {
+          return { state: {} };
+        },
+        category: 'test',
+        validLegacyConsumers: [],
+        producer: 'alerts',
+        solution: 'stack',
+        validate: {
+          params: { validate: (params) => params },
+        },
+        authorize: {
+          params: {
+            authorize: async () => {
+              throw new Error('Not authorized to edit params');
+            },
+          },
+        },
+      });
+
+      const result = await rulesClient.bulkEditRuleParamsWithReadAuth({
+        operations: [
+          {
+            field: 'exceptionsList',
+            operation: 'set',
+            value: [
+              {
+                id: 'exception-list-id',
+                list_id: 'exception-list',
+                type: 'detection',
+                namespace_type: 'single',
+              },
+              {
+                id: 'exception-list-id-2',
+                list_id: 'exception-list',
+                type: 'detection',
+                namespace_type: 'single',
+              },
+            ],
+          },
+        ],
+      });
+
+      expect(result.errors).toHaveLength(1);
+      expect(result.errors[0]).toHaveProperty('message', 'Not authorized to edit params');
+    });
   });
 
   describe('apiKeys', () => {

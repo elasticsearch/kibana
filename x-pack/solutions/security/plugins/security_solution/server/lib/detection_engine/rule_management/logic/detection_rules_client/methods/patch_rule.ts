@@ -27,7 +27,7 @@ import {
   toggleRuleEnabledOnUpdate,
   formatBulkEditResultErrors,
   isReadAuthEditField,
-  validateFieldWritePermissions,
+  validateEditedFieldWritePermissions,
 } from '../utils';
 import { getRuleByIdOrRuleId } from './get_rule_by_id_or_rule_id';
 import type { RuleParams } from '../../../../rule_schema';
@@ -69,7 +69,9 @@ export const patchRule = async ({
 
   await validateMlAuth(mlAuthz, rulePatch.type ?? existingRule.type);
   validateNonCustomizablePatchFields(rulePatch, existingRule);
-  validateFieldWritePermissions(rulePatch, rulesAuthz);
+  // A PATCH payload only carries the fields the client sent, so presence of a
+  // restricted field key (even set to null) means the user is editing it.
+  validateEditedFieldWritePermissions(rulePatch, rulesAuthz);
 
   const patchedRule = await applyRulePatch({
     prebuiltRuleAssetClient,

@@ -23,7 +23,7 @@ import {
   formatBulkEditResultErrors,
   hasOnlyReadAuthEditableChanges,
   toggleRuleEnabledOnUpdate,
-  validateFieldWritePermissions,
+  validateEditedFieldWritePermissions,
   validateMlAuth,
 } from '../utils';
 
@@ -88,9 +88,11 @@ export const updateRule = async ({
    * `all` privileges for rules.
    */
   if (hasOnlyReadAuthEditableChanges(ruleWithUpdates, existingRule)) {
-    // We're only modifying the fields that are editable with read permissions
+    // We're only modifying the fields that are editable with read permissions.
+    // `modifiedFields` contains only the fields that changed (including a field
+    // being unset), so presence of a restricted field means the user is editing it.
     const modifiedFields = extractChangedUpdatableFields(ruleWithUpdates, existingRule);
-    validateFieldWritePermissions(modifiedFields, rulesAuthz);
+    validateEditedFieldWritePermissions(modifiedFields, rulesAuthz);
 
     const appliedUpdateWithReadPrivs: BulkEditResult<RuleParams> =
       await updateReadAuthEditRuleFields({

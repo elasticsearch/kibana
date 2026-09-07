@@ -85,6 +85,7 @@ describe('Custom Query Alerts', () => {
     getEntityStore: jest.fn().mockResolvedValue({
       createCRUDClient: jest.fn().mockReturnValue({ listEntities: jest.fn() }),
     }),
+    getRulesAuthz: jest.fn().mockResolvedValue({}),
   };
 
   const securityRuleTypeWrapper = createSecurityRuleTypeWrapper(wrapperOptions);

@@ -12,7 +12,13 @@ import { ALERTING_CASES_SAVED_OBJECT_INDEX } from '@kbn/core-saved-objects-serve
 import type { RawRule } from '@kbn/alerting-plugin/server/types';
 import { ES_TEST_INDEX_NAME } from '@kbn/alerting-api-integration-helpers';
 import { getAlwaysFiringInternalRule } from '../../../../common/lib/alert_utils';
-import { DefaultSpace, GlobalReadAtSpace1, Space1AllAtSpace1, Superuser } from '../../../scenarios';
+import {
+  DefaultSpace,
+  GlobalReadAtSpace1,
+  RulesReadExceptionsAll,
+  Space1AllAtSpace1,
+  Superuser,
+} from '../../../scenarios';
 import { checkAAD, getTestRuleData, getUrlPrefix, ObjectRemover } from '../../../../common/lib';
 import type { FtrProviderContext } from '../../../../common/ftr_provider_context';
 import { AlertUtils } from '../../../../common/lib';
@@ -126,7 +132,7 @@ export default function createBulkEditRuleParamsWithReadAuthTests({
       const response = await supertestWithoutAuth
         .post(`${getUrlPrefix(spaceId)}/api/alerting_fixture/_bulk_edit_params`)
         .set('kbn-xsrf', 'foo')
-        .auth(GlobalReadAtSpace1.user.username, GlobalReadAtSpace1.user.password)
+        .auth(RulesReadExceptionsAll.username, RulesReadExceptionsAll.password)
         .send({
           ids: [ruleId],
           operations: [
@@ -154,7 +160,7 @@ export default function createBulkEditRuleParamsWithReadAuthTests({
       });
 
       expect((rawRuleAfter._source as any)?.alert.createdBy).toEqual('elastic');
-      expect((rawRuleAfter._source as any)?.alert.updatedBy).toEqual('global_read');
+      expect((rawRuleAfter._source as any)?.alert.updatedBy).toEqual('rules_read_exceptions_all');
       expect((rawRuleAfter._source as any)?.alert.apiKeyOwner).toEqual('elastic');
 
       expect((rawRuleAfter._source as any)?.alert.params.exceptionsList).toEqual([
@@ -257,6 +263,36 @@ export default function createBulkEditRuleParamsWithReadAuthTests({
       await checkAAD({ supertest, spaceId, type: RULE_SAVED_OBJECT_TYPE, id: ruleId });
     });
 
+    it('should return an error when the user cannot edit the rule exceptions list', async () => {
+      const ruleId = await createDetectionRule();
+
+      // global_read has rule read access but not the exceptions sub-feature, so the
+      // rule type's params authorizer rejects the exception list edit.
+      const response = await supertestWithoutAuth
+        .post(`${getUrlPrefix(spaceId)}/api/alerting_fixture/_bulk_edit_params`)
+        .set('kbn-xsrf', 'foo')
+        .auth(GlobalReadAtSpace1.user.username, GlobalReadAtSpace1.user.password)
+        .send({
+          ids: [ruleId],
+          operations: [
+            {
+              operation: 'set',
+              field: 'exceptionsList',
+              value: [{ id: '1', list_id: 'xyz', namespace_type: 'single', type: 'rule_default' }],
+            },
+          ],
+        })
+        .expect(200);
+
+      expect(response.body.total).toEqual(1);
+      expect(response.body.skipped).toEqual([]);
+      expect(response.body.rules).toEqual([]);
+      expect(response.body.errors.length).toEqual(1);
+      expect(response.body.errors[0].message).toEqual(
+        'The current user does not have the permissions to edit the following fields: exceptions_list'
+      );
+    });
+
     it('should handle bulk editing exceptionsLists in multiple rules', async () => {
       const ruleId1 = await createDetectionRule();
       const ruleId2 = await createDetectionRule();
@@ -298,7 +334,7 @@ export default function createBulkEditRuleParamsWithReadAuthTests({
       const response = await supertestWithoutAuth
         .post(`${getUrlPrefix(spaceId)}/api/alerting_fixture/_bulk_edit_params`)
         .set('kbn-xsrf', 'foo')
-        .auth(GlobalReadAtSpace1.user.username, GlobalReadAtSpace1.user.password)
+        .auth(RulesReadExceptionsAll.username, RulesReadExceptionsAll.password)
         .send({
           ids: [ruleId1, ruleId2],
           operations: [
@@ -333,7 +369,7 @@ export default function createBulkEditRuleParamsWithReadAuthTests({
 
       resultsAfter.forEach((rawRuleAfter) => {
         expect((rawRuleAfter._source as any)?.alert.createdBy).toEqual('elastic');
-        expect((rawRuleAfter._source as any)?.alert.updatedBy).toEqual('global_read');
+        expect((rawRuleAfter._source as any)?.alert.updatedBy).toEqual('rules_read_exceptions_all');
         expect((rawRuleAfter._source as any)?.alert.apiKeyOwner).toEqual('elastic');
 
         expect((rawRuleAfter._source as any)?.alert.params.exceptionsList).toEqual([
@@ -382,7 +418,7 @@ export default function createBulkEditRuleParamsWithReadAuthTests({
       const response = await supertestWithoutAuth
         .post(`${getUrlPrefix(spaceId)}/api/alerting_fixture/_bulk_edit_params`)
         .set('kbn-xsrf', 'foo')
-        .auth(GlobalReadAtSpace1.user.username, GlobalReadAtSpace1.user.password)
+        .auth(RulesReadExceptionsAll.username, RulesReadExceptionsAll.password)
         .send({
           ids: [createdRule.id],
           operations: [
@@ -414,7 +450,7 @@ export default function createBulkEditRuleParamsWithReadAuthTests({
       const response = await supertestWithoutAuth
         .post(`${getUrlPrefix(spaceId)}/api/alerting_fixture/_bulk_edit_params`)
         .set('kbn-xsrf', 'foo')
-        .auth(GlobalReadAtSpace1.user.username, GlobalReadAtSpace1.user.password)
+        .auth(RulesReadExceptionsAll.username, RulesReadExceptionsAll.password)
         .send({
           ids: [ruleId],
           operations: [
@@ -502,7 +538,7 @@ export default function createBulkEditRuleParamsWithReadAuthTests({
       const response = await supertestWithoutAuth
         .post(`${getUrlPrefix(spaceId)}/api/alerting_fixture/_bulk_edit_params`)
         .set('kbn-xsrf', 'foo')
-        .auth(GlobalReadAtSpace1.user.username, GlobalReadAtSpace1.user.password)
+        .auth(RulesReadExceptionsAll.username, RulesReadExceptionsAll.password)
         .send({
           ids: [ruleId],
           operations: [
@@ -530,7 +566,7 @@ export default function createBulkEditRuleParamsWithReadAuthTests({
       });
 
       expect((rawRuleAfter._source as any)?.alert.createdBy).toEqual('elastic');
-      expect((rawRuleAfter._source as any)?.alert.updatedBy).toEqual('global_read');
+      expect((rawRuleAfter._source as any)?.alert.updatedBy).toEqual('rules_read_exceptions_all');
       expect((rawRuleAfter._source as any)?.alert.apiKeyOwner).toEqual('elastic');
 
       expect((rawRuleBefore._source as any)?.alert.actions).toEqual([

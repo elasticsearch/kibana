@@ -488,6 +488,25 @@ describe('DetectionRulesClient.patchRule', () => {
           expect(rulesClient.bulkEditRuleParamsWithReadAuth).not.toHaveBeenCalled();
           expect(rulesClient.update).not.toHaveBeenCalled();
         });
+
+        it('throws 403 when unsetting note via null', async () => {
+          const existingRule = getRulesSchemaMock();
+          (getRuleByRuleId as jest.Mock).mockResolvedValueOnce(existingRule);
+
+          const rulePatch = {
+            rule_id: existingRule.rule_id,
+            note: null,
+          } as unknown as Parameters<typeof detectionRulesClient.patchRule>[0]['rulePatch'];
+
+          await expect(detectionRulesClient.patchRule({ rulePatch })).rejects.toThrow(
+            expect.objectContaining({
+              statusCode: 403,
+            })
+          );
+
+          expect(rulesClient.bulkEditRuleParamsWithReadAuth).not.toHaveBeenCalled();
+          expect(rulesClient.update).not.toHaveBeenCalled();
+        });
       });
     });
 

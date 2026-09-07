@@ -6,6 +6,7 @@
  */
 
 import expect from '@kbn/expect';
+import { v4 as uuidV4 } from 'uuid';
 import { ExceptionListTypeEnum } from '@kbn/securitysolution-io-ts-list-types';
 import { ROLES } from '@kbn/security-solution-plugin/common/test';
 
@@ -18,6 +19,7 @@ export default ({ getService }: FtrProviderContext) => {
   const supertest = getService('supertest');
   const detectionsApi = getService('detectionsApi');
   const log = getService('log');
+  const utils = getService('securitySolutionUtils');
 
   describe('@ess @serverless @skipInServerlessMKI update_rules RBAC', () => {
     describe('@skipInServerless with rules_read_exceptions_all user role', () => {
@@ -340,6 +342,451 @@ export default ({ getService }: FtrProviderContext) => {
           'The current user does not have the permissions to edit the following fields: exceptions_list'
         );
       });
+    });
+
+    // Exception-list edits through the generic Alerting API require exceptions-edit.
+    describe('@skipInServerless read-auth params via the generic Alerting API', () => {
+      const role = ROLES.rules_all_exceptions_none;
+
+      beforeEach(async () => {
+        await deleteAllRules(supertest, log);
+        await createUserAndRole(getService, role);
+      });
+
+      afterEach(async () => {
+        await deleteUserAndRole(getService, role);
+      });
+
+      const exceptionsList = [
+        {
+          id: '1',
+          list_id: '123',
+          namespace_type: 'single' as const,
+          type: ExceptionListTypeEnum.DETECTION,
+        },
+      ];
+
+      const exceptionsListModified = [
+        {
+          id: '2',
+          list_id: '456',
+          namespace_type: 'single' as const,
+          type: ExceptionListTypeEnum.DETECTION,
+        },
+      ];
+
+      const getAlertingRuleBody = (current: Record<string, unknown>, params: unknown) => ({
+        name: current.name,
+        tags: current.tags,
+        schedule: current.schedule,
+        throttle: current.throttle ?? null,
+        notify_when: current.notify_when ?? null,
+        actions: current.actions,
+        params,
+      });
+
+      it('rejects attaching exception lists via PUT /api/alerting/rule when the user lacks exceptions-edit', async () => {
+        const existingRule = await createRule(supertest, log, getSimpleRule('rule-1'));
+        const restrictedSupertest = await utils.createSuperTest(role);
+
+        const { body: current } = await restrictedSupertest
+          .get(`/api/alerting/rule/${existingRule.id}`)
+          .set('kbn-xsrf', 'true')
+          .expect(200);
+
+        const { body } = await restrictedSupertest
+          .put(`/api/alerting/rule/${existingRule.id}`)
+          .set('kbn-xsrf', 'true')
+          .send(getAlertingRuleBody(current, { ...current.params, exceptionsList }))
+          .expect(403);
+
+        expect(body.message).to.eql(
+          'The current user does not have the permissions to edit the following fields: exceptions_list'
+        );
+      });
+
+      it('rejects removing exception lists via PUT /api/alerting/rule when the user lacks exceptions-edit', async () => {
+        // Clearing a rule's exception lists is a privileged edit too.
+        const existingRule = await createRule(supertest, log, {
+          ...getSimpleRule('rule-1'),
+          exceptions_list: exceptionsList,
+        });
+        const restrictedSupertest = await utils.createSuperTest(role);
+
+        const { body: current } = await restrictedSupertest
+          .get(`/api/alerting/rule/${existingRule.id}`)
+          .set('kbn-xsrf', 'true')
+          .expect(200);
+
+        const { body } = await restrictedSupertest
+          .put(`/api/alerting/rule/${existingRule.id}`)
+          .set('kbn-xsrf', 'true')
+          .send(getAlertingRuleBody(current, { ...current.params, exceptionsList: [] }))
+          .expect(403);
+
+        expect(body.message).to.eql(
+          'The current user does not have the permissions to edit the following fields: exceptions_list'
+        );
+      });
+
+      it('rejects modifying exception lists via PUT /api/alerting/rule when the user lacks exceptions-edit', async () => {
+        // Replacing the attached exception lists with different ones is gated too.
+        const existingRule = await createRule(supertest, log, {
+          ...getSimpleRule('rule-1'),
+          exceptions_list: exceptionsList,
+        });
+        const restrictedSupertest = await utils.createSuperTest(role);
+
+        const { body: current } = await restrictedSupertest
+          .get(`/api/alerting/rule/${existingRule.id}`)
+          .set('kbn-xsrf', 'true')
+          .expect(200);
+
+        const { body } = await restrictedSupertest
+          .put(`/api/alerting/rule/${existingRule.id}`)
+          .set('kbn-xsrf', 'true')
+          .send(
+            getAlertingRuleBody(current, {
+              ...current.params,
+              exceptionsList: exceptionsListModified,
+            })
+          )
+          .expect(403);
+
+        expect(body.message).to.eql(
+          'The current user does not have the permissions to edit the following fields: exceptions_list'
+        );
+      });
+
+      it('allows editing other rule params via the Alerting API when exception lists are unchanged', async () => {
+        // Rule already has exceptions; editing an unrelated field leaves them untouched.
+        const existingRule = await createRule(supertest, log, {
+          ...getSimpleRule('rule-1'),
+          exceptions_list: exceptionsList,
+        });
+        const restrictedSupertest = await utils.createSuperTest(role);
+
+        const { body: current } = await restrictedSupertest
+          .get(`/api/alerting/rule/${existingRule.id}`)
+          .set('kbn-xsrf', 'true')
+          .expect(200);
+
+        const { body } = await restrictedSupertest
+          .put(`/api/alerting/rule/${existingRule.id}`)
+          .set('kbn-xsrf', 'true')
+          .send({ ...getAlertingRuleBody(current, current.params), name: 'renamed via alerting' })
+          .expect(200);
+
+        expect(body.params.exceptionsList).to.eql(current.params.exceptionsList);
+      });
+
+      it('allows creating a rule with exception lists via the Alerting API without exceptions-edit', async () => {
+        // Create is not gated: import and duplication set exception lists at create time.
+        const seed = await createRule(supertest, log, getSimpleRule('seed-rule'));
+        const { body: seedAlerting } = await supertest
+          .get(`/api/alerting/rule/${seed.id}`)
+          .set('kbn-xsrf', 'true')
+          .expect(200);
+
+        const restrictedSupertest = await utils.createSuperTest(role);
+
+        const { body } = await restrictedSupertest
+          .post(`/api/alerting/rule`)
+          .set('kbn-xsrf', 'true')
+          .send({
+            rule_type_id: seedAlerting.rule_type_id,
+            consumer: seedAlerting.consumer,
+            name: 'created via alerting without exceptions-edit',
+            enabled: false,
+            tags: [],
+            schedule: seedAlerting.schedule,
+            actions: [],
+            params: { ...seedAlerting.params, ruleId: uuidV4(), exceptionsList },
+          })
+          .expect(200);
+
+        expect(body.params.exceptionsList).to.eql(exceptionsList);
+      });
+    });
+
+    // With exceptions-edit, attach/modify/remove through the generic Alerting API are allowed.
+    describe('@skipInServerless read-auth params via the generic Alerting API with exceptions-edit', () => {
+      const role = ROLES.rules_all_exceptions_all;
+
+      beforeEach(async () => {
+        await deleteAllRules(supertest, log);
+        await createUserAndRole(getService, role);
+      });
+
+      afterEach(async () => {
+        await deleteUserAndRole(getService, role);
+      });
+
+      const exceptionsList = [
+        {
+          id: '1',
+          list_id: '123',
+          namespace_type: 'single' as const,
+          type: ExceptionListTypeEnum.DETECTION,
+        },
+      ];
+
+      const exceptionsListModified = [
+        {
+          id: '2',
+          list_id: '456',
+          namespace_type: 'single' as const,
+          type: ExceptionListTypeEnum.DETECTION,
+        },
+      ];
+
+      // Seeds a rule, then sets its exception lists to `nextExceptions` via the Alerting API.
+      const editExceptionsViaAlerting = async (
+        seededExceptions: typeof exceptionsList | undefined,
+        nextExceptions: typeof exceptionsList
+      ) => {
+        const existingRule = await createRule(supertest, log, {
+          ...getSimpleRule('rule-1'),
+          ...(seededExceptions ? { exceptions_list: seededExceptions } : {}),
+        });
+        const authorizedSupertest = await utils.createSuperTest(role);
+
+        const { body: current } = await authorizedSupertest
+          .get(`/api/alerting/rule/${existingRule.id}`)
+          .set('kbn-xsrf', 'true')
+          .expect(200);
+
+        const { body } = await authorizedSupertest
+          .put(`/api/alerting/rule/${existingRule.id}`)
+          .set('kbn-xsrf', 'true')
+          .send({
+            name: current.name,
+            tags: current.tags,
+            schedule: current.schedule,
+            throttle: current.throttle ?? null,
+            notify_when: current.notify_when ?? null,
+            actions: current.actions,
+            params: { ...current.params, exceptionsList: nextExceptions },
+          })
+          .expect(200);
+
+        return body;
+      };
+
+      it('allows attaching exception lists via PUT /api/alerting/rule', async () => {
+        const body = await editExceptionsViaAlerting(undefined, exceptionsList);
+        expect(body.params.exceptionsList).to.eql(exceptionsList);
+      });
+
+      it('allows modifying exception lists via PUT /api/alerting/rule', async () => {
+        const body = await editExceptionsViaAlerting(exceptionsList, exceptionsListModified);
+        expect(body.params.exceptionsList).to.eql(exceptionsListModified);
+      });
+
+      it('allows removing exception lists via PUT /api/alerting/rule', async () => {
+        const body = await editExceptionsViaAlerting(exceptionsList, []);
+        expect(body.params.exceptionsList).to.eql([]);
+      });
+    });
+
+    // Investigation guide (note) and investigation fields through the generic Alerting
+    // API. `enabled` is intentionally not covered here: it is a top-level rule attribute
+    // (governed by alerting.rule.enable and the Detection Engine routes), not a rule
+    // param, so the params authorizer never sees it.
+    const describeGenericAlertingParamRbac = (config: {
+      title: string;
+      errorField: string;
+      noneRole: ROLES;
+      value: unknown;
+      modified: unknown;
+      seed: (value: unknown) => Record<string, unknown>;
+      setParam: (params: Record<string, unknown>, value: unknown) => Record<string, unknown>;
+      removeParam: (params: Record<string, unknown>) => Record<string, unknown>;
+      readParam: (body: { params: Record<string, unknown> }) => unknown;
+    }) => {
+      const getAlertingRuleBody = (current: Record<string, unknown>, params: unknown) => ({
+        name: current.name,
+        tags: current.tags,
+        schedule: current.schedule,
+        throttle: current.throttle ?? null,
+        notify_when: current.notify_when ?? null,
+        actions: current.actions,
+        params,
+      });
+
+      // Seeds a rule (optionally with the field set), then edits its params via the
+      // Alerting API as `role` and asserts the HTTP status.
+      const editViaAlerting = async (
+        role: ROLES,
+        seededValue: unknown,
+        mutate: (params: Record<string, unknown>) => Record<string, unknown>,
+        expectedStatus: number
+      ) => {
+        const existingRule = await createRule(supertest, log, {
+          ...getSimpleRule('rule-1'),
+          ...(seededValue !== undefined ? config.seed(seededValue) : {}),
+        } as Parameters<typeof createRule>[2]);
+        const restrictedSupertest = await utils.createSuperTest(role);
+
+        const { body: current } = await restrictedSupertest
+          .get(`/api/alerting/rule/${existingRule.id}`)
+          .set('kbn-xsrf', 'true')
+          .expect(200);
+
+        const { body } = await restrictedSupertest
+          .put(`/api/alerting/rule/${existingRule.id}`)
+          .set('kbn-xsrf', 'true')
+          .send(getAlertingRuleBody(current, mutate({ ...current.params })))
+          .expect(expectedStatus);
+
+        return body;
+      };
+
+      const forbiddenMessage = `The current user does not have the permissions to edit the following fields: ${config.errorField}`;
+
+      describe(`@skipInServerless ${config.title} via the generic Alerting API without the sub-feature`, () => {
+        beforeEach(async () => {
+          await deleteAllRules(supertest, log);
+          await createUserAndRole(getService, config.noneRole);
+        });
+
+        afterEach(async () => {
+          await deleteUserAndRole(getService, config.noneRole);
+        });
+
+        it(`rejects attaching ${config.errorField}`, async () => {
+          const body = await editViaAlerting(
+            config.noneRole,
+            undefined,
+            (params) => config.setParam(params, config.value),
+            403
+          );
+          expect(body.message).to.eql(forbiddenMessage);
+        });
+
+        it(`rejects modifying ${config.errorField}`, async () => {
+          const body = await editViaAlerting(
+            config.noneRole,
+            config.value,
+            (params) => config.setParam(params, config.modified),
+            403
+          );
+          expect(body.message).to.eql(forbiddenMessage);
+        });
+
+        it(`rejects removing ${config.errorField}`, async () => {
+          const body = await editViaAlerting(
+            config.noneRole,
+            config.value,
+            (params) => config.removeParam(params),
+            403
+          );
+          expect(body.message).to.eql(forbiddenMessage);
+        });
+
+        it(`allows creating a rule with ${config.errorField} via the Alerting API`, async () => {
+          // Create is not gated: import and duplication set these fields at create time.
+          const seed = await createRule(supertest, log, getSimpleRule('seed-rule'));
+          const { body: seedAlerting } = await supertest
+            .get(`/api/alerting/rule/${seed.id}`)
+            .set('kbn-xsrf', 'true')
+            .expect(200);
+
+          const restrictedSupertest = await utils.createSuperTest(config.noneRole);
+
+          const { body } = await restrictedSupertest
+            .post(`/api/alerting/rule`)
+            .set('kbn-xsrf', 'true')
+            .send({
+              rule_type_id: seedAlerting.rule_type_id,
+              consumer: seedAlerting.consumer,
+              name: `created via alerting without ${config.errorField} edit`,
+              enabled: false,
+              tags: [],
+              schedule: seedAlerting.schedule,
+              actions: [],
+              params: config.setParam({ ...seedAlerting.params, ruleId: uuidV4() }, config.value),
+            })
+            .expect(200);
+
+          expect(config.readParam(body)).to.eql(config.value);
+        });
+      });
+
+      describe(`@skipInServerless ${config.title} via the generic Alerting API with the sub-feature`, () => {
+        const role = ROLES.rules_all_exceptions_all;
+
+        beforeEach(async () => {
+          await deleteAllRules(supertest, log);
+          await createUserAndRole(getService, role);
+        });
+
+        afterEach(async () => {
+          await deleteUserAndRole(getService, role);
+        });
+
+        it(`allows attaching ${config.errorField}`, async () => {
+          const body = await editViaAlerting(
+            role,
+            undefined,
+            (params) => config.setParam(params, config.value),
+            200
+          );
+          expect(config.readParam(body)).to.eql(config.value);
+        });
+
+        it(`allows modifying ${config.errorField}`, async () => {
+          const body = await editViaAlerting(
+            role,
+            config.value,
+            (params) => config.setParam(params, config.modified),
+            200
+          );
+          expect(config.readParam(body)).to.eql(config.modified);
+        });
+
+        it(`allows removing ${config.errorField}`, async () => {
+          const body = await editViaAlerting(
+            role,
+            config.value,
+            (params) => config.removeParam(params),
+            200
+          );
+          expect(config.readParam(body)).to.eql(undefined);
+        });
+      });
+    };
+
+    describeGenericAlertingParamRbac({
+      title: 'investigation guide (note)',
+      errorField: 'note',
+      noneRole: ROLES.rules_all_investigation_guide_none,
+      value: 'investigate me',
+      modified: 'investigate me differently',
+      seed: (value) => ({ note: value }),
+      setParam: (params, value) => ({ ...params, note: value }),
+      removeParam: (params) => {
+        const next = { ...params };
+        delete next.note;
+        return next;
+      },
+      readParam: (body) => body.params.note,
+    });
+
+    describeGenericAlertingParamRbac({
+      title: 'investigation fields',
+      errorField: 'investigation_fields',
+      noneRole: ROLES.rules_all_custom_highlighted_fields_none,
+      value: { field_names: ['host.name'] },
+      modified: { field_names: ['host.name', 'user.name'] },
+      seed: (value) => ({ investigation_fields: value }),
+      setParam: (params, value) => ({ ...params, investigationFields: value }),
+      removeParam: (params) => {
+        const next = { ...params };
+        delete next.investigationFields;
+        return next;
+      },
+      readParam: (body) => body.params.investigationFields,
     });
   });
 };

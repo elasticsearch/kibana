@@ -11,5 +11,6 @@ export default function ({ loadTestFile }: FtrProviderContext) {
   describe('Rules Management - Rule Update APIs', function () {
     loadTestFile(require.resolve('./update_rules'));
     loadTestFile(require.resolve('./update_rules_ess'));
+    loadTestFile(require.resolve('./update_rules_rbac'));
   });
 }

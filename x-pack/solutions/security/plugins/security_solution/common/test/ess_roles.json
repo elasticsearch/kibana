@@ -611,6 +611,111 @@
       }
     ]
   },
+  "rules_all_exceptions_none": {
+    "name": "rules_all_exceptions_none",
+    "elasticsearch": {
+      "cluster": [],
+      "indices": [],
+      "run_as": []
+    },
+    "kibana": [
+      {
+        "feature": {
+          "ml": ["read"],
+          "securitySolutionRulesV4": [
+            "minimal_all",
+            "security_solution_investigation_guide_edit",
+            "security_solution_custom_highlighted_fields_edit",
+            "security_solution_enable_disable_rules",
+            "security_solution_manual_run_rules",
+            "security_solution_rules_management_settings"
+          ],
+          "builtInAlerts": ["all"]
+        },
+        "spaces": ["*"],
+        "base": []
+      }
+    ]
+  },
+  "rules_all_investigation_guide_none": {
+    "name": "rules_all_investigation_guide_none",
+    "elasticsearch": {
+      "cluster": [],
+      "indices": [],
+      "run_as": []
+    },
+    "kibana": [
+      {
+        "feature": {
+          "ml": ["read"],
+          "securitySolutionRulesV4": [
+            "minimal_all",
+            "security_solution_exceptions_all",
+            "security_solution_custom_highlighted_fields_edit",
+            "security_solution_enable_disable_rules",
+            "security_solution_manual_run_rules",
+            "security_solution_rules_management_settings"
+          ],
+          "builtInAlerts": ["all"]
+        },
+        "spaces": ["*"],
+        "base": []
+      }
+    ]
+  },
+  "rules_all_custom_highlighted_fields_none": {
+    "name": "rules_all_custom_highlighted_fields_none",
+    "elasticsearch": {
+      "cluster": [],
+      "indices": [],
+      "run_as": []
+    },
+    "kibana": [
+      {
+        "feature": {
+          "ml": ["read"],
+          "securitySolutionRulesV4": [
+            "minimal_all",
+            "security_solution_exceptions_all",
+            "security_solution_investigation_guide_edit",
+            "security_solution_enable_disable_rules",
+            "security_solution_manual_run_rules",
+            "security_solution_rules_management_settings"
+          ],
+          "builtInAlerts": ["all"]
+        },
+        "spaces": ["*"],
+        "base": []
+      }
+    ]
+  },
+  "rules_all_exceptions_all": {
+    "name": "rules_all_exceptions_all",
+    "elasticsearch": {
+      "cluster": [],
+      "indices": [],
+      "run_as": []
+    },
+    "kibana": [
+      {
+        "feature": {
+          "ml": ["read"],
+          "securitySolutionRulesV4": [
+            "minimal_all",
+            "security_solution_exceptions_all",
+            "security_solution_investigation_guide_edit",
+            "security_solution_custom_highlighted_fields_edit",
+            "security_solution_enable_disable_rules",
+            "security_solution_manual_run_rules",
+            "security_solution_rules_management_settings"
+          ],
+          "builtInAlerts": ["all"]
+        },
+        "spaces": ["*"],
+        "base": []
+      }
+    ]
+  },
   "rules_all_manual_run_none": {
     "name": "rules_all_manual_run_none",
     "elasticsearch": {

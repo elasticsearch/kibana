@@ -15,7 +15,10 @@ import { validFields } from '@kbn/alerting-plugin/common/constants';
 import type { BulkEditResult } from '@kbn/alerting-plugin/server/rules_client/common/bulk_edit/types';
 
 import { normalizeRuleResponse } from '../../../../../../common/detection_engine/prebuilt_rules/diff/normalize_rule_response';
-import type { DetectionRulesAuthz } from '../../../../../../common/detection_engine/rule_management/authz';
+import {
+  READ_AUTH_PARAM_FIELDS,
+  type DetectionRulesAuthz,
+} from '../../../../../../common/detection_engine/rule_management/authz';
 import { convertObjectKeysToCamelCase } from '../../../../../utils/object_case_converters';
 import type { MlAuthz } from '../../../../machine_learning/authz';
 
@@ -51,39 +54,58 @@ export const validateMlAuth = async (mlAuthz: MlAuthz, ruleType: Type) => {
   throwAuthzError(await mlAuthz.validateRuleType(ruleType));
 };
 
-/**
- * Validates that the user has the required permissions to edit the specified fields.
- * Throws a 403 ClientError if the user lacks permissions for any field they're trying to update.
- */
-export const validateFieldWritePermissions = (
-  ruleUpdate: Partial<ReadAuthRuleUpdateProps>,
-  rulesAuthz: DetectionRulesAuthz
-) => {
-  const errors = [];
-  if (ruleUpdate.exceptions_list != null && !rulesAuthz.canEditExceptions) {
-    errors.push('exceptions_list');
-  }
-
-  if (ruleUpdate.investigation_fields != null && !rulesAuthz.canEditCustomHighlightedFields) {
-    errors.push('investigation_fields');
-  }
-
-  if (ruleUpdate.note != null && !rulesAuthz.canEditInvestigationGuides) {
-    errors.push('note');
-  }
-
-  if (ruleUpdate.enabled != null && !rulesAuthz.canEnableDisableRules) {
-    errors.push('enabled');
-  }
-
-  if (errors.length > 0) {
+const throwFieldWritePermissionError = (forbiddenFields: string[]) => {
+  if (forbiddenFields.length > 0) {
     throw new ClientError(
-      `The current user does not have the permissions to edit the following fields: ${errors.join(
+      `The current user does not have the permissions to edit the following fields: ${forbiddenFields.join(
         ','
       )}`,
       403
     );
   }
+};
+
+/**
+ * Validates that the user can edit every restricted field that carries a value in
+ * `ruleUpdate`. A field set to null/undefined is treated as "nothing to gate", so
+ * this suits callers that pass a full rule state (rule restore) rather than a set of
+ * edited fields. Throws a 403 ClientError when the user lacks a required permission.
+ */
+export const validateFieldWritePermissions = (
+  ruleUpdate: Partial<ReadAuthRuleUpdateProps>,
+  rulesAuthz: DetectionRulesAuthz
+) => {
+  const forbiddenFields: string[] = READ_AUTH_PARAM_FIELDS.filter(
+    ({ field, capability }) => ruleUpdate[field] != null && !rulesAuthz[capability]
+  ).map(({ field }) => field);
+
+  if (ruleUpdate.enabled != null && !rulesAuthz.canEnableDisableRules) {
+    forbiddenFields.push('enabled');
+  }
+
+  throwFieldWritePermissionError(forbiddenFields);
+};
+
+/**
+ * Validates that the user can edit every restricted field the edit touches. A field
+ * counts as edited whenever its key is present, so setting, changing, and unsetting
+ * (null/undefined) all require the matching permission. Callers must pass only the
+ * fields the user is editing (a PATCH payload or the diffed PUT changes). Throws a
+ * 403 ClientError when the user lacks a required permission.
+ */
+export const validateEditedFieldWritePermissions = (
+  ruleUpdate: Partial<ReadAuthRuleUpdateProps>,
+  rulesAuthz: DetectionRulesAuthz
+) => {
+  const forbiddenFields: string[] = READ_AUTH_PARAM_FIELDS.filter(
+    ({ field, capability }) => field in ruleUpdate && !rulesAuthz[capability]
+  ).map(({ field }) => field);
+
+  if ('enabled' in ruleUpdate && !rulesAuthz.canEnableDisableRules) {
+    forbiddenFields.push('enabled');
+  }
+
+  throwFieldWritePermissionError(forbiddenFields);
 };
 
 export class ClientError extends Error {

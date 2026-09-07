@@ -10,6 +10,7 @@ import { getMockRulesAuthz } from '../../__mocks__/authz';
 import {
   mergeExceptionLists,
   validateFieldWritePermissions,
+  validateEditedFieldWritePermissions,
   hasOnlyReadAuthEditableChanges,
   extractChangedUpdatableFields,
 } from './utils';
@@ -80,6 +81,89 @@ describe('utils', () => {
       };
 
       expect(() => validateFieldWritePermissions(ruleUpdate, rulesAuthz)).toThrow(
+        expect.objectContaining({
+          statusCode: 403,
+          message:
+            'The current user does not have the permissions to edit the following fields: exceptions_list,investigation_fields,note',
+        })
+      );
+    });
+  });
+
+  describe('validateEditedFieldWritePermissions', () => {
+    it('should not throw when user has all required permissions', () => {
+      const rulesAuthz = getMockRulesAuthz();
+      const ruleUpdate = {
+        exceptions_list: [],
+        investigation_fields: { field_names: ['host.name'] },
+        note: 'Investigation guide content',
+      };
+
+      expect(() => validateEditedFieldWritePermissions(ruleUpdate, rulesAuthz)).not.toThrow();
+    });
+
+    it('should not throw when a restricted field is absent from the edit', () => {
+      const rulesAuthz = { ...getMockRulesAuthz(), canEditInvestigationGuides: false };
+      const ruleUpdate = { exceptions_list: [] };
+
+      expect(() => validateEditedFieldWritePermissions(ruleUpdate, rulesAuthz)).not.toThrow();
+    });
+
+    it('should throw 403 when setting a restricted field without permission', () => {
+      const rulesAuthz = { ...getMockRulesAuthz(), canEditInvestigationGuides: false };
+      const ruleUpdate = { note: 'Investigation guide content' };
+
+      expect(() => validateEditedFieldWritePermissions(ruleUpdate, rulesAuthz)).toThrow(
+        expect.objectContaining({
+          statusCode: 403,
+          message:
+            'The current user does not have the permissions to edit the following fields: note',
+        })
+      );
+    });
+
+    it('should throw 403 when unsetting a restricted field via null without permission', () => {
+      const rulesAuthz = { ...getMockRulesAuthz(), canEditInvestigationGuides: false };
+      const ruleUpdate = { note: null } as unknown as Parameters<
+        typeof validateEditedFieldWritePermissions
+      >[0];
+
+      expect(() => validateEditedFieldWritePermissions(ruleUpdate, rulesAuthz)).toThrow(
+        expect.objectContaining({
+          statusCode: 403,
+          message:
+            'The current user does not have the permissions to edit the following fields: note',
+        })
+      );
+    });
+
+    it('should throw 403 when unsetting a restricted field via undefined without permission', () => {
+      const rulesAuthz = { ...getMockRulesAuthz(), canEditCustomHighlightedFields: false };
+      const ruleUpdate = { investigation_fields: undefined };
+
+      expect(() => validateEditedFieldWritePermissions(ruleUpdate, rulesAuthz)).toThrow(
+        expect.objectContaining({
+          statusCode: 403,
+          message:
+            'The current user does not have the permissions to edit the following fields: investigation_fields',
+        })
+      );
+    });
+
+    it('should aggregate multiple field errors into a single error message', () => {
+      const rulesAuthz = {
+        ...getMockRulesAuthz(),
+        canEditExceptions: false,
+        canEditCustomHighlightedFields: false,
+        canEditInvestigationGuides: false,
+      };
+      const ruleUpdate = {
+        exceptions_list: [],
+        investigation_fields: undefined,
+        note: null,
+      } as unknown as Parameters<typeof validateEditedFieldWritePermissions>[0];
+
+      expect(() => validateEditedFieldWritePermissions(ruleUpdate, rulesAuthz)).toThrow(
         expect.objectContaining({
           statusCode: 403,
           message:
