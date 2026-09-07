@@ -109,6 +109,40 @@ describe('Summary row helpers', () => {
       ).toBe(1);
     });
 
+    it('should return an empty summary instead of NaN/Infinity for an all-null column', () => {
+      const allNullTable = { ...mockNumericTable, rows: [{ myColumn: null }, { myColumn: null }] };
+      for (const op of ['avg', 'sum', 'min', 'max'] as const) {
+        expect(
+          computeSummaryRowForColumn(
+            { summaryRow: op, columnId: 'myColumn' },
+            allNullTable,
+            { myColumn: customNumericFormatter },
+            defaultFormatter
+          )
+        ).toBe('');
+      }
+    });
+
+    it('should skip NaN values instead of poisoning the summary', () => {
+      const tableWithNaN = { ...mockNumericTable, rows: [{ myColumn: 45 }, { myColumn: NaN }] };
+      expect(
+        computeSummaryRowForColumn(
+          { summaryRow: 'sum', columnId: 'myColumn' },
+          tableWithNaN,
+          { myColumn: customNumericFormatter },
+          defaultFormatter
+        )
+      ).toBe('45.00');
+      expect(
+        computeSummaryRowForColumn(
+          { summaryRow: 'count', columnId: 'myColumn' },
+          tableWithNaN,
+          { myColumn: customNumericFormatter },
+          defaultFormatter
+        )
+      ).toBe(1);
+    });
+
     it('should count numeric arrays as valid and distinct values', () => {
       expect(
         computeSummaryRowForColumn(

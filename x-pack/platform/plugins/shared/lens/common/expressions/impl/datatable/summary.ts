@@ -97,6 +97,10 @@ export function computeSummaryRowForColumn(
   if (columnArgs.summaryRow === 'count') {
     return defaultFormatter.convertToText(summaryValue);
   }
+  // no valid values to summarize: show an empty summary rather than NaN/Infinity
+  if (summaryValue === undefined) {
+    return '';
+  }
   return formatters[getOriginalId(columnArgs.columnId)].convertToText(summaryValue);
 }
 
@@ -105,17 +109,27 @@ function computeFinalValue(
   columnId: string,
   rows: Datatable['rows']
 ) {
-  // flatten the row structure, to easier handle numeric arrays
-  const validRows = rows.filter((v) => v[columnId] != null).flatMap((v) => v[columnId]);
+  // flatten the row structure to handle numeric arrays, then keep only finite
+  // numbers: NaN (e.g. from formula math) would otherwise poison every summary,
+  // consistently with how the rest of the datatable treats it as an empty value
+  const validRows = rows
+    .flatMap((v) => v[columnId])
+    .filter((value): value is number => typeof value === 'number' && Number.isFinite(value));
   const count = validRows.length;
+  if (type === 'count') {
+    return count;
+  }
+  // sum/avg/min/max are meaningless without any valid value (avg would be NaN,
+  // min/max would be ±Infinity, which the number formatter renders as "NaN")
+  if (count === 0) {
+    return undefined;
+  }
   const sum = validRows.reduce<number>((partialSum: number, value: number) => {
     return partialSum + value;
   }, 0);
   switch (type) {
     case 'sum':
       return sum;
-    case 'count':
-      return count;
     case 'avg':
       return sum / count;
     case 'min':
