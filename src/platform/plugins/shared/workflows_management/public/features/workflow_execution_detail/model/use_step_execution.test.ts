@@ -156,14 +156,16 @@ describe('useStepExecution', () => {
       { wrapper: createWrapper(queryClient) }
     );
 
-    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    await act(async () => {
+      await jest.advanceTimersByTimeAsync(0);
+    });
+    expect(result.current.isSuccess).toBe(true);
 
     mockGetStepExecution.mockClear();
     await act(async () => {
-      jest.advanceTimersByTime(5_000);
-      await Promise.resolve();
+      await jest.advanceTimersByTimeAsync(5_000);
     });
-    await waitFor(() => expect(mockGetStepExecution).toHaveBeenCalled());
+    expect(mockGetStepExecution).toHaveBeenCalled();
   });
 
   it('should use the correct query key structure', async () => {
