@@ -117,7 +117,8 @@ spaceTest.describe(
       return groupedByConcurrencyKey;
     }
 
-    spaceTest(
+    // Failing: https://github.com/elastic/kibana/issues/270988
+    spaceTest.skip(
       'cancel-in-progress strategy cancels previous executions and completes the latest',
       async ({ apiServices }) => {
         const isolationKey = randomUUID();
@@ -151,7 +152,8 @@ spaceTest.describe(
       }
     );
 
-    spaceTest(
+    // Failing: https://github.com/elastic/kibana/issues/257103
+    spaceTest.skip(
       'drop strategy drops new executions until there is an already running execution',
       async ({ apiServices }) => {
         const isolationKey = randomUUID();
@@ -185,7 +187,8 @@ spaceTest.describe(
       }
     );
 
-    spaceTest(
+    // Failing: https://github.com/elastic/kibana/issues/285504
+    spaceTest.skip(
       'queue strategy queues new executions and runs them sequentially until all complete',
       async ({ apiServices }) => {
         // Scout's default test timeout is 60s. Queue serialises 3 ~4s runs for
