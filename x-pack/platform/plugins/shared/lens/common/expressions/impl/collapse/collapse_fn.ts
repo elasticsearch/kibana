@@ -93,7 +93,9 @@ or a number of collapse functions matching the number of metrics.`);
 
   return {
     ...input,
-    columns: input.columns.filter((c) => by?.indexOf(c.id) !== -1 || metric?.indexOf(c.id) !== -1),
+    columns: input.columns.filter(
+      (c) => (by ?? []).includes(c.id) || (metric ?? []).includes(c.id)
+    ),
     rows: input.rows
       .map((row) => {
         const bucketIdentifier = getBucketIdentifier(row, by);
