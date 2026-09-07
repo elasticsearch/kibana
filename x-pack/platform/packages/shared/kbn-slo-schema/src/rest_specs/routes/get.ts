@@ -4,31 +4,27 @@
  * 2.0; you may not use this file except in compliance with the Elastic License
  * 2.0.
  */
-import * as t from 'io-ts';
-import { allOrAnyString } from '../../schema/common';
-import { sloIdSchema } from '../../schema/slo';
-import { sloWithDataResponseSchema } from '../slo';
+import { z } from '@kbn/zod';
+import { allOrAnyString } from '../../schema/zod/common';
+import { sloIdSchema } from '../../schema/zod/slo';
+import { sloWithDataResponseSchemaZod } from '../slo';
 
-const getSLOQuerySchema = t.partial({
-  query: t.partial({
-    instanceId: allOrAnyString,
-    remoteName: t.string,
-  }),
+const getSLOQuerySchema = z.object({
+  instanceId: allOrAnyString.optional(),
+  remoteName: z.string().optional(),
 });
 
-const getSLOParamsSchema = t.intersection([
-  t.type({
-    path: t.type({
-      id: sloIdSchema,
-    }),
+const getSLOParamsSchema = z.object({
+  path: z.object({
+    id: sloIdSchema,
   }),
-  getSLOQuerySchema,
-]);
+  query: getSLOQuerySchema.optional(),
+});
 
-const getSLOResponseSchema = sloWithDataResponseSchema;
+const getSLOResponseSchema = sloWithDataResponseSchemaZod;
 
-type GetSLOParams = t.TypeOf<typeof getSLOQuerySchema.props.query>;
-type GetSLOResponse = t.OutputOf<typeof getSLOResponseSchema>;
+type GetSLOParams = z.output<typeof getSLOQuerySchema>;
+type GetSLOResponse = z.input<typeof getSLOResponseSchema>;
 
 export { getSLOParamsSchema, getSLOResponseSchema };
 export type { GetSLOParams, GetSLOResponse };

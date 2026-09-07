@@ -14,6 +14,14 @@ import {
   sloDefinitionSchema,
   summarySchema,
 } from '../schema';
+import {
+  allOrAnyString as allOrAnyStringZod,
+  groupingsSchema as groupingsSchemaZod,
+  metaSchema as metaSchemaZod,
+  remoteSchema as remoteSchemaZod,
+  sloDefinitionSchema as sloDefinitionSchemaZod,
+  summarySchema as summarySchemaZod,
+} from '../schema/zod';
 import type { SLODefinitionResponse } from './routes/find_definition';
 
 const sloWithDataResponseSchema = t.intersection([
@@ -25,7 +33,16 @@ const sloWithDataResponseSchema = t.intersection([
   }),
 ]);
 
+// Zod twin — io-ts version stays alive until its last consumer (test_helpers/fixtures.ts) is updated.
+const sloWithDataResponseSchemaZod = sloDefinitionSchemaZod.extend({
+  summary: summarySchemaZod,
+  groupings: groupingsSchemaZod,
+  instanceId: allOrAnyStringZod,
+  meta: metaSchemaZod.optional(),
+  remote: remoteSchemaZod.optional(),
+});
+
 type SLOWithSummaryResponse = t.OutputOf<typeof sloWithDataResponseSchema>;
 
-export { sloWithDataResponseSchema };
+export { sloWithDataResponseSchema, sloWithDataResponseSchemaZod };
 export type { SLODefinitionResponse, SLOWithSummaryResponse };

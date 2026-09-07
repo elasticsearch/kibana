@@ -4,47 +4,43 @@
  * 2.0; you may not use this file except in compliance with the Elastic License
  * 2.0.
  */
-import * as t from 'io-ts';
-import { indicatorSchema, timeWindowSchema } from '../../schema';
-import { allOrAnyStringOrArray } from '../../schema/common';
+import { z } from '@kbn/zod';
+import { allOrAnyStringOrArray } from '../../schema/zod/common';
+import { indicatorSchema } from '../../schema/zod/indicators';
 import {
   budgetingMethodSchema,
+  dashboardsWithIdSchema,
   objectiveSchema,
   optionalSettingsSchema,
   sloIdSchema,
   tagsSchema,
-} from '../../schema/slo';
+} from '../../schema/zod/slo';
+import { timeWindowSchema } from '../../schema/zod/time_window';
 
-const createSLOParamsSchema = t.type({
-  body: t.intersection([
-    t.type({
-      name: t.string,
-      description: t.string,
-      indicator: indicatorSchema,
-      timeWindow: timeWindowSchema,
-      budgetingMethod: budgetingMethodSchema,
-      objective: objectiveSchema,
-    }),
-    t.partial({
-      id: sloIdSchema,
-      settings: optionalSettingsSchema,
-      tags: tagsSchema,
-      groupBy: allOrAnyStringOrArray,
-      revision: t.number,
-      artifacts: t.partial({
-        dashboards: t.array(t.type({ id: t.string })),
-      }),
-    }),
-  ]),
+const createSLOParamsSchema = z.object({
+  body: z.object({
+    name: z.string(),
+    description: z.string(),
+    indicator: indicatorSchema,
+    timeWindow: timeWindowSchema,
+    budgetingMethod: budgetingMethodSchema,
+    objective: objectiveSchema,
+    id: sloIdSchema.optional(),
+    settings: optionalSettingsSchema.optional(),
+    tags: tagsSchema.optional(),
+    groupBy: allOrAnyStringOrArray.optional(),
+    revision: z.number().optional(),
+    artifacts: dashboardsWithIdSchema.optional(),
+  }),
 });
 
-const createSLOResponseSchema = t.type({
+const createSLOResponseSchema = z.object({
   id: sloIdSchema,
 });
 
-type CreateSLOInput = t.OutputOf<typeof createSLOParamsSchema.props.body>; // Raw payload sent by the frontend
-type CreateSLOParams = t.TypeOf<typeof createSLOParamsSchema.props.body>; // Parsed payload used by the backend
-type CreateSLOResponse = t.TypeOf<typeof createSLOResponseSchema>; // Raw response sent to the frontend
+type CreateSLOInput = z.input<typeof createSLOParamsSchema.shape.body>;
+type CreateSLOParams = z.output<typeof createSLOParamsSchema.shape.body>;
+type CreateSLOResponse = z.output<typeof createSLOResponseSchema>;
 
 export { createSLOParamsSchema, createSLOResponseSchema };
 export type { CreateSLOInput, CreateSLOParams, CreateSLOResponse };

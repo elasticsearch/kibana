@@ -12,8 +12,7 @@ import type {
 } from '@kbn/core-saved-objects-api-server';
 import type { Logger } from '@kbn/core/server';
 import type { Paginated, Pagination } from '@kbn/slo-schema';
-import { ALL_VALUE, sloDefinitionSchema, storedSloDefinitionSchema } from '@kbn/slo-schema';
-import { isLeft } from 'fp-ts/Either';
+import { ALL_VALUE, sloDefinitionSchemaZod, storedSloDefinitionSchemaZod } from '@kbn/slo-schema';
 import { merge } from 'lodash';
 import { SLO_MODEL_VERSION } from '../../common/constants';
 import type { SLODefinition, StoredSLODefinition } from '../domain/models';
@@ -159,7 +158,7 @@ export class DefaultSLODefinitionRepository implements SLODefinitionRepository {
       references: storedSLOObject.references,
     });
 
-    const result = sloDefinitionSchema.decode({
+    const result = sloDefinitionSchemaZod.safeParse({
       ...storedSLO,
       // groupBy was added in 8.10.0
       groupBy: storedSLO.groupBy ?? ALL_VALUE,
@@ -182,12 +181,12 @@ export class DefaultSLODefinitionRepository implements SLODefinitionRepository {
       artifacts: { dashboards: dashboardsIds },
     });
 
-    if (isLeft(result)) {
+    if (!result.success) {
       this.logger.debug(`Invalid stored SLO with id [${storedSLO.id}]`);
       return undefined;
     }
 
-    return result.right;
+    return result.data;
   }
 
   private getDashboardsIds({
@@ -231,7 +230,7 @@ export class DefaultSLODefinitionRepository implements SLODefinitionRepository {
       });
     }
     return {
-      storedSLO: storedSloDefinitionSchema.encode({
+      storedSLO: storedSloDefinitionSchemaZod.encode({
         ...slo,
         artifacts: { dashboards: dashboardsRef },
       }),

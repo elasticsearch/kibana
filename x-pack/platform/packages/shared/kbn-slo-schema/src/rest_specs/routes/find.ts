@@ -4,83 +4,80 @@
  * 2.0; you may not use this file except in compliance with the Elastic License
  * 2.0.
  */
-import { toBooleanRt } from '@kbn/io-ts-utils';
-import { either, isRight } from 'fp-ts/Either';
-import * as t from 'io-ts';
-import { sloWithDataResponseSchema } from '../slo';
+import { BooleanFromString } from '@kbn/zod-helpers';
+import { z } from '@kbn/zod';
+import { MAX_QUERY_LENGTH } from '../../schema/zod/limits';
+import { sloWithDataResponseSchemaZod } from '../slo';
 
-const sortDirectionSchema = t.union([t.literal('asc'), t.literal('desc')]);
-const sortBySchema = t.union([
-  t.literal('error_budget_consumed'),
-  t.literal('error_budget_remaining'),
-  t.literal('sli_value'),
-  t.literal('status'),
-  t.literal('burn_rate_5m'),
-  t.literal('burn_rate_1h'),
-  t.literal('burn_rate_1d'),
+const sortDirectionSchema = z.union([z.literal('asc'), z.literal('desc')]);
+const sortBySchema = z.union([
+  z.literal('error_budget_consumed'),
+  z.literal('error_budget_remaining'),
+  z.literal('sli_value'),
+  z.literal('status'),
+  z.literal('burn_rate_5m'),
+  z.literal('burn_rate_1h'),
+  z.literal('burn_rate_1d'),
 ]);
 
-const searchAfterArraySchema = t.array(t.union([t.string, t.number]));
-type SearchAfterArray = t.TypeOf<typeof searchAfterArraySchema>;
+const searchAfterArraySchema = z.array(z.union([z.string(), z.number()]));
 
-const searchAfterSchema = new t.Type<SearchAfterArray, string, unknown>(
-  'SearchAfter',
-  (input: unknown): input is SearchAfterArray =>
-    Array.isArray(input) &&
-    input.length > 0 &&
-    input.every((item) => typeof item === 'string' || typeof item === 'number'),
-  (input: unknown, context: t.Context) =>
-    either.chain(t.string.validate(input, context), (value: string) => {
+// Codec: wire form is a JSON-encoded string; decoded form is the parsed array.
+const searchAfterSchema = z.codec(
+  z
+    .string()
+    .describe('A JSON-encoded array of strings or numbers used for cursor-based pagination'),
+  searchAfterArraySchema,
+  {
+    decode: (value, payload) => {
+      const fail = () => {
+        payload.issues.push({
+          code: 'custom',
+          message: 'Invalid searchAfter value, must be a JSON array of strings or numbers',
+          input: value,
+        });
+        return z.NEVER;
+      };
       try {
-        const parsedValue = JSON.parse(value);
-        const decoded = searchAfterArraySchema.decode(parsedValue);
-        if (isRight(decoded)) {
-          return t.success(decoded.right);
-        }
-        return t.failure(
-          input,
-          context,
-          'Invalid searchAfter value, must be a JSON array of strings or numbers'
-        );
-      } catch (err) {
-        return t.failure(
-          input,
-          context,
-          'Invalid searchAfter value, must be a JSON array of strings or numbers'
-        );
+        const result = searchAfterArraySchema.safeParse(JSON.parse(value));
+        return result.success ? result.data : fail();
+      } catch {
+        return fail();
       }
-    }),
-  (input: SearchAfterArray): string => JSON.stringify(input)
+    },
+    encode: (value) => JSON.stringify(value),
+  }
 );
 
-const findSLOParamsSchema = t.partial({
-  query: t.partial({
-    filters: t.string,
-    kqlQuery: t.string,
-    // Used for page pagination
-    page: t.string,
-    perPage: t.string,
-    sortBy: sortBySchema,
-    sortDirection: sortDirectionSchema,
-    hideStale: toBooleanRt,
-    // Used for cursor pagination, searchAfter is a JSON array
-    searchAfter: searchAfterSchema,
-    size: t.string,
-  }),
+const findSLOQuerySchema = z.object({
+  filters: z.string().max(MAX_QUERY_LENGTH).optional(),
+  kqlQuery: z.string().max(MAX_QUERY_LENGTH).optional(),
+  // Used for page-based pagination; kept as strings to preserve backward compatibility
+  page: z.string().optional(),
+  perPage: z.string().optional(),
+  sortBy: sortBySchema.optional(),
+  sortDirection: sortDirectionSchema.optional(),
+  hideStale: BooleanFromString.optional(),
+  // Used for cursor-based pagination; searchAfter is a JSON-encoded array
+  searchAfter: searchAfterSchema.optional(),
+  size: z.string().optional(),
 });
 
-const findSLOResponseSchema = t.intersection([
-  t.type({
-    page: t.number,
-    perPage: t.number,
-    total: t.number,
-    results: t.array(sloWithDataResponseSchema),
-  }),
-  t.partial({ searchAfter: searchAfterArraySchema, size: t.number }),
-]);
+const findSLOParamsSchema = z.object({
+  query: findSLOQuerySchema.optional(),
+});
 
-type FindSLOParams = t.TypeOf<typeof findSLOParamsSchema.props.query>;
-type FindSLOResponse = t.OutputOf<typeof findSLOResponseSchema>;
+const findSLOResponseSchema = z.object({
+  page: z.number(),
+  perPage: z.number(),
+  total: z.number(),
+  results: z.array(sloWithDataResponseSchemaZod),
+  searchAfter: searchAfterArraySchema.optional(),
+  size: z.number().optional(),
+});
+
+type FindSLOParams = z.output<typeof findSLOQuerySchema>;
+type FindSLOResponse = z.input<typeof findSLOResponseSchema>;
 
 export { findSLOParamsSchema, findSLOResponseSchema };
 export type { FindSLOParams, FindSLOResponse };

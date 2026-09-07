@@ -37,7 +37,11 @@ export abstract class TransformGenerator {
   }
 
   public buildDescription(slo: SLODefinition): string {
-    return `Rolled-up SLI data for SLO: ${slo.name} [id: ${slo.id}, revision: ${slo.revision}]`;
+    const prefix = 'Rolled-up SLI data for SLO: ';
+    const suffix = ` [id: ${slo.id}, revision: ${slo.revision}]`;
+    const maxNameLen = 1000 - prefix.length - suffix.length;
+    const name = slo.name.length > maxNameLen ? slo.name.slice(0, maxNameLen) : slo.name;
+    return `${prefix}${name}${suffix}`;
   }
 
   public buildCommonGroupBy(
