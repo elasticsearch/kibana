@@ -22,7 +22,6 @@ import { css } from '@emotion/react';
 import type { Viewport } from '@xyflow/react';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux-v7';
-import useLocalStorage from 'react-use/lib/useLocalStorage';
 import { useMemoCss } from '@kbn/css-utils/public/use_memo_css';
 import { i18n } from '@kbn/i18n';
 import type { monaco } from '@kbn/monaco';
@@ -60,6 +59,10 @@ import { useKibana } from '../../../hooks/use_kibana';
 import { useWorkflowEditorReadOnly } from '../../../hooks/use_workflow_editor_read_only';
 import { useWorkflowUrlState } from '../../../hooks/use_workflow_url_state';
 import { useWorkflowsExperimentalUiSetting } from '../../../hooks/use_workflows_experimental_ui_setting';
+import {
+  getStoredHideControlsMenu,
+  setStoredHideControlsMenu,
+} from '../../../lib/workflow_editor_preferences';
 import { getTestRunTooltipContent } from '../../../shared/ui';
 import { EditorSettingsPopover } from '../../../widgets/workflow_yaml_editor/ui/editor_settings_popover';
 import {
@@ -98,15 +101,16 @@ export const WorkflowDetailEditor = React.memo<WorkflowDetailEditorProps>(({ hig
     graphViewportRef.current = viewport;
   }, []);
 
-  // "Hide controls menu" toggle (settings popover). When OFF the bottom bar
-  // stays expanded indefinitely; when ON (default) it auto-collapses to the
-  // small pill after 5s. Persisted in localStorage so the choice sticks
-  // across reloads.
-  const HIDE_CONTROLS_MENU_KEY = 'workflowsUi.bottomBar.hideControlsMenu';
-  const [hideControlsMenu, handleHideControlsMenuChange] = useLocalStorage<boolean>(
-    HIDE_CONTROLS_MENU_KEY,
-    true
+  // "Hide controls menu" toggle (settings popover). When ON the bottom bar
+  // auto-collapses to the small pill after 5s; when OFF it stays expanded.
+  // Persisted in localStorage so the choice sticks across reloads.
+  const [hideControlsMenu, setHideControlsMenu] = useState<boolean>(
+    () => getStoredHideControlsMenu() ?? false
   );
+  const handleHideControlsMenuChange = useCallback((next: boolean) => {
+    setStoredHideControlsMenu(next);
+    setHideControlsMenu(next);
+  }, []);
 
   const dispatch = useDispatch();
 

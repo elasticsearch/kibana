@@ -11,6 +11,12 @@ import { parse, stringify } from 'query-string';
 import { useCallback, useMemo } from 'react';
 import { useHistory, useLocation } from 'react-router-dom';
 import type { LayoutDirection } from '@kbn/workflows';
+import {
+  getStoredEditorView,
+  getStoredGraphDirection,
+  setStoredEditorView,
+  setStoredGraphDirection,
+} from '../lib/workflow_editor_preferences';
 
 export type WorkflowUrlStateTabType = 'workflow' | 'executions';
 export type WorkflowEditorView = 'yaml' | 'graph';
@@ -52,8 +58,16 @@ export function useWorkflowUrlState() {
     const params = parse(location.search);
     return {
       tab: (firstString(params.tab) as WorkflowUrlStateTabType) || 'workflow',
-      view: params.view === 'graph' ? 'graph' : 'yaml',
-      direction: params.direction === 'LR' ? 'LR' : 'TB',
+      view:
+        getStoredEditorView() ??
+        (params.view === 'graph' || params.view === 'yaml'
+          ? (params.view as WorkflowEditorView)
+          : 'yaml'),
+      direction:
+        getStoredGraphDirection() ??
+        (params.direction === 'LR' || params.direction === 'TB'
+          ? (params.direction as LayoutDirection)
+          : 'TB'),
       executionId: firstString(params.executionId),
       stepExecutionId: firstString(params.stepExecutionId),
       stepId: firstString(params.stepId),
@@ -148,9 +162,9 @@ export function useWorkflowUrlState() {
 
   const setEditorView = useCallback(
     (view: WorkflowEditorView) => {
+      setStoredEditorView(view);
       updateUrlState({
-        // Omit default to keep the URL clean
-        view: view === 'yaml' ? undefined : view,
+        view,
         // Clear the flyout selection when switching views
         stepId: undefined,
       });
@@ -160,8 +174,8 @@ export function useWorkflowUrlState() {
 
   const setGraphDirection = useCallback(
     (direction: LayoutDirection) => {
-      // Omit default 'TB' to keep the URL clean
-      updateUrlState({ direction: direction === 'TB' ? undefined : direction });
+      setStoredGraphDirection(direction);
+      updateUrlState({ direction });
     },
     [updateUrlState]
   );

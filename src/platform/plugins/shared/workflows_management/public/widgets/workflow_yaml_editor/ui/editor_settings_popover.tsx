@@ -59,7 +59,7 @@ export function EditorSettingsPopover({
   editorRef,
   graphDirection,
   onGraphDirectionChange,
-  hideControlsMenu = true,
+  hideControlsMenu = false,
   onHideControlsMenuChange,
 }: EditorSettingsPopoverProps) {
   const { euiTheme } = useEuiTheme();
