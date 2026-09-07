@@ -362,7 +362,17 @@ export function getTextBasedDatasource({
       // detection via HTTP), but the persisted layer state may not have a timeField (if comes from the API)
       // This ensures each layer picks up the correct timeFieldName so that
       // time-based filtering works correctly for ES|QL visualizations.
-      for (const [layerId, layer] of Object.entries(initState.layers)) {
+      for (const [layerId, persistedLayer] of Object.entries(initState.layers)) {
+        // Inject the data view reference extracted by getPersistableState back into
+        // the layer: on saved-object import or copy-to-space the reference id gets
+        // remapped, while the copy kept in layer.index still points at the source
+        // space's data view.
+        const reference = references?.find(({ name }) => name === getLayerReferenceName(layerId));
+        const layer =
+          reference && persistedLayer.index !== reference.id
+            ? { ...persistedLayer, index: reference.id }
+            : persistedLayer;
+
         if (layer.timeField || !indexPatterns) {
           hydratedLayers[layerId] = layer;
           continue;

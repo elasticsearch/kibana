@@ -1115,6 +1115,54 @@ describe('Textbased Data Source', () => {
       expect(result.layers.a.timeField).toBe('timestamp');
     });
 
+    it('should inject remapped data view references into layer.index', () => {
+      const state = {
+        layers: {
+          a: {
+            columns: [{ columnId: 'col1', fieldName: 'bytes', meta: { type: 'number' } }],
+            query: { esql: 'FROM foo' },
+            index: 'source-space-id',
+          },
+        },
+      } as unknown as TextBasedPersistedState;
+
+      const result = TextBasedDatasource.initialize(
+        state,
+        [
+          {
+            type: 'index-pattern',
+            id: 'target-space-id',
+            name: 'textBasedLanguages-datasource-layer-a',
+          },
+        ],
+        undefined,
+        undefined,
+        undefined
+      );
+      expect(result.layers.a.index).toBe('target-space-id');
+    });
+
+    it('should keep layer.index when no reference matches the layer', () => {
+      const state = {
+        layers: {
+          a: {
+            columns: [{ columnId: 'col1', fieldName: 'bytes', meta: { type: 'number' } }],
+            query: { esql: 'FROM foo' },
+            index: '1',
+          },
+        },
+      } as unknown as TextBasedPersistedState;
+
+      const result = TextBasedDatasource.initialize(
+        state,
+        [{ type: 'index-pattern', id: 'other', name: 'textBasedLanguages-datasource-layer-b' }],
+        undefined,
+        undefined,
+        undefined
+      );
+      expect(result.layers.a.index).toBe('1');
+    });
+
     it('should not overwrite timeField when layer already has one', () => {
       const state = {
         layers: {
