@@ -347,6 +347,9 @@ export default function ({ getService, getPageObjects }: FtrProviderContext) {
         await dashboardPanelActions.clickInlineEdit(panel);
         await testSubjects.click(dimension);
         await testSubjects.click('lns_colorEditing_trigger');
+        // The trigger opens the color-mapping flyout as a sibling; wait for it to
+        // actually render before reading its contents instead of assuming the click landed.
+        await testSubjects.existOrFail('lns-palettePanelFlyout');
         await retry.try(async () => {
           if (
             !(await testSubjects.exists('lns-colorMapping-colorPicker-tab-custom', {
@@ -431,14 +434,19 @@ export default function ({ getService, getPageObjects }: FtrProviderContext) {
         await dashboardPanelActions.clickInlineEdit(panel);
         await testSubjects.click(dimension);
         await testSubjects.click('lns_colorEditing_trigger');
-        const swatch = await testSubjects.find('lns-colorMapping-colorSwatch-0');
-        const color = chroma(await swatch.getComputedStyle('background-color')).hex(); // eui converts hex to rgb
+        await testSubjects.existOrFail('lns-palettePanelFlyout');
+        try {
+          const swatch = await testSubjects.find('lns-colorMapping-colorSwatch-0');
+          const color = chroma(await swatch.getComputedStyle('background-color')).hex(); // eui converts hex to rgb
 
-        expect(color).to.be(customColor);
-
-        await testSubjects.click('lns-indexPattern-SettingWithSiblingFlyoutBack');
-        await lens.closeDimensionEditor();
-        await testSubjects.click('cancelFlyoutButton');
+          expect(color).to.be(customColor);
+        } finally {
+          // Always close the inline editor, otherwise a failed assertion leaves the
+          // flyout open and cascades into the next test in this series.
+          await testSubjects.click('lns-indexPattern-SettingWithSiblingFlyoutBack');
+          await lens.closeDimensionEditor();
+          await testSubjects.click('cancelFlyoutButton');
+        }
       }
 
       it('should save xy chart custom color mappings from above', async () => {
@@ -460,7 +468,7 @@ export default function ({ getService, getPageObjects }: FtrProviderContext) {
       });
 
       it('should save table chart custom color mappings from above', async () => {
-        await verifyCustomColor(...testParams.tagCloud);
+        await verifyCustomColor(...testParams.table);
       });
     });
   });
