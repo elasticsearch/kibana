@@ -5,8 +5,7 @@
  * 2.0.
  */
 
-import { render, screen } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import { fireEvent, render, screen } from '@testing-library/react';
 import React from 'react';
 import type { HttpSetup } from '@kbn/core/public';
 
@@ -93,14 +92,14 @@ describe('WorkflowExecutionDetailsFlyout', () => {
     );
   });
 
-  it('calls onClose when the flyout close button is clicked', async () => {
+  it('calls onClose when the flyout close button is clicked', () => {
     render(
       <TestProviders>
         <WorkflowExecutionDetailsFlyout {...defaultProps} />
       </TestProviders>
     );
 
-    await userEvent.click(screen.getByTestId('euiFlyoutCloseButton'));
+    fireEvent.click(screen.getByTestId('euiFlyoutCloseButton'));
 
     expect(mockOnClose).toHaveBeenCalledTimes(1);
   });
