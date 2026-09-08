@@ -97,6 +97,7 @@ export async function getUnifiedTraceItems({
   end,
   serviceName,
   ecsOnly = false,
+  focusedDocId,
 }: {
   apmEventClient: APMEventClient;
   logsClient: LogsClient;
@@ -106,6 +107,7 @@ export async function getUnifiedTraceItems({
   end: number;
   serviceName?: string;
   ecsOnly?: boolean;
+  focusedDocId?: string;
 }): Promise<{
   traceItems: TraceItem[];
   unifiedTraceErrors: UnifiedTraceErrors;
@@ -128,6 +130,7 @@ export async function getUnifiedTraceItems({
       end,
       serviceName,
       ecsOnly,
+      focusedDocId,
     }),
     getSpanLinksCountById({
       traceId,

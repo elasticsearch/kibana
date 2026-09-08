@@ -104,6 +104,7 @@ const unifiedTracesByIdRoute = createApmServerRoute({
           maxTraceItems,
           serviceName,
           ecsOnly: ecsOnly ?? false,
+          focusedDocId: entryTransactionId,
         }),
         entryTransactionId
           ? getTransaction({
@@ -152,6 +153,7 @@ const unifiedTracesByIdSummaryRoute = createApmServerRoute({
         start,
         end,
         maxTraceItems,
+        focusedDocId: docId,
       }),
       getTraceSummaryCount({ apmEventClient, start, end, traceId }),
     ]);

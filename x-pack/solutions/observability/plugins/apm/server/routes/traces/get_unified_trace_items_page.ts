@@ -46,6 +46,7 @@ import {
   TRANSACTION_RESULT,
 } from '../../../common/es_fields/apm';
 import { asMutableArray } from '../../../common/utils/as_mutable_array';
+import { ensureFocusedTraceHits, getTraceHitId } from './ensure_focused_trace_hits';
 import { MAX_ITEMS_PER_PAGE } from './trace_constants';
 
 export const fields = asMutableArray(['@timestamp', 'trace.id', 'service.name'] as const);
@@ -221,9 +222,7 @@ async function paginate({
   // more than once in the same response. Previously handled with collapse, which only works
   // within a single page. seenIds deduplicates across both within-page and cross-page results.
   const newHits = response.hits.filter((hit) => {
-    const id = (hit.fields?.[SPAN_ID]?.[0] ?? hit.fields?.[TRANSACTION_ID]?.[0]) as
-      | string
-      | undefined;
+    const id = getTraceHitId(hit);
     if (!id || seenIds.has(id)) return false;
     seenIds.add(id);
     return true;
@@ -259,7 +258,7 @@ async function paginate({
   });
 }
 
-export function getUnifiedTraceItemsPaginated({
+export async function getUnifiedTraceItemsPaginated({
   apmEventClient,
   maxTraceItems,
   traceId,
@@ -267,6 +266,7 @@ export function getUnifiedTraceItemsPaginated({
   end,
   serviceName,
   ecsOnly = false,
+  focusedDocId,
 }: {
   apmEventClient: APMEventClient;
   maxTraceItems: number;
@@ -275,8 +275,9 @@ export function getUnifiedTraceItemsPaginated({
   end: number;
   serviceName?: string;
   ecsOnly?: boolean;
-}) {
-  return paginate({
+  focusedDocId?: string;
+}): Promise<{ hits: PageHits; total: number }> {
+  const result = await paginate({
     apmEventClient,
     maxTraceItems,
     traceId,
@@ -287,4 +288,21 @@ export function getUnifiedTraceItemsPaginated({
     seenIds: new Set(),
     ecsOnly,
   });
+
+  if (!focusedDocId) {
+    return result;
+  }
+
+  const hits = await ensureFocusedTraceHits({
+    apmEventClient,
+    hits: result.hits,
+    focusedDocId,
+    maxTraceItems,
+    traceId,
+    start,
+    end,
+    ecsOnly,
+  });
+
+  return { hits, total: result.total };
 }

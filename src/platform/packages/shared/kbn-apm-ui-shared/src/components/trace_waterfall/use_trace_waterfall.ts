@@ -32,6 +32,14 @@ const INSTRUMENTATION_WARNING = i18n.translate(
   }
 );
 
+const MISSING_ENTRY_WARNING = i18n.translate(
+  'apmUiShared.traceWaterfallItem.warningMessage.missingEntryWarning',
+  {
+    defaultMessage:
+      'The selected transaction is missing from this truncated waterfall. A different transaction from the same trace is shown instead.',
+  }
+);
+
 export interface TraceWaterfallItem extends TraceItem {
   depth: number;
   offset: number;
@@ -100,7 +108,7 @@ export function useTraceWaterfall({
       return {
         rootItem,
         traceState,
-        message: traceState !== TraceDataState.Full ? FALLBACK_WARNING : undefined,
+        message: getTraceStateMessage(traceState),
         traceWaterfall,
         duration: getTraceWaterfallDuration(traceWaterfall),
         maxDepth: Math.max(...traceWaterfall.map((item) => item.depth)),
@@ -260,6 +268,31 @@ export enum TraceDataState {
   Partial = 'partial',
   Empty = 'empty',
   Invalid = 'invalid',
+  MissingEntry = 'missingEntry',
+}
+
+function getTraceStateMessage(traceState: TraceDataState): string | undefined {
+  switch (traceState) {
+    case TraceDataState.MissingEntry:
+      return MISSING_ENTRY_WARNING;
+    case TraceDataState.Partial:
+    case TraceDataState.Empty:
+      return FALLBACK_WARNING;
+    case TraceDataState.Invalid:
+      return INSTRUMENTATION_WARNING;
+    case TraceDataState.Full:
+      return undefined;
+  }
+}
+
+function getOrphanItems(traceItems: TraceItem[], rootItem: TraceItem | undefined): TraceItem[] {
+  const parentIds = new Set(traceItems.map(({ id }) => id));
+  return traceItems.filter((item) => {
+    if (item.id === rootItem?.id || !item.parentId) {
+      return false;
+    }
+    return !parentIds.has(item.parentId);
+  });
 }
 
 export function getRootItemOrFallback(
@@ -274,20 +307,20 @@ export function getRootItemOrFallback(
   }
 
   const entryTransactionRootItem = entryTransactionId
-    ? traceItems?.find((item) => item.id === entryTransactionId)
+    ? traceItems.find((item) => item.id === entryTransactionId)
     : undefined;
 
-  const rootItem = entryTransactionRootItem
-    ? entryTransactionRootItem
-    : traceParentChildrenMap.root?.[0];
+  if (entryTransactionId && !entryTransactionRootItem) {
+    const fallbackRoot = traceParentChildrenMap.root?.[0];
+    return {
+      traceState: TraceDataState.MissingEntry,
+      rootItem: fallbackRoot,
+      orphans: getOrphanItems(traceItems, fallbackRoot),
+    };
+  }
 
-  const parentIds = new Set(traceItems.map(({ id }) => id));
-  // TODO: Reuse waterfall util methods where possible or if logic is the same
-  const orphans = traceItems.filter(
-    (item) =>
-      // Root cannot be an orphan.
-      item.id !== rootItem?.id && item.parentId && !parentIds.has(item.parentId)
-  );
+  const rootItem = entryTransactionRootItem ?? traceParentChildrenMap.root?.[0];
+  const orphans = getOrphanItems(traceItems, rootItem);
 
   if (rootItem) {
     return {

@@ -856,6 +856,38 @@ describe('getRootItemOrFallback', () => {
     expect(result.traceState).toBe(TraceDataState.Full);
     expect(result.orphans).toEqual([]);
   });
+
+  it('should return a FULL state rooted at the selected entry transaction', () => {
+    const traceData = [root, child1, child2, grandchild];
+
+    const result = getRootItemOrFallback(
+      getTraceParentChildrenMap(traceData, false),
+      traceData,
+      child1.id
+    );
+
+    expect(result.rootItem).toEqual(child1);
+    expect(result.traceState).toBe(TraceDataState.Full);
+    expect(result.orphans).toEqual([]);
+  });
+
+  it('should return MissingEntry instead of silently re-rooting when the selected id is absent', () => {
+    const otherRoot: TraceItem = {
+      ...root,
+      id: 'other-root',
+      name: 'other-root',
+    };
+    const traceData = [otherRoot, child2];
+
+    const result = getRootItemOrFallback(
+      getTraceParentChildrenMap(traceData, false),
+      traceData,
+      'missing-entry-id'
+    );
+
+    expect(result.rootItem).toEqual(otherRoot);
+    expect(result.traceState).toBe(TraceDataState.MissingEntry);
+  });
 });
 
 describe('getTraceWaterfallDuration', () => {

@@ -17,6 +17,7 @@ export function TraceWarning({ children }: { children: React.ReactNode }) {
 
   switch (traceState) {
     case TraceDataState.Partial:
+    case TraceDataState.MissingEntry:
       return (
         <EuiFlexGroup direction="column">
           <EuiFlexItem grow={false}>

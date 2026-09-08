@@ -1667,3 +1667,91 @@ describe('getTraceItemIcon', () => {
     });
   });
 });
+
+describe('getUnifiedTraceItems focused document reservation', () => {
+  const mockApmEventClient = {
+    search: jest.fn(),
+  } as unknown as APMEventClient;
+
+  const mockLogsClient = {} as LogsClient;
+
+  const defaultParams = {
+    apmEventClient: mockApmEventClient,
+    logsClient: mockLogsClient,
+    traceId: 'test-trace-id',
+    start: 0,
+    end: 1000,
+    maxTraceItems: 1,
+  };
+
+  const defaultSearchFields = {
+    [AT_TIMESTAMP]: ['2023-01-01T00:00:00.000Z'],
+    [TRACE_ID]: ['test-trace-id'],
+    [SERVICE_NAME]: ['test-service'],
+    [TIMESTAMP_US]: [1672531200000000],
+  };
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    (getUnifiedTraceErrors as jest.Mock).mockResolvedValue({
+      apmErrors: [],
+      unprocessedOtelErrors: [],
+      totalErrors: 0,
+    });
+    (getSpanLinksCountById as jest.Mock).mockResolvedValue({});
+  });
+
+  it('merges a missing focused transaction into truncated ranked hits', async () => {
+    const rankedRoot = {
+      _source: {},
+      fields: {
+        ...defaultSearchFields,
+        [PROCESSOR_EVENT]: ProcessorEvent.transaction,
+        [SPAN_ID]: ['root-1'],
+        [TRANSACTION_ID]: ['root-1'],
+        [TRANSACTION_NAME]: ['long-root'],
+        [TRANSACTION_DURATION]: [1_000_000],
+      },
+    };
+    const focusedChild = {
+      _source: {},
+      fields: {
+        ...defaultSearchFields,
+        [PROCESSOR_EVENT]: ProcessorEvent.transaction,
+        [SPAN_ID]: ['focused-1'],
+        [TRANSACTION_ID]: ['focused-1'],
+        [TRANSACTION_NAME]: ['short-child'],
+        [TRANSACTION_DURATION]: [2000],
+        [PARENT_ID]: ['root-1'],
+      },
+    };
+
+    (mockApmEventClient.search as jest.Mock).mockImplementation((operationName: string) => {
+      if (operationName === 'get_focused_trace_items') {
+        return Promise.resolve({
+          hits: { hits: [focusedChild], total: { value: 1, relation: 'eq' } },
+        });
+      }
+
+      return Promise.resolve({
+        hits: {
+          hits: [rankedRoot],
+          total: { value: 2, relation: 'eq' },
+        },
+      });
+    });
+
+    const result = await getUnifiedTraceItems({
+      ...defaultParams,
+      focusedDocId: 'focused-1',
+    });
+
+    expect(result.traceItems.map((item) => item.id)).toEqual(['focused-1']);
+    expect(result.traceDocsTotal).toBe(2);
+    expect(
+      (mockApmEventClient.search as jest.Mock).mock.calls.some(
+        (call) => call[0] === 'get_focused_trace_items'
+      )
+    ).toBe(true);
+  });
+});

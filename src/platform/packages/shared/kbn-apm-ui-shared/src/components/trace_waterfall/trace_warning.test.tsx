@@ -50,6 +50,24 @@ describe('TraceWarning', () => {
     expect(trace).toBeInTheDocument();
   });
 
+  it('renders a warning for a missing selected transaction, and shows the fallback trace', () => {
+    render(
+      <TraceWaterfallContext.Provider
+        value={{ traceState: TraceDataState.MissingEntry } as TraceWaterfallContextProps}
+      >
+        <TraceWarning>
+          <div>Trace</div>
+        </TraceWarning>
+      </TraceWaterfallContext.Provider>
+    );
+
+    const warning = screen.queryByTestId('traceWarning');
+    const trace = screen.queryByText('Trace');
+
+    expect(warning).toBeInTheDocument();
+    expect(trace).toBeInTheDocument();
+  });
+
   it('renders a warning for an empty trace, and does not show the trace', () => {
     render(
       <TraceWaterfallContext.Provider
