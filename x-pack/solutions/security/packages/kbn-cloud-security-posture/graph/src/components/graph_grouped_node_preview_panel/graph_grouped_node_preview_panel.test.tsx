@@ -243,20 +243,25 @@ describe('GraphGroupedNodePreviewPanel', () => {
     });
 
     describe('Page Size Changes', () => {
-      it('should reset pageIndex to 0 when changing pageSize to 25', async () => {
+      it('should reset pageIndex to 0 when changing pageSize to 50', async () => {
+        // Use a single userEvent instance for all three clicks to avoid the
+        // per-call setup/teardown overhead of the compat API, which causes the
+        // test to exceed the 5000ms default timeout on loaded CI agents.
+        // pointerEventsCheck: 0 is set globally so the popover item click
+        // (which has pointer-events:none in EUI) is not blocked.
+        const user = userEvent.setup({ pointerEventsCheck: 0 });
         const entityItems = Array.from({ length: 50 }, (_, i) =>
           createEntityItem({ id: `entity-${i}` })
         );
         render(<GraphGroupedNodePreviewPanel {...defaultProps} entityItems={entityItems} />);
 
         // Navigate to page 2 first (showing items 11-20)
-        await userEvent.click(screen.getByTestId(PAGINATION_BUTTON_NEXT_TEST_ID));
+        await user.click(screen.getByTestId(PAGINATION_BUTTON_NEXT_TEST_ID));
         expect(screen.getByLabelText(/Page 2/)).toBeInTheDocument();
 
         // Change page size by opening popover and selecting 50
-        await userEvent.click(screen.getByTestId(PAGE_SIZE_BTN_TEST_ID));
-        // Use pointerEventsCheck: 0 to skip pointer-events check for popover items
-        await userEvent.click(screen.getByText('50 rows'), { pointerEventsCheck: 0 });
+        await user.click(screen.getByTestId(PAGE_SIZE_BTN_TEST_ID));
+        await user.click(screen.getByText('50 rows'));
 
         await waitFor(() => {
           // Should reset to page 1 (index 0)
