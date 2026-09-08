@@ -5,7 +5,7 @@
  * 2.0.
  */
 
-import { waitFor, screen, waitForElementToBeRemoved } from '@testing-library/react';
+import { waitFor, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import React from 'react';
 
@@ -129,11 +129,13 @@ describe.skip('Severity form field', () => {
 
     await userEvent.click(await screen.findByTestId('case-table-bulk-actions-link-icon'));
 
-    const contextMenu = await screen.findByTestId('case-table-bulk-actions-context-menu');
+    expect(await screen.findByTestId('case-table-bulk-actions-context-menu')).toBeInTheDocument();
 
     await userEvent.click(await screen.findByTestId('case-table-bulk-actions-link-icon'));
 
-    await waitForElementToBeRemoved(contextMenu);
+    await waitFor(() => {
+      expect(screen.queryByTestId('case-table-bulk-actions-context-menu')).not.toBeInTheDocument();
+    });
   });
 
   it('does not show the bulk actions without update & delete permissions', async () => {
