@@ -25,6 +25,41 @@ export const searchQuerySchema = schema.oneOf([
       ),
       limit: schema.maybe(schema.number()),
       cursor: schema.maybe(schema.string()),
+      sort: schema.maybe(
+        schema.object({
+          field: schema.string(),
+          direction: schema.oneOf([schema.literal('asc'), schema.literal('desc')]),
+        })
+      ),
+      createdBy: schema.maybe(
+        schema.object({
+          included: schema.maybe(schema.arrayOf(schema.string())),
+          excluded: schema.maybe(schema.arrayOf(schema.string())),
+          includeNoCreator: schema.maybe(schema.boolean()),
+        })
+      ),
+      favorites: schema.maybe(
+        schema.object({
+          only: schema.maybe(schema.boolean()),
+          ids: schema.maybe(schema.arrayOf(schema.string())),
+        })
+      ),
+      facets: schema.maybe(
+        schema.object({
+          tags: schema.maybe(
+            schema.object({
+              size: schema.maybe(schema.number()),
+              includeMissing: schema.maybe(schema.boolean()),
+            })
+          ),
+          createdBy: schema.maybe(
+            schema.object({
+              size: schema.maybe(schema.number()),
+              includeMissing: schema.maybe(schema.boolean()),
+            })
+          ),
+        })
+      ),
     },
     {
       unknowns: 'forbid',
@@ -39,6 +74,26 @@ export const searchResultSchema = schema.object({
     total: schema.number(),
     cursor: schema.maybe(schema.string()),
   }),
+  facets: schema.maybe(
+    schema.object({
+      tags: schema.maybe(
+        schema.arrayOf(
+          schema.object({
+            key: schema.string(),
+            doc_count: schema.number(),
+          })
+        )
+      ),
+      createdBy: schema.maybe(
+        schema.arrayOf(
+          schema.object({
+            key: schema.string(),
+            doc_count: schema.number(),
+          })
+        )
+      ),
+    })
+  ),
 });
 
 export const searchSchemas = {
@@ -73,6 +128,36 @@ export interface SearchQuery {
   limit?: number;
   /** The cursor for this query. Can be a page number or a cursor */
   cursor?: string;
+  /** Sorting support */
+  sort?: {
+    /** Field to sort by (e.g., 'title', 'updatedAt', 'createdAt') */
+    field: string;
+    /** Sort direction */
+    direction: 'asc' | 'desc';
+  };
+  /** User/creator filtering */
+  createdBy?: {
+    /** User profile UIDs to include */
+    included?: string[];
+    /** User profile UIDs to exclude */
+    excluded?: string[];
+    /** Include items with no creator (null/undefined createdBy) */
+    includeNoCreator?: boolean;
+  };
+  /** Favorites filtering */
+  favorites?: {
+    /** Only return favorited items for current user */
+    only?: boolean;
+    /** Pre-fetched favorite IDs (client-provided optimization) */
+    ids?: string[];
+  };
+  /** Facet requests */
+  facets?: {
+    /** Request tag facet counts */
+    tags?: { size?: number; includeMissing?: boolean };
+    /** Request creator facet counts */
+    createdBy?: { size?: number; includeMissing?: boolean };
+  };
 }
 
 export interface SearchIn<T extends string = string, Options extends void | object = object> {
@@ -90,6 +175,11 @@ export type SearchResult<T = unknown, M = void> = M extends void
         /** Page number or cursor */
         cursor?: string;
       };
+      /** Facet results */
+      facets?: {
+        tags?: Array<{ key: string; doc_count: number }>;
+        createdBy?: Array<{ key: string; doc_count: number }>;
+      };
     }
   : {
       hits: T[];
@@ -99,4 +189,9 @@ export type SearchResult<T = unknown, M = void> = M extends void
         cursor?: string;
       };
       meta: M;
+      /** Facet results */
+      facets?: {
+        tags?: Array<{ key: string; doc_count: number }>;
+        createdBy?: Array<{ key: string; doc_count: number }>;
+      };
     };
