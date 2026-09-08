@@ -168,18 +168,27 @@
   resolved "https://registry.yarnpkg.com/@assemblyscript/loader/-/loader-0.19.23.tgz#7fccae28d0a2692869f1d1219d36093bc24d5e72"
   integrity sha512-ulkCYfFbYj01ie1MDOyxv2F6SpRN1TOj7fQxbP07D6HmeR+gr2JLSmINKjga2emB+b1L2KGrFKBTc+e00p54nw==
 
-"@atlaskit/pragmatic-drag-and-drop-hitbox@1.1.0":
-  version "1.1.0"
-  resolved "https://registry.yarnpkg.com/@atlaskit/pragmatic-drag-and-drop-hitbox/-/pragmatic-drag-and-drop-hitbox-1.1.0.tgz#3a031ac295513a394eff116f9b75869e64d3e559"
-  integrity sha512-JWt6eVp6Br2FPHRM8s0dUIHQk/jFInGP1f3ti5CdtM1Ji5/pt8Akm44wDC063Gv2i5RGseixtbW0z/t6RYtbdg==
+"@atlaskit/pragmatic-drag-and-drop-hitbox@2.1.0":
+  version "2.1.0"
+  resolved "https://registry.yarnpkg.com/@atlaskit/pragmatic-drag-and-drop-hitbox/-/pragmatic-drag-and-drop-hitbox-2.1.0.tgz#79723697423c1cc65d22c44ccf6bb760c450bbbc"
+  integrity sha512-88krJVd1OcPHy0EFcJx0CjT1AOTB/1AneVvDWOhU4FH6NYDgTNF69euj8GUE07r0KK3L+9V77MKQhaOtwq2mXA==
   dependencies:
-    "@atlaskit/pragmatic-drag-and-drop" "^1.6.0"
+    "@atlaskit/pragmatic-drag-and-drop" "^3.0.0"
     "@babel/runtime" "^7.0.0"
 
-"@atlaskit/pragmatic-drag-and-drop@1.7.7", "@atlaskit/pragmatic-drag-and-drop@^1.6.0":
-  version "1.7.7"
-  resolved "https://registry.yarnpkg.com/@atlaskit/pragmatic-drag-and-drop/-/pragmatic-drag-and-drop-1.7.7.tgz#2e491de6a6fad6c79545ca8d5e7fc23cc7a2e017"
-  integrity sha512-jX+68AoSTqO/fhCyJDTZ38Ey6/wyL2Iq+J/moanma0YyktpnoHxevjY1UNJHYp0NCburdQDZSL1ZFac1mO1osQ==
+"@atlaskit/pragmatic-drag-and-drop@3.0.0":
+  version "3.0.0"
+  resolved "https://registry.yarnpkg.com/@atlaskit/pragmatic-drag-and-drop/-/pragmatic-drag-and-drop-3.0.0.tgz#90c3d701b500c16c043eca845fb228101ab06a50"
+  integrity sha512-EEKBELv757wrvhMHBAoFcXjfzGZ4Y2FJ2xnSsWovsOKywkN1Q4IWRH52hQpPmJnATLcmO9viVhoXWSXFBLKSLQ==
+  dependencies:
+    "@babel/runtime" "^7.0.0"
+    bind-event-listener "^3.0.0"
+    raf-schd "^4.0.3"
+
+"@atlaskit/pragmatic-drag-and-drop@^3.0.0":
+  version "3.1.0"
+  resolved "https://registry.yarnpkg.com/@atlaskit/pragmatic-drag-and-drop/-/pragmatic-drag-and-drop-3.1.0.tgz#dcfe6c552e1bf83f80095ad39acbee384d6d1dfd"
+  integrity sha512-VU+2Oh6OgvC6D1xiX3lfm1gZJsaSPD+ZKjAHodOQ9IO6RfOvAyReLlK5ut9gIUpPmbD8d09wlCs7y4A6/I8c5Q==
   dependencies:
     "@babel/runtime" "^7.0.0"
     bind-event-listener "^3.0.0"
