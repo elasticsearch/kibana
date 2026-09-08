@@ -10,8 +10,8 @@ import {
   isProviderForSolutions,
 } from './inference_service_form_fields';
 import React from 'react';
-import { render, screen } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import { render, screen, waitFor } from '@testing-library/react';
+import userEvent, { PointerEventsCheckLevel } from '@testing-library/user-event';
 import { Form, useForm } from '@kbn/es-ui-shared-plugin/static/forms/hook_form_lib';
 import { I18nProvider } from '@kbn/i18n-react';
 import { httpServiceMock } from '@kbn/core-http-browser-mocks';
@@ -62,11 +62,15 @@ const renderForm = (options: RenderFormOptions = {}) => {
   );
 };
 
-// FLAKY: https://github.com/elastic/kibana/issues/253331
-describe.skip('Inference Services', () => {
+describe('Inference Services', () => {
+  let user: ReturnType<typeof userEvent.setup>;
+
   // Reset cloned providers before each test to prevent mutation pollution
   beforeEach(() => {
     mockClonedProviders = JSON.parse(JSON.stringify(mockProviders));
+    // Skip the pointer-events actionability check: it runs an expensive getComputedStyle pass on
+    // every click that EUI popovers/overlays make costly, pushing this render-heavy suite over the 5s budget.
+    user = userEvent.setup({ pointerEventsCheck: PointerEventsCheckLevel.Never });
   });
   it('renders', () => {
     renderForm();
@@ -77,14 +81,14 @@ describe.skip('Inference Services', () => {
   it('renders Selectable', async () => {
     renderForm();
 
-    await userEvent.click(screen.getByTestId('provider-select'));
+    await user.click(screen.getByTestId('provider-select'));
     expect(screen.getByTestId('euiSelectableList')).toBeInTheDocument();
   });
 
   it('renders Elastic at top', async () => {
     renderForm();
 
-    await userEvent.click(screen.getByTestId('provider-select'));
+    await user.click(screen.getByTestId('provider-select'));
     const listItems = screen.getAllByTestId('provider');
     expect(listItems[0]).toHaveTextContent('Elastic');
   });
@@ -92,50 +96,55 @@ describe.skip('Inference Services', () => {
   it('renders selected provider fields - hugging_face', async () => {
     renderForm();
 
-    await userEvent.click(screen.getByTestId('provider-select'));
-    await userEvent.click(screen.getByText('Hugging Face'));
+    await user.click(screen.getByTestId('provider-select'));
+    await user.click(screen.getByText('Hugging Face'));
 
-    expect(screen.getByTestId('provider-select')).toHaveValue('Hugging Face');
+    expect(await screen.findByTestId('provider-select')).toHaveValue('Hugging Face');
+    expect(await screen.findByTestId('taskTypeSelect')).toBeInTheDocument();
     expect(screen.getByTestId('api_key-password')).toBeInTheDocument();
     expect(screen.getByTestId('url-input')).toBeInTheDocument();
-    expect(screen.getByTestId('taskTypeSelect')).toBeInTheDocument();
     expect(screen.getByTestId('inference-endpoint-input-field')).toBeInTheDocument();
-    expect(screen.queryByTestId('inference-endpoint-input-field')).toHaveDisplayValue(
-      /hugging_face-text_embedding/
+    await waitFor(() =>
+      expect(screen.getByTestId('inference-endpoint-input-field')).toHaveDisplayValue(
+        /hugging_face-text_embedding/
+      )
     );
   });
 
   it('re-renders fields when selected to anthropic from hugging_face', async () => {
     renderForm();
 
-    await userEvent.click(screen.getByTestId('provider-select'));
-    await userEvent.click(screen.getByText('Hugging Face'));
-    expect(screen.getByTestId('provider-select')).toHaveValue('Hugging Face');
+    await user.click(screen.getByTestId('provider-select'));
+    await user.click(screen.getByText('Hugging Face'));
+    expect(await screen.findByTestId('provider-select')).toHaveValue('Hugging Face');
 
-    await userEvent.click(screen.getByTestId('provider-select'));
-    await userEvent.click(screen.getByText('Anthropic'));
+    await user.click(screen.getByTestId('provider-select'));
+    await user.click(screen.getByText('Anthropic'));
 
-    expect(screen.getByTestId('provider-select')).toHaveValue('Anthropic');
+    expect(await screen.findByTestId('provider-select')).toHaveValue('Anthropic');
+    expect(await screen.findByTestId('taskTypeSelect')).toBeInTheDocument();
     expect(screen.getByTestId('api_key-password')).toBeInTheDocument();
     expect(screen.getByTestId('model_id-input')).toBeInTheDocument();
-    expect(screen.getByTestId('taskTypeSelectSingle')).toBeInTheDocument();
     expect(screen.getByTestId('inference-endpoint-input-field')).toBeInTheDocument();
-    expect(screen.queryByTestId('inference-endpoint-input-field')).toHaveDisplayValue(
-      /anthropic-completion/
+    await waitFor(() =>
+      expect(screen.getByTestId('inference-endpoint-input-field')).toHaveDisplayValue(
+        /anthropic-completion/
+      )
     );
   });
 
   it('populates default model_id when selecting openai provider', async () => {
     renderForm();
 
-    await userEvent.click(screen.getByTestId('provider-select'));
-    await userEvent.click(screen.getByText('OpenAI'));
+    await user.click(screen.getByTestId('provider-select'));
+    await user.click(screen.getByText('OpenAI'));
 
-    expect(screen.getByTestId('provider-select')).toHaveValue('OpenAI');
-    const modelIdInput = screen.getByTestId('model_id-input');
+    expect(await screen.findByTestId('provider-select')).toHaveValue('OpenAI');
     // Default value comes from INTERNAL_OVERRIDE_FIELDS.openai.defaultValues.model_id
     const expectedDefaultModel = INTERNAL_OVERRIDE_FIELDS.openai?.defaultValues?.model_id as string;
-    expect(modelIdInput).toHaveValue(expectedDefaultModel);
+    await waitFor(() =>
+      expect(screen.getByTestId('model_id-input')).toHaveValue(expectedDefaultModel)
+    );
   });
 
   describe('isProviderForSolutions', () => {
@@ -157,7 +166,7 @@ describe.skip('Inference Services', () => {
     it('hides excluded providers from the selectable list', async () => {
       renderForm({ excludeProviders: [ServiceProviderKeys.elasticsearch] });
 
-      await userEvent.click(screen.getByTestId('provider-select'));
+      await user.click(screen.getByTestId('provider-select'));
       const listItems = screen.getAllByTestId('provider');
       const providerTexts = listItems.map((item) => item.textContent);
       expect(providerTexts).not.toContain('Elasticsearch');
@@ -166,7 +175,7 @@ describe.skip('Inference Services', () => {
     it('shows all providers when excludeProviders is not set', async () => {
       renderForm();
 
-      await userEvent.click(screen.getByTestId('provider-select'));
+      await user.click(screen.getByTestId('provider-select'));
       const listItems = screen.getAllByTestId('provider');
       const providerTexts = listItems.map((item) => item.textContent);
       expect(providerTexts).toContain('Elasticsearch');
@@ -178,10 +187,10 @@ describe.skip('Inference Services', () => {
       it('shows max_number_of_allocations field for Elasticsearch provider', async () => {
         renderForm({ enforceAdaptiveAllocations: true });
 
-        await userEvent.click(screen.getByTestId('provider-select'));
-        await userEvent.click(screen.getByText('Elasticsearch'));
+        await user.click(screen.getByTestId('provider-select'));
+        await user.click(screen.getByText('Elasticsearch'));
 
-        expect(screen.getByTestId('provider-select')).toHaveValue('Elasticsearch');
+        expect(await screen.findByTestId('provider-select')).toHaveValue('Elasticsearch');
         // max_number_of_allocations should be visible in serverless
         expect(screen.getByTestId('max_number_of_allocations-number')).toBeInTheDocument();
       });
@@ -189,10 +198,10 @@ describe.skip('Inference Services', () => {
       it('hides num_allocations field for Elasticsearch provider', async () => {
         renderForm({ enforceAdaptiveAllocations: true });
 
-        await userEvent.click(screen.getByTestId('provider-select'));
-        await userEvent.click(screen.getByText('Elasticsearch'));
+        await user.click(screen.getByTestId('provider-select'));
+        await user.click(screen.getByText('Elasticsearch'));
 
-        expect(screen.getByTestId('provider-select')).toHaveValue('Elasticsearch');
+        expect(await screen.findByTestId('provider-select')).toHaveValue('Elasticsearch');
         // num_allocations should be hidden in serverless
         expect(screen.queryByTestId('num_allocations-number')).not.toBeInTheDocument();
       });
@@ -200,10 +209,10 @@ describe.skip('Inference Services', () => {
       it('hides num_threads field for Elasticsearch provider', async () => {
         renderForm({ enforceAdaptiveAllocations: true });
 
-        await userEvent.click(screen.getByTestId('provider-select'));
-        await userEvent.click(screen.getByText('Elasticsearch'));
+        await user.click(screen.getByTestId('provider-select'));
+        await user.click(screen.getByText('Elasticsearch'));
 
-        expect(screen.getByTestId('provider-select')).toHaveValue('Elasticsearch');
+        expect(await screen.findByTestId('provider-select')).toHaveValue('Elasticsearch');
         // num_threads should be hidden in serverless
         expect(screen.queryByTestId('num_threads-number')).not.toBeInTheDocument();
       });
@@ -211,10 +220,10 @@ describe.skip('Inference Services', () => {
       it('shows adaptive resources title for Elasticsearch provider', async () => {
         renderForm({ enforceAdaptiveAllocations: true });
 
-        await userEvent.click(screen.getByTestId('provider-select'));
-        await userEvent.click(screen.getByText('Elasticsearch'));
+        await user.click(screen.getByTestId('provider-select'));
+        await user.click(screen.getByText('Elasticsearch'));
 
-        expect(screen.getByTestId('provider-select')).toHaveValue('Elasticsearch');
+        expect(await screen.findByTestId('provider-select')).toHaveValue('Elasticsearch');
         // Adaptive resources title should be shown in serverless
         expect(screen.getByTestId('maxNumberOfAllocationsDetailsLabel')).toBeInTheDocument();
       });
@@ -224,10 +233,10 @@ describe.skip('Inference Services', () => {
       it('shows num_allocations field for Elasticsearch provider', async () => {
         renderForm({ enforceAdaptiveAllocations: false });
 
-        await userEvent.click(screen.getByTestId('provider-select'));
-        await userEvent.click(screen.getByText('Elasticsearch'));
+        await user.click(screen.getByTestId('provider-select'));
+        await user.click(screen.getByText('Elasticsearch'));
 
-        expect(screen.getByTestId('provider-select')).toHaveValue('Elasticsearch');
+        expect(await screen.findByTestId('provider-select')).toHaveValue('Elasticsearch');
         // num_allocations should be visible in non-serverless
         expect(screen.getByTestId('num_allocations-number')).toBeInTheDocument();
       });
@@ -235,10 +244,10 @@ describe.skip('Inference Services', () => {
       it('shows num_threads field for Elasticsearch provider', async () => {
         renderForm({ enforceAdaptiveAllocations: false });
 
-        await userEvent.click(screen.getByTestId('provider-select'));
-        await userEvent.click(screen.getByText('Elasticsearch'));
+        await user.click(screen.getByTestId('provider-select'));
+        await user.click(screen.getByText('Elasticsearch'));
 
-        expect(screen.getByTestId('provider-select')).toHaveValue('Elasticsearch');
+        expect(await screen.findByTestId('provider-select')).toHaveValue('Elasticsearch');
         // num_threads should be visible in non-serverless
         expect(screen.getByTestId('num_threads-number')).toBeInTheDocument();
       });
@@ -246,10 +255,10 @@ describe.skip('Inference Services', () => {
       it('does not show max_number_of_allocations field for Elasticsearch provider', async () => {
         renderForm({ enforceAdaptiveAllocations: false });
 
-        await userEvent.click(screen.getByTestId('provider-select'));
-        await userEvent.click(screen.getByText('Elasticsearch'));
+        await user.click(screen.getByTestId('provider-select'));
+        await user.click(screen.getByText('Elasticsearch'));
 
-        expect(screen.getByTestId('provider-select')).toHaveValue('Elasticsearch');
+        expect(await screen.findByTestId('provider-select')).toHaveValue('Elasticsearch');
         // max_number_of_allocations should NOT be visible in non-serverless
         expect(screen.queryByTestId('max_number_of_allocations-number')).not.toBeInTheDocument();
       });
@@ -257,10 +266,10 @@ describe.skip('Inference Services', () => {
       it('does not show adaptive resources title for Elasticsearch provider', async () => {
         renderForm({ enforceAdaptiveAllocations: false });
 
-        await userEvent.click(screen.getByTestId('provider-select'));
-        await userEvent.click(screen.getByText('Elasticsearch'));
+        await user.click(screen.getByTestId('provider-select'));
+        await user.click(screen.getByText('Elasticsearch'));
 
-        expect(screen.getByTestId('provider-select')).toHaveValue('Elasticsearch');
+        expect(await screen.findByTestId('provider-select')).toHaveValue('Elasticsearch');
         // Adaptive resources title should NOT be shown in non-serverless
         expect(screen.queryByTestId('maxNumberOfAllocationsDetailsLabel')).not.toBeInTheDocument();
       });
@@ -270,10 +279,10 @@ describe.skip('Inference Services', () => {
       it('shows num_allocations field for Elasticsearch provider', async () => {
         renderForm();
 
-        await userEvent.click(screen.getByTestId('provider-select'));
-        await userEvent.click(screen.getByText('Elasticsearch'));
+        await user.click(screen.getByTestId('provider-select'));
+        await user.click(screen.getByText('Elasticsearch'));
 
-        expect(screen.getByTestId('provider-select')).toHaveValue('Elasticsearch');
+        expect(await screen.findByTestId('provider-select')).toHaveValue('Elasticsearch');
         // num_allocations should be visible when enforceAdaptiveAllocations is not set
         expect(screen.getByTestId('num_allocations-number')).toBeInTheDocument();
       });
@@ -281,10 +290,10 @@ describe.skip('Inference Services', () => {
       it('does not show max_number_of_allocations field for Elasticsearch provider', async () => {
         renderForm();
 
-        await userEvent.click(screen.getByTestId('provider-select'));
-        await userEvent.click(screen.getByText('Elasticsearch'));
+        await user.click(screen.getByTestId('provider-select'));
+        await user.click(screen.getByText('Elasticsearch'));
 
-        expect(screen.getByTestId('provider-select')).toHaveValue('Elasticsearch');
+        expect(await screen.findByTestId('provider-select')).toHaveValue('Elasticsearch');
         // max_number_of_allocations should NOT be visible when enforceAdaptiveAllocations is not set
         expect(screen.queryByTestId('max_number_of_allocations-number')).not.toBeInTheDocument();
       });
