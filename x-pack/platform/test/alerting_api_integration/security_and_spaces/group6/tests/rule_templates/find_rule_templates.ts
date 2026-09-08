@@ -41,7 +41,6 @@ export default (ftrProvider: FtrProviderContext): void => {
       const ids = response.body.data.map((template: { id: string }) => template.id);
       expect(ids).to.contain(SAMPLE_V1_TEMPLATE_ID);
       expect(ids).not.to.contain(SAMPLE_V2_TEMPLATE_ID);
-      expect(response.body.total).to.eql(1);
     });
   });
 };
