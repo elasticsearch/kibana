@@ -8,18 +8,22 @@
 import expect from 'expect';
 import type { FtrProviderContext } from '../../ftr_provider_context';
 
-export default function ({ getPageObjects }: FtrProviderContext) {
+export default function ({ getPageObjects, getService }: FtrProviderContext) {
   const pageObjects = getPageObjects(['common', 'home', 'svlCommonPage']);
+  const sampleData = getService('sampleData');
+  const svlCommonApi = getService('svlCommonApi');
 
-  // Failing: See https://github.com/elastic/kibana/issues/266763
-  describe.skip('Sample data in serverless', function () {
+  describe('Sample data in serverless', function () {
     this.tags(['skipSvlVectorDB']);
     before(async () => {
       await pageObjects.svlCommonPage.loginWithPrivilegedRole();
     });
 
     after(async () => {
-      await pageObjects.home.removeSampleDataSet('ecommerce');
+      await sampleData.testResources.removeKibanaSampleData(
+        'ecommerce',
+        svlCommonApi.getInternalRequestHeader()
+      );
     });
 
     it('Sample data loads', async () => {
