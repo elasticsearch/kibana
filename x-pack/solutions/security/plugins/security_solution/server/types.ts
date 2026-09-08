@@ -37,7 +37,6 @@ import type {
 import type { FrameworkRequest } from './lib/framework';
 import type { EndpointAuthz } from '../common/endpoint/types/authz';
 import type { EndpointInternalFleetServicesInterface } from './endpoint/services/fleet';
-import type { RiskEngineDataClient } from './lib/entity_analytics/risk_engine/risk_engine_data_client';
 import type { RiskScoreDataClient } from './lib/entity_analytics/risk_score/risk_score_data_client';
 import type { AssetCriticalityDataClient } from './lib/entity_analytics/asset_criticality';
 import type { IDetectionRulesClient } from './lib/detection_engine/rule_management/logic/detection_rules_client/detection_rules_client_interface';
@@ -74,7 +73,6 @@ export interface SecuritySolutionApiRequestHandlerContext {
   getInternalDataViewsService: () => Promise<DataViewsService>;
   getExceptionListClient: () => ExceptionListClient | null;
   getInternalFleetServices: () => EndpointInternalFleetServicesInterface;
-  getRiskEngineDataClient: () => RiskEngineDataClient;
   getRiskScoreDataClient: () => RiskScoreDataClient;
   getAssetCriticalityDataClient: () => AssetCriticalityDataClient;
   getEntityStoreUpdateClient: () => EntityStoreUpdateClient;

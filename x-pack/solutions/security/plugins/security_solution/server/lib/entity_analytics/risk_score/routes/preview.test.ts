@@ -15,38 +15,43 @@ import {
   requestMock,
 } from '../../../detection_engine/routes/__mocks__';
 import { getRiskInputsIndex } from '../get_risk_inputs_index';
-import { riskScoreServiceFactory } from '../risk_score_service';
-import { riskScoreServiceMock } from '../risk_score_service.mock';
+import { calculateScoresWithESQLV2 } from './calculate_scores_v2';
+import { getConfiguration } from '../../risk_engine/utils/saved_object_configuration';
 import { riskScorePreviewRoute } from './preview';
 import type {
   MockClients,
   SecuritySolutionRequestHandlerContextMock,
 } from '../../../detection_engine/routes/__mocks__/request_context';
 
-jest.mock('../risk_score_service');
+jest.mock('./calculate_scores_v2');
 jest.mock('../get_risk_inputs_index');
+jest.mock('../../risk_engine/utils/saved_object_configuration');
 
 describe('POST risk_engine/preview route', () => {
   let server: ReturnType<typeof serverMock.create>;
   let clients: MockClients;
   let context: SecuritySolutionRequestHandlerContextMock;
   let logger: ReturnType<typeof loggerMock.create>;
-  let mockRiskScoreService: ReturnType<typeof riskScoreServiceMock.create>;
 
   beforeEach(() => {
     server = serverMock.create();
     logger = loggerMock.create();
     ({ clients, context } = requestContextMock.createTools());
-    mockRiskScoreService = riskScoreServiceMock.create();
     (getRiskInputsIndex as jest.Mock).mockImplementationOnce(
       async ({ dataViewId }: { dataViewId: string }) => ({
         index: dataViewId,
         runtimeMappings: {},
       })
     );
+    (getConfiguration as jest.Mock).mockResolvedValue({
+      alertSampleSizePerShard: 123,
+    });
+    (calculateScoresWithESQLV2 as jest.Mock).mockResolvedValue({
+      after_keys: {},
+      scores: { host: [], user: [], service: [] },
+    });
 
     clients.appClient.getAlertsIndex.mockReturnValue('default-alerts-index');
-    (riskScoreServiceFactory as jest.Mock).mockReturnValue(mockRiskScoreService);
 
     riskScorePreviewRoute(server.router, logger);
   });
@@ -83,7 +88,7 @@ describe('POST risk_engine/preview route', () => {
         const response = await server.inject(request, requestContextMock.convertContext(context));
 
         expect(response.status).toEqual(200);
-        expect(mockRiskScoreService.calculateScores).toHaveBeenCalledWith(
+        expect(calculateScoresWithESQLV2).toHaveBeenCalledWith(
           expect.objectContaining({ index: 'custom-dataview-id' })
         );
       });
@@ -98,7 +103,7 @@ describe('POST risk_engine/preview route', () => {
         const response = await server.inject(request, requestContextMock.convertContext(context));
 
         expect(response.status).toEqual(200);
-        expect(mockRiskScoreService.calculateScores).toHaveBeenCalledWith(
+        expect(calculateScoresWithESQLV2).toHaveBeenCalledWith(
           expect.objectContaining({ index: 'unknown-dataview', runtimeMappings: {} })
         );
       });
@@ -110,7 +115,7 @@ describe('POST risk_engine/preview route', () => {
         const response = await server.inject(request, requestContextMock.convertContext(context));
 
         expect(response.status).toEqual(200);
-        expect(mockRiskScoreService.calculateScores).toHaveBeenCalledWith(
+        expect(calculateScoresWithESQLV2).toHaveBeenCalledWith(
           expect.objectContaining({ range: { start: 'now-15d', end: 'now' } })
         );
       });
@@ -120,7 +125,7 @@ describe('POST risk_engine/preview route', () => {
         const response = await server.inject(request, requestContextMock.convertContext(context));
 
         expect(response.status).toEqual(200);
-        expect(mockRiskScoreService.calculateScores).toHaveBeenCalledWith(
+        expect(calculateScoresWithESQLV2).toHaveBeenCalledWith(
           expect.objectContaining({ range: { start: 'now-30d', end: 'now-20d' } })
         );
       });
@@ -155,7 +160,7 @@ describe('POST risk_engine/preview route', () => {
         const response = await server.inject(request, requestContextMock.convertContext(context));
 
         expect(response.status).toEqual(200);
-        expect(mockRiskScoreService.calculateScores).toHaveBeenCalledWith(
+        expect(calculateScoresWithESQLV2).toHaveBeenCalledWith(
           expect.objectContaining({
             filter: {
               bool: {
@@ -188,7 +193,7 @@ describe('POST risk_engine/preview route', () => {
         const response = await server.inject(request, requestContextMock.convertContext(context));
 
         expect(response.status).toEqual(200);
-        expect(mockRiskScoreService.calculateScores).toHaveBeenCalledWith(
+        expect(calculateScoresWithESQLV2).toHaveBeenCalledWith(
           expect.objectContaining({
             weights: [
               {
@@ -243,7 +248,7 @@ describe('POST risk_engine/preview route', () => {
         const response = await server.inject(request, requestContextMock.convertContext(context));
 
         expect(response.status).toEqual(200);
-        expect(mockRiskScoreService.calculateScores).toHaveBeenCalledWith(
+        expect(calculateScoresWithESQLV2).toHaveBeenCalledWith(
           expect.objectContaining({ afterKeys: { host: afterKey } })
         );
       });
@@ -270,7 +275,7 @@ describe('POST risk_engine/preview route', () => {
         const response = await server.inject(request, requestContextMock.convertContext(context));
 
         expect(response.status).toEqual(200);
-        expect(mockRiskScoreService.calculateScores).toHaveBeenCalledWith(
+        expect(calculateScoresWithESQLV2).toHaveBeenCalledWith(
           expect.objectContaining({ excludeAlertStatuses: ['open'] })
         );
       });
@@ -285,7 +290,7 @@ describe('POST risk_engine/preview route', () => {
         const response = await server.inject(request, requestContextMock.convertContext(context));
 
         expect(response.status).toEqual(200);
-        expect(mockRiskScoreService.calculateScores).toHaveBeenCalledWith(
+        expect(calculateScoresWithESQLV2).toHaveBeenCalledWith(
           expect.objectContaining({ excludeAlertTags: ['tag1'] })
         );
       });
@@ -302,7 +307,7 @@ describe('POST risk_engine/preview route', () => {
         const response = await server.inject(request, requestContextMock.convertContext(context));
 
         expect(response.status).toEqual(200);
-        expect(mockRiskScoreService.calculateScores).toHaveBeenCalledWith(
+        expect(calculateScoresWithESQLV2).toHaveBeenCalledWith(
           expect.objectContaining({ filters })
         );
       });
@@ -313,7 +318,7 @@ describe('POST risk_engine/preview route', () => {
         const response = await server.inject(request, requestContextMock.convertContext(context));
 
         expect(response.status).toEqual(200);
-        expect(mockRiskScoreService.calculateScores).toHaveBeenCalledWith(
+        expect(calculateScoresWithESQLV2).toHaveBeenCalledWith(
           expect.objectContaining({ filters: [] })
         );
       });
@@ -324,7 +329,7 @@ describe('POST risk_engine/preview route', () => {
         const response = await server.inject(request, requestContextMock.convertContext(context));
 
         expect(response.status).toEqual(200);
-        expect(mockRiskScoreService.calculateScores).toHaveBeenCalledWith(
+        expect(calculateScoresWithESQLV2).toHaveBeenCalledWith(
           expect.objectContaining({ filters: [] })
         );
       });

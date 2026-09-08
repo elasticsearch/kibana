@@ -7,11 +7,12 @@
 
 import type { EntityStoreSetupContract } from '@kbn/entity-store/server';
 import type { AnalyticsServiceSetup } from '@kbn/core/server';
-import { INTERVAL } from '../tasks/constants';
 import {
   createRiskScoreMaintainer,
   type RegisterRiskScoreMaintainerDeps,
 } from './risk_score_maintainer';
+
+const INTERVAL = '1h';
 
 export type RegisterRiskScoreMaintainerOptions = RegisterRiskScoreMaintainerDeps & {
   entityStore: EntityStoreSetupContract | undefined;

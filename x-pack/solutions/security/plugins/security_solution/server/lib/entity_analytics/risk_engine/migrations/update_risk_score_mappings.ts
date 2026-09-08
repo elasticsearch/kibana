@@ -8,8 +8,10 @@
 import { asyncForEach } from '@kbn/std';
 import { first } from 'lodash/fp';
 import type { EntityAnalyticsMigrationsParams } from '../../migrations';
-import { RiskEngineDataClient } from '../risk_engine_data_client';
-import { getDefaultRiskEngineConfiguration } from '../utils/saved_object_configuration';
+import {
+  getDefaultRiskEngineConfiguration,
+  updateSavedObjectAttribute,
+} from '../utils/saved_object_configuration';
 import { RiskScoreDataClient } from '../../risk_score/risk_score_data_client';
 import type { RiskEngineConfiguration } from '../../types';
 import { riskEngineConfigurationTypeName } from '../saved_object';
@@ -51,14 +53,6 @@ export const updateRiskScoreMappings = async ({
 
       const esClient = coreStart.elasticsearch.client.asInternalUser;
       const soClient = buildScopedInternalSavedObjectsClientUnsafe({ coreStart, namespace });
-      const riskEngineDataClient = new RiskEngineDataClient({
-        logger,
-        kibanaVersion,
-        esClient,
-        namespace,
-        soClient,
-        auditLogger,
-      });
       const riskScoreDataClient = new RiskScoreDataClient({
         logger,
         kibanaVersion,
@@ -72,9 +66,13 @@ export const updateRiskScoreMappings = async ({
       await riskScoreDataClient.createOrUpdateRiskScoreLatestIndex();
       await riskScoreDataClient.createOrUpdateRiskScoreComponentTemplate();
       await riskScoreDataClient.rolloverRiskScoreTimeSeriesIndex();
-      await riskEngineDataClient.updateConfiguration({
-        _meta: {
-          mappingsVersion: newConfig._meta.mappingsVersion,
+      await updateSavedObjectAttribute({
+        savedObjectsClient: soClient,
+        namespace,
+        attributes: {
+          _meta: {
+            mappingsVersion: newConfig._meta.mappingsVersion,
+          },
         },
       });
 

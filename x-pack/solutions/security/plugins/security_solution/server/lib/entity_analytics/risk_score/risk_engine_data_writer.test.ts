@@ -7,8 +7,29 @@
 
 import type { ElasticsearchClient, Logger } from '@kbn/core/server';
 import { loggingSystemMock, elasticsearchServiceMock } from '@kbn/core/server/mocks';
+import type { EntityRiskScoreRecord } from '../../../../common/api/entity_analytics/common';
+import { EntityRiskLevelsEnum } from '../../../../common/api/entity_analytics/common';
 import { RiskEngineDataWriter } from './risk_engine_data_writer';
-import { riskScoreServiceMock } from './risk_score_service.mock';
+
+const createRiskScoreMock = (
+  overrides: Partial<EntityRiskScoreRecord> = {}
+): EntityRiskScoreRecord => ({
+  '@timestamp': '2023-02-15T00:15:19.231Z',
+  id_field: 'host.name',
+  id_value: 'hostname',
+  calculated_level: EntityRiskLevelsEnum.High,
+  calculated_score: 149,
+  calculated_score_norm: 85.332,
+  category_1_score: 85,
+  category_1_count: 12,
+  category_2_count: 0,
+  category_2_score: 0,
+  criticality_level: 'high_impact',
+  criticality_modifier: 2,
+  notes: [],
+  inputs: [],
+  ...overrides,
+});
 
 describe('RiskEngineDataWriter', () => {
   describe('#bulk', () => {
@@ -29,7 +50,7 @@ describe('RiskEngineDataWriter', () => {
 
     it('converts a list of host risk scores to an appropriate list of operations', async () => {
       await writer.bulk({
-        host: [riskScoreServiceMock.createRiskScore(), riskScoreServiceMock.createRiskScore()],
+        host: [createRiskScoreMock(), createRiskScoreMock()],
       });
 
       const [{ operations }] = (esClientMock.bulk as jest.Mock).mock.lastCall;
@@ -95,11 +116,11 @@ describe('RiskEngineDataWriter', () => {
     it('converts a list of user risk scores to an appropriate list of operations', async () => {
       await writer.bulk({
         user: [
-          riskScoreServiceMock.createRiskScore({
+          createRiskScoreMock({
             id_field: 'user.name',
             id_value: 'username_1',
           }),
-          riskScoreServiceMock.createRiskScore({
+          createRiskScoreMock({
             id_field: 'user.name',
             id_value: 'username_2',
           }),
@@ -169,17 +190,17 @@ describe('RiskEngineDataWriter', () => {
     it('converts a list of mixed risk scores to an appropriate list of operations', async () => {
       await writer.bulk({
         host: [
-          riskScoreServiceMock.createRiskScore({
+          createRiskScoreMock({
             id_field: 'host.name',
             id_value: 'hostname_1',
           }),
         ],
         user: [
-          riskScoreServiceMock.createRiskScore({
+          createRiskScoreMock({
             id_field: 'user.name',
             id_value: 'username_1',
           }),
-          riskScoreServiceMock.createRiskScore({
+          createRiskScoreMock({
             id_field: 'user.name',
             id_value: 'username_2',
           }),
@@ -276,7 +297,7 @@ describe('RiskEngineDataWriter', () => {
       (esClientMock.bulk as jest.Mock).mockRejectedValue(new Error('something went wrong'));
 
       const { errors } = await writer.bulk({
-        host: [riskScoreServiceMock.createRiskScore()],
+        host: [createRiskScoreMock()],
       });
 
       expect(errors).toEqual(['something went wrong']);
@@ -289,7 +310,7 @@ describe('RiskEngineDataWriter', () => {
       });
 
       const { took } = await writer.bulk({
-        host: [riskScoreServiceMock.createRiskScore()],
+        host: [createRiskScoreMock()],
       });
 
       expect(took).toEqual(123);
@@ -301,7 +322,7 @@ describe('RiskEngineDataWriter', () => {
       });
 
       const { docs_written: docsWritten } = await writer.bulk({
-        host: [riskScoreServiceMock.createRiskScore()],
+        host: [createRiskScoreMock()],
       });
 
       expect(docsWritten).toEqual(2);
@@ -320,7 +341,7 @@ describe('RiskEngineDataWriter', () => {
 
       it('returns the number of docs written', async () => {
         const { docs_written: docsWritten } = await writer.bulk({
-          host: [riskScoreServiceMock.createRiskScore()],
+          host: [createRiskScoreMock()],
         });
 
         expect(docsWritten).toEqual(1);
@@ -328,7 +349,7 @@ describe('RiskEngineDataWriter', () => {
 
       it('returns the errors', async () => {
         const { errors } = await writer.bulk({
-          host: [riskScoreServiceMock.createRiskScore()],
+          host: [createRiskScoreMock()],
         });
 
         expect(errors).toEqual(['something went wrong']);

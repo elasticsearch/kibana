@@ -11,9 +11,10 @@ import { FF_ENABLE_ENTITY_STORE_V2 } from '@kbn/entity-store/common';
 /**
  * Runtime gate for id-based risk scoring.
  *
- * This remains separate from maintainer registration gating
- * (experimentalFeatures.riskScoringMaintainerEnabled), which controls whether
- * the maintainer task is registered at plugin startup.
+ * This remains separate from maintainer registration gating:
+ * `experimentalFeatures.entityAnalyticsEntityStoreV2` controls whether the
+ * maintainer is registered at plugin startup, while this UI setting controls
+ * runtime id-based behavior.
  */
 export const getIsIdBasedRiskScoringEnabled = async (
   uiSettingsClient: IUiSettingsClient

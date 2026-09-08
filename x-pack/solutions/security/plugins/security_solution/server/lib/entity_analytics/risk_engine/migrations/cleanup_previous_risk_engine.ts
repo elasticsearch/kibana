@@ -7,7 +7,6 @@
 
 import { first } from 'lodash/fp';
 import type { EntityAnalyticsMigrationsParams } from '../../migrations';
-import { removeRiskScoringTask } from '../../risk_score/tasks/risk_scoring_task';
 import type { RiskEngineConfiguration } from '../../types';
 import { stopTransform, deleteTransform, getLatestTransformId } from '../../utils/transforms';
 import { riskEngineConfigurationTypeName } from '../saved_object';
@@ -69,10 +68,6 @@ export const cleanupLegacyRiskEngine = async ({
           );
         });
 
-        await removeRiskScoringTask({ logger, namespace, taskManager }).catch((err: unknown) => {
-          const message = err instanceof Error ? err.message : String(err);
-          logger.error(`Failed to remove risk scoring task for namespace ${namespace}: ${message}`);
-        });
       }
     }
   } catch (err: unknown) {
