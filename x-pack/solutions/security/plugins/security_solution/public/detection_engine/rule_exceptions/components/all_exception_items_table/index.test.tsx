@@ -7,10 +7,14 @@
 
 import React, { useReducer } from 'react';
 import { mount, shallow } from 'enzyme';
+import { fireEvent, render as rtlRender, waitFor } from '@testing-library/react';
 
 import { ExceptionListTypeEnum } from '@kbn/securitysolution-io-ts-list-types';
 
-import { fetchExceptionListsItemsByListIds } from '@kbn/securitysolution-list-api';
+import {
+  deleteExceptionListItemById,
+  fetchExceptionListsItemsByListIds,
+} from '@kbn/securitysolution-list-api';
 
 import { ExceptionsViewer } from '.';
 import { useKibana } from '../../../../common/lib/kibana';
@@ -590,6 +594,85 @@ describe('ExceptionsViewer', () => {
           wrapper.find('[data-test-subj="EndpointExceptionsMovedCallout"]').exists()
         ).toBeFalsy();
       });
+    });
+  });
+
+  describe('deleting an exception item', () => {
+    beforeEach(() => {
+      (deleteExceptionListItemById as jest.Mock).mockClear();
+      (deleteExceptionListItemById as jest.Mock).mockResolvedValue({});
+
+      (useReducer as jest.Mock).mockReturnValue([
+        {
+          exceptions: [sampleExceptionItem],
+          pagination: { pageIndex: 0, pageSize: 25, totalItemCount: 1, pageSizeOptions: [25, 50] },
+          currenFlyout: null,
+          exceptionToEdit: null,
+          viewerState: null,
+          exceptionLists: [],
+          exceptionsToShow: { active: true },
+        },
+        jest.fn(),
+      ]);
+    });
+
+    const renderViewerAndOpenDeleteModal = () => {
+      const wrapper = rtlRender(
+        <TestProviders>
+          <ExceptionsViewer
+            rule={{
+              ...getMockRule(),
+              exceptions_list: [
+                {
+                  id: '5b543420',
+                  list_id: 'list_id',
+                  type: 'detection',
+                  namespace_type: 'single',
+                },
+              ],
+            }}
+            listTypes={[ExceptionListTypeEnum.DETECTION]}
+            isViewReadOnly={false}
+          />
+        </TestProviders>
+      );
+
+      fireEvent.click(wrapper.getByTestId('exceptionItemCardHeader-actionButton'));
+      fireEvent.click(wrapper.getByTestId('exceptionItemCardHeader-actionItem-delete'));
+
+      return wrapper;
+    };
+
+    it('shows the delete confirmation modal without deleting the item', () => {
+      const wrapper = renderViewerAndOpenDeleteModal();
+
+      expect(wrapper.getByTestId('exceptionItemDeleteConfirmModal')).toBeTruthy();
+      expect(deleteExceptionListItemById).not.toHaveBeenCalled();
+    });
+
+    it('deletes the item on confirm', async () => {
+      const wrapper = renderViewerAndOpenDeleteModal();
+
+      fireEvent.click(wrapper.getByTestId('confirmModalConfirmButton'));
+
+      await waitFor(() => {
+        expect(deleteExceptionListItemById).toHaveBeenCalledWith(
+          expect.objectContaining({
+            id: sampleExceptionItem.id,
+            namespaceType: sampleExceptionItem.namespace_type,
+          })
+        );
+      });
+      expect(wrapper.queryByTestId('exceptionItemDeleteConfirmModal')).toBeNull();
+    });
+
+    it('does not delete the item on cancel', () => {
+      const wrapper = renderViewerAndOpenDeleteModal();
+
+      fireEvent.click(wrapper.getByTestId('confirmModalCancelButton'));
+
+      expect(deleteExceptionListItemById).not.toHaveBeenCalled();
+      expect(wrapper.queryByTestId('exceptionItemDeleteConfirmModal')).toBeNull();
     });
   });
 });

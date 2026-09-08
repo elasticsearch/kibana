@@ -5,7 +5,7 @@
  * 2.0.
  */
 
-import { render } from '@testing-library/react';
+import { fireEvent, render } from '@testing-library/react';
 import React from 'react';
 
 import { ExceptionsListCard } from '.';
@@ -104,5 +104,64 @@ describe('ExceptionsListCard', () => {
       </TestProviders>
     );
     expect(wrapper.getByTestId('includeExpiredExceptionsConfirmationModal')).toBeTruthy();
+  });
+
+  describe('deleting an exception item', () => {
+    const renderCardAndOpenDeleteModal = (onDeleteException: jest.Mock) => {
+      (useExceptionsListCard as jest.Mock).mockReturnValue({
+        ...getMockUseExceptionsListCard(),
+        onDeleteException,
+      });
+
+      const wrapper = render(
+        <TestProviders>
+          <ExceptionsListCard
+            exceptionsList={{ ...getExceptionListSchemaMock(), rules: [] }}
+            handleDelete={jest.fn()}
+            handleExport={jest.fn()}
+            handleDuplicate={jest.fn()}
+            readOnly={false}
+          />
+        </TestProviders>
+      );
+
+      fireEvent.click(wrapper.getByTestId('exceptionItemCardHeaderButtonIcon'));
+      fireEvent.click(wrapper.getByTestId('exceptionItemCardHeaderActionItemdelete'));
+
+      return wrapper;
+    };
+
+    it('shows the confirmation modal without deleting the item', () => {
+      const onDeleteException = jest.fn();
+      const wrapper = renderCardAndOpenDeleteModal(onDeleteException);
+
+      expect(wrapper.getByTestId('exceptionItemDeleteConfirmModal')).toBeTruthy();
+      expect(onDeleteException).not.toHaveBeenCalled();
+    });
+
+    it('deletes the item on confirm', () => {
+      const onDeleteException = jest.fn();
+      const wrapper = renderCardAndOpenDeleteModal(onDeleteException);
+
+      fireEvent.click(wrapper.getByTestId('confirmModalConfirmButton'));
+
+      const exceptionItem = getExceptionListItemSchemaMock();
+      expect(onDeleteException).toHaveBeenCalledWith({
+        id: exceptionItem.id,
+        name: exceptionItem.name,
+        namespaceType: exceptionItem.namespace_type,
+      });
+      expect(wrapper.queryByTestId('exceptionItemDeleteConfirmModal')).toBeNull();
+    });
+
+    it('does not delete the item on cancel', () => {
+      const onDeleteException = jest.fn();
+      const wrapper = renderCardAndOpenDeleteModal(onDeleteException);
+
+      fireEvent.click(wrapper.getByTestId('confirmModalCancelButton'));
+
+      expect(onDeleteException).not.toHaveBeenCalled();
+      expect(wrapper.queryByTestId('exceptionItemDeleteConfirmModal')).toBeNull();
+    });
   });
 });

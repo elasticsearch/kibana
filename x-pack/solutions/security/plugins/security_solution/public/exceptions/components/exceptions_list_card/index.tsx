@@ -5,7 +5,7 @@
  * 2.0.
  */
 
-import React, { memo, useMemo } from 'react';
+import React, { memo, useCallback, useMemo, useState } from 'react';
 
 import {
   EuiLink,
@@ -23,9 +23,11 @@ import styled from '@emotion/styled';
 import { ExceptionListTypeEnum } from '@kbn/securitysolution-io-ts-list-types';
 import type { NamespaceType } from '@kbn/securitysolution-io-ts-list-types';
 import { HeaderMenu } from '@kbn/securitysolution-exception-list-components';
+import type { ExceptionListItemIdentifiers } from '@kbn/securitysolution-exception-list-components';
 import type { Rule } from '../../../detection_engine/rule_management/logic/types';
 import { EditExceptionFlyout } from '../../../detection_engine/rule_exceptions/components/edit_exception_flyout';
 import { AddExceptionFlyout } from '../../../detection_engine/rule_exceptions/components/add_exception_flyout';
+import { ExceptionItemDeleteConfirmModal } from '../../../detection_engine/rule_exceptions/components/exception_item_delete_confirm_modal';
 import type { ExceptionListInfo } from '../../hooks/use_all_exception_lists';
 import { TitleBadge } from '../title_badge';
 import * as i18n from '../../translations';
@@ -157,6 +159,21 @@ export const ExceptionsListCard = memo<ExceptionsListCardProps>(
       handleManageRules: onManageRules,
     });
 
+    const [exceptionToDelete, setExceptionToDelete] = useState<ExceptionListItemIdentifiers | null>(
+      null
+    );
+
+    const handleCancelDeleteException = useCallback(() => {
+      setExceptionToDelete(null);
+    }, []);
+
+    const handleConfirmDeleteException = useCallback(() => {
+      if (exceptionToDelete != null) {
+        onDeleteException(exceptionToDelete);
+      }
+      setExceptionToDelete(null);
+    }, [exceptionToDelete, onDeleteException]);
+
     return (
       <>
         <EuiAccordion
@@ -225,7 +242,7 @@ export const ExceptionsListCard = memo<ExceptionsListCardProps>(
               hideUtility
               viewerStatus={exceptionViewerStatus}
               ruleReferences={ruleReferences}
-              onDeleteException={onDeleteException}
+              onDeleteException={setExceptionToDelete}
               onEditExceptionItem={onEditExceptionItem}
               onPaginationChange={onPaginationChange}
               onCreateExceptionListItem={onAddExceptionClick}
@@ -236,6 +253,13 @@ export const ExceptionsListCard = memo<ExceptionsListCardProps>(
             />
           </ExceptionPanel>
         </EuiAccordion>
+        {exceptionToDelete != null ? (
+          <ExceptionItemDeleteConfirmModal
+            exceptionItemName={exceptionToDelete.name}
+            onCancel={handleCancelDeleteException}
+            onConfirm={handleConfirmDeleteException}
+          />
+        ) : null}
         {showAddExceptionFlyout ? (
           <AddExceptionFlyout
             rules={null}

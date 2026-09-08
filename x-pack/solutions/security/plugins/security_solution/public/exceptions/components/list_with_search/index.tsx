@@ -5,7 +5,7 @@
  * 2.0.
  */
 
-import React from 'react';
+import React, { useCallback, useState } from 'react';
 import type { FC } from 'react';
 import { EuiPanel } from '@elastic/eui';
 
@@ -17,10 +17,12 @@ import {
   EmptyViewerState,
   ViewerStatus,
 } from '@kbn/securitysolution-exception-list-components';
+import type { ExceptionListItemIdentifiers } from '@kbn/securitysolution-exception-list-components';
 import { useUserPrivileges } from '../../../common/components/user_privileges';
 import { useEndpointExceptionsCapability } from '../../hooks/use_endpoint_exceptions_capability';
 import { AddExceptionFlyout } from '../../../detection_engine/rule_exceptions/components/add_exception_flyout';
 import { EditExceptionFlyout } from '../../../detection_engine/rule_exceptions/components/edit_exception_flyout';
+import { ExceptionItemDeleteConfirmModal } from '../../../detection_engine/rule_exceptions/components/exception_item_delete_confirm_modal';
 import * as i18n from '../../translations';
 import { useListWithSearchComponent } from '../../hooks/use_list_with_search';
 import { ListExceptionItems } from '..';
@@ -64,6 +66,21 @@ const ListWithSearchComponent: FC<ListWithSearchComponentProps> = ({
 
   const canAddException =
     listType === ExceptionListTypeEnum.ENDPOINT ? canWriteEndpointExceptions : canEditExceptions;
+
+  const [exceptionToDelete, setExceptionToDelete] = useState<ExceptionListItemIdentifiers | null>(
+    null
+  );
+
+  const handleCancelDeleteException = useCallback(() => {
+    setExceptionToDelete(null);
+  }, []);
+
+  const handleConfirmDeleteException = useCallback(() => {
+    if (exceptionToDelete != null) {
+      onDeleteException(exceptionToDelete);
+    }
+    setExceptionToDelete(null);
+  }, [exceptionToDelete, onDeleteException]);
 
   return (
     <>
@@ -129,9 +146,16 @@ const ListWithSearchComponent: FC<ListWithSearchComponentProps> = ({
               lastUpdated={lastUpdated}
               onPaginationChange={onPaginationChange}
               onEditExceptionItem={onEditExceptionItem}
-              onDeleteException={onDeleteException}
+              onDeleteException={setExceptionToDelete}
               onCreateExceptionListItem={onAddExceptionClick}
             />
+            {exceptionToDelete != null && (
+              <ExceptionItemDeleteConfirmModal
+                exceptionItemName={exceptionToDelete.name}
+                onCancel={handleCancelDeleteException}
+                onConfirm={handleConfirmDeleteException}
+              />
+            )}
           </>
         </EuiPanel>
       )}
