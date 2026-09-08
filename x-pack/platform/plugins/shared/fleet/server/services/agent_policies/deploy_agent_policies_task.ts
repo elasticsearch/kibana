@@ -97,9 +97,30 @@ export function registerDeployAgentPoliciesTask(taskManagerSetup: TaskManagerSet
 
 export async function scheduleDeployAgentPoliciesTask(
   taskManagerStart: TaskManagerStartContract,
-  agentPolicyIdsWithSpace: Array<{ id: string; spaceId?: string }>
+  agentPolicyIdsWithSpace: Array<{ id: string; spaceId?: string }>,
+  options: { coalesce?: boolean } = {}
 ) {
   if (!agentPolicyIdsWithSpace.length) {
+    return;
+  }
+
+  const coalesce = options.coalesce !== false;
+
+  // Single-policy deploys share a stable task id so repeated bumps while a deploy
+  // is already queued collapse into one run. Adhoc ensureScheduled is a no-op when
+  // that task is currently running; deployPolicies schedules a unique follow-up
+  // if the SO revision moved during the in-flight run.
+  if (coalesce && agentPolicyIdsWithSpace.length === 1) {
+    const { id, spaceId } = agentPolicyIdsWithSpace[0];
+    const space = spaceId ?? DEFAULT_SPACE_ID;
+    await taskManagerStart.ensureScheduled({
+      id: `${TASK_TYPE}:${space}:${id}`,
+      scope: ['fleet'],
+      params: { agentPolicyIdsWithSpace: [{ id, spaceId: space }] },
+      taskType: TASK_TYPE,
+      runAt: new Date(Date.now() + 3 * 1000),
+      state: {},
+    });
     return;
   }
 

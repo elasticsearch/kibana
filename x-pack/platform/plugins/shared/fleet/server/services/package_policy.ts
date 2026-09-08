@@ -977,6 +977,27 @@ class PackagePolicyClientImpl implements PackagePolicyClient {
       this.keepPolicyIdInSync(packagePolicy);
     }
 
+    return runWithCache(() =>
+      this.bulkCreateWithCache(soClient, esClient, packagePolicies, options, request)
+    );
+  }
+
+  private async bulkCreateWithCache(
+    soClient: SavedObjectsClientContract,
+    esClient: ElasticsearchClient,
+    packagePolicies: NewPackagePolicyWithId[],
+    options?: {
+      user?: AuthenticatedUser;
+      bumpRevision?: boolean;
+      force?: true;
+      asyncDeploy?: boolean;
+      overwrite?: boolean;
+    },
+    request?: KibanaRequest
+  ): Promise<{
+    created: PackagePolicy[];
+    failed: Array<{ packagePolicy: NewPackagePolicy; error?: Error | SavedObjectError }>;
+  }> {
     const agentPolicyIds = new Set(packagePolicies.flatMap((pkgPolicy) => pkgPolicy.policy_ids));
 
     const [useSpaceAwareness, savedObjectType, packageInfos, agentPolicies] = await Promise.all([
@@ -1348,6 +1369,7 @@ class PackagePolicyClientImpl implements PackagePolicyClient {
         ),
         perPage: SO_SEARCH_LIMIT,
         namespaces: isSpacesEnabled ? options.spaceIds : undefined,
+        ...(options.fields ? { fields: options.fields } : {}),
       })
       .catch(
         catchAndSetErrorStackTrace.withMessage(
@@ -2059,6 +2081,24 @@ class PackagePolicyClientImpl implements PackagePolicyClient {
       this.keepPolicyIdInSync(packagePolicyUpdate);
     }
 
+    return runWithCache(() =>
+      this.bulkUpdateWithCache(soClient, esClient, packagePolicyUpdates, options)
+    );
+  }
+
+  private async bulkUpdateWithCache(
+    soClient: SavedObjectsClientContract,
+    esClient: ElasticsearchClient,
+    packagePolicyUpdates: UpdatePackagePolicyWithId[],
+    options: PackagePolicyClientBulkUpdateOptions
+  ): Promise<{
+    updatedPolicies: PackagePolicy[] | null;
+    failedPolicies: Array<{
+      packagePolicy: NewPackagePolicyWithId;
+      error: Error | SavedObjectError;
+    }>;
+  }> {
+    const logger = this.getLogger('bulkUpdate');
     const agentPolicyIds = new Set(packagePolicyUpdates.flatMap((p) => p.policy_ids ?? []));
 
     const [savedObjectType, oldPackagePolicies, packageInfos, agentPoliciesForBulkUpdate] =
