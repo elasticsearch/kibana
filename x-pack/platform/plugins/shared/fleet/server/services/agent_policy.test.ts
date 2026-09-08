@@ -1075,6 +1075,7 @@ describe('Agent policy', () => {
   describe('bumpRevision', () => {
     beforeEach(() => {
       mockedPackagePolicyService.findAllForAgentPolicy.mockResolvedValue([]);
+      jest.mocked(getPackageInfo).mockReset();
     });
 
     it('should call agentPolicyUpdateEventHandler with updated event once', async () => {
@@ -1160,7 +1161,47 @@ describe('Agent policy', () => {
       // full fetch (for the deploy event it never triggers on this branch) should now be skipped,
       // so the total should stay at 1 instead of the 2 it would be if `_update` also fetched.
       expect(mockedPackagePolicyService.findAllForAgentPolicy).toHaveBeenCalledTimes(1);
+      expect(mockedPackagePolicyService.findAllForAgentPolicy).toHaveBeenCalledWith(
+        expect.anything(),
+        'agent-policy',
+        expect.objectContaining({
+          fields: ['package', 'package_agent_version_condition'],
+        })
+      );
       expect(scheduleDeployAgentPoliciesTask).toHaveBeenCalledTimes(1);
+    });
+
+    it('looks up package info once per unique package when falling back for version conditions', async () => {
+      const soClient = getSavedObjectMock({ revision: 1, monitoring_enabled: [] });
+      const esClient = elasticsearchServiceMock.createClusterClient().asInternalUser;
+
+      mockedPackagePolicyService.findAllForAgentPolicy.mockResolvedValue([
+        {
+          id: 'pp-1',
+          package: { name: 'synthetics', title: 'Elastic Synthetics', version: '1.4.1' },
+        } as any,
+        {
+          id: 'pp-2',
+          package: { name: 'synthetics', title: 'Elastic Synthetics', version: '1.4.1' },
+        } as any,
+      ]);
+      jest.mocked(getPackageInfo).mockResolvedValue({
+        conditions: { agent: { version: '>=8.16.0' } },
+      } as any);
+
+      await agentPolicyService.bumpRevision(soClient, esClient, 'agent-policy', {
+        asyncDeploy: true,
+      });
+
+      expect(getPackageInfo).toHaveBeenCalledTimes(1);
+      expect(soClient.update).toHaveBeenCalledWith(
+        expect.anything(),
+        'agent-policy',
+        expect.objectContaining({
+          has_agent_version_conditions: true,
+          min_agent_version: '8.16.0',
+        })
+      );
     });
   });
 

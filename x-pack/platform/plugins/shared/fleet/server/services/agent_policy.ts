@@ -1323,27 +1323,60 @@ class AgentPolicyService {
     minAgentVersion: string | undefined;
     packageAgentVersionConditions: AgentPolicyAgentVersionCondition[] | undefined;
   }> {
-    const packagePolicies = await packagePolicyService.findAllForAgentPolicy(soClient, policyId);
+    const savedObjectType = await getPackagePolicySavedObjectType();
+    const [packagePolicies, rawResult] = await Promise.all([
+      packagePolicyService.findAllForAgentPolicy(soClient, policyId, {
+        fields: ['package', 'package_agent_version_condition'],
+      }),
+      soClient
+        .find<PackagePolicySOAttributes>({
+          type: savedObjectType,
+          filter: buildCurrentRevisionFilter(
+            savedObjectType,
+            `${savedObjectType}.attributes.policy_ids:${escapeSearchQueryPhrase(policyId)}`
+          ),
+          perPage: SO_SEARCH_LIMIT,
+          fields: ['inputs_for_versions'],
+        })
+        .catch(() => undefined),
+    ]);
 
-    const conditions: AgentPolicyAgentVersionCondition[] = [];
+    const uniquePackagesNeedingFallback = new Map<string, { name: string; version: string }>();
     for (const pp of packagePolicies) {
-      let versionCondition = pp.package_agent_version_condition;
+      if (pp.package_agent_version_condition || !pp.package?.name || !pp.package?.version) {
+        continue;
+      }
+      uniquePackagesNeedingFallback.set(`${pp.package.name}:${pp.package.version}`, {
+        name: pp.package.name,
+        version: pp.package.version,
+      });
+    }
 
-      // For package policies created before this field was introduced, fall back
-      // to looking up the installed package info to get the version condition.
-      if (!versionCondition && pp.package?.name && pp.package?.version) {
+    const fallbackConditionByPackageKey = new Map<string, string | undefined>();
+    await Promise.all(
+      [...uniquePackagesNeedingFallback.entries()].map(async ([key, pkg]) => {
         try {
           const pkgInfo = await getPackageInfo({
             savedObjectsClient: soClient,
-            pkgName: pp.package.name,
-            pkgVersion: pp.package.version,
+            pkgName: pkg.name,
+            pkgVersion: pkg.version,
             prerelease: true,
           });
-          versionCondition = pkgInfo.conditions?.agent?.version;
+          fallbackConditionByPackageKey.set(key, pkgInfo.conditions?.agent?.version);
         } catch {
           // ignore — package might not be installed or accessible
+          fallbackConditionByPackageKey.set(key, undefined);
         }
-      }
+      })
+    );
+
+    const conditions: AgentPolicyAgentVersionCondition[] = [];
+    for (const pp of packagePolicies) {
+      const versionCondition =
+        pp.package_agent_version_condition ??
+        (pp.package?.name && pp.package?.version
+          ? fallbackConditionByPackageKey.get(`${pp.package.name}:${pp.package.version}`)
+          : undefined);
 
       if (versionCondition) {
         conditions.push({
@@ -1358,17 +1391,6 @@ class AgentPolicyService {
     // indicator of template-level version conditions (HBS templates referencing _meta.agent.version).
     // compilePackagePolicyForVersions only populates it when hasAgentVersionConditionInInputTemplate
     // is true, so its presence means the policy requires version-specific behaviour.
-    const savedObjectType = await getPackagePolicySavedObjectType();
-    const rawResult = await Promise.resolve(
-      soClient.find<PackagePolicySOAttributes>({
-        type: savedObjectType,
-        filter: buildCurrentRevisionFilter(
-          savedObjectType,
-          `${savedObjectType}.attributes.policy_ids:${escapeSearchQueryPhrase(policyId)}`
-        ),
-        perPage: SO_SEARCH_LIMIT,
-      })
-    ).catch(() => undefined);
     const hasTemplateConditions = (rawResult?.saved_objects ?? []).some(
       (so) =>
         so.attributes.inputs_for_versions &&

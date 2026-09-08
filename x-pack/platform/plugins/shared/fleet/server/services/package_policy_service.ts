@@ -396,7 +396,10 @@ export interface PackagePolicyClientBulkUpdateOptions {
   oldPackagePolicies?: PackagePolicy[];
 }
 
-export type PackagePolicyClientFindAllForAgentPolicyOptions = WithSpaceIdsOption;
+export type PackagePolicyClientFindAllForAgentPolicyOptions = WithSpaceIdsOption & {
+  /** SO `_source` projection. Use when the caller only needs a subset of attributes. */
+  fields?: string[];
+};
 
 export interface PackagePolicyClientGetOptions {
   /**
