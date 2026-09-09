@@ -17,12 +17,25 @@ import { getStream, indexAndAssertTargetStream } from './helpers/requests';
 export default function ({ getService }: DeploymentAgnosticFtrProviderContext) {
   const roleScopedSupertest = getService('roleScopedSupertest');
   const esClient = getService('es');
+  const retry = getService('retry');
 
   let apiClient: StreamsSupertestRepositoryClient;
 
   describe('Streams Preconfigured Definitions', () => {
     before(async () => {
       apiClient = await createStreamsRepositoryAdminClient(roleScopedSupertest);
+      // Wait for startup preconfiguration to materialize the backing data streams; the wildcard read returns an empty array rather than a 404, so this polls a value instead of looping on a thrown error.
+      await retry.waitForWithTimeout(
+        'preconfigured logs.ecs and logs.otel data streams to materialize',
+        30_000,
+        async () => {
+          const { data_streams: dataStreams } = await esClient.indices.getDataStream({
+            name: 'logs*',
+          });
+          const names = new Set(dataStreams.map((ds) => ds.name));
+          return names.has('logs.ecs') && names.has('logs.otel');
+        }
+      );
     });
 
     it(`materializes backing data streams for wired root streams`, async () => {
