@@ -350,14 +350,14 @@ describe('Http1BasePathProxyServer', () => {
     });
 
     test('it will do a redirect if it detects what looks like a stale or previously used base path', async () => {
-      const fakeBasePath = basePath !== 'abc' ? 'abc' : 'efg';
+      const fakeBasePath = basePath !== '/abc' ? 'abc' : 'efg';
       const res = await proxySupertest.get(`/${fakeBasePath}`).expect(302);
       const location = res.header.location;
       expect(location).toEqual(`${basePath}/`);
     });
 
     test('it will NOT do a redirect if it detects what looks like a stale or previously used base path if we intentionally turn it off', async () => {
-      const fakeBasePath = basePath !== 'abc' ? 'abc' : 'efg';
+      const fakeBasePath = basePath !== '/abc' ? 'abc' : 'efg';
       await proxyWithoutShouldRedirectSupertest.get(`/${fakeBasePath}`).expect(404);
     });
 
@@ -366,7 +366,7 @@ describe('Http1BasePathProxyServer', () => {
     });
 
     test('it will NOT redirect if it is not a GET verb', async () => {
-      const fakeBasePath = basePath !== 'abc' ? 'abc' : 'efg';
+      const fakeBasePath = basePath !== '/abc' ? 'abc' : 'efg';
       await proxySupertest.put(`/${fakeBasePath}`).expect(404);
     });
   });
