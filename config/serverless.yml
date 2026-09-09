@@ -307,3 +307,10 @@ xpack.genAiSettings:
   showAiBreadcrumb: false
   showSpacesIntegration: false
   showAiAssistantsVisibilitySetting: false
+
+# Async search optimizations
+server.socketTimeout: 120000 # making this explicit
+elasticsearch.idleSocketTimeout: 2m
+data.search.asyncSearch:
+  pollLength: 1m50s # set so as not to run into any of the 2 minute timeouts
+  keepAlive: 2m
