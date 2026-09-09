@@ -39,12 +39,12 @@ export const HeaderActions: VFC = memo(() => {
       <ShareUrlIconButton
         url={isAlert ? alertDetailsLink : null}
         tooltip={i18n.translate('xpack.securitySolution.flyout.right.header.shareButtonToolTip', {
-          defaultMessage: 'Share alert',
+          defaultMessage: 'Copy link to alert',
         })}
         ariaLabel={i18n.translate(
           'xpack.securitySolution.flyout.right.header.shareButtonAriaLabel',
           {
-            defaultMessage: 'Share alert',
+            defaultMessage: 'Copy link to alert',
           }
         )}
         dataTestSubj={SHARE_BUTTON_TEST_ID}

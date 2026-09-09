@@ -36,7 +36,7 @@ import { isRulePreviewDocument } from '../../shared/utils/is_rule_preview_docume
 const SHARE_ALERT_LABEL = i18n.translate(
   'xpack.securitySolution.flyoutV2.document.header.shareAlertLabel',
   {
-    defaultMessage: 'Share alert',
+    defaultMessage: 'Copy link to alert',
   }
 );
 

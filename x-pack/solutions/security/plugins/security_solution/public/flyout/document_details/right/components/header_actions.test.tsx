@@ -52,7 +52,7 @@ describe('<HeaderAction />', () => {
     jest.mocked(useGetFlyoutLink).mockReturnValue(alertUrl);
   });
 
-  describe('Share alert url action', () => {
+  describe('Copy link to alert url action', () => {
     it('should render share button in the title', () => {
       const { getByTestId } = renderHeaderActions(mockContextValue);
       const shareButton = getByTestId(SHARE_BUTTON_TEST_ID);

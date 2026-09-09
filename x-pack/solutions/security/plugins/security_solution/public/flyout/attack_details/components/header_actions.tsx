@@ -41,13 +41,13 @@ export const AttackHeaderActions: VFC = memo(() => {
         tooltip={i18n.translate(
           'xpack.securitySolution.attackDetailsFlyout.header.shareButtonToolTip',
           {
-            defaultMessage: 'Share attack',
+            defaultMessage: 'Copy link to attack',
           }
         )}
         ariaLabel={i18n.translate(
           'xpack.securitySolution.attackDetailsFlyout.header.shareButtonAriaLabel',
           {
-            defaultMessage: 'Share attack',
+            defaultMessage: 'Copy link to attack',
           }
         )}
         dataTestSubj={HEADER_SHARE_BUTTON_TEST_ID}

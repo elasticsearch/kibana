@@ -38,12 +38,12 @@ describe('ShareUrlIconButton', () => {
     const { getByRole } = render(
       <ShareUrlIconButton
         url="https://example.com/alert"
-        tooltip="Share alert"
-        ariaLabel="Share alert"
+        tooltip="Copy link to alert"
+        ariaLabel="Copy link to alert"
         dataTestSubj="share-btn"
       />
     );
-    expect(getByRole('button', { name: 'Share alert' })).toBeInTheDocument();
+    expect(getByRole('button', { name: 'Copy link to alert' })).toBeInTheDocument();
   });
 
   it('applies the provided data-test-subj', () => {

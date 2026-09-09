@@ -29,7 +29,7 @@ export interface ShareUrlIconButtonProps {
 }
 
 /**
- * Share icon that copies a URL to the clipboard (EuiCopy + EuiButtonIcon).
+ * Link icon that copies a URL to the clipboard (EuiCopy + EuiButtonIcon).
  * Renders nothing when `url` is falsy.
  */
 export const ShareUrlIconButton = memo(
@@ -45,7 +45,7 @@ export const ShareUrlIconButton = memo(
             {(copy) => (
               /* eslint-disable-next-line @elastic/eui/tooltip-button-icon-wrap */
               <EuiButtonIcon
-                iconType="share"
+                iconType="link"
                 color="text"
                 aria-label={ariaLabel}
                 data-test-subj={dataTestSubj}

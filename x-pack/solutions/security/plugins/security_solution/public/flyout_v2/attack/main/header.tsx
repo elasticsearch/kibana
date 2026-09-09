@@ -24,7 +24,7 @@ import { useGetAttackFlyoutLink } from '../../../flyout/attack_details/hooks/use
 const SHARE_ATTACK_LABEL = i18n.translate(
   'xpack.securitySolution.flyoutV2.attack.header.shareAttackLabel',
   {
-    defaultMessage: 'Share attack',
+    defaultMessage: 'Copy link to attack',
   }
 );
 

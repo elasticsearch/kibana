@@ -181,7 +181,7 @@ export const LinkContent = ({
             }
           >
             <EuiButton
-              iconType="copy"
+              iconType="link"
               fill
               data-test-subj="copyShareUrlButton"
               data-share-url={urlToCopy.current}
