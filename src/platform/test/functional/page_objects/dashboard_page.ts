@@ -688,7 +688,11 @@ export class DashboardPageObject extends FtrService {
     this.log.debug('entering new title');
     // Wait for the title input to be enabled before setting the value to avoid flakiness
     await this.testSubjects.waitForEnabled('savedObjectTitle');
-    await this.testSubjects.setValue('savedObjectTitle', dashboardTitle);
+    // Re-drive the title until it lands: on a still-animating modal setValue can type into the wrong active element and silently drop the keystrokes, leaving Save to fire on an empty title
+    await this.retry.waitFor(`save modal title is set to ${dashboardTitle}`, async () => {
+      await this.testSubjects.setValue('savedObjectTitle', dashboardTitle);
+      return (await this.testSubjects.getAttribute('savedObjectTitle', 'value')) === dashboardTitle;
+    });
 
     if (saveOptions.storeTimeWithDashboard !== undefined) {
       await this.setStoreTimeWithDashboard(saveOptions.storeTimeWithDashboard);
