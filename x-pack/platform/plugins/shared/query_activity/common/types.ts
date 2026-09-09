@@ -7,17 +7,20 @@
 
 export type QueryType = 'ES|QL' | 'DSL' | 'EQL' | 'SQL' | 'MSearch' | 'Async search' | 'Other';
 
-export interface RunningQuery {
+export interface RunningQuerySummary {
   taskId: string;
   queryType: QueryType;
   source: string;
   startTime: number;
+  runningTimeMs: number;
+  cancellable: boolean;
+  cancelled: boolean;
+}
+
+export interface RunningQuery extends RunningQuerySummary {
   indices: number;
   remoteSearch?: string;
   query: string;
-  runningTimeMs: number;
   traceId?: string;
   xOpaqueId?: string;
-  cancellable: boolean;
-  cancelled: boolean;
 }

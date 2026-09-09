@@ -23,7 +23,6 @@ describe(`GET ${API_BASE_PATH}/search`, () => {
     registerSearchRoute({ router, logger });
 
     const [[_config, handler]] = router.get.mock.calls;
-
     const coreContext = coreMock.createRequestHandlerContext();
     coreContext.uiSettings.client.get.mockImplementation(async (key: string) => {
       if (key === QUERY_ACTIVITY_MIN_RUNNING_TIME_SETTING) {
@@ -40,7 +39,13 @@ describe(`GET ${API_BASE_PATH}/search`, () => {
     return { handler, context, esClient, logger };
   };
 
-  it('returns transformed running queries from the ES tasks list', async () => {
+  const createRequest = () =>
+    httpServerMock.createKibanaRequest({
+      method: 'get',
+      path: `${API_BASE_PATH}/search`,
+    });
+
+  it('returns lightweight query summaries without fetching task details', async () => {
     const { handler, context, esClient } = setup();
 
     esClient.tasks.list.mockResolvedValueOnce({
@@ -55,59 +60,94 @@ describe(`GET ${API_BASE_PATH}/search`, () => {
           cancellable: true,
           cancelled: false,
           headers: { 'X-Opaque-Id': 'req1;kibana:application:discover:new' },
-          description:
-            'indices[test], types[], search_type[QUERY_THEN_FETCH], source[{"query":{"match_all":{}}}]',
         },
       ],
     } as any);
 
-    const request = httpServerMock.createKibanaRequest({
-      method: 'get',
-      path: `${API_BASE_PATH}/search`,
+    const response = await handler(context, createRequest(), kibanaResponseFactory);
+
+    expect(esClient.tasks.list).toHaveBeenCalledWith({
+      detailed: false,
+      group_by: 'none',
+      actions: [
+        'indices:data/read/search',
+        'indices:data/read/esql',
+        'indices:data/read/esql[a]',
+        'indices:data/read/eql',
+        'indices:data/read/eql[a]',
+        'indices:data/read/sql',
+        'indices:data/read/sql[a]',
+        'indices:data/read/msearch',
+        'indices:data/read/async_search/submit',
+      ],
+      filter_path: [
+        'tasks.node',
+        'tasks.id',
+        'tasks.action',
+        'tasks.parent_task_id',
+        'tasks.start_time_in_millis',
+        'tasks.running_time_in_nanos',
+        'tasks.cancellable',
+        'tasks.cancelled',
+        'tasks.headers',
+      ],
     });
-
-    const response = await handler(context, request, kibanaResponseFactory);
-
-    expect(esClient.tasks.list).toHaveBeenCalledWith(
-      expect.objectContaining({
-        detailed: true,
-        group_by: 'none',
-        actions: expect.arrayContaining([
-          'indices:data/read/search*',
-          'indices:data/read/esql*',
-          'indices:data/read/eql*',
-          'indices:data/read/sql*',
-          'indices:data/read/msearch*',
-          'indices:data/read/async_search*',
-        ]),
-      })
-    );
-
+    expect(esClient.tasks.get).not.toHaveBeenCalled();
     expect(response.status).toBe(200);
     expect(response.payload).toEqual({
       queries: [
-        expect.objectContaining({
+        {
           taskId: 'node1:1',
           queryType: 'DSL',
           source: 'Discover',
-        }),
+          startTime: 1_000_000,
+          runningTimeMs: QUERY_ACTIVITY_MIN_RUNNING_TIME_DEFAULT_MS,
+          cancellable: true,
+          cancelled: false,
+        },
       ],
     });
   });
 
+  it('omits non-cancellable template wrapper tasks hidden by the original detailed list', async () => {
+    const { handler, context, esClient } = setup();
+    const runningTime = QUERY_ACTIVITY_MIN_RUNNING_TIME_DEFAULT_MS * 1_000_000 + 1;
+    esClient.tasks.list.mockResolvedValueOnce({
+      tasks: [
+        {
+          node: 'node1',
+          id: 1,
+          action: 'indices:data/read/search/template',
+          start_time_in_millis: 1_000_000,
+          running_time_in_nanos: runningTime,
+          cancellable: false,
+          headers: {},
+        },
+        {
+          node: 'node1',
+          id: 2,
+          action: 'indices:data/read/msearch/template',
+          start_time_in_millis: 1_000_000,
+          running_time_in_nanos: runningTime,
+          cancellable: false,
+          headers: {},
+        },
+      ],
+    } as any);
+
+    const response = await handler(context, createRequest(), kibanaResponseFactory);
+
+    expect(response.status).toBe(200);
+    expect(response.payload).toEqual({ queries: [] });
+  });
+
   it('returns an error response when ES tasks.list throws', async () => {
     const { handler, context, esClient, logger } = setup();
-
     const error: any = new Error('ES unavailable');
     error.statusCode = 503;
     esClient.tasks.list.mockRejectedValueOnce(error);
 
-    const request = httpServerMock.createKibanaRequest({
-      method: 'get',
-      path: `${API_BASE_PATH}/search`,
-    });
-
-    const response = await handler(context, request, kibanaResponseFactory);
+    const response = await handler(context, createRequest(), kibanaResponseFactory);
 
     expect(response.status).toBe(503);
     expect(response.payload).toEqual({ message: 'Failed to fetch query activity' });

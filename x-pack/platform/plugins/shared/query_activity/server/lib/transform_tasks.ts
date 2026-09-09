@@ -6,7 +6,7 @@
  */
 
 import type { TasksTaskInfo } from '@elastic/elasticsearch/lib/api/types';
-import type { RunningQuery, QueryType } from '../../common/types';
+import type { RunningQuery, RunningQuerySummary, QueryType } from '../../common/types';
 
 const SEARCH_ACTION_PREFIX = 'indices:data/read/search';
 const ESQL_ACTION_PREFIX = 'indices:data/read/esql';
@@ -14,6 +14,20 @@ const EQL_ACTION_PREFIX = 'indices:data/read/eql';
 const SQL_ACTION_PREFIX = 'indices:data/read/sql';
 const MSEARCH_ACTION_PREFIX = 'indices:data/read/msearch';
 const ASYNC_SEARCH_ACTION_PREFIX = 'indices:data/read/async_search';
+
+export const QUERY_TASK_ACTIONS = [
+  SEARCH_ACTION_PREFIX,
+  ESQL_ACTION_PREFIX,
+  `${ESQL_ACTION_PREFIX}[a]`,
+  EQL_ACTION_PREFIX,
+  `${EQL_ACTION_PREFIX}[a]`,
+  SQL_ACTION_PREFIX,
+  `${SQL_ACTION_PREFIX}[a]`,
+  MSEARCH_ACTION_PREFIX,
+  `${ASYNC_SEARCH_ACTION_PREFIX}/submit`,
+] as const;
+
+const QUERY_TASK_ACTION_SET: ReadonlySet<string> = new Set(QUERY_TASK_ACTIONS);
 
 const INDICES_REGEX = /indices\[([^\]]*)\]/;
 const SOURCE_REGEX = /source\[(\{.*\})\]/s;
@@ -112,22 +126,15 @@ export function parseEsqlDescription(description: string): { indices: number; qu
 }
 
 /**
- * Returns true for top-level search/esql tasks that exceed the runtime threshold.
+ * Returns true when a root query task should be shown in Query Activity.
  */
-export function isIncludedTask(task: TasksTaskInfo, thresholdNanos: number): boolean {
+export function isQueryTaskCandidate(task: TasksTaskInfo, thresholdNanos: number): boolean {
   if (task.parent_task_id !== undefined && task.parent_task_id !== null) {
     return false;
   }
 
   const action = task.action ?? '';
-  if (
-    !action.startsWith(SEARCH_ACTION_PREFIX) &&
-    !action.startsWith(ESQL_ACTION_PREFIX) &&
-    !action.startsWith(EQL_ACTION_PREFIX) &&
-    !action.startsWith(SQL_ACTION_PREFIX) &&
-    !action.startsWith(MSEARCH_ACTION_PREFIX) &&
-    !action.startsWith(ASYNC_SEARCH_ACTION_PREFIX)
-  ) {
+  if (!QUERY_TASK_ACTION_SET.has(action)) {
     return false;
   }
 
@@ -135,15 +142,50 @@ export function isIncludedTask(task: TasksTaskInfo, thresholdNanos: number): boo
     return false;
   }
 
-  // Background async tasks (e.g. ES|QL submitted via POST /_esql/async) surface in the task
-  // list with cancellable:false and an empty description once the initial HTTP handler task
-  // has completed. They cannot be cancelled via the tasks API and have no query to display,
-  // so there is nothing useful to show the user.
-  if (!task.cancellable && !task.description) {
-    return false;
+  return true;
+}
+
+const transformTaskSummary = (task: TasksTaskInfo): RunningQuerySummary | undefined => {
+  if (task.start_time_in_millis == null) {
+    return undefined;
   }
 
-  return true;
+  const action = task.action ?? '';
+  const headers = task.headers as Record<string, string> | undefined;
+  const xOpaqueId = headers?.['X-Opaque-Id'];
+
+  return {
+    taskId: `${task.node}:${task.id}`,
+    queryType: getQueryType(action),
+    source: capitalise(extractSource(xOpaqueId)),
+    startTime: task.start_time_in_millis,
+    runningTimeMs: Math.round((task.running_time_in_nanos ?? 0) / 1_000_000),
+    cancellable: task.cancellable ?? false,
+    cancelled: task.cancelled ?? false,
+  };
+};
+
+/**
+ * Transforms lightweight Elasticsearch task metadata into query activity table rows.
+ */
+export function transformTaskSummaries(
+  tasks: TasksTaskInfo[],
+  thresholdNanos: number
+): RunningQuerySummary[] {
+  const results: RunningQuerySummary[] = [];
+
+  for (const task of tasks) {
+    if (!isQueryTaskCandidate(task, thresholdNanos)) {
+      continue;
+    }
+
+    const summary = transformTaskSummary(task);
+    if (summary) {
+      results.push(summary);
+    }
+  }
+
+  return results;
 }
 
 /**
@@ -154,20 +196,19 @@ export function transformTasks(tasks: TasksTaskInfo[], thresholdNanos: number): 
   const results: RunningQuery[] = [];
 
   for (const task of tasks) {
-    if (!isIncludedTask(task, thresholdNanos)) {
+    if (!isQueryTaskCandidate(task, thresholdNanos)) {
       continue;
     }
 
-    if (task.start_time_in_millis == null) {
+    const summary = transformTaskSummary(task);
+    if (!summary) {
       continue;
     }
 
-    const action = task.action ?? '';
-    const queryType = getQueryType(action);
+    const { queryType } = summary;
     const description = task.description ?? '';
     const headers = task.headers as Record<string, string> | undefined;
     const xOpaqueId = headers?.['X-Opaque-Id'];
-    const source = capitalise(extractSource(xOpaqueId));
     const traceId = headers?.['trace.id'];
 
     let indices = 0;
@@ -186,17 +227,11 @@ export function transformTasks(tasks: TasksTaskInfo[], thresholdNanos: number): 
     }
 
     results.push({
-      taskId: `${task.node}:${task.id}`,
-      queryType,
-      source,
-      startTime: task.start_time_in_millis,
-      runningTimeMs: Math.round((task.running_time_in_nanos ?? 0) / 1_000_000),
+      ...summary,
       indices,
       query,
       traceId,
       xOpaqueId,
-      cancellable: task.cancellable ?? false,
-      cancelled: task.cancelled ?? false,
     });
   }
 

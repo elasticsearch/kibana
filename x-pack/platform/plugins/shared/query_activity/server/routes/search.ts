@@ -12,7 +12,22 @@ import {
   QUERY_ACTIVITY_MIN_RUNNING_TIME_SETTING,
 } from '../../common/constants';
 import type { RouteOptions } from '.';
-import { transformTasks } from '../lib/transform_tasks';
+import { QUERY_TASK_ACTIONS, transformTaskSummaries } from '../lib/transform_tasks';
+import { getErrorStatusCode, hasQueryActivityMonitorPrivilege } from '../lib/route_helpers';
+
+// Elasticsearch includes task headers independently of `detailed`; that flag only gates the
+// description and status fields.
+const LIST_FILTER_PATH = [
+  'tasks.node',
+  'tasks.id',
+  'tasks.action',
+  'tasks.parent_task_id',
+  'tasks.start_time_in_millis',
+  'tasks.running_time_in_nanos',
+  'tasks.cancellable',
+  'tasks.cancelled',
+  'tasks.headers',
+];
 
 export const registerSearchRoute = ({ router, logger }: RouteOptions) => {
   router.get(
@@ -34,19 +49,18 @@ export const registerSearchRoute = ({ router, logger }: RouteOptions) => {
 
         // In ESS, verify the user has the ES monitor cluster privilege before proceeding.
         // In Serverless, security?.hasPrivileges is absent so the check is silently skipped —
-        // GET /_cat/tasks is an internal-only API that requires operator-level access there,
+        // GET /_tasks is an internal-only API that requires operator-level access there,
         // and Kibana RBAC (requiredPrivileges above) is the authorization gate.
-        const esPrivileges =
-          await coreContext.elasticsearch.client.asCurrentUser.security?.hasPrivileges?.({
-            cluster: ['monitor'],
-          });
-        if (esPrivileges && !esPrivileges.cluster?.monitor) {
+        const hasMonitorPrivilege = await hasQueryActivityMonitorPrivilege(
+          coreContext.elasticsearch.client.asCurrentUser
+        );
+        if (!hasMonitorPrivilege) {
           return response.forbidden({
             body: { message: 'Insufficient privileges to view queries' },
           });
         }
 
-        // asInternalUser is intentional: in Serverless, GET /_cat/tasks is an internal-only API
+        // asInternalUser is intentional: in Serverless, GET /_tasks is an internal-only API
         // that requires operator-level access. Kibana RBAC (requiredPrivileges above) is the
         // authorization gate; the pre-flight hasPrivileges check above enforces ES privileges in ESS.
         const esClient = coreContext.elasticsearch.client.asInternalUser;
@@ -56,26 +70,22 @@ export const registerSearchRoute = ({ router, logger }: RouteOptions) => {
         const thresholdNanos = minRunningTimeMs * 1_000_000;
 
         const result = await esClient.tasks.list({
-          detailed: true,
+          detailed: false,
           group_by: 'none',
-          actions: [
-            'indices:data/read/search*',
-            'indices:data/read/esql*',
-            'indices:data/read/eql*',
-            'indices:data/read/sql*',
-            'indices:data/read/msearch*',
-            'indices:data/read/async_search*',
-          ],
+          actions: [...QUERY_TASK_ACTIONS],
+          filter_path: LIST_FILTER_PATH,
         });
 
-        const tasks = (result.tasks ?? []) as TasksTaskInfo[];
-        const queries = transformTasks(tasks, thresholdNanos);
+        const queries = transformTaskSummaries(
+          (result.tasks ?? []) as TasksTaskInfo[],
+          thresholdNanos
+        );
 
         return response.ok({ body: { queries } });
       } catch (error) {
         logger.error(`Failed to fetch query activity: ${error}`);
         return response.customError({
-          statusCode: (error as { statusCode?: number })?.statusCode ?? 500,
+          statusCode: getErrorStatusCode(error) ?? 500,
           body: { message: 'Failed to fetch query activity' },
         });
       }

@@ -197,6 +197,7 @@ const QueryActivityAppWithData: React.FC = () => {
       <QueryActivityTable
         queries={queries}
         onCancelQuery={handleCancelQuery}
+        onQueryNoLongerRunning={handleRefresh}
         isLoading={isLoading}
         error={
           error

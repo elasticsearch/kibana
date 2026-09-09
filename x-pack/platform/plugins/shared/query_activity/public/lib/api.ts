@@ -7,9 +7,16 @@
 
 import type { HttpSetup } from '@kbn/core/public';
 import { API_BASE_PATH } from '../../common/constants';
-import type { RunningQuery } from '../../common/types';
+import type { RunningQuery, RunningQuerySummary } from '../../common/types';
 import type { SendRequestConfig, SendRequestResponse, UseRequestConfig } from '../shared_imports';
 import { sendRequest as _sendRequest, useRequest as _useRequest } from '../shared_imports';
+
+export interface QueryDetailsError {
+  attributes?: {
+    code?: string;
+  };
+  message?: string;
+}
 
 export class QueryActivityApiService {
   constructor(private readonly client: HttpSetup) {}
@@ -25,7 +32,7 @@ export class QueryActivityApiService {
   }
 
   public useLoadQueryActivity() {
-    return this.useRequest<{ queries: RunningQuery[] }>({
+    return this.useRequest<{ queries: RunningQuerySummary[] }>({
       path: `${API_BASE_PATH}/search`,
       method: 'get',
     });
@@ -51,8 +58,15 @@ export class QueryActivityApiService {
   }
 
   public fetchQueryActivity() {
-    return this.sendRequest<{ queries: RunningQuery[] }>({
+    return this.sendRequest<{ queries: RunningQuerySummary[] }>({
       path: `${API_BASE_PATH}/search`,
+      method: 'get',
+    });
+  }
+
+  public fetchQueryDetails(taskId: string) {
+    return this.sendRequest<{ query: RunningQuery }, QueryDetailsError>({
+      path: `${API_BASE_PATH}/queries/${encodeURIComponent(taskId)}`,
       method: 'get',
     });
   }

@@ -42,7 +42,12 @@ const mockContext = (overrides: Partial<QueryActivityAppContextValue> = {}) =>
     chrome: {} as any,
     http: { basePath: { prepend: jest.fn((path: string) => path) } } as any,
     notifications: {} as any,
-    apiService: {} as any,
+    apiService: {
+      fetchQueryDetails: jest.fn().mockResolvedValue({
+        data: { query: createQuery() },
+        error: null,
+      }),
+    } as any,
     url: {
       locators: {
         get: jest.fn(() => undefined),
@@ -130,11 +135,21 @@ describe('QueryActivityTable', () => {
 
   it('opens the query detail flyout when clicking the task id', async () => {
     const query = createQuery({ taskId: 'node1:flyout' });
-    const { user } = await renderTable({ queries: [query] });
+    const fetchQueryDetails = jest.fn().mockResolvedValue({
+      data: { query },
+      error: null,
+    });
+    const { user } = await renderTable({
+      queries: [query],
+      contextOverrides: {
+        apiService: { fetchQueryDetails } as any,
+      },
+    });
 
     await user.click(await screen.findByText(query.taskId));
 
     expect(await screen.findByText('Indices')).toBeInTheDocument();
+    expect(fetchQueryDetails).toHaveBeenCalledWith(query.taskId);
   });
 
   it('cancels a query after confirmation and shows the "Cancelling the query…" state', async () => {

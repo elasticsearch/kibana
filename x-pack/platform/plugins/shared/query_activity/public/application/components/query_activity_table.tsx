@@ -21,7 +21,7 @@ import {
 } from '@elastic/eui';
 import moment from 'moment';
 import { i18n } from '@kbn/i18n';
-import type { RunningQuery } from '../../../common/types';
+import type { RunningQuerySummary } from '../../../common/types';
 import { useQueryActivityAppContext } from '../app_context';
 import { QueryDetailFlyout } from './query_detail_flyout';
 import { RunTimeFilter } from './run_time_filter';
@@ -34,13 +34,17 @@ import {
 } from '../../lib/stop_requested_tasks_storage';
 
 interface QueryActivityTableProps {
-  queries: RunningQuery[];
+  queries: RunningQuerySummary[];
   onCancelQuery: (taskId: string) => Promise<boolean>;
+  onQueryNoLongerRunning?: () => void;
   isLoading?: boolean;
   error?: string;
 }
 
-type TableRunningQuery = RunningQuery & { sourceDisplay: string; sourceAvailable: boolean };
+type TableRunningQuery = RunningQuerySummary & {
+  sourceDisplay: string;
+  sourceAvailable: boolean;
+};
 
 export const notAvailableLabel = i18n.translate('xpack.queryActivity.table.notAvailableLabel', {
   defaultMessage: 'Not available',
@@ -49,6 +53,7 @@ export const notAvailableLabel = i18n.translate('xpack.queryActivity.table.notAv
 export const QueryActivityTable: React.FC<QueryActivityTableProps> = ({
   queries,
   onCancelQuery,
+  onQueryNoLongerRunning,
   isLoading = false,
   error,
 }) => {
@@ -58,7 +63,7 @@ export const QueryActivityTable: React.FC<QueryActivityTableProps> = ({
     defaultMessage: 'Long-running queries',
   });
 
-  const [selectedQuery, setSelectedQuery] = useState<RunningQuery | null>(null);
+  const [selectedQuery, setSelectedQuery] = useState<RunningQuerySummary | null>(null);
   const [runTimeValue, setRunTimeValue] = useState<number | null>(null);
   const [runTimeUnit, setRunTimeUnit] = useState('m');
   const [taskIdToStop, setTaskIdToStop] = useState<string | null>(null);
@@ -341,10 +346,11 @@ export const QueryActivityTable: React.FC<QueryActivityTableProps> = ({
       />
       {selectedQuery && (
         <QueryDetailFlyout
-          query={selectedQuery}
+          summary={selectedQuery}
           isStopRequested={stopRequestedTaskIds.has(selectedQuery.taskId)}
           onClose={closeFlyout}
           onStopQuery={requestStopQuery}
+          onQueryNoLongerRunning={onQueryNoLongerRunning}
         />
       )}
       {taskIdToStop && (
