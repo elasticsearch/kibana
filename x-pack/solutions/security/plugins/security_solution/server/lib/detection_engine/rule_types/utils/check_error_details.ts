@@ -12,6 +12,7 @@ const USER_ERRORS_EXCEPTIONS = [
   'verification_exception',
   'parsing_exception',
   'x_content_parse_exception',
+  'number_format_exception',
 ];
 
 // illegal_argument_exception is too broad to classify as a user error globally (ES itself

@@ -95,6 +95,13 @@ line 1:45: invalid [test_not_lookup] resolution in lookup mode to an index in [s
     });
   });
 
+  describe('shard errors caused by data/mapping issues', () => {
+    it('should mark as user error when shard error is caused by number_format_exception', () => {
+      const errorMessage = `index: ".ds-my-index-2026.05.16-000008" reason: "failed to create query: Character is neither a decimal digit number, decimal point, nor \\"e\\" notation exponential mark." type: "query_shard_exception" caused by reason: "Character is neither a decimal digit number, decimal point, nor \\"e\\" notation exponential mark." caused by type: "number_format_exception"`;
+      expect(checkErrorDetails(errorMessage)).toHaveProperty('isUserError', true);
+    });
+  });
+
   describe('missing ml job errors', () => {
     it('should mark as user error error string', () => {
       const errorMessage = `problem_child_rare_process_by_user missing`;
