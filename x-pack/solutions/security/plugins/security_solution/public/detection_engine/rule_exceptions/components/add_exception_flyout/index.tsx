@@ -572,7 +572,10 @@ export const AddExceptionFlyout = memo(function AddExceptionFlyout({
         titleId={exceptionFlyoutTitleId}
         dataTestSubjId={'exceptionFlyoutTitle'}
       />
-      <FlyoutBodySection className="builder-section">
+      <FlyoutBodySection
+        className="builder-section"
+        data-test-subj={`addExceptionFlyoutBuilder-${isLoading ? 'loading' : 'loaded'}`}
+      >
         {
           // TODO: This is a quick fix to make sure that we do not lose conditions state on refetching index patterns via `useFetchIndexPatterns`
           // which happens due to data being stale after 5 minutes (in `useFetchJobsSummaryQuery`, `useFetchModulesQuery` and `useFetchRecognizerQuery`)

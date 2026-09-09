@@ -5,8 +5,7 @@
  * 2.0.
  */
 
-export interface CustomQueryRule {
-  index: string[];
+interface BaseCustomQueryRule {
   enabled: boolean;
   name: string;
   description: string;
@@ -18,6 +17,13 @@ export interface CustomQueryRule {
   from: string;
   investigation_fields?: { field_names: string[] };
 }
+
+/**
+ * A custom query rule reads events from either an index pattern list or a data
+ * view, never both. Callers pass exactly one of `index` / `data_view_id`.
+ */
+export type CustomQueryRule = BaseCustomQueryRule &
+  ({ index: string[]; data_view_id?: never } | { data_view_id: string; index?: never });
 
 export const DEFAULT_SECURITY_SOLUTION_INDEXES = [
   'apm-*-transaction*',

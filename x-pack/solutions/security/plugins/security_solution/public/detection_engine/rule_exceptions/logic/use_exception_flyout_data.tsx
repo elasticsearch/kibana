@@ -34,7 +34,10 @@ export interface ReturnUseFetchExceptionFlyoutData {
 export const useFetchIndexPatterns = (rules: Rule[] | null): ReturnUseFetchExceptionFlyoutData => {
   const { data, spaces } = useKibana().services;
   const { addWarning } = useAppToasts();
-  const [dataViewLoading, setDataViewLoading] = useState(false);
+  // Tracks the last `memoDataViewId` we've settled a fetch for (resolved or failed).
+  // Drives `isDataViewLoading` so loading stays true from mount until the data view
+  // fetch completes, since that fetch is gated behind an async active-space lookup.
+  const [resolvedDataViewId, setResolvedDataViewId] = useState<string | null>(null);
   const [activeSpaceId, setActiveSpaceId] = useState('');
   const isSingleRule = useMemo(() => rules != null && rules.length === 1, [rules]);
   const isMLRule = useMemo(
@@ -109,7 +112,6 @@ export const useFetchIndexPatterns = (rules: Rule[] | null): ReturnUseFetchExcep
       // we could be trying to fetch a data view that does not exist, which would
       // throw an error here.
       if (activeSpaceId !== '' && memoDataViewId) {
-        setDataViewLoading(true);
         // We wrap dataViews.get within a try catch because we've seen errors happening with conflicting ids in the saved object api
         try {
           const dv = await data.dataViews.get(memoDataViewId);
@@ -119,7 +121,9 @@ export const useFetchIndexPatterns = (rules: Rule[] | null): ReturnUseFetchExcep
         } catch (error) {
           addWarning(error, { title: 'Failed to load data view for exceptions flyout' });
         } finally {
-          setDataViewLoading(false);
+          // Mark this id as settled (whether it resolved, failed, or returned no fields)
+          // so `isDataViewLoading` stops reporting a load instead of hanging.
+          setResolvedDataViewId(memoDataViewId);
         }
       }
     };
@@ -155,8 +159,15 @@ export const useFetchIndexPatterns = (rules: Rule[] | null): ReturnUseFetchExcep
     [memoDataViewId, dataViewIndexPatterns, indexIndexPatterns]
   );
 
+  // For data-view-backed rules the field fetch is gated behind an async active-space
+  // lookup, so on the first renders the effect above hasn't started and the other
+  // loading flags are false. Report loading from mount until the current data view id
+  // has settled, so consumers don't observe a premature "loaded" state while the
+  // condition-builder combobox is still empty.
+  const isDataViewLoading = memoDataViewId != null && resolvedDataViewId !== memoDataViewId;
+
   return {
-    isLoading: isIndexPatternLoading || mlJobLoading || dataViewLoading,
+    isLoading: isIndexPatternLoading || mlJobLoading || isDataViewLoading,
     indexPatterns: indexPatternsToUse,
     getExtendedFields,
   };
