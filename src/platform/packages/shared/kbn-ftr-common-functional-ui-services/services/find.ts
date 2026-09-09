@@ -511,6 +511,14 @@ export class FindService extends FtrService {
     await this.driver.wait(until.elementIsNotVisible(element._webElement), timeout);
   }
 
+  public async waitForElementVisible(
+    element: WebElementWrapper,
+    timeout: number = this.defaultFindTimeout
+  ) {
+    this.log.debug(`Find.waitForElementVisible with timeout=${timeout}`);
+    await this.driver.wait(until.elementIsVisible(element._webElement), timeout);
+  }
+
   private async _withTimeout(timeout: number) {
     if (timeout !== this.currentWait) {
       this.currentWait = timeout;
