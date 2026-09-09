@@ -34,9 +34,20 @@ import {
   NO_ERROR,
   TAGS,
   MONITOR_HISTORY,
+  OVERVIEW_DEFAULT_VISIBLE_COLUMN_IDS,
+  OVERVIEW_TABLE_COLUMN_ID,
 } from '../labels';
 import { useKibanaSpace } from '../../../../../../../../hooks/use_kibana_space';
 import type { ClientPluginsStart } from '../../../../../../../../plugin';
+import type { SelectableTableColumn } from '../../../../../common/hooks/use_table_column_selector';
+import { OVERVIEW_TABLE_COLUMNS_STORAGE_KEY } from '../../../../../common/hooks/use_table_column_selector';
+import { usePersistedColumnIds } from '../../../../../common/hooks/use_persisted_column_ids';
+import {
+  CREATED_COLUMN_LABEL,
+  LAST_MODIFIED_COLUMN_LABEL,
+  MonitorTimestamp,
+} from '../../../../../common/components/monitor_timestamp';
+import { useOverviewDisplayOptions } from '../../../../common/use_overview_display_options';
 
 export const useMonitorsTableColumns = ({
   setFlyoutConfigCallback,
@@ -109,10 +120,19 @@ export const useMonitorsTableColumns = ({
     [dispatch, setFlyoutConfigCallback]
   );
 
+  const { visibleColumnIds } = usePersistedColumnIds(
+    OVERVIEW_TABLE_COLUMNS_STORAGE_KEY,
+    OVERVIEW_DEFAULT_VISIBLE_COLUMN_IDS
+  );
+  const {
+    options: { absoluteTimestamps },
+  } = useOverviewDisplayOptions();
+
   const columns: Array<EuiBasicTableColumn<OverviewStatusMetaData>> = useMemo(() => {
     const LazySpaceList = spaces?.ui.components.getSpaceList ?? (() => null);
+    const visibleSet = new Set(visibleColumnIds);
 
-    return [
+    const allColumns: Array<SelectableTableColumn<OverviewStatusMetaData>> = [
       {
         field: 'overallStatus',
         name: STATUS,
@@ -215,6 +235,7 @@ export const useMonitorsTableColumns = ({
         ),
       },
       {
+        id: OVERVIEW_TABLE_COLUMN_ID.locations,
         name: LOCATIONS,
         width: '120px',
         render: (monitor: OverviewStatusMetaData) => {
@@ -227,6 +248,7 @@ export const useMonitorsTableColumns = ({
         ? []
         : [
             {
+              id: OVERVIEW_TABLE_COLUMN_ID.latestError,
               name: LATEST_ERROR,
               // Wide enough that most error reasons fit in 1–2 lines without
               // wrap; longer messages clamp to 3 lines + tooltip below.
@@ -277,6 +299,7 @@ export const useMonitorsTableColumns = ({
               },
             },
             {
+              id: OVERVIEW_TABLE_COLUMN_ID.tags,
               name: TAGS,
               width: '12%',
               render: (monitor: OverviewStatusMetaData) => (
@@ -291,6 +314,7 @@ export const useMonitorsTableColumns = ({
         ? []
         : [
             {
+              id: OVERVIEW_TABLE_COLUMN_ID.history,
               align: 'left' as const,
               field: 'configId' as const,
               name: MONITOR_HISTORY,
@@ -332,13 +356,41 @@ export const useMonitorsTableColumns = ({
           ]
         : []),
       {
+        id: OVERVIEW_TABLE_COLUMN_ID.createdAt,
+        field: 'created_at',
+        name: CREATED_COLUMN_LABEL,
+        width: '140px',
+        sortable: true,
+        render: (createdAt: string | undefined) => (
+          <MonitorTimestamp timestamp={createdAt} absolute={absoluteTimestamps} />
+        ),
+      },
+      {
+        id: OVERVIEW_TABLE_COLUMN_ID.updatedAt,
+        field: 'updated_at',
+        name: LAST_MODIFIED_COLUMN_LABEL,
+        width: '140px',
+        sortable: true,
+        render: (updatedAt: string | undefined) => (
+          <MonitorTimestamp timestamp={updatedAt} absolute={absoluteTimestamps} />
+        ),
+      },
+      {
         name: ACTIONS,
         render: (monitor: OverviewStatusMetaData) => <MonitorsActions monitor={monitor} />,
         align: 'right',
         width: '40px',
       },
     ];
+
+    return allColumns
+      .filter((col) => col.id == null || visibleSet.has(col.id))
+      .map(
+        ({ id: _id, selectorName: _selectorName, ...col }) =>
+          col as EuiBasicTableColumn<OverviewStatusMetaData>
+      );
   }, [
+    absoluteTimestamps,
     hasMultipleSpaces,
     histogramsById,
     isFlyoutOpen,
@@ -352,6 +404,7 @@ export const useMonitorsTableColumns = ({
     // depending on the object would remount every cell once on resolution.
     spaceId,
     spaces?.ui.components.getSpaceList,
+    visibleColumnIds,
   ]);
 
   return {

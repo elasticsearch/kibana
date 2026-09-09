@@ -29,6 +29,8 @@ import { useOverviewTrendsRequests } from '../../../../hooks/use_overview_trends
 const COLUMN_TO_SORT_FIELD: Record<string, MonitorOverviewPageState['sortField']> = {
   overallStatus: 'status',
   name: 'name.keyword',
+  created_at: 'created_at',
+  updated_at: 'updated_at',
 };
 
 const SORT_FIELD_TO_COLUMN = Object.fromEntries(

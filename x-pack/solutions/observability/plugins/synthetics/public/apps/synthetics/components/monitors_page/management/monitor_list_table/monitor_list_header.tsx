@@ -23,6 +23,7 @@ export const MonitorListHeader = ({
   setIsLocationsFlyoutOpen,
   setIsScheduleFlyoutOpen,
   setIsMaintenanceWindowsFlyoutOpen,
+  columnSelector,
 }: {
   recordRangeLabel: JSX.Element;
   selectedItems: EncryptedSyntheticsSavedMonitor[];
@@ -36,6 +37,7 @@ export const MonitorListHeader = ({
   setIsLocationsFlyoutOpen: (val: boolean) => void;
   setIsScheduleFlyoutOpen: (val: boolean) => void;
   setIsMaintenanceWindowsFlyoutOpen: (val: boolean) => void;
+  columnSelector: React.ReactNode;
 }) => {
   return (
     <EuiFlexGroup alignItems="center">
@@ -53,6 +55,9 @@ export const MonitorListHeader = ({
           setIsScheduleFlyoutOpen={setIsScheduleFlyoutOpen}
           setIsMaintenanceWindowsFlyoutOpen={setIsMaintenanceWindowsFlyoutOpen}
         />
+      </EuiFlexItem>
+      <EuiFlexItem grow={false} data-test-subj="syntheticsMonitorListColumnSelector">
+        {columnSelector}
       </EuiFlexItem>
       <EuiFlexItem grow={false}>
         <ShowAllSpaces />

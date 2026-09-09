@@ -160,6 +160,7 @@ describe('current status route', () => {
           "downConfigs": Object {
             "id2": Object {
               "configId": "id2",
+              "created_at": undefined,
               "isEnabled": true,
               "isStatusAlertEnabled": false,
               "locations": Array [
@@ -204,6 +205,7 @@ describe('current status route', () => {
           "upConfigs": Object {
             "id1": Object {
               "configId": "id1",
+              "created_at": undefined,
               "isEnabled": true,
               "isStatusAlertEnabled": false,
               "locations": Array [
@@ -323,6 +325,7 @@ describe('current status route', () => {
           "downConfigs": Object {
             "id2": Object {
               "configId": "id2",
+              "created_at": undefined,
               "isEnabled": true,
               "isStatusAlertEnabled": false,
               "locations": Array [
@@ -367,6 +370,7 @@ describe('current status route', () => {
           "upConfigs": Object {
             "id1": Object {
               "configId": "id1",
+              "created_at": undefined,
               "isEnabled": true,
               "isStatusAlertEnabled": false,
               "locations": Array [
@@ -436,6 +440,7 @@ describe('current status route', () => {
           "pendingConfigs": Object {
             "id1": Object {
               "configId": "id1",
+              "created_at": undefined,
               "isEnabled": true,
               "isStatusAlertEnabled": false,
               "locations": Array [
@@ -463,6 +468,7 @@ describe('current status route', () => {
             },
             "id2": Object {
               "configId": "id2",
+              "created_at": undefined,
               "isEnabled": true,
               "isStatusAlertEnabled": false,
               "locations": Array [

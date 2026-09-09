@@ -13,6 +13,7 @@ export const MonitorSortFieldSchema = schema.maybe(
     schema.literal('enabled'),
     schema.literal('status'),
     schema.literal('updated_at'),
+    schema.literal('created_at'),
     schema.literal('urls'),
     schema.literal(`${ConfigKey.NAME}.keyword`),
     schema.literal(`${ConfigKey.TAGS}.keyword`),

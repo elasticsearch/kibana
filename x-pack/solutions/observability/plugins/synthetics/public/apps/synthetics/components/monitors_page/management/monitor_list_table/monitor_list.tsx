@@ -32,9 +32,13 @@ import type {
   OverviewStatusState,
 } from '../../../../../../../common/runtime_types';
 import { ConfigKey, SourceType } from '../../../../../../../common/runtime_types';
-import { useMonitorListColumns } from './columns';
+import { useMonitorListColumns, MANAGEMENT_DEFAULT_VISIBLE_COLUMN_IDS } from './columns';
 import * as labels from './labels';
 import type { ClientPluginsStart } from '../../../../../../plugin';
+import {
+  MANAGEMENT_TABLE_COLUMNS_STORAGE_KEY,
+  useTableColumnSelector,
+} from '../../../common/hooks/use_table_column_selector';
 
 export type MonitorListItem = EncryptedSyntheticsSavedMonitor;
 
@@ -92,10 +96,17 @@ export const MonitorList = ({
       const { index, size } = page;
       const { field, direction } = sort;
 
+      const rawField = String(field);
+      const nextSortField = (
+        rawField === 'enabled' || rawField === 'created_at' || rawField === 'updated_at'
+          ? rawField
+          : `${rawField}.keyword`
+      ) as MonitorListSortField;
+
       loadPage({
         pageIndex: index,
         pageSize: size,
-        sortField: (field === 'enabled' ? field : `${field}.keyword`) as MonitorListSortField,
+        sortField: nextSortField,
         sortOrder: direction,
       });
     },
@@ -122,12 +133,17 @@ export const MonitorList = ({
     total: totalItemCount,
   });
 
-  const columns = useMonitorListColumns({
+  const allColumns = useMonitorListColumns({
     loading,
     overviewStatus,
     setMonitorPendingDeletion,
     setMonitorPendingReset,
     isFixableByReset,
+  });
+  const { columns, ColumnSelector } = useTableColumnSelector({
+    columns: allColumns,
+    defaultVisibleColumnIds: MANAGEMENT_DEFAULT_VISIBLE_COLUMN_IDS,
+    storageKeyPrefix: MANAGEMENT_TABLE_COLUMNS_STORAGE_KEY,
   });
 
   const [selectedItems, setSelectedItems] = useState<MonitorListItem[]>([]);
@@ -165,6 +181,7 @@ export const MonitorList = ({
           setIsLocationsFlyoutOpen={setIsLocationsFlyoutOpen}
           setIsScheduleFlyoutOpen={setIsScheduleFlyoutOpen}
           setIsMaintenanceWindowsFlyoutOpen={setIsMaintenanceWindowsFlyoutOpen}
+          columnSelector={ColumnSelector}
         />
         <EuiHorizontalRule margin="s" />
         <EuiBasicTable<MonitorListItem>

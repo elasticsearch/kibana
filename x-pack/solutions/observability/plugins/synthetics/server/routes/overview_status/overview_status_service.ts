@@ -1340,6 +1340,7 @@ export class OverviewStatusService {
       type: monitor.attributes[ConfigKey.MONITOR_TYPE],
       projectId: monitor.attributes[ConfigKey.PROJECT_ID],
       isStatusAlertEnabled: isStatusEnabled(monitor.attributes[ConfigKey.ALERT_CONFIG]),
+      created_at: monitor.created_at,
       updated_at: monitor.updated_at,
       spaces: monitor.namespaces,
       urls: monitor.attributes[ConfigKey.URLS],

@@ -82,6 +82,11 @@ export function useMonitorsSortedByStatus(): OverviewStatusMetaData[] {
           return moment(a.updated_at).diff(moment(b.updated_at));
         });
         return sortOrder === 'asc' ? result : result.reverse();
+      case 'created_at':
+        result = result.sort((a, b) => {
+          return moment(a.created_at).diff(moment(b.created_at));
+        });
+        return sortOrder === 'asc' ? result : result.reverse();
       case 'urls': {
         const withUrl = result.filter((m) => m.urls);
         const withoutUrl = result.filter((m) => !m.urls);

@@ -78,6 +78,7 @@ export const OverviewStatusMetaDataCodec = t.intersection([
   t.partial({
     projectId: t.string,
     updated_at: t.string,
+    created_at: t.string,
     timestamp: t.string,
     spaces: t.array(t.string),
     urls: t.string,

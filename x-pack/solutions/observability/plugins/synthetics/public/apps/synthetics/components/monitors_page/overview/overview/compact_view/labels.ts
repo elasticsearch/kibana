@@ -45,3 +45,20 @@ export const LATEST_ERROR = i18n.translate('xpack.synthetics.overview.compactVie
 export const NO_ERROR = i18n.translate('xpack.synthetics.overview.compactView.noError', {
   defaultMessage: '—',
 });
+
+export const OVERVIEW_TABLE_COLUMN_ID = {
+  locations: 'locations',
+  latestError: 'latestError',
+  tags: 'tags',
+  history: 'history',
+  createdAt: 'created_at',
+  updatedAt: 'updated_at',
+} as const;
+
+export const OVERVIEW_DEFAULT_VISIBLE_COLUMN_IDS: string[] = [
+  OVERVIEW_TABLE_COLUMN_ID.locations,
+  OVERVIEW_TABLE_COLUMN_ID.latestError,
+  OVERVIEW_TABLE_COLUMN_ID.tags,
+  OVERVIEW_TABLE_COLUMN_ID.history,
+  OVERVIEW_TABLE_COLUMN_ID.updatedAt,
+];

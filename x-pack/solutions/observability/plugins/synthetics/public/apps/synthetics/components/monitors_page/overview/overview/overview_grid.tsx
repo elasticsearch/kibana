@@ -29,6 +29,7 @@ import { MaybeMonitorDetailsFlyout } from './monitor_detail_flyout';
 import { OverviewGridCompactView } from './compact_view/overview_grid_compact_view';
 import { ViewButtons } from './view_buttons/view_buttons';
 import { OverviewCardView } from './overview_cards_view/overview_card_view';
+import { OverviewTableColumnSelector } from './compact_view/components/overview_table_column_selector';
 
 export const OverviewGrid = memo(
   ({ view, isEmbeddable }: { view: OverviewView; isEmbeddable?: boolean }) => {
@@ -90,6 +91,7 @@ export const OverviewGrid = memo(
           <EuiFlexItem grow={false}>
             <SortFields />
           </EuiFlexItem>
+          {view === 'compactView' ? <OverviewTableColumnSelector /> : null}
           <EuiFlexItem grow={false}>
             <GroupFields />
           </EuiFlexItem>

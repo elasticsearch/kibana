@@ -127,6 +127,20 @@ export const SortFields = () => {
         );
       },
     },
+    {
+      label: CREATED_LABEL,
+      value: 'created_at',
+      checked: sortField === 'created_at',
+      defaultSortOrder: 'desc',
+      onClick: () => {
+        handleSortChange(
+          setOverviewPageStateAction({
+            sortField: 'created_at',
+            sortOrder: 'desc',
+          })
+        );
+      },
+    },
   ];
 
   return (
@@ -160,6 +174,12 @@ const getOrderContent = (sortField: MonitorListSortField) => {
         asc: SORT_UPDATED_ASC,
         desc: SORT_UPDATED_DESC,
         label: LAST_MODIFIED_LABEL,
+      };
+    case 'created_at':
+      return {
+        asc: SORT_UPDATED_ASC,
+        desc: SORT_UPDATED_DESC,
+        label: CREATED_LABEL,
       };
     case 'status':
       return {
@@ -263,3 +283,7 @@ const LAST_MODIFIED_LABEL = i18n.translate(
     defaultMessage: 'Last modified',
   }
 );
+
+const CREATED_LABEL = i18n.translate('xpack.synthetics.overview.sortPopover.createdLabel', {
+  defaultMessage: 'Created',
+});

@@ -5,7 +5,6 @@
  * 2.0.
  */
 
-import type { EuiBasicTableColumn } from '@elastic/eui';
 import { EuiButtonIcon, EuiFlexGroup, EuiFlexItem, EuiToolTip } from '@elastic/eui';
 import { i18n } from '@kbn/i18n';
 import React from 'react';
@@ -42,6 +41,33 @@ import { MonitorEnabled } from './monitor_enabled';
 import { MonitorLocations } from './monitor_locations';
 import { UnhealthyTooltip } from './unhealthy_tooltip';
 import type { MonitorListItem } from './monitor_list';
+import type { SelectableTableColumn } from '../../../common/hooks/use_table_column_selector';
+import {
+  CREATED_COLUMN_LABEL,
+  LAST_MODIFIED_COLUMN_LABEL,
+  MonitorTimestamp,
+} from '../../../common/components/monitor_timestamp';
+
+export const MANAGEMENT_TABLE_COLUMN_ID = {
+  type: 'type',
+  schedule: 'schedule',
+  locations: 'locations',
+  tags: 'tags',
+  enabled: 'enabled',
+  spaces: 'spaces',
+  createdAt: 'created_at',
+  updatedAt: 'updated_at',
+} as const;
+
+export const MANAGEMENT_DEFAULT_VISIBLE_COLUMN_IDS: string[] = [
+  MANAGEMENT_TABLE_COLUMN_ID.type,
+  MANAGEMENT_TABLE_COLUMN_ID.schedule,
+  MANAGEMENT_TABLE_COLUMN_ID.locations,
+  MANAGEMENT_TABLE_COLUMN_ID.tags,
+  MANAGEMENT_TABLE_COLUMN_ID.enabled,
+  MANAGEMENT_TABLE_COLUMN_ID.spaces,
+  MANAGEMENT_TABLE_COLUMN_ID.updatedAt,
+];
 
 export function useMonitorListColumns({
   loading,
@@ -58,7 +84,7 @@ export function useMonitorListColumns({
     skippedMonitors: Array<{ id: string; name: string }>;
   }) => void;
   isFixableByReset: (configId: string) => boolean;
-}): Array<EuiBasicTableColumn<MonitorListItem>> {
+}): Array<SelectableTableColumn<MonitorListItem>> {
   const history = useHistory();
   const { http, spaces } = useKibana<ClientPluginsStart>().services;
   const canEditSynthetics = useCanEditSynthetics();
@@ -81,7 +107,7 @@ export function useMonitorListColumns({
   };
   const LazySpaceList = spaces?.ui.components.getSpaceList ?? (() => null);
 
-  const columns: Array<EuiBasicTableColumn<MonitorListItem>> = [
+  const columns: Array<SelectableTableColumn<MonitorListItem>> = [
     {
       align: 'left' as const,
       field: ConfigKey.NAME as string,
@@ -118,6 +144,7 @@ export function useMonitorListColumns({
         ]
       : []),
     {
+      id: MANAGEMENT_TABLE_COLUMN_ID.type,
       align: 'left' as const,
       field: ConfigKey.MONITOR_TYPE,
       name: i18n.translate('xpack.synthetics.management.monitorList.monitorType', {
@@ -138,6 +165,7 @@ export function useMonitorListColumns({
       ),
     },
     {
+      id: MANAGEMENT_TABLE_COLUMN_ID.schedule,
       align: 'left' as const,
       field: ConfigKey.SCHEDULE,
       sortable: true,
@@ -148,6 +176,7 @@ export function useMonitorListColumns({
       render: (schedule: SyntheticsMonitorSchedule) => getFrequencyLabel(schedule),
     },
     {
+      id: MANAGEMENT_TABLE_COLUMN_ID.locations,
       align: 'left' as const,
       field: ConfigKey.LOCATIONS,
       'data-test-subj': 'syntheticsMonitorListLocations',
@@ -164,6 +193,7 @@ export function useMonitorListColumns({
         ) : null,
     },
     {
+      id: MANAGEMENT_TABLE_COLUMN_ID.tags,
       align: 'left' as const,
       field: ConfigKey.TAGS,
       name: i18n.translate('xpack.synthetics.management.monitorList.tags', {
@@ -179,6 +209,7 @@ export function useMonitorListColumns({
       ),
     },
     {
+      id: MANAGEMENT_TABLE_COLUMN_ID.enabled,
       align: 'left' as const,
       field: ConfigKey.ENABLED as string,
       sortable: true,
@@ -195,6 +226,7 @@ export function useMonitorListColumns({
       ),
     },
     {
+      id: MANAGEMENT_TABLE_COLUMN_ID.spaces,
       name: i18n.translate('xpack.synthetics.management.monitorList.spacesColumnTitle', {
         defaultMessage: 'Spaces',
       }),
@@ -208,6 +240,24 @@ export function useMonitorListColumns({
           />
         );
       },
+    },
+    {
+      id: MANAGEMENT_TABLE_COLUMN_ID.createdAt,
+      align: 'left' as const,
+      field: 'created_at',
+      sortable: true,
+      width: '140px',
+      name: CREATED_COLUMN_LABEL,
+      render: (createdAt: string) => <MonitorTimestamp timestamp={createdAt} />,
+    },
+    {
+      id: MANAGEMENT_TABLE_COLUMN_ID.updatedAt,
+      align: 'left' as const,
+      field: 'updated_at',
+      sortable: true,
+      width: '140px',
+      name: LAST_MODIFIED_COLUMN_LABEL,
+      render: (updatedAt: string) => <MonitorTimestamp timestamp={updatedAt} />,
     },
     {
       align: 'right' as const,
