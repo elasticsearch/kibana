@@ -25,7 +25,8 @@ export function searchHitToAgent(
   hit: FleetServerAgentESResponse & {
     sort?: SortResults;
     fields?: { status?: AgentStatus[]; pipeline_config?: string[]; signals?: string[] };
-  }
+  },
+  options?: { requireStatusRuntimeField?: boolean }
 ): Agent {
   const outputs: OutputMap | undefined = hit._source?.outputs
     ? Object.entries(hit._source?.outputs).reduce((acc, [key, val]) => {
@@ -118,14 +119,14 @@ export function searchHitToAgent(
     health: hit._source?.health,
   };
 
-  if (!hit.fields?.status?.length) {
+  if (hit.fields?.status?.length) {
+    agent.status = hit.fields.status[0];
+  } else if (options?.requireStatusRuntimeField !== false) {
     appContextService
       .getLogger()
       .error(
         'Agent status runtime field is missing, unable to get agent status for agent ' + agent.id
       );
-  } else {
-    agent.status = hit.fields.status[0];
   }
   if (hit.fields?.pipeline_config?.length) {
     agent.pipeline_config = hit.fields.pipeline_config[0];

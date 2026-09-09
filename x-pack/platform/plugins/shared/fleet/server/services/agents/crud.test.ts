@@ -570,6 +570,16 @@ describe('Agents CRUD test', () => {
       expect(searchMock.mock.calls.at(-1)[0].sort).toEqual([{ policy_id: { order: 'desc' } }]);
     });
 
+    it('should omit the status runtime mapping when includeStatusRuntimeField is false', async () => {
+      searchMock.mockResolvedValueOnce(getEsResponse(['1'], 1, 'online'));
+      await getAgentsByKuery(esClientMock, soClientMock, {
+        showAgentless: true,
+        showInactive: false,
+        includeStatusRuntimeField: false,
+      });
+      expect(searchMock.mock.calls[0][0].runtime_mappings).not.toHaveProperty('status');
+    });
+
     describe('status filters', () => {
       beforeEach(() => {
         searchMock.mockImplementationOnce(() => Promise.resolve(getEsResponse([], 0, 'online')));

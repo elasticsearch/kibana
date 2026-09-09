@@ -97,6 +97,11 @@ export interface AgentClient {
       pitId?: string;
       pitKeepAlive?: string;
       getStatusSummary?: boolean;
+      /**
+       * When false, skip the agent-status runtime field and the inactivity-timeout SO scan it
+       * requires. Defaults to true. Forced on when `getStatusSummary` is true.
+       */
+      includeStatusRuntimeField?: boolean;
     }
   ): Promise<{
     agents: Agent[];
@@ -143,6 +148,7 @@ class AgentClientImpl implements AgentClient {
       pitId?: string;
       pitKeepAlive?: string;
       getStatusSummary?: boolean;
+      includeStatusRuntimeField?: boolean;
     }
   ) {
     await this.#runPreflight();
