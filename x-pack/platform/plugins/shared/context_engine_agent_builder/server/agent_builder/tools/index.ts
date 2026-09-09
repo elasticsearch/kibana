@@ -9,20 +9,26 @@ import type { AgentBuilderPluginSetup } from '@kbn/agent-builder-server';
 import type { CoreStart } from '@kbn/core/server';
 import type { SecurityPluginStart } from '@kbn/security-plugin/server';
 import type { WorkflowsServerPluginSetup } from '@kbn/workflows-management-plugin/server';
+import type { ContextEnginePluginStart } from '@kbn/context-engine-plugin/server';
 import type { AiIndexService } from '@kbn/context-engine-plugin/server/ai_indices/service';
 import { createSaveAutomationTool } from './save_automation/tool';
+import { createListAiIndicesTool } from './list_ai_indices/tool';
+import { createDescribeAiIndexTool } from './describe_ai_index/tool';
+import { createQueryAiIndicesTool } from './query_ai_indices/tool';
 
 type WorkflowsManagementApi = WorkflowsServerPluginSetup['management'];
 
 export const registerAgentBuilderTools = ({
   agentBuilder,
   getAiIndexService,
+  getContextEngineStart,
   getCoreStart,
   getSecurityStart,
   getWorkflowsManagement,
 }: {
   agentBuilder: AgentBuilderPluginSetup;
   getAiIndexService: () => Promise<AiIndexService>;
+  getContextEngineStart: () => Promise<ContextEnginePluginStart>;
   getCoreStart: () => Promise<CoreStart>;
   getSecurityStart: () => Promise<SecurityPluginStart | undefined>;
   getWorkflowsManagement: () => WorkflowsManagementApi;
@@ -35,4 +41,9 @@ export const registerAgentBuilderTools = ({
       getWorkflowsManagement,
     })
   );
+
+  const aiIndexToolDeps = { getContextEngineStart, getSecurityStart };
+  agentBuilder.tools.register(createListAiIndicesTool(aiIndexToolDeps));
+  agentBuilder.tools.register(createDescribeAiIndexTool(aiIndexToolDeps));
+  agentBuilder.tools.register(createQueryAiIndicesTool(aiIndexToolDeps));
 };

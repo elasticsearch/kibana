@@ -7,8 +7,8 @@
 
 import type { CoreSetup } from '@kbn/core/server';
 import type { AgentBuilderPluginSetup } from '@kbn/agent-builder-server';
-import { apiPrivileges } from '@kbn/context-engine-plugin/common/features';
 import type { WorkflowsServerPluginSetup } from '@kbn/workflows-management-plugin/server';
+import { hasContextEngineReadPrivilege } from './agent_builder/has_context_engine_read_privilege';
 import { registerAgentBuilderTools } from './agent_builder/tools';
 import { registerAttachmentTypes } from './attachment_types';
 import type {
@@ -36,13 +36,7 @@ export const registerContextEngineAgentBuilderIntegration = ({
     const [coreStart, startDeps] = await coreSetup.getStartServices();
     const { contextEngine, security } = startDeps;
 
-    // Registry reads use the internal user, so re-check CE's read privilege for the caller. One
-    // space-aware check covers every id, as in CE's list route.
-    const checkPrivileges = security.authz.checkPrivilegesDynamicallyWithRequest(request);
-    const { hasAllRequested } = await checkPrivileges({
-      kibana: [security.authz.actions.api.get(apiPrivileges.readContextEngine)],
-    });
-    if (!hasAllRequested) {
+    if (!(await hasContextEngineReadPrivilege({ security, request }))) {
       return [];
     }
 
@@ -74,6 +68,10 @@ export const registerContextEngineAgentBuilderIntegration = ({
     getAiIndexService: async () => {
       const [, startDeps] = await coreSetup.getStartServices();
       return startDeps.contextEngine.getAiIndexService();
+    },
+    getContextEngineStart: async () => {
+      const [, startDeps] = await coreSetup.getStartServices();
+      return startDeps.contextEngine;
     },
   });
 };

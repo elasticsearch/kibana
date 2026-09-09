@@ -3,7 +3,13 @@
   "compilerOptions": {
     "outDir": "target/types"
   },
-  "include": ["../../../../../typings/**/*", "common/**/*", "public/**/*", "server/**/*"],
+  "include": [
+    "../../../../../typings/**/*",
+    "common/**/*",
+    "public/**/*",
+    "server/**/*",
+    "test/scout/**/*"
+  ],
   "exclude": ["target/**/*"],
   "kbn_references": [
     "@kbn/core",
@@ -21,6 +27,7 @@
     "@kbn/core-http-server-mocks",
     "@kbn/workflows",
     "@kbn/workflows-yaml",
-    "@kbn/agent-builder-plugin"
+    "@kbn/agent-builder-plugin",
+    "@kbn/scout"
   ]
 }

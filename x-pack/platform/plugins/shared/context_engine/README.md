@@ -185,6 +185,37 @@ document-level security mirroring Kibana object privileges, so callers only see
 knowledge indicators for dashboards, rules or connectors they could open. Custom
 AI Indices get the space filter alone; they are queried like any other index.
 
+## Agent Builder tools
+
+The `contextEngineAgentBuilder` plugin registers three read-only tools under
+`platform.context_engine.*`, each calling the same per-request read service as
+the routes above, so a tool and its route always agree:
+
+| Tool                | Route                    | Result                                                                            |
+| ------------------- | ------------------------ | --------------------------------------------------------------------------------- |
+| `list_ai_indices`   | `GET …/ai_index`         | `{ id, esql_target, description, managed, assigned_to_agent? }` per listed entry  |
+| `describe_ai_index` | `GET …/{id}/_describe`   | `{ response }`, the context block                                                 |
+| `query_ai_indices`  | `POST …/ai_index/_query` | `{ columns, values }`                                                             |
+
+`assigned_to_agent` is present only when an Agent Builder agent calls the tool
+during a conversation, where it says whether that agent's configuration includes
+the index; over MCP there is no agent, so the field is absent. `query_ai_indices`
+has no `time_range` or `filter`: agents write time constraints in ES|QL or
+`params`. Its rows come back as a plain (`other`) result rather than
+`esql_results` on purpose: the Agent Builder UI replays `esql_results` queries in
+Discover and Lens, which would run them without the server-side space filter and
+limit.
+
+Reaching the tools takes Agent Builder's `read` privilege (that is all the MCP
+server itself checks); using them also takes Context Engine's `read` privilege,
+which every handler verifies for the caller and, without it, returns an error
+result.
+
+The space is always derived through the request and never passed directly. In
+Agent Builder chat, it is derived from the agent's space. When using a tool over
+MCP, the space is derived from the space the MCP server is served from
+(`/s/{spaceId}/api/agent_builder/mcp`).
+
 ## Feedback analysis configuration
 
 Signal *generation* is global — one background task, one advanced setting.
