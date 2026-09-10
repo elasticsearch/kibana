@@ -62,6 +62,12 @@ export function getDataSetByIdApiPath(id: string): string {
 }
 
 export type { Dataset, DataSetWithName, DatasetSettings } from './dataset_types';
+export type {
+  DatasetMappings,
+  DatasetMappingProperty,
+  DatasetMappingFieldType,
+  DatasetMappingsDynamic,
+} from './dataset_types';
 
 export const PLUGIN_NAME = i18n.translate('xpack.dataFederation.pluginName', {
   defaultMessage: 'ES|QL Data Federation',

@@ -10,6 +10,11 @@ export interface Dataset {
   resource: string;
   description?: string;
   settings?: DatasetSettings;
+  /**
+   * Optional dataset mapping declaration. When provided, it controls exposed column names and types.
+   * See: https://www.elastic.co/docs/reference/query-languages/esql/esql-data-federation-datasets#declare-a-dataset-mapping
+   */
+  mappings?: DatasetMappings;
 }
 
 /**
@@ -19,6 +24,44 @@ export interface Dataset {
 export type DataSetWithName = Dataset & { name: string };
 
 export type DatasetSettings = DatasetSettingsFile;
+
+export type DatasetMappingsDynamic = 'true' | 'false';
+
+export type DatasetMappingFieldType =
+  | 'keyword'
+  | 'text'
+  | 'long'
+  | 'integer'
+  | 'double'
+  | 'boolean'
+  | 'date'
+  | 'unsigned_long'
+  | 'ip';
+
+export interface DatasetMappingProperty {
+  type: DatasetMappingFieldType;
+  /**
+   * Optional physical column name. Use it to expose a file column under a different logical name.
+   */
+  path?: string;
+  /**
+   * Optional date parsing pattern for a column with type `date`.
+   */
+  format?: string;
+}
+
+export interface DatasetMappings {
+  /**
+   * Controls undeclared columns. The default, `true`, overlays the declared columns on the inferred schema.
+   * Set it to `false` to treat the declaration as the complete schema.
+   */
+  dynamic?: DatasetMappingsDynamic;
+  properties: Record<string, DatasetMappingProperty>;
+  _id?: {
+    /** Optional source column whose value becomes the row's `_id`. */
+    path: string;
+  };
+}
 
 export interface DatasetSettingsFile {
   format?: 'parquet' | 'csv' | 'tsv' | 'ndjson' | 'orc';

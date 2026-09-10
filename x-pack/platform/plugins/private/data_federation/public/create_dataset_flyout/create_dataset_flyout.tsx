@@ -26,6 +26,7 @@ import {
   EuiTextArea,
   EuiTitle,
 } from '@elastic/eui';
+import { i18n } from '@kbn/i18n';
 import { useKibana } from '@kbn/kibana-react-plugin/public';
 import { useController, useForm } from 'react-hook-form';
 
@@ -33,6 +34,14 @@ import type { DataSetWithName, DataSource } from '../../common';
 import { DATA_SOURCE_TYPES_TO_HELP_TEXT, validateIndexNameRules } from '../../common';
 import { getFlyoutSaveErrorMessage } from '../get_flyout_save_error_message';
 import type { DataFederationKibanaServices } from '../types';
+import {
+  MappingEditor,
+  buildDatasetMappings,
+  emptyMappingEditorValue,
+  DataType,
+  type MappingEditorValue,
+  validateMappingEditorValue,
+} from '../components/mapping_editor';
 import {
   buildDatasetSettingsFromFormValues,
   type CreateDatasetFormValues,
@@ -81,6 +90,8 @@ export const CreateDatasetFlyout: FunctionComponent<CreateDatasetFlyoutProps> = 
   const initialIdNormalized = initialDataSet?.name?.trim().toLowerCase() ?? '';
   const [saveError, setSaveError] = useState<string | undefined>();
   const [isSaving, setIsSaving] = useState(false);
+  const [isMappingsOpen, setIsMappingsOpen] = useState(Boolean(initialDataSet?.mappings));
+  const [mappingsValidationError, setMappingsValidationError] = useState<string | undefined>();
   const flyoutTopRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -94,6 +105,27 @@ export const CreateDatasetFlyout: FunctionComponent<CreateDatasetFlyoutProps> = 
       initialDataSet ? dataSetToFlyoutFormValues(initialDataSet) : emptyDatasetFlyoutFormValues(),
     [initialDataSet]
   );
+
+  const [mappingsValue, setMappingsValue] = useState<MappingEditorValue>(() => {
+    // NOTE: We intentionally keep this out of react-hook-form for now. The API payload is
+    // derived from this editor state on submit.
+    if (!initialDataSet?.mappings) return emptyMappingEditorValue();
+
+    const mappings = initialDataSet.mappings;
+    const fields = Object.entries(mappings.properties ?? {}).map(([name, prop], idx) => ({
+      id: String(idx),
+      name,
+      path: prop.path ?? '',
+      type: prop.type === 'date' ? DataType.DATETIME : (prop.type as DataType),
+      format: prop.format ?? '',
+    }));
+
+    return {
+      dynamic: mappings.dynamic !== 'false',
+      idPath: mappings._id?.path ?? '',
+      fields,
+    };
+  });
 
   const {
     handleSubmit,
@@ -109,6 +141,25 @@ export const CreateDatasetFlyout: FunctionComponent<CreateDatasetFlyoutProps> = 
       return;
     }
     reset(dataSetToFlyoutFormValues(initialDataSet));
+    if (initialDataSet.mappings) {
+      const mappings = initialDataSet.mappings;
+      const fields = Object.entries(mappings.properties ?? {}).map(([name, prop], idx) => ({
+        id: String(idx),
+        name,
+        path: prop.path ?? '',
+        type: prop.type === 'date' ? DataType.DATETIME : (prop.type as DataType),
+        format: prop.format ?? '',
+      }));
+      setMappingsValue({
+        dynamic: mappings.dynamic !== 'false',
+        idPath: mappings._id?.path ?? '',
+        fields,
+      });
+      setIsMappingsOpen(true);
+    } else {
+      setMappingsValue(emptyMappingEditorValue());
+      setIsMappingsOpen(false);
+    }
   }, [initialDataSet, reset]);
 
   const { field: nameField } = useController({
@@ -184,16 +235,33 @@ export const CreateDatasetFlyout: FunctionComponent<CreateDatasetFlyoutProps> = 
 
   const onSubmit = async (values: CreateDatasetFormValues) => {
     setSaveError(undefined);
+    setMappingsValidationError(undefined);
     setIsSaving(true);
     try {
       const desc = values.description?.trim();
       const settings = buildDatasetSettingsFromFormValues(values.settings);
+      const mappings = buildDatasetMappings(mappingsValue);
+
+      if (mappings) {
+        const validation = validateMappingEditorValue(mappingsValue);
+        if (!validation.isValid) {
+          setIsMappingsOpen(true);
+          setMappingsValidationError(
+            i18n.translate('xpack.dataFederation.createDatasetFlyout.mappings.invalid', {
+              defaultMessage: 'Fix mappings errors before saving.',
+            })
+          );
+          return;
+        }
+      }
+
       const payload: DataSetWithName = {
         name: values.name.trim(),
         data_source: values.data_source.trim(),
         resource: values.resource.trim(),
         ...(desc ? { description: desc } : {}),
         ...(settings ? { settings } : {}),
+        ...(mappings ? { mappings } : {}),
       };
       const message = await onSave(payload, initialDataSet?.name);
       if (message) {
@@ -317,6 +385,42 @@ export const CreateDatasetFlyout: FunctionComponent<CreateDatasetFlyoutProps> = 
             </EuiFormRow>
           ) : null}
           {dataSourceIdField.value ? <CreateDatasetFlyoutSettings control={control} /> : null}
+
+          {dataSourceIdField.value ? (
+            <>
+              <EuiSpacer size="m" />
+              <EuiButtonEmpty
+                size="s"
+                flush="left"
+                iconType={isMappingsOpen ? 'chevronSingleDown' : 'chevronSingleRight'}
+                aria-expanded={isMappingsOpen}
+                onClick={() => setIsMappingsOpen((v) => !v)}
+                data-test-subj="createDatasetFlyoutMappingsToggle"
+              >
+                {i18n.translate('xpack.dataFederation.createDatasetFlyout.mappings.toggle', {
+                  defaultMessage: 'Mappings (optional)',
+                })}
+              </EuiButtonEmpty>
+              {isMappingsOpen ? (
+                <>
+                  <EuiSpacer size="s" />
+                  {mappingsValidationError ? (
+                    <>
+                      <EuiText
+                        color="danger"
+                        size="s"
+                        data-test-subj="createDatasetFlyoutMappingsError"
+                      >
+                        {mappingsValidationError}
+                      </EuiText>
+                      <EuiSpacer size="s" />
+                    </>
+                  ) : null}
+                  <MappingEditor value={mappingsValue} onChange={setMappingsValue} />
+                </>
+              ) : null}
+            </>
+          ) : null}
         </EuiForm>
       </EuiFlyoutBody>
       <EuiFlyoutFooter>

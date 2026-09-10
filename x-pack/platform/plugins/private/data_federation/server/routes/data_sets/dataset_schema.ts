@@ -8,6 +8,7 @@
 import { schema } from '@kbn/config-schema';
 
 const optionalString = schema.maybe(schema.string({ maxLength: 4096 }));
+const optionalShortString = schema.maybe(schema.string({ maxLength: 256 }));
 
 /**
  * Request body for `PUT .../data_sets/{id}`: {@link Dataset} (no top-level `name`;
@@ -17,6 +18,34 @@ export const datasetSchema = schema.object({
   data_source: schema.string({ maxLength: 256 }),
   resource: schema.string({ maxLength: 4096 }),
   description: optionalString,
+  mappings: schema.maybe(
+    schema.object({
+      dynamic: schema.maybe(schema.oneOf([schema.literal('true'), schema.literal('false')])),
+      properties: schema.recordOf(
+        schema.string({ maxLength: 256 }),
+        schema.object({
+          type: schema.oneOf([
+            schema.literal('keyword'),
+            schema.literal('text'),
+            schema.literal('long'),
+            schema.literal('integer'),
+            schema.literal('double'),
+            schema.literal('boolean'),
+            schema.literal('date'),
+            schema.literal('unsigned_long'),
+            schema.literal('ip'),
+          ]),
+          path: optionalShortString,
+          format: optionalString,
+        })
+      ),
+      _id: schema.maybe(
+        schema.object({
+          path: schema.string({ maxLength: 256 }),
+        })
+      ),
+    })
+  ),
   settings: schema.maybe(
     schema.object({
       format: schema.maybe(

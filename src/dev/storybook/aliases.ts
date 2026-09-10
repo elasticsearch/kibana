@@ -32,6 +32,7 @@ export const storybookAliases = {
   custom_icons: 'src/platform/packages/shared/kbn-custom-icons/.storybook',
   custom_integrations: 'src/platform/plugins/shared/custom_integrations/storybook',
   data: 'src/platform/plugins/shared/data/.storybook',
+  data_federation: 'x-pack/platform/plugins/private/data_federation/.storybook',
   discover: 'src/platform/plugins/shared/discover/.storybook',
   es_ui_shared: 'src/platform/plugins/shared/es_ui_shared/.storybook',
   esql_ast_inspector: 'examples/esql_ast_inspector/.storybook',

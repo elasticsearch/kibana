@@ -39,6 +39,16 @@ export function registerCreateDataset(router: IRouter): void {
       const { client } = (await context.core).elasticsearch;
       const dataSetsClient = new DataSetsClient(client.asCurrentUser);
       try {
+        const mappings = request.body.mappings as unknown as
+          | { properties?: Record<string, unknown> }
+          | undefined;
+        if (mappings && Object.keys(mappings.properties ?? {}).length === 0) {
+          return response.badRequest({
+            body: {
+              message: 'mappings.properties must contain at least one field',
+            },
+          });
+        }
         await dataSetsClient.put(id, request.body);
         return response.ok();
       } catch (error) {
