@@ -11,6 +11,10 @@ import {
   ALERTING_TOOL_IDS,
   ALERTING_V2_ENABLED_SETTING_ID,
 } from '@kbn/alerting-v2-constants';
+import {
+  ALERTING_V2_NOTIFICATION_GROUP_INPUT_DEFINITION_ID,
+  KIBANA_WORKFLOW_INPUT_DEFINITION_REF_PREFIX,
+} from '@kbn/workflows';
 import { manageActionPolicyTool } from '../tools/manage_action_policy';
 import type { ManageActionPolicyToolDeps } from '../tools/manage_action_policy';
 import {
@@ -25,6 +29,8 @@ import {
   generateSingleRuleActionPolicyDoc,
   generateMultiRuleActionPolicyDoc,
 } from './schema_to_skill_docs';
+
+const NOTIFICATION_GROUP_INPUT_REF = `${KIBANA_WORKFLOW_INPUT_DEFINITION_REF_PREFIX}${ALERTING_V2_NOTIFICATION_GROUP_INPUT_DEFINITION_ID}`;
 
 export const createActionPolicyManagementSkill = (deps: ManageActionPolicyToolDeps) =>
   defineSkillType({
@@ -179,10 +185,11 @@ When setting up notifications create a default workflow first (Step 1), then cre
    - If no email connector exists, tell the user: "No email connector is configured. You can set one up under Stack Management → Connectors, then come back to add notifications."
 3. Generate a unique \`workflowId\` — a UUID (e.g. \`550e8400-e29b-41d4-a716-446655440000\`). Pass it as the \`workflowId\` parameter when calling \`platform.core.generate_workflow\`. This same ID will be used as the persisted workflow ID and must be referenced in the action policy destination. **Do NOT use a human-readable slug** — it would collide across conversations.
 4. Call \`platform.core.generate_workflow\` with the \`workflowId\` and a natural-language description that includes the YAML template tailored to the rule's query columns (paste the template into the \`query\` or \`instructions\` parameter). Consult the [workflow-dispatch-payload reference](./references/workflow-dispatch-payload.md) for the field catalog, \`data\` notes, and example YAML.
-5. After creating the workflow, render it inline for user review:
+5. Validate the generated YAML with \`platform.workflows.validate_workflow\`, passing \`expectedInputRefs: ["${NOTIFICATION_GROUP_INPUT_REF}"]\`. This confirms the workflow declares the dispatch payload as an input and only references fields the payload actually provides. If it reports \`missingInputRef\` or \`unknownInputRefPath\`, fix the YAML and re-validate before continuing.
+6. After creating the workflow, render it inline for user review:
    \`<render_attachment id="{attachmentId}" version="{attachmentVersion}"/>\`
    where \`attachmentId\` and \`attachmentVersion\` come from the \`generate_workflow\` tool result.
-6. Use the \`workflowId\` you generated in step 3 for action policy destinations. Do NOT use the \`attachmentId\` — that is only for rendering.
+7. Use the \`workflowId\` you generated in step 3 for action policy destinations. Do NOT use the \`attachmentId\` — that is only for rendering.
 
 Then create the action policy from the matching reference above and render it:
 \`<render_attachment id="{attachmentId}" version="{version}"/>\`
@@ -232,6 +239,21 @@ When the user asks how destinations relate to workflows or connectors, consult t
 When the user asks how a notification gets from a rule firing to email/Slack, consult the [dispatch-flow reference](./references/dispatch-flow.md).
 
 ### Workflow Dispatch Payload
-When choosing Liquid variables for a notification workflow, including query-specific \`ep.data.*\` fields, consult the [workflow-dispatch-payload reference](./references/workflow-dispatch-payload.md).`,
+When choosing Liquid variables for a notification workflow, including query-specific \`ep.data.*\` fields, consult the [workflow-dispatch-payload reference](./references/workflow-dispatch-payload.md).
+
+Any workflow used as an action policy destination must declare the dispatch payload as an input on its \`manual\` trigger:
+
+\`\`\`yaml
+triggers:
+  - type: manual
+    inputs:
+      properties:
+        payload:
+          $ref: '${NOTIFICATION_GROUP_INPUT_REF}'
+      required:
+        - payload
+\`\`\`
+
+Templates then read from \`inputs.payload.*\`. Verify this with \`platform.workflows.validate_workflow\` using \`expectedInputRefs: ["${NOTIFICATION_GROUP_INPUT_REF}"]\`.`,
     getInlineTools: () => [manageActionPolicyTool(deps)],
   });

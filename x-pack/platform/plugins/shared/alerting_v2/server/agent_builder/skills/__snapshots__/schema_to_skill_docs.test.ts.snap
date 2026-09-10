@@ -91,6 +91,10 @@ Catalog of fields the dispatcher passes as \`inputs.payload\`. In Liquid:
 \`{{ inputs.payload.<field> }}\`, and inside
 \`{% for ep in inputs.payload.episodes %}\` use \`{{ ep.<field> }}\`.
 
+Destination workflows must declare \`payload\` as a manual-trigger input bound to
+\`$ref: '#/kibana/definitions/alertingV2NotificationGroup'\`;
+see the example below.
+
 ## Top-Level Fields (\`inputs.payload\`)
 
 | Field | Type | Required | Description |
@@ -134,6 +138,12 @@ name: \\"Notify: <rule-name>\\"
 enabled: true
 triggers:
   - type: manual
+    inputs:
+      properties:
+        payload:
+          $ref: '#/kibana/definitions/alertingV2NotificationGroup'
+      required:
+        - payload
 steps:
   - name: send_email
     type: email

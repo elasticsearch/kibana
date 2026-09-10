@@ -7,8 +7,16 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
-import type { ValidateWorkflowResponseDto, WorkflowYaml } from '@kbn/workflows';
-import { validateStepNameUniqueness } from '@kbn/workflows';
+import type {
+  ValidateWorkflowResponseDto,
+  WorkflowInputRefViolation,
+  WorkflowYaml,
+} from '@kbn/workflows';
+import {
+  scanForTemplateVariables,
+  validateStepNameUniqueness,
+  validateWorkflowInputRefs,
+} from '@kbn/workflows';
 import { isGraphBuildError, WorkflowGraph } from '@kbn/workflows/graph';
 import type { WorkflowDiagnostic } from '@kbn/workflows/types/v1';
 import {
@@ -24,7 +32,18 @@ import { validateTriggers } from './validate_triggers';
 
 export interface ValidateWorkflowYamlOptions {
   triggerDefinitions?: TriggerDefinitionForValidateTriggers[];
+  /** Opt-in: when omitted, no input-ref checks run. */
+  expectedInputRefs?: readonly string[];
 }
+
+/** The subset of validation options a caller controls; the rest is derived from server state. */
+export type ValidateWorkflowRequestOptions = Pick<ValidateWorkflowYamlOptions, 'expectedInputRefs'>;
+
+const INPUT_REF_RULE_IDS = {
+  missing_input_ref: 'missingInputRef',
+  unresolvable_input_ref: 'unresolvableInputRef',
+  unknown_input_ref_path: 'unknownInputRefPath',
+} as const satisfies Record<WorkflowInputRefViolation['reason'], WorkflowDiagnostic['ruleId']>;
 
 export function validateWorkflowYaml(
   yaml: string,
@@ -121,6 +140,25 @@ export function validateWorkflowYaml(
       const message =
         isGraphBuildError(error) || error instanceof Error ? error.message : String(error);
       diagnostics.push({ severity: 'error', message, source: 'graph', ruleId: 'graphBuildError' });
+    }
+
+    if (options?.expectedInputRefs?.length) {
+      // Scanning the parsed definition also covers variables inside `{% %}` tags, which a
+      // `{{ }}` match would miss.
+      const violations = validateWorkflowInputRefs({
+        definition: parsedWorkflow,
+        templateVariables: scanForTemplateVariables(parsedWorkflow),
+        expectedInputRefs: options.expectedInputRefs,
+      });
+
+      for (const violation of violations) {
+        diagnostics.push({
+          severity: 'error',
+          message: violation.message,
+          source: 'input-ref',
+          ruleId: INPUT_REF_RULE_IDS[violation.reason],
+        });
+      }
     }
   }
 

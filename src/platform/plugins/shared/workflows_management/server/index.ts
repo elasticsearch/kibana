@@ -23,3 +23,4 @@ export type {
   BulkScheduleWorkflowItem,
   WorkflowsManagementApi,
 } from './api/workflows_management_api';
+export type { ValidateWorkflowRequestOptions } from '../common/lib/validate_workflow_yaml';

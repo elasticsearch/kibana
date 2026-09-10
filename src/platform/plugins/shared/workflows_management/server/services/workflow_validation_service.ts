@@ -14,6 +14,7 @@ import type { ServerTriggerDefinition } from '@kbn/workflows-extensions/server';
 import type { z } from '@kbn/zod/v4';
 
 import type { WorkflowValidationDeps } from './types';
+import type { ValidateWorkflowRequestOptions } from '../../common/lib/validate_workflow_yaml';
 import { validateWorkflowYaml } from '../../common/lib/validate_workflow_yaml';
 import { getWorkflowZodSchema } from '../../common/schema';
 import { getAvailableConnectors } from '../api/lib/workflow_connectors';
@@ -40,11 +41,15 @@ export class WorkflowValidationService {
   async validateWorkflow(
     yaml: string,
     spaceId: string,
-    request: KibanaRequest
+    request: KibanaRequest,
+    options?: ValidateWorkflowRequestOptions
   ): Promise<ValidateWorkflowResponseDto> {
     const zodSchema = await this.getWorkflowZodSchema({ loose: false }, spaceId, request);
     const triggerDefinitions = this.getRegisteredCustomTriggerDefinitions();
-    return validateWorkflowYaml(yaml, zodSchema, { triggerDefinitions });
+    return validateWorkflowYaml(yaml, zodSchema, {
+      triggerDefinitions,
+      expectedInputRefs: options?.expectedInputRefs,
+    });
   }
 
   async getWorkflowZodSchema(

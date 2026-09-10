@@ -26,6 +26,7 @@ import {
 import {
   ALERTING_V2_NOTIFICATION_GROUP_INPUT_DEFINITION_ID,
   builtinWorkflowInputDefinitions,
+  KIBANA_WORKFLOW_INPUT_DEFINITION_REF_PREFIX,
 } from '@kbn/workflows';
 import {
   ruleOperationSchema,
@@ -994,6 +995,10 @@ export const generateActionPolicyWorkflowPayloadDoc = (): string => {
     '`{{ inputs.payload.<field> }}`, and inside',
     '`{% for ep in inputs.payload.episodes %}` use `{{ ep.<field> }}`.',
     '',
+    'Destination workflows must declare `payload` as a manual-trigger input bound to',
+    `\`$ref: '${KIBANA_WORKFLOW_INPUT_DEFINITION_REF_PREFIX}${ALERTING_V2_NOTIFICATION_GROUP_INPUT_DEFINITION_ID}'\`;`,
+    'see the example below.',
+    '',
     '## Top-Level Fields (`inputs.payload`)',
     '',
     topLevelTable,
@@ -1024,6 +1029,12 @@ export const generateActionPolicyWorkflowPayloadDoc = (): string => {
     'enabled: true',
     'triggers:',
     '  - type: manual',
+    '    inputs:',
+    '      properties:',
+    '        payload:',
+    `          $ref: '${KIBANA_WORKFLOW_INPUT_DEFINITION_REF_PREFIX}${ALERTING_V2_NOTIFICATION_GROUP_INPUT_DEFINITION_ID}'`,
+    '      required:',
+    '        - payload',
     'steps:',
     '  - name: send_email',
     '    type: email',

@@ -11,7 +11,11 @@
 
 import { readFileSync } from 'fs';
 import Path from 'path';
-import { isWorkflowValidationRuleId } from '@kbn/workflows';
+import {
+  ALERTING_V2_NOTIFICATION_GROUP_INPUT_DEFINITION_ID,
+  isWorkflowValidationRuleId,
+  KIBANA_WORKFLOW_INPUT_DEFINITION_REF_PREFIX,
+} from '@kbn/workflows';
 import { z } from '@kbn/zod/v4';
 import { validateWorkflowYaml } from './validate_workflow_yaml';
 import { getWorkflowZodSchema } from '../schema';
@@ -502,6 +506,95 @@ steps:
 
       expect(result.valid).toBe(true);
       expect(result.diagnostics.filter((d) => d.source === 'graph')).toHaveLength(0);
+    });
+  });
+
+  describe('expectedInputRefs', () => {
+    const notificationGroupRef = `${KIBANA_WORKFLOW_INPUT_DEFINITION_REF_PREFIX}${ALERTING_V2_NOTIFICATION_GROUP_INPUT_DEFINITION_ID}`;
+
+    // Inputs are declared on the manual trigger; the workflow schema drops root-level `inputs`.
+    const workflowYaml = (inputsBlock: string, message: string) => `
+version: '1'
+name: Notification Workflow
+triggers:
+  - type: manual${inputsBlock}
+steps:
+  - name: notify
+    type: console
+    with:
+      message: "${message}"
+`;
+
+    const withPayloadInput = `
+    inputs:
+      properties:
+        payload:
+          $ref: '${notificationGroupRef}'
+      required:
+        - payload`;
+
+    it('passes when the workflow declares the ref and uses known fields', () => {
+      const result = validateWorkflowYaml(
+        workflowYaml(withPayloadInput, 'policy {{ inputs.payload.policyId }}'),
+        schema,
+        { expectedInputRefs: [notificationGroupRef] }
+      );
+
+      expect(result.valid).toBe(true);
+      expect(result.diagnostics.filter((d) => d.source === 'input-ref')).toHaveLength(0);
+    });
+
+    it('reports a missing input declaration', () => {
+      const result = validateWorkflowYaml(
+        workflowYaml('', 'hello {{ inputs.payload.policyId }}'),
+        schema,
+        { expectedInputRefs: [notificationGroupRef] }
+      );
+
+      expect(result.valid).toBe(false);
+      expect(result.diagnostics).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ source: 'input-ref', ruleId: 'missingInputRef' }),
+        ])
+      );
+    });
+
+    it('reports a template path the ref schema does not define', () => {
+      const result = validateWorkflowYaml(
+        workflowYaml(withPayloadInput, 'policy {{ inputs.payload.policyName }}'),
+        schema,
+        { expectedInputRefs: [notificationGroupRef] }
+      );
+
+      expect(result.valid).toBe(false);
+      expect(result.diagnostics).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ source: 'input-ref', ruleId: 'unknownInputRefPath' }),
+        ])
+      );
+    });
+
+    it('catches unknown fields referenced only inside a liquid tag', () => {
+      const result = validateWorkflowYaml(
+        workflowYaml(
+          withPayloadInput,
+          '{% for ep in inputs.payload.nope %}{{ ep.episode_id }}{% endfor %}'
+        ),
+        schema,
+        { expectedInputRefs: [notificationGroupRef] }
+      );
+
+      expect(result.valid).toBe(false);
+      expect(result.diagnostics.map((d) => d.ruleId)).toContain('unknownInputRefPath');
+    });
+
+    it('runs no input-ref checks when the option is omitted', () => {
+      const yaml = workflowYaml('', 'hello {{ inputs.payload.policyName }}');
+
+      expect(validateWorkflowYaml(yaml, schema).diagnostics).toEqual(
+        validateWorkflowYaml(yaml, schema, { expectedInputRefs: [] }).diagnostics
+      );
+      expect(validateWorkflowYaml(yaml, schema).valid).toBe(true);
     });
   });
 

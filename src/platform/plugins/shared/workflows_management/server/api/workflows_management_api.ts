@@ -77,6 +77,7 @@ import type {
   WorkflowsService,
 } from './workflows_management_service';
 import { formatWorkflowDiagnostic } from '../../common/lib/format_workflow_diagnostic';
+import type { ValidateWorkflowRequestOptions } from '../../common/lib/validate_workflow_yaml';
 import type {
   RestoreWorkflowVersionResponseDto,
   WorkflowChangesHistoryResponse,
@@ -1202,12 +1203,17 @@ export class WorkflowsManagementApi {
     return getWorkflowJsonSchema(zodSchema);
   }
 
+  /**
+   * Validates workflow YAML. Pass `options.expectedInputRefs` to additionally require that the
+   * workflow declares an input bound to each ref and only references fields in that ref's schema.
+   */
   public async validateWorkflow(
     yaml: string,
     spaceId: string,
-    request: KibanaRequest
+    request: KibanaRequest,
+    options?: ValidateWorkflowRequestOptions
   ): Promise<ValidateWorkflowResponseDto> {
-    return this.workflowsService.validateWorkflow(yaml, spaceId, request);
+    return this.workflowsService.validateWorkflow(yaml, spaceId, request, options);
   }
 
   private isStepExecution(params: StepLogsParams | ExecutionLogsParams): params is StepLogsParams {

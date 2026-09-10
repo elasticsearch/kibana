@@ -49,7 +49,24 @@ describe('registerValidateWorkflowTool', () => {
     await invokeHandler(registeredTool, { yaml }, context);
 
     expect(mockApi.validateWorkflow).toHaveBeenCalledTimes(1);
-    expect(mockApi.validateWorkflow).toHaveBeenCalledWith(yaml, 'default', context.request);
+    expect(mockApi.validateWorkflow).toHaveBeenCalledWith(
+      yaml,
+      'default',
+      context.request,
+      undefined
+    );
+  });
+
+  it('forwards expectedInputRefs when the caller supplies them', async () => {
+    const yaml = `version: '1'\nname: test\nenabled: true\ntriggers:\n  - type: manual\nsteps:\n  - name: log\n    type: console\n    with:\n      message: test\n`;
+    const context = { spaceId: 'default', request: {} } as any;
+    const expectedInputRefs = ['#/kibana/definitions/alertingV2NotificationGroup'];
+
+    await invokeHandler(registeredTool, { yaml, expectedInputRefs }, context);
+
+    expect(mockApi.validateWorkflow).toHaveBeenCalledWith(yaml, 'default', context.request, {
+      expectedInputRefs,
+    });
   });
 
   it('returns results in expected shape', async () => {

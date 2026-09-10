@@ -132,6 +132,26 @@ export interface WorkflowValidationRules {
     values: { workflowId: string };
   };
 
+  // -- workflow input refs ------------------------------------------------------
+  /** No declared input is bound to an input contract the caller requires. */
+  missingInputRef: {
+    owner: 'workflow-input-ref-validation';
+    defaultSeverity: 'error';
+    values: { ref: string; declaredInputs: string };
+  };
+  /** An input is bound to a `$ref` that resolves to no known schema. */
+  unresolvableInputRef: {
+    owner: 'workflow-input-ref-validation';
+    defaultSeverity: 'error';
+    values: { ref: string; inputName: string };
+  };
+  /** A template references a path the input contract's schema does not allow. */
+  unknownInputRefPath: {
+    owner: 'workflow-input-ref-validation';
+    defaultSeverity: 'error';
+    values: { ref: string; inputName: string; path: string; knownKeys: string };
+  };
+
   // -- workflow outputs ---------------------------------------------------------
   invalidWorkflowOutput: {
     owner: 'workflow-output-validation';
@@ -263,6 +283,10 @@ export const WORKFLOW_VALIDATION_RULES: {
   invalidInputType: { owner: 'workflow-inputs-validation', defaultSeverity: 'error' },
   missingRequiredInput: { owner: 'workflow-inputs-validation', defaultSeverity: 'error' },
   targetWorkflowNotFound: { owner: 'workflow-inputs-validation', defaultSeverity: 'error' },
+
+  missingInputRef: { owner: 'workflow-input-ref-validation', defaultSeverity: 'error' },
+  unresolvableInputRef: { owner: 'workflow-input-ref-validation', defaultSeverity: 'error' },
+  unknownInputRefPath: { owner: 'workflow-input-ref-validation', defaultSeverity: 'error' },
 
   invalidWorkflowOutput: { owner: 'workflow-output-validation', defaultSeverity: 'error' },
 

@@ -11,6 +11,16 @@ export * from './spec/lib/build_fields_zod_validator';
 export * from './spec/lib/build_step_schema_for_agent';
 export * from './spec/lib/generate_yaml_schema_from_connectors';
 export * from './spec/lib/get_workflow_json_schema';
+export {
+  isJsonSchemaPathValid,
+  validateWorkflowInputRefs,
+} from './spec/lib/validate_workflow_input_refs';
+export type {
+  IsJsonSchemaPathValidOptions,
+  ValidateWorkflowInputRefsArgs,
+  WorkflowInputRefViolation,
+  WorkflowInputRefViolationReason,
+} from './spec/lib/validate_workflow_input_refs';
 export { getElasticsearchConnectors } from './spec/elasticsearch';
 export { getKibanaConnectors } from './spec/kibana';
 export { resolveKibanaStepTypeAlias } from './spec/kibana/aliases';

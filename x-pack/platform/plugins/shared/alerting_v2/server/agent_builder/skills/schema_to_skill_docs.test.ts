@@ -371,9 +371,12 @@ describe('schema_to_skill_docs', () => {
       generateActionPolicyWorkflowPayloadDoc(),
     ];
 
+    // Matched on the pointer prefixes rather than the `$ref` keyword: authored workflow YAML
+    // legitimately contains `$ref: '#/kibana/definitions/...'` as an input contract.
     it('never leaves an unresolved pointer or type in any doc', () => {
       for (const doc of allDocs()) {
-        expect(doc).not.toContain('$ref');
+        expect(doc).not.toContain('#/definitions/');
+        expect(doc).not.toContain('#/$defs/');
         expect(doc).not.toContain('| unknown');
         expect(doc).not.toContain('unknown[]');
       }

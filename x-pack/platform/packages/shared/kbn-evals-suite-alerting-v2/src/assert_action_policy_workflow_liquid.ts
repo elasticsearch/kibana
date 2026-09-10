@@ -8,7 +8,7 @@
 import {
   ALERTING_V2_NOTIFICATION_GROUP_INPUT_DEFINITION_ID,
   builtinWorkflowInputDefinitions,
-  parseJsPropertyAccess,
+  isJsonSchemaPathValid,
   scanForTemplateVariables,
   WorkflowSchemaForAutocomplete,
   type JsonSchema,
@@ -38,28 +38,6 @@ const getPayloadSchema = (): JsonSchema => {
 
 const isUnderPrefix = (path: string, prefix: string): boolean =>
   path === prefix || path.startsWith(`${prefix}.`) || path.startsWith(`${prefix}[`);
-
-const ANY_KEY_OBJECT: JsonSchema = { type: 'object', additionalProperties: true };
-
-/**
- * Follows one path segment into `schema` and returns the schema of the value it lands
- * on, or `null` when the schema doesn't allow that segment.
- */
-const resolveSegment = (schema: JsonSchema, segment: string): JsonSchema | null => {
-  if (schema.type === 'array') {
-    // Liquid indexes arrays numerically and can't pick a slot out of a tuple schema.
-    const items = Array.isArray(schema.items) ? schema.items[0] : schema.items;
-    return /^\d+$/.test(segment) ? items ?? ANY_KEY_OBJECT : null;
-  }
-
-  if (schema.type !== 'object') {
-    return null;
-  }
-
-  // Open maps (groupKey, rules, episode data) accept any key but don't describe their
-  // values, so everything below them is unconstrained.
-  return schema.properties?.[segment] ?? (schema.additionalProperties ? ANY_KEY_OBJECT : null);
-};
 
 const toPayloadRelativePath = (path: string): string => {
   if (path === PAYLOAD_PREFIX) {
@@ -153,18 +131,7 @@ export const isActionPolicyPayloadLiquidPath = (path: string): boolean =>
 export const isActionPolicyPayloadPathInSchema = (
   relativePath: string,
   schema: JsonSchema = getPayloadSchema()
-): boolean => {
-  let current: JsonSchema | null = schema;
-
-  for (const segment of parseJsPropertyAccess(relativePath)) {
-    current = resolveSegment(current, segment);
-    if (!current) {
-      return false;
-    }
-  }
-
-  return true;
-};
+): boolean => isJsonSchemaPathValid(relativePath, schema);
 
 /**
  * Asserts that an action-policy notification workflow:

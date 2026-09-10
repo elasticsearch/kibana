@@ -76,6 +76,7 @@ import type {
   SearchStepExecutionsParams,
 } from './workflows_management_api';
 
+import type { ValidateWorkflowRequestOptions } from '../../common/lib/validate_workflow_yaml';
 import type {
   RestoreWorkflowVersionResponseDto,
   WorkflowChangesHistoryResponse,
@@ -663,10 +664,11 @@ export class WorkflowsService {
   public async validateWorkflow(
     yaml: string,
     spaceId: string,
-    request: KibanaRequest
+    request: KibanaRequest,
+    options?: ValidateWorkflowRequestOptions
   ): Promise<ValidateWorkflowResponseDto> {
     await this.ensureInitialized();
-    return this.validationService.validateWorkflow(yaml, spaceId, request);
+    return this.validationService.validateWorkflow(yaml, spaceId, request, options);
   }
 
   public async getWorkflowZodSchema(
