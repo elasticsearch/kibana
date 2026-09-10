@@ -8,6 +8,10 @@
 import { tags } from '@kbn/scout';
 import { expect } from '@kbn/scout/ui';
 import { deleteAllConversationsFromEs } from '../../../scout_agent_builder_shared/lib/conversations_es';
+import {
+  getGenAiConnectorId,
+  seedConversationViaConverse,
+} from '../../../scout_agent_builder_shared/lib/conversations_api';
 import { test } from '../fixtures';
 
 const CONVERSATION_DATA = [
@@ -36,18 +40,20 @@ test.describe.skip(
       await deleteAllConversationsFromEs(esClient);
     });
 
-    test('embeddable sidebar conversation history', async ({ page, pageObjects, llmProxy }) => {
+    test('embeddable sidebar conversation history', async ({
+      page,
+      pageObjects,
+      llmProxy,
+      kbnClient,
+    }) => {
       const conversationIds: string[] = [];
 
-      await test.step('seed conversations via full-screen UI', async () => {
+      await test.step('seed conversations via converse API', async () => {
+        const connectorId = await getGenAiConnectorId(kbnClient);
         for (const conv of CONVERSATION_DATA) {
-          const conversationId = await pageObjects.agentBuilder.createConversationViaUI(
-            conv.title,
-            conv.userMessage,
-            conv.expectedResponse,
-            llmProxy
+          conversationIds.push(
+            await seedConversationViaConverse(kbnClient, llmProxy, connectorId, conv)
           );
-          conversationIds.push(conversationId);
         }
       });
 
