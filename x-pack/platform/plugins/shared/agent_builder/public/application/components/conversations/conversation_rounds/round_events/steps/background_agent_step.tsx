@@ -63,7 +63,7 @@ const BackgroundAgentHeadline: React.FC<{ step: BackgroundAgentCompleteStepData 
   return (
     <EuiFlexGroup direction="row" gutterSize="s" alignItems="center" responsive={false}>
       <EuiFlexItem grow={false}>
-        <EuiText color={isFailure ? 'danger' : 'inherit'}>
+        <EuiText size="s" color={isFailure ? 'danger' : 'inherit'}>
           <p role="status">
             {isFailure ? (
               <FormattedMessage

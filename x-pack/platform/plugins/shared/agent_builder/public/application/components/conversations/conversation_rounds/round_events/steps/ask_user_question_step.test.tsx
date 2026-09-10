@@ -51,6 +51,17 @@ describe('AskUserQuestionStepEvent', () => {
     expect(screen.queryByText('Pick a color')).not.toBeInTheDocument();
   });
 
+  it('renders the label at the small text size', () => {
+    renderWithProviders(
+      <AskUserQuestionStepEvent
+        step={makeStep([{ choice: [0] }, { choice: [0] }, { choice: [0] }])}
+      />
+    );
+    expect(screen.getByText('Clarification • 3 answered').closest('.euiText')?.className).toMatch(
+      /euiText-s/
+    );
+  });
+
   it('returns null when answers are not defined', () => {
     const { container } = renderWithProviders(
       <AskUserQuestionStepEvent step={makeStep(undefined)} />

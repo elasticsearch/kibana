@@ -21,7 +21,7 @@ export const CompactionStep: React.FC<CompactionStepProps> = ({ step }) => {
   return (
     <StepLayout
       label={
-        <EuiText color="inherit">
+        <EuiText size="s" color="inherit">
           <p role="status" aria-live="polite">
             {isInProgress ? (
               <FormattedMessage
