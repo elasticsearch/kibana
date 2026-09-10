@@ -280,5 +280,106 @@ describe('APM metrics static dashboard helpers', () => {
         })
       ).toBe(false);
     });
+
+    it('returns true for OTel-native EDOT .NET 9', () => {
+      expect(
+        hasDashboard({
+          agentName: 'opentelemetry/dotnet/elastic',
+          telemetrySdkName: 'opentelemetry',
+          telemetrySdkLanguage: 'dotnet',
+          runtimeVersion: '9.0.0',
+        })
+      ).toBe(true);
+    });
+
+    it('returns true for OTel-native vanilla .NET', () => {
+      expect(
+        hasDashboard({
+          agentName: 'opentelemetry/dotnet',
+          telemetrySdkName: 'opentelemetry',
+          telemetrySdkLanguage: 'dotnet',
+        })
+      ).toBe(true);
+    });
+  });
+
+  describe('convertSavedDashboardToPanels - .NET OTel-native dashboards', () => {
+    interface PanelLike {
+      config?: {
+        attributes?: {
+          state?: {
+            datasourceStates?: {
+              formBased?: {
+                layers?: Record<string, { columns?: Record<string, { sourceField?: string }> }>;
+              };
+            };
+          };
+        };
+      };
+    }
+
+    const dataView = {
+      id: 'dotnet-id',
+      title: 'metrics-*.otel-*',
+      getIndexPattern: () => 'metrics-*.otel-*',
+    } as unknown as DataView;
+
+    const collectSourceFields = (panels: PanelLike[]): string[] => {
+      const fields: string[] = [];
+      for (const panel of panels) {
+        const layers = panel.config?.attributes?.state?.datasourceStates?.formBased?.layers ?? {};
+        for (const layer of Object.values(layers)) {
+          for (const column of Object.values(layer.columns ?? {})) {
+            if (column.sourceField) {
+              fields.push(column.sourceField);
+            }
+          }
+        }
+      }
+      return fields;
+    };
+
+    it('loads the new dotnet.* dashboard for OTel-native EDOT .NET 9', async () => {
+      const panels = await convertSavedDashboardToPanels({
+        agentName: 'opentelemetry/dotnet/elastic',
+        telemetrySdkName: 'opentelemetry',
+        telemetrySdkLanguage: 'dotnet',
+        runtimeVersion: '9.0.0',
+        dataView,
+      });
+
+      expect(panels).toBeDefined();
+      const fields = collectSourceFields(panels as PanelLike[]);
+      expect(fields).toContain('dotnet.gc.collections');
+      expect(fields).toContain('dotnet.thread_pool.thread.count');
+    });
+
+    it('loads the same dotnet.* dashboard for OTel-native vanilla .NET', async () => {
+      const panels = await convertSavedDashboardToPanels({
+        agentName: 'opentelemetry/dotnet',
+        telemetrySdkName: 'opentelemetry',
+        telemetrySdkLanguage: 'dotnet',
+        runtimeVersion: '9.0.0',
+        dataView,
+      });
+
+      expect(panels).toBeDefined();
+      expect(collectSourceFields(panels as PanelLike[])).toContain('dotnet.gc.collections');
+    });
+
+    it('loads the legacy-schema dashboard for OTel-native EDOT .NET 8', async () => {
+      const panels = await convertSavedDashboardToPanels({
+        agentName: 'opentelemetry/dotnet/elastic',
+        telemetrySdkName: 'opentelemetry',
+        telemetrySdkLanguage: 'dotnet',
+        runtimeVersion: '8.0.0',
+        dataView,
+      });
+
+      expect(panels).toBeDefined();
+      expect(collectSourceFields(panels as PanelLike[])).toContain(
+        'process.runtime.dotnet.gc.collections.count'
+      );
+    });
   });
 });

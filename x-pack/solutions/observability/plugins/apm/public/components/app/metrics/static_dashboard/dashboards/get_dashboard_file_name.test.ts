@@ -237,6 +237,39 @@ describe('getDashboardFileName', () => {
         })
       ).toBe('classic_apm-edot-dotnet');
     });
+
+    it('resolves OTel-native EDOT .NET 9 to the new dotnet.* dashboard', () => {
+      expect(
+        getDashboardFileName({
+          agentName: 'opentelemetry/dotnet/elastic',
+          telemetrySdkName: 'opentelemetry',
+          telemetrySdkLanguage: 'dotnet',
+          runtimeVersion: '9.0.0',
+        })
+      ).toBe('otel_native-edot-dotnet');
+    });
+
+    it('resolves OTel-native EDOT .NET 8 to the lte-v8 dashboard via <=8 rule', () => {
+      expect(
+        getDashboardFileName({
+          agentName: 'opentelemetry/dotnet/elastic',
+          telemetrySdkName: 'opentelemetry',
+          telemetrySdkLanguage: 'dotnet',
+          runtimeVersion: '8.0.11',
+        })
+      ).toBe('otel_native-edot-dotnet-lte-v8');
+    });
+
+    it('resolves OTel-native vanilla .NET to the otel_other dotnet dashboard', () => {
+      expect(
+        getDashboardFileName({
+          agentName: 'opentelemetry/dotnet',
+          telemetrySdkName: 'opentelemetry',
+          telemetrySdkLanguage: 'dotnet',
+          runtimeVersion: '9.0.0',
+        })
+      ).toBe('otel_native-otel_other-dotnet');
+    });
   });
 });
 
