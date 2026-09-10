@@ -9,6 +9,9 @@
 
 export const ENABLE_ESQL = 'enableESQL';
 
+// Temporary: remove once dataset filtering is enabled by default in ES
+export const ESQL_DATASET_FILTERING_FEATURE_FLAG = 'esql.datasetFilteringEnabled';
+
 /**
  * Denotes placeholder value for property on a record that is not set.
  */

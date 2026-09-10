@@ -7,7 +7,7 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
-import type { CoreStart, HttpStart, ThemeServiceStart } from '@kbn/core/public';
+import type { CoreStart, FeatureFlagsStart, HttpStart, ThemeServiceStart } from '@kbn/core/public';
 import { createGetterSetter } from '@kbn/kibana-utils-plugin/public';
 import type { DataViewsContract } from '@kbn/data-views-plugin/common';
 import type { DataPublicPluginStart } from './types';
@@ -26,3 +26,8 @@ export const [getSearchService, setSearchService] =
   createGetterSetter<DataPublicPluginStart['search']>('Search');
 
 export const [getTheme, setTheme] = createGetterSetter<ThemeServiceStart>('Theme');
+
+export const [getFeatureFlags, setFeatureFlags] = createGetterSetter<FeatureFlagsStart>(
+  'FeatureFlags',
+  false
+);

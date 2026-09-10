@@ -10,7 +10,7 @@
 import { dataViewPluginMocks } from '@kbn/data-views-plugin/public/mocks';
 import { createStubDataView } from '@kbn/data-views-plugin/common/data_view.stub';
 import { dataPluginMock } from '../../mocks';
-import { setIndexPatterns, setSearchService } from '../../services';
+import { setIndexPatterns, setSearchService, setFeatureFlags } from '../../services';
 import { getESQLAdHocDataview } from '@kbn/esql-utils';
 
 jest.mock('@kbn/esql-utils', () => ({
@@ -242,6 +242,15 @@ describe('createFiltersFromClickEvent', () => {
         table.rows[0]['1-1'] = 'test message';
       });
 
+      test('should return empty array when field is not found in dataview and dataset filtering is disabled', async () => {
+        mockFieldByName.mockReturnValue(null);
+        setFeatureFlags({
+          getBooleanValue: jest.fn().mockResolvedValue(false),
+        } as any);
+        const filter = await createFilterESQL(table, 0, 0);
+        expect(filter).toEqual([]);
+      });
+
       test('should return empty array when field is not found in dataview', async () => {
         mockFieldByName.mockReturnValue(null);
         const filter = await createFilterESQL(table, 0, 0);
@@ -364,6 +373,78 @@ describe('createFiltersFromClickEvent', () => {
             }),
           })
         );
+      });
+
+      describe('dataset sources (no fieldCaps)', () => {
+        const mockInjectedField = {
+          name: 'message',
+          type: 'string',
+          filterable: true,
+          scripted: false,
+        };
+
+        beforeEach(() => {
+          // First call returns null (field not in data view), second call returns the injected field
+          mockFieldByName.mockReturnValueOnce(null).mockReturnValue(mockInjectedField);
+          setFeatureFlags({
+            getBooleanValue: jest.fn().mockResolvedValue(true),
+          } as any);
+          (table.columns[0].meta!.sourceParams as Record<string, unknown>).isSourceFieldFilterable =
+            true;
+        });
+
+        test('creates a phrase filter by injecting the field into the data view', async () => {
+          const filter = await createFilterESQL(table, 0, 0);
+
+          expect(filter).toHaveLength(1);
+          expect(filter[0]).toEqual(
+            expect.objectContaining({
+              query: expect.objectContaining({
+                match_phrase: expect.objectContaining({ message: 'test message' }),
+              }),
+            })
+          );
+          expect(mockDataView.getFieldByName('message')).toBeDefined();
+        });
+
+        test('creates a phrases filter for array values', async () => {
+          mockFieldByName.mockReset();
+          mockFieldByName.mockReturnValueOnce(null).mockReturnValue(mockInjectedField);
+          table.rows[0]['1-1'] = ['val1', 'val2'];
+
+          const filter = await createFilterESQL(table, 0, 0);
+
+          expect(filter).toHaveLength(1);
+          expect(filter[0]).toEqual(
+            expect.objectContaining({
+              query: expect.objectContaining({
+                bool: expect.objectContaining({
+                  should: expect.arrayContaining([
+                    expect.objectContaining({ match_phrase: { message: 'val1' } }),
+                    expect.objectContaining({ match_phrase: { message: 'val2' } }),
+                  ]),
+                }),
+              }),
+            })
+          );
+        });
+
+        test('returns empty array for computed columns even when isSourceFieldFilterable is true', async () => {
+          table.columns[0].isComputedColumn = true;
+
+          const filter = await createFilterESQL(table, 0, 0);
+
+          expect(filter).toEqual([]);
+        });
+
+        test('returns empty array when isSourceFieldFilterable is not set', async () => {
+          delete (table.columns[0].meta!.sourceParams as Record<string, unknown>)
+            .isSourceFieldFilterable;
+
+          const filter = await createFilterESQL(table, 0, 0);
+
+          expect(filter).toEqual([]);
+        });
       });
     });
   });

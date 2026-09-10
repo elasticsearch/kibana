@@ -27,7 +27,8 @@ import {
 } from '@kbn/es-query/src/filters/build_filters';
 import { MISSING_TOKEN } from '@kbn/field-formats-common';
 import type { DataViewsPublicPluginStart } from '@kbn/data-views-plugin/public';
-import { getHttp, getIndexPatterns, getSearchService } from '../../services';
+import { ESQL_DATASET_FILTERING_FEATURE_FLAG } from '@kbn/esql-utils';
+import { getHttp, getIndexPatterns, getSearchService, getFeatureFlags } from '../../services';
 import type { AggConfigSerialized } from '../../../common/search/aggs';
 import { mapAndFlattenFilters } from '../../query';
 
@@ -161,8 +162,40 @@ const createFilterFromRawColumnsESQL = async (
 
   const field = dataView.getFieldByName(fieldName);
 
-  // Field should be present in the data view and filterable
-  if (!field || !field.filterable) {
+  if (!field) {
+    // For dataset sources fieldCaps returns nothing, so the data view has no fields.
+    // Only proceed when dataset filtering is enabled and the column is a real, filterable
+    // source field — not a computed one.
+    const datasetFilteringEnabled = await getFeatureFlags()?.getBooleanValue(
+      ESQL_DATASET_FILTERING_FEATURE_FLAG,
+      true
+    );
+    if (
+      !datasetFilteringEnabled ||
+      column.isComputedColumn === true ||
+      column.meta?.sourceParams?.isSourceFieldFilterable !== true
+    ) {
+      return [];
+    }
+    // Inject the field into the shared data view so that filter display utilities
+    // (getDisplayValueFromFilter → getValueFormatter) can find it and won't throw.
+    dataView.fields.add({
+      name: fieldName,
+      type: column.meta?.type ?? 'string',
+      searchable: true,
+      aggregatable: false,
+      count: 0,
+      readFromDocValues: false,
+    });
+    const injectedField = dataView.getFieldByName(fieldName)!;
+    return [
+      Array.isArray(value)
+        ? buildPhrasesFilter(injectedField, value, dataView)
+        : buildPhraseFilter(injectedField, value, dataView),
+    ];
+  }
+
+  if (!field.filterable) {
     return [];
   }
 

@@ -28,6 +28,7 @@ import { QueryService } from './query';
 import { DateRangePickerPresetsService } from './date_range_picker_presets';
 import {
   setHttp,
+  setFeatureFlags,
   setIndexPatterns,
   setOverlays,
   setSearchService,
@@ -148,10 +149,11 @@ export class DataPublicPlugin
       cps,
     }: DataStartDependencies
   ): DataPublicPluginStart {
-    const { uiSettings, overlays, http } = core;
+    const { uiSettings, overlays, http, featureFlags } = core;
     setOverlays(overlays);
     setUiSettings(uiSettings);
     setHttp(http);
+    setFeatureFlags(featureFlags);
     setIndexPatterns(dataViews);
 
     const query = this.queryService.start({
