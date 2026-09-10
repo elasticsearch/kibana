@@ -10,7 +10,6 @@ import type { LegendSizeSettingsProps } from './legend_size_settings';
 import { LegendSizeSettings } from './legend_size_settings';
 import { LegendSize } from '@kbn/chart-expressions-common';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
-import userEvent, { PointerEventsCheckLevel } from '@testing-library/user-event';
 
 describe('legend size settings', () => {
   const renderLegendSizeSettings = (props?: Partial<LegendSizeSettingsProps>) => {
@@ -22,11 +21,10 @@ describe('legend size settings', () => {
     };
     return render(<LegendSizeSettings {...defaultProps} {...props} />);
   };
-  const user = userEvent.setup({ pointerEventsCheck: PointerEventsCheckLevel.Never });
-  const openSelect = async () => await user.click(screen.getByRole('button'));
+  const openSelect = () => fireEvent.click(screen.getByRole('button'));
   const chooseOption = async (option: string) => {
-    await openSelect();
-    fireEvent.click(screen.getByRole('option', { name: option }));
+    openSelect();
+    fireEvent.click(await screen.findByRole('option', { name: option }));
   };
   it('renders nothing if not vertical legend', () => {
     const { container } = renderLegendSizeSettings({ isVerticalLegend: false });
@@ -55,17 +53,17 @@ describe('legend size settings', () => {
 
   it('hides "auto" option if visualization not using it', async () => {
     renderLegendSizeSettings({ showAutoOption: true });
-    await openSelect();
+    openSelect();
     expect(
-      screen.getAllByRole('option').filter((option) => option.textContent === 'Auto')
+      (await screen.findAllByRole('option')).filter((option) => option.textContent === 'Auto')
     ).toHaveLength(1);
 
     cleanup();
 
     renderLegendSizeSettings({ showAutoOption: false });
-    await openSelect();
+    openSelect();
     expect(
-      screen.getAllByRole('option').filter((option) => option.textContent === 'Auto')
+      (await screen.findAllByRole('option')).filter((option) => option.textContent === 'Auto')
     ).toHaveLength(0);
   });
 });
