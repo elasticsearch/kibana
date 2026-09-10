@@ -39,6 +39,11 @@ interface WaitForTaskDrainedParams {
   spaceId?: string;
 }
 
+interface WaitForExecutorIdleParams {
+  ruleId: string;
+  spaceId?: string;
+}
+
 /**
  * Test-time accessor for the per-rule alerting_v2 rule executor task. Used to
  * wait for deterministic conditions instead of sleeping by wall-clock time:
@@ -48,6 +53,10 @@ interface WaitForTaskDrainedParams {
  *   - `waitForTaskDrained` — polls `.kibana_task_manager` until the executor
  *     task is no longer in `claiming`/`running` status (or until the document
  *     is gone, e.g. after rule delete).
+ *   - `waitForExecutorIdle` — polls `.kibana_task_manager` until the executor
+ *     task has finished its initial run and is scheduled ahead (`idle` with a
+ *     future `runAt`), so an operation that only touches `idle` tasks (e.g. API
+ *     key rotation) can act on it deterministically.
  *
  * The underlying `kibana.task.id` construction (`taskType:spaceId:ruleId`) is
  * an implementation detail; tests pass `ruleId` (and optionally `spaceId`).
@@ -55,6 +64,7 @@ interface WaitForTaskDrainedParams {
 export interface RuleExecutionsApiService {
   waitForRuns: (params: WaitForRunsParams) => Promise<void>;
   waitForTaskDrained: (params: WaitForTaskDrainedParams) => Promise<void>;
+  waitForExecutorIdle: (params: WaitForExecutorIdleParams) => Promise<void>;
 }
 
 const buildExecutorTaskId = (ruleId: string, spaceId: string): string =>
@@ -87,6 +97,27 @@ export const getRuleExecutionsApiService = ({
     return !status || !RUNNING_TASK_STATUSES.includes(status);
   };
 
+  /**
+   * Returns `true` once the executor task has completed its initial run and is
+   * waiting for the next one: `task.status` is `idle` and `task.runAt` is in
+   * the future. A freshly scheduled task runs immediately regardless of its
+   * interval, so it starts out `idle` with a `runAt` in the past — only after
+   * the first run settles does `runAt` move ahead.
+   */
+  const isExecutorTaskIdleAhead = async (taskId: string): Promise<boolean> => {
+    const result = await esClient.search<{ task: { status: string; runAt: string } }>({
+      index: TASK_MANAGER_INDEX,
+      query: { term: { _id: `task:${taskId}` } },
+      size: 1,
+      _source: ['task.status', 'task.runAt'],
+    });
+
+    const task = result.hits.hits[0]?._source?.task;
+    if (!task) return false;
+
+    return task.status === 'idle' && Date.parse(task.runAt) > Date.now();
+  };
+
   return {
     waitForRuns: ({ ruleId, runs, since, spaceId = DEFAULT_SPACE_ID }) =>
       measurePerformanceAsync(log, 'ruleExecutions.waitForRuns', async () => {
@@ -107,6 +138,18 @@ export const getRuleExecutionsApiService = ({
 
         await expect
           .poll(() => isExecutorTaskDrained(taskId), {
+            timeout: POLL_TIMEOUT_MS,
+            intervals: [POLL_INTERVAL_MS],
+          })
+          .toBe(true);
+      }),
+
+    waitForExecutorIdle: ({ ruleId, spaceId = DEFAULT_SPACE_ID }) =>
+      measurePerformanceAsync(log, 'ruleExecutions.waitForExecutorIdle', async () => {
+        const taskId = buildExecutorTaskId(ruleId, spaceId);
+
+        await expect
+          .poll(() => isExecutorTaskIdleAhead(taskId), {
             timeout: POLL_TIMEOUT_MS,
             intervals: [POLL_INTERVAL_MS],
           })

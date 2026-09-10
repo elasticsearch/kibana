@@ -11,6 +11,7 @@ import { ID_MAX_LENGTH, MAX_BULK_ITEMS } from '@kbn/alerting-v2-schemas';
 import {
   ALERTING_V2_RULES_ALL_ROLE,
   ALERTING_V2_RULES_READ_ROLE,
+  type AlertingApiServicesFixture,
   apiTest,
   buildCreateRuleData,
   NO_ACCESS_ROLE,
@@ -18,6 +19,23 @@ import {
 } from '../fixtures';
 
 const BULK_UPDATE_API_KEY_URL = `${testData.RULE_API_PATH}/_bulk_update_api_key`;
+
+// Rules are created enabled, so Task Manager runs their executor once
+// immediately — independent of the schedule interval. `_bulk_update_api_key`
+// only rotates `idle` tasks, so rotating while that first run is still in
+// flight skips the rule and reports a per-rule error. Create with a long
+// interval and wait for the executor to settle back to `idle` (its next run a
+// day out) before rotating, so the rotation acts on an idle task deterministically.
+const createRotatableRule = async (apiServices: AlertingApiServicesFixture, name: string) => {
+  const rule = await apiServices.alertingV2.rules.create(
+    buildCreateRuleData({
+      metadata: { name },
+      schedule: { every: '1d', lookback: testData.LOOKBACK_WINDOW },
+    })
+  );
+  await apiServices.alertingV2.ruleExecutions.waitForExecutorIdle({ ruleId: rule.id });
+  return rule;
+};
 
 apiTest.describe('Bulk update rule API key by IDs API', { tag: '@local-stateful-classic' }, () => {
   let writerCredentials: RoleApiCredentials;
@@ -37,12 +55,8 @@ apiTest.describe('Bulk update rule API key by IDs API', { tag: '@local-stateful-
   apiTest(
     'update: rotates the API key for rules and stamps audit metadata',
     async ({ apiClient, apiServices }) => {
-      const ruleA = await apiServices.alertingV2.rules.create(
-        buildCreateRuleData({ metadata: { name: 'rule-a' } })
-      );
-      const ruleB = await apiServices.alertingV2.rules.create(
-        buildCreateRuleData({ metadata: { name: 'rule-b' } })
-      );
+      const ruleA = await createRotatableRule(apiServices, 'rule-a');
+      const ruleB = await createRotatableRule(apiServices, 'rule-b');
 
       const response = await apiClient.post(BULK_UPDATE_API_KEY_URL, {
         headers: writerHeaders,
@@ -68,9 +82,7 @@ apiTest.describe('Bulk update rule API key by IDs API', { tag: '@local-stateful-
   apiTest(
     'state: preserves all rule attributes other than the audit metadata',
     async ({ apiClient, apiServices }) => {
-      const created = await apiServices.alertingV2.rules.create(
-        buildCreateRuleData({ metadata: { name: 'preserve-attrs-rule' } })
-      );
+      const created = await createRotatableRule(apiServices, 'preserve-attrs-rule');
 
       const response = await apiClient.post(BULK_UPDATE_API_KEY_URL, {
         headers: writerHeaders,
@@ -96,9 +108,7 @@ apiTest.describe('Bulk update rule API key by IDs API', { tag: '@local-stateful-
   apiTest(
     'update: reports unknown ids in the errors array with RULE_NOT_FOUND while rotating the valid ones',
     async ({ apiClient, apiServices }) => {
-      const rule = await apiServices.alertingV2.rules.create(
-        buildCreateRuleData({ metadata: { name: 'existing-rule' } })
-      );
+      const rule = await createRotatableRule(apiServices, 'existing-rule');
 
       const response = await apiClient.post(BULK_UPDATE_API_KEY_URL, {
         headers: writerHeaders,
@@ -168,9 +178,7 @@ apiTest.describe('Bulk update rule API key by IDs API', { tag: '@local-stateful-
   apiTest(
     'authorization: should return 200 for a user with full alerting_v2 privileges',
     async ({ apiClient, apiServices }) => {
-      const rule = await apiServices.alertingV2.rules.create(
-        buildCreateRuleData({ metadata: { name: 'writer-can-rotate' } })
-      );
+      const rule = await createRotatableRule(apiServices, 'writer-can-rotate');
       const response = await apiClient.post(BULK_UPDATE_API_KEY_URL, {
         headers: writerHeaders,
         body: { ids: [rule.id] },
