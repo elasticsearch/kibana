@@ -384,12 +384,31 @@ describe('parsePluginZipFile', () => {
     expect(command.referencedFiles).toEqual([]);
   });
 
-  it('throws when a skill and command have the same dirName', async () => {
+  it('drops commands that share a name with a skill and keeps the skill', async () => {
     const archive = createMockArchive({
       '.claude-plugin/plugin.json': JSON.stringify({ name: 'test-plugin' }),
       'skills/deploy/SKILL.md': 'Skill deploy instructions.',
       'commands/': '',
       'commands/deploy.md': 'Command deploy instructions.',
+    });
+
+    const result = await parsePluginZipFile(archive);
+
+    expect(result.skills).toHaveLength(1);
+    expect(result.skills[0].dirName).toBe('deploy');
+    expect(result.skills[0].content).toBe('Skill deploy instructions.');
+  });
+
+  it('still throws on duplicate names among commands only', async () => {
+    const archive = createMockArchive({
+      '.claude-plugin/plugin.json': JSON.stringify({
+        name: 'test-plugin',
+        commands: ['commands/', 'extra-commands/'],
+      }),
+      'commands/': '',
+      'commands/deploy.md': 'Deploy v1',
+      'extra-commands/': '',
+      'extra-commands/deploy.md': 'Deploy v2',
     });
 
     await expect(parsePluginZipFile(archive)).rejects.toThrow(PluginArchiveError);
