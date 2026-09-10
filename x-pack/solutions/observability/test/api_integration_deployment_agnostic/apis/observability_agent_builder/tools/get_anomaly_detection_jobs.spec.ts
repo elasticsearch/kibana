@@ -81,28 +81,32 @@ export default function ({ getService }: DeploymentAgnosticFtrProviderContext) {
         .send({ environments: [ENVIRONMENT] })
         .expect(200);
 
-      await retry.waitFor('ML job to have anomalies for both services', async () => {
-        const toolResults =
-          await agentBuilderApiClient.executeTool<GetAnomalyDetectionJobsToolResult>({
-            id: OBSERVABILITY_GET_ANOMALY_DETECTION_JOBS_TOOL_ID,
-            params: { start: START_ISO, end: END_ISO },
-          });
+      await retry.waitForWithTimeout(
+        'ML job to have anomalies for both services',
+        120_000,
+        async () => {
+          const toolResults =
+            await agentBuilderApiClient.executeTool<GetAnomalyDetectionJobsToolResult>({
+              id: OBSERVABILITY_GET_ANOMALY_DETECTION_JOBS_TOOL_ID,
+              params: { start: START_ISO, end: END_ISO },
+            });
 
-        const { topAnomalies } = toolResults[0].data.jobs[0];
+          const { topAnomalies } = toolResults[0].data.jobs[0];
 
-        const hasServiceAAnomalies = topAnomalies.some((a) =>
-          a.influencers?.some(
-            (inf) => inf.fieldName === 'service.name' && inf.fieldValues.includes(SERVICE_A)
-          )
-        );
-        const hasServiceBAnomalies = topAnomalies.some((a) =>
-          a.influencers?.some(
-            (inf) => inf.fieldName === 'service.name' && inf.fieldValues.includes(SERVICE_B)
-          )
-        );
+          const hasServiceAAnomalies = topAnomalies.some((a) =>
+            a.influencers?.some(
+              (inf) => inf.fieldName === 'service.name' && inf.fieldValues.includes(SERVICE_A)
+            )
+          );
+          const hasServiceBAnomalies = topAnomalies.some((a) =>
+            a.influencers?.some(
+              (inf) => inf.fieldName === 'service.name' && inf.fieldValues.includes(SERVICE_B)
+            )
+          );
 
-        return hasServiceAAnomalies && hasServiceBAnomalies;
-      });
+          return hasServiceAAnomalies && hasServiceBAnomalies;
+        }
+      );
     });
 
     after(async () => {
