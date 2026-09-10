@@ -6,8 +6,9 @@
  */
 
 import { defineSkillType } from '@kbn/agent-builder-server/skills/type_definition';
-import { platformCoreTools } from '@kbn/agent-builder-common/tools';
+import { contextEngineAiIndexTools, platformCoreTools } from '@kbn/agent-builder-common/tools';
 import { internalNamespaces } from '@kbn/agent-builder-common/base/namespaces';
+import { contextEngineSkillAvailability } from '../context_engine_skill_availability';
 import content from './ai_index_automations.skill.md.text';
 import indexMetadataTemplateYaml from './index_metadata_template.yaml.text';
 import entityProfileTemplateYaml from './entity_profile_template.yaml.text';
@@ -18,6 +19,7 @@ export const aiIndexAutomationsSkill = defineSkillType({
   name: 'ai-index-automations',
   basePath: 'skills/platform/context-engine',
   experimental: true,
+  availability: contextEngineSkillAvailability,
   description:
     'Read, draft and change the workflow automations that generate Knowledge Indicators for a Context Engine AI index. Load when authoring a KI generation workflow, when inspecting what an existing automation does, when a proposed fix names a workflow step, or when validating or piloting an automation.',
   content,
@@ -51,6 +53,7 @@ export const aiIndexAutomationsSkill = defineSkillType({
     platformCoreTools.getWorkflowExecutionStatus,
     platformCoreTools.generateEsql,
     platformCoreTools.executeEsql,
+    contextEngineAiIndexTools.queryAiIndices,
     `${internalNamespaces.workflows}.validate_workflow`,
     `${internalNamespaces.workflows}.get_workflow`,
     `${internalNamespaces.workflows}.get_step_definitions`,

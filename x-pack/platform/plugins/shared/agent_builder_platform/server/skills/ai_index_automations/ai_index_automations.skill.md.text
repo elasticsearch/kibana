@@ -423,7 +423,8 @@ returns step outputs and the failure message when a step throws.
 
 **Read what it wrote, not whether it ran.** A workflow completes cleanly and still emits indicators
 with empty `content`, absent `attributes`, or titles too alike to tell apart under retrieval. Query
-the tag back with `platform.core.execute_esql`:
+the tag back with `platform.context_engine.query_ai_indices`, which applies space scoping
+server-side (never read an AI index with `platform.core.execute_esql`):
 
 ```esql
 FROM <destination> METADATA _id
