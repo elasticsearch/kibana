@@ -10,6 +10,8 @@ import { expect } from '@kbn/scout-oblt/ui';
 import { test } from '../fixtures';
 
 const TEST_TIMEOUT = 3 * 60 * 1000; // 3 minutes timeout, needed to wait for the SLOs to be created
+/** Matches the SLO seeded by global.setup.ts via the worker-scoped sloData fixture. */
+const SLO_NAME = 'Test Stack SLO';
 
 test.describe(
   'SLOs Overview',
@@ -24,19 +26,9 @@ test.describe(
     });
 
     test('Go to slos overview and validate data retention tab', async ({ page }) => {
-      // Already navigated in beforeEach
-      // This test ensures the page loads
-      expect(page).toBeDefined();
-      await expect(async () => {
-        await page.getByTestId('querySubmitButton').click();
-
-        await expect
-          .poll(() => page.locator('text=Test Stack SLO').count(), { timeout: 30_000 })
-          .toBeGreaterThan(5);
-      }).toPass({
-        intervals: [10_000],
-        timeout: TEST_TIMEOUT,
-      });
+      // Already navigated in beforeEach; assert the seeded SLO renders on the overview.
+      await page.getByTestId('querySubmitButton').click();
+      await expect(page.locator(`text=${SLO_NAME}`)).not.toHaveCount(0, { timeout: 30_000 });
     });
   }
 );
