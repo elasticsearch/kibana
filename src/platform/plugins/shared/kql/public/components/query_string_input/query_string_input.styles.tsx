@@ -41,6 +41,17 @@ const queryStringInputStyles = {
         '> .euiFormControlLayoutIcons': {
           maxHeight: euiTheme.size.xxl,
         },
+        // Opaque gutter behind the clear control. A <textarea> with overflow:hidden
+        // clips at the padding edge, so paddingRight alone cannot keep unbroken /
+        // nowrap glyphs from painting under the × (see elastic/kibana#106963).
+        '&:has(> .kbnQueryBar__textarea--isClearable) > .euiFormControlLayoutIcons:last-child': {
+          backgroundColor: euiTheme.components.forms.background,
+          // Match the clearable paddingRight affordance (xxl) and sit flush to the
+          // field edge so the scrim covers the full gutter EUI insets from `right`.
+          width: euiTheme.size.xxl,
+          justifyContent: 'center',
+          insetInlineEnd: 0,
+        },
       },
       '.kbnQueryBar__textarea': {
         zIndex: euiTheme.levels.content,
@@ -55,7 +66,9 @@ const queryStringInputStyles = {
         margin: 0,
 
         '&.kbnQueryBar__textarea--isClearable': {
-          paddingRight: euiTheme.size.xxl, // Account for clear button
+          // Keeps the caret/selection out of the clear control; does NOT by itself
+          // stop glyph paint under the × (padding-box overflow clip — see wrap scrim).
+          paddingRight: euiTheme.size.xxl,
         },
 
         '&:not(.kbnQueryBar__textarea--autoHeight)': {
