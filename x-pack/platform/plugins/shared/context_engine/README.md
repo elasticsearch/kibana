@@ -179,14 +179,13 @@ privileges. Callers also need, on every backing index (`ai-index-*`):
   Elasticsearch returns 403. The counts aggregation also needs `read`; without
   it the two counts sections are omitted and the rest of the block is returned.
 
-Kibana adds only the space filter. Enforcement is space isolation plus whatever
-Elasticsearch applies for the caller (index privileges and any DLS on the
-role); per-KI Kibana object privileges are not checked. The built-in SML index
-(`ai-index-idx-sml-data`) is the one default index whose documents carry
-`permissions.kibana.privileges`, so a caller with Elasticsearch `read` on it
-can see knowledge indicators for dashboards, rules or connectors they could not
-open in Kibana. This residual is accepted: users query the Elastic AI Index like
-any other index.
+Two things decide what a caller can see: the space filter Kibana adds, and the
+caller's own Elasticsearch permissions on the backing indices. Nothing checks
+whether the caller could open the Kibana object a knowledge indicator describes.
+That matters for the built-in SML index (`ai-index-idx-sml-data`): anyone with
+Elasticsearch `read` on it may see knowledge indicators for dashboards, rules or
+connectors they cannot open in Kibana. This is by design; the Elastic AI Index
+is queried like any other index.
 
 ## Agent Builder tools
 
