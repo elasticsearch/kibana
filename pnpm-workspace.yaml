@@ -1516,7 +1516,7 @@ packages:
   - 'x-pack/platform/test/security_api_integration/plugins/saml_provider'
   - 'x-pack/platform/test/security_api_integration/plugins/user_profiles_consumer'
   - 'x-pack/platform/test/security_functional/plugins/test_endpoints'
-  - 'x-pack/platform/test/spaces_api_integration/common/plugins/access_control_test_plugin'
+  - 'x-pack/platform/test/spaces_access_control/plugins/access_control_test_plugin'
   - 'x-pack/platform/test/spaces_api_integration/common/plugins/spaces_test_plugin'
   - 'x-pack/platform/test/ui_capabilities/common/plugins/foo_plugin'
   - 'x-pack/platform/test/usage_collection/plugins/application_usage_test'

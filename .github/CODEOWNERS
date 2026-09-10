@@ -1327,7 +1327,7 @@ x-pack/platform/test/security_api_integration/plugins/oidc_provider @elastic/kib
 x-pack/platform/test/security_api_integration/plugins/saml_provider @elastic/kibana-security
 x-pack/platform/test/security_api_integration/plugins/user_profiles_consumer @elastic/kibana-security
 x-pack/platform/test/security_functional/plugins/test_endpoints @elastic/kibana-security
-x-pack/platform/test/spaces_api_integration/common/plugins/access_control_test_plugin @elastic/kibana-security
+x-pack/platform/test/spaces_access_control/plugins/access_control_test_plugin @elastic/kibana-security
 x-pack/platform/test/spaces_api_integration/common/plugins/spaces_test_plugin @elastic/kibana-security
 x-pack/platform/test/ui_capabilities/common/plugins/foo_plugin @elastic/kibana-security
 x-pack/platform/test/usage_collection/plugins/application_usage_test @elastic/kibana-core

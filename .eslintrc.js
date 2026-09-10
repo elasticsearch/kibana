@@ -2433,6 +2433,7 @@ module.exports = {
 
         'x-pack/platform/plugins/shared/spaces/**/*.{js,mjs,ts,tsx}',
         'x-pack/platform/test/spaces_api_integration/**/*.{js,mjs,ts,tsx}',
+        'x-pack/platform/test/spaces_access_control/**/*.{js,mjs,ts,tsx}',
       ],
       rules: {
         'import/order': [
@@ -2494,6 +2495,7 @@ module.exports = {
 
         'x-pack/platform/plugins/shared/spaces/**/*.{ts,tsx}',
         'x-pack/platform/test/spaces_api_integration/**/*.{ts,tsx}',
+        'x-pack/platform/test/spaces_access_control/**/*.{ts,tsx}',
       ],
     },
 

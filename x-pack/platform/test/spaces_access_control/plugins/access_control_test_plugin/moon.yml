@@ -15,7 +15,7 @@ project:
   description: Moon project for @kbn/access-control-test-plugin
   channel: ''
   owner: '@elastic/kibana-security'
-  sourceRoot: x-pack/platform/test/spaces_api_integration/common/plugins/access_control_test_plugin
+  sourceRoot: x-pack/platform/test/spaces_access_control/plugins/access_control_test_plugin
 dependsOn:
   - '@kbn/core'
   - '@kbn/config-schema'

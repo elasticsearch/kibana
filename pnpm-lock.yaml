@@ -316,7 +316,7 @@ importers:
         version: link:x-pack/platform/test/alerting_api_integration/common/plugins/aad
       '@kbn/access-control-test-plugin':
         specifier: workspace:*
-        version: link:x-pack/platform/test/spaces_api_integration/common/plugins/access_control_test_plugin
+        version: link:x-pack/platform/test/spaces_access_control/plugins/access_control_test_plugin
       '@kbn/actions-plugin':
         specifier: workspace:*
         version: link:x-pack/platform/plugins/shared/actions
@@ -9234,7 +9234,7 @@ importers:
 
   x-pack/platform/test/security_functional/plugins/test_endpoints: {}
 
-  x-pack/platform/test/spaces_api_integration/common/plugins/access_control_test_plugin: {}
+  x-pack/platform/test/spaces_access_control/plugins/access_control_test_plugin: {}
 
   x-pack/platform/test/spaces_api_integration/common/plugins/spaces_test_plugin: {}
 

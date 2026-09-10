@@ -19,26 +19,32 @@ export interface SpacesRequestAuthFixture extends RequestAuthFixture {
 export const apiTest = base.extend<{
   requestAuth: SpacesRequestAuthFixture;
 }>({
-  requestAuth: async ({ requestAuth }, use) => {
-    const getSavedObjectsManagementApiKey = async (): Promise<RoleApiCredentials> => {
-      return await requestAuth.getApiKeyForCustomRole({
-        elasticsearch: {
-          cluster: [],
-          indices: [],
-        },
-        kibana: [
-          {
-            base: [],
-            feature: {
-              savedObjectsManagement: ['all'],
-            },
-            spaces: ['*'],
+  requestAuth: [
+    async ({ requestAuth }, use) => {
+      const getSavedObjectsManagementApiKey = async (): Promise<RoleApiCredentials> => {
+        return await requestAuth.getApiKeyForCustomRole({
+          elasticsearch: {
+            cluster: [],
+            indices: [],
           },
-        ],
-      });
-    };
+          kibana: [
+            {
+              base: [],
+              feature: {
+                savedObjectsManagement: ['all'],
+              },
+              spaces: ['*'],
+            },
+          ],
+        });
+      };
 
-    const extended: SpacesRequestAuthFixture = { ...requestAuth, getSavedObjectsManagementApiKey };
-    await use(extended);
-  },
+      const extended: SpacesRequestAuthFixture = {
+        ...requestAuth,
+        getSavedObjectsManagementApiKey,
+      };
+      await use(extended);
+    },
+    { scope: 'worker' },
+  ],
 });
