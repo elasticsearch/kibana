@@ -57,6 +57,16 @@ jest.mock('@kbn/observability-plugin/public', () => ({
   getGroupFilters: jest.fn(),
 }));
 
+jest.mock('@elastic/charts', () => {
+  const actual = jest.requireActual('@elastic/charts');
+  return {
+    ...actual,
+    Chart: () => <div data-test-subj="mockChart" />,
+    Settings: () => null,
+    Metric: () => null,
+  };
+});
+
 jest.mock('../../../hooks/use_kibana', () => ({
   useKibanaContextForPlugin: () => ({
     services: {
