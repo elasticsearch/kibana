@@ -372,4 +372,144 @@ describe('invalidateApiKeysAndDeletePendingApiKeySavedObject', () => {
       expect(result.totalInvalidated).toEqual(1);
     });
   });
+
+  describe('undecryptable API key invalidation', () => {
+    const invalidateUiamApiKeyFn = jest.fn();
+    const decryptError = new Error(
+      'Failed to decrypt attribute "apiKeyId" of saved object "api_key_pending_invalidation,so_1": Invalid initialization vector'
+    );
+
+    beforeEach(() => {
+      invalidateUiamApiKeyFn.mockReset();
+    });
+
+    test('should invalidate with raw UIAM values and delete SO when raw uiamApiKey is a UIAM credential', async () => {
+      invalidateUiamApiKeyFn.mockResolvedValueOnce({
+        invalidated_api_keys: ['plaintext-key-id'],
+        previously_invalidated_api_keys: [],
+        error_count: 0,
+      });
+
+      const result = await invalidateApiKeysAndDeletePendingApiKeySavedObject({
+        apiKeyIdsToInvalidate: [],
+        undecryptableApiKeysToInvalidate: [
+          {
+            id: 'so_1',
+            apiKeyId: 'plaintext-key-id',
+            uiamApiKey: 'essu_plaintext_key',
+            error: decryptError,
+          },
+        ],
+        invalidateApiKeyFn,
+        invalidateUiamApiKeyFn,
+        logger,
+        missingApiKeyRetries: {},
+        savedObjectsClient: internalSavedObjectsRepository,
+        savedObjectType: 'api_key_pending_invalidation',
+      });
+
+      expect(invalidateUiamApiKeyFn).toHaveBeenCalledTimes(1);
+      expect(internalSavedObjectsRepository.delete).toHaveBeenCalledWith(
+        'api_key_pending_invalidation',
+        'so_1'
+      );
+      expect(logger.warn).toHaveBeenCalledWith(
+        expect.stringContaining(
+          'Deleted undecryptable "api_key_pending_invalidation" saved object "so_1"'
+        ),
+        expect.objectContaining({ tags: expect.arrayContaining(['uiam-api-key-invalidate']) })
+      );
+      expect(logger.warn).toHaveBeenCalledWith(
+        expect.stringContaining('UIAM key invalidated with raw stored value'),
+        expect.anything()
+      );
+      expect(result.totalInvalidated).toEqual(1);
+    });
+
+    test('should invalidate with raw ES key id and delete SO when there is no UIAM credential', async () => {
+      invalidateApiKeyFn.mockResolvedValueOnce({
+        invalidated_api_keys: ['plaintext-key-id'],
+        previously_invalidated_api_keys: [],
+        error_count: 0,
+      });
+
+      const result = await invalidateApiKeysAndDeletePendingApiKeySavedObject({
+        apiKeyIdsToInvalidate: [],
+        undecryptableApiKeysToInvalidate: [
+          { id: 'so_1', apiKeyId: 'plaintext-key-id', error: decryptError },
+        ],
+        invalidateApiKeyFn,
+        invalidateUiamApiKeyFn,
+        logger,
+        missingApiKeyRetries: {},
+        savedObjectsClient: internalSavedObjectsRepository,
+        savedObjectType: 'api_key_pending_invalidation',
+      });
+
+      expect(invalidateApiKeyFn).toHaveBeenCalledWith({ ids: ['plaintext-key-id'] });
+      expect(invalidateUiamApiKeyFn).not.toHaveBeenCalled();
+      expect(internalSavedObjectsRepository.delete).toHaveBeenCalledWith(
+        'api_key_pending_invalidation',
+        'so_1'
+      );
+      expect(result.totalInvalidated).toEqual(1);
+    });
+
+    test('should still delete SO when the raw-value invalidation attempt errors', async () => {
+      invalidateApiKeyFn.mockRejectedValueOnce(new Error('invalidation exploded'));
+
+      const result = await invalidateApiKeysAndDeletePendingApiKeySavedObject({
+        apiKeyIdsToInvalidate: [],
+        undecryptableApiKeysToInvalidate: [
+          { id: 'so_1', apiKeyId: 'garbage-ciphertext', error: decryptError },
+        ],
+        invalidateApiKeyFn,
+        invalidateUiamApiKeyFn,
+        logger,
+        missingApiKeyRetries: {},
+        savedObjectsClient: internalSavedObjectsRepository,
+        savedObjectType: 'api_key_pending_invalidation',
+      });
+
+      expect(internalSavedObjectsRepository.delete).toHaveBeenCalledWith(
+        'api_key_pending_invalidation',
+        'so_1'
+      );
+      expect(logger.warn).toHaveBeenCalledWith(
+        expect.stringContaining('invalidation attempt errored: invalidation exploded'),
+        expect.anything()
+      );
+      expect(result.totalInvalidated).toEqual(1);
+    });
+
+    test('should log an error and not count the SO when deletion fails', async () => {
+      invalidateApiKeyFn.mockResolvedValueOnce({
+        invalidated_api_keys: [],
+        previously_invalidated_api_keys: [],
+        error_count: 0,
+      });
+      internalSavedObjectsRepository.delete.mockRejectedValueOnce(new Error('delete failed'));
+
+      const result = await invalidateApiKeysAndDeletePendingApiKeySavedObject({
+        apiKeyIdsToInvalidate: [],
+        undecryptableApiKeysToInvalidate: [
+          { id: 'so_1', apiKeyId: 'plaintext-key-id', error: decryptError },
+        ],
+        invalidateApiKeyFn,
+        invalidateUiamApiKeyFn,
+        logger,
+        missingApiKeyRetries: {},
+        savedObjectsClient: internalSavedObjectsRepository,
+        savedObjectType: 'api_key_pending_invalidation',
+      });
+
+      expect(logger.error).toHaveBeenCalledWith(
+        expect.stringContaining(
+          'Failed to delete undecryptable "api_key_pending_invalidation" saved object "so_1"'
+        ),
+        expect.objectContaining({ tags: expect.arrayContaining(['uiam-api-key-invalidate']) })
+      );
+      expect(result.totalInvalidated).toEqual(0);
+    });
+  });
 });

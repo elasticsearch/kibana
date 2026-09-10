@@ -6,8 +6,12 @@
  */
 
 import type { Logger, SavedObjectsClientContract } from '@kbn/core/server';
-import { isMissingApiKey, isRevokedApiKey } from '@kbn/core-security-server';
-import type { ApiKeyIdAndSOId, UiamApiKeyAndSOId } from './get_api_key_ids_to_invalidate';
+import { isMissingApiKey, isRevokedApiKey, isUiamCredential } from '@kbn/core-security-server';
+import type {
+  ApiKeyIdAndSOId,
+  UiamApiKeyAndSOId,
+  UndecryptableApiKeyAndSOId,
+} from './get_api_key_ids_to_invalidate';
 import { invalidateAPIKeys, invalidateUiamAPIKeys } from './invalidate_api_keys';
 import type { ApiKeyInvalidationFn, UiamApiKeyInvalidationFn } from '../invalidate_api_keys_task';
 import { UIAM_LOGS_INVALIDATE_TAGS } from '../../constants';
@@ -17,6 +21,7 @@ const MAX_MISSING_KEY_RETRIES = 5;
 interface InvalidateApiKeysAndDeleteSO {
   apiKeyIdsToInvalidate: ApiKeyIdAndSOId[];
   uiamApiKeysToInvalidate?: UiamApiKeyAndSOId[];
+  undecryptableApiKeysToInvalidate?: UndecryptableApiKeyAndSOId[];
   invalidateApiKeyFn?: ApiKeyInvalidationFn;
   invalidateUiamApiKeyFn?: UiamApiKeyInvalidationFn;
   logger: Logger;
@@ -33,6 +38,7 @@ export interface InvalidateApiKeysResult {
 export async function invalidateApiKeysAndDeletePendingApiKeySavedObject({
   apiKeyIdsToInvalidate,
   uiamApiKeysToInvalidate,
+  undecryptableApiKeysToInvalidate,
   invalidateApiKeyFn,
   invalidateUiamApiKeyFn,
   logger,
@@ -113,6 +119,53 @@ export async function invalidateApiKeysAndDeletePendingApiKeySavedObject({
         logger.error(`Failed to delete invalidated UIAM API key. Error: ${err.message}`, {
           tags: UIAM_LOGS_INVALIDATE_TAGS,
         });
+      }
+    }
+  }
+
+  // Undecryptable pending-invalidation SOs (e.g. attributes persisted in plaintext by a
+  // pre-encryption-fix provisioning run). Decryption failures are deterministic, so these SOs can
+  // never be drained through the normal path — each one produces decrypt errors on every run,
+  // forever. Attempt a best-effort invalidation with the raw stored values (the real key id/key
+  // when the root cause is the plaintext bug), then delete the SO regardless of the outcome.
+  if (undecryptableApiKeysToInvalidate && undecryptableApiKeysToInvalidate.length > 0) {
+    for (const { id, apiKeyId, uiamApiKey, error } of undecryptableApiKeysToInvalidate) {
+      let invalidationOutcome = 'skipped (no usable raw key material)';
+      try {
+        if (uiamApiKey && apiKeyId && isUiamCredential(uiamApiKey)) {
+          const response = await invalidateUiamAPIKeys(
+            { uiamApiKey, apiKeyId },
+            invalidateUiamApiKeyFn
+          );
+          invalidationOutcome =
+            response.apiKeysEnabled === true && response.result.error_count > 0
+              ? `UIAM invalidation failed: ${response.result.error_details
+                  ?.map((d) => d.reason)
+                  .join('; ')}`
+              : 'UIAM key invalidated with raw stored value';
+        } else if (apiKeyId) {
+          const response = await invalidateAPIKeys({ ids: [apiKeyId] }, invalidateApiKeyFn);
+          invalidationOutcome =
+            response.apiKeysEnabled === true && response.result.error_count > 0
+              ? 'ES key invalidation failed'
+              : 'ES key invalidated with raw stored value';
+        }
+      } catch (invalidationError) {
+        invalidationOutcome = `invalidation attempt errored: ${invalidationError.message}`;
+      }
+
+      try {
+        await savedObjectsClient.delete(savedObjectType, id);
+        totalInvalidated++;
+        logger.warn(
+          `Deleted undecryptable "${savedObjectType}" saved object "${id}" (decryption error: ${error.message}). Best-effort key invalidation outcome: ${invalidationOutcome}.`,
+          { tags: UIAM_LOGS_INVALIDATE_TAGS }
+        );
+      } catch (deleteError) {
+        logger.error(
+          `Failed to delete undecryptable "${savedObjectType}" saved object "${id}". Error: ${deleteError.message}`,
+          { tags: UIAM_LOGS_INVALIDATE_TAGS }
+        );
       }
     }
   }

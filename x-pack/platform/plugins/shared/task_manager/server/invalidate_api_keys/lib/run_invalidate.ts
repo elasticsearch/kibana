@@ -69,19 +69,25 @@ export async function runInvalidate(opts: RunInvalidateOpts): Promise<RunInvalid
     });
 
     if (apiKeysToInvalidate.total > 0) {
-      const { apiKeyIdsToExclude, apiKeyIdsToInvalidate, uiamApiKeysToInvalidate } =
-        await getApiKeyIdsToInvalidate({
-          apiKeySOsPendingInvalidation: apiKeysToInvalidate,
-          encryptedSavedObjectsClient,
-          savedObjectsClient,
-          savedObjectType,
-          savedObjectTypesToQuery: opts.savedObjectTypesToQuery,
-        });
+      const {
+        apiKeyIdsToExclude,
+        apiKeyIdsToInvalidate,
+        uiamApiKeysToInvalidate,
+        undecryptableApiKeysToInvalidate,
+      } = await getApiKeyIdsToInvalidate({
+        apiKeySOsPendingInvalidation: apiKeysToInvalidate,
+        encryptedSavedObjectsClient,
+        logger,
+        savedObjectsClient,
+        savedObjectType,
+        savedObjectTypesToQuery: opts.savedObjectTypesToQuery,
+      });
       apiKeyIdsToExclude.forEach(({ id }) => excludedSOIds.add(id));
 
       const result = await invalidateApiKeysAndDeletePendingApiKeySavedObject({
         apiKeyIdsToInvalidate,
         uiamApiKeysToInvalidate,
+        undecryptableApiKeysToInvalidate,
         invalidateApiKeyFn,
         invalidateUiamApiKeyFn,
         logger,
