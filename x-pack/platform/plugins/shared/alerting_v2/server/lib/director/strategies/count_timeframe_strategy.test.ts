@@ -130,6 +130,7 @@ describe('CountTimeframeStrategy', () => {
         on: alertEventStatus.breached,
         to: alertEpisodeStatus.active,
         stateTransition,
+        expectedStatusCount: 1,
       });
     });
 
@@ -138,6 +139,7 @@ describe('CountTimeframeStrategy', () => {
         on: alertEventStatus.breached,
         to: alertEpisodeStatus.active,
         stateTransition,
+        expectedStatusCount: 1,
       });
     });
   });
@@ -182,6 +184,7 @@ describe('CountTimeframeStrategy', () => {
         to: alertEpisodeStatus.active,
         stateTransition,
         statusCount: 2,
+        expectedStatusCount: 1,
       });
     });
 
@@ -192,6 +195,7 @@ describe('CountTimeframeStrategy', () => {
         to: alertEpisodeStatus.active,
         stateTransition,
         statusCount: 5,
+        expectedStatusCount: 1,
       });
     });
 
@@ -214,6 +218,7 @@ describe('CountTimeframeStrategy', () => {
         to: alertEpisodeStatus.active,
         stateTransition: { pending_timeframe: '2m' },
         statusCount: 1,
+        expectedStatusCount: 1,
         eventTimestamp: '2025-01-01T00:02:00.000Z',
         previousTimestamp: '2025-01-01T00:00:00.000Z',
       });
@@ -243,6 +248,7 @@ describe('CountTimeframeStrategy', () => {
           pending_operator: 'OR',
         },
         statusCount: 1,
+        expectedStatusCount: 1,
         eventTimestamp: '2025-01-01T00:02:00.000Z',
         previousTimestamp: '2025-01-01T00:00:00.000Z',
       });
@@ -320,6 +326,7 @@ describe('CountTimeframeStrategy', () => {
         to: alertEpisodeStatus.active,
         stateTransition,
         statusCount: 1,
+        expectedStatusCount: 1,
       });
     });
   });
@@ -397,6 +404,7 @@ describe('CountTimeframeStrategy', () => {
         to: alertEpisodeStatus.active,
         stateTransition,
         statusCount: 1,
+        expectedStatusCount: 1,
       });
     });
 
@@ -421,14 +429,25 @@ describe('CountTimeframeStrategy', () => {
       });
     });
 
-    it('treats status count as 1 when the previous episode is present but the status count no', () => {
+    it('treats status count as 0 when the previous episode has a null status count', () => {
       expectTransition({
         from: alertEpisodeStatus.pending,
         on: alertEventStatus.breached,
         to: alertEpisodeStatus.pending,
         stateTransition: { pending_count: 3 },
         statusCount: null,
-        expectedStatusCount: 2,
+        expectedStatusCount: 1,
+      });
+    });
+
+    it('increments from 1 when a legacy active episode has a null status count', () => {
+      expectTransition({
+        from: alertEpisodeStatus.active,
+        on: alertEventStatus.breached,
+        to: alertEpisodeStatus.active,
+        stateTransition: { pending_count: 3 },
+        statusCount: null,
+        expectedStatusCount: 1,
       });
     });
   });
@@ -441,6 +460,7 @@ describe('CountTimeframeStrategy', () => {
         to: alertEpisodeStatus.active,
         stateTransition: { pending_count: 2, pending_timeframe: 'bad' },
         statusCount: 1,
+        expectedStatusCount: 1,
       });
     });
 
@@ -462,7 +482,6 @@ describe('CountTimeframeStrategy', () => {
     };
 
     it.each<[string, AlertEpisodeStatus, AlertEventStatus, AlertEpisodeStatus]>([
-      ['active', alertEpisodeStatus.active, alertEventStatus.breached, alertEpisodeStatus.active],
       [
         'inactive',
         alertEpisodeStatus.inactive,
@@ -477,6 +496,118 @@ describe('CountTimeframeStrategy', () => {
       ],
     ])('stays %s', (_label, from, on, to) => {
       expectTransition({ from, on, to, stateTransition });
+    });
+  });
+
+  describe('active status_count', () => {
+    const stateTransition: RuleResponse['state_transition'] = {
+      pending_count: 3,
+      recovering_count: 3,
+    };
+
+    it('enters active with statusCount 1 from pending when the threshold is met', () => {
+      expectTransition({
+        from: alertEpisodeStatus.pending,
+        on: alertEventStatus.breached,
+        to: alertEpisodeStatus.active,
+        stateTransition,
+        statusCount: 2,
+        expectedStatusCount: 1,
+      });
+    });
+
+    it('increments statusCount while staying active', () => {
+      expectTransition({
+        from: alertEpisodeStatus.active,
+        on: alertEventStatus.breached,
+        to: alertEpisodeStatus.active,
+        stateTransition,
+        statusCount: 1,
+        expectedStatusCount: 2,
+      });
+    });
+
+    it('keeps incrementing statusCount across consecutive active evaluations', () => {
+      expectTransition({
+        from: alertEpisodeStatus.active,
+        on: alertEventStatus.breached,
+        to: alertEpisodeStatus.active,
+        stateTransition,
+        statusCount: 4,
+        expectedStatusCount: 5,
+      });
+    });
+
+    it('resets statusCount to 1 on a new active span after recovering (flap)', () => {
+      expectTransition({
+        from: alertEpisodeStatus.recovering,
+        on: alertEventStatus.breached,
+        to: alertEpisodeStatus.active,
+        stateTransition,
+        statusCount: 3,
+        expectedStatusCount: 1,
+      });
+    });
+
+    it('enters active with statusCount 1 when skipping pending', () => {
+      expectTransition({
+        from: alertEpisodeStatus.inactive,
+        on: alertEventStatus.breached,
+        to: alertEpisodeStatus.active,
+        stateTransition: { pending_count: 0 },
+        expectedStatusCount: 1,
+      });
+    });
+
+    it('resets statusCount independently across active ↔ recovering flaps', () => {
+      const flapStateTransition: RuleResponse['state_transition'] = {
+        pending_count: 3,
+        recovering_count: 10,
+      };
+
+      const step = (
+        from: AlertEpisodeStatus,
+        on: AlertEventStatus,
+        statusCount: number
+      ): { status: AlertEpisodeStatus; statusCount?: number } =>
+        getNextState({
+          eventStatus: on,
+          stateTransition: flapStateTransition,
+          previousEpisode: buildLatestAlertEvent({
+            episodeStatus: from,
+            eventStatus: on,
+            statusCount,
+          }),
+        });
+
+      // Each contiguous run starts at 1 and increments while staying;
+      // a flap starts a new run and must not carry the previous span's count.
+      // Sequence: active → recovering → active → recovering → active → recovering
+      const ticks: Array<{
+        on: AlertEventStatus;
+        status: AlertEpisodeStatus;
+        statusCount: number;
+      }> = [
+        { on: alertEventStatus.breached, status: alertEpisodeStatus.active, statusCount: 2 },
+        { on: alertEventStatus.recovered, status: alertEpisodeStatus.recovering, statusCount: 1 },
+        { on: alertEventStatus.recovered, status: alertEpisodeStatus.recovering, statusCount: 2 },
+        { on: alertEventStatus.breached, status: alertEpisodeStatus.active, statusCount: 1 },
+        { on: alertEventStatus.breached, status: alertEpisodeStatus.active, statusCount: 2 },
+        { on: alertEventStatus.recovered, status: alertEpisodeStatus.recovering, statusCount: 1 },
+        { on: alertEventStatus.breached, status: alertEpisodeStatus.active, statusCount: 1 },
+        { on: alertEventStatus.recovered, status: alertEpisodeStatus.recovering, statusCount: 1 },
+      ];
+
+      let previous: { status: AlertEpisodeStatus; statusCount: number } = {
+        status: alertEpisodeStatus.active,
+        statusCount: 1,
+      };
+
+      for (const tick of ticks) {
+        const result = step(previous.status, tick.on, previous.statusCount);
+        expect(result).toEqual({ status: tick.status, statusCount: tick.statusCount });
+        previous = { status: tick.status, statusCount: tick.statusCount };
+      }
     });
   });
 
@@ -529,23 +660,110 @@ describe('CountTimeframeStrategy', () => {
     });
   });
 
+  describe("no_data event with no_data_strategy: 'last_known_status'", () => {
+    const stateTransition: RuleResponse['state_transition'] = {
+      pending_count: 3,
+      recovering_count: 3,
+    };
+
+    it.each<[string, AlertEpisodeStatus, number | null]>([
+      ['pending', alertEpisodeStatus.pending, 1],
+      ['pending', alertEpisodeStatus.pending, 2],
+      ['recovering', alertEpisodeStatus.recovering, 1],
+      ['recovering', alertEpisodeStatus.recovering, 2],
+      ['active', alertEpisodeStatus.active, 1],
+      ['active', alertEpisodeStatus.active, 4],
+      ['inactive', alertEpisodeStatus.inactive, null],
+    ])('omits statusCount on %s hold (count %s)', (_label, from, statusCount) => {
+      const result = getNextState({
+        eventStatus: alertEventStatus.no_data,
+        stateTransition,
+        noDataStrategy: 'last_known_status',
+        previousEpisode: buildLatestAlertEvent({
+          episodeStatus: from,
+          eventStatus: alertEventStatus.no_data,
+          statusCount,
+        }),
+      });
+
+      expect(result.status).toBe(from);
+      expect(result).not.toHaveProperty('statusCount');
+    });
+  });
+
+  // In production, no_data events are never emitted when no_data_strategy is 'none'
+  // because getNoDataEsqlQuery returns undefined and ClassifyAbsentGroupsStep skips
+  // no-data detection entirely. These tests document what the strategy would do if
+  // a no_data event reached it — the general staying-in-status path increments.
+  describe("no_data event with no_data_strategy: 'none'", () => {
+    const stateTransition: RuleResponse['state_transition'] = {
+      pending_count: 3,
+      recovering_count: 3,
+    };
+
+    it('increments statusCount on active hold', () => {
+      expectTransition({
+        from: alertEpisodeStatus.active,
+        on: alertEventStatus.no_data,
+        to: alertEpisodeStatus.active,
+        stateTransition,
+        noDataStrategy: 'none',
+        statusCount: 3,
+        expectedStatusCount: 4,
+      });
+    });
+
+    it('increments statusCount on pending hold', () => {
+      expectTransition({
+        from: alertEpisodeStatus.pending,
+        on: alertEventStatus.no_data,
+        to: alertEpisodeStatus.pending,
+        stateTransition,
+        noDataStrategy: 'none',
+        statusCount: 2,
+        expectedStatusCount: 3,
+      });
+    });
+  });
+
   describe("no_data event with no_data_strategy: 'emit'", () => {
     const stateTransition: RuleResponse['state_transition'] = {
       pending_count: 3,
       recovering_count: 3,
     };
 
-    it.each<[AlertEpisodeStatus]>([
-      [alertEpisodeStatus.inactive],
-      [alertEpisodeStatus.active],
-      [alertEpisodeStatus.recovering],
-    ])('transitions %s → active', (from) => {
+    it('transitions inactive → active with statusCount 1', () => {
       expectTransition({
-        from,
+        from: alertEpisodeStatus.inactive,
         on: alertEventStatus.no_data,
         to: alertEpisodeStatus.active,
         stateTransition,
         noDataStrategy: 'emit',
+        expectedStatusCount: 1,
+      });
+    });
+
+    it('increments statusCount while staying active', () => {
+      expectTransition({
+        from: alertEpisodeStatus.active,
+        on: alertEventStatus.no_data,
+        to: alertEpisodeStatus.active,
+        stateTransition,
+        noDataStrategy: 'emit',
+        statusCount: 2,
+        expectedStatusCount: 3,
+      });
+    });
+
+    it('transitions recovering → active with statusCount 1 (new span)', () => {
+      expectTransition({
+        from: alertEpisodeStatus.recovering,
+        on: alertEventStatus.no_data,
+        to: alertEpisodeStatus.active,
+        stateTransition,
+        noDataStrategy: 'emit',
+        statusCount: 2,
+        expectedStatusCount: 1,
       });
     });
 
@@ -569,6 +787,7 @@ describe('CountTimeframeStrategy', () => {
         stateTransition,
         noDataStrategy: 'emit',
         statusCount: 2,
+        expectedStatusCount: 1,
       });
     });
   });

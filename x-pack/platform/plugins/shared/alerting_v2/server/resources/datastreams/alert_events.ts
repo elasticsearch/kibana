@@ -36,7 +36,7 @@ const mappings: MappingsDefinition = {
       properties: {
         id: { type: 'keyword' },
         status: { type: 'keyword' }, // inactive | pending | active | recovering
-        status_count: { type: 'long' }, // only set for pending and recovering
+        status_count: { type: 'long' },
       },
     },
     space_id: { type: 'keyword' },

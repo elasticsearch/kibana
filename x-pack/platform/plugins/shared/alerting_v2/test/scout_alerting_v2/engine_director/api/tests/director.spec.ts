@@ -359,7 +359,7 @@ apiTest.describe('Director', { tag: tags.stateful.classic }, () => {
       //    director must translate every one of those into an event
       //    that carries `episode.status: 'active'` including
       //    `status: 'recovered'` events.
-      await apiServices.alertingV2.ruleEvents.waitForAtLeast(rule.id, 1, {
+      await apiServices.alertingV2.ruleEvents.waitForAtLeast(rule.id, 2, {
         status: 'recovered',
         episodeStatus: 'active',
       });
@@ -399,6 +399,16 @@ apiTest.describe('Director', { tag: tags.stateful.classic }, () => {
 
       const postReopenEpisodeIds = new Set(postReopenGroupEvents.map((event) => event.episode?.id));
       expect(postReopenEpisodeIds).toStrictEqual(new Set([activeEpisodeId]));
+
+      // Activate starts a new active span at 1; locked director ticks increment.
+      const postReopenSorted = [...postReopenGroupEvents].sort(
+        (a, b) => Date.parse(a['@timestamp']) - Date.parse(b['@timestamp'])
+      );
+      expect(postReopenSorted.length).toBeGreaterThanOrEqual(3);
+      expect(postReopenSorted[0].status).toBe('breached');
+      expect(postReopenSorted.map((event) => event.episode?.status_count)).toStrictEqual(
+        postReopenSorted.map((_, index) => index + 1)
+      );
     }
   );
 
@@ -476,8 +486,8 @@ apiTest.describe('Director', { tag: tags.stateful.classic }, () => {
       });
 
       // pending_count=3 — director needs status_count to climb 1 → 2 → 3 to
-      // promote the episode to active. Also lets us assert that active events
-      // do not carry status_count.
+      // promote the episode to active. The first active event starts a new
+      // span at status_count=1 (it does not carry the pending count).
       const rule = await apiServices.alertingV2.rules.create(
         buildCreateRuleData({
           metadata: { name: 'director-count-increment' },
@@ -509,12 +519,55 @@ apiTest.describe('Director', { tag: tags.stateful.classic }, () => {
 
       const activeEvents = events.filter((event) => event.episode?.status === 'active');
       expect(activeEvents.length).toBeGreaterThanOrEqual(1);
-      // Active events must not carry status_count.
-      for (const event of activeEvents) {
-        expect(event.episode?.status_count).toBeUndefined();
-      }
+      const firstActive = [...activeEvents].sort(
+        (a, b) => Date.parse(a['@timestamp']) - Date.parse(b['@timestamp'])
+      )[0];
+      expect(firstActive.episode?.status_count).toBe(1);
     }
   );
+
+  apiTest('increments status_count while the episode stays active', async ({ apiServices }) => {
+    const hostName = 'host-active-count-increment';
+
+    await apiServices.alertingV2.sourceIndex.indexDocs({
+      index: SOURCE_INDEX,
+      docs: [
+        {
+          '@timestamp': new Date().toISOString(),
+          'host.name': hostName,
+          severity: 'high',
+          value: 1,
+        },
+      ],
+    });
+
+    // pending_count=0 skips pending so consecutive ticks are one active span.
+    const rule = await apiServices.alertingV2.rules.create(
+      buildCreateRuleData({
+        metadata: { name: 'director-active-count-increment' },
+        query: {
+          format: 'standalone',
+          breach: {
+            query: `FROM ${SOURCE_INDEX} | WHERE host.name == "${hostName}" | STATS count = COUNT(*) BY host.name | WHERE count >= 1`,
+          },
+        },
+        state_transition: { pending_count: 0 },
+      })
+    );
+
+    await apiServices.alertingV2.ruleEvents.waitForAtLeast(rule.id, 3, {
+      episodeStatus: 'active',
+    });
+
+    const activeEvents = await apiServices.alertingV2.ruleEvents.find(rule.id, {
+      episodeStatus: 'active',
+    });
+    const counts = [...activeEvents]
+      .sort((a, b) => Date.parse(a['@timestamp']) - Date.parse(b['@timestamp']))
+      .map((event) => event.episode?.status_count);
+
+    expect(counts.slice(0, 3)).toStrictEqual([1, 2, 3]);
+  });
 
   apiTest(
     'starts a new pending lifecycle at status_count 1 after the previous lifecycle reached inactive',
@@ -919,9 +972,121 @@ apiTest.describe('Director', { tag: tags.stateful.classic }, () => {
       );
 
       expect(reactivatedEvent?.episode?.id).toBe(initialActiveEpisodeId);
-      // The re-active event is a steady-state status, so the director must
-      // not carry over the recovering status_count onto it.
-      expect(reactivatedEvent?.episode?.status_count).toBeUndefined();
+      // Re-entering active after recovering starts a new active span at 1;
+      // the recovering status_count must not carry over.
+      expect(reactivatedEvent?.episode?.status_count).toBe(1);
+    }
+  );
+
+  apiTest(
+    'resets status_count independently across active recovering flaps',
+    async ({ apiServices }) => {
+      const hostName = 'host-active-recovering-flap';
+
+      const indexBreach = () =>
+        apiServices.alertingV2.sourceIndex.indexDocs({
+          index: SOURCE_INDEX,
+          docs: [
+            {
+              '@timestamp': new Date().toISOString(),
+              'host.name': hostName,
+              severity: 'high',
+              value: 1,
+            },
+          ],
+        });
+
+      const clearBreach = () =>
+        apiServices.alertingV2.sourceIndex.deleteDocs({
+          index: SOURCE_INDEX,
+          query: { term: { 'host.name': hostName } },
+        });
+
+      await indexBreach();
+
+      // recovering_count=10 keeps the episode in recovering long enough to re-breach
+      // before it drops to inactive.
+      const rule = await apiServices.alertingV2.rules.create(
+        buildCreateRuleData({
+          metadata: { name: 'director-active-recovering-flap' },
+          query: {
+            format: 'standalone',
+            breach: {
+              query: `FROM ${SOURCE_INDEX} | WHERE host.name == "${hostName}" | STATS count = COUNT(*) BY host.name | WHERE count >= 1`,
+            },
+          },
+          state_transition: { pending_count: 0, recovering_count: 10 },
+        })
+      );
+
+      const waitForStatusAfter = async (
+        episodeStatus: 'active' | 'recovering',
+        afterMs: number
+      ) => {
+        await expect
+          .poll(
+            async () => {
+              const events = await apiServices.alertingV2.ruleEvents.find(rule.id, {
+                episodeStatus,
+              });
+              return events.some((event) => Date.parse(event['@timestamp']) > afterMs);
+            },
+            { timeout: POLL_TIMEOUT_MS, intervals: [POLL_INTERVAL_MS] }
+          )
+          .toBe(true);
+
+        const events = await apiServices.alertingV2.ruleEvents.find(rule.id, {
+          episodeStatus,
+        });
+        const nextEvent = [...events]
+          .filter((event) => Date.parse(event['@timestamp']) > afterMs)
+          .sort((a, b) => Date.parse(a['@timestamp']) - Date.parse(b['@timestamp']))[0];
+        if (!nextEvent) {
+          throw new Error(`expected a ${episodeStatus} event after ${afterMs}`);
+        }
+        return nextEvent;
+      };
+
+      await apiServices.alertingV2.ruleEvents.waitForAtLeast(rule.id, 1, {
+        episodeStatus: 'active',
+      });
+      const firstActive = (
+        await apiServices.alertingV2.ruleEvents.find(rule.id, { episodeStatus: 'active' })
+      )[0];
+      expect(firstActive.episode?.status_count).toBe(1);
+      const episodeId = firstActive.episode?.id;
+
+      await clearBreach();
+      const firstRecovering = await waitForStatusAfter(
+        'recovering',
+        Date.parse(firstActive['@timestamp'])
+      );
+      expect(firstRecovering.episode?.id).toBe(episodeId);
+      expect(firstRecovering.episode?.status_count).toBe(1);
+
+      await indexBreach();
+      const secondActive = await waitForStatusAfter(
+        'active',
+        Date.parse(firstRecovering['@timestamp'])
+      );
+      expect(secondActive.episode?.id).toBe(episodeId);
+      expect(secondActive.episode?.status_count).toBe(1);
+
+      await clearBreach();
+      const secondRecovering = await waitForStatusAfter(
+        'recovering',
+        Date.parse(secondActive['@timestamp'])
+      );
+      expect(secondRecovering.episode?.id).toBe(episodeId);
+      expect(secondRecovering.episode?.status_count).toBe(1);
+
+      await indexBreach();
+      const thirdActive = await waitForStatusAfter(
+        'active',
+        Date.parse(secondRecovering['@timestamp'])
+      );
+      expect(thirdActive.episode?.id).toBe(episodeId);
+      expect(thirdActive.episode?.status_count).toBe(1);
     }
   );
 
@@ -1408,21 +1573,23 @@ apiTest.describe('Director', { tag: tags.stateful.classic }, () => {
       expect(activeEvents.length).toBeGreaterThanOrEqual(1);
 
       // status_count must have observed value 1 in pending (proves the
-      // count side was being walked) and must not be set on active events.
+      // count side was being walked). The first active event starts a new
+      // span at status_count=1.
       const pendingCounts = pendingEvents
         .map((event) => event.episode!.status_count)
         .filter((count): count is number => typeof count === 'number');
 
       expect(pendingCounts).toContain(1);
 
-      for (const event of activeEvents) {
-        expect(event.episode?.status_count).toBeUndefined();
-      }
+      const firstActive = [...activeEvents].sort(
+        (a, b) => Date.parse(a['@timestamp']) - Date.parse(b['@timestamp'])
+      )[0];
+      expect(firstActive.episode?.status_count).toBe(1);
     }
   );
 
   apiTest(
-    "no_data_strategy 'last_known_status' preserves the prior episode status",
+    "no_data_strategy 'last_known_status' omits status_count on no-data holds",
     async ({ apiServices }) => {
       const HOST = 'host-director-no-data-last-known';
 
@@ -1450,7 +1617,6 @@ apiTest.describe('Director', { tag: tags.stateful.classic }, () => {
               query: `FROM ${SOURCE_INDEX} | WHERE host.name == "${HOST}" | STATS count = COUNT(*) BY host.name`,
             },
           },
-          // Use recovery_strategy 'none' so the recovery step never fires.
           recovery_strategy: 'none',
           no_data_strategy: 'last_known_status',
           state_transition: { pending_count: 10 },
@@ -1477,7 +1643,98 @@ apiTest.describe('Director', { tag: tags.stateful.classic }, () => {
       expect(noDataEvents.length).toBeGreaterThanOrEqual(1);
       for (const event of noDataEvents) {
         expect(event.episode?.status).toBe('pending');
+        expect(event.episode?.status_count).toBeUndefined();
       }
+    }
+  );
+
+  apiTest(
+    "no_data_strategy 'none' freezes the episode when data disappears — no new events are emitted",
+    async ({ apiServices }) => {
+      const HOST = 'host-director-no-data-none';
+
+      await apiServices.alertingV2.sourceIndex.indexDocs({
+        index: SOURCE_INDEX,
+        docs: [
+          {
+            '@timestamp': new Date().toISOString(),
+            'host.name': HOST,
+            severity: 'high',
+            value: 1,
+          },
+        ],
+      });
+
+      const rule = await apiServices.alertingV2.rules.create(
+        buildCreateRuleData({
+          metadata: { name: 'director-no-data-none' },
+          query: {
+            format: 'standalone',
+            breach: {
+              query: `FROM ${SOURCE_INDEX} | WHERE host.name == "${HOST}" | STATS count = COUNT(*) BY host.name | WHERE count >= 1`,
+            },
+          },
+          recovery_strategy: 'none',
+          no_data_strategy: 'none',
+          state_transition: { pending_count: 0 },
+        })
+      );
+
+      await apiServices.alertingV2.ruleEvents.waitForAtLeast(rule.id, 3, {
+        episodeStatus: 'active',
+      });
+
+      const activeEventsBefore = await apiServices.alertingV2.ruleEvents.find(rule.id, {
+        episodeStatus: 'active',
+      });
+      const countsBefore = [...activeEventsBefore]
+        .sort((a, b) => Date.parse(a['@timestamp']) - Date.parse(b['@timestamp']))
+        .map((event) => event.episode?.status_count);
+
+      expect(countsBefore.slice(0, 3)).toStrictEqual([1, 2, 3]);
+
+      const eventCountBefore = activeEventsBefore.length;
+      const lastActiveTimestamp = [...activeEventsBefore]
+        .sort((a, b) => Date.parse(a['@timestamp']) - Date.parse(b['@timestamp']))
+        .at(-1)!['@timestamp'];
+
+      await apiServices.alertingV2.sourceIndex.deleteDocs({
+        index: SOURCE_INDEX,
+        query: { term: { 'host.name': HOST } },
+      });
+
+      await apiServices.alertingV2.ruleExecutions.waitForRuns({
+        ruleId: rule.id,
+        runs: 2,
+      });
+
+      // No no_data events — no_data_strategy 'none' skips detection entirely.
+      const noDataEvents = await apiServices.alertingV2.ruleEvents.find(rule.id, {
+        status: 'no_data',
+      });
+      expect(noDataEvents).toHaveLength(0);
+
+      // No recovered events — recovery_strategy 'none' skips recovery.
+      const recoveredEvents = await apiServices.alertingV2.ruleEvents.find(rule.id, {
+        status: 'recovered',
+      });
+      expect(recoveredEvents).toHaveLength(0);
+
+      // No new active events after the data was removed — the episode is
+      // frozen at its last state with no further status_count increments.
+      const activeEventsAfter = await apiServices.alertingV2.ruleEvents.find(rule.id, {
+        episodeStatus: 'active',
+      });
+      const newActiveEvents = activeEventsAfter.filter(
+        (event) => Date.parse(event['@timestamp']) > Date.parse(lastActiveTimestamp)
+      );
+      expect(newActiveEvents).toHaveLength(0);
+      expect(activeEventsAfter).toHaveLength(eventCountBefore);
+
+      // Latest episode state is still active.
+      const latestStates = await apiServices.alertingV2.ruleEvents.getLatestEpisodeStates(rule.id);
+      const [latestState] = Array.from(latestStates.values());
+      expect(latestState.episode?.status).toBe('active');
     }
   );
 

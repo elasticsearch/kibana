@@ -63,13 +63,8 @@ const assertEpisodeIsActivatable = (alertEvent: AlertEventRecord): void => {
  * 2. The `.alert-actions` audit document already built by the
  *    orchestrator (`alertActionDoc` — unchanged).
  *
- * `episode.status_count` is deliberately not set — that mirrors the
- * director's own strategies, which never emit `status_count` on any
- * `→ active` transition (see `BasicTransitionStrategy` and
- * `CountTimeframeStrategy`). If the alert later re-enters `pending` or
- * `recovering`, the engine restarts counting from scratch, which is
- * exactly what happens for any other engine-driven `→ active`
- * transition today.
+ * `episode.status_count` starts at `1` — entering a new status resets
+ * the count. Subsequent director ticks while user-locked increment it.
  *
  * `status: breached` is hardcoded because that is the only event
  * status compatible with `episode.status: active` in practice; if the
@@ -93,7 +88,7 @@ export const activateHandler: ActionHandler<ActivateAlertActionBody> = {
       source: alertEvent.source,
       type: alertEventType.alert,
       space_id: alertEvent.space_id,
-      episode: { id: alertEvent.episode_id, status: alertEpisodeStatus.active },
+      episode: { id: alertEvent.episode_id, status: alertEpisodeStatus.active, status_count: 1 },
       severity: alertEvent.severity ?? undefined,
     });
 

@@ -286,7 +286,7 @@
     },
     {
       "id": "e747878cbda0163-9085e2d8ed11df7",
-      "title": "Director no_data_strategy 'last_known_status' preserves the prior episode status",
+      "title": "Director no_data_strategy 'last_known_status' omits status_count on no-data holds",
       "expectedStatus": "passed",
       "tags": [
         "@local-stateful-classic",
@@ -296,6 +296,20 @@
         "file": "x-pack/platform/plugins/shared/alerting_v2/test/scout_alerting_v2/engine_director/api/tests/director.spec.ts",
         "line": 1403,
         "column": 28
+      }
+    },
+    {
+      "id": "e747878cbda0163-a1b3c8d9e0f12345",
+      "title": "Director no_data_strategy 'none' freezes the episode when data disappears — no new events are emitted",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic",
+        "@cloud-stateful-classic"
+      ],
+      "location": {
+        "file": "x-pack/platform/plugins/shared/alerting_v2/test/scout_alerting_v2/engine_director/api/tests/director.spec.ts",
+        "line": 1651,
+        "column": 9
       }
     },
     {

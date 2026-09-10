@@ -61,7 +61,11 @@ describe('activateHandler', () => {
         source: alertEvent.source,
         type: alertEventType.alert,
         space_id: alertEvent.space_id,
-        episode: { id: alertEvent.episode_id, status: alertEpisodeStatus.active },
+        episode: {
+          id: alertEvent.episode_id,
+          status: alertEpisodeStatus.active,
+          status_count: 1,
+        },
         severity: alertEvent.severity,
       });
     });
@@ -76,10 +80,15 @@ describe('activateHandler', () => {
       ).not.toThrow();
     });
 
-    it('omits episode.status_count on the synthetic event — mirroring the director on any → active transition', () => {
-      const prepared = activateHandler.prepare(buildItem());
-      expect(prepared.ruleEvent?.episode).toBeDefined();
-      expect(prepared.ruleEvent?.episode?.status_count).toBeUndefined();
+    it.each<AlertEpisodeStatus>([
+      alertEpisodeStatus.inactive,
+      alertEpisodeStatus.recovering,
+      alertEpisodeStatus.pending,
+    ])('starts status_count at 1 when reopening from %s', (status) => {
+      const prepared = activateHandler.prepare(
+        buildItem(buildAlertEvent({ episode_status: status }))
+      );
+      expect(prepared.ruleEvent?.episode?.status_count).toBe(1);
     });
 
     it('defaults rule version to 1 when the alert event omits it', () => {

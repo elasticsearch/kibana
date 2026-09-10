@@ -584,6 +584,45 @@ describe('DirectorService', () => {
       expect(result.alertEvents[0].episode).toEqual({
         id: 'episode-1',
         status: alertEpisodeStatus.active,
+        status_count: 1,
+      });
+    });
+
+    it('increments status_count while the episode stays active', async () => {
+      const ruleWithTransition = createRuleResponse({
+        state_transition: { pending_count: 3 },
+      });
+
+      const alertEvent = createAlertEvent({
+        group_hash: 'hash-1',
+        status: 'breached',
+        episode: undefined,
+      });
+
+      mockEsClient.esql.query.mockResolvedValue(
+        createLatestAlertEventStateResponse([
+          {
+            last_episode_timestamp: '2026-01-01T00:00:00.000Z',
+            last_status: 'breached',
+            last_episode_id: 'episode-1',
+            last_episode_status: 'active',
+            last_episode_status_count: 3,
+            group_hash: 'hash-1',
+          },
+        ])
+      );
+
+      const result = await directorService.run({
+        spaceId: 'default',
+        rule: ruleWithTransition,
+        executionContext: testExecutionContext,
+        alertEvents: [alertEvent],
+      });
+
+      expect(result.alertEvents[0].episode).toEqual({
+        id: 'episode-1',
+        status: alertEpisodeStatus.active,
+        status_count: 4,
       });
     });
 
@@ -650,7 +689,7 @@ describe('DirectorService', () => {
               last_status: 'breached',
               last_episode_id: 'user-activated-episode',
               last_episode_status: 'active',
-              last_episode_status_count: null,
+              last_episode_status_count: 1,
               last_lifecycle_action_type: ALERT_EPISODE_ACTION_TYPE.ACTIVATE,
               group_hash: 'hash-1',
             },
@@ -669,6 +708,7 @@ describe('DirectorService', () => {
         expect(result.alertEvents[0].episode).toEqual({
           id: 'user-activated-episode',
           status: alertEpisodeStatus.active,
+          status_count: 2,
         });
       });
 
@@ -689,7 +729,7 @@ describe('DirectorService', () => {
               last_status: 'breached',
               last_episode_id: 'user-activated-episode',
               last_episode_status: 'active',
-              last_episode_status_count: null,
+              last_episode_status_count: 1,
               last_lifecycle_action_type: ALERT_EPISODE_ACTION_TYPE.ACTIVATE,
               group_hash: 'hash-1',
             },
@@ -707,14 +747,14 @@ describe('DirectorService', () => {
         expect(result.alertEvents[0].episode).toEqual({
           id: 'user-activated-episode',
           status: alertEpisodeStatus.active,
+          status_count: 2,
         });
       });
 
-      it('never emits status_count on the forced-active event (mirrors any → active transitions)', async () => {
-        // Even under a count-based rule where the previous state carries
-        // status_count, the forced-active emit drops it — consistent with
-        // BasicTransitionStrategy and CountTimeframeStrategy which never
-        // emit status_count on the → active edge.
+      it('increments status_count on the forced-active event (same per-span counting as the engine)', async () => {
+        // User-lock follows the same per-span rules: entering a status
+        // resets to 1, staying increments. A recovering engine signal
+        // does not reset the count because the episode is held in active.
         const ruleWithTransition = createRuleResponse({
           state_transition: { pending_count: 3 },
         });
@@ -749,8 +789,8 @@ describe('DirectorService', () => {
         expect(result.alertEvents[0].episode).toEqual({
           id: 'user-activated-episode',
           status: alertEpisodeStatus.active,
+          status_count: 6,
         });
-        expect(result.alertEvents[0].episode?.status_count).toBeUndefined();
       });
 
       it('does not lock when the last lifecycle action is deactivate — strategy owns transitions', async () => {
@@ -886,7 +926,7 @@ describe('DirectorService', () => {
               last_status: 'breached',
               last_episode_id: 'locked-episode',
               last_episode_status: 'active',
-              last_episode_status_count: null,
+              last_episode_status_count: 1,
               last_lifecycle_action_type: ALERT_EPISODE_ACTION_TYPE.ACTIVATE,
               group_hash: 'locked-group',
             },
@@ -912,6 +952,7 @@ describe('DirectorService', () => {
         expect(result.alertEvents[0].episode).toEqual({
           id: 'locked-episode',
           status: alertEpisodeStatus.active,
+          status_count: 2,
         });
         expect(result.alertEvents[1].episode).toEqual({
           id: 'engine-episode',

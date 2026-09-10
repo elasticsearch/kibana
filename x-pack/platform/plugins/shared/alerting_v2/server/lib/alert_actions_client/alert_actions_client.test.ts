@@ -317,7 +317,7 @@ describe('AlertActionsClient', () => {
     });
 
     // Handler-internal behaviour (synthetic rule-event reconstruction,
-    // severity omission, status_count omission, and the
+    // severity omission, status_count on entry, and the
     // `episode_status !== 'inactive'` precondition variants) is
     // covered exhaustively by `handlers/activate.test.ts`. The tests
     // here cover only what the orchestrator owns: persistence layout,

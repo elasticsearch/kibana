@@ -120,7 +120,7 @@ apiTest.describe('Create activate alert action API', { tag: '@local-stateful-cla
         group_hash: groupHash,
         status: 'breached',
         type: 'alert',
-        episode: { id: episodeId, status: 'active' },
+        episode: { id: episodeId, status: 'active', status_count: 1 },
         data: { 'host.name': 'host-a' },
         severity: 'high',
         space_id: 'default',
@@ -244,7 +244,7 @@ apiTest.describe('Create activate alert action API', { tag: '@local-stateful-cla
 
       const latestStates = await apiServices.alertingV2.ruleEvents.getLatestEpisodeStates(ruleId);
       expect(latestStates.get(groupHash)).toMatchObject({
-        episode: { id: episodeId, status: 'active' },
+        episode: { id: episodeId, status: 'active', status_count: 1 },
         status: 'breached',
       });
     }
@@ -276,7 +276,7 @@ apiTest.describe('Create activate alert action API', { tag: '@local-stateful-cla
 
       const latestStates = await apiServices.alertingV2.ruleEvents.getLatestEpisodeStates(ruleId);
       expect(latestStates.get(groupHash)).toMatchObject({
-        episode: { id: episodeId, status: 'active' },
+        episode: { id: episodeId, status: 'active', status_count: 1 },
         status: 'breached',
       });
     }
@@ -324,7 +324,7 @@ apiTest.describe('Create activate alert action API', { tag: '@local-stateful-cla
 
       const latestStates = await apiServices.alertingV2.ruleEvents.getLatestEpisodeStates(ruleId);
       expect(latestStates.get(groupHash)).toMatchObject({
-        episode: { id: episodeId, status: 'active' },
+        episode: { id: episodeId, status: 'active', status_count: 1 },
         status: 'breached',
       });
     }
