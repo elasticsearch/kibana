@@ -12,7 +12,6 @@ import { I18nProvider } from '@kbn/i18n-react';
 import type { RuleResponse } from '../../../../../common/api/detection_engine';
 import { BulkActionTypeEnum } from '../../../../../common/api/detection_engine/rule_management';
 import { DuplicateOptions } from '../../../../../common/detection_engine/rule_management/constants';
-import { useIsExperimentalFeatureEnabled } from '../../../../common/hooks/use_experimental_features';
 import { useUserPrivileges } from '../../../../common/components/user_privileges';
 import { useExecuteBulkAction } from '../../logic/bulk_actions/use_execute_bulk_action';
 import { usePrebuiltRulesDeprecationReview } from '../../logic/prebuilt_rules/use_prebuilt_rules_deprecation_review';
@@ -22,7 +21,6 @@ import { savedRuleMock } from '../../logic/mock';
 import { useDeprecatedRuleDetailsCallout } from './use_deprecated_rule_details_callout';
 import { createDefaultExternalRuleSource } from '../../../../../server/lib/detection_engine/rule_management/logic/detection_rules_client/mergers/rule_source/create_default_external_rule_source';
 
-jest.mock('../../../../common/hooks/use_experimental_features');
 jest.mock('../../../../common/components/user_privileges');
 jest.mock('../../logic/bulk_actions/use_execute_bulk_action');
 jest.mock('../../logic/prebuilt_rules/use_prebuilt_rules_deprecation_review');
@@ -31,7 +29,6 @@ jest.mock(
 );
 jest.mock('../../../../common/lib/kibana');
 
-const mockUseIsExperimentalFeatureEnabled = useIsExperimentalFeatureEnabled as jest.Mock;
 const mockUseUserPrivileges = useUserPrivileges as jest.Mock;
 const mockUseExecuteBulkAction = useExecuteBulkAction as jest.Mock;
 const mockUsePrebuiltRulesDeprecationReview = usePrebuiltRulesDeprecationReview as jest.Mock;
@@ -89,8 +86,6 @@ function TestComponent(
 describe('useDeprecatedRuleDetailsCallout', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-
-    mockUseIsExperimentalFeatureEnabled.mockReturnValue(true);
 
     mockUseUserPrivileges.mockReturnValue({
       rulesPrivileges: {

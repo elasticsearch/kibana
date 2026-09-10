@@ -14,7 +14,6 @@ import { RuleDeprecationEventTypes } from '../../../../common/lib/telemetry/even
 import type { RuleResponse } from '../../../../../common/api/detection_engine';
 import { BulkActionTypeEnum } from '../../../../../common/api/detection_engine/rule_management';
 import { DuplicateOptions } from '../../../../../common/detection_engine/rule_management/constants';
-import { useIsExperimentalFeatureEnabled } from '../../../../common/hooks/use_experimental_features';
 import { useBulkDuplicateExceptionsConfirmation } from '../../../rule_management_ui/components/rules_table/bulk_actions/use_bulk_duplicate_confirmation';
 import { useExecuteBulkAction } from '../../logic/bulk_actions/use_execute_bulk_action';
 import { usePrebuiltRulesDeprecationReview } from '../../logic/prebuilt_rules/use_prebuilt_rules_deprecation_review';
@@ -49,11 +48,10 @@ export const useDeprecatedRuleDetailsCallout = ({
     rules: { edit: canEditRules },
   } = useUserPrivileges().rulesPrivileges;
 
-  const isFeatureEnabled = useIsExperimentalFeatureEnabled('prebuiltRulesDeprecationUIEnabled');
   const isPrebuiltRule = rule?.rule_source?.type === 'external';
   const { data, isLoading } = usePrebuiltRulesDeprecationReview(
     { ids: rule?.id ? [rule.id] : [] },
-    { enabled: isFeatureEnabled && isPrebuiltRule }
+    { enabled: isPrebuiltRule }
   );
   const { executeBulkAction } = useExecuteBulkAction();
 

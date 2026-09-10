@@ -50,15 +50,6 @@ describe(
   'Deprecated rules - Rule Management page callout',
   {
     tags: ['@ess', '@skipInServerlessMKI'],
-    env: {
-      ftrConfig: {
-        kbnServerArgs: [
-          `--xpack.securitySolution.enableExperimental=${JSON.stringify([
-            'prebuiltRulesDeprecationUIEnabled',
-          ])}`,
-        ],
-      },
-    },
   },
   () => {
     before(() => {

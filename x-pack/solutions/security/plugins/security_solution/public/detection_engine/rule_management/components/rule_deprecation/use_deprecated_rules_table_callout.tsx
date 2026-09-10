@@ -10,7 +10,6 @@ import { EuiButton, EuiLink } from '@elastic/eui';
 import { FormattedMessage } from '@kbn/i18n-react';
 import { useUserPrivileges } from '../../../../common/components/user_privileges';
 import { useBoolState } from '../../../../common/hooks/use_bool_state';
-import { useIsExperimentalFeatureEnabled } from '../../../../common/hooks/use_experimental_features';
 import { useTimedDismissal } from '../../../../common/hooks/use_timed_dismissal';
 import { useKibana } from '../../../../common/lib/kibana';
 import { RuleDeprecationEventTypes } from '../../../../common/lib/telemetry/events/rule_deprecation/types';
@@ -25,7 +24,6 @@ import * as i18n from './translations';
 export const DISMISSAL_STORAGE_KEY = 'securitySolution.deprecatedRulesCallout.dismissedAt';
 
 export const useDeprecatedRulesTableCallout = () => {
-  const isFeatureEnabled = useIsExperimentalFeatureEnabled('prebuiltRulesDeprecationUIEnabled');
   const [isModalVisible, showModal, hideModal] = useBoolState();
   const [isConfirmVisible, showConfirm, hideConfirm] = useBoolState();
   const [isDismissed, dismiss] = useTimedDismissal(DISMISSAL_STORAGE_KEY);
@@ -38,14 +36,12 @@ export const useDeprecatedRulesTableCallout = () => {
       },
     },
   } = useKibana().services;
-  const { data, isLoading } = usePrebuiltRulesDeprecationReview(null, {
-    enabled: isFeatureEnabled,
-  });
+  const { data, isLoading } = usePrebuiltRulesDeprecationReview(null);
   const { executeBulkAction } = useExecuteBulkAction();
 
   const hasReportedShown = useRef(false);
   const rulesCount = data?.rules.length ?? 0;
-  const isCalloutVisible = isFeatureEnabled && !isDismissed && !isLoading && rulesCount > 0;
+  const isCalloutVisible = !isDismissed && !isLoading && rulesCount > 0;
 
   useEffect(() => {
     if (isCalloutVisible && !hasReportedShown.current) {
