@@ -71,17 +71,32 @@ export const AccessControlIndexSelector: React.FC<IndexSelectorProps> = ({
   valueOfSelected,
   fullWidth,
 }) => {
+  const selectedOption = indexSelectorOptions.find((option) => option.value === valueOfSelected);
+  const indexTypeLabel = i18n.translate(
+    'xpack.contentConnectors.content.searchIndex.documents.selector.indexType.ariaLabel',
+    {
+      defaultMessage: 'Index type',
+    }
+  );
+  const ariaLabel = selectedOption
+    ? i18n.translate(
+        'xpack.contentConnectors.content.searchIndex.documents.selector.indexType.selectedAriaLabel',
+        {
+          defaultMessage: '{label}, {selectedValue}',
+          values: {
+            label: indexTypeLabel,
+            selectedValue: selectedOption.title,
+          },
+        }
+      )
+    : indexTypeLabel;
+
   return (
     <EuiSuperSelect
       fullWidth={fullWidth}
       valueOfSelected={valueOfSelected}
       onChange={onChange}
-      aria-label={i18n.translate(
-        'xpack.contentConnectors.content.searchIndex.documents.selector.indexType.ariaLabel',
-        {
-          defaultMessage: 'Index type',
-        }
-      )}
+      aria-label={ariaLabel}
       prepend={
         indexSelectorOptions.some((option) => option.error) ? (
           <EuiFormPrepend iconLeft="warning" />
