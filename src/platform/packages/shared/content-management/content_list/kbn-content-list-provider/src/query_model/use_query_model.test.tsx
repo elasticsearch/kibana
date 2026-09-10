@@ -121,8 +121,8 @@ describe('useQueryModel', () => {
 
     expect(result.current.model.search).toBe('dashboard status:open is:custom');
     expect(result.current.model.filters).toEqual({
-      createdBy: { include: ['u_jane'], exclude: [] },
-      tag: { include: ['tag-1'], exclude: ['tag-2'] },
+      createdBy: { include: [], includeAll: ['u_jane'], exclude: [] },
+      tag: { include: [], includeAll: ['tag-1'], exclude: ['tag-2'] },
     });
     expect(result.current.model.flags).toEqual({ starred: true });
     expect(result.current.model.referencedFields).toEqual(new Set(['tag', 'createdBy']));
@@ -139,8 +139,8 @@ describe('useQueryModel', () => {
     });
 
     expect(result.current.model.filters).toEqual({
-      createdBy: { include: ['u_jane'], exclude: [] },
-      tag: { include: ['tag-1'], exclude: [] },
+      createdBy: { include: [], includeAll: ['u_jane'], exclude: [] },
+      tag: { include: [], includeAll: ['tag-1'], exclude: [] },
     });
   });
 

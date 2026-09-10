@@ -112,9 +112,9 @@ describe('parseQueryText', () => {
   });
 
   describe('field filter extraction', () => {
-    it('extracts a simple include field clause.', () => {
+    it('routes a bare scalar clause to `includeAll` (match-all term).', () => {
       const result = parseQueryText('tag:Production', fields, flags, schema);
-      expect(result.filters.tag).toEqual({ include: ['tag-1'], exclude: [] });
+      expect(result.filters.tag).toEqual({ include: [], includeAll: ['tag-1'], exclude: [] });
       expect(result.search).toBe('');
     });
 
@@ -123,9 +123,13 @@ describe('parseQueryText', () => {
       expect(result.filters.tag).toEqual({ include: [], exclude: ['tag-2'] });
     });
 
-    it('combines include and exclude for the same field.', () => {
+    it('combines a bare include scalar and an exclude for the same field.', () => {
       const result = parseQueryText('tag:Production -tag:Archived', fields, flags, schema);
-      expect(result.filters.tag).toEqual({ include: ['tag-1'], exclude: ['tag-2'] });
+      expect(result.filters.tag).toEqual({
+        include: [],
+        includeAll: ['tag-1'],
+        exclude: ['tag-2'],
+      });
     });
 
     it('extracts multiple fields simultaneously.', () => {
@@ -135,13 +139,55 @@ describe('parseQueryText', () => {
         flags,
         schema
       );
-      expect(result.filters.tag).toEqual({ include: ['tag-1'], exclude: [] });
-      expect(result.filters.createdBy).toEqual({ include: ['u_jane'], exclude: [] });
+      expect(result.filters.tag).toEqual({ include: [], includeAll: ['tag-1'], exclude: [] });
+      expect(result.filters.createdBy).toEqual({
+        include: [],
+        includeAll: ['u_jane'],
+        exclude: [],
+      });
     });
 
-    it('deduplicates repeated values for the same field.', () => {
+    it('routes a single OR-group clause to `include` (match-any).', () => {
+      const result = parseQueryText('tag:(Production or Archived)', fields, flags, schema);
+      expect(result.filters.tag).toEqual({ include: ['tag-1', 'tag-2'], exclude: [] });
+    });
+
+    it('routes separate bare scalar clauses to `includeAll` (match-all/AND).', () => {
+      const result = parseQueryText('tag:Production tag:Archived', fields, flags, schema);
+      expect(result.filters.tag).toEqual({
+        include: [],
+        includeAll: ['tag-1', 'tag-2'],
+        exclude: [],
+      });
+    });
+
+    it('keeps separate single-value OR-groups as match-any (non-breaking).', () => {
+      const result = parseQueryText('tag:(Production) tag:(Archived)', fields, flags, schema);
+      expect(result.filters.tag).toEqual({ include: ['tag-1', 'tag-2'], exclude: [] });
+    });
+
+    it('mixes a match-any group with a match-all scalar.', () => {
+      const result = parseQueryText('tag:(Production or Archived) tag:Beta', fields, flags, schema);
+      expect(result.filters.tag).toEqual({
+        include: ['tag-1', 'tag-2'],
+        includeAll: ['tag-3'],
+        exclude: [],
+      });
+    });
+
+    it('combines match-all scalars with an exclude clause.', () => {
+      const result = parseQueryText('tag:Production tag:Archived -tag:Beta', fields, flags, schema);
+      expect(result.filters.tag).toEqual({
+        include: [],
+        includeAll: ['tag-1', 'tag-2'],
+        exclude: ['tag-3'],
+      });
+    });
+
+    it('deduplicates repeated bare scalars into a single match-all value.', () => {
       const result = parseQueryText('tag:Production tag:Production', fields, flags, schema);
-      expect(result.filters.tag?.include).toEqual(['tag-1']);
+      expect(result.filters.tag?.includeAll).toEqual(['tag-1']);
+      expect(result.filters.tag?.include).toEqual([]);
     });
 
     it('keeps the raw display value when resolution fails so the filter still applies.', () => {
@@ -156,7 +202,7 @@ describe('parseQueryText', () => {
         flags,
         buildSchema([fieldWithNoFuzzy])
       );
-      expect(result.filters.tag).toEqual({ include: ['nonexistent'], exclude: [] });
+      expect(result.filters.tag).toEqual({ include: [], includeAll: ['nonexistent'], exclude: [] });
     });
 
     it('tracks referenced fields when the value cannot be resolved.', () => {
@@ -172,7 +218,8 @@ describe('parseQueryText', () => {
         buildSchema([fieldWithNoFuzzy])
       );
       expect(result.filters.createdBy).toEqual({
-        include: ['someone@example.com'],
+        include: [],
+        includeAll: ['someone@example.com'],
         exclude: [],
       });
       expect(result.referencedFields).toEqual(new Set(['createdBy']));
@@ -182,7 +229,8 @@ describe('parseQueryText', () => {
     it('sets unresolvedFields to empty when all values resolve.', () => {
       const result = parseQueryText('createdBy:jane@example.com', fields, flags, schema);
       expect(result.filters.createdBy).toEqual({
-        include: ['u_jane'],
+        include: [],
+        includeAll: ['u_jane'],
         exclude: [],
       });
       expect(result.unresolvedFields.size).toBe(0);
@@ -190,9 +238,9 @@ describe('parseQueryText', () => {
   });
 
   describe('fuzzy field resolution', () => {
-    it('uses fuzzy matching when exact resolution fails.', () => {
+    it('uses fuzzy matching when exact resolution fails (single match → match-all).', () => {
       const result = parseQueryText('tag:prod', fields, flags, schema);
-      expect(result.filters.tag).toEqual({ include: ['tag-1'], exclude: [] });
+      expect(result.filters.tag).toEqual({ include: [], includeAll: ['tag-1'], exclude: [] });
     });
 
     it('resolves multiple fuzzy matches into the include list.', () => {
@@ -213,7 +261,7 @@ describe('parseQueryText', () => {
     it('extracts flags alongside search text and field filters.', () => {
       const result = parseQueryText('dashboard tag:Production is:starred', fields, flags, schema);
       expect(result.flags).toEqual({ starred: true });
-      expect(result.filters.tag).toEqual({ include: ['tag-1'], exclude: [] });
+      expect(result.filters.tag).toEqual({ include: [], includeAll: ['tag-1'], exclude: [] });
       expect(result.search).toBe('dashboard');
     });
 

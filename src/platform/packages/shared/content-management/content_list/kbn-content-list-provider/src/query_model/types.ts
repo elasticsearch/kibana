@@ -16,11 +16,20 @@
 /**
  * Include/exclude filter for a single field dimension.
  *
- * Always uses arrays (never undefined) to avoid null-checking throughout.
+ * Mirrors EUI's search AST: values within a single OR-group clause
+ * (`field:(a or b)`) are match-any; separate `must` clauses
+ * (`field:a field:b`) are match-all (AND-combined).
  */
 export interface QueryFilterValue {
-  /** IDs that items must match. */
+  /** Match-any (OR) IDs: an item matches if it has at least one. */
   include: string[];
+  /**
+   * Match-all (AND) IDs: an item matches only if it has every one.
+   *
+   * Populated when the query expresses the field as separate `must` clauses
+   * (e.g. `tag:a tag:b`). Absent for the common match-any case.
+   */
+  includeAll?: string[];
   /** IDs that items must not match. */
   exclude: string[];
 }

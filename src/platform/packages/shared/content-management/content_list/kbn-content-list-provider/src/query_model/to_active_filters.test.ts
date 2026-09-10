@@ -69,6 +69,44 @@ describe('toFindItemsFilters', () => {
     expect(result.createdBy).toEqual({ include: ['u_jane'], exclude: [] });
   });
 
+  it('passes through `includeAll` (match-all) buckets.', () => {
+    const model: ContentListQueryModel = {
+      ...EMPTY_MODEL,
+      filters: {
+        tag: { include: [], includeAll: ['tag-1', 'tag-2'], exclude: ['tag-3'] },
+      },
+    };
+    expect(toFindItemsFilters(model).tag).toEqual({
+      include: [],
+      includeAll: ['tag-1', 'tag-2'],
+      exclude: ['tag-3'],
+    });
+  });
+
+  it('emits a field filter that only has match-all values.', () => {
+    const model: ContentListQueryModel = {
+      ...EMPTY_MODEL,
+      filters: {
+        tag: { include: [], includeAll: ['tag-1', 'tag-2'], exclude: [] },
+      },
+    };
+    expect(toFindItemsFilters(model).tag).toEqual({
+      include: [],
+      includeAll: ['tag-1', 'tag-2'],
+      exclude: [],
+    });
+  });
+
+  it('does not add an `includeAll` key when the bucket is empty.', () => {
+    const model: ContentListQueryModel = {
+      ...EMPTY_MODEL,
+      filters: {
+        tag: { include: ['tag-1'], includeAll: [], exclude: [] },
+      },
+    };
+    expect(toFindItemsFilters(model).tag).not.toHaveProperty('includeAll');
+  });
+
   it('skips field filters with empty include and exclude arrays.', () => {
     const model: ContentListQueryModel = {
       ...EMPTY_MODEL,

@@ -57,14 +57,14 @@ describe('legacy_decoder', () => {
         { filter: 'graph', created_by: 'jane@example.com', favorites: 'true' },
         validSortFields
       )?.state.queryText
-    ).toBe('graph createdBy:"jane@example.com" is:starred');
+    ).toBe('graph createdBy:("jane@example.com") is:starred');
   });
 
-  it('decodes created_by values with EUI query escaping', () => {
+  it('decodes multiple created_by values as a single OR-group (match-any)', () => {
     expect(
       decodeLegacyParams({ created_by: ['jane@example.com', 'Jane Doe'] }, validSortFields)?.state
         .queryText
-    ).toBe('createdBy:"jane@example.com" createdBy:"Jane Doe"');
+    ).toBe('createdBy:("jane@example.com" or "Jane Doe")');
   });
 
   it('decodes favorites=true as is:starred', () => {
@@ -88,7 +88,7 @@ describe('legacy_decoder', () => {
       )
     ).toEqual({
       state: {
-        queryText: 'dashboard createdBy:"jane@example.com" is:starred',
+        queryText: 'dashboard createdBy:("jane@example.com") is:starred',
         sort: { field: 'updatedAt', direction: 'asc' },
       },
       consumed: ['s', 'sort', 'sortdir', 'created_by', 'favorites'],

@@ -27,6 +27,11 @@ describe('datasource type utilities', () => {
       expect(getIncludeExcludeFilter(filter)).toBe(filter);
     });
 
+    it('returns the filter for an object with only `includeAll` (match-all).', () => {
+      const filter: IncludeExcludeFilter = { includeAll: ['a', 'b'] };
+      expect(getIncludeExcludeFilter(filter)).toBe(filter);
+    });
+
     it('returns `undefined` for a string value.', () => {
       expect(getIncludeExcludeFilter('search text')).toBeUndefined();
     });

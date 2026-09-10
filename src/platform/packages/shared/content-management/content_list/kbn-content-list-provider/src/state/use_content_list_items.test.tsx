@@ -235,7 +235,8 @@ describe('useContentListItems', () => {
 
       await waitFor(() => {
         expect(result.current.filters.filters.createdBy).toEqual({
-          include: ['u_jane'],
+          include: [],
+          includeAll: ['u_jane'],
           exclude: [],
         });
       });
@@ -244,7 +245,7 @@ describe('useContentListItems', () => {
         expect(
           userFindItems.mock.calls.some(([params]) => {
             const createdBy = getIncludeExcludeFilter(params.filters.createdBy);
-            return createdBy?.include?.includes('u_jane') && createdBy?.exclude?.length === 0;
+            return createdBy?.includeAll?.includes('u_jane') && createdBy?.exclude?.length === 0;
           })
         ).toBe(true);
       });

@@ -13,8 +13,15 @@ import type { ContentListItem } from '../item';
  * Include/exclude filter shape used by tag, type, lastResponse, and other filter dimensions.
  */
 export interface IncludeExcludeFilter {
-  /** Values that items must match (include filter). */
+  /** Match-any (OR) values: an item matches if it has at least one. */
   include?: string[];
+  /**
+   * Match-all (AND) values: an item matches only if it has every one.
+   *
+   * Optional and additive — data sources that ignore it fall back to
+   * match-any semantics on {@link IncludeExcludeFilter.include}.
+   */
+  includeAll?: string[];
   /** Values that items must not match (exclude filter). */
   exclude?: string[];
 }
@@ -49,13 +56,15 @@ export interface ActiveFilters {
 }
 
 /**
- * Returns the filter value as {@link IncludeExcludeFilter} if it has `include` or `exclude`
- * arrays; otherwise `undefined`.
+ * Returns the filter value as {@link IncludeExcludeFilter} if it has an
+ * `include`, `includeAll`, or `exclude` array; otherwise `undefined`.
  */
 export const getIncludeExcludeFilter = (
   value: IncludeExcludeFilter | IncludeExcludeFlag | string | undefined
 ): IncludeExcludeFilter | undefined =>
-  value != null && typeof value === 'object' && ('include' in value || 'exclude' in value)
+  value != null &&
+  typeof value === 'object' &&
+  ('include' in value || 'includeAll' in value || 'exclude' in value)
     ? (value as IncludeExcludeFilter)
     : undefined;
 

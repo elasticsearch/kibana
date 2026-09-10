@@ -64,8 +64,11 @@ const buildQueryText = ({
 }): string | undefined => {
   let query = Query.parse('');
 
+  // Emit a single OR-group (`createdBy:(u1 or u2)`) so multi-user bookmarks
+  // keep match-any semantics. Separate simple clauses would now parse as
+  // match-all (AND), which is meaningless for a single-creator field.
   for (const user of createdBy) {
-    query = query.addSimpleFieldValue('createdBy', user);
+    query = query.addOrFieldValue('createdBy', user, true, 'eq');
   }
 
   if (favorites) {

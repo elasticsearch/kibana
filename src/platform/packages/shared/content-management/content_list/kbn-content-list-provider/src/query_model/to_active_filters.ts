@@ -33,10 +33,12 @@ export const toFindItemsFilters = (model: ContentListQueryModel): ActiveFilters 
   }
 
   for (const [fieldName, filter] of Object.entries(model.filters)) {
-    if (filter.include.length > 0 || filter.exclude.length > 0) {
+    const includeAll = filter.includeAll ?? [];
+    if (filter.include.length > 0 || includeAll.length > 0 || filter.exclude.length > 0) {
       result[fieldName] = {
         include: filter.include,
         exclude: filter.exclude,
+        ...(includeAll.length > 0 ? { includeAll } : {}),
       };
     }
   }

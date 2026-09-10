@@ -305,6 +305,64 @@ describe('createClientStrategy', () => {
       expect(result.items[0].id).toBe('1');
     });
 
+    it('applies tag match-all (includeAll) filter, keeping only items with every tag', async () => {
+      const both: UserContentCommonSchema = {
+        ...createMockItem('1'),
+        references: [
+          { type: 'tag', id: 'tag-1', name: 'tag-1' },
+          { type: 'tag', id: 'tag-2', name: 'tag-2' },
+        ],
+      };
+      const onlyOne: UserContentCommonSchema = {
+        ...createMockItem('2'),
+        references: [{ type: 'tag', id: 'tag-1', name: 'tag-1' }],
+      };
+      const mockFindItems = createMockFindItems([both, onlyOne]);
+      const { findItems } = createClientStrategy(mockFindItems, undefined, undefined, {
+        tag: tagFilter,
+      });
+
+      const result = await findItems(
+        createParams({ filters: { tag: { includeAll: ['tag-1', 'tag-2'] } } })
+      );
+
+      expect(result.items.map((i) => i.id)).toEqual(['1']);
+    });
+
+    it('intersects match-any (include) and match-all (includeAll) buckets', async () => {
+      const prodImportant: UserContentCommonSchema = {
+        ...createMockItem('1'),
+        references: [
+          { type: 'tag', id: 'prod', name: 'prod' },
+          { type: 'tag', id: 'important', name: 'important' },
+        ],
+      };
+      const devImportant: UserContentCommonSchema = {
+        ...createMockItem('2'),
+        references: [
+          { type: 'tag', id: 'dev', name: 'dev' },
+          { type: 'tag', id: 'important', name: 'important' },
+        ],
+      };
+      const prodOnly: UserContentCommonSchema = {
+        ...createMockItem('3'),
+        references: [{ type: 'tag', id: 'prod', name: 'prod' }],
+      };
+      const mockFindItems = createMockFindItems([prodImportant, devImportant, prodOnly]);
+      const { findItems } = createClientStrategy(mockFindItems, undefined, undefined, {
+        tag: tagFilter,
+      });
+
+      // (prod OR dev) AND important
+      const result = await findItems(
+        createParams({
+          filters: { tag: { include: ['prod', 'dev'], includeAll: ['important'] } },
+        })
+      );
+
+      expect(result.items.map((i) => i.id)).toEqual(['1', '2']);
+    });
+
     it('applies starred filter via decorate + IncludeExcludeFlag', async () => {
       const mockItems = [createMockItem('1'), createMockItem('2'), createMockItem('3')];
       const mockFindItems = createMockFindItems(mockItems);
