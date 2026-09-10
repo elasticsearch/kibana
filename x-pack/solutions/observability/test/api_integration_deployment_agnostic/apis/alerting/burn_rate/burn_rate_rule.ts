@@ -9,6 +9,7 @@ import type { Dataset, PartialConfig } from '@kbn/data-forge';
 import { cleanup, generate } from '@kbn/data-forge';
 import type { RoleCredentials, InternalRequestHeader } from '@kbn/ftr-common-functional-services';
 import expect from '@kbn/expect';
+import { SLI_DESTINATION_INDEX_PATTERN } from '@kbn/slo-plugin/common/constants';
 import type { DeploymentAgnosticFtrProviderContext } from '../../../ftr_provider_context';
 
 const RULE_TYPE_ID = 'slo.rules.burnRate';
@@ -28,6 +29,7 @@ export default function ({ getService }: DeploymentAgnosticFtrProviderContext) {
   const dataViewApi = getService('dataViewApi');
   const sloApi = getService('sloApi');
   const config = getService('config');
+  const retry = getService('retry');
   const isServerless = config.get('serverless');
   const kibanaServer = getService('kibanaServer');
   const expectedConsumer = isServerless ? 'observability' : 'slo';
@@ -293,6 +295,20 @@ export default function ({ getService }: DeploymentAgnosticFtrProviderContext) {
       });
 
       it('should be active', async () => {
+        // The rule evaluates this SLO's rollup data; wait until it lands and force an
+        // evaluation so the breach is detected deterministically, not by racing the scheduler.
+        await retry.tryForTime(120 * 1000, async () => {
+          const response = await esClient.search({
+            index: SLI_DESTINATION_INDEX_PATTERN,
+            size: 1,
+            query: { term: { 'slo.id': sloId } },
+          });
+          if (response.hits.hits.length === 0) {
+            throw new Error(`No SLI rollup documents for SLO ${sloId} yet`);
+          }
+        });
+        await alertingApi.runRule(currentRoleAuthc, ruleId);
+
         const executionStatus = await alertingApi.waitForRuleStatus({
           roleAuthc: currentRoleAuthc,
           ruleId,
