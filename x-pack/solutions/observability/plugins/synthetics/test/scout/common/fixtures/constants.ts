@@ -27,6 +27,7 @@ export const SYNTHETICS_API_URLS = {
   PRIVATE_LOCATIONS: '/api/synthetics/private_locations',
   PRIVATE_LOCATIONS_MONITORS: '/internal/synthetics/private_locations/monitors',
   SERVICE_LOCATIONS: '/internal/uptime/service/locations',
+  INDEX_PRIVILEGES: '/internal/synthetics/index_privileges',
   DYNAMIC_SETTINGS: '/api/synthetics/settings',
   MULTI_SPACE_SETTINGS: '/internal/synthetics/settings_multi_space',
   PARAMS: '/api/synthetics/params',

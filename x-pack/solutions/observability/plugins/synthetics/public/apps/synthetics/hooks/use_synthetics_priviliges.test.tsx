@@ -8,11 +8,16 @@
 import { renderHook } from '@testing-library/react';
 import React from 'react';
 import { render, WrappedHelper } from '../utils/testing';
+import { useCanReadSyntheticsIndex } from '../../../hooks/use_capabilities';
 import { useSyntheticsPrivileges } from './use_synthetics_priviliges';
 
 jest.mock('../../../hooks/use_capabilities', () => ({
   useCanReadSyntheticsIndex: jest.fn().mockReturnValue({ canRead: true, loading: false }),
 }));
+
+const mockUseCanReadSyntheticsIndex = useCanReadSyntheticsIndex as jest.MockedFunction<
+  typeof useCanReadSyntheticsIndex
+>;
 
 jest.mock('react-redux-v7', () => {
   const actual = jest.requireActual('react-redux-v7');
@@ -27,6 +32,32 @@ function wrapper({ children }: React.PropsWithChildren) {
 }
 
 describe('useSyntheticsPrivileges', () => {
+  afterEach(() => {
+    mockUseCanReadSyntheticsIndex.mockReturnValue({ canRead: true, loading: false });
+  });
+
+  it('shows a loading spinner while index privileges are being checked', () => {
+    mockUseCanReadSyntheticsIndex.mockReturnValue({ canRead: undefined, loading: true });
+
+    const {
+      result: { current },
+    } = renderHook(() => useSyntheticsPrivileges(), { wrapper });
+
+    const { getByTestId } = render(current!);
+    expect(getByTestId('syntheticsPrivilegesLoading')).toBeInTheDocument();
+  });
+
+  it('shows the unprivileged empty state when the user cannot read synthetics-*', () => {
+    mockUseCanReadSyntheticsIndex.mockReturnValue({ canRead: false, loading: false });
+
+    const {
+      result: { current },
+    } = renderHook(() => useSyntheticsPrivileges(), { wrapper });
+
+    const { getByTestId } = render(current!);
+    expect(getByTestId('syntheticsUnprivileged')).toBeInTheDocument();
+  });
+
   it.each([
     [true, null],
     [false, ''],

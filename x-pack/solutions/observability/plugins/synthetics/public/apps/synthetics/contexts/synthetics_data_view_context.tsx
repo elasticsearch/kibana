@@ -10,6 +10,7 @@ import React, { createContext, useContext } from 'react';
 import { useFetcher } from '@kbn/observability-shared-plugin/public';
 import type { DataViewsPublicPluginStart, DataView } from '@kbn/data-views-plugin/public';
 import { SYNTHETICS_INDEX_PATTERN } from '../../../../common/constants';
+import { useCanReadSyntheticsIndex } from '../../../hooks/use_capabilities';
 
 // TODO: This should be changed to createContext<DataView | undefined> because this is the type returned by useFetcher, not changing it because not sure of the side effects
 export const SyntheticsDataViewContext = createContext({} as DataView);
@@ -19,9 +20,14 @@ export const SyntheticsDataViewContextProvider: FC<
     dataViews: DataViewsPublicPluginStart;
   }>
 > = ({ children, dataViews }) => {
-  const { data } = useFetcher<Promise<DataView | undefined>>(async () => {
+  const { canRead } = useCanReadSyntheticsIndex();
+  // Creating the data view calls field_caps and toasts a security_exception without index read.
+  const { data } = useFetcher(() => {
+    if (canRead !== true) {
+      return;
+    }
     return dataViews.create({ title: SYNTHETICS_INDEX_PATTERN });
-  }, [dataViews]);
+  }, [dataViews, canRead]);
 
   return <SyntheticsDataViewContext.Provider value={data!} children={children} />;
 };

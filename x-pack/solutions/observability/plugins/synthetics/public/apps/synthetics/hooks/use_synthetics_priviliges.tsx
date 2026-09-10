@@ -14,6 +14,7 @@ import {
   EuiIcon,
   EuiButton,
   EuiMarkdownFormat,
+  EuiLoadingSpinner,
 } from '@elastic/eui';
 import { FormattedMessage } from '@kbn/i18n-react';
 import { useKibana } from '@kbn/kibana-react-plugin/public';
@@ -35,7 +36,21 @@ export const useSyntheticsPrivileges = () => {
     useCanReadSyntheticsIndex();
   const { error } = useSelector(selectOverviewStatus);
 
-  if (!isCanReadLoading && !canReadSyntheticsIndex) {
+  if (isCanReadLoading) {
+    return (
+      <EuiFlexGroup
+        alignItems="center"
+        justifyContent="center"
+        style={{ height: 'calc(100vh - 150px)' }}
+      >
+        <EuiFlexItem grow={false}>
+          <EuiLoadingSpinner size="xl" data-test-subj="syntheticsPrivilegesLoading" />
+        </EuiFlexItem>
+      </EuiFlexGroup>
+    );
+  }
+
+  if (canReadSyntheticsIndex === false) {
     return (
       <EuiFlexGroup
         alignItems="center"

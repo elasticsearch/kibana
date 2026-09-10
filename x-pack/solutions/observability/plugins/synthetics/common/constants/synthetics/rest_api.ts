@@ -10,6 +10,10 @@ export interface IndexSizeEntry {
   sizeInBytes: number;
 }
 
+export interface SyntheticsIndexPrivilegesResponse {
+  canRead: boolean;
+}
+
 export enum SYNTHETICS_API_URLS {
   // public apis
   SYNTHETICS_MONITORS = '/api/synthetics/monitors',
@@ -29,6 +33,7 @@ export enum SYNTHETICS_API_URLS {
   SYNTHETICS_ENABLEMENT = '/internal/synthetics/service/enablement',
   RUN_ONCE_MONITOR = '/internal/synthetics/service/monitors/run_once',
   SERVICE_ALLOWED = '/internal/synthetics/service/allowed',
+  INDEX_PRIVILEGES = '/internal/synthetics/index_privileges',
   SYNTHETICS_PROJECT_APIKEY = '/internal/synthetics/service/api_key',
   SYNTHETICS_HAS_INTEGRATION_MONITORS = '/internal/synthetics/fleet/has_integration_monitors',
   SYNTHETICS_MONITORS_HEALTH = '/internal/synthetics/monitors/_health',
