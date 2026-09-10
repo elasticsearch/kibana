@@ -9,8 +9,8 @@
 
 import type { ElasticsearchClient, KibanaRequest, Logger } from '@kbn/core/server';
 import type { EsWorkflowExecution } from '@kbn/workflows';
-import { ExecutionStatus, WorkflowRepository } from '@kbn/workflows';
-import { isGraphBuildError, WorkflowGraph } from '@kbn/workflows/graph';
+import { ExecutionStatus, isTerminalStatus, WorkflowRepository } from '@kbn/workflows';
+import { GraphBuildError, isGraphBuildError, WorkflowGraph } from '@kbn/workflows/graph';
 import { setWorkflowEventChainContext } from '@kbn/workflows-extensions/server';
 import { WorkflowGraphSetupError } from './workflow_graph_setup_error';
 import type { WorkflowsExecutionEngineConfig } from '../config';
@@ -32,7 +32,10 @@ import { StepIoService } from '../workflow_context_manager/step_io_service';
 import type { ContextDependencies } from '../workflow_context_manager/types';
 import { WorkflowExecutionCursor } from '../workflow_context_manager/workflow_execution_cursor';
 import { WorkflowExecutionRuntimeManager } from '../workflow_context_manager/workflow_execution_runtime_manager';
-import { WorkflowExecutionState } from '../workflow_context_manager/workflow_execution_state';
+import {
+  getTerminalWorkflowRefreshOptions,
+  WorkflowExecutionState,
+} from '../workflow_context_manager/workflow_execution_state';
 
 import { WorkflowEventLoggerService } from '../workflow_event_logger';
 import { WorkflowTaskManager } from '../workflow_task_manager/workflow_task_manager';
@@ -92,34 +95,51 @@ export async function setupDependencies(
     ...(visitedWorkflowIds.length > 0 ? { visitedWorkflowIds } : {}),
   });
 
-  // Compiling the definition into its execution graph can throw a GraphBuildError
-  // for a structurally-unsupported workflow (currently only the parallel-branch
-  // constraints: nested flow-control / unsupported step types inside a branch
-  // body). This same rule is validated in the editor (see the client-side
-  // `validateGraphBuild`, which squiggles the offending step), so authored-in-UI
-  // workflows are rejected before they ever run. This block is the defense-in-depth
-  // runtime net for the paths that bypass the editor — API/programmatic creation,
-  // imports, or workflows authored before the constraint existed. It is a permanent
-  // author error, not a transient fault, so we mark the execution FAILED with the
-  // actionable message and rethrow a typed, non-retryable error — otherwise the raw
-  // throw escapes the task runner and the run is force-recovered into an opaque
-  // "Execution abandoned" TaskRecoveryError with no failure reason and no step records.
+  // Reject incompatible execution formats before reading checkpoints, and persist
+  // permanent setup failures instead of allowing task recovery to reinterpret them.
   let workflowExecutionGraph: WorkflowGraph;
   try {
+    const executionMode = workflowExecution.executionMode;
+    if (
+      !isTerminalStatus(workflowExecution.status) &&
+      executionMode !== 'parallel_v4' &&
+      !(
+        executionMode === undefined &&
+        [ExecutionStatus.PENDING, ExecutionStatus.QUEUED].includes(workflowExecution.status) &&
+        !workflowExecution.currentNodeId &&
+        !workflowExecution.stepExecutionIds?.length &&
+        !workflowExecution.scopeStack?.length
+      )
+    ) {
+      throw new GraphBuildError(
+        'This execution uses an unsupported legacy execution format. Start a new execution; legacy checkpoints cannot be resumed.',
+        'workflow'
+      );
+    }
     workflowExecutionGraph = WorkflowGraph.fromWorkflowDefinition(
       workflowExecution.workflowDefinition,
       defaultWorkflowSettings
     );
+    if (!workflowExecution.executionMode && !isTerminalStatus(workflowExecution.status)) {
+      await workflowExecutionRepository.updateWorkflowExecution({
+        id: workflowRunId,
+        executionMode: 'parallel_v4',
+      });
+      workflowExecution.executionMode = 'parallel_v4';
+    }
   } catch (error) {
     if (isGraphBuildError(error)) {
       const finishedAt = new Date();
-      await workflowExecutionRepository.updateWorkflowExecution({
-        id: workflowRunId,
-        status: ExecutionStatus.FAILED,
-        error: { type: 'GraphBuildError', message: error.message },
-        finishedAt: finishedAt.toISOString(),
-        duration: finishedAt.getTime() - new Date(workflowExecution.startedAt).getTime(),
-      });
+      await workflowExecutionRepository.updateWorkflowExecution(
+        {
+          id: workflowRunId,
+          status: ExecutionStatus.FAILED,
+          error: { type: 'GraphBuildError', message: error.message },
+          finishedAt: finishedAt.toISOString(),
+          duration: finishedAt.getTime() - new Date(workflowExecution.startedAt).getTime(),
+        },
+        getTerminalWorkflowRefreshOptions({ ...workflowExecution, status: ExecutionStatus.FAILED })
+      );
       logger.error(
         `Workflow execution ${workflowRunId} failed to build its execution graph: ${error.message}`
       );
@@ -142,12 +162,15 @@ export async function setupDependencies(
     config.logging.console
   );
 
-  const workflowLogger = workflowEventLoggerService.createLogger({
-    workflowId: workflowExecution.workflowId,
-    workflowName: workflowExecution.workflowDefinition.name,
-    executionId: workflowExecution.id,
-    spaceId: workflowExecution.spaceId,
-  });
+  const workflowLogger = workflowEventLoggerService.createLogger(
+    {
+      workflowId: workflowExecution.workflowId,
+      workflowName: workflowExecution.workflowDefinition.name,
+      executionId: workflowExecution.id,
+      spaceId: workflowExecution.spaceId,
+    },
+    { throwOnFailure: true }
+  );
 
   const workflowExecutionState = new WorkflowExecutionState(
     workflowExecution as EsWorkflowExecution,

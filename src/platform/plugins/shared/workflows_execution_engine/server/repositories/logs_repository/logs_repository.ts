@@ -42,12 +42,28 @@ export class LogsRepository {
     private readonly logger: Logger
   ) {}
 
-  public async createLogs(logEvents: WorkflowLogEvent[]): Promise<void> {
+  public async createLogs(
+    logEvents: WorkflowLogEvent[],
+    options: { throwOnFailure?: boolean } = {}
+  ): Promise<void> {
     const dataStreamClient = await initializeDataStreamClient(this.coreDataStreams);
 
-    await retryTransientEsErrors(() => dataStreamClient.create({ documents: logEvents }), {
-      logger: this.logger,
-    });
+    const result = await retryTransientEsErrors(
+      () => dataStreamClient.create({ documents: logEvents }),
+      {
+        logger: this.logger,
+      }
+    );
+    if (options.throwOnFailure && result.errors) {
+      const failed = result.items.flatMap((item) =>
+        item.create?.error ? [item.create.error] : []
+      );
+      throw new Error(
+        `Failed to index ${failed.length} workflow events: ${failed
+          .map((error) => error.reason ?? error.type)
+          .join('; ')}`
+      );
+    }
   }
 
   public async getRecentLogs(limit: number = 100): Promise<LogSearchResult> {

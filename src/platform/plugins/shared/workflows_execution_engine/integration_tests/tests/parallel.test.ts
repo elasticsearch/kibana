@@ -30,10 +30,35 @@ const stepExecutionsFor = (fixture: WorkflowRunFixture, stepId: string) =>
  * tests must pump `resumeWorkflow()` to drive the step to a terminal state.
  */
 const driveToTerminal = async (fixture: WorkflowRunFixture, maxGuard = 10): Promise<void> => {
-  let guard = 0;
-  while (getExecution(fixture)?.status === ExecutionStatus.WAITING && guard < maxGuard) {
-    await fixture.resumeWorkflow();
-    guard += 1;
+  jest.useFakeTimers({
+    doNotFake: [
+      'nextTick',
+      'setImmediate',
+      'clearImmediate',
+      'setTimeout',
+      'clearTimeout',
+      'setInterval',
+      'clearInterval',
+      'performance',
+      'queueMicrotask',
+      'hrtime',
+    ],
+  });
+  try {
+    for (
+      let guard = 0;
+      getExecution(fixture)?.status === ExecutionStatus.WAITING && guard < maxGuard;
+      guard++
+    ) {
+      const deadlines = [...fixture.stepExecutionRepositoryMock.stepExecutions.values()].flatMap(
+        (step) =>
+          typeof step.state?.resumeAt === 'string' ? [new Date(step.state.resumeAt).getTime()] : []
+      );
+      jest.setSystemTime(Math.max(Date.now() + 1000, ...deadlines));
+      await fixture.resumeWorkflow();
+    }
+  } finally {
+    jest.useRealTimers();
   }
 };
 
@@ -389,9 +414,7 @@ steps:
     describe('after resumes', () => {
       beforeAll(async () => {
         // Each branch needs a second poll to finish; resume until terminal.
-        await workflowRunFixture.resumeWorkflow();
-        await workflowRunFixture.resumeWorkflow();
-        await workflowRunFixture.resumeWorkflow();
+        await driveToTerminal(workflowRunFixture);
       });
 
       it('completes the workflow', () => {

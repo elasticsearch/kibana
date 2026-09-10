@@ -1,0 +1,36 @@
+name: "workflow.output terminates parallel siblings"
+description: "The terminator determines the workflow result. Sibling waits and queued work are cancelled; parent retry/fallback and after_join must not run."
+enabled: true
+triggers:
+  - type: manual
+steps:
+  - name: branches
+    type: parallel
+    on-failure:
+      retry: { max-attempts: 2, delay: 1ms }
+      fallback:
+        - name: forbiddenFallback
+          type: console
+          with: { message: forbidden }
+    branches:
+      - name: waiting
+        steps:
+          - name: pause
+            type: wait
+            with: { duration: 1h }
+          - name: forbiddenAfterWait
+            type: console
+            with: { message: forbidden }
+      - name: returning
+        steps:
+          - name: terminate
+            type: workflow.output
+            with: { message: chosen }
+      - name: competing
+        steps:
+          - name: later
+            type: workflow.output
+            with: { message: later }
+  - name: forbiddenAfterJoin
+    type: console
+    with: { message: forbidden }

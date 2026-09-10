@@ -56,8 +56,16 @@ import { WorkflowScopeStack } from '../workflow_context_manager/workflow_scope_s
  *   used to update the step's status and identify the failure point
  */
 export async function catchError(
-  params: WorkflowExecutionLoopParams,
-  failedStepExecutionRuntime: StepExecutionRuntime
+  params: Pick<
+    WorkflowExecutionLoopParams,
+    | 'workflowExecutionCursor'
+    | 'workflowLogger'
+    | 'stepExecutionRuntimeFactory'
+    | 'nodesFactory'
+    | 'workflowRuntime'
+  >,
+  failedStepExecutionRuntime: StepExecutionRuntime,
+  boundaryNodeId?: string
 ) {
   const { workflowExecutionCursor, workflowLogger, stepExecutionRuntimeFactory, nodesFactory } =
     params;
@@ -79,9 +87,12 @@ export async function catchError(
     // 2. There are items in the execution stack
     // 3. The top stack entry has nested scopes to process
     // This allows error handling to bubble up through the scope hierarchy.
-    if (failedStepExecutionRuntime.stepExecutionExists() && failedStepExecutionRuntime.error) {
+    if (
+      failedStepExecutionRuntime.stepExecution?.status !== undefined &&
+      failedStepExecutionRuntime.error
+    ) {
       workflowExecutionCursor.captureError(failedStepExecutionRuntime.error);
-    } else if (failedStepExecutionRuntime.stepExecutionExists()) {
+    } else if (failedStepExecutionRuntime.stepExecution?.status !== undefined) {
       const stepExecution = failedStepExecutionRuntime.stepExecution;
       // Only finalize the step here if it has NOT already reached a terminal state
       // on its own. A step that already settled itself (e.g. a parallel step that
@@ -109,6 +120,9 @@ export async function catchError(
     );
     while (workflowExecutionCursor.error && !workflowScopeStack.isEmpty()) {
       const scopeEntry = workflowScopeStack.getCurrentScope();
+      if (scopeEntry.nodeId === boundaryNodeId) {
+        break;
+      }
       const newWorkflowScopeStack = workflowScopeStack.exitScope();
       const currentNode = workflowExecutionCursor.currentNode;
 
@@ -145,7 +159,7 @@ export async function catchError(
       );
 
       if (workflowExecutionCursor.error) {
-        if (stepExecutionRuntime.stepExecutionExists()) {
+        if (stepExecutionRuntime.stepExecution?.status !== undefined) {
           // Same rule as above: don't clobber a scope that already settled itself
           // (e.g. a parallel step that failed with its aggregate output). Only
           // finalize scopes still non-terminal while the error bubbles up.

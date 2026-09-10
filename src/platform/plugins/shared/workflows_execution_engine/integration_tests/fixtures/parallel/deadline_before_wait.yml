@@ -1,0 +1,25 @@
+name: "Branch deadline before nested wait"
+description: "A 2-second outer branch deadline must terminate nested 30-second waits near the deadline, without running after_wait. Settled aggregate reports two timeouts."
+enabled: true
+triggers:
+  - type: manual
+steps:
+  - name: branches
+    type: parallel
+    mode: settled
+    branch-timeout: 2s
+    foreach: [a, b]
+    steps:
+      - name: nested
+        type: parallel
+        foreach: [1, 2]
+        steps:
+          - name: long_wait
+            type: wait
+            with: { duration: 30s }
+          - name: after_wait
+            type: console
+            with: { message: MUST_NOT_RUN }
+  - name: joined
+    type: console
+    with: { message: '{{ steps.branches.output | json }}' }

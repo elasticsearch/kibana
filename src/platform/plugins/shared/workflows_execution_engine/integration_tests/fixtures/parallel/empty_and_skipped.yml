@@ -1,0 +1,31 @@
+name: "Empty fan-out and skipped branch bodies"
+description: "An empty fan-out launches nothing. An empty foreach and skipped final condition in each outer branch must still join successfully."
+enabled: true
+triggers:
+  - type: manual
+steps:
+  - name: empty
+    type: parallel
+    foreach: []
+    steps:
+      - name: never_empty
+        type: console
+        with: { message: MUST_NOT_RUN }
+  - name: branches
+    type: parallel
+    foreach: [a, b]
+    steps:
+      - name: empty_loop
+        type: foreach
+        foreach: []
+        steps:
+          - name: never_loop
+            type: console
+            with: { message: MUST_NOT_RUN }
+      - name: skipped_final
+        type: console
+        if: '${{ false }}'
+        with: { message: MUST_NOT_RUN }
+  - name: joined
+    type: console
+    with: { message: '{{ steps.branches.output | json }}' }

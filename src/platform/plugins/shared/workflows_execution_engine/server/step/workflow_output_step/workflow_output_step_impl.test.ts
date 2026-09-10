@@ -28,6 +28,7 @@ const createRuntime = () => {
 };
 
 const createWorkflowRuntime = (outputs?: unknown[]) => ({
+  branchExecutor: { requestTermination: jest.fn().mockResolvedValue(undefined) },
   getWorkflowExecution: jest.fn(() => ({
     workflowDefinition: { outputs },
   })),
@@ -42,22 +43,21 @@ describe('WorkflowOutputStepImpl', () => {
     const stepExecutionRuntime = createRuntime();
     const workflowRuntime = createWorkflowRuntime();
     const workflowLogger = { logError: jest.fn(), logInfo: jest.fn() };
-    const stepExecutionRuntimeFactory = {
-      createStepExecutionRuntime: jest.fn(),
-    };
     const step = new WorkflowOutputStepImpl(
       { configuration: { status: 'completed', with: { answer: 42 } } } as any,
       stepExecutionRuntime as any,
       workflowRuntime as any,
-      workflowLogger as any,
-      stepExecutionRuntimeFactory as any
+      workflowLogger as any
     );
 
     await step.run();
 
-    expect(workflowRuntime.setWorkflowOutputs).toHaveBeenCalledWith({ answer: 42 });
-    expect(stepExecutionRuntime.finishStep).toHaveBeenCalledWith({ answer: 42 });
-    expect(workflowRuntime.setWorkflowStatus).toHaveBeenCalledWith(ExecutionStatus.COMPLETED);
+    expect(workflowRuntime.branchExecutor.requestTermination).toHaveBeenCalledWith(
+      stepExecutionRuntime,
+      { answer: 42 },
+      ExecutionStatus.COMPLETED,
+      undefined
+    );
   });
 
   it('marks workflow as cancelled and keeps explicit cancellation reason', async () => {
@@ -74,13 +74,17 @@ describe('WorkflowOutputStepImpl', () => {
       } as any,
       stepExecutionRuntime as any,
       workflowRuntime as any,
-      workflowLogger as any,
-      { createStepExecutionRuntime: jest.fn() } as any
+      workflowLogger as any
     );
 
     await step.run();
 
-    expect(workflowRuntime.setWorkflowCancelled).toHaveBeenCalledWith('requested by user');
+    expect(workflowRuntime.branchExecutor.requestTermination).toHaveBeenCalledWith(
+      stepExecutionRuntime,
+      { reason: 'requested by user' },
+      ExecutionStatus.CANCELLED,
+      undefined
+    );
     expect(workflowRuntime.setWorkflowStatus).not.toHaveBeenCalledWith(ExecutionStatus.CANCELLED);
   });
 
@@ -97,14 +101,17 @@ describe('WorkflowOutputStepImpl', () => {
       } as any,
       stepExecutionRuntime as any,
       workflowRuntime as any,
-      workflowLogger as any,
-      { createStepExecutionRuntime: jest.fn() } as any
+      workflowLogger as any
     );
 
     await step.run();
 
-    expect(workflowRuntime.setWorkflowError).toHaveBeenCalledWith(expect.any(Error));
-    expect(workflowRuntime.setWorkflowStatus).toHaveBeenCalledWith(ExecutionStatus.FAILED);
+    expect(workflowRuntime.branchExecutor.requestTermination).toHaveBeenCalledWith(
+      stepExecutionRuntime,
+      { message: 'failed on purpose' },
+      ExecutionStatus.FAILED,
+      expect.objectContaining({ message: 'failed on purpose' })
+    );
   });
 
   it('falls back to completed status when no explicit status is provided', async () => {
@@ -119,14 +126,17 @@ describe('WorkflowOutputStepImpl', () => {
       } as any,
       stepExecutionRuntime as any,
       workflowRuntime as any,
-      workflowLogger as any,
-      { createStepExecutionRuntime: jest.fn() } as any
+      workflowLogger as any
     );
 
     await step.run();
 
-    expect(stepExecutionRuntime.finishStep).toHaveBeenCalledWith({ result: 'ok' });
-    expect(workflowRuntime.setWorkflowStatus).toHaveBeenCalledWith(ExecutionStatus.COMPLETED);
+    expect(workflowRuntime.branchExecutor.requestTermination).toHaveBeenCalledWith(
+      stepExecutionRuntime,
+      { result: 'ok' },
+      ExecutionStatus.COMPLETED,
+      undefined
+    );
   });
 
   it('fails with validation error when outputs do not match schema', async () => {
@@ -144,14 +154,18 @@ describe('WorkflowOutputStepImpl', () => {
       } as any,
       stepExecutionRuntime as any,
       workflowRuntime as any,
-      workflowLogger as any,
-      { createStepExecutionRuntime: jest.fn() } as any
+      workflowLogger as any
     );
 
     await step.run();
 
     expect(stepExecutionRuntime.failStep).toHaveBeenCalledWith(expect.any(Error));
-    expect(workflowRuntime.setWorkflowStatus).toHaveBeenCalledWith(ExecutionStatus.FAILED);
+    expect(workflowRuntime.branchExecutor.requestTermination).toHaveBeenCalledWith(
+      stepExecutionRuntime,
+      {},
+      ExecutionStatus.FAILED,
+      expect.any(Error)
+    );
     expect(workflowLogger.logError).toHaveBeenCalledWith(
       expect.stringContaining('Output validation failed'),
       expect.any(Error),
@@ -171,23 +185,20 @@ describe('WorkflowOutputStepImpl', () => {
       } as any,
       stepExecutionRuntime as any,
       workflowRuntime as any,
-      workflowLogger as any,
-      { createStepExecutionRuntime: jest.fn() } as any
+      workflowLogger as any
     );
 
     await step.run();
 
-    expect(workflowRuntime.setWorkflowOutputs).toHaveBeenCalledWith({});
-    expect(workflowRuntime.setWorkflowError).toHaveBeenCalledWith(
+    expect(workflowRuntime.branchExecutor.requestTermination).toHaveBeenCalledWith(
+      stepExecutionRuntime,
+      {},
+      ExecutionStatus.FAILED,
       expect.objectContaining({ message: 'Workflow terminated with failed status' })
     );
   });
 
-  it('completes ancestor steps when scope stack is non-empty', async () => {
-    const ancestorRuntime = {
-      stepExecutionExists: jest.fn().mockReturnValue(true),
-      finishStep: jest.fn(),
-    };
+  it('delegates ancestor completion with the terminating scope to the coordinator', async () => {
     const scopeStack = {
       isEmpty: jest.fn().mockReturnValueOnce(false).mockReturnValueOnce(true),
       getCurrentScope: jest.fn().mockReturnValue({
@@ -206,21 +217,22 @@ describe('WorkflowOutputStepImpl', () => {
     };
     const workflowRuntime = createWorkflowRuntime();
     const workflowLogger = { logError: jest.fn(), logInfo: jest.fn() };
-    const stepExecutionRuntimeFactory = {
-      createStepExecutionRuntime: jest.fn().mockReturnValue(ancestorRuntime),
-    };
     const step = new WorkflowOutputStepImpl(
       { configuration: { status: 'completed', with: { ok: true } } } as any,
       stepExecutionRuntime as any,
       workflowRuntime as any,
-      workflowLogger as any,
-      stepExecutionRuntimeFactory as any
+      workflowLogger as any
     );
 
     await step.run();
 
-    expect(stepExecutionRuntimeFactory.createStepExecutionRuntime).toHaveBeenCalled();
-    expect(ancestorRuntime.finishStep).toHaveBeenCalled();
+    expect(workflowRuntime.branchExecutor.requestTermination).toHaveBeenCalledWith(
+      stepExecutionRuntime,
+      { ok: true },
+      ExecutionStatus.COMPLETED,
+      undefined
+    );
+    expect(stepExecutionRuntime.scopeStack).toBe(scopeStack);
   });
 
   it('handles catch block when run throws a non-Error', async () => {
@@ -237,8 +249,7 @@ describe('WorkflowOutputStepImpl', () => {
       { configuration: { status: 'completed', with: { x: 1 } } } as any,
       stepExecutionRuntime as any,
       workflowRuntime as any,
-      workflowLogger as any,
-      { createStepExecutionRuntime: jest.fn() } as any
+      workflowLogger as any
     );
 
     await step.run();
@@ -260,16 +271,20 @@ describe('WorkflowOutputStepImpl', () => {
       } as any,
       stepExecutionRuntime as any,
       workflowRuntime as any,
-      workflowLogger as any,
-      { createStepExecutionRuntime: jest.fn() } as any
+      workflowLogger as any
     );
 
     await step.run();
 
-    expect(workflowRuntime.setWorkflowCancelled).toHaveBeenCalledWith('cancelled via message');
+    expect(workflowRuntime.branchExecutor.requestTermination).toHaveBeenCalledWith(
+      stepExecutionRuntime,
+      { message: 'cancelled via message' },
+      ExecutionStatus.CANCELLED,
+      undefined
+    );
   });
 
-  it('uses default cancellation reason when no reason or message', async () => {
+  it('delegates cancellation without an explicit reason to the coordinator', async () => {
     const stepExecutionRuntime = createRuntime();
     const workflowRuntime = createWorkflowRuntime();
     const workflowLogger = { logError: jest.fn(), logInfo: jest.fn() };
@@ -283,13 +298,17 @@ describe('WorkflowOutputStepImpl', () => {
       } as any,
       stepExecutionRuntime as any,
       workflowRuntime as any,
-      workflowLogger as any,
-      { createStepExecutionRuntime: jest.fn() } as any
+      workflowLogger as any
     );
 
     await step.run();
 
-    expect(workflowRuntime.setWorkflowCancelled).toHaveBeenCalledWith("Cancelled by step 'myStep'");
+    expect(workflowRuntime.branchExecutor.requestTermination).toHaveBeenCalledWith(
+      stepExecutionRuntime,
+      {},
+      ExecutionStatus.CANCELLED,
+      undefined
+    );
   });
 
   it('uses reason from failed output for error message', async () => {
@@ -305,13 +324,15 @@ describe('WorkflowOutputStepImpl', () => {
       } as any,
       stepExecutionRuntime as any,
       workflowRuntime as any,
-      workflowLogger as any,
-      { createStepExecutionRuntime: jest.fn() } as any
+      workflowLogger as any
     );
 
     await step.run();
 
-    expect(workflowRuntime.setWorkflowError).toHaveBeenCalledWith(
+    expect(workflowRuntime.branchExecutor.requestTermination).toHaveBeenCalledWith(
+      stepExecutionRuntime,
+      { reason: 'custom failure reason' },
+      ExecutionStatus.FAILED,
       expect.objectContaining({ message: 'custom failure reason' })
     );
   });

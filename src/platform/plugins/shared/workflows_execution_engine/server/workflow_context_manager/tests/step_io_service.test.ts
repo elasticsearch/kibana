@@ -22,6 +22,7 @@ import { WorkflowGraph } from '@kbn/workflows/graph';
 import type { StepExecutionRepository } from '../../repositories/step_execution_repository';
 import type { WorkflowExecutionRepository } from '../../repositories/workflow_execution_repository';
 import { buildStepExecutionId } from '../../utils';
+import { createExecutionFence } from '../../workflow_execution_loop/execution_fence';
 import { StepIoService } from '../step_io_service';
 import { WorkflowExecutionState } from '../workflow_execution_state';
 
@@ -1560,6 +1561,36 @@ describe('StepIoService', () => {
       expect(stepExecutionRepository.getStepExecutionsByIds).not.toHaveBeenCalled();
     });
 
+    it('does not overwrite a new branch output with an older in-flight fetch', async () => {
+      const { state, service, stepExecutionRepository } = buildHarness({ evictionMinBytes: 0 });
+      state.updateWorkflowExecution({ stepExecutionIds: ['step-1'] });
+      stepExecutionRepository.getStepExecutionsByIds.mockResolvedValueOnce([
+        {
+          id: 'step-1',
+          stepId: 'nested_parallel',
+          stepType: 'parallel',
+          status: ExecutionStatus.WAITING,
+        } as EsWorkflowStepExecution,
+      ]);
+      await service.load();
+      expect(service.hasEvictedOutputs()).toBe(true);
+      let releaseFetch = () => {};
+      stepExecutionRepository.getStepExecutionsByIds.mockImplementationOnce(
+        () =>
+          new Promise((resolve) => {
+            releaseFetch = () =>
+              resolve([{ id: 'step-1', output: null } as EsWorkflowStepExecution]);
+          })
+      );
+      const rehydrating = service.rehydrateOutputs(['step-1']);
+      expect(stepExecutionRepository.getStepExecutionsByIds).toHaveBeenCalledTimes(2);
+      const newOutput = { succeeded: 2, results: ['a', 'b'] };
+      service.setStepOutput('step-1', newOutput);
+      releaseFetch();
+      await rehydrating;
+      expect(service.getStepOutput('step-1')).toEqual(newOutput);
+    });
+
     it('preserves fresh output when a deferred step completes on resume before flush', async () => {
       const { state, service, stepExecutionRepository } = buildHarness();
       state.updateWorkflowExecution({ stepExecutionIds: ['exec-child'] });
@@ -2587,5 +2618,66 @@ describe('StepIoService', () => {
         expect(service.getStepOutput('src-exec')).toBeUndefined();
       });
     });
+  });
+});
+
+describe('parallel loop IO ownership', () => {
+  const frames = (index: number): StackFrame[] => [
+    {
+      stepId: 'fanOut',
+      nestedScopes: [
+        { nodeId: 'enterParallel_fanOut', nodeType: 'enter-parallel', scopeId: String(index) },
+      ],
+    },
+  ];
+
+  it('keeps source pins independent for the same loop in two branches', async () => {
+    const { state, service } = buildHarness({ evictionMinBytes: 1 });
+    for (const index of [0, 1]) {
+      createCompletedStep(
+        state,
+        service,
+        `source-${index}`,
+        'source',
+        { items: [index] },
+        'connector'
+      );
+      state.upsertStep({ id: `source-${index}`, scopeStack: frames(index) });
+      service.setStepOutput(`source-${index}`, { items: [index] }, 20);
+    }
+    const left = createExecutionFence(() => frames(0));
+    const right = createExecutionFence(() => frames(1));
+    left.run(() => service.pinLoopSource('loop', '{{ steps.source.output.items }}'));
+    right.run(() => service.pinLoopSource('loop', '{{ steps.source.output.items }}'));
+    await service.flushStepChanges();
+    await service.flushStepChanges();
+    expect(service.getStepOutput('source-0')).toEqual({ items: [0] });
+    expect(service.getStepOutput('source-1')).toEqual({ items: [1] });
+    left.run(() => service.unpinLoopScope('loop'));
+    service.setStepOutput('source-0', { items: [0] }, 20);
+    service.setStepOutput('source-1', { items: [1] }, 20);
+    await service.flushStepChanges();
+    await service.flushStepChanges();
+    expect(service.getStepOutput('source-0')).toBeUndefined();
+    expect(service.getStepOutput('source-1')).toEqual({ items: [1] });
+  });
+
+  it('preserves the latest loop output in every branch when one loop completes', async () => {
+    const { state, service } = buildHarness();
+    for (const index of [0, 1]) {
+      createCompletedStep(
+        state,
+        service,
+        `result-${index}`,
+        'result',
+        { branch: index },
+        'connector'
+      );
+      state.upsertStep({ id: `result-${index}`, scopeStack: frames(index) });
+    }
+    await service.flushStepChanges();
+    service.evictStaleLoopOutputs(['result']);
+    expect(service.getStepOutput('result-0')).toEqual({ branch: 0 });
+    expect(service.getStepOutput('result-1')).toEqual({ branch: 1 });
   });
 });

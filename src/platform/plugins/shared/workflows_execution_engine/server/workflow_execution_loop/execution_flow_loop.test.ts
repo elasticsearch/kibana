@@ -41,6 +41,7 @@ describe('executionFlowLoop', () => {
       workflowExecutionCursor,
       workflowRuntime: {
         executionCursor: workflowExecutionCursor,
+        getWorkflowExecution: jest.fn().mockReturnValue({ executionMode: 'parallel_v4' }),
         saveState: jest.fn().mockResolvedValue(undefined),
       },
     } as any;
@@ -60,6 +61,7 @@ describe('executionFlowLoop', () => {
       workflowExecutionCursor,
       workflowRuntime: {
         executionCursor: workflowExecutionCursor,
+        getWorkflowExecution: jest.fn().mockReturnValue({ executionMode: 'parallel_v4' }),
         saveState: jest.fn().mockResolvedValue(undefined),
       },
     } as any;
@@ -83,6 +85,7 @@ describe('executionFlowLoop', () => {
       workflowExecutionCursor,
       workflowRuntime: {
         executionCursor: workflowExecutionCursor,
+        getWorkflowExecution: jest.fn().mockReturnValue({ executionMode: 'parallel_v4' }),
         saveState,
       },
     } as any;
@@ -107,6 +110,7 @@ describe('executionFlowLoop', () => {
       workflowExecutionCursor,
       workflowRuntime: {
         executionCursor: workflowExecutionCursor,
+        getWorkflowExecution: jest.fn().mockReturnValue({ executionMode: 'parallel_v4' }),
         saveState: jest.fn().mockResolvedValue(undefined),
       },
     } as any;

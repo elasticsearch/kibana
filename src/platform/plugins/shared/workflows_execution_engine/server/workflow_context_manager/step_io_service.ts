@@ -9,7 +9,7 @@
 
 import type { Logger } from '@kbn/core/server';
 import type { JsonValue } from '@kbn/utility-types';
-import type { EsWorkflowStepExecution, SerializedError } from '@kbn/workflows';
+import type { EsWorkflowStepExecution, SerializedError, StackFrame } from '@kbn/workflows';
 import { ExecutionStatus, isTerminalStatus } from '@kbn/workflows';
 import { extractPropertyPathsFromKql, scanForTemplateVariables } from '@kbn/workflows/common/utils';
 import type { GraphNodeUnion, WorkflowGraph } from '@kbn/workflows/graph';
@@ -17,6 +17,7 @@ import {
   extractReferencedStepIds,
   extractReferencedStepIdsFromVariables,
 } from './extract_referenced_step_ids';
+import { getParallelScopes } from './parallel_scope';
 import { EVICTION_EXEMPT_STEP_TYPES, LOOP_STEP_TYPES } from './step_io_pinned_types';
 import type { StepExecutionMetadata, StepIoStateAccessor } from './workflow_execution_state';
 import { WorkflowScopeStack } from './workflow_scope_stack';
@@ -24,6 +25,10 @@ import type { OutputSizeStats } from '../lib/telemetry/events/workflows_executio
 import type { StepExecutionRepository } from '../repositories/step_execution_repository';
 import { formatBytes, safeOutputSize } from '../step/errors';
 import { buildStepExecutionId } from '../utils';
+import {
+  canWriteExecution,
+  getExecutionStackFrames,
+} from '../workflow_execution_loop/execution_fence';
 
 /**
  * Resolves predecessors for a node — supplied at call time so the service
@@ -55,6 +60,8 @@ export interface PrepareForReadArgs {
    * uses a fixed sentinel key that assumes single-consumer access.
    */
   consumerId?: string;
+  stackFrames?: StackFrame[];
+  includeOwnOutput?: boolean;
 }
 
 /**
@@ -67,14 +74,17 @@ export interface StepIoReader {
   getStepOutput(stepExecutionId: string): JsonValue | null | undefined;
   getStepInput(stepExecutionId: string): JsonValue | undefined;
   getStepError(stepExecutionId: string): SerializedError | undefined;
-  getLatestStepIO(stepId: string):
+  getLatestStepIO(
+    stepId: string,
+    stackFrames?: StackFrame[]
+  ):
     | {
         input: JsonValue | undefined;
         output: JsonValue | null | undefined;
         error: SerializedError | undefined;
       }
     | undefined;
-  getDataSetVariables(): Record<string, unknown>;
+  getDataSetVariables(stackFrames?: StackFrame[]): Record<string, unknown>;
 }
 
 /**
@@ -265,7 +275,7 @@ export class StepIoService implements StepIoWriter, StepIoLifecycle {
    * case (the same context manager calls `getVariables` 5–10× per step but
    * the underlying data only changes when a `data.set` step runs).
    */
-  private dataSetVariablesCache: Record<string, unknown> | undefined;
+  private readonly dataSetVariablesCache = new Map<string, Record<string, unknown>>();
 
   constructor(init: StepIoServiceInit) {
     this.stepRepository = init.stepRepository;
@@ -293,28 +303,31 @@ export class StepIoService implements StepIoWriter, StepIoLifecycle {
   }
 
   public getStepError(stepExecutionId: string): SerializedError | undefined {
-    return this.state.getStepExecution(stepExecutionId)?.error;
+    return this.state.getStepExecution(stepExecutionId)?.error ?? undefined;
   }
 
   /**
    * Returns the input/output/error of the latest execution of `stepId`, or
    * `undefined` when the step has not run.
    */
-  public getLatestStepIO(stepId: string):
+  public getLatestStepIO(
+    stepId: string,
+    stackFrames?: StackFrame[]
+  ):
     | {
         input: JsonValue | undefined;
         output: JsonValue | null | undefined;
         error: SerializedError | undefined;
       }
     | undefined {
-    const latest = this.state.getLatestStepExecution(stepId);
+    const latest = this.state.getLatestStepExecution(stepId, stackFrames);
     if (!latest) {
       return undefined;
     }
     return {
       input: this.getStepInput(latest.id),
       output: this.getStepOutput(latest.id),
-      error: latest.error,
+      error: latest.error ?? undefined,
     };
   }
 
@@ -327,17 +340,30 @@ export class StepIoService implements StepIoWriter, StepIoLifecycle {
    * result is memoised because the same context manager calls
    * `getVariables()` 5–10× per step.
    */
-  public getDataSetVariables(): Record<string, unknown> {
-    if (this.dataSetVariablesCache !== undefined) {
-      return this.dataSetVariablesCache;
+  public getDataSetVariables(stackFrames: StackFrame[] = []): Record<string, unknown> {
+    const scopes = getParallelScopes(stackFrames);
+    const cacheKey = JSON.stringify(scopes);
+    const cached = this.dataSetVariablesCache.get(cacheKey);
+    if (cached !== undefined) {
+      return cached;
     }
-    const result: Record<string, unknown> = {};
-    for (const output of this.dataSetOutputs.values()) {
-      if (output != null && typeof output === 'object' && !Array.isArray(output)) {
+    const result: Record<string, JsonValue> = {};
+    for (const [stepExecutionId, output] of this.dataSetOutputs) {
+      const sourceScopes = getParallelScopes(
+        this.state.getStepExecution(stepExecutionId)?.scopeStack ?? []
+      );
+      // Sequential loops share accumulators; only a parallel fan-out introduces isolation.
+      // Include ancestor writes, never sibling or descendant branch writes (including after join).
+      if (
+        sourceScopes.every((scope, index) => scopes[index] === scope) &&
+        output != null &&
+        typeof output === 'object' &&
+        !Array.isArray(output)
+      ) {
         Object.assign(result, output);
       }
     }
-    this.dataSetVariablesCache = result;
+    this.dataSetVariablesCache.set(cacheKey, result);
     return result;
   }
 
@@ -349,12 +375,13 @@ export class StepIoService implements StepIoWriter, StepIoLifecycle {
    */
   private recordDataSetOutput(stepExecutionId: string, output: JsonValue | null): void {
     this.dataSetOutputs.set(stepExecutionId, output);
-    this.dataSetVariablesCache = undefined;
+    this.dataSetVariablesCache.clear();
   }
 
   // ----- IO writes ----------------------------------------------------------
 
   public setStepInput(stepExecutionId: string, input: JsonValue): void {
+    if (!canWriteExecution()) return;
     this.inputs.set(stepExecutionId, input);
     const existing = this.pendingIoChanges.get(stepExecutionId) ?? {};
     existing.input = input;
@@ -382,6 +409,7 @@ export class StepIoService implements StepIoWriter, StepIoLifecycle {
     output: JsonValue | null,
     sizeBytes?: number
   ): void {
+    if (!canWriteExecution()) return;
     // Fresh in-memory output is authoritative — do not let a subsequent
     // prepareForRead rehydrate from ES and overwrite with a stale doc
     // (common when a deferred step completes on resume before flush).
@@ -491,6 +519,24 @@ export class StepIoService implements StepIoWriter, StepIoLifecycle {
     await Promise.all([this.state.flushWorkflowDoc(), this.flushStepChanges()]);
   }
 
+  private readonly heldStepWrites = new Map<string, number>();
+
+  public holdStepWrites(ids: readonly string[]): () => void {
+    for (const id of ids) this.heldStepWrites.set(id, (this.heldStepWrites.get(id) ?? 0) + 1);
+    let released = false;
+    return () => {
+      if (released) return;
+      released = true;
+      for (const id of ids) {
+        const remaining = (this.heldStepWrites.get(id) ?? 1) - 1;
+        if (remaining === 0) this.heldStepWrites.delete(id);
+        else this.heldStepWrites.set(id, remaining);
+      }
+    };
+  }
+
+  private stepFlushQueue: Promise<void> = Promise.resolve();
+
   /**
    * Step-doc-only flush. Drains state's pending lifecycle partials, merges
    * with this service's IO partials, and runs the combined bulk-upsert. Then
@@ -499,9 +545,14 @@ export class StepIoService implements StepIoWriter, StepIoLifecycle {
    * previous cycle's eviction queue — the deferral is one cycle, not one
    * bulk-upsert.
    */
-  public async flushStepChanges(): Promise<void> {
-    const flushedIds = await this.persistMergedStepChanges();
-    this.runDeferredEvictionCycle(flushedIds);
+  public flushStepChanges(): Promise<void> {
+    // Serialize snapshots so an older bulk cannot overwrite a newer checkpoint.
+    // A failed write poisons this task's queue: no subsequent side effect may start.
+    this.stepFlushQueue = this.stepFlushQueue.then(async () => {
+      const flushedIds = await this.persistMergedStepChanges();
+      this.runDeferredEvictionCycle(flushedIds);
+    });
+    return this.stepFlushQueue;
   }
 
   /**
@@ -514,7 +565,7 @@ export class StepIoService implements StepIoWriter, StepIoLifecycle {
    */
   public async load(): Promise<void> {
     this.dataSetOutputs.clear();
-    this.dataSetVariablesCache = undefined;
+    this.dataSetVariablesCache.clear();
 
     const stepExecutionIds = this.state.getWorkflowExecutionStepExecutionIds();
     if (!stepExecutionIds) {
@@ -576,11 +627,13 @@ export class StepIoService implements StepIoWriter, StepIoLifecycle {
   public evictStaleLoopOutputs(innerStepIds: Iterable<string>): void {
     for (const stepId of innerStepIds) {
       const executionIds = this.state.getStepExecutionIdsByStepId(stepId);
-      if (executionIds && executionIds.length > 1) {
-        const staleIds = executionIds.slice(0, -1);
-        for (const execId of staleIds) {
-          this.dropStaleStepIo(execId);
-        }
+      const latestByBranch = new Map<string, string>();
+      for (const id of executionIds ?? []) {
+        const scope = getParallelScopes(this.state.getStepExecution(id)?.scopeStack ?? []);
+        const key = JSON.stringify(scope);
+        const previous = latestByBranch.get(key);
+        if (previous) this.dropStaleStepIo(previous);
+        latestByBranch.set(key, id);
       }
     }
   }
@@ -639,6 +692,8 @@ export class StepIoService implements StepIoWriter, StepIoLifecycle {
     node,
     predecessorsResolver,
     consumerId = '__single_consumer__',
+    stackFrames,
+    includeOwnOutput = false,
   }: PrepareForReadArgs): Promise<void> {
     // Fast path: eviction is disabled (default config, evictionMinBytes ===
     // Infinity). Nothing can ever be evicted → no race possible → zero work.
@@ -663,7 +718,8 @@ export class StepIoService implements StepIoWriter, StepIoLifecycle {
     //   2. Set pins before the `await rehydrateOutputs`: resident co-neededIds
     //      must be protected during the real ES fetch (a genuine macrotask yield
     //      where the persistence loop can fire).
-    const neededIds = this.computeRehydrationTargets(node, predecessorsResolver);
+    const neededIds = this.computeRehydrationTargets(node, predecessorsResolver, stackFrames);
+    if (includeOwnOutput) neededIds.add(consumerId);
     this.readPinnedOutputIdsByConsumer.set(consumerId, neededIds);
 
     // Zero-ES-call fast path: nothing is evicted and no stale transients need
@@ -761,7 +817,7 @@ export class StepIoService implements StepIoWriter, StepIoLifecycle {
    * pinned outputs become evictable again. Idempotent.
    */
   public unpinLoopScope(loopStepId: string): void {
-    this.pinnedOutputIdsByScope.delete(loopStepId);
+    this.pinnedOutputIdsByScope.delete(this.loopScopeKey(loopStepId, getExecutionStackFrames()));
   }
 
   /**
@@ -791,14 +847,15 @@ export class StepIoService implements StepIoWriter, StepIoLifecycle {
    */
   private computeRehydrationTargets(
     node: GraphNodeUnion,
-    predecessorsResolver: PredecessorsResolver
+    predecessorsResolver: PredecessorsResolver,
+    stackFrames?: StackFrame[]
   ): Set<string> {
     const neededIds = new Set<string>();
     const referencedStepIds = extractReferencedStepIds(node);
 
     const fallbackToPredecessors = (): void => {
       for (const pred of predecessorsResolver(node)) {
-        const latestExec = this.state.getLatestStepExecution(pred.stepId);
+        const latestExec = this.state.getLatestStepExecution(pred.stepId, stackFrames);
         if (latestExec) {
           neededIds.add(latestExec.id);
         }
@@ -809,11 +866,14 @@ export class StepIoService implements StepIoWriter, StepIoLifecycle {
       // Static analysis ambiguous (dynamic bracket access).
       fallbackToPredecessors();
     } else {
-      this.addLatestExecutionIdsForStepIds(neededIds, referencedStepIds);
+      this.addLatestExecutionIdsForStepIds(neededIds, referencedStepIds, stackFrames);
       // If the analysis found nothing but a predecessor is actually evicted,
       // the analysis missed a reference. Fall back conservatively rather
       // than trust an empty set.
-      if (referencedStepIds.size === 0 && this.hasEvictedPredecessor(node, predecessorsResolver)) {
+      if (
+        referencedStepIds.size === 0 &&
+        this.hasEvictedPredecessor(node, predecessorsResolver, stackFrames)
+      ) {
         fallbackToPredecessors();
       }
     }
@@ -821,7 +881,7 @@ export class StepIoService implements StepIoWriter, StepIoLifecycle {
     // Scope-stack entries — needed by enrichStepContextAccordingToStepScope.
     const executionId = this.state.getWorkflowExecutionId();
     let currentScope = WorkflowScopeStack.fromStackFrames(
-      this.state.getWorkflowExecutionScopeStack()
+      stackFrames ?? this.state.getWorkflowExecutionScopeStack()
     );
     while (!currentScope.isEmpty()) {
       const frame = currentScope.getCurrentScope();
@@ -847,12 +907,12 @@ export class StepIoService implements StepIoWriter, StepIoLifecycle {
         if (scopeInputStepIds === null) {
           fallbackToPredecessors();
         } else {
-          this.addLatestExecutionIdsForStepIds(neededIds, scopeInputStepIds);
+          this.addLatestExecutionIdsForStepIds(neededIds, scopeInputStepIds, stackFrames);
           // Re-pin the loop's source outputs while the loop scope is active.
           // Primary pinning happens unconditionally at loop entry
           // (pinLoopSource); this re-pin covers resume, where the loop is
           // re-entered mid-iteration without going through the enter node.
-          this.pinLatestExecutionIdsForScope(frame.stepId, scopeInputStepIds);
+          this.pinLatestExecutionIdsForScope(frame.stepId, scopeInputStepIds, stackFrames);
         }
       }
     }
@@ -862,10 +922,11 @@ export class StepIoService implements StepIoWriter, StepIoLifecycle {
 
   private addLatestExecutionIdsForStepIds(
     neededIds: Set<string>,
-    referencedStepIds: ReadonlySet<string>
+    referencedStepIds: ReadonlySet<string>,
+    stackFrames?: StackFrame[]
   ): void {
     for (const stepId of referencedStepIds) {
-      const latestExec = this.state.getLatestStepExecution(stepId);
+      const latestExec = this.state.getLatestStepExecution(stepId, stackFrames);
       if (latestExec) {
         neededIds.add(latestExec.id);
       }
@@ -878,15 +939,17 @@ export class StepIoService implements StepIoWriter, StepIoLifecycle {
    */
   private pinLatestExecutionIdsForScope(
     foreachStepId: string,
-    referencedStepIds: ReadonlySet<string>
+    referencedStepIds: ReadonlySet<string>,
+    stackFrames = getExecutionStackFrames()
   ): void {
-    let pinned = this.pinnedOutputIdsByScope.get(foreachStepId);
+    const scopeKey = this.loopScopeKey(foreachStepId, stackFrames);
+    let pinned = this.pinnedOutputIdsByScope.get(scopeKey);
     for (const stepId of referencedStepIds) {
-      const latestExec = this.state.getLatestStepExecution(stepId);
+      const latestExec = this.state.getLatestStepExecution(stepId, stackFrames);
       if (latestExec) {
         if (!pinned) {
           pinned = new Map<string, string>();
-          this.pinnedOutputIdsByScope.set(foreachStepId, pinned);
+          this.pinnedOutputIdsByScope.set(scopeKey, pinned);
         }
         // Keyed by stepId: re-pinning a step that ran again this iteration
         // overwrites its previous execution id, so the scope holds at most one
@@ -894,6 +957,11 @@ export class StepIoService implements StepIoWriter, StepIoLifecycle {
         pinned.set(stepId, latestExec.id);
       }
     }
+  }
+
+  private loopScopeKey(stepId: string, stackFrames?: StackFrame[]): string {
+    const scopes = getParallelScopes(stackFrames ?? []);
+    return scopes.length > 0 ? JSON.stringify([stepId, ...scopes]) : stepId;
   }
 
   /**
@@ -937,10 +1005,11 @@ export class StepIoService implements StepIoWriter, StepIoLifecycle {
 
   private hasEvictedPredecessor(
     node: GraphNodeUnion,
-    predecessorsResolver: PredecessorsResolver
+    predecessorsResolver: PredecessorsResolver,
+    stackFrames?: StackFrame[]
   ): boolean {
     for (const pred of predecessorsResolver(node)) {
-      const latestExec = this.state.getLatestStepExecution(pred.stepId);
+      const latestExec = this.state.getLatestStepExecution(pred.stepId, stackFrames);
       if (latestExec && this.evictedOutputIds.has(latestExec.id)) {
         return true;
       }
@@ -1066,6 +1135,8 @@ export class StepIoService implements StepIoWriter, StepIoLifecycle {
     // workflowRunId disagrees with the current execution rather than
     // restoring foreign output into memory.
     const docs = fetched.filter((doc) => {
+      // A concurrent branch may have produced a newer output while this fetch was in flight.
+      if (!this.evictedOutputIds.has(doc.id)) return false;
       if (doc.workflowRunId && doc.workflowRunId !== expectedRunId) {
         this.logger?.error(
           `Cross-execution doc skipped during rehydration: id=${doc.id} expected runId=${expectedRunId} got=${doc.workflowRunId}`
@@ -1150,9 +1221,18 @@ export class StepIoService implements StepIoWriter, StepIoLifecycle {
    * last flush — eviction-only events do not re-upsert the output.
    */
   private async persistMergedStepChanges(): Promise<ReadonlyArray<string>> {
-    const lifecyclePartials = this.state.drainPendingStepChanges();
+    const lifecyclePartials = this.state.drainPendingStepChanges(
+      new Set(this.heldStepWrites.keys())
+    );
     const ioPartials = this.pendingIoChanges;
     this.pendingIoChanges = new Map();
+    for (const id of this.heldStepWrites.keys()) {
+      const partial = ioPartials.get(id);
+      if (partial) {
+        this.pendingIoChanges.set(id, partial);
+        ioPartials.delete(id);
+      }
+    }
 
     if (lifecyclePartials.size === 0 && ioPartials.size === 0) {
       return [];
@@ -1222,7 +1302,7 @@ export class StepIoService implements StepIoWriter, StepIoLifecycle {
     const step = this.state.getStepExecution(stepExecutionId);
     if (!step) return;
     if (step.stepType && this.pinnedStepTypes.has(step.stepType)) return;
-    if (this.isPinned(stepExecutionId)) return;
+    if (this.isPinned(stepExecutionId) || this.heldStepWrites.has(stepExecutionId)) return;
     this.outputs.delete(stepExecutionId);
     this.inputs.delete(stepExecutionId);
     this.clearOutputSize(stepExecutionId);

@@ -9,12 +9,14 @@
 
 import type { CollisionStrategy, ConcurrencySettings } from './schema';
 import {
+  BaseConnectorStepSchema,
   CollisionStrategySchema,
   ConcurrencySettingsSchema,
   DataSetStepSchema,
   DEFAULT_PARALLEL_MAX_CONCURRENCY,
   ElasticsearchStepSchema,
   EventTimestampSchema,
+  getParallelStepSchema,
   IfStepSchema,
   KibanaStepSchema,
   LIQUID_MEMORY_LIMIT_MAX,
@@ -1259,5 +1261,24 @@ describe('`if` condition on step schemas', () => {
 
     expect(IfStepSchema.safeParse({ ...ifStep, condition: atLimit }).success).toBe(true);
     expect(IfStepSchema.safeParse({ ...ifStep, condition: overLimit }).success).toBe(false);
+  });
+});
+
+describe('parallel handler schema preservation', () => {
+  it('preserves retry, fallback bodies, and fallback connector inputs during validation', () => {
+    const input = {
+      name: 'parallel',
+      type: 'parallel',
+      foreach: ['a', 'b'],
+      steps: [{ name: 'work', type: 'console', with: { message: 'work' } }],
+      'on-failure': {
+        retry: { 'max-attempts': 1, delay: '1s' },
+        fallback: [{ name: 'recover', type: 'console', with: { message: 'recovered' } }],
+      },
+    };
+    expect(getParallelStepSchema(BaseConnectorStepSchema).parse(input)['on-failure']).toEqual(
+      input['on-failure']
+    );
+    expect(ParallelStepSchema.parse(input)['on-failure']?.retry).toEqual(input['on-failure'].retry);
   });
 });

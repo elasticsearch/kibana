@@ -106,6 +106,9 @@ interface GraphBuildContext {
    */
   stack: GraphNodeUnion[];
 
+  /** Loop control cannot leave the current parallel branch. */
+  parallelScopeDepth?: number;
+
   /** Used to construct predictable unique node IDs */
   parentKey: string;
 }
@@ -1072,52 +1075,24 @@ function createForeachGraphForStepWithForeach(
   return createForeachGraph(generatedStepId, foreachStep, context);
 }
 
-// Compiles a parallel branch body into a real subgraph and enforces the v1
-// branch-body constraints (straight-line only; no `waitForInput`). Returns the
-// subgraph plus its single start node.
 function buildParallelBranchBody(
   stepId: string,
   steps: BaseStep[],
   context: GraphBuildContext
 ): { bodyGraph: WorkflowGraphType; startNodeId: string } {
-  // The branch body is compiled into a real subgraph so that adding nested
-  // flow-control inside a branch later is an executor change, not a graph one.
-  // v1 supports a straight-line body (one or more atomic/wait steps); nested
-  // flow-control (if/switch/foreach/while) inside a branch is not yet supported
-  // by the parallel executor and is rejected here so it fails loudly at compile
-  // time rather than silently running only one path at runtime.
-  const bodyGraph = createStepsSequence(steps || [], context);
+  const bodyGraph = createStepsSequence(steps || [], {
+    ...context,
+    stack: [...context.stack],
+    parallelScopeDepth: context.stack.length,
+  });
 
-  const branchingNode = bodyGraph
-    .nodes()
-    .find((nodeId) => (bodyGraph.outEdges(nodeId)?.length ?? 0) > 1);
-  if (branchingNode) {
+  const timeoutNode = bodyGraph.nodes().find((nodeId) => {
+    const { type } = bodyGraph.node(nodeId);
+    return type === 'enter-timeout-zone';
+  });
+  if (timeoutNode) {
     throw new GraphBuildError(
-      `Parallel step "${stepId}" has a branch body with nested flow-control, which is not supported yet. ` +
-        `A parallel branch body must be a straight-line sequence of steps (no if/switch/foreach/while inside the branch).`,
-      stepId
-    );
-  }
-
-  // A straight-line body of atomic/connector/wait steps compiles to leaf nodes
-  // only. Any `enter-*`/`exit-*` node means the body was wrapped in flow-control
-  // (if/switch/foreach/while), an `on-failure` handler (retry/continue/fallback),
-  // or a step-level `timeout` zone. The parallel executor walks branch bodies as
-  // a straight line and cannot drive these wrapper nodes, so a branch would hang
-  // at runtime. Reject at compile time with an actionable message instead.
-  const flowControlNode = bodyGraph
-    .nodes()
-    .map((nodeId) => bodyGraph.node(nodeId))
-    .find((bodyNode) => {
-      const type = bodyNode?.type as string | undefined;
-      return type !== undefined && (type.startsWith('enter-') || type.startsWith('exit-'));
-    });
-  if (flowControlNode) {
-    throw new GraphBuildError(
-      `Parallel step "${stepId}" has a branch body containing unsupported flow-control ` +
-        `("${flowControlNode.type}"). A parallel branch body must be a straight-line sequence of ` +
-        `atomic steps with no nested flow-control (if/switch/foreach/while), no step-level ` +
-        `"if", no step-level "on-failure" handler, and no step-level "timeout".`,
+      `Parallel step "${stepId}" does not yet support step-level timeout zones in branch bodies.`,
       stepId
     );
   }
@@ -1248,7 +1223,7 @@ function createWhileGraph(
 }
 
 function findEnclosingLoop(context: GraphBuildContext): LoopEnterNode {
-  for (let i = context.stack.length - 1; i >= 0; i--) {
+  for (let i = context.stack.length - 1; i >= (context.parallelScopeDepth ?? 0); i--) {
     const node = context.stack[i];
     if (isLoopEnterNode(node)) {
       return node;
@@ -1256,7 +1231,7 @@ function findEnclosingLoop(context: GraphBuildContext): LoopEnterNode {
   }
   throw new Error(
     'loop.break and loop.continue are only valid inside a loop body (foreach or while). ' +
-      'Move the step inside a loop, or remove it.'
+      'Move the step inside a loop in the same parallel branch, or remove it.'
   );
 }
 

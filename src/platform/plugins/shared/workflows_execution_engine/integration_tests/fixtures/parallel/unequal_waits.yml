@@ -1,0 +1,28 @@
+name: "Unequal branch waits"
+description: "The short branch finishes after one second while the long branch stays waiting until three seconds; the join runs only after both."
+enabled: true
+triggers:
+  - type: manual
+steps:
+  - name: branches
+    type: parallel
+    branches:
+      - name: short
+        steps:
+          - name: short_pause
+            type: wait
+            with: { duration: 1s }
+          - name: short_result
+            type: console
+            with: { message: 1s }
+      - name: long
+        steps:
+          - name: long_pause
+            type: wait
+            with: { duration: 3s }
+          - name: long_result
+            type: console
+            with: { message: 3s }
+  - name: joined
+    type: console
+    with: { message: '{{ steps.branches.output | json }}' }

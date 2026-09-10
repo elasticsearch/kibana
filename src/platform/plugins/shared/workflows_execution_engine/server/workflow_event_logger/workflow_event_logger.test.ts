@@ -20,6 +20,32 @@ const createLogsRepositoryMock = () =>
   } as unknown as jest.Mocked<LogsRepository>);
 
 describe('WorkflowEventLogger', () => {
+  it.each([false, true])(
+    'propagates strict persistence failures, including child loggers and shutdown (aborted=%s)',
+    async (aborted) => {
+      const repository = createLogsRepositoryMock();
+      repository.createLogs
+        .mockRejectedValueOnce(new Error('index unavailable'))
+        .mockResolvedValue(undefined);
+      const parent = new WorkflowEventLogger(
+        repository,
+        loggerMock.create(),
+        {},
+        { throwOnFailure: true }
+      );
+      const child = parent.createStepLogger('step-execution', 'step');
+      child.logInfo('completed');
+      const signal = aborted ? AbortSignal.abort(new WorkflowTaskManagerAbortError()) : undefined;
+      await expect(child.flushEvents({ signal })).rejects.toThrow('index unavailable');
+      await expect(parent.flushEvents()).resolves.toBeUndefined();
+      expect(repository.createLogs).toHaveBeenCalledTimes(2);
+      expect(repository.createLogs).toHaveBeenLastCalledWith(
+        expect.arrayContaining([expect.objectContaining({ message: 'completed' })]),
+        { throwOnFailure: true }
+      );
+    }
+  );
+
   it('logs info events and preserves context fields', async () => {
     const logsRepository = createLogsRepositoryMock();
     const logger = loggerMock.create();

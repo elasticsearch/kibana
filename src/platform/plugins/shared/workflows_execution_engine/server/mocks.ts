@@ -53,6 +53,11 @@ export const workflowsExecutionEngineMock = {
     },
     config: {
       maxWorkflowDepth: 10,
+      parallel: {
+        maxConcurrentOperations: 20,
+        maxOutstandingBranches: 100,
+        maxTransitionsPerTick: 1000,
+      },
     },
   } as jest.Mocked<WorkflowsExecutionEnginePluginStart>),
 };

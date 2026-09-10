@@ -1,0 +1,26 @@
+name: "Parallel inside sequential foreach"
+description: "Two outer iterations each run two parallel branches. No previous-iteration state or output may leak into the next join."
+enabled: true
+triggers:
+  - type: manual
+steps:
+  - name: batches
+    type: foreach
+    foreach: [A, B]
+    steps:
+      - name: remember_batch
+        type: data.set
+        with: { batch: '{{ foreach.item }}' }
+      - name: tasks
+        type: parallel
+        foreach: [1, 2]
+        steps:
+          - name: pause
+            type: wait
+            with: { duration: 1s }
+          - name: task_result
+            type: console
+            with: { message: '{{ variables.batch }}:{{ foreach.item }}' }
+      - name: batch_result
+        type: console
+        with: { message: '{{ steps.tasks.output | json }}' }

@@ -201,7 +201,18 @@ export async function handleExecutionDelay(
     return;
   }
 
-  const resumeAt = new Date(resumeAtFromState);
+  const enclosingDeadline =
+    stepExecutionRuntime.node.type === 'enter-parallel'
+      ? getIdleTimeoutResumeDeadlineMs(
+          params,
+          workflowExecution,
+          params.workflowExecutionCursor.currentStackFrames,
+          stepExecutionRuntime
+        )
+      : undefined;
+  const resumeAt = new Date(
+    Math.min(new Date(resumeAtFromState).getTime(), enclosingDeadline ?? Infinity)
+  );
   const now = new Date();
   const diff = resumeAt.getTime() - now.getTime();
 

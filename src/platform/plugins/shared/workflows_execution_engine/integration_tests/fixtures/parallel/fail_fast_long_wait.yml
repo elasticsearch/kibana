@@ -1,0 +1,31 @@
+name: "Fail-fast parks until started sibling wakes"
+description: "Intentional HTTP 401 fails first branch. Already-started waiting sibling drains. Third branch must be skipped. Workflow fails and after_join must not run. A queued branch blocked by fail-fast must not cause repeated one-second wake-ups during the minute-long wait."
+enabled: true
+triggers:
+  - type: manual
+steps:
+  - name: branches
+    type: parallel
+    concurrency: 2
+    branches:
+      - name: failing
+        steps:
+          - name: fail
+            type: http
+            with: { url: 'http://localhost:9228/audit-intentional-unauthorized', method: GET }
+      - name: active
+        steps:
+          - name: pause
+            type: wait
+            with: { duration: 1m }
+          - name: active_result
+            type: console
+            with: { message: drained }
+      - name: queued
+        steps:
+          - name: never_queued
+            type: console
+            with: { message: MUST_NOT_RUN }
+  - name: after_join
+    type: console
+    with: { message: MUST_NOT_RUN }

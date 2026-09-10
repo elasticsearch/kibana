@@ -9,6 +9,7 @@
 
 import type { CoreStart, ElasticsearchClient, KibanaRequest } from '@kbn/core/server';
 import type { WorkflowGraph } from '@kbn/workflows/graph';
+import type { ExecutionFailure } from './execution_failure';
 import type { WorkflowExecutionRepository } from '../repositories/workflow_execution_repository';
 import type { NodesFactory } from '../step/nodes_factory';
 import type { StepExecutionRuntimeFactory } from '../workflow_context_manager/step_execution_runtime_factory';
@@ -20,6 +21,16 @@ import type { IWorkflowEventLogger } from '../workflow_event_logger';
 import type { WorkflowTaskManager } from '../workflow_task_manager/workflow_task_manager';
 
 export interface WorkflowExecutionLoopParams {
+  executionFailure?: ExecutionFailure;
+  cancellationGraceMs?: number;
+  parallelLimits?: {
+    maxConcurrentOperations: number;
+    maxOutstandingBranches: number;
+    maxTransitionsPerTick: number;
+  };
+  /** Nearest owning parallel node; ancestor monitoring stays with its parent cursor. */
+  boundaryNodeId?: string;
+
   workflowExecutionGraph: WorkflowGraph;
   workflowRuntime: WorkflowExecutionRuntimeManager;
   workflowExecutionCursor: WorkflowExecutionCursorApi;

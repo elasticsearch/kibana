@@ -7,13 +7,7 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
-/**
- * Thrown by `setupDependencies` when the workflow definition cannot be compiled
- * into an execution graph. The execution has already been persisted as FAILED
- * with the underlying reason at the point this is thrown, so the run task can
- * swallow it and return cleanly instead of letting it surface as a generic,
- * retryable task failure (which would be recovered into a TaskRecoveryError).
- */
+/** Reports a permanent graph or execution-format error after FAILED has been persisted. */
 export class WorkflowGraphSetupError extends Error {
   constructor(message: string) {
     super(message);

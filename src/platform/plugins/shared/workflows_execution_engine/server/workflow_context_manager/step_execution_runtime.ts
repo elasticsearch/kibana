@@ -26,6 +26,7 @@ import type { RunStepResult } from '../step/node_implementation';
 import { extractConnectorId, extractTokenUsage, parseDuration } from '../utils';
 
 import type { IWorkflowEventLogger, WorkflowEventFlushOptions } from '../workflow_event_logger';
+import { canWriteExecution } from '../workflow_execution_loop/execution_fence';
 
 interface StepExecutionRuntimeInit {
   contextManager: WorkflowContextManager;
@@ -136,10 +137,12 @@ export class StepExecutionRuntime {
   }
 
   public getCurrentStepState(): Record<string, unknown> | undefined {
-    return this.workflowExecutionState.getStepExecution(this.stepExecutionId)?.state;
+    const state = this.workflowExecutionState.getStepExecution(this.stepExecutionId)?.state;
+    return state ? structuredClone(state) : undefined;
   }
 
   public setCurrentStepState(state: Record<string, unknown> | undefined): void {
+    if (!canWriteExecution()) return;
     const stepId = this.node.stepId;
     this.workflowExecutionState.upsertStep({
       id: this.stepExecutionId,
@@ -149,6 +152,7 @@ export class StepExecutionRuntime {
   }
 
   public startStep(): void {
+    if (!canWriteExecution()) return;
     const stepId = this.node.stepId;
     const stepStartedAt = new Date();
 
@@ -165,11 +169,13 @@ export class StepExecutionRuntime {
   }
 
   public setInput(input: Record<string, unknown>): void {
+    if (!canWriteExecution()) return;
     this.stepIoService.setStepInput(this.stepExecutionId, input as JsonValue);
   }
 
   /** Stamps the optional HITL audit envelope on the in-memory step doc (flushed with the next step write). */
   public stampHitlAudit(hitl: NonNullable<EsWorkflowStepExecution['hitl']>): void {
+    if (!canWriteExecution()) return;
     this.workflowExecutionState.upsertStep({
       id: this.stepExecutionId,
       hitl,
@@ -192,6 +198,7 @@ export class StepExecutionRuntime {
    *   step has no output to size.
    */
   public finishStep(stepOutput?: unknown, sizeBytes?: number): void {
+    if (!canWriteExecution()) return;
     const startedStepExecution = this.workflowExecutionState.getStepExecution(this.stepExecutionId);
     const finishedAt = new Date().toISOString();
     const executionTimeMs = startedStepExecution?.startedAt
@@ -237,6 +244,7 @@ export class StepExecutionRuntime {
    *   into the per-execution total.
    */
   public failStep(error: Error, partialOutput?: unknown): void {
+    if (!canWriteExecution()) return;
     // Guardrail: this is the single choke point where a thrown error becomes the persisted
     // error for both the step and the workflow execution. The persisted shape is constrained by
     // `BaseSerializedErrorSchema` (`type` / `message` / optional `details`) and produced by
@@ -297,6 +305,7 @@ export class StepExecutionRuntime {
    * @param error - The timeout error to record on the step execution.
    */
   public timeoutStep(error: Error): void {
+    if (!canWriteExecution()) return;
     const executionError = ExecutionError.fromError(error);
     const serializedError = executionError.toSerializableObject();
 
@@ -375,6 +384,7 @@ export class StepExecutionRuntime {
     resumeDate?: Date,
     waitingStatus: ExecutionStatus = ExecutionStatus.WAITING
   ): boolean {
+    if (!canWriteExecution()) return false;
     // For timer-based waits, resumeAt is the sole sentinel (written on entry, cleared on exit).
     // For indefinite waits (no resumeDate), status is the sentinel since no resumeAt is written.
     const alreadyWaiting =
@@ -441,6 +451,7 @@ export class StepExecutionRuntime {
     additionalState?: Record<string, unknown>,
     forceTaskSchedule?: boolean
   ): void {
+    if (!canWriteExecution()) return;
     const existing = this.stepExecution?.state ?? {};
     const nextState: Record<string, unknown> = {
       ...existing,
@@ -470,6 +481,7 @@ export class StepExecutionRuntime {
 
   /** Modifies workflow-level execution state. Use sparingly — prefer step output for step-scoped data. */
   public updateWorkflowExecution(update: Partial<EsWorkflowExecution>): void {
+    if (!canWriteExecution()) return;
     this.workflowExecutionState.updateWorkflowExecution(update);
   }
 

@@ -135,11 +135,13 @@ export class WorkflowContextManager {
    * node's execution so the concurrent eviction loop cannot evict them between
    * the pre-warm and the synchronous `getContext()` call that follows.
    */
-  public async ensureContextReady(): Promise<void> {
+  public async ensureContextReady(includeOwnOutput = false): Promise<void> {
     await this.stepIoService.prepareForRead({
       node: this.node,
       predecessorsResolver: () => this.predecessors,
       consumerId: this.consumerExecutionId,
+      stackFrames: this.stackFrames,
+      includeOwnOutput,
     });
   }
 
@@ -327,7 +329,7 @@ export class WorkflowContextManager {
    * Steps are processed in execution order to ensure consistent variable assignment.
    */
   public getVariables(): Record<string, unknown> {
-    return this.stepIoService.getDataSetVariables();
+    return this.stepIoService.getDataSetVariables(this.stackFrames);
   }
 
   /**
@@ -732,11 +734,14 @@ export class WorkflowContextManager {
         stepState: Record<string, unknown> | undefined;
       }
     | undefined {
-    const io = this.stepIoService.getLatestStepIO(stepId);
+    const io = this.stepIoService.getLatestStepIO(stepId, this.stackFrames);
     if (!io) {
       return;
     }
-    const latestStepExecution = this.workflowExecutionState.getLatestStepExecution(stepId);
+    const latestStepExecution = this.workflowExecutionState.getLatestStepExecution(
+      stepId,
+      this.stackFrames
+    );
     return {
       runStepResult: {
         input: io.input,

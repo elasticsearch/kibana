@@ -44,7 +44,10 @@ export interface LogsByLevelParams extends BaseLogsParams {
 }
 
 export interface IWorkflowEventLoggerService {
-  createLogger(context: WorkflowEventLoggerContext): IWorkflowEventLogger;
+  createLogger(
+    context: WorkflowEventLoggerContext,
+    options?: WorkflowEventLoggerOptions
+  ): IWorkflowEventLogger;
   createWorkflowLogger(workflowId: string, workflowName?: string): IWorkflowEventLogger;
   createExecutionLogger(
     workflowId: string,
@@ -82,6 +85,7 @@ export interface WorkflowEventLoggerContext {
 }
 
 export interface WorkflowEventLoggerOptions {
+  throwOnFailure?: boolean;
   enableConsoleLogging?: boolean;
 }
 

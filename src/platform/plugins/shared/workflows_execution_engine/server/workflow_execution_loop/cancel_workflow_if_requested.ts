@@ -8,6 +8,7 @@
  */
 
 import { ExecutionStatus } from '@kbn/workflows';
+import type { ExecutionFailure } from './execution_failure';
 import type { WorkflowExecutionRepository } from '../repositories/workflow_execution_repository';
 import { buildStepExecutionId } from '../utils';
 import type { StepExecutionRuntime } from '../workflow_context_manager/step_execution_runtime';
@@ -31,7 +32,8 @@ export async function cancelWorkflowIfRequested(
   monitoredStepExecutionRuntime: StepExecutionRuntime,
   workflowLogger: IWorkflowEventLogger,
   workflowExecutionCursor: WorkflowExecutionCursorApi,
-  monitorAbortController?: AbortController
+  monitorAbortController?: AbortController,
+  executionFailure?: ExecutionFailure
 ): Promise<void> {
   if (!workflowExecutionState.getWorkflowExecution().cancelRequested) {
     try {
@@ -44,6 +46,11 @@ export async function cancelWorkflowIfRequested(
         return;
       }
     } catch (error) {
+      if (executionFailure)
+        throw executionFailure.fail(
+          'Failed to check workflow cancellation status',
+          error instanceof Error ? error : new Error(String(error))
+        );
       // If the cancellation check fails (e.g., network timeout, Elasticsearch unavailable),
       // log the error but don't throw. This prevents infrastructure issues from causing
       // step execution failures. The workflow will continue executing, and cancellation

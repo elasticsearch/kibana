@@ -803,6 +803,7 @@ export const ParallelStepObjectSchema = BaseStepSchema.extend({
     ),
   ...ParallelStepConfigSchema.shape,
   ...TimeoutPropSchema.shape,
+  ...StepWithOnFailureSchema.shape,
 });
 
 // Exactly one mode. Dynamic requires `steps`; static must not use top-level `steps`.
@@ -851,6 +852,7 @@ export const getParallelStepSchema = (stepSchema: z.ZodType, loose: boolean = fa
   // Populate both the dynamic `steps` body and each static branch's `steps` with
   // the resolved per-step schema so connector steps validate inside branches too.
   const schema = ParallelStepObjectSchema.extend({
+    'on-failure': getOnFailureStepSchema(stepSchema, loose).optional(),
     steps: z.array(stepSchema).min(1).optional(),
     branches: z
       .array(ParallelBranchSchema.extend({ steps: z.array(stepSchema).min(1) }))

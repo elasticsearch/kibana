@@ -136,6 +136,18 @@ export type WorkflowTokenUsage = z.infer<typeof WorkflowTokenUsageSchema>;
 export type WorkflowStepTokenUsage = z.infer<typeof WorkflowStepTokenUsageSchema>;
 
 export interface EsWorkflowExecution {
+  /** Persisted cursor format; legacy is readable only to reject unsupported resumes. */
+  executionMode?: 'legacy' | 'parallel_v4';
+  /** Accepted whole-workflow termination, persisted before cleanup and final status. */
+  pendingTermination?: {
+    nodeId: string;
+    stackFrames: StackFrame[];
+    stepExecutionId: string;
+    status: ExecutionStatus;
+    output: Record<string, unknown>;
+    error?: SerializedError;
+    stepError?: SerializedError;
+  } | null;
   spaceId: string;
   id: string;
   workflowId: string;
@@ -241,9 +253,28 @@ export interface EsWorkflowStepExecution {
    * There might be several instances of the same stepId if it's inside loops, retries, etc.
    */
   stepExecutionIndex: number;
-  error?: SerializedError;
+  error?: SerializedError | null;
   output?: JsonValue;
   input?: JsonValue;
+
+  /** Last committed branch transition; persisted with the node result for crash recovery. */
+  executionCheckpoint?: {
+    branchId: string;
+    sequence: number;
+    nodeId: string;
+    currentNodeId: string;
+    stackFrames: StackFrame[];
+    status: 'running' | 'completed' | 'failed' | 'timed_out';
+    waiting: boolean;
+    yielded?: boolean;
+    scopeUpdates?: Array<{
+      id: string;
+      status?: ExecutionStatus;
+      state?: Record<string, unknown>;
+      error?: SerializedError | null;
+      finishedAt?: string;
+    }>;
+  } | null;
 
   /** Specific step execution instance state. Used by loops, retries, etc to track execution context. */
   state?: Record<string, unknown>;

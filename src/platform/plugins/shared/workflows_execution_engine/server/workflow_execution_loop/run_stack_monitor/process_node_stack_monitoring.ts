@@ -34,6 +34,7 @@ export async function processNodeStackMonitoring(
 
   while (!nodeStack.isEmpty()) {
     const scopeData = nodeStack.getCurrentScope();
+    if (scopeData.nodeId === params.boundaryNodeId) break;
     nodeStack = nodeStack.exitScope();
     const scopeStepExecutionRuntime = params.stepExecutionRuntimeFactory.createStepExecutionRuntime(
       {
@@ -50,12 +51,15 @@ export async function processNodeStackMonitoring(
     }
   }
 
+  if (params.boundaryNodeId) return;
+
   await cancelWorkflowIfRequested(
     params.workflowExecutionRepository,
     params.workflowExecutionState,
     monitoredStepExecutionRuntime,
     params.workflowLogger,
     params.workflowExecutionCursor,
-    monitoredStepExecutionRuntime.abortController
+    monitoredStepExecutionRuntime.abortController,
+    params.executionFailure
   );
 }

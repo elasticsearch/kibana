@@ -1,0 +1,52 @@
+name: Parallel alert processing
+enabled: false
+triggers:
+  - type: manual
+
+steps:
+  - name: seed
+    type: data.set
+    with:
+      owner: parent
+      values: []
+  - name: alerts
+    type: parallel
+    foreach: '["a", "b"]'
+    steps:
+      - name: identify
+        type: data.set
+        with:
+          owner: '{{ foreach.item }}'
+      - name: choose
+        type: if
+        condition: 'variables.owner: a'
+        steps:
+          - name: left
+            type: data.set
+            with:
+              selected: left
+        else:
+          - name: right
+            type: data.set
+            with:
+              selected: right
+      - name: enrich
+        type: foreach
+        foreach: '[1, 2]'
+        steps:
+          - name: accumulate
+            type: data.set
+            with:
+              values: '${{ variables.values | push: foreach.item }}'
+          - name: iterationPause
+            type: wait
+            with:
+              duration: 1ms
+      - name: result
+        type: console
+        with:
+          message: '{{ variables | json }}'
+  - name: parentResult
+    type: console
+    with:
+      message: '{{ variables | json }}'

@@ -23,6 +23,11 @@ export const createMockWorkflowExecutionEngineConfig = (): WorkflowsExecutionEng
   enabled: true,
   eventDriven: { enabled: true, logEvents: true, maxChainDepth: 10 },
   maxWorkflowDepth: 10,
+  parallel: {
+    maxConcurrentOperations: 20,
+    maxOutstandingBranches: 100,
+    maxTransitionsPerTick: 1000,
+  },
   logging: { console: true },
   http: { allowedHosts: ['*'] },
   maxResponseSize: new ByteSizeValue(10 * 1024 * 1024),
@@ -114,6 +119,7 @@ export const getExpectedWorkflowExecutionLoopCallArgs = (options: {
   signal: AbortSignal;
 }) => ({
   workflowRuntime: options.workflowRuntime,
+  parallelLimits: options.dependencies.config.parallel,
   stepExecutionRuntimeFactory: {},
   workflowExecutionState: expect.any(Object),
   workflowExecutionRepository: options.workflowExecutionRepository,

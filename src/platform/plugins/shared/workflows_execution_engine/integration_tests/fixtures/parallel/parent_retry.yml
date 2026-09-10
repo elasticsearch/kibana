@@ -1,0 +1,22 @@
+name: "Retry and fallback around an entire parallel step"
+description: "Intentional branch failure retries the whole parallel step once. Each attempt has separate branch state. Parent fallback executes and preserves failure; parent_after must not run. Add continue: true to resume after the handler."
+enabled: true
+triggers:
+  - type: manual
+steps:
+  - name: branches
+    type: parallel
+    foreach: [a, b]
+    steps:
+      - name: fail
+        type: http
+        with: { url: 'http://localhost:9228/audit-intentional-unauthorized', method: GET }
+    on-failure:
+      retry: { max-attempts: 1, delay: 1s }
+      fallback:
+        - name: recovery
+          type: console
+          with: { message: recovered }
+  - name: parent_after
+    type: console
+    with: { message: done }

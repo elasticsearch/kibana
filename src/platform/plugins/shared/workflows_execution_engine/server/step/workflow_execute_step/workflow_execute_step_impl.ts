@@ -168,6 +168,8 @@ export class WorkflowExecuteStepImpl implements NodeImplementation, CancellableN
         return;
       }
 
+      if (stepExecutionRuntime.abortController.signal.aborted) return;
+
       const result = await executor.execute(
         targetWorkflow,
         inputs,
@@ -184,16 +186,7 @@ export class WorkflowExecuteStepImpl implements NodeImplementation, CancellableN
   }
 
   async onCancel(): Promise<void> {
-    const executionId = this.syncExecutor.getExecutionIdForCancel();
-    if (!executionId) {
-      return;
-    }
-
-    await this.init.workflowsExecutionEngine.cancelWorkflowExecution(
-      executionId,
-      this.init.spaceId,
-      this.init.request
-    );
+    await this.syncExecutor.cancel(this.init.spaceId, this.init.request);
   }
 
   private async getWorkflow(workflowId: string): Promise<EsWorkflow | null> {

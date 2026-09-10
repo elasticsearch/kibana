@@ -21,6 +21,8 @@ import { mockContextDependencies } from '../server/execution_functions/__mock__/
 import { createMockWorkflowExecutionEngineConfig } from '../server/execution_functions/execution_functions_test_utils';
 import { runWorkflow } from '../server/execution_functions/run_workflow';
 import { workflowsExecutionEngineMock } from '../server/mocks';
+import * as logDataStream from '../server/repositories/logs_repository/data_stream';
+import type { LogsRepositoryDataStreamClient } from '../server/repositories/logs_repository/data_stream';
 import type { StepExecutionRepository } from '../server/repositories/step_execution_repository';
 import type { WorkflowExecutionRepository } from '../server/repositories/workflow_execution_repository';
 
@@ -29,6 +31,12 @@ jest.mock('../server/repositories/workflow_execution_repository');
 jest.mock('../server/repositories/step_execution_repository');
 
 export class WorkflowRunFixture {
+  public readonly createEventDocuments = jest
+    .fn<
+      ReturnType<LogsRepositoryDataStreamClient['create']>,
+      Parameters<LogsRepositoryDataStreamClient['create']>
+    >()
+    .mockResolvedValue({ errors: false, items: [], took: 0 });
   public readonly taskAbortController = new AbortController();
   public readonly dependencies = mockContextDependencies();
   public readonly loggerMock = {
@@ -60,6 +68,12 @@ export class WorkflowRunFixture {
   public readonly internalResumeWorkflowExecutionMock = jest.fn().mockResolvedValue(undefined);
 
   constructor() {
+    jest.spyOn(logDataStream, 'initializeDataStreamClient').mockResolvedValue({
+      create: this.createEventDocuments,
+      search: jest.fn(),
+      exists: jest.fn(),
+      helpers: { getFieldsFromHit: jest.fn() },
+    });
     // Mock repository constructors to return our mock instances
     const workflowRepoModule = jest.requireMock(
       '../server/repositories/workflow_execution_repository'

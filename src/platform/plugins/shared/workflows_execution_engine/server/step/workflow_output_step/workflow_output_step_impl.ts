@@ -13,7 +13,6 @@ import type { WorkflowOutputGraphNode } from '@kbn/workflows/graph';
 import { buildFieldsZodValidator } from '@kbn/workflows/spec/lib/build_fields_zod_validator';
 import { normalizeFieldsToJsonSchema } from '@kbn/workflows/spec/lib/field_conversion';
 import type { StepExecutionRuntime } from '../../workflow_context_manager/step_execution_runtime';
-import type { StepExecutionRuntimeFactory } from '../../workflow_context_manager/step_execution_runtime_factory';
 import type { WorkflowExecutionRuntimeManager } from '../../workflow_context_manager/workflow_execution_runtime_manager';
 import type { IWorkflowEventLogger } from '../../workflow_event_logger';
 import type { NodeImplementation } from '../node_implementation';
@@ -32,31 +31,12 @@ export class WorkflowOutputStepImpl implements NodeImplementation {
     private node: WorkflowOutputGraphNode,
     private stepExecutionRuntime: StepExecutionRuntime,
     private workflowExecutionRuntime: WorkflowExecutionRuntimeManager,
-    private workflowLogger: IWorkflowEventLogger,
-    private stepExecutionRuntimeFactory: StepExecutionRuntimeFactory
+    private workflowLogger: IWorkflowEventLogger
   ) {}
 
-  /**
-   * Completes all ancestor steps in the scope stack.
-   * Uses the step's own finishStep() logic so lifecycle behaviour
-   * (logging, timing, status) is applied consistently.
-   */
-  private completeAncestorSteps(): void {
-    let stack = this.stepExecutionRuntime.scopeStack;
-    while (!stack.isEmpty()) {
-      const currentScope = stack.getCurrentScope();
-      stack = stack.exitScope();
-      const scopeStepRuntime = this.stepExecutionRuntimeFactory.createStepExecutionRuntime({
-        nodeId: currentScope.nodeId,
-        stackFrames: stack.stackFrames,
-      });
-      if (scopeStepRuntime.stepExecutionExists()) {
-        scopeStepRuntime.finishStep();
-      }
-    }
-  }
-
   async run(): Promise<void> {
+    const executor = this.workflowExecutionRuntime.branchExecutor;
+    if (!executor) throw new Error('Cursor engine is not initialized');
     this.stepExecutionRuntime.startStep();
 
     const step = this.node.configuration as WorkflowOutputStep;
@@ -96,7 +76,12 @@ export class WorkflowOutputStepImpl implements NodeImplementation {
           // Fail the step with validation error (failStep also sets workflow-level error via updateWorkflowExecution)
           this.stepExecutionRuntime.failStep(validationError);
 
-          this.workflowExecutionRuntime.setWorkflowStatus(ExecutionStatus.FAILED);
+          await executor.requestTermination(
+            this.stepExecutionRuntime,
+            {},
+            ExecutionStatus.FAILED,
+            validationError
+          );
           return;
         }
       }
@@ -108,78 +93,24 @@ export class WorkflowOutputStepImpl implements NodeImplementation {
 
       // Execution status from step (default 'completed' is applied by WorkflowOutputStepSchema)
       const stepStatus = step.status;
-      let executionStatus: ExecutionStatus;
-      let outcome: 'success' | 'failure' | 'unknown';
-
-      // Store outputs in workflow execution context and persist them
-      // This ensures outputs are saved before the workflow terminates
-      this.workflowExecutionRuntime.setWorkflowOutputs(outputValues);
-
-      switch (stepStatus) {
-        case 'completed':
-          executionStatus = ExecutionStatus.COMPLETED;
-          outcome = 'success';
-          // Complete the step successfully with the output values
-          this.stepExecutionRuntime.finishStep(outputValues);
-          break;
-        case 'cancelled': {
-          executionStatus = ExecutionStatus.CANCELLED;
-          outcome = 'unknown';
-          // User can provide reason/message in with:; otherwise default mentions the step
-          const stepName = this.node.configuration?.name ?? 'workflow.output';
-          const cancellationReason =
-            (typeof outputValues.reason === 'string' && outputValues.reason) ||
-            (typeof outputValues.message === 'string' && outputValues.message) ||
-            `Cancelled by step '${stepName}'`;
-          this.workflowExecutionRuntime.setWorkflowCancelled(cancellationReason);
-          this.stepExecutionRuntime.finishStep(outputValues);
-          break;
-        }
-        case 'failed': {
-          executionStatus = ExecutionStatus.FAILED;
-          outcome = 'failure';
-          const errorMessage =
-            (typeof outputValues.message === 'string' && outputValues.message) ||
-            (typeof outputValues.reason === 'string' && outputValues.reason) ||
-            'Workflow terminated with failed status';
-
-          const failureError = new Error(errorMessage);
-
-          this.workflowLogger.logInfo(`Workflow failed with message: ${errorMessage}`, {
-            event: { action: 'workflow-output-error-set', outcome: 'failure' },
-            tags: ['workflow-output', 'error'],
-            error: {
-              message: errorMessage,
-              type: failureError.name,
-            },
-          });
-
-          // The step itself completes successfully (it did its job),
-          // but the workflow is marked as failed via setWorkflowError
-          this.stepExecutionRuntime.finishStep(outputValues);
-          this.workflowExecutionRuntime.setWorkflowError(failureError);
-          break;
-        }
-        default:
-          executionStatus = ExecutionStatus.COMPLETED;
-          outcome = 'success';
-          this.stepExecutionRuntime.finishStep(outputValues);
-      }
-
-      this.workflowLogger.logInfo(`Workflow terminated with status: ${stepStatus}`, {
-        event: {
-          action: 'workflow-terminated',
-          outcome,
-        },
-        tags: ['workflow-output', 'termination'],
-      });
-
-      this.completeAncestorSteps();
-
-      // Update the workflow execution status to terminate the workflow (cancelled already set via setWorkflowCancelled)
-      if (executionStatus !== ExecutionStatus.CANCELLED) {
-        this.workflowExecutionRuntime.setWorkflowStatus(executionStatus);
-      }
+      const status =
+        stepStatus === 'failed'
+          ? ExecutionStatus.FAILED
+          : stepStatus === 'cancelled'
+          ? ExecutionStatus.CANCELLED
+          : ExecutionStatus.COMPLETED;
+      const message =
+        typeof outputValues.message === 'string'
+          ? outputValues.message
+          : typeof outputValues.reason === 'string'
+          ? outputValues.reason
+          : 'Workflow terminated with failed status';
+      await executor.requestTermination(
+        this.stepExecutionRuntime,
+        outputValues,
+        status,
+        status === ExecutionStatus.FAILED ? new Error(message) : undefined
+      );
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       const errorObj = error instanceof Error ? error : new Error(errorMessage);

@@ -188,6 +188,7 @@ export async function runWorkflow({
   const loopSpan = apm.startSpan('workflow execution loop', 'workflow', 'execution');
   try {
     await workflowExecutionLoop({
+      parallelLimits: config.parallel,
       workflowRuntime,
       workflowExecutionCursor,
       stepExecutionRuntimeFactory,

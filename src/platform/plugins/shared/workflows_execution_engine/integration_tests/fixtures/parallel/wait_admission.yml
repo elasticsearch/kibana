@@ -1,0 +1,26 @@
+name: "Waiting branches release and reacquire admission"
+description: "Local concurrency one with count-waiting false. Three branches suspend twice and all finish once, with their own identity."
+enabled: true
+triggers:
+  - type: manual
+steps:
+  - name: branches
+    type: parallel
+    concurrency: { max: 1, count-waiting: false }
+    foreach: [a, b, c]
+    steps:
+      - name: started
+        type: console
+        with: { message: '{{ foreach.item }}' }
+      - name: first_pause
+        type: wait
+        with: { duration: 1s }
+      - name: middle
+        type: console
+        with: { message: '{{ foreach.item }}' }
+      - name: second_pause
+        type: wait
+        with: { duration: 1s }
+      - name: result
+        type: console
+        with: { message: '{{ foreach.item }}' }

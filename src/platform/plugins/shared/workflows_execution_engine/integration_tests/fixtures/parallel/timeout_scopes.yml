@@ -1,0 +1,32 @@
+name: "Timeout enclosing loops and handlers"
+description: "A branch deadline unwinds foreach, while and retry scopes without running its fallback."
+enabled: true
+triggers:
+  - type: manual
+steps:
+  - name: branches
+    type: parallel
+    mode: settled
+    branch-timeout: 2s
+    foreach: [a, b]
+    steps:
+      - name: items
+        type: foreach
+        foreach: [1, 2]
+        steps:
+          - name: loop
+            type: while
+            condition: 'true'
+            steps:
+              - name: pause
+                type: wait
+                with: { duration: 1h }
+                on-failure:
+                  retry: { max-attempts: 2, delay: 1s }
+                  fallback:
+                    - name: forbidden
+                      type: console
+                      with: { message: MUST_NOT_RUN }
+  - name: joined
+    type: console
+    with: { message: '{{ steps.branches.output | json }}' }

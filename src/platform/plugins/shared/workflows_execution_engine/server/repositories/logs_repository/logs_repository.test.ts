@@ -42,6 +42,29 @@ describe('LogsRepository', () => {
   });
 
   describe('createLogs', () => {
+    it.each([true, false])(
+      'handles partial bulk failures with strict mode %s',
+      async (throwOnFailure) => {
+        dataStreamClient.create.mockResolvedValue({
+          errors: true,
+          items: [
+            {
+              create: {
+                status: 400,
+                error: { type: 'mapper_parsing_exception', reason: 'invalid event' },
+              },
+            },
+          ],
+        });
+        const result = repo.createLogs([], { throwOnFailure });
+        if (throwOnFailure) {
+          await expect(result).rejects.toThrow('Failed to index 1 workflow events: invalid event');
+        } else {
+          await expect(result).resolves.toBeUndefined();
+        }
+      }
+    );
+
     it('delegates to dataStreamClient.create', async () => {
       const events = [{ message: 'hello' }];
       await repo.createLogs(events as any);

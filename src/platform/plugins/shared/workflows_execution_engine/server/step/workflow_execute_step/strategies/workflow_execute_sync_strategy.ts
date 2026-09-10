@@ -34,6 +34,8 @@ interface SubWorkflowWaitState extends Record<string, unknown> {
 }
 
 export class WorkflowExecuteSyncStrategy {
+  private initiation: Promise<StrategyResult> | undefined;
+  private startedExecutionId: string | undefined;
   constructor(
     private workflowsExecutionEngine: WorkflowsExecutionEnginePluginStart,
     private workflowExecutionRepository: WorkflowExecutionRepository,
@@ -54,7 +56,14 @@ export class WorkflowExecuteSyncStrategy {
       | undefined;
 
     if (!currentState) {
-      return this.initiateSubWorkflowExecution(workflow, inputs, spaceId, request, parentDepth);
+      this.initiation = this.initiateSubWorkflowExecution(
+        workflow,
+        inputs,
+        spaceId,
+        request,
+        parentDepth
+      );
+      return this.initiation;
     }
 
     return this.readChildExecutionFromEs(currentState, spaceId);
@@ -74,6 +83,15 @@ export class WorkflowExecuteSyncStrategy {
       | SubWorkflowWaitState
       | undefined;
     return state?.executionId;
+  }
+
+  /** Cancels a child even when its start response arrives after the parent was aborted. */
+  async cancel(spaceId: string, request: KibanaRequest): Promise<void> {
+    await this.initiation;
+    const executionId = this.startedExecutionId ?? this.getExecutionIdForCancel();
+    if (executionId) {
+      await this.workflowsExecutionEngine.cancelWorkflowExecution(executionId, spaceId, request);
+    }
   }
 
   /** Re-read child execution from ES after child completion resumed the parent. */
@@ -116,6 +134,8 @@ export class WorkflowExecuteSyncStrategy {
         },
         request
       );
+
+      this.startedExecutionId = workflowExecutionId;
 
       this.workflowLogger.logInfo(
         `Started sync sub-workflow execution: ${workflowExecutionId}, entering wait state`

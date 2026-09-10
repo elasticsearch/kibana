@@ -12,6 +12,8 @@ import { ExecutionStatus } from '@kbn/workflows';
 import type { GraphNodeUnion } from '@kbn/workflows/graph';
 
 import * as catchErrorModule from './catch_error';
+import { ExecutionBudget } from './execution_budget';
+import { ExecutionFailure } from './execution_failure';
 import * as handleExecutionDelayModule from './handle_execution_delay';
 import { runNode } from './run_node';
 import * as runStackMonitorModule from './run_stack_monitor/run_stack_monitor';
@@ -189,11 +191,71 @@ describe('runNode', () => {
 
       await runNode(mockParams);
 
-      expect(mockHandleExecutionDelay).toHaveBeenCalled();
+      expect(mockHandleExecutionDelay).not.toHaveBeenCalled();
+      expect(mockStepExecutionRuntime.abortController.signal.aborted).toBe(true);
       expect(mockStepExecutionRuntime.flushEventLogs).toHaveBeenCalledWith({
         signal: mockParams.signal,
       });
     });
+  });
+
+  it('bounds cancellation while the initial monitor is waiting on storage', async () => {
+    const failure = new ExecutionFailure();
+    jest
+      .spyOn(mockParams.workflowExecutionRepository, 'getWorkflowExecutionById')
+      .mockImplementation(() => new Promise(() => {}));
+    const run = runNode(
+      { ...mockParams, executionFailure: failure, cancellationGraceMs: 10 },
+      { deadline: Date.now() + 10 }
+    );
+    await expect(run).rejects.toThrow('Cancelled operation did not settle');
+    expect(mockNodeImplementation.run).not.toHaveBeenCalled();
+    expect(mockCatchError).not.toHaveBeenCalled();
+  });
+
+  it('fails the execution when an operation never settles and bypasses workflow handlers', async () => {
+    const failure = new ExecutionFailure();
+    const budget = new ExecutionBudget(1);
+    mockNodeImplementation.run.mockImplementation(() => new Promise<void>(() => {}));
+    await expect(
+      runNode(
+        {
+          ...mockParams,
+          boundaryNodeId: 'parallel',
+          executionFailure: failure,
+          cancellationGraceMs: 10,
+        },
+        { budget, deadline: Date.now() + 10 }
+      )
+    ).rejects.toThrow('Cancelled operation did not settle');
+    expect(failure.signal.aborted).toBe(true);
+    expect(mockCatchError).not.toHaveBeenCalled();
+    expect(() => budget.acquire(failure.signal)).toThrow();
+  });
+
+  it('retains operation capacity until an abort-ignoring node actually settles', async () => {
+    const budget = new ExecutionBudget(1);
+    let finish: () => void = () => {};
+    const operation = new Promise<void>((resolve) => {
+      finish = resolve;
+    });
+    mockNodeImplementation.run.mockImplementation(() => operation);
+    await runNode(
+      { ...mockParams, boundaryNodeId: 'parallel' },
+      { budget, deadline: Date.now() + 10 }
+    );
+    expect(mockStepExecutionRuntime.abortController.signal.aborted).toBe(true);
+    let admitted = false;
+    const queued = budget.acquire(new AbortController().signal).then((release) => {
+      admitted = true;
+      return release;
+    });
+    await Promise.resolve();
+    expect(admitted).toBe(false);
+    finish();
+    const release = await queued;
+    expect(admitted).toBe(true);
+    release();
   });
 
   describe('when workflow is cancelled before step starts', () => {

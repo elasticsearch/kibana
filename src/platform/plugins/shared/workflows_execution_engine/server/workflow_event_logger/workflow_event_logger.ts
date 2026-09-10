@@ -19,15 +19,20 @@ import type {
 import type { LogsRepository, WorkflowLogEvent } from '../repositories/logs_repository';
 import { isWorkflowTaskManagerAbortSignal } from '../workflow_task_shutdown';
 
+interface EventBuffer {
+  events: WorkflowLogEvent[];
+  pending: Promise<void>;
+}
+
 export class WorkflowEventLogger implements IWorkflowEventLogger {
-  private eventQueue: WorkflowLogEvent[] = [];
   private timings: Map<string, Date> = new Map();
 
   constructor(
     private logsRepository: LogsRepository,
     private logger: Logger,
     private context: WorkflowEventLoggerContext = {},
-    private options: WorkflowEventLoggerOptions = {}
+    private options: WorkflowEventLoggerOptions = {},
+    private buffer: EventBuffer = { events: [], pending: Promise.resolve() }
   ) {}
 
   public logEvent(eventProperties: Partial<WorkflowLogEvent>): void {
@@ -171,7 +176,8 @@ export class WorkflowEventLogger implements IWorkflowEventLogger {
         stepName,
         stepType,
       },
-      this.options
+      this.options,
+      this.options.throwOnFailure ? this.buffer : undefined
     );
   }
 
@@ -242,21 +248,34 @@ export class WorkflowEventLogger implements IWorkflowEventLogger {
   }
 
   private queueEvent(event: WorkflowLogEvent): void {
-    this.eventQueue.push(event);
+    this.buffer.events.push(event);
   }
 
   public async flushEvents(options: WorkflowEventFlushOptions = {}): Promise<void> {
-    if (this.eventQueue.length === 0) return;
+    if (!this.options.throwOnFailure) return this.flushBatch(options);
+    const flush = this.buffer.pending.then(() => this.flushBatch(options));
+    this.buffer.pending = flush.catch(() => {});
+    return flush;
+  }
 
-    const events = [...this.eventQueue];
-    this.eventQueue = [];
+  private async flushBatch(options: WorkflowEventFlushOptions): Promise<void> {
+    if (this.buffer.events.length === 0) return;
+
+    const events = [...this.buffer.events];
+    this.buffer.events = [];
 
     try {
-      await this.logsRepository.createLogs(events);
+      if (this.options.throwOnFailure)
+        await this.logsRepository.createLogs(events, { throwOnFailure: true });
+      else await this.logsRepository.createLogs(events);
 
       this.logger.debug(`Successfully indexed ${events.length} workflow events`);
     } catch (error) {
-      if (options.signal && isWorkflowTaskManagerAbortSignal(options.signal)) {
+      if (
+        !this.options.throwOnFailure &&
+        options.signal &&
+        isWorkflowTaskManagerAbortSignal(options.signal)
+      ) {
         // Best-effort flushes are used after Task Manager aborts; do not re-queue
         // because this process may not get another chance to flush them.
         this.logger.debug(`Failed to index workflow events during best-effort flush`, {
@@ -272,7 +291,8 @@ export class WorkflowEventLogger implements IWorkflowEventLogger {
       });
 
       // Re-queue events for retry (optional)
-      this.eventQueue.unshift(...events);
+      this.buffer.events.unshift(...events);
+      if (this.options.throwOnFailure) throw error;
     }
   }
 }

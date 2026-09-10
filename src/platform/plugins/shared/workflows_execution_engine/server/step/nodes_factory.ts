@@ -220,7 +220,7 @@ export class NodesFactory {
           this.stepIoService,
           this.workflowGraph
         );
-      case 'enter-parallel':
+      case 'enter-parallel': {
         return new EnterParallelNodeImpl(
           node as EnterParallelNode,
           this.workflowRuntime,
@@ -230,6 +230,7 @@ export class NodesFactory {
           this,
           this.workflowGraph
         );
+      }
       case 'exit-parallel':
         return new ExitParallelNodeImpl(this.workflowRuntime);
       case 'loop-break':
@@ -432,8 +433,7 @@ export class NodesFactory {
           node as WorkflowOutputGraphNode,
           stepExecutionRuntime,
           this.workflowRuntime,
-          stepLogger,
-          this.stepExecutionRuntimeFactory
+          stepLogger
         );
       default:
         throw new Error(`Unknown node type: ${node.stepType}`);

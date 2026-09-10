@@ -8,11 +8,16 @@
  */
 
 import apm from 'elastic-apm-node';
-import { ExecutionStatus } from '@kbn/workflows';
+import { ExecutionStatus, isTerminalStatus } from '@kbn/workflows';
+import { ExecutionError } from '@kbn/workflows/server';
+import { completeTerminationPath } from './complete_termination_path';
+import { ExecutionFailure } from './execution_failure';
+import { outsideExecutionFence } from './execution_fence';
 import { executionFlowLoop } from './execution_flow_loop';
 import { flushState, persistenceLoop } from './persistence_loop';
 import type { WorkflowExecutionLoopParams } from './types';
 import { emitHitlLifecycle } from '../step/wait_for_input_step/hitl_lifecycle_auditor';
+import { getTerminalWorkflowRefreshOptions } from '../workflow_context_manager/workflow_execution_state';
 import { isWorkflowTaskManagerAbortSignal } from '../workflow_task_shutdown';
 
 const TASK_MANAGER_ABORT_CANCELLATION_REASON = 'Cancelled because Task Manager aborted the task';
@@ -39,6 +44,43 @@ const TASK_MANAGER_ABORT_CANCELLATION_REASON = 'Cancelled because Task Manager a
  * - The execution cursor's `stop()` is called while the workflow remains RUNNING
  */
 export async function workflowExecutionLoop(params: WorkflowExecutionLoopParams) {
+  const executionFailure = new ExecutionFailure();
+  const executionParams = { ...params, executionFailure };
+  try {
+    const pending = params.workflowRuntime.getWorkflowExecution().pendingTermination;
+    if (pending) outsideExecutionFence(() => completeTerminationPath(executionParams, pending));
+    await runWorkflowExecutionLoop(executionParams);
+  } catch (error) {
+    executionFailure.fail(
+      'Workflow execution persistence failed',
+      error instanceof Error ? error : new Error(String(error))
+    );
+  }
+  if (!executionFailure.error) return;
+  // Failed flush queues cannot safely be reused to record the terminal disposition.
+  // This write is attempted only after both drivers have stopped.
+  const failure = executionFailure.error;
+  const update = {
+    id: params.workflowRuntime.getWorkflowExecution().id,
+    status: ExecutionStatus.FAILED,
+    pendingTermination: null,
+    error: ExecutionError.fromError(failure).toSerializableObject(),
+    finishedAt: new Date().toISOString(),
+  };
+  outsideExecutionFence(() => {
+    params.workflowExecutionCursor.captureError(failure);
+    params.workflowExecutionCursor.stop();
+    params.workflowExecutionState.updateWorkflowExecution(update);
+  });
+  await params.workflowExecutionRepository.updateWorkflowExecution(
+    update,
+    getTerminalWorkflowRefreshOptions(params.workflowRuntime.getWorkflowExecution())
+  );
+}
+
+async function runWorkflowExecutionLoop(
+  params: WorkflowExecutionLoopParams & { executionFailure: ExecutionFailure }
+) {
   const { workflowExecutionCursor, workflowRuntime } = params;
   // Create an abort controller to signal the persistence loop to exit immediately
   // when execution completes (instead of waiting for the next 500ms flush cycle)
@@ -91,21 +133,109 @@ export async function workflowExecutionLoop(params: WorkflowExecutionLoopParams)
     workflowExecutionCursor.start();
     // Run execution and persistence loops in parallel
     // When execution finishes, signal persistence loop to exit immediately
-    await Promise.all([
-      executionFlowLoop(params).finally(() => {
-        // Signal persistence loop to stop waiting and exit
+    const runDriver = async (run: () => Promise<void>): Promise<void> => {
+      try {
+        await run();
+      } catch (error) {
+        params.executionFailure?.fail(
+          'Workflow execution driver failed',
+          error instanceof Error ? error : new Error(String(error))
+        );
         persistenceAbortController.abort();
-      }),
-      persistenceLoop(params, persistenceAbortController.signal),
-    ]);
+        throw error;
+      }
+    };
+    const drivers = [
+      runDriver(() => executionFlowLoop(params).finally(() => persistenceAbortController.abort())),
+      runDriver(() => persistenceLoop(params, persistenceAbortController.signal)),
+    ];
+    const results = await Promise.allSettled(drivers);
+    for (const result of results) if (result.status === 'rejected') throw result.reason;
+    params.executionFailure.throwIfFailed();
   } catch (error) {
     workflowExecutionCursor.captureError(error);
+    workflowExecutionCursor.stop();
+    workflowRuntime.branchExecutor?.abortActive();
+    const fatalError = params.executionFailure?.error;
+    if (fatalError) {
+      outsideExecutionFence(() => {
+        const serializedError = ExecutionError.fromError(fatalError).toSerializableObject();
+        for (const step of params.workflowExecutionState.getAllStepExecutions()) {
+          if (!isTerminalStatus(step.status))
+            params.workflowExecutionState.upsertStep({
+              id: step.id,
+              status: ExecutionStatus.FAILED,
+              error: serializedError,
+              finishedAt: new Date().toISOString(),
+            });
+        }
+      });
+    }
   } finally {
+    params.signal.removeEventListener('abort', onTaskAbort);
     const finalFlushSpan = apm.startSpan('final flush state', 'workflow', 'persistence');
     await flushState(params, {
       workflowLogFlushSignal: params.signal,
     });
     finalFlushSpan?.end();
+  }
+
+  const termination = workflowRuntime.getWorkflowExecution().pendingTermination;
+  if (termination && !params.executionFailure?.error) {
+    outsideExecutionFence(() => {
+      const workflow = workflowRuntime.getWorkflowExecution();
+      completeTerminationPath(params, termination);
+      params.workflowExecutionState.updateWorkflowExecution({
+        status: termination.status,
+        pendingTermination: null,
+        error: termination.error ?? null,
+        context: { ...workflow.context, output: termination.output },
+        ...(termination.status === ExecutionStatus.CANCELLED
+          ? {
+              cancelledAt: new Date().toISOString(),
+              cancelledBy: 'workflow',
+              cancellationReason: String(
+                termination.output.reason ??
+                  termination.output.message ??
+                  'Workflow termination requested'
+              ),
+            }
+          : {}),
+      });
+      workflowExecutionCursor.clearError();
+      if (termination.error)
+        workflowExecutionCursor.captureError(new Error(termination.error.message));
+      workflowExecutionCursor.stop();
+      for (const step of params.workflowExecutionState.getAllStepExecutions()) {
+        if (!isTerminalStatus(step.status))
+          params.workflowExecutionState.upsertStep({
+            id: step.id,
+            status: ExecutionStatus.CANCELLED,
+            finishedAt: new Date().toISOString(),
+          });
+      }
+    });
+  }
+
+  if (
+    params.executionFailure &&
+    workflowRuntime.getWorkflowExecution().status === ExecutionStatus.CANCELLED
+  ) {
+    outsideExecutionFence(() => {
+      for (const step of params.workflowExecutionState.getAllStepExecutions()) {
+        if (!isTerminalStatus(step.status)) {
+          params.workflowExecutionState.upsertStep({
+            id: step.id,
+            status: ExecutionStatus.CANCELLED,
+            finishedAt: new Date().toISOString(),
+          });
+          params.workflowLogger.logInfo('Step cancelled', {
+            workflow: { step_id: step.stepId, step_execution_id: step.id },
+            event: { action: 'step-cancelled', outcome: 'unknown' },
+          });
+        }
+      }
+    });
   }
 
   // Final save to ensure workflow state is persisted after execution loop

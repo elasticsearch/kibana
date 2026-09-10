@@ -17,6 +17,7 @@ import type {
   LogsByLevelParams,
   StepLogsParams,
   WorkflowEventLoggerContext,
+  WorkflowEventLoggerOptions,
 } from './types';
 import { WorkflowEventLogger } from './workflow_event_logger';
 import type { LogSearchResult, SearchLogsParams } from '../repositories/logs_repository';
@@ -32,8 +33,12 @@ export class WorkflowEventLoggerService implements IWorkflowEventLoggerService {
     this.logsRepository = new LogsRepository(dataStreams, logger);
   }
 
-  public createLogger(context: WorkflowEventLoggerContext): IWorkflowEventLogger {
+  public createLogger(
+    context: WorkflowEventLoggerContext,
+    options: WorkflowEventLoggerOptions = {}
+  ): IWorkflowEventLogger {
     return new WorkflowEventLogger(this.logsRepository, this.logger, context, {
+      ...options,
       enableConsoleLogging: this.enableConsoleLogging,
     });
   }

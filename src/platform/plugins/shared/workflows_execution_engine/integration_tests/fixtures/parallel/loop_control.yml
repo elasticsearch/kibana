@@ -1,0 +1,56 @@
+name: "Loop control and switch inside parallel"
+description: "Each branch emits foreach values 0,2 and while values 0,2. Switch chooses left or default. Both branches complete."
+enabled: true
+triggers:
+  - type: manual
+steps:
+  - name: branches
+    type: parallel
+    foreach: [left, right]
+    steps:
+      - name: identity
+        type: data.set
+        with: { owner: '{{ foreach.item }}' }
+      - name: select_path
+        type: switch
+        expression: '{{ variables.owner }}'
+        cases:
+          - match: left
+            steps:
+              - name: left_path
+                type: console
+                with: { message: left }
+        default:
+          - name: default_path
+            type: console
+            with: { message: right }
+      - name: items
+        type: foreach
+        foreach: [0, 1, 2, 3, 4]
+        steps:
+          - name: skip_one
+            type: loop.continue
+            if: '${{ foreach.index == 1 }}'
+          - name: stop_three
+            type: loop.break
+            if: '${{ foreach.index == 3 }}'
+          - name: item_result
+            type: console
+            with: { message: '{{ variables.owner }}:{{ foreach.item }}' }
+      - name: repeat
+        type: while
+        condition: '${{ while.iteration < 10 }}'
+        max-iterations: 10
+        steps:
+          - name: skip_iteration
+            type: loop.continue
+            if: '${{ while.iteration == 1 }}'
+          - name: end_repeat
+            type: loop.break
+            if: '${{ while.iteration == 3 }}'
+          - name: iteration_result
+            type: console
+            with: { message: '{{ variables.owner }}:{{ while.iteration }}' }
+      - name: result
+        type: console
+        with: { message: '{{ variables.owner }}' }

@@ -12,6 +12,14 @@ import { schema } from '@kbn/config-schema';
 import type { PluginConfigDescriptor } from '@kbn/core/server';
 import { DEFAULT_MAX_STEP_SIZE } from './step/errors';
 
+const executionLimit = (defaultValue: number) =>
+  schema.number({
+    defaultValue,
+    min: 1,
+    max: defaultValue,
+    validate: (value) => (Number.isInteger(value) ? undefined : 'must be an integer'),
+  });
+
 const EventTriggersConfigSchema = schema.object({
   /**
    * When false, event-driven workflow execution is disabled: event-triggered runs
@@ -35,6 +43,11 @@ const configSchema = schema.object({
   /**
    * Maximum depth of nested workflow execution (workflow calling workflow via workflow.execute step).
    */
+  parallel: schema.object({
+    maxConcurrentOperations: executionLimit(20),
+    maxOutstandingBranches: executionLimit(100),
+    maxTransitionsPerTick: executionLimit(1000),
+  }),
   maxWorkflowDepth: schema.number({ defaultValue: 10, min: 1 }),
   logging: schema.object({
     console: schema.boolean({ defaultValue: false }),

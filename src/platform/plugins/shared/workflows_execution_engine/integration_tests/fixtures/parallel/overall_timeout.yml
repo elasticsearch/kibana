@@ -1,0 +1,31 @@
+name: "Overall timeout with parent handler"
+description: "The overall timeout cancels all nested waits. Parent fallback and continue run recovered; after_wait must not run."
+enabled: true
+triggers:
+  - type: manual
+steps:
+  - name: branches
+    type: parallel
+    mode: settled
+    timeout: 2s
+    foreach: [a, b]
+    steps:
+      - name: nested
+        type: parallel
+        foreach: [1, 2]
+        steps:
+          - name: long_wait
+            type: wait
+            with: { duration: 30s }
+          - name: after_wait
+            type: console
+            with: { message: MUST_NOT_RUN }
+    on-failure:
+      continue: true
+      fallback:
+        - name: recovery
+          type: console
+          with: { message: recovered }
+  - name: joined
+    type: console
+    with: { message: recovered }
