@@ -1929,7 +1929,7 @@ describe('WorkflowCrudService', () => {
       expect(taskScheduler.unscheduleWorkflowTasks).not.toHaveBeenCalled();
     });
 
-    it('warns when an enabled scheduled workflow needs scheduler sync but the scheduler is unavailable', async () => {
+    it('warns with the persisted space when scheduler sync is unavailable', async () => {
       const { deps, client } = makeDeps();
       const scheduledDefinition = {
         name: 'Test Workflow',
@@ -1938,6 +1938,7 @@ describe('WorkflowCrudService', () => {
         steps: [],
       } as any;
       const existingSource = makeSource({
+        spaceId: '*',
         enabled: true,
         valid: true,
         triggerTypes: ['scheduled'],
@@ -1961,7 +1962,7 @@ describe('WorkflowCrudService', () => {
       await service.updateWorkflow('wf-1', { tags: ['new'] } as any, 'default', request);
 
       expect(deps.logger.warn).toHaveBeenCalledWith(
-        'Skipping scheduler sync for workflow wf-1 in space default: task scheduler is unavailable'
+        'Skipping scheduler sync for workflow wf-1 in space *: task scheduler is unavailable'
       );
     });
 
@@ -2581,6 +2582,199 @@ describe('WorkflowCrudService', () => {
       );
 
       applyYamlUpdateSpy.mockRestore();
+    });
+
+    it('commits enabled: false before unscheduling', async () => {
+      const taskScheduler = makeTaskScheduler();
+      const { deps, client } = makeDeps();
+      (deps as any).getTaskScheduler = () => taskScheduler;
+      const scheduledDefinition = {
+        name: 'Test Workflow',
+        enabled: true,
+        triggers: [{ type: 'scheduled', with: { every: '30s' } }],
+        steps: [],
+      } as any;
+      const existingSource = makeSource({
+        enabled: true,
+        valid: true,
+        triggerTypes: ['scheduled'],
+        definition: scheduledDefinition,
+      });
+      client.search
+        .mockResolvedValueOnce({
+          hits: {
+            hits: [
+              {
+                _id: 'wf-1',
+                _source: existingSource,
+                _seq_no: 2,
+                _primary_term: 1,
+              },
+            ],
+          },
+        })
+        .mockResolvedValueOnce({
+          hits: {
+            hits: [
+              {
+                _id: 'wf-1',
+                _source: makeSource({
+                  ...existingSource,
+                  enabled: false,
+                  definition: { ...scheduledDefinition, enabled: false },
+                }),
+              },
+            ],
+          },
+        });
+
+      const service = new WorkflowCrudService(deps);
+      await service.updateWorkflow('wf-1', { enabled: false }, 'default', request);
+
+      expect(taskScheduler.unscheduleWorkflowTasks).toHaveBeenCalledWith('wf-1');
+      expect(client.index).toHaveBeenCalled();
+      expect(client.index.mock.invocationCallOrder[0]).toBeLessThan(
+        taskScheduler.unscheduleWorkflowTasks.mock.invocationCallOrder[0]
+      );
+    });
+
+    it('records the disabled document change before unscheduling fails', async () => {
+      const taskScheduler = makeTaskScheduler();
+      taskScheduler.unscheduleWorkflowTasks.mockRejectedValue(new Error('tm down'));
+      const { deps, client } = makeDeps();
+      (deps as any).getTaskScheduler = () => taskScheduler;
+      mockedLogWorkflowChanges.mockClear();
+      client.search.mockResolvedValue({
+        hits: {
+          hits: [
+            {
+              _id: 'wf-1',
+              _source: makeSource({ enabled: true }),
+              _seq_no: 2,
+              _primary_term: 1,
+            },
+          ],
+        },
+      });
+
+      const service = new WorkflowCrudService(deps);
+      await expect(
+        service.updateWorkflow('wf-1', { enabled: false }, 'default', request)
+      ).rejects.toThrow('tm down');
+      expect(client.index).toHaveBeenCalledWith(
+        expect.objectContaining({
+          document: expect.objectContaining({ enabled: false }),
+        })
+      );
+      expect(mockedLogWorkflowChanges).toHaveBeenCalledWith(
+        expect.objectContaining({
+          action: WorkflowChangeHistoryAction.workflowUpdate,
+          workflows: [
+            expect.objectContaining({
+              id: 'wf-1',
+              document: expect.objectContaining({ enabled: false }),
+            }),
+          ],
+        })
+      );
+      expect(mockedLogWorkflowChanges.mock.invocationCallOrder[0]).toBeLessThan(
+        taskScheduler.unscheduleWorkflowTasks.mock.invocationCallOrder[0]
+      );
+    });
+
+    it('does not unschedule when the workflow is not visible in the requested space', async () => {
+      const taskScheduler = makeTaskScheduler();
+      const { deps, client } = makeDeps();
+      (deps as any).getTaskScheduler = () => taskScheduler;
+      client.search.mockResolvedValue({
+        hits: {
+          hits: [],
+        },
+      });
+
+      const service = new WorkflowCrudService(deps);
+      await expect(
+        service.updateWorkflow('workflow-in-another-space', { enabled: false }, 'default', request)
+      ).rejects.toThrow('Workflow with id workflow-in-another-space not found');
+
+      expect(taskScheduler.unscheduleWorkflowTasks).not.toHaveBeenCalled();
+      expect(client.index).not.toHaveBeenCalled();
+    });
+
+    it('does not unschedule when the workflow document write fails', async () => {
+      const taskScheduler = makeTaskScheduler();
+      const { deps, client } = makeDeps();
+      (deps as any).getTaskScheduler = () => taskScheduler;
+      client.search.mockResolvedValue({
+        hits: {
+          hits: [
+            {
+              _id: 'wf-1',
+              _source: makeSource({ enabled: true }),
+              _seq_no: 2,
+              _primary_term: 1,
+            },
+          ],
+        },
+      });
+      client.index.mockRejectedValue(new Error('index unavailable'));
+
+      const service = new WorkflowCrudService(deps);
+      await expect(
+        service.updateWorkflow('wf-1', { enabled: false }, 'default', request)
+      ).rejects.toThrow('index unavailable');
+
+      expect(taskScheduler.unscheduleWorkflowTasks).not.toHaveBeenCalled();
+    });
+
+    it('uses the persisted space for the post-write scheduler re-read', async () => {
+      const taskScheduler = makeTaskScheduler();
+      const { deps, client } = makeDeps();
+      (deps as any).getTaskScheduler = () => taskScheduler;
+      const scheduledDefinition = {
+        name: 'Test Workflow',
+        enabled: true,
+        triggers: [{ type: 'scheduled', with: { every: '30s' } }],
+        steps: [],
+      } as any;
+      const existingSource = makeSource({
+        spaceId: '*',
+        enabled: true,
+        valid: true,
+        triggerTypes: ['scheduled'],
+        definition: scheduledDefinition,
+      });
+      client.search.mockResolvedValue({
+        hits: {
+          hits: [
+            {
+              _id: 'wf-1',
+              _source: existingSource,
+              _seq_no: 2,
+              _primary_term: 1,
+            },
+          ],
+        },
+      });
+
+      const service = new WorkflowCrudService(deps);
+      await service.updateWorkflow('wf-1', { tags: ['new'] } as any, 'default', request);
+
+      expect(client.search).toHaveBeenCalledTimes(2);
+      expect(client.search.mock.calls[1][0]).toEqual(
+        expect.objectContaining({
+          query: {
+            bool: {
+              must: [{ ids: { values: ['wf-1'] } }, { term: { spaceId: '*' } }],
+            },
+          },
+        })
+      );
+      expect(taskScheduler.updateWorkflowTasks).toHaveBeenCalledWith(
+        expect.objectContaining({ id: 'wf-1' }),
+        '*',
+        request
+      );
     });
   });
 

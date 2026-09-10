@@ -729,7 +729,7 @@ export class WorkflowCrudService {
         successfullyWritten.map((vw) =>
           syncSchedulerAfterSave({
             workflowId: vw.id,
-            spaceId,
+            spaceId: vw.workflowData.spaceId,
             request,
             getWorkflow: (wfId, sp) => this.getEsWorkflowForScheduler(wfId, sp),
             taskScheduler,
@@ -844,14 +844,6 @@ export class WorkflowCrudService {
       },
     });
 
-    await this.syncSchedulerAfterWorkflowUpdate({
-      id,
-      spaceId,
-      request,
-      finalData,
-      shouldUpdateScheduler,
-    });
-
     if (finalData.version !== previousVersion) {
       await this.logWorkflowChangesAfterWrite({
         workflows: [{ id, document: finalData }],
@@ -862,6 +854,13 @@ export class WorkflowCrudService {
         restoreMetadata,
       });
     }
+
+    await this.syncSchedulerAfterWorkflowUpdate({
+      id,
+      request,
+      finalData,
+      shouldUpdateScheduler,
+    });
 
     return {
       response: {
@@ -1037,12 +1036,12 @@ export class WorkflowCrudService {
 
   private async syncSchedulerAfterWorkflowUpdate(params: {
     id: string;
-    spaceId: string;
     request: KibanaRequest;
     finalData: WorkflowProperties;
     shouldUpdateScheduler: boolean;
   }): Promise<void> {
-    const { id, spaceId, request, finalData, shouldUpdateScheduler } = params;
+    const { id, request, finalData, shouldUpdateScheduler } = params;
+    const schedulerSpaceId = finalData.spaceId;
     const shouldRefreshScheduledTaskCredentials =
       Boolean(finalData.definition) &&
       finalData.valid &&
@@ -1055,14 +1054,14 @@ export class WorkflowCrudService {
     const taskScheduler = this.deps.getTaskScheduler();
     if (!taskScheduler) {
       this.deps.logger.warn(
-        `Skipping scheduler sync for workflow ${id} in space ${spaceId}: task scheduler is unavailable`
+        `Skipping scheduler sync for workflow ${id} in space ${schedulerSpaceId}: task scheduler is unavailable`
       );
       return;
     }
 
     await syncSchedulerAfterSave({
       workflowId: id,
-      spaceId,
+      spaceId: schedulerSpaceId,
       request,
       getWorkflow: (wfId, sp) => this.getEsWorkflowForScheduler(wfId, sp),
       taskScheduler,
