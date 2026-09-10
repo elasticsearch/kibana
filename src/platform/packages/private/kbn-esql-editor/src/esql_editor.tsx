@@ -53,6 +53,7 @@ import {
   EDITOR_INITIAL_HEIGHT,
   EDITOR_INITIAL_HEIGHT_INLINE_EDITING,
   EDITOR_MAX_HEIGHT,
+  EDITOR_MIN_HEIGHT,
   RESIZABLE_CONTAINER_INITIAL_HEIGHT,
   esqlEditorStyles,
 } from './esql_editor.styles';
@@ -231,6 +232,11 @@ const ESQLEditorInternal = function ESQLEditor({
   const [isCurrentQueryStarred, setIsCurrentQueryStarred] = useState(false);
   const [isLanguageComponentOpen, setIsLanguageComponentOpen] = useState(false);
   const [isVisorOpen, setIsVisorOpen] = useRestorableState('isVisorOpen', false);
+  const [isFullScreen, setIsFullScreen] = useState(false);
+  const [measuredFullScreenEditorHeight, setMeasuredFullScreenEditorHeight] = useState<
+    number | undefined
+  >(undefined);
+  const fullScreenWrapperRef = useRef<HTMLDivElement>(null);
 
   // Refs for dynamic dependencies that commands need to access
   const esqlVariablesRef = useRef(esqlVariables);
@@ -370,6 +376,53 @@ const ESQLEditorInternal = function ESQLEditor({
     isVisorOpenRef.current = isVisorOpen;
   }, [esqlVariables, controlsContext, isVisorOpen]);
 
+  useEffect(() => {
+    if (!isFullScreen) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && !isSuggestionPopupOpenRef.current) setIsFullScreen(false);
+    };
+    document.addEventListener('keydown', onKeyDown, true);
+    return () => document.removeEventListener('keydown', onKeyDown, true);
+  }, [isFullScreen]);
+
+  useEffect(() => {
+    if (!isFullScreen) {
+      setMeasuredFullScreenEditorHeight(undefined);
+      return;
+    }
+
+    const measure = () => {
+      const wrapper = fullScreenWrapperRef.current;
+      const monacoGroup = containerRef.current;
+      if (!wrapper || !monacoGroup) return;
+
+      const wrapperH = wrapper.getBoundingClientRect().height;
+      const monacoTop =
+        monacoGroup.getBoundingClientRect().top - wrapper.getBoundingClientRect().top;
+
+      let belowH = 0;
+      let sibling = monacoGroup.nextElementSibling;
+      while (sibling) {
+        belowH += sibling.getBoundingClientRect().height;
+        sibling = sibling.nextElementSibling;
+      }
+
+      const available = Math.max(wrapperH - monacoTop - belowH, EDITOR_MIN_HEIGHT);
+      setMeasuredFullScreenEditorHeight((prev) =>
+        prev !== undefined && Math.abs(prev - available) <= 1 ? prev : available
+      );
+    };
+
+    const observer = new ResizeObserver(measure);
+    if (fullScreenWrapperRef.current) observer.observe(fullScreenWrapperRef.current);
+    const raf = requestAnimationFrame(measure);
+
+    return () => {
+      observer.disconnect();
+      cancelAnimationFrame(raf);
+    };
+  }, [isFullScreen]);
+
   const triggerSuggestions = useCallback(() => {
     setTimeout(() => {
       if (suppressSuggestionsRef.current) {
@@ -414,10 +467,17 @@ const ESQLEditorInternal = function ESQLEditor({
     }
   }, [triggerSuggestions]);
 
+  const effectiveEditorHeight = measuredFullScreenEditorHeight ?? editorHeight;
+
   const styles = useMemo(
     () =>
-      esqlEditorStyles(theme.euiTheme, editorHeight, Boolean(editorIsInline), Boolean(hasOutline)),
-    [theme.euiTheme, editorHeight, editorIsInline, hasOutline]
+      esqlEditorStyles(
+        theme.euiTheme,
+        effectiveEditorHeight,
+        Boolean(editorIsInline),
+        Boolean(hasOutline)
+      ),
+    [theme.euiTheme, effectiveEditorHeight, editorIsInline, hasOutline]
   );
 
   const onMouseDownResize = useCallback<typeof onMouseDownResizeHandler>(
@@ -989,6 +1049,8 @@ const ESQLEditorInternal = function ESQLEditor({
         dataErrorsControl={dataErrorsControl}
         starredQueriesService={starredQueriesService}
         queryStats={queryStats}
+        isFullScreen={isFullScreen}
+        onToggleFullScreen={() => setIsFullScreen((v) => !v)}
         {...editorMessages}
         onErrorClick={onErrorClick}
       />
@@ -1102,7 +1164,24 @@ const ESQLEditorInternal = function ESQLEditor({
     </>
   );
 
-  return editorPanel;
+  const fullScreenOverlayStyle = isFullScreen
+    ? {
+        position: 'fixed' as const,
+        top: 'var(--kbn-layout--header-height, 0px)',
+        left: 0,
+        right: 0,
+        bottom: 0,
+        zIndex: theme.euiTheme.levels.modal,
+        backgroundColor: theme.euiTheme.colors.emptyShade,
+        overflow: 'hidden',
+      }
+    : undefined;
+
+  return (
+    <div ref={fullScreenWrapperRef} css={fullScreenOverlayStyle}>
+      {editorPanel}
+    </div>
+  );
 };
 
 const ESQLEditorWithState = withRestorableState(ESQLEditorInternal);

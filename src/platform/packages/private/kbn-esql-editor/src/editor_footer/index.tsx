@@ -51,10 +51,20 @@ interface EditorFooterProps {
   dataErrorsControl?: DataErrorsControl;
   starredQueriesService: EsqlStarredQueriesService | null;
   queryStats?: QueryStats;
+  isFullScreen?: boolean;
+  onToggleFullScreen?: () => void;
 }
 
 const openDocumentationLabel = i18n.translate('esqlEditor.query.documentationAriaLabel', {
   defaultMessage: 'Open documentation',
+});
+
+const enterFullScreenLabel = i18n.translate('esqlEditor.query.enterFullScreenAriaLabel', {
+  defaultMessage: 'Full screen',
+});
+
+const exitFullScreenLabel = i18n.translate('esqlEditor.query.exitFullScreenAriaLabel', {
+  defaultMessage: 'Exit full screen',
 });
 
 export const EditorFooter = memo(function EditorFooter({
@@ -77,6 +87,8 @@ export const EditorFooter = memo(function EditorFooter({
   dataErrorsControl,
   starredQueriesService,
   queryStats,
+  isFullScreen,
+  onToggleFullScreen,
 }: EditorFooterProps) {
   const kibana = useKibana<ESQLEditorDeps>();
   const { docLinks } = kibana.services;
@@ -167,6 +179,22 @@ export const EditorFooter = memo(function EditorFooter({
                     onHelpMenuVisibilityChange={setIsLanguageComponentOpen}
                   />
                 </>
+              )}
+              {onToggleFullScreen && (
+                <EuiToolTip
+                  position="top"
+                  content={isFullScreen ? exitFullScreenLabel : enterFullScreenLabel}
+                  disableScreenReaderOutput
+                >
+                  <EuiButtonIcon
+                    iconType={isFullScreen ? 'fullScreenExit' : 'fullScreen'}
+                    color="text"
+                    data-test-subj="ESQLEditor-toggle-fullscreen"
+                    size="xs"
+                    onClick={onToggleFullScreen}
+                    aria-label={isFullScreen ? exitFullScreenLabel : enterFullScreenLabel}
+                  />
+                </EuiToolTip>
               )}
             </EuiFlexGroup>
           </EuiFlexItem>
