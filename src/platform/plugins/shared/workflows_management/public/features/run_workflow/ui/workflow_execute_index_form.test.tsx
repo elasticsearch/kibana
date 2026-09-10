@@ -27,6 +27,9 @@ jest.mock('@kbn/unified-search-plugin/public', () => ({
   SearchBar: MockSearchBar,
   DataViewPicker: MockDataViewPicker,
 }));
+jest.mock('./workflow_execute_unified_data_table', () => ({
+  WorkflowExecuteUnifiedDataTable: () => null,
+}));
 
 jest.mock('@kbn/unified-data-table', () => {
   const actual = jest.requireActual('@kbn/unified-data-table');

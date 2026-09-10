@@ -31,6 +31,9 @@ jest.mock('@kbn/unified-search-plugin/public', () => ({
   SearchBar: MockSearchBar,
   DataViewPicker: MockDataViewPicker,
 }));
+jest.mock('./workflow_execute_unified_data_table', () => ({
+  WorkflowExecuteUnifiedDataTable: () => null,
+}));
 
 const mockUseKibana = useKibana as jest.MockedFunction<typeof useKibana>;
 
