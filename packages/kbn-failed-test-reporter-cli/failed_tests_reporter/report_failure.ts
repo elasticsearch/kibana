@@ -8,6 +8,13 @@
  */
 
 import type { ExistingFailedTestIssue } from './existing_failed_test_issues';
+import {
+  NOT_AVAILABLE,
+  formatDurationFromTime,
+  formatDurationSeconds,
+  formatOwners,
+  getConfigPathFromCommandLine,
+} from './failure_details';
 import type { TestFailure } from './get_failures';
 import { getLocationFromClassname, getReportNameFromClassname } from './get_failures';
 import type { ScoutTestFailureExtended } from './get_scout_failures';
@@ -133,8 +140,6 @@ function renderErrorMessageSection({
   return '';
 }
 
-const NOT_AVAILABLE = 'N/A';
-
 /**
  * Render a `| Field | Value |` markdown table. Shared by all test types so the
  * issue format stays aligned.
@@ -145,38 +150,6 @@ function renderDetailsTable(rows: Array<[string, string]>): string[] {
     '|-------|-------|',
     ...rows.map(([field, value]) => `| ${field} | ${value || NOT_AVAILABLE} |`),
   ];
-}
-
-/**
- * Normalize a comma separated list of code owners so it renders consistently
- * regardless of whether the source joined with `,` (FTR) or `, ` (Scout).
- */
-function formatOwners(owners?: string): string {
-  if (!owners) {
-    return NOT_AVAILABLE;
-  }
-  const normalized = owners
-    .split(',')
-    .map((owner) => owner.trim())
-    .filter(Boolean)
-    .join(', ');
-  return normalized || NOT_AVAILABLE;
-}
-
-function formatDurationSeconds(seconds: number): string {
-  return `${seconds.toFixed(2)}s`;
-}
-
-/**
- * Duration is reported as a seconds string in JUnit reports, but is not always
- * present (and unit tests may pass non-numeric values).
- */
-function formatDurationFromTime(time?: string): string {
-  if (!time) {
-    return NOT_AVAILABLE;
-  }
-  const seconds = Number(time);
-  return Number.isFinite(seconds) ? formatDurationSeconds(seconds) : NOT_AVAILABLE;
 }
 
 /*
@@ -237,15 +210,6 @@ function createJUnitBody(
   }
 
   return updateIssueMetadata(bodyContent.join('\n'), metadata);
-}
-
-/**
- * Extract the config path from a command line, e.g. the Playwright/FTR `--config` flag.
- */
-function getConfigPathFromCommandLine(command?: string): string {
-  if (!command) return NOT_AVAILABLE;
-  const configMatch = command.match(/--config(?:=|\s+)(\S+)/);
-  return configMatch ? configMatch[1] : NOT_AVAILABLE;
 }
 
 /**

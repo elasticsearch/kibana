@@ -19,7 +19,15 @@ import { FtrScreenshotFilename } from '@kbn/ftr-screenshot-filename';
 import { JourneyScreenshots } from '@kbn/journeys';
 
 import type { BuildkiteMetadata } from './buildkite_metadata';
+import {
+  NOT_AVAILABLE,
+  formatDurationFromTime,
+  formatOwners,
+  getConfigPathFromCommandLine,
+} from './failure_details';
+import { trimFailureText } from './failure_text';
 import type { TestFailure } from './get_failures';
+import { getReportNameFromClassname } from './get_failures';
 
 interface JourneyMeta {
   journeyName: string;
@@ -44,7 +52,7 @@ async function getJourneySnapshotHtml(log: ToolingLog, journeyMeta: JourneyMeta)
 
   return [
     '<section>',
-    '<h5>Steps</h5>',
+    '<h2>Steps</h2>',
     ...screenshots.get().flatMap(({ title, path, fullscreenPath }) => {
       const base64 = Fs.readFileSync(path, 'base64');
       const fullscreenBase64 = Fs.readFileSync(fullscreenPath, 'base64');
@@ -99,18 +107,157 @@ function findAllScreenshots(log: ToolingLog) {
 }
 
 function getFtrScreenshotHtml(log: ToolingLog, failureName: string) {
-  return getAllScreenshots(log)
-    .filter((s) => s.name.startsWith(FtrScreenshotFilename.create(failureName, { ext: false })))
-    .map((s) => {
+  const screenshots = getAllScreenshots(log).filter((s) =>
+    s.name.startsWith(FtrScreenshotFilename.create(failureName, { ext: false }))
+  );
+
+  if (!screenshots.length) {
+    return '';
+  }
+
+  return [
+    '<section>',
+    '<h2>Screenshots</h2>',
+    ...screenshots.map((s) => {
       const base64 = Fs.readFileSync(s.path).toString('base64');
       return `
         <div class="screenshotContainer">
           <img class="screenshot img-fluid img-thumbnail" src="data:image/png;base64,${base64}" />
         </div>
       `;
-    })
-    .join('\n');
+    }),
+    '</section>',
+  ].join('\n');
 }
+
+const renderCopyable = (text: string) =>
+  `<div class="copyable">
+    <button type="button" class="copyBtn" title="Copy to clipboard">Copy</button>
+    <pre>${escape(text)}</pre>
+  </div>`;
+
+const renderDetailsRow = (label: string, valueHtml: string) =>
+  `<tr><th scope="row">${escape(label)}</th><td>${valueHtml}</td></tr>`;
+
+// Without these hints the browser wraps long paths at the hyphen in `x-pack`, which reads like a
+// typo; `word-break: keep-all` in the template then limits breaks to path separators.
+const renderCode = (value: string) => `<code>${escape(value).replaceAll('/', '/<wbr />')}</code>`;
+
+const renderLink = (href: string, text: string) => `<a href="${escape(href)}">${escape(text)}</a>`;
+
+/** Issue URLs are long and all look alike, so link them by number. */
+const renderIssueLink = (url: string) => {
+  const number = url.match(/\/issues\/(\d+)/)?.[1];
+  return renderLink(url, number ? `#${number}` : url);
+};
+
+const renderDetailsTable = (failure: TestFailure, bkMeta: BuildkiteMetadata) => {
+  const location = failure.location && failure.location !== 'unknown' ? failure.location : '';
+  const configPath = getConfigPathFromCommandLine(failure.commandLine);
+  const failureCount = failure.failureCount || 0;
+
+  return `<table class="table table-sm details">
+    <tbody>
+      ${[
+        renderDetailsRow('Location', location ? renderCode(location) : NOT_AVAILABLE),
+        renderDetailsRow('Test type', escape(failure.testType || NOT_AVAILABLE)),
+        renderDetailsRow('Duration', escape(formatDurationFromTime(failure.time))),
+        renderDetailsRow(
+          'Config path',
+          configPath === NOT_AVAILABLE ? NOT_AVAILABLE : renderCode(configPath)
+        ),
+        renderDetailsRow('Code owners', escape(formatOwners(failure.owners))),
+        renderDetailsRow(
+          'Failures in tracked branches',
+          `<span class="badge rounded-pill bg-danger">${failureCount}</span>${
+            failure.githubIssue ? ` ${renderIssueLink(failure.githubIssue)}` : ''
+          }`
+        ),
+        renderDetailsRow(
+          'Buildkite job',
+          bkMeta.jobUrl ? renderLink(bkMeta.jobUrl, bkMeta.jobName || bkMeta.jobUrl) : NOT_AVAILABLE
+        ),
+      ].join('\n      ')}
+    </tbody>
+  </table>`;
+};
+
+const renderErrorSection = (failure: TestFailure) => {
+  const { summary, trimmed } = trimFailureText(failure.failure);
+
+  return `<section>
+    <h2>Error</h2>
+    ${renderCopyable(summary)}
+    ${
+      trimmed
+        ? `<details>
+             <summary>Full stack trace</summary>
+             ${renderCopyable(failure.failure)}
+           </details>`
+        : ''
+    }
+  </section>`;
+};
+
+/** The cascade is all the same forced 1ms timeout, so the names are the only detail worth keeping. */
+const renderAbortedRunSection = (cascading: TestFailure[]) => {
+  if (!cascading.length) {
+    return '';
+  }
+
+  return `<section>
+    <h2>This failure aborted the run</h2>
+    <p>
+      This timeout aborted the config run, so the ${cascading.length} hook${
+    cascading.length === 1 ? '' : 's'
+  } below never ran:
+      each was cancelled with a forced 1ms timeout. They are not tracked separately.
+    </p>
+    <ul class="aborted">
+      ${cascading.map(({ name }) => `<li>${renderCode(name)}</li>`).join('\n      ')}
+    </ul>
+  </section>`;
+};
+
+const renderStdoutSection = (failure: TestFailure) => {
+  const stdout = failure['system-out'];
+  if (!stdout) {
+    return '';
+  }
+
+  return `<details>
+    <summary>Standard output</summary>
+    ${renderCopyable(stdout)}
+  </details>`;
+};
+
+export interface PartitionedFailures {
+  /** failures that get a report of their own */
+  reported: TestFailure[];
+  /** failures folded into `rootCause`'s report */
+  cascading: TestFailure[];
+  /** the failure whose timeout aborted the run */
+  rootCause?: TestFailure;
+}
+
+/**
+ * Separate the failures worth their own artifacts from the ones that only happened because an
+ * earlier Mocha timeout aborted the run. The cascade always trails the failure that caused it.
+ */
+export const partitionCascadingFailures = (failures: TestFailure[]): PartitionedFailures => {
+  const firstCascading = failures.findIndex(({ cascading }) => cascading);
+
+  // no cascade, or nothing to fold it into
+  if (firstCascading < 1) {
+    return { reported: failures, cascading: [] };
+  }
+
+  return {
+    reported: failures.filter(({ cascading }) => !cascading),
+    cascading: failures.filter(({ cascading }) => cascading),
+    rootCause: failures[firstCascading - 1],
+  };
+};
 
 export async function reportFailuresToFile(
   log: ToolingLog,
@@ -123,10 +270,16 @@ export async function reportFailuresToFile(
   }
 
   const journeyMeta = getJourneyMetadata(rootMeta);
+  const { reported, cascading, rootCause } = partitionCascadingFailures(failures);
+
+  const template = Fs.readFileSync(
+    require.resolve('./report_failures_to_file_html_template.html')
+  ).toString();
 
   // Jest could, in theory, fail 1000s of tests and write 1000s of failures
   // So let's just write files for the first 20
-  for (const failure of failures.slice(0, 20)) {
+  for (const failure of reported.slice(0, 20)) {
+    const abortedRunnables = failure === rootCause ? cascading.map(({ name }) => name) : [];
     const hash = createHash('sha256').update(failure.name).digest('hex');
     const filenameBase = `${
       process.env.BUILDKITE_JOB_ID ? process.env.BUILDKITE_JOB_ID + '_' : ''
@@ -136,6 +289,14 @@ export async function reportFailuresToFile(
     const failureLog = [
       ['Test:', '-----', failure.classname, failure.name, ''],
       ['Failure:', '--------', failure.failure],
+      abortedRunnables.length
+        ? [
+            '',
+            'Run aborted after this failure:',
+            '-------------------------------',
+            ...abortedRunnables,
+          ]
+        : [],
       failure['system-out'] ? ['', 'Standard Out:', '-------------', failure['system-out']] : [],
     ]
       .flat()
@@ -144,6 +305,7 @@ export async function reportFailuresToFile(
     const failureJSON = JSON.stringify(
       {
         ...failure,
+        ...(abortedRunnables.length ? { abortedRunnables } : {}),
         hash,
         buildId: bkMeta.buildId,
         jobId: bkMeta.jobId,
@@ -155,75 +317,32 @@ export async function reportFailuresToFile(
       2
     );
 
-    const failureHTML = Fs.readFileSync(
-      require.resolve('./report_failures_to_file_html_template.html')
-    )
-      .toString()
-      .replace('$TITLE', escape(failure.name))
-      .replace(
-        '$MAIN',
-        `
-        ${failure.classname
-          .split('.')
-          .map((part) => `<h5>${escape(part.replace('·', '.'))}</h5>`)
-          .join('')}
-        <hr />
-        <p><strong>${escape(failure.name)}</strong></p>
-        <p>
-          <small>
-            ${
-              failure.commandLine
-                ? `<div>
-                     <strong>Command Line</strong>:
-                     <pre>${escape(failure.commandLine)}</pre>
-                   </div>`
-                : ''
-            }
-            <div>
-                <strong>Owners</strong>:
-                <pre>${escape(
-                  failure?.owners ? (failure?.owners as string) : 'Unable to determine code owners'
-                )}</pre>
-            </div>
-            <div>
-                <strong>Failures in tracked branches</strong>:
-                    <span class="badge rounded-pill bg-danger">${failure.failureCount || 0}</span>
-            </div>
-            ${
-              failure.githubIssue
-                ? `<div>
-                     <a href="${escape(failure.githubIssue)}">${escape(failure.githubIssue)}</a>
-                   </div>`
-                : ''
-            }
-          </small>
-        </p>
+    const failureHTML = template.replace('$TITLE', escape(failure.name)).replace(
+      '$MAIN',
+      `
+        <header>
+          <p class="reportName">${escape(getReportNameFromClassname(failure.classname))}</p>
+          <h1>${escape(failure.name)}</h1>
+        </header>
+        ${renderDetailsTable(failure, bkMeta)}
         ${
-          bkMeta.jobUrl
-            ? `<p>
-              <small>
-                <strong>Buildkite Job</strong><br />
-                <a href="${escape(bkMeta.jobUrl)}">${escape(bkMeta.jobUrl)}</a>
-              </small>
-            </p>`
+          failure.commandLine
+            ? `<section>
+                 <h2>Command line</h2>
+                 ${renderCopyable(failure.commandLine)}
+               </section>`
             : ''
         }
-        <pre>${escape(failure.failure)}</pre>
+        ${renderErrorSection(failure)}
+        ${failure === rootCause ? renderAbortedRunSection(cascading) : ''}
         ${
           journeyMeta
             ? await getJourneySnapshotHtml(log, journeyMeta)
             : getFtrScreenshotHtml(log, failure.name)
         }
-        ${
-          failure['system-out']
-            ? `
-              <h5>Stdout</h5>
-              <pre>${escape(failure['system-out'] || '')}</pre>
-            `
-            : ''
-        }
+        ${renderStdoutSection(failure)}
       `
-      );
+    );
 
     Fs.mkdirSync(dir, { recursive: true });
     Fs.writeFileSync(Path.join(dir, `${filenameBase}.log`), failureLog, 'utf8');

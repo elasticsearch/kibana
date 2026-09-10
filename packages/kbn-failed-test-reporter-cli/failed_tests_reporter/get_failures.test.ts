@@ -229,6 +229,55 @@ it('associates each Jest failure with its enclosing suite', async () => {
   ]);
 });
 
+describe('cascading failures', () => {
+  const report = (cascadingAttr: string) => `
+    <testsuites name="ftr">
+      <testsuite name="FTR" timestamp="2026-07-15T12:00:00" time="1" tests="2" failures="2" skipped="0">
+        <testcase classname="FTR.x-pack/a·ts" name="root cause" time="120">
+          <failure>Error: Timeout of 120000ms exceeded.</failure>
+        </testcase>
+        <testcase classname="FTR.x-pack/a·ts" name="after all hook" time="0.001" ${cascadingAttr}>
+          <failure>Error: Timeout of 1ms exceeded.</failure>
+        </testcase>
+      </testsuite>
+    </testsuites>
+  `;
+
+  it('flags the failures the reporter marked as cascading', async () => {
+    const [rootCause, cascading] = getFailures(
+      await parseTestReport(report('cascading-failure="true"'))
+    );
+
+    expect(rootCause.cascading).toBeUndefined();
+    expect(cascading.cascading).toBe(true);
+    expect(cascading).not.toHaveProperty('cascading-failure');
+  });
+
+  it('leaves failures unflagged when the attribute is absent', async () => {
+    const failures = getFailures(await parseTestReport(report('')));
+
+    expect(failures.map(({ cascading }) => cascading)).toEqual([undefined, undefined]);
+  });
+});
+
+it('rewrites absolute checkout paths as repository relative ones', async () => {
+  const report = await parseTestReport(`
+    <testsuites name="ftr">
+      <testsuite name="FTR" timestamp="2026-07-15T12:00:00" time="1" tests="1" failures="1" skipped="0">
+        <testcase classname="FTR.x-pack/a·ts" name="a test" time="1">
+          <failure>Error: boom (/opt/buildkite-agent/builds/bk-agent-1/elastic/kibana-pull-request/kibana/x-pack/a.ts)</failure>
+          <system-out>ran /opt/buildkite-agent/builds/bk-agent-1/elastic/kibana-pull-request/kibana/x-pack/a.ts</system-out>
+        </testcase>
+      </testsuite>
+    </testsuites>
+  `);
+
+  const [failure] = getFailures(report);
+
+  expect(failure.failure).toBe('Error: boom (x-pack/a.ts)');
+  expect(failure['system-out']).toBe('ran x-pack/a.ts');
+});
+
 it('discovers failures in mocha report', async () => {
   const failures = getFailures(await parseTestReport(MOCHA_REPORT));
   expect(failures).toMatchInlineSnapshot(`

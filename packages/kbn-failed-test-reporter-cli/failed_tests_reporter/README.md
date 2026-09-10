@@ -2,6 +2,14 @@
 
 A little CLI that runs in CI to find the failed tests in the JUnit reports, then create/update github issues for each failure.
 
+## Cascading failures
+
+The first Mocha timeout aborts a whole FTR config run, and every hook still left in the suite tree
+then fails immediately with a forced 1ms timeout. The FTR JUnit reporter tags those trailing entries
+with `cascading-failure="true"`, and this CLI keeps them out of GitHub and out of the failure report
+artifacts: they are listed on the report of the failure that caused the abort instead. They are still
+present in the JUnit report and indexed to Elasticsearch, flagged as `cascading`.
+
 ## Test this script locally
 
 To fetch some JUnit reports from a recent build on CI, visit its `Google Cloud Storage Upload Report` and execute the following in the JS Console:

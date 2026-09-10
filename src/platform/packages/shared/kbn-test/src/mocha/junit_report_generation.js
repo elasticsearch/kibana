@@ -19,6 +19,7 @@ import { getUniqueJunitReportPath } from '../report_path';
 import { getSnapshotOfRunnableLogs } from './log_cache';
 import { escapeCdata } from '../..';
 import { prettifyCommandLine } from '../prettify_command_line';
+import { isMochaTimeoutError } from './mocha_timeout';
 
 const dateNow = Date.now.bind(Date);
 
@@ -32,6 +33,12 @@ export function setupJUnitReportGeneration(runner, options = {}) {
 
   const stats = {};
   const results = [];
+
+  // The first Mocha timeout aborts the config run (see `registerAbortOnTimeout`) and every remaining
+  // runnable is then forced to fail with a 1ms timeout. Tagging those trailing failures lets
+  // reporters fold them into the timeout that caused them.
+  // See https://github.com/elastic/apps-dx/issues/37.
+  let sawMochaTimeout = false;
 
   const getDuration = (node) =>
     node.startTime && node.endTime ? ((node.endTime - node.startTime) / 1000).toFixed(3) : null;
@@ -71,7 +78,10 @@ export function setupJUnitReportGeneration(runner, options = {}) {
   runner.on('test', setStartTime);
   runner.on('pass', (node) => results.push({ node }));
   runner.on('pass', setEndTime);
-  runner.on('fail', (node, error) => results.push({ failed: true, error, node }));
+  runner.on('fail', (node, error) => {
+    results.push({ failed: true, error, node, cascading: sawMochaTimeout });
+    sawMochaTimeout = sawMochaTimeout || isMochaTimeoutError(error);
+  });
   runner.on('fail', setEndTime);
   runner.on('suite end', () => setEndTime(stats));
 
@@ -131,7 +141,7 @@ export function setupJUnitReportGeneration(runner, options = {}) {
       'command-line': commandLine,
     });
 
-    function addTestcaseEl(node, failed) {
+    function addTestcaseEl(node, failed, cascading) {
       const attrs = {
         name: getFullTitle(node),
         classname: `${reportName}.${getPath(node).replace(/\./g, '·')}`,
@@ -145,13 +155,17 @@ export function setupJUnitReportGeneration(runner, options = {}) {
 
         // Comma-separated list of owners. Empty string if no owners are found.
         attrs.owners = getOwningTeamsForPath(testCaseRelativePath, codeOwnersEntries).join(',');
+
+        if (cascading) {
+          attrs['cascading-failure'] = 'true';
+        }
       }
 
       return testsuitesEl.ele('testcase', attrs);
     }
 
     [...results, ...skippedResults].forEach((result) => {
-      const el = addTestcaseEl(result.node, result.failed);
+      const el = addTestcaseEl(result.node, result.failed, result.cascading);
 
       if (result.failed) {
         el.ele('system-out').dat(escapeCdata(getSnapshotOfRunnableLogs(result.node) || ''));

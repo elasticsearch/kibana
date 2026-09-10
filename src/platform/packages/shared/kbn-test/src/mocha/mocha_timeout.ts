@@ -7,14 +7,9 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
-// @ts-ignore not typed yet
-// @internal
-export { setupJUnitReportGeneration } from './junit_report_generation';
-// @ts-ignore not typed yet
-// @internal
-export { recordLog, snapshotLogsForRunnable, getSnapshotOfRunnableLogs } from './log_cache';
-// @ts-ignore not typed yet
-// @internal
-export { escapeCdata } from './xml';
-// @internal
-export { isMochaTimeoutError } from './mocha_timeout';
+// Mocha's own `Runnable.constants.TIMEOUT` (see `createTimeoutError()` in mocha's `lib/errors.js`),
+// not exported on the public `mocha` API. Every Mocha timeout carries it, whatever the message says.
+const MOCHA_TIMEOUT_ERROR_CODE = 'ERR_MOCHA_TIMEOUT';
+
+export const isMochaTimeoutError = (error: unknown): boolean =>
+  (error as { code?: string } | undefined)?.code === MOCHA_TIMEOUT_ERROR_CODE;

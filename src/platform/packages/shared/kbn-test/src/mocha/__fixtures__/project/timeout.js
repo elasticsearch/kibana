@@ -7,14 +7,18 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
-// @ts-ignore not typed yet
-// @internal
-export { setupJUnitReportGeneration } from './junit_report_generation';
-// @ts-ignore not typed yet
-// @internal
-export { recordLog, snapshotLogsForRunnable, getSnapshotOfRunnableLogs } from './log_cache';
-// @ts-ignore not typed yet
-// @internal
-export { escapeCdata } from './xml';
-// @internal
-export { isMochaTimeoutError } from './mocha_timeout';
+// The shape of an aborted config run: a hook times out, then so does the teardown hook mocha runs
+// afterwards.
+describe('TIMEOUT_SUITE', () => {
+  before('root cause', async function () {
+    this.timeout(1);
+    await new Promise((resolve) => setTimeout(resolve, 100));
+  });
+
+  it('never runs', () => {});
+
+  after('cascading', async function () {
+    this.timeout(1);
+    await new Promise((resolve) => setTimeout(resolve, 100));
+  });
+});

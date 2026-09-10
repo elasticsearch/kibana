@@ -11,6 +11,7 @@ import stripAnsi from 'strip-ansi';
 import { getCodeOwnersEntries, getOwningTeamsForPath } from '@kbn/code-owners';
 import type { CodeOwnersEntry } from '@kbn/code-owners';
 
+import { toRepoRelativePaths } from './failure_text';
 import type { FailedTestCase, TestReport } from './test_report';
 import { makeFailedTestCaseWithSuiteIter } from './test_report';
 
@@ -26,6 +27,11 @@ export type TestFailure = FailedTestCase['$'] & {
   owners?: string;
   testType?: JUnitTestType;
   location?: string;
+  /**
+   * Set when the failure only happened because an earlier Mocha timeout aborted the run. These are
+   * kept for the record but never reported to GitHub and get no artifacts of their own.
+   */
+  cascading?: boolean;
 };
 
 const getText = (node?: Array<string | { _: string }>) => {
@@ -35,11 +41,12 @@ const getText = (node?: Array<string | { _: string }>) => {
 
   const [nodeWrapped] = node;
 
-  if (nodeWrapped && typeof nodeWrapped === 'object' && typeof nodeWrapped._ === 'string') {
-    return stripAnsi(nodeWrapped._);
-  }
+  const text =
+    nodeWrapped && typeof nodeWrapped === 'object' && typeof nodeWrapped._ === 'string'
+      ? nodeWrapped._
+      : String(nodeWrapped);
 
-  return stripAnsi(String(nodeWrapped));
+  return toRepoRelativePaths(stripAnsi(text));
 };
 
 /**
@@ -172,7 +179,7 @@ export function getFailures(report: TestReport) {
     // fall back to resolving them from the source location.
     const owners = testCase.$.owners || getOwnersFromLocation(location, codeOwnersEntries);
 
-    const failureObj = {
+    const failureObj: TestFailure = {
       // unwrap xml weirdness
       ...testCase.$,
       // Strip ANSI color characters
@@ -185,8 +192,13 @@ export function getFailures(report: TestReport) {
       location,
     };
 
+    if (testCase.$['cascading-failure'] === 'true') {
+      failureObj.cascading = true;
+    }
+
     // cleaning up duplicates
     delete failureObj['command-line'];
+    delete failureObj['cascading-failure'];
 
     failures.push(failureObj);
   }
