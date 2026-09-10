@@ -20,6 +20,12 @@ import { useScheduleApi } from '../logic/use_schedule_api';
 jest.mock('@kbn/inference-connectors');
 jest.mock('../logic/use_schedule_api');
 jest.mock('../../../../../common/lib/kibana');
+jest.mock('../../../../../data_view_manager/hooks/use_data_view', () => ({
+  useDataView: jest.fn().mockReturnValue({
+    dataView: undefined,
+    status: 'ready',
+  }),
+}));
 jest.mock('react-router-dom', () => ({
   matchPath: jest.fn(),
   useLocation: jest.fn().mockReturnValue({
@@ -53,8 +59,6 @@ const setMockCreateSchedule = ({ mutateAsync }: { mutateAsync: jest.Mock }) => {
 };
 
 const defaultProps = {
-  connectorId: undefined,
-  onConnectorIdSelected: jest.fn(),
   onClose: jest.fn(),
 };
 
@@ -68,13 +72,15 @@ const renderComponent = async () => {
   });
 };
 
-// FLAKY: https://github.com/elastic/kibana/issues/220116
-describe.skip('CreateFlyout', () => {
+describe('CreateFlyout', () => {
   beforeEach(() => {
     jest.clearAllMocks();
 
     mockUseKibana.mockReturnValue({
       services: {
+        featureFlags: {
+          getBooleanValue: jest.fn().mockResolvedValue(false),
+        },
         lens: {
           EmbeddableComponent: () => <div data-test-subj="mockEmbeddableComponent" />,
         },
