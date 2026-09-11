@@ -14,7 +14,12 @@ import type { BundleGenerationContext, GenerationContext } from '../parser/get_g
 import { registerHelpers } from './register_helpers';
 import { registerTemplates } from './register_templates';
 
-export const AVAILABLE_TEMPLATES = ['zod_operation_schema'] as const;
+export const AVAILABLE_TEMPLATES = [
+  'zod_operation_schema',
+  'api_client_supertest',
+  'api_client_quickstart',
+  'api_client_scout',
+] as const;
 
 export type TemplateName = (typeof AVAILABLE_TEMPLATES)[number];
 

@@ -5,7 +5,7 @@
  * 2.0.
  */
 
-import type { ApiClientFixture } from '@kbn/scout-oblt';
+import type { ApiClientFixture, ApiClientResponse } from '@kbn/scout-oblt';
 import type { CreateSLOInput } from '@kbn/slo-schema';
 
 /**
@@ -14,7 +14,7 @@ import type { CreateSLOInput } from '@kbn/slo-schema';
  * For the HTTP call under test (especially RBAC), prefer `apiClient` + scoped credentials from `requestAuth`.
  */
 export interface SloLifecycleApi {
-  create(slo: CreateSLOInput): ReturnType<ApiClientFixture['post']>;
+  create(slo: CreateSLOInput): Promise<ApiClientResponse>;
   deleteAllSLOs(): Promise<void>;
 }
 

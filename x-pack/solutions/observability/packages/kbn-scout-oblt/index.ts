@@ -70,7 +70,10 @@ export type {
 
 // Re-exported fixture types
 export type { ApiServicesFixture, BrowserAuthFixture, SamlAuth } from '@kbn/scout';
-export type { ApiClientFixture } from '@kbn/scout/src/playwright/fixtures/scope/worker/api_client';
+export type {
+  ApiClientFixture,
+  ApiClientResponse,
+} from '@kbn/scout/src/playwright/fixtures/scope/worker/api_client';
 
 // Re-exported service & configuration types
 export type {

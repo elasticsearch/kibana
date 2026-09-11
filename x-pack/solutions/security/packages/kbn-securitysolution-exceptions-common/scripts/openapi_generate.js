@@ -36,6 +36,20 @@ const ROOT = resolve(__dirname, '..');
   });
 
   await generate({
+    title: 'Exceptions API client for Scout tests',
+    rootDir: ROOT,
+    sourceGlob: './api/**/*.schema.yaml',
+    templateName: 'api_client_scout',
+    skipLinting: true,
+    bundle: {
+      outFile: join(
+        REPO_ROOT,
+        'x-pack/solutions/security/packages/test-api-clients/scout/exceptions.gen.ts'
+      ),
+    },
+  });
+
+  await generate({
     title: 'Exceptions API client for quickstart',
     rootDir: ROOT,
     sourceGlob: './api/**/*.schema.yaml',

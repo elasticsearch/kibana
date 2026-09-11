@@ -7,13 +7,30 @@
 
 require('@kbn/setup-node-env');
 const { generate } = require('@kbn/openapi-generator');
+const { REPO_ROOT } = require('@kbn/repo-info');
 // eslint-disable-next-line import/no-nodejs-modules
-const { resolve } = require('path');
+const { join, resolve } = require('path');
 
 const DISCOVERIES_SCHEMAS_ROOT = resolve(__dirname, '../..');
 
-generate({
-  rootDir: DISCOVERIES_SCHEMAS_ROOT,
-  sourceGlob: './schemas/**/*.schema.yaml',
-  templateName: 'zod_operation_schema',
-});
+(async () => {
+  await generate({
+    rootDir: DISCOVERIES_SCHEMAS_ROOT,
+    sourceGlob: './schemas/**/*.schema.yaml',
+    templateName: 'zod_operation_schema',
+  });
+
+  await generate({
+    title: 'Attack Discovery API client for Scout tests',
+    rootDir: DISCOVERIES_SCHEMAS_ROOT,
+    sourceGlob: './schemas/**/*.schema.yaml',
+    templateName: 'api_client_scout',
+    skipLinting: true,
+    bundle: {
+      outFile: join(
+        REPO_ROOT,
+        'x-pack/solutions/security/packages/test-api-clients/scout/discoveries.gen.ts'
+      ),
+    },
+  });
+})();

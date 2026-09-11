@@ -36,4 +36,18 @@ const OSQUERY_ROOT = resolve(__dirname, '../..');
       ),
     },
   });
+
+  await generate({
+    title: 'API client for Scout tests',
+    rootDir: OSQUERY_ROOT,
+    sourceGlob: 'common/api/**/*.schema.yaml',
+    templateName: 'api_client_scout',
+    skipLinting: true,
+    bundle: {
+      outFile: join(
+        REPO_ROOT,
+        'x-pack/solutions/security/packages/test-api-clients/scout/osquery.gen.ts'
+      ),
+    },
+  });
 })();

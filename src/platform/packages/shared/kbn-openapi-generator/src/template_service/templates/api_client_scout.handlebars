@@ -1,0 +1,75 @@
+/*
+ * Copyright Elasticsearch B.V. and/or licensed to Elasticsearch B.V. under one
+ * or more contributor license agreements. Licensed under the Elastic License
+ * 2.0; you may not use this file except in compliance with the Elastic License
+ * 2.0.
+ */
+
+ {{> disclaimer}}
+
+import type { ApiClientFixture, ApiClientResponse } from '@kbn/scout';
+import { ELASTIC_HTTP_VERSION_HEADER, X_ELASTIC_INTERNAL_ORIGIN_REQUEST } from '@kbn/core-http-common';
+import { replaceParams } from '@kbn/openapi-common/shared';
+import { stringify as stringifyQuery } from 'query-string';
+
+{{#each operations}}
+{{#if (or requestQuery requestParams requestBody response)}}
+import type {
+  {{~#if requestQuery}}{{operationId}}RequestQueryInput,{{/if}}
+  {{~#if requestParams}}{{operationId}}RequestParamsInput,{{/if}}
+  {{~#if requestBody}}{{operationId}}RequestBodyInput,{{/if}}
+  {{~#if response}}{{operationId}}Response,{{/if}}
+} from '{{replace sourcePath 'schema.yaml' 'gen'}}';
+{{/if}}
+{{/each}}
+
+export interface ScoutApiRequestOptions {
+  /** Extra headers merged on top of the defaults, e.g. an API key or a SAML cookie for auth */
+  headers?: Record<string, string>;
+  /** Kibana space id the request targets. Omit or pass 'default' for the default space */
+  kibanaSpace?: string;
+}
+
+const securitySolutionScoutApiServiceFactory = (apiClient: ApiClientFixture) => ({
+  {{#each operations}}
+    {{#if description}}
+    /**
+      * {{{description}}}
+      */
+    {{/if}}
+    async {{camelCase operationId}}({{#if (or requestQuery requestParams requestBody)}}props: {{operationId}}Props, {{/if}}options: ScoutApiRequestOptions = {}): Promise<ApiClientResponse{{#if response}}<{{operationId}}Response>{{/if}}> {
+      const basePath = options.kibanaSpace && options.kibanaSpace !== 'default' ? `/s/${options.kibanaSpace}` : '';
+      const path = `${basePath}{{#if requestParams}}${replaceParams('{{path}}', props.params)}{{else}}{{path}}{{/if}}`;
+
+      return apiClient.{{method}}{{#if response}}<{{operationId}}Response>{{/if}}(
+        {{~#if requestQuery}}`${path}?${stringifyQuery(props.query, { arrayFormat: 'comma' })}`{{else}}path{{/if}},
+        {
+          headers: {
+            'kbn-xsrf': 'true',
+            [ELASTIC_HTTP_VERSION_HEADER]: '{{version}}',
+            [X_ELASTIC_INTERNAL_ORIGIN_REQUEST]: 'kibana',
+            ...options.headers,
+          },
+          {{~#if requestBody}}
+          body: props.body,
+          {{/if}}
+          responseType: 'json',
+        }
+      );
+    },
+  {{/each}}
+});
+
+export function SecuritySolutionScoutApiServiceProvider(apiClient: ApiClientFixture) {
+  return securitySolutionScoutApiServiceFactory(apiClient);
+}
+
+{{#each operations}}
+{{#if (or requestQuery requestParams requestBody)}}
+export interface {{operationId}}Props {
+  {{~#if requestQuery}}query: {{operationId}}RequestQueryInput;{{/if}}
+  {{~#if requestParams}}params: {{operationId}}RequestParamsInput;{{/if}}
+  {{~#if requestBody}}body: {{operationId}}RequestBodyInput;{{/if}}
+}
+{{/if}}
+{{/each}}

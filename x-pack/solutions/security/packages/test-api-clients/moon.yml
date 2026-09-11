@@ -28,6 +28,8 @@ dependsOn:
   - '@kbn/osquery-plugin'
   - '@kbn/tooling-log'
   - '@kbn/fleet-plugin'
+  - '@kbn/scout'
+  - '@kbn/discoveries-schemas'
 tags:
   - shared-common
   - package
