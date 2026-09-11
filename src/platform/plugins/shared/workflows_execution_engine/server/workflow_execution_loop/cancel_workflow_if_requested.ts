@@ -8,7 +8,7 @@
  */
 
 import { ExecutionStatus } from '@kbn/workflows';
-import type { WorkflowExecutionRepository } from '../repositories/workflow_execution_repository';
+import type { WorkflowExecutionPersistence } from '../repositories/execution_persistence';
 import { buildStepExecutionId } from '../utils';
 import type { StepExecutionRuntime } from '../workflow_context_manager/step_execution_runtime';
 import type { WorkflowExecutionCursorApi } from '../workflow_context_manager/workflow_execution_cursor';
@@ -26,7 +26,7 @@ import type { IWorkflowEventLogger } from '../workflow_event_logger';
  * issues from causing step execution failures.
  */
 export async function cancelWorkflowIfRequested(
-  workflowExecutionRepository: WorkflowExecutionRepository,
+  workflowExecutionRepository: WorkflowExecutionPersistence,
   workflowExecutionState: WorkflowExecutionState,
   monitoredStepExecutionRuntime: StepExecutionRuntime,
   workflowLogger: IWorkflowEventLogger,

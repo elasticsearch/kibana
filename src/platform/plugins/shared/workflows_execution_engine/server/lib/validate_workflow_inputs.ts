@@ -15,7 +15,7 @@ import {
   applyInputDefaults,
   getInputsFromDefinition,
 } from '@kbn/workflows/spec/lib/field_conversion';
-import type { WorkflowExecutionRepository } from '../repositories/workflow_execution_repository';
+import type { WorkflowExecutionPersistence } from '../repositories/execution_persistence';
 import { WorkflowTemplatingEngine } from '../templating_engine';
 import {
   buildInputDefaultRenderContext,
@@ -36,7 +36,7 @@ const hasInputChanges = (
  */
 export const validateWorkflowInputs = async (
   workflowExecution: WorkflowExecutionForInputRendering,
-  workflowExecutionRepository: WorkflowExecutionRepository,
+  workflowExecutionRepository: WorkflowExecutionPersistence,
   logger: Logger,
   coreStart?: CoreStart,
   dependencies?: ContextDependencies
