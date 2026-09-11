@@ -15,7 +15,7 @@ import { useAppToastsMock } from '../../../hooks/use_app_toasts.mock';
 import { mockJobsSummaryResponse } from '../../ml_popover/api.mock';
 import { getJobsSummary } from '../api/get_jobs_summary';
 import { useInstalledSecurityJobs } from './use_installed_security_jobs';
-import { TestProviders } from '../../../mock';
+import { createReactQueryWrapper } from '../../../mock/create_react_query_wrapper';
 
 jest.mock('../../../../../common/machine_learning/has_ml_user_permissions');
 jest.mock('../../../../../common/machine_learning/has_ml_license');
@@ -39,7 +39,7 @@ describe('useInstalledSecurityJobs', () => {
 
     it('returns jobs and permissions', async () => {
       const { result } = renderHook(() => useInstalledSecurityJobs(), {
-        wrapper: TestProviders,
+        wrapper: createReactQueryWrapper(),
       });
 
       await waitFor(() => expect(result.current.jobs).toHaveLength(3));
@@ -72,7 +72,7 @@ describe('useInstalledSecurityJobs', () => {
 
     it('filters out non-security jobs', async () => {
       const { result } = renderHook(() => useInstalledSecurityJobs(), {
-        wrapper: TestProviders,
+        wrapper: createReactQueryWrapper(),
       });
       await waitFor(() => expect(result.current.jobs.length).toBeGreaterThan(0));
 
@@ -83,7 +83,7 @@ describe('useInstalledSecurityJobs', () => {
       (getJobsSummary as jest.Mock).mockRejectedValue('whoops');
 
       renderHook(() => useInstalledSecurityJobs(), {
-        wrapper: TestProviders,
+        wrapper: createReactQueryWrapper(),
       });
 
       await waitFor(() =>
@@ -102,7 +102,7 @@ describe('useInstalledSecurityJobs', () => {
 
     it('returns empty jobs and false predicates', () => {
       const { result } = renderHook(() => useInstalledSecurityJobs(), {
-        wrapper: TestProviders,
+        wrapper: createReactQueryWrapper(),
       });
 
       expect(result.current.jobs).toEqual([]);
