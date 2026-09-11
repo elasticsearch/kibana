@@ -111,11 +111,11 @@ export function getConnectorType(): ConnectorTypeModel<
     actionConnectorFields: lazy(() => import('./pagerduty_connectors')),
     actionParamsFields: lazy(() => import('./pagerduty_params')),
     defaultActionParams: {
-      dedupKey: `{{${AlertProvidedActionVariables.ruleId}}}:{{${AlertProvidedActionVariables.alertId}}}`,
+      dedupKey: `{{${AlertProvidedActionVariables.ruleId}}}:{{${AlertProvidedActionVariables.alertUuid}}}`,
       eventAction: EventActionOptions.TRIGGER,
     },
     defaultRecoveredActionParams: {
-      dedupKey: `{{${AlertProvidedActionVariables.ruleId}}}:{{${AlertProvidedActionVariables.alertId}}}`,
+      dedupKey: `{{${AlertProvidedActionVariables.ruleId}}}:{{${AlertProvidedActionVariables.alertUuid}}}`,
       eventAction: EventActionOptions.RESOLVE,
     },
   };
