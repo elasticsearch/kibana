@@ -68254,7 +68254,7 @@ paths:
 
         Refer to [Spaces](https://www.elastic.co/docs/deploy-manage/manage-spaces) for more information.
 
-        Update the Entity Store log extraction configuration.<br/><br/>[Required authorization] Route required privileges: securitySolution.
+        Update the Entity Store log extraction configuration. Omitting a field leaves it unchanged. Sending `null` for a field clears that override and reverts to the default value.<br/><br/>[Required authorization] Route required privileges: securitySolution.
       operationId: put-security-entity-store
       parameters:
         - description: A required header to protect against CSRF attacks
@@ -68268,6 +68268,13 @@ paths:
         content:
           application/json:
             examples:
+              clearLogExtractionOverrideExample:
+                description: Send null for any field to clear that override and revert it to the default value.
+                summary: Clear log extraction overrides
+                value:
+                  logExtraction:
+                    delay: null
+                    frequency: null
               updateLogExtractionExample:
                 description: Update the log extraction configuration with a new lookback period and frequency.
                 summary: Update log extraction settings
@@ -76790,7 +76797,7 @@ paths:
 
         Refer to [Spaces](https://www.elastic.co/docs/deploy-manage/manage-spaces) for more information.
 
-        Install the Entity Store and create engines for the specified entity types. A single `logExtraction` configuration is shared across all entity types. Supply it once at install to customize settings; omit it (or send an empty object) to use defaults on first install or preserve the existing configuration on re-install. To change settings after install, use the update endpoint.<br/><br/>[Required authorization] Route required privileges: securitySolution.
+        Install the Entity Store and create engines for the specified entity types. A single `logExtraction` configuration is shared across all entity types. Supply it once at install to customize settings; omit it (or send an empty object) to use defaults on first install or preserve the existing configuration on re-install. Omitting a field leaves it unchanged. Sending `null` for a field clears that override and reverts to the default value. To change settings after install, use the update endpoint.<br/><br/>[Required authorization] Route required privileges: securitySolution.
       operationId: post-security-entity-store-install
       parameters:
         - description: A required header to protect against CSRF attacks
