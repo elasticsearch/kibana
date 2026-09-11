@@ -52,10 +52,11 @@ describe('bindContract', () => {
     container.load(new ContainerModule((options) => bindContract(options)));
   });
 
-  it('exposes registerArtifactType on the setup contract', () => {
+  it('exposes registerArtifactType and registerBuilderType on the setup contract', () => {
     const setup = container.get(AlertingSetupToken);
     expect(setup).toEqual({
       registerArtifactType: expect.any(Function),
+      registerBuilderType: expect.any(Function),
     });
   });
 

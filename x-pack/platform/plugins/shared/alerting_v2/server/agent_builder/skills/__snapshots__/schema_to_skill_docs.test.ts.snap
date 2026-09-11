@@ -1,8 +1,6 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[
-  `schema_to_skill_docs generateActionPolicyOperationsDoc matches the reviewed skill-doc snapshot 1`
-] = `
+exports[`schema_to_skill_docs generateActionPolicyOperationsDoc matches the reviewed skill-doc snapshot 1`] = `
 "# Action Policy Operations Schema Reference
 
 #### \`operation: \\"set_metadata\\"\`
@@ -63,9 +61,7 @@ Use \`validate\` as the last operation to confirm the action policy is complete 
 | \`operation\` | \\"validate\\" | required |  |"
 `;
 
-exports[
-  `schema_to_skill_docs generateActionPolicySchemaDoc matches the reviewed skill-doc snapshot 1`
-] = `
+exports[`schema_to_skill_docs generateActionPolicySchemaDoc matches the reviewed skill-doc snapshot 1`] = `
 "# Action Policy API Schema Reference
 
 ## Top-Level Fields
@@ -82,9 +78,7 @@ exports[
 | \`throttle\` | object | optional | The throttle configuration for notifications. |"
 `;
 
-exports[
-  `schema_to_skill_docs generateActionPolicyWorkflowPayloadDoc matches the reviewed skill-doc snapshot 1`
-] = `
+exports[`schema_to_skill_docs generateActionPolicyWorkflowPayloadDoc matches the reviewed skill-doc snapshot 1`] = `
 "# Action Policy Workflow Dispatch Payload
 
 Catalog of fields the dispatcher passes as \`inputs.payload\`. In Liquid:
@@ -154,9 +148,7 @@ steps:
 \`\`\`"
 `;
 
-exports[
-  `schema_to_skill_docs generateDispatchFlowDoc matches the reviewed skill-doc snapshot 1`
-] = `
+exports[`schema_to_skill_docs generateDispatchFlowDoc matches the reviewed skill-doc snapshot 1`] = `
 "# Dispatch Flow
 
 The end-to-end notification path:
@@ -173,9 +165,7 @@ The end-to-end notification path:
 Signal rules (\`kind: signal\`) are excluded at step 2 — the dispatcher query only selects \`type == 'alert'\` events."
 `;
 
-exports[
-  `schema_to_skill_docs generateEpisodeLifecycleDoc matches the reviewed skill-doc snapshot 1`
-] = `
+exports[`schema_to_skill_docs generateEpisodeLifecycleDoc matches the reviewed skill-doc snapshot 1`] = `
 "# Episode Lifecycle
 
 Episodes are the unit of alert state. Each unique group (by \`group_hash\`) has its own episode. Each episode has a status that reflects where it is in the lifecycle:
@@ -190,9 +180,7 @@ Episodes are the unit of alert state. Each unique group (by \`group_hash\`) has 
 Only \`kind: alert\` rules produce episodes. \`kind: signal\` rules write raw signal events with no episode tracking."
 `;
 
-exports[
-  `schema_to_skill_docs generateGroupingModesDoc matches the reviewed skill-doc snapshot 1`
-] = `
+exports[`schema_to_skill_docs generateGroupingModesDoc matches the reviewed skill-doc snapshot 1`] = `
 "# Grouping Modes
 
 - \`per_episode\`: one notification per alert episode lifecycle (default).
@@ -202,9 +190,7 @@ exports[
 Throttle strategy must be compatible with the grouping mode — see [action-policy-throttle-grouping-compatibility](./action-policy-throttle-grouping-compatibility.md)."
 `;
 
-exports[
-  `schema_to_skill_docs generateMatcherContextDoc matches the reviewed skill-doc snapshot 1`
-] = `
+exports[`schema_to_skill_docs generateMatcherContextDoc matches the reviewed skill-doc snapshot 1`] = `
 "# Matcher Context Fields
 
 When the dispatcher evaluates a policy's KQL matcher, these fields are available:
@@ -224,9 +210,7 @@ When the dispatcher evaluates a policy's KQL matcher, these fields are available
 An empty matcher is a catch-all that matches all episodes in the space. To scope a policy to a single rule, use \`rule.id: \\"<ruleId>\\"\`."
 `;
 
-exports[
-  `schema_to_skill_docs generateMultiRuleActionPolicyDoc matches the reviewed skill-doc snapshot 1`
-] = `
+exports[`schema_to_skill_docs generateMultiRuleActionPolicyDoc matches the reviewed skill-doc snapshot 1`] = `
 "# Multi-rule Action Policies
 
 Use this path when the user wants **one policy across several rules**, a space-wide
@@ -266,9 +250,7 @@ not by a single rule name.
 For the default one-rule path, see [single-rule action policies](./action-policy-single-rule.md)."
 `;
 
-exports[
-  `schema_to_skill_docs generateNoDataStrategyDoc matches the reviewed skill-doc snapshot 1`
-] = `
+exports[`schema_to_skill_docs generateNoDataStrategyDoc matches the reviewed skill-doc snapshot 1`] = `
 "# No-Data Strategy
 
 \`no_data_strategy\` is a **top-level rule field** that controls behaviour when no data is present.
@@ -286,9 +268,7 @@ When setting \`no_data_strategy\` to anything other than \`'none'\`, add a \`no_
 Signal rules cannot set \`no_data_strategy\` ([rule-kind reference](./rule-kind.md))."
 `;
 
-exports[
-  `schema_to_skill_docs generateNotificationsOverviewDoc matches the reviewed skill-doc snapshot 1`
-] = `
+exports[`schema_to_skill_docs generateNotificationsOverviewDoc matches the reviewed skill-doc snapshot 1`] = `
 "# Notifications via Action Policies
 
 Notifications are not configured on the rule itself. Alert episodes are matched and dispatched by **action policies** — space-scoped saved objects that send matched episodes to workflow destinations.
@@ -307,9 +287,7 @@ When a user asks for notifications on a rule that is currently \`kind: signal\` 
 4. After ensuring the rule is \`kind: alert\`, load the \`action-policy-management\` skill for notification setup."
 `;
 
-exports[
-  `schema_to_skill_docs generateRecoveryStrategyDoc matches the reviewed skill-doc snapshot 1`
-] = `
+exports[`schema_to_skill_docs generateRecoveryStrategyDoc matches the reviewed skill-doc snapshot 1`] = `
 "# Recovery Strategy
 
 \`recovery_strategy\` is a **top-level rule field** (not inside the query). It controls how episodes transition from active to recovering/inactive (see [episode-lifecycle reference](./episode-lifecycle.md)). Signal rules (\`kind: signal\`) cannot set \`recovery_strategy\` ([rule-kind reference](./rule-kind.md)).
@@ -352,7 +330,8 @@ Use \`set_metadata\` to name the rule and add a description or tags so the user 
 | \`name\` | string | optional | Rule name (must be unique within the space). (min length: 1, max length: 256) |
 | \`description\` | string | optional | Human-readable description of the rule. (max length: 1024) |
 | \`tags\` | string[] | optional | Tags for categorization, e.g. [\\"production\\", \\"infra\\"]. (min items: 1, max items: 20) |
-| \`builder_type\` | string | optional | Identifies the rule builder that authored this rule (e.g. \\"threshold\\"). Absent for rules authored directly in ES\\\\|QL. (max length: 64) |
+| \`builder_type\` | string | optional | Identifies the rule builder that authored this rule (e.g. \\"threshold\\"). Absent for rules authored directly in ES\\\\|QL. (min length: 1, max length: 64) |
+| \`builder_fields\` | object | optional | Structured parameters for the rule builder identified by \`builder_type\`. The server generates the rule query from these fields. |
 | \`operation\` | \\"set_metadata\\" | required |  |
 
 #### \`operation: \\"set_kind\\"\`
@@ -496,9 +475,7 @@ Severity is set by adding a \`severity\` column to the breach query via \`EVAL\`
   \`| EVAL severity = CASE(cpu > 0.95, \\"critical\\", cpu > 0.8, \\"high\\", \\"medium\\")\`"
 `;
 
-exports[
-  `schema_to_skill_docs generateSingleRuleActionPolicyDoc matches the reviewed skill-doc snapshot 1`
-] = `
+exports[`schema_to_skill_docs generateSingleRuleActionPolicyDoc matches the reviewed skill-doc snapshot 1`] = `
 "# Single-rule Action Policies
 
 Use this path when the user wants notifications for **one specific rule**.
@@ -525,9 +502,7 @@ If the user explicitly requests a cross-rule or shared policy, consult the
 [multi-rule action policies reference](./action-policy-multi-rule.md)."
 `;
 
-exports[
-  `schema_to_skill_docs generateThrottleGroupingCompatibilityDoc matches the reviewed skill-doc snapshot 1`
-] = `
+exports[`schema_to_skill_docs generateThrottleGroupingCompatibilityDoc matches the reviewed skill-doc snapshot 1`] = `
 "# Throttle / Grouping Compatibility
 
 - \`per_episode\`: one notification per alert episode lifecycle (default).
@@ -545,9 +520,7 @@ validates compatibility after all operations run.
 Related: [action-policy-grouping-modes](./action-policy-grouping-modes.md), [action-policy-throttle-strategies](./action-policy-throttle-strategies.md)."
 `;
 
-exports[
-  `schema_to_skill_docs generateThrottleStrategiesDoc matches the reviewed skill-doc snapshot 1`
-] = `
+exports[`schema_to_skill_docs generateThrottleStrategiesDoc matches the reviewed skill-doc snapshot 1`] = `
 "# Throttle Strategies
 
 - \`on_status_change\`: notify only on episode status transitions (default for \`per_episode\`).
@@ -558,9 +531,7 @@ exports[
 Compatibility with grouping modes — see [action-policy-throttle-grouping-compatibility](./action-policy-throttle-grouping-compatibility.md)."
 `;
 
-exports[
-  `schema_to_skill_docs generateWorkflowDestinationsDoc matches the reviewed skill-doc snapshot 1`
-] = `
+exports[`schema_to_skill_docs generateWorkflowDestinationsDoc matches the reviewed skill-doc snapshot 1`] = `
 "# Workflows
 
 A workflow is a **concrete automation defined in YAML** that executes when dispatched by an action policy.

@@ -97,6 +97,7 @@ jest.mock('@kbn/alerting-v2-rule-form', () => ({
       Compose Discover flyout
     </button>
   ),
+  getRuleBuilderCreateOptions: () => [],
 }));
 
 jest.mock('./rules_data_source', () => ({
