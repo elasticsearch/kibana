@@ -309,11 +309,29 @@ export const normalizeDatatable: AttributesNormalizer<DatatableAttributes> = (at
     })
   );
 
-  // For DSL datatable, we infer the DSL metric column dataType from the color config.
-  // 'last_value' operation type can produce a number or a string, so we need to infer the dataType from the color config.
+  // Form-based: only last_value metrics need color to pick number vs string; other ops
+  // have a fixed dataType and fall through to `normalizeDataTypes`.
+  // Text-based: `getValueColumn` uses the same color hint for metrics/rows, and splits
+  // are always string. Bucket dates must not be forced to string on the form-based path.
+  const inferColumnDataType = (
+    newColumnId: string,
+    { isTextBased }: { isTextBased: boolean }
+  ): DataType | undefined => {
+    if (isTextBased) {
+      if (isSplitMetricColumnId(newColumnId)) {
+        return;
+      }
+      const visCol = visColumnByNewId.get(newColumnId);
+      const color = visCol ? buildColorProps(visCol).color : undefined;
+      if (isMetricColumnId(newColumnId)) {
+        return inferDatatypeFromColor(color, 'number');
+      }
+      if (isRowColumnId(newColumnId)) {
+        return inferDatatypeFromColor(color, 'string');
+      }
+      return;
+    }
 
-  // Every other DSL operation type produces a fixed dataType regardless of color, so we let the common fallback handle them.
-  const inferColumnDataType = (newColumnId: string): DataType | undefined => {
     if (!isMetricColumnId(newColumnId)) {
       return;
     }
@@ -489,6 +507,27 @@ export const normalizeDatatable: AttributesNormalizer<DatatableAttributes> = (at
     },
   };
 
+  // The transform always sets `inMetricDimension: true` on metric columns.
+  // there are integration panels that have `isMetric: true` on the viz column
+  // but were never tagged by the suggestion engine, so the layer column lacks
+  // the flag. Fill it in when the remapped column ID confirms it's a metric.
+  const alignEsqlInMetricDimension: NormalizerConfig<DatatableAttributes> = {
+    original: (attrs) => {
+      const textBasedLayer = Object.values(attrs.state.datasourceStates.textBased?.layers ?? {})[0];
+      if (!textBasedLayer) {
+        return attrs;
+      }
+
+      for (const column of textBasedLayer.columns) {
+        if (isMetricColumnId(column.columnId) && column.inMetricDimension === undefined) {
+          column.inMetricDimension = true;
+        }
+      }
+
+      return attrs;
+    },
+  };
+
   // ES|QL text-based layers keep columns in editor order (often metrics first).
   // fromAPIFormat emits split → rows → metrics for nesting; normalize originals only.
   const sortEsqlDatasourceColumns: NormalizerConfig<DatatableAttributes> = {
@@ -515,6 +554,7 @@ export const normalizeDatatable: AttributesNormalizer<DatatableAttributes> = (at
     filterOrphanColumns,
     alignColumnTypes,
     alignId,
+    alignEsqlInMetricDimension,
     deduplicateColumns,
     sortColumns,
     sortEsqlDatasourceColumns,
