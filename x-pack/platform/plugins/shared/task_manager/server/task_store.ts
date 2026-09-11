@@ -61,7 +61,6 @@ import type {
   ApiKeyOptions,
 } from './task';
 import { TaskStatus, TaskLifecycleResult } from './task';
-
 import type { TaskTypeDictionary } from './task_type_dictionary';
 import type { AdHocTaskCounter } from './lib/adhoc_task_counter';
 import { TaskValidator } from './task_validator';
@@ -73,6 +72,12 @@ import { TASK_SO_NAME, INVALIDATE_API_KEY_SO_NAME } from './saved_objects';
 import type { ApiKeyStrategy, ApiKeySOFields, InvalidationTarget } from './api_key_strategy';
 import { getFirstRunAt } from './lib/get_first_run_at';
 import { isInterval } from './lib/intervals';
+
+/**
+ * `TaskStore.schedule()` options: `ApiKeyOptions` plus an internal `refresh` flag that makes
+ * the write immediately visible to searches (used by `requestImmediateClaim`).
+ */
+export type ScheduleTaskOptions = ApiKeyOptions & { refresh?: boolean };
 
 export interface StoreOpts {
   esClient: ElasticsearchClient;
@@ -477,7 +482,7 @@ export class TaskStore {
    */
   public async schedule(
     taskInstance: TaskInstance,
-    options?: ApiKeyOptions
+    options?: ScheduleTaskOptions
   ): Promise<ConcreteTaskInstance> {
     return this.executionContextRunner.run(() => this._schedule(taskInstance, options), {
       id: 'schedule',
@@ -485,7 +490,7 @@ export class TaskStore {
   }
   private async _schedule(
     taskInstance: TaskInstance,
-    options?: ApiKeyOptions
+    options?: ScheduleTaskOptions
   ): Promise<ConcreteTaskInstance> {
     try {
       this.validateCanEncryptSavedObjects(options?.request);
@@ -515,7 +520,7 @@ export class TaskStore {
           ...apiKeySOFields,
           runAt: getFirstRunAt({ taskInstance: validatedTaskInstance, logger: this.logger }),
         },
-        { id, refresh: false }
+        { id, refresh: options?.refresh ?? false }
       );
       if (
         get(taskInstance, 'schedule.interval', null) == null &&
@@ -686,7 +691,7 @@ export class TaskStore {
    */
   public async update(
     doc: ConcreteTaskInstance,
-    options: { validate: boolean }
+    options: { validate: boolean; refresh?: boolean }
   ): Promise<ConcreteTaskInstance> {
     return this.executionContextRunner.run(() => this._update(doc, options), {
       id: 'update',
@@ -695,7 +700,7 @@ export class TaskStore {
 
   private async _update(
     doc: ConcreteTaskInstance,
-    options: { validate: boolean }
+    options: { validate: boolean; refresh?: boolean }
   ): Promise<ConcreteTaskInstance> {
     let updatedSavedObject;
     let attributes;
@@ -709,7 +714,7 @@ export class TaskStore {
         doc.id,
         attributes,
         {
-          refresh: false,
+          refresh: options.refresh ?? false,
           version: doc.version,
         }
       );

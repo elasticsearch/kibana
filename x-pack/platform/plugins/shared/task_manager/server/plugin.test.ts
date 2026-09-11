@@ -15,12 +15,28 @@ import { taskPollingLifecycleMock } from './polling_lifecycle.mock';
 import { TaskPollingLifecycle } from './polling_lifecycle';
 import type { TaskPollingLifecycle as TaskPollingLifecycleClass } from './polling_lifecycle';
 import { licensingMock } from '@kbn/licensing-plugin/server/mocks';
+import { TaskManagerClaimNudgeService } from './claim_nudge/claim_nudge_service';
+import { TASK_MANAGER_CLAIM_NUDGE_INDEX } from './constants';
 
 let mockTaskPollingLifecycle = taskPollingLifecycleMock.create({});
 jest.mock('./polling_lifecycle', () => {
   return {
     TaskPollingLifecycle: jest.fn().mockImplementation(() => {
       return mockTaskPollingLifecycle;
+    }),
+  };
+});
+
+// `start()` issues a long-polling ES request, which never resolves against a mocked ES client.
+const mockClaimNudgeService = {
+  start: jest.fn(),
+  stop: jest.fn(),
+  notify: jest.fn(),
+};
+jest.mock('./claim_nudge/claim_nudge_service', () => {
+  return {
+    TaskManagerClaimNudgeService: jest.fn().mockImplementation(() => {
+      return mockClaimNudgeService;
     }),
   };
 });
@@ -79,12 +95,19 @@ const pluginInitializerContextParams = {
   auto_calculate_default_ech_capacity: false,
   api_key_type: ApiKeyType.ES,
   grant_uiam_api_keys: false,
+  claim_nudge: {
+    enabled: true,
+  },
 };
 
 describe('TaskManagerPlugin', () => {
   beforeEach(() => {
     mockTaskPollingLifecycle = taskPollingLifecycleMock.create({});
     (TaskPollingLifecycle as jest.Mock<TaskPollingLifecycleClass>).mockClear();
+    (TaskManagerClaimNudgeService as jest.Mock).mockClear();
+    mockClaimNudgeService.start.mockClear();
+    mockClaimNudgeService.stop.mockClear();
+    mockClaimNudgeService.notify.mockClear();
   });
 
   describe('setup', () => {
@@ -192,6 +215,68 @@ describe('TaskManagerPlugin', () => {
       const pollingLifecycleOpts = (TaskPollingLifecycle as jest.Mock).mock.calls[0][0];
       expect(pollingLifecycleOpts.enrichFakeRequest).toBe(enricher);
     });
+
+    test('should start the claim nudge service if node.roles.backgroundTasks is true and claim_nudge.enabled is true', async () => {
+      const pluginInitializerContext = coreMock.createPluginInitializerContext<TaskManagerConfig>(
+        pluginInitializerContextParams
+      );
+      pluginInitializerContext.node.roles.backgroundTasks = true;
+      const taskManagerPlugin = new TaskManagerPlugin(pluginInitializerContext);
+      taskManagerPlugin.setup(coreMock.createSetup(), { usageCollection: undefined });
+      taskManagerPlugin.start(coreStart, {
+        cloud: cloudMock.createStart(),
+        licensing: licensingMock.createStart(),
+      });
+
+      expect(TaskManagerClaimNudgeService as jest.Mock).toHaveBeenCalledTimes(1);
+      expect(TaskManagerClaimNudgeService as jest.Mock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          index: TASK_MANAGER_CLAIM_NUDGE_INDEX,
+          isServerless: false,
+        })
+      );
+      expect(mockClaimNudgeService.start).toHaveBeenCalledTimes(1);
+
+      const pollingLifecycleOpts = (TaskPollingLifecycle as jest.Mock).mock.calls[0][0];
+      expect(pollingLifecycleOpts.claimNudgeService).toBe(mockClaimNudgeService);
+    });
+
+    test('should not start the claim nudge service if node.roles.backgroundTasks is false', async () => {
+      const pluginInitializerContext = coreMock.createPluginInitializerContext<TaskManagerConfig>(
+        pluginInitializerContextParams
+      );
+      pluginInitializerContext.node.roles.backgroundTasks = false;
+      const taskManagerPlugin = new TaskManagerPlugin(pluginInitializerContext);
+      taskManagerPlugin.setup(coreMock.createSetup(), { usageCollection: undefined });
+      taskManagerPlugin.start(coreStart, {
+        cloud: cloudMock.createStart(),
+        licensing: licensingMock.createStart(),
+      });
+
+      expect(mockClaimNudgeService.start).not.toHaveBeenCalled();
+      // A node that doesn't poll still has to be able to nudge the ones that do, so construction
+      // must stay outside the `shouldRunBackgroundTasks` guard even though `start()` is inside it.
+      expect(TaskManagerClaimNudgeService as jest.Mock).toHaveBeenCalledTimes(1);
+    });
+
+    test('should not construct the claim nudge service when claim_nudge.enabled is false', async () => {
+      const pluginInitializerContext = coreMock.createPluginInitializerContext<TaskManagerConfig>({
+        ...pluginInitializerContextParams,
+        claim_nudge: { enabled: false },
+      });
+      pluginInitializerContext.node.roles.backgroundTasks = true;
+      const taskManagerPlugin = new TaskManagerPlugin(pluginInitializerContext);
+      taskManagerPlugin.setup(coreMock.createSetup(), { usageCollection: undefined });
+      taskManagerPlugin.start(coreStart, {
+        cloud: cloudMock.createStart(),
+        licensing: licensingMock.createStart(),
+      });
+
+      expect(TaskManagerClaimNudgeService as jest.Mock).not.toHaveBeenCalled();
+
+      const pollingLifecycleOpts = (TaskPollingLifecycle as jest.Mock).mock.calls[0][0];
+      expect(pollingLifecycleOpts.claimNudgeService).toBeUndefined();
+    });
   });
 
   describe('stop', () => {
@@ -229,6 +314,41 @@ describe('TaskManagerPlugin', () => {
       await taskManagerPlugin.stop();
 
       expect(mockTaskPollingLifecycle.stop).not.toHaveBeenCalled();
+    });
+
+    test('should stop the claim nudge service if it is defined', async () => {
+      const pluginInitializerContext = coreMock.createPluginInitializerContext<TaskManagerConfig>(
+        pluginInitializerContextParams
+      );
+      pluginInitializerContext.node.roles.backgroundTasks = true;
+      const taskManagerPlugin = new TaskManagerPlugin(pluginInitializerContext);
+      taskManagerPlugin.setup(coreMock.createSetup(), { usageCollection: undefined });
+      taskManagerPlugin.start(coreStart, {
+        cloud: cloudMock.createStart(),
+        licensing: licensingMock.createStart(),
+      });
+
+      await taskManagerPlugin.stop();
+
+      expect(mockClaimNudgeService.stop).toHaveBeenCalledTimes(1);
+    });
+
+    test('should not call stop on the claim nudge service when claim_nudge.enabled is false', async () => {
+      const pluginInitializerContext = coreMock.createPluginInitializerContext<TaskManagerConfig>({
+        ...pluginInitializerContextParams,
+        claim_nudge: { enabled: false },
+      });
+      pluginInitializerContext.node.roles.backgroundTasks = true;
+      const taskManagerPlugin = new TaskManagerPlugin(pluginInitializerContext);
+      taskManagerPlugin.setup(coreMock.createSetup(), { usageCollection: undefined });
+      taskManagerPlugin.start(coreStart, {
+        cloud: cloudMock.createStart(),
+        licensing: licensingMock.createStart(),
+      });
+
+      await taskManagerPlugin.stop();
+
+      expect(mockClaimNudgeService.stop).not.toHaveBeenCalled();
     });
 
     test('should remove the current from discovery service', async () => {

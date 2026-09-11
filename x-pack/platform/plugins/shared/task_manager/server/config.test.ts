@@ -15,6 +15,9 @@ describe('config validation', () => {
         "allow_reading_invalid_state": true,
         "api_key_type": "es",
         "auto_calculate_default_ech_capacity": false,
+        "claim_nudge": Object {
+          "enabled": true,
+        },
         "claim_strategy": "mget",
         "discovery": Object {
           "active_nodes_lookback": "30s",
@@ -82,6 +85,9 @@ describe('config validation', () => {
         "allow_reading_invalid_state": true,
         "api_key_type": "es",
         "auto_calculate_default_ech_capacity": false,
+        "claim_nudge": Object {
+          "enabled": true,
+        },
         "claim_strategy": "mget",
         "discovery": Object {
           "active_nodes_lookback": "30s",
@@ -147,6 +153,9 @@ describe('config validation', () => {
         "allow_reading_invalid_state": true,
         "api_key_type": "es",
         "auto_calculate_default_ech_capacity": false,
+        "claim_nudge": Object {
+          "enabled": true,
+        },
         "claim_strategy": "mget",
         "discovery": Object {
           "active_nodes_lookback": "30s",
@@ -303,6 +312,16 @@ describe('config validation', () => {
     }).toThrowErrorMatchingInlineSnapshot(
       `"[discovery.active_nodes_lookback]: active node lookback duration cannot exceed five minutes"`
     );
+  });
+
+  test('claim_nudge.enabled defaults to true', () => {
+    const result = configSchema.validate({});
+    expect(result.claim_nudge.enabled).toEqual(true);
+  });
+
+  test('claim_nudge.enabled can be disabled', () => {
+    const result = configSchema.validate({ claim_nudge: { enabled: false } });
+    expect(result.claim_nudge.enabled).toEqual(false);
   });
 
   test('should not throw if ephemeral_tasks is defined', () => {

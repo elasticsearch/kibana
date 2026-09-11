@@ -258,6 +258,26 @@ describe('TaskStore', () => {
       expect(attributes.state).toEqual('{}');
     });
 
+    // An optionless `schedule()` is already covered above; this pins the case the `?? false` in
+    // `schedule` exists for, where options are supplied but say nothing about refreshing.
+    test('defaults to refresh:false when options omit refresh', async () => {
+      await testSchedule({ taskType: 'yawn', params: {}, state: {} }, {});
+      expect(savedObjectsClient.create).toHaveBeenCalledWith(
+        'task',
+        expect.anything(),
+        expect.objectContaining({ refresh: false })
+      );
+    });
+
+    test('passes refresh:true through to the saved objects client when requested', async () => {
+      await testSchedule({ taskType: 'yawn', params: {}, state: {} }, { refresh: true });
+      expect(savedObjectsClient.create).toHaveBeenCalledWith(
+        'task',
+        expect.anything(),
+        expect.objectContaining({ refresh: true })
+      );
+    });
+
     test('schedule a task without API key if request is provided but security disabled', async () => {
       store = new TaskStore({
         logger: mockLogger(),
@@ -1441,6 +1461,44 @@ describe('TaskStore', () => {
         startedAt: null,
         user: undefined,
         version: '123',
+      });
+    });
+
+    test('passes refresh:true through to the saved objects client when requested', async () => {
+      const task = {
+        runAt: mockedDate,
+        scheduledAt: mockedDate,
+        startedAt: null,
+        retryAt: null,
+        id: 'task:324242',
+        params: { hello: 'world' },
+        state: { foo: 'bar' },
+        taskType: 'report',
+        attempts: 3,
+        status: 'idle' as TaskStatus,
+        version: '123',
+        ownerId: null,
+        traceparent: 'myTraceparent',
+        partition: 99,
+      };
+
+      savedObjectsClient.update.mockImplementation(
+        async (type: string, id: string, attributes: SavedObjectAttributes) => {
+          return {
+            id,
+            type,
+            attributes,
+            references: [],
+            version: '123',
+          };
+        }
+      );
+
+      await store.update(task, { validate: true, refresh: true });
+
+      expect(savedObjectsClient.update).toHaveBeenCalledWith('task', task.id, expect.anything(), {
+        version: '123',
+        refresh: true,
       });
     });
 

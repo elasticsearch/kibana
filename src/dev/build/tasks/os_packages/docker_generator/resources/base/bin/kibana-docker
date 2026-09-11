@@ -444,6 +444,7 @@ kibana_vars=(
     xpack.spaces.maxSpaces
     xpack.spaces.defaultSolution
     xpack.task_manager.capacity
+    xpack.task_manager.claim_nudge.enabled
     xpack.task_manager.claim_strategy
     xpack.task_manager.auto_calculate_default_ech_capacity
     xpack.task_manager.discovery.active_nodes_lookback

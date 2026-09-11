@@ -22,7 +22,7 @@ import {
   type TaskInstanceWithDeprecatedFields,
   type TaskInstanceWithId,
 } from './task';
-import type { TaskStore } from './task_store';
+import type { ScheduleTaskOptions, TaskStore } from './task_store';
 import { ensureDeprecatedFieldsAreCorrected } from './lib/correct_deprecated_fields';
 import { retryableBulkUpdate } from './lib/retryable_bulk_update';
 import type { ErrorOutput } from './lib/bulk_operation_buffer';
@@ -30,14 +30,20 @@ import { calculateNextRunAtFromSchedule } from './lib/get_next_run_at';
 import { TaskAlreadyRunningError } from './lib/errors';
 import type { TaskPollingLifecycle } from './polling_lifecycle';
 import { getExecutionId } from './lib/get_execution_id';
+import type { TaskManagerClaimNudgeService } from './claim_nudge/claim_nudge_service';
+import {
+  taskManagerClaimNudgeTelemetry,
+  type ClaimNudgeSource,
+} from './otel/claim_nudge_telemetry';
 
-const scheduleOptionsToStoreApiKeyOptions = (
-  options?: ScheduleOptions
-): ApiKeyOptions | undefined => {
+const scheduleOptionsToStoreOptions = (
+  options: ScheduleOptions | undefined,
+  claimNudgeEnabled: boolean
+): ScheduleTaskOptions | undefined => {
   if (!options) {
     return undefined;
   }
-  const storeOpts: ApiKeyOptions = {};
+  const storeOpts: ScheduleTaskOptions = {};
   if (options.request) {
     storeOpts.request = options.request;
   }
@@ -49,6 +55,10 @@ const scheduleOptionsToStoreApiKeyOptions = (
   }
   if (options.regenerateApiKey !== undefined) {
     storeOpts.regenerateApiKey = options.regenerateApiKey;
+  }
+  if (options.requestImmediateClaim === true && claimNudgeEnabled) {
+    // the refresh only serves the nudged claim cycle, so skip it when no nudge follows
+    storeOpts.refresh = true;
   }
   return Object.keys(storeOpts).length ? storeOpts : undefined;
 };
@@ -62,6 +72,7 @@ export interface TaskSchedulingOpts {
   middleware: Middleware;
   taskManagerId: string;
   taskPollingLifecycle?: TaskPollingLifecycle; // subscribe to task lifecycle events
+  claimNudgeService?: TaskManagerClaimNudgeService;
 }
 
 /**
@@ -102,6 +113,7 @@ export class TaskScheduling {
   private logger: Logger;
   private middleware: Middleware;
   private readonly taskPolling: TaskPollingLifecycle | undefined;
+  private readonly claimNudgeService: TaskManagerClaimNudgeService | undefined;
 
   /**
    * Initializes the task manager, preventing any further addition of middleware,
@@ -113,6 +125,33 @@ export class TaskScheduling {
     this.middleware = opts.middleware;
     this.store = opts.taskStore;
     this.taskPolling = opts.taskPollingLifecycle;
+    this.claimNudgeService = opts.claimNudgeService;
+  }
+
+  private get claimNudgeEnabled(): boolean {
+    return this.claimNudgeService !== undefined;
+  }
+
+  /**
+   * Asks background task nodes to run an immediate claim cycle. Best-effort: on failure,
+   * regular polling remains the fallback.
+   */
+  private async notifyClaimNudge(taskId: string, source: ClaimNudgeSource) {
+    if (!this.claimNudgeService) {
+      return;
+    }
+    // counts attempts, not successes: the forced refresh has already happened by this point
+    taskManagerClaimNudgeTelemetry.recordClaimNudge(source);
+    try {
+      await this.claimNudgeService.notify();
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      // Deliberately not "failed": the nudge is bounded to a short timeout, and aborting it does
+      // not stop Elasticsearch from applying the write, so it may well have landed anyway.
+      this.logger.warn(
+        `Could not confirm the Task Manager claim nudge for task ${taskId}; it will run on the next poll cycle: ${message}`
+      );
+    }
   }
 
   /**
@@ -135,18 +174,24 @@ export class TaskScheduling {
         ? agent.currentTraceparent
         : '';
 
-    return await this.store.schedule(
+    const scheduledTask = await this.store.schedule(
       {
         ...modifiedTask,
         traceparent: traceparent || '',
         enabled: modifiedTask.enabled ?? true,
       },
-      scheduleOptionsToStoreApiKeyOptions(options)
+      scheduleOptionsToStoreOptions(options, this.claimNudgeEnabled)
     );
+
+    if (options?.requestImmediateClaim === true) {
+      await this.notifyClaimNudge(scheduledTask.id, 'schedule');
+    }
+
+    return scheduledTask;
   }
 
   /**
-   * Bulk schedules a task.
+   * Bulk schedules a task. Ignores `requestImmediateClaim`; use `schedule()` per task to nudge.
    *
    * @param tasks - The tasks being scheduled.
    * @returns {Promise<ConcreteTaskInstance>}
@@ -186,7 +231,8 @@ export class TaskScheduling {
 
     return await this.store.bulkSchedule(
       modifiedTasks,
-      scheduleOptionsToStoreApiKeyOptions(options)
+      // no nudge follows a bulk schedule, so never force a refresh
+      scheduleOptionsToStoreOptions(options, false)
     );
   }
 
@@ -350,7 +396,8 @@ export class TaskScheduling {
           scheduledAt: new Date(),
           runAt: new Date(),
         },
-        { validate: false }
+        // the refresh only serves the nudged claim cycle, letting it see the new runAt at once
+        { validate: false, refresh: this.claimNudgeEnabled }
       );
     } catch (e) {
       if (e.statusCode === 409) {
@@ -363,6 +410,11 @@ export class TaskScheduling {
         throw e;
       }
     }
+
+    if (!conflict) {
+      await this.notifyClaimNudge(taskId, 'run_soon');
+    }
+
     return conflict ? { id: task.id, forced, conflict: true } : { id: task.id, forced };
   }
 

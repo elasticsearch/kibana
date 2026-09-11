@@ -695,7 +695,19 @@ export interface ApiKeyOptions {
   onEsKey?: boolean;
 }
 
-export type ScheduleOptions = Record<string, unknown> & ApiKeyOptions;
+export type ScheduleOptions = Record<string, unknown> &
+  ApiKeyOptions & {
+    /**
+     * Asks background task nodes to claim this task immediately instead of waiting for the
+     * next poll_interval, for latency-sensitive callers. Best-effort: if the nudge fails,
+     * the task still runs on the next regular poll.
+     *
+     * Only honored by `schedule()` when that call creates the task. An `ensureScheduled()` that
+     * finds the task already scheduled does not nudge; use `runSoon()` for an existing task.
+     * `bulkSchedule()` ignores this option.
+     */
+    requestImmediateClaim?: boolean;
+  };
 
 // Local event log interface to avoid a circular dependency with @kbn/event-log-plugin in .tsconfig
 export interface TaskEventLogger {

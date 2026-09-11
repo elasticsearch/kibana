@@ -70,7 +70,22 @@ export interface TaskToSchedule {
 }
 
 const scheduleBodySchema = schema.object({
-  task: taskToScheduleSchema,
+  // Extended rather than added to `taskToScheduleSchema`, which `bulk_schedule` also uses: only
+  // this route converts `runAt` to a Date, so accepting it there would pass a string to
+  // `bulkSchedule`.
+  task: taskToScheduleSchema.extends({
+    /**
+     * ISO date string. Lets tests create a task that regular polling will not claim for a known
+     * amount of time, which is otherwise impossible without writing to the task index directly.
+     */
+    runAt: schema.maybe(
+      schema.string({
+        maxLength: 100,
+        validate: (value) =>
+          Number.isNaN(Date.parse(value)) ? 'must be an ISO 8601 date string' : undefined,
+      })
+    ),
+  }),
   /**
    * When true, Task Manager schedules without the HTTP request, so no API keys are granted from the caller.
    * Intended for FTR/Scout only (this route is behind `ftrApis`). Omitted or false preserves existing callers' body shape.
@@ -114,10 +129,16 @@ export const registerTaskManagerScheduleRoute = (
       }
 
       const { task, skipRequestForScheduling, onEsKey, ensureScheduled } = req.body as {
-        task: TaskToSchedule;
+        task: TaskToSchedule & { runAt?: string };
         skipRequestForScheduling?: boolean;
         onEsKey?: boolean;
         ensureScheduled?: boolean;
+      };
+
+      const { runAt, ...taskFields } = task;
+      const taskInstance = {
+        ...taskFields,
+        ...(runAt ? { runAt: new Date(runAt) } : {}),
       };
 
       const options = {
@@ -126,18 +147,20 @@ export const registerTaskManagerScheduleRoute = (
       };
 
       if (ensureScheduled === true) {
-        const { id } = task;
+        const { id } = taskInstance;
         if (!id) {
           return res.badRequest({ body: { message: 'ensureScheduled requires task.id' } });
         }
 
-        return res.ok({ body: await startContract.ensureScheduled({ ...task, id }, options) });
+        return res.ok({
+          body: await startContract.ensureScheduled({ ...taskInstance, id }, options),
+        });
       }
 
       const taskResult =
         skipRequestForScheduling === true
-          ? await startContract.schedule(task)
-          : await startContract.schedule(task, options);
+          ? await startContract.schedule(taskInstance)
+          : await startContract.schedule(taskInstance, options);
 
       return res.ok({ body: taskResult });
     }

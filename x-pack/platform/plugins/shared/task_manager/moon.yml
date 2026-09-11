@@ -74,6 +74,7 @@ fileGroups:
     - common/**/*
     - test/scout/**/*
     - test/scout_uiam_local/**/*
+    - test/scout_task_manager_claim_nudge/**/*
     - '!target/**/*'
   jest-config:
     - jest.config.js

@@ -126,6 +126,9 @@ export const config: PluginConfigDescriptor<TaskManagerConfig> = {
   },
   exposeToUsage: {
     claim_strategy: true,
+    claim_nudge: {
+      enabled: true,
+    },
     discovery: {
       active_nodes_lookback: true,
     },

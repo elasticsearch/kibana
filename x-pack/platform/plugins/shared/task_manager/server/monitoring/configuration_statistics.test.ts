@@ -74,6 +74,9 @@ describe('Configuration Statistics Aggregator', () => {
     auto_calculate_default_ech_capacity: false,
     api_key_type: ApiKeyType.ES,
     grant_uiam_api_keys: false,
+    claim_nudge: {
+      enabled: true,
+    },
   };
 
   test('merges the static config with the merged configs', async () => {
