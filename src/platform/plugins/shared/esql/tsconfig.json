@@ -55,6 +55,7 @@
     "@kbn/management-settings-ids",
     "@kbn/core-ui-settings-server",
     "@kbn/es-errors",
+    "@kbn/es-types",
   ],
   "exclude": [
     "target/**/*",

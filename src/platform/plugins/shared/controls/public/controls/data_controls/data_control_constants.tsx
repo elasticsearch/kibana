@@ -133,38 +133,6 @@ export const DataControlEditorStrings = {
           i18n.translate('controls.controlGroup.manageControl.dataSource.valuesPreview.title', {
             defaultMessage: 'Values preview',
           }),
-        getRunQueryButton: () =>
-          i18n.translate(
-            'controls.controlGroup.manageControl.dataSource.valuesPreview.runQueryButton',
-            {
-              defaultMessage: 'Run query',
-            }
-          ),
-        getEmptyTitle: () =>
-          i18n.translate(
-            'controls.controlGroup.manageControl.dataSource.valuesPreview.emptyTitle',
-            {
-              defaultMessage: 'No values returned',
-            }
-          ),
-        getEmptyText: () =>
-          i18n.translate('controls.controlGroup.manageControl.dataSource.valuesPreview.emptyText', {
-            defaultMessage: "This query isn't returning any values. Edit it and run it again.",
-          }),
-        getQueryNeedsRunningText: () =>
-          i18n.translate(
-            'controls.controlGroup.manageControl.dataSource.valuesPreview.queryNeedsRunningText',
-            {
-              defaultMessage: 'Run the query to get a preview of possible values.',
-            }
-          ),
-        getErrorTitle: () =>
-          i18n.translate(
-            'controls.controlGroup.manageControl.dataSource.valuesPreview.errorTitle',
-            {
-              defaultMessage: 'Error getting values preview',
-            }
-          ),
         getDataSourceLabel: () =>
           i18n.translate(
             'controls.controlGroup.manageControl.dataSource.valuesPreview.dataSourceLabel',
@@ -189,45 +157,6 @@ export const DataControlEditorStrings = {
             }}
           />
         ),
-        getMultiColumnErrorTitle: () =>
-          i18n.translate(
-            'controls.controlGroup.manageControl.dataSource.valuesPreview.multiColumnErrorTitle',
-            {
-              defaultMessage: 'Query must return a single column',
-            }
-          ),
-        getMultiColumnErrorBody: (totalColumns: number) => (
-          <FormattedMessage
-            id="controls.controlGroup.manageControl.dataSource.valuesPreview.multiColumnErrorBody"
-            defaultMessage="Your query is currently returning {totalColumns} columns. Choose a column, or use {statsBy} to narrow your query down."
-            values={{
-              totalColumns,
-              statsBy: <EuiCode>STATS BY</EuiCode>,
-            }}
-          />
-        ),
-        getColumnsListLabel: () =>
-          i18n.translate(
-            'controls.controlGroup.manageControl.dataSource.valuesPreview.columnsListLabel',
-            {
-              defaultMessage: 'Columns',
-            }
-          ),
-        getSelectAColumnText: () =>
-          i18n.translate(
-            'controls.controlGroup.manageControl.dataSource.valuesPreview.selectAColumnText',
-            {
-              defaultMessage: 'Select a column',
-            }
-          ),
-        getMinText: () =>
-          i18n.translate('controls.controlGroup.manageControl.dataSource.valuesPreview.minText', {
-            defaultMessage: 'Minimum value',
-          }),
-        getMaxText: () =>
-          i18n.translate('controls.controlGroup.manageControl.dataSource.valuesPreview.maxText', {
-            defaultMessage: 'Maximum value',
-          }),
       },
     },
     displaySettings: {

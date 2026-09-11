@@ -15,22 +15,20 @@ import { ESQLValuesPreview } from './esql_values_preview';
 
 const noopProps = {
   updateQuery: jest.fn(),
-  isQueryRunning: false,
-  queryNeedsRunning: false,
-  dataSource: 'index',
 };
 
 const numericColumn: ESQLColumn = { name: 'bytes', type: 'long' };
 const stringColumn: ESQLColumn = { name: 'os', type: 'keyword' };
 
 describe('ESQLValuesPreview', () => {
-  it('renders min/max stats for numeric columns', () => {
+  it('renders min/max stats for numeric columns when control type is range slider', () => {
     const { getByText, getByTestId } = render(
       <I18nProvider>
         <ESQLValuesPreview
           {...noopProps}
-          previewOptions={[6, 7, 67]}
-          previewColumns={[numericColumn]}
+          values={[6, 7, 67]}
+          columns={[numericColumn]}
+          isRangeControl={true}
         />
       </I18nProvider>
     );
@@ -39,12 +37,29 @@ describe('ESQLValuesPreview', () => {
     expect(getByText('6')).toBeInTheDocument();
     expect(getByText('67')).toBeInTheDocument();
   });
+
+  it('renders a list of values for numeric columns when control type is options list', () => {
+    const { getByTestId, queryByTestId } = render(
+      <I18nProvider>
+        <ESQLValuesPreview
+          {...noopProps}
+          values={[6, 7, 67]}
+          columns={[numericColumn]}
+          isRangeControl={false}
+        />
+      </I18nProvider>
+    );
+
+    expect(queryByTestId('esqlValuesPreviewRange')).not.toBeInTheDocument();
+    expect(getByTestId('esqlValuesPreviewStrings')).toBeInTheDocument();
+  });
+
   it('renders a list of values for string columns', () => {
     const { getByTestId } = render(
       <I18nProvider>
         <ESQLValuesPreview
           {...noopProps}
-          previewOptions={[
+          values={[
             'some',
             'BODY',
             'once',
@@ -66,7 +81,7 @@ describe('ESQLValuesPreview', () => {
             'on her fore',
             'head',
           ]}
-          previewColumns={[stringColumn]}
+          columns={[stringColumn]}
         />
       </I18nProvider>
     );
@@ -77,11 +92,7 @@ describe('ESQLValuesPreview', () => {
   it('shows the column picker when the query returns multiple columns', () => {
     const { getByText, getByTestId } = render(
       <I18nProvider>
-        <ESQLValuesPreview
-          {...noopProps}
-          previewOptions={[]}
-          previewColumns={[numericColumn, stringColumn]}
-        />
+        <ESQLValuesPreview {...noopProps} values={[]} columns={[numericColumn, stringColumn]} />
       </I18nProvider>
     );
 

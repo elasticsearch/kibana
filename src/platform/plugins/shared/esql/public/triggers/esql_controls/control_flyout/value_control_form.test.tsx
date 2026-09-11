@@ -34,10 +34,7 @@ jest.mock('@kbn/esql-utils', () => {
         columns: [
           {
             name: 'field',
-            id: 'field',
-            meta: {
-              type: 'keyword',
-            },
+            type: 'keyword',
           },
         ],
         values: [['v1'], ['v2']],
@@ -48,6 +45,8 @@ jest.mock('@kbn/esql-utils', () => {
     getValuesFromQueryField: jest.fn().mockReturnValue('field'),
     getESQLQueryColumnsRaw: jest.fn().mockResolvedValue([{ name: 'column1' }, { name: 'column2' }]),
     getVariableNamePrefix: actual.getVariableNamePrefix,
+    ESQLValuesPreview: actual.ESQLValuesPreview,
+    appendStatsByToQuery: actual.appendStatsByToQuery,
   };
 });
 
@@ -249,7 +248,7 @@ describe('ValueControlForm', () => {
         );
 
         // values preview panel should be rendered
-        expect(await findByTestId('esqlValuesPreview')).toBeInTheDocument();
+        expect(await findByTestId('esqlValuesPreviewStrings')).toBeInTheDocument();
       });
 
       it('should be able to change in fields type', async () => {

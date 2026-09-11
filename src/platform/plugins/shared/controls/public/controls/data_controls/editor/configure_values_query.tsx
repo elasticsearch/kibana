@@ -7,7 +7,17 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
-import { EuiFormRow, EuiSpacer } from '@elastic/eui';
+import {
+  EuiCode,
+  EuiFlexGroup,
+  EuiFlexItem,
+  EuiFormRow,
+  EuiIconTip,
+  EuiLoadingSpinner,
+  EuiPanel,
+  EuiSpacer,
+} from '@elastic/eui';
+import { css } from '@emotion/react';
 import React, { useCallback, useMemo, useState } from 'react';
 import { appendStatsByToQuery, getIndexPatternFromESQLQuery } from '@kbn/esql-utils';
 import type { AggregateQuery } from '@kbn/es-query';
@@ -17,13 +27,19 @@ import { ESQLLangEditor } from '@kbn/esql/public';
 import type { ESQLColumn } from '@kbn/es-types';
 import type { ESQLControlVariable } from '@kbn/esql-types';
 import { apiCanAddNewPanel, apiCanPinPanels } from '@kbn/presentation-publishing';
-import { DEFAULT_ESQL_OPTIONS_LIST_STATE, ESQL_CONTROL } from '@kbn/controls-constants';
+import type { OPTIONS_LIST_CONTROL } from '@kbn/controls-constants';
+import {
+  DEFAULT_ESQL_OPTIONS_LIST_STATE,
+  ESQL_CONTROL,
+  RANGE_SLIDER_CONTROL,
+} from '@kbn/controls-constants';
+import { ESQLValuesPreview } from '@kbn/esql-utils';
 import { dataService } from '../../../services/kibana_services';
 import { getESQLSingleColumnValues } from '../../../../common/options_list';
 import { getControlsTimezone } from '../../utils';
-import { ESQLValuesPreview } from './esql_values_preview';
 import type { DataControlEditorState } from './types';
 import { getDataViewIdFromESQLQuery } from '../../utils/get_data_view_id_from_esql_query';
+import { DataControlEditorStrings } from '../data_control_constants';
 
 interface ConfigureValuesQueryProps {
   editorState: Partial<DataControlEditorState>;
@@ -32,6 +48,7 @@ interface ConfigureValuesQueryProps {
   isEdit: boolean;
   esqlVariables?: ESQLControlVariable[];
   parentApi?: unknown;
+  selectedControlType?: typeof OPTIONS_LIST_CONTROL | typeof RANGE_SLIDER_CONTROL;
   // Re-opens the parent data control editor flyout. Used after the inner ESQL variable
   // control creation flyout closes
   reopenEditor?: (overrides?: Partial<DataControlEditorState>) => void;
@@ -44,6 +61,7 @@ export const ConfigureValuesQuery = ({
   isEdit,
   esqlVariables = [],
   parentApi,
+  selectedControlType,
   reopenEditor,
 }: ConfigureValuesQueryProps) => {
   const [previewOptions, setPreviewOptions] = useState<string[] | number[]>([]);
@@ -199,15 +217,64 @@ export const ConfigureValuesQuery = ({
         />
       </EuiFormRow>
       <EuiSpacer size="s" />
-      <ESQLValuesPreview
-        previewOptions={previewOptions}
-        previewColumns={previewColumns}
-        previewError={previewError}
-        queryNeedsRunning={previewQueryNeedsRunning}
-        updateQuery={appendColumnToESQLQuery}
-        isQueryRunning={isPreviewQueryRunning}
-        dataSource={dataSource}
-      />
+      {isPreviewQueryRunning ? (
+        <EuiPanel
+          hasBorder={false}
+          hasShadow={false}
+          paddingSize="xl"
+          css={css`
+            text-align: center;
+          `}
+        >
+          <EuiLoadingSpinner size="l" />
+        </EuiPanel>
+      ) : (
+        <>
+          {previewColumns.length === 1 && (
+            <>
+              <EuiFlexGroup>
+                <EuiFlexItem>
+                  <EuiFormRow
+                    label={DataControlEditorStrings.manageControl.dataSource.valuesPreview.getDataSourceLabel()}
+                  >
+                    <EuiCode>{dataSource}</EuiCode>
+                  </EuiFormRow>
+                </EuiFlexItem>
+                <EuiFlexItem>
+                  <EuiFormRow
+                    label={
+                      <>
+                        {DataControlEditorStrings.manageControl.dataSource.valuesPreview.getFieldLabel()}{' '}
+                        <EuiIconTip
+                          type="question"
+                          color="primary"
+                          content={DataControlEditorStrings.manageControl.dataSource.valuesPreview.getFieldTooltip()}
+                        />
+                      </>
+                    }
+                  >
+                    <EuiCode>{previewColumns[0].name}</EuiCode>
+                  </EuiFormRow>
+                </EuiFlexItem>
+              </EuiFlexGroup>
+              <EuiSpacer size="s" />
+            </>
+          )}
+          {!previewQueryNeedsRunning && (
+            <EuiFormRow
+              label={DataControlEditorStrings.manageControl.dataSource.valuesPreview.getTitle()}
+            >
+              <ESQLValuesPreview
+                values={previewOptions}
+                columns={previewColumns}
+                error={previewError}
+                updateQuery={appendColumnToESQLQuery}
+                isRangeControl={selectedControlType === RANGE_SLIDER_CONTROL}
+              />
+            </EuiFormRow>
+          )}
+        </>
+      )}
     </>
   );
 };
