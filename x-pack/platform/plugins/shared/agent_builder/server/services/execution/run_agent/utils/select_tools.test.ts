@@ -208,13 +208,13 @@ describe('selectTools', () => {
       return result.staticTools.map((tool) => tool.id).filter((id) => id !== 'attachments.read');
     };
 
-    it('adds the three tools when the feature is on and the agent has AI indices', async () => {
+    it('adds the three tools when the feature is on and the agent has AI Indices', async () => {
       await expect(
         selectStaticToolIds({ aiIndicesEnabled: true, aiIndices: ['elastic'] })
       ).resolves.toEqual(aiIndexToolIds);
     });
 
-    it('adds nothing when the agent has no AI indices', async () => {
+    it('adds nothing when the agent has no AI Indices', async () => {
       await expect(selectStaticToolIds({ aiIndicesEnabled: true, aiIndices: [] })).resolves.toEqual(
         []
       );

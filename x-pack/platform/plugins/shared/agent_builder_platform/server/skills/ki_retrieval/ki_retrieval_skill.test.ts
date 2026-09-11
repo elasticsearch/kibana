@@ -31,7 +31,7 @@ describe('kiRetrievalSkill', () => {
     expect(kiRetrievalSkill.content.length).toBeGreaterThan(0);
   });
 
-  it('references the correct AI index pattern in content', () => {
+  it('references the correct AI Index pattern in content', () => {
     expect(kiRetrievalSkill.content).toContain('ai-index-*');
     expect(kiRetrievalSkill.content).not.toContain('ai-index-idx-*');
     expect(kiRetrievalSkill.content).not.toContain('ai-index-ds-*');
@@ -43,7 +43,7 @@ describe('kiRetrievalSkill', () => {
     expect(content).toContain('`list_ai_indices`');
     expect(content).toContain('`describe_ai_index`');
     expect(content).toContain('`query_ai_indices`');
-    expect(content).toContain('Do not use `execute_esql` or `list_indices` on AI indices');
+    expect(content).toContain('Do not use `execute_esql` or `list_indices` on AI Indices');
     expect(content).not.toContain('platform.core.list_indices');
   });
 

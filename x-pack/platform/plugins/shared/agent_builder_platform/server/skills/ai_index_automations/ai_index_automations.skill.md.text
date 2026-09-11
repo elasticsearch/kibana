@@ -219,7 +219,7 @@ verification and the write see the same document, the `verifyKi` gate, the `ki_i
 makes a re-run replace rather than duplicate, and the `attributes.esql` wiring the verifiers read.
 
 Each template opens with a comment saying what to change and what to leave, and declares what
-varies in `consts` at the top — the AI index id, the source index, the fields the strategy turns
+varies in `consts` at the top — the AI Index id, the source index, the fields the strategy turns
 on. Editing that block is most of the adaptation; the strategy's own grounding is the rest.
 
 **Index/Table Metadata** (`type: index_metadata`) — template **`index-metadata-template`**. Fetch
@@ -285,7 +285,7 @@ dozen turns that produced them.
 no history, no tool results, not even the index id. Anything you leave out it will invent, and it
 will invent it confidently. Put in the prompt:
 
-- the AI index id, and whether its destination is an index or a data stream
+- the AI Index id, and whether its destination is an index or a data stream
 - the sources and the exact corpus filter the automation should apply
 - the strategy from `analyze-and-improve`, and what the indicators are meant to capture
 - **the template it starts from, by name**, and the values its `consts` block should take. This is
@@ -424,7 +424,7 @@ returns step outputs and the failure message when a step throws.
 **Read what it wrote, not whether it ran.** A workflow completes cleanly and still emits indicators
 with empty `content`, absent `attributes`, or titles too alike to tell apart under retrieval. Query
 the tag back with `platform.context_engine.query_ai_indices`, which applies space scoping
-server-side (never read an AI index with `platform.core.execute_esql`):
+server-side (never read an AI Index with `platform.core.execute_esql`):
 
 ```esql
 FROM <destination> METADATA _id
@@ -442,7 +442,7 @@ looking for a fault in the workflow that isn't there. Expanding first gives one 
 `WHERE` then matches the row carrying the pilot tag.
 
 `<destination>` is the `dest.value` from the brief. `FROM ai-index-*` works too when you are unsure
-of it, at the cost of scanning every AI index.
+of it, at the cost of scanning every AI Index.
 
 Judge those against what the brief asked for. When one step is what is wrong,
 `platform.workflows.workflow_execute_step` runs that step alone out of the inline YAML, so you can

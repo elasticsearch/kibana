@@ -21,7 +21,7 @@ export const aiIndexAutomationsSkill = defineSkillType({
   experimental: true,
   availability: contextEngineSkillAvailability,
   description:
-    'Read, draft and change the workflow automations that generate Knowledge Indicators for a Context Engine AI index. Load when authoring a KI generation workflow, when inspecting what an existing automation does, when a proposed fix names a workflow step, or when validating or piloting an automation.',
+    'Read, draft and change the workflow automations that generate Knowledge Indicators for a Context Engine AI Index. Load when authoring a KI generation workflow, when inspecting what an existing automation does, when a proposed fix names a workflow step, or when validating or piloting an automation.',
   content,
   // One runnable workflow per strategy that comes up most. These are the starting point for
   // authoring: an agent handed a template edits it, where one handed only a prose shape writes a

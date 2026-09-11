@@ -148,7 +148,7 @@ describe('getResearchAgentPrompt', () => {
     expect(messages.map(asText).some((t) => t.includes(NOTICE_MARKER))).toBe(false);
   });
 
-  it('omits the AI indices section when the agent declares no AI indices', async () => {
+  it('omits the AI Indices section when the agent declares no AI Indices', async () => {
     const messages = await getResearchAgentPrompt(
       makeParams({
         experimentalFeatures: { aiIndices: true, bash: false, skills: false },
@@ -158,7 +158,7 @@ describe('getResearchAgentPrompt', () => {
     expect(asText(messages[0])).not.toContain('## AI INDICES');
   });
 
-  it('omits the AI indices section when AI index instructions are disabled', async () => {
+  it('omits the AI Indices section when AI Index instructions are disabled', async () => {
     const messages = await getResearchAgentPrompt(
       makeParams({
         configuration: {
@@ -175,7 +175,7 @@ describe('getResearchAgentPrompt', () => {
     expect(asText(messages[0])).not.toContain('## AI INDICES');
   });
 
-  it('renders the AI indices section with the running space when the agent declares one', async () => {
+  it('renders the AI Indices section with the running space when the agent declares one', async () => {
     const messages = await getResearchAgentPrompt(
       makeParams({
         configuration: {
@@ -197,7 +197,7 @@ describe('getResearchAgentPrompt', () => {
     expect(system.indexOf('## AI INDICES')).toBeLessThan(system.indexOf('## INSTRUCTIONS'));
   });
 
-  it('renders every catalog entry, including custom AI indices', async () => {
+  it('renders every catalog entry, including custom AI Indices', async () => {
     const messages = await getResearchAgentPrompt(
       makeParams({
         configuration: {

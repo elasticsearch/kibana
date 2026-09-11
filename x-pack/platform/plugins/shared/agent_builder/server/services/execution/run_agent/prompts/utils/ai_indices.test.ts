@@ -25,7 +25,7 @@ const render = (overrides: Partial<Parameters<typeof getAiIndicesInstructions>[0
   });
 
 describe('getAiIndicesInstructions', () => {
-  it('renders nothing when AI index instructions are disabled', () => {
+  it('renders nothing when AI Index instructions are disabled', () => {
     expect(render({ enabled: false })).toBe('');
   });
 
@@ -33,7 +33,7 @@ describe('getAiIndicesInstructions', () => {
     expect(render({ catalog: [] })).toBe('');
   });
 
-  it('explains what an AI index is and how it is named', () => {
+  it('explains what an AI Index is and how it is named', () => {
     const instructions = render();
 
     expect(instructions).toContain('## AI INDICES');
@@ -51,7 +51,7 @@ describe('getAiIndicesInstructions', () => {
   it('continues with other relevant sources when KIs do not cover the question', () => {
     const instructions = render();
 
-    expect(instructions).toContain('Search relevant AI indices before broader retrieval');
+    expect(instructions).toContain('Search relevant AI Indices before broader retrieval');
     expect(instructions).toContain('continue with other relevant data or tools');
   });
 
@@ -64,7 +64,7 @@ describe('getAiIndicesInstructions', () => {
     );
   });
 
-  it('renders every catalog entry, including custom AI indices', () => {
+  it('renders every catalog entry, including custom AI Indices', () => {
     const instructions = render({
       catalog: [
         ...defaultCatalog,
@@ -106,7 +106,7 @@ describe('getAiIndicesInstructions', () => {
     expect(instructions).toContain('1. `list_ai_indices`');
     expect(instructions).toContain('2. `describe_ai_index`');
     expect(instructions).toContain('3. `query_ai_indices`');
-    expect(instructions).toContain('Do not query AI indices with `execute_esql`');
+    expect(instructions).toContain('Do not query AI Indices with `execute_esql`');
     expect(instructions).not.toContain('sml_');
   });
 

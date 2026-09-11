@@ -9,21 +9,21 @@ This skill is not about generating these KIs, that is a separate skill.
 
 ## Tools
 
-AI indices have three dedicated tools. Use them in this order, and use nothing else to read an
-AI index:
+AI Indices have three dedicated tools. Use them in this order, and use nothing else to read an
+AI Index:
 
-1. **`list_ai_indices`** — the AI indices you can use in the current space. Each entry has
-   an `id`, the `esql_target` to put in `FROM`, and a description. An AI index is left out when
+1. **`list_ai_indices`** — the AI Indices you can use in the current space. Each entry has
+   an `id`, the `esql_target` to put in `FROM`, and a description. An AI Index is left out when
    you cannot read its backing index, or when every document in it belongs to another space; an
-   empty AI index is still listed. Skip this when your instructions already name the index.
+   empty AI Index is still listed. Skip this when your instructions already name the index.
 2. **`describe_ai_index`** — takes an `id` and returns a context block you can read and copy
    ES|QL from: what the index holds, its fields and which are semantic, KI type and tag counts,
-   and example queries. Fields differ between AI indices, so describe one before filtering on a
+   and example queries. Fields differ between AI Indices, so describe one before filtering on a
    field.
 3. **`query_ai_indices`** — runs your ES|QL and returns the rows. The server applies the space
    scoping and a row limit; do not add a space condition yourself.
 
-Do not use `execute_esql` or `list_indices` on AI indices. Only `query_ai_indices` applies the
+Do not use `execute_esql` or `list_indices` on AI Indices. Only `query_ai_indices` applies the
 space scoping, and only `list_ai_indices` knows which `ai-index-*` indices are registered AI
 indices.
 
@@ -74,7 +74,7 @@ need per-query filtering.
 
 ### Space scoping
 
-Documents in an AI index may belong to specific Kibana spaces. `query_ai_indices` applies that
+Documents in an AI Index may belong to specific Kibana spaces. `query_ai_indices` applies that
 scoping server-side and returns only documents visible from the current space; the counts in
 `describe_ai_index` are scoped the same way. Never write a space condition in ES|QL: a filter
 you write does not replace the server's scoping, and on most indices it silently matches nothing
@@ -131,7 +131,7 @@ after the `WHERE`), then re-run the retrieval query with the most relevant tag a
 
 ## Suggested retrieval flow
 
-1. **Discover** — call `list_ai_indices` to see which AI indices are available to you and their
+1. **Discover** — call `list_ai_indices` to see which AI Indices are available to you and their
    `esql_target`s. Skip this when your instructions already name the index.
 2. **Orient** — call `describe_ai_index` with the index `id`. Its context block gives you the
    fields, the type and tag counts, and example queries to start from. Sample a few KIs
