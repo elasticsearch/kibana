@@ -5,7 +5,9 @@
  * 2.0.
  */
 
-import type { TimelineItem } from '@kbn/timelines-plugin/common';
+import type { TimelineItem, TimelineNonEcsData } from '@kbn/timelines-plugin/common';
+import type { EcsSecurityExtension as Ecs } from '@kbn/securitysolution-ecs';
+import { ALERT_RULE_TYPE } from '@kbn/rule-data-utils';
 import { useCallback, useMemo } from 'react';
 import { useDispatch, useSelector } from 'react-redux-v7';
 import type { TableId } from '@kbn/securitysolution-data-table';
@@ -14,6 +16,7 @@ import {
   dataTableSelectors,
   tableDefaults,
 } from '@kbn/securitysolution-data-table';
+import set from '@kbn/safer-lodash-set/set';
 import type { State } from '../../../../common/store/types';
 import { useUpdateTimeline } from '../../../../timelines/components/open_timeline/use_update_timeline';
 import { useCreateTimeline } from '../../../../timelines/hooks/use_create_timeline';
@@ -21,6 +24,30 @@ import { TimelineId } from '../../../../../common/types/timeline';
 import { TimelineTypeEnum } from '../../../../../common/api/timeline';
 import { sendBulkEventsToTimelineAction } from '../actions';
 import type { CreateTimelineProps } from '../types';
+import { ALERT_GROUP_ID } from '../../../../../common/field_maps/field_names';
+
+const getNonEcsFieldValue = (data: TimelineNonEcsData[], field: string): string[] | undefined =>
+  data.find((d) => d.field === field)?.value ?? undefined;
+
+/**
+ * Backfills kibana.alert.rule.type/kibana.alert.group.id from `item.data` onto `item.ecs`
+ * for bulk selections, since only `_id`/`_index` are populated there by default.
+ */
+const enrichEcsForBulkSend = (item: TimelineItem): Ecs => {
+  const ruleType = getNonEcsFieldValue(item.data, ALERT_RULE_TYPE);
+  const groupId = getNonEcsFieldValue(item.data, ALERT_GROUP_ID);
+  if (!ruleType && !groupId) {
+    return item.ecs;
+  }
+  const enriched: Ecs = { ...item.ecs };
+  if (ruleType) {
+    set(enriched, ALERT_RULE_TYPE, ruleType);
+  }
+  if (groupId) {
+    set(enriched, ALERT_GROUP_ID, groupId);
+  }
+  return enriched;
+};
 
 const { setSelected } = dataTableActions;
 
@@ -75,11 +102,7 @@ export const useSendBulkToTimeline = ({ tableId, from, to }: UseSendBulkToTimeli
 
   const sendBulkEventsToTimelineHandler = useCallback(
     (items: TimelineItem[]) => {
-      sendBulkEventsToTimelineAction(
-        createTimeline,
-        items.map((item) => item.ecs),
-        'KqlFilter'
-      );
+      sendBulkEventsToTimelineAction(createTimeline, items.map(enrichEcsForBulkSend), 'KqlFilter');
 
       dispatch(
         setSelected({

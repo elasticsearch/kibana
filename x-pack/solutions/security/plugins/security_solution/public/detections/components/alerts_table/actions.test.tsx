@@ -35,6 +35,7 @@ import {
 import type { CreateTimeline } from './types';
 import type { EcsSecurityExtension as Ecs } from '@kbn/securitysolution-ecs';
 import type { DataProvider } from '../../../../common/types/timeline';
+import { ALERT_GROUP_ID } from '../../../../common/field_maps/field_names';
 import { TimelineId, TimelineTabs } from '../../../../common/types/timeline';
 import { TimelineStatusEnum, TimelineTypeEnum } from '../../../../common/api/timeline';
 import type { ISearchStart } from '@kbn/data-plugin/public';
@@ -1293,6 +1294,120 @@ describe('alert actions', () => {
             key: '_id',
             value: eventIds.join(),
             params: eventIds,
+          },
+          $state: {
+            store: FilterStateStore.APP_STATE,
+          },
+        },
+      ];
+      const expected = getExpectedcreateTimelineParam(
+        from,
+        to,
+        expectedDataProviders,
+        expectedFilters
+      );
+      expect(createTimeline).toHaveBeenCalledWith(expected);
+    });
+
+    test('expands kibana.alert.group.id when every selected alert is an EQL sequence alert with a group id', () => {
+      const eqlEcsA: Ecs = {
+        ...mockEcsDataWithAlert,
+        _id: 'eql-alert-a',
+        signal: {
+          rule: {
+            ...mockEcsDataWithAlert.signal?.rule,
+            type: ['eql'],
+          },
+          group: { id: ['group-a'] },
+        },
+      };
+      const eqlEcsB: Ecs = {
+        ...mockEcsDataWithAlert,
+        _id: 'eql-alert-b',
+        signal: {
+          rule: {
+            ...mockEcsDataWithAlert.signal?.rule,
+            type: ['eql'],
+          },
+          group: { id: ['group-b'] },
+        },
+      };
+      const eqlGroupIds = ['group-a', 'group-b'];
+
+      sendBulkEventsToTimelineAction(createTimeline, [eqlEcsA, eqlEcsB], 'KqlFilter');
+      const { from, to } = determineToAndFrom({ ecs: [eqlEcsA, eqlEcsB] });
+      const expectedDataProviders: DataProvider[] = [];
+      const expectedFilters: Filter[] = [
+        {
+          query: {
+            bool: {
+              filter: {
+                terms: {
+                  [ALERT_GROUP_ID]: eqlGroupIds,
+                },
+              },
+            },
+          },
+          meta: {
+            alias: 'Alert Ids',
+            negate: false,
+            disabled: false,
+            type: 'phrases',
+            key: ALERT_GROUP_ID,
+            value: eqlGroupIds.join(),
+            params: eqlGroupIds,
+          },
+          $state: {
+            store: FilterStateStore.APP_STATE,
+          },
+        },
+      ];
+      const expected = getExpectedcreateTimelineParam(
+        from,
+        to,
+        expectedDataProviders,
+        expectedFilters
+      );
+      expect(createTimeline).toHaveBeenCalledWith(expected);
+    });
+
+    test('keeps _id-based filtering when the selection mixes EQL-with-group and non-EQL alerts', () => {
+      const eqlEcsA: Ecs = {
+        ...mockEcsDataWithAlert,
+        _id: 'eql-alert-a',
+        signal: {
+          rule: {
+            ...mockEcsDataWithAlert.signal?.rule,
+            type: ['eql'],
+          },
+          group: { id: ['group-a'] },
+        },
+      };
+      const nonEqlEcs: Ecs = mockEcsData[0];
+      const mixedIds = [eqlEcsA._id, nonEqlEcs._id];
+
+      sendBulkEventsToTimelineAction(createTimeline, [eqlEcsA, nonEqlEcs], 'KqlFilter');
+      const { from, to } = determineToAndFrom({ ecs: [eqlEcsA, nonEqlEcs] });
+      const expectedDataProviders: DataProvider[] = [];
+      const expectedFilters: Filter[] = [
+        {
+          query: {
+            bool: {
+              filter: {
+                ids: {
+                  values: mixedIds,
+                },
+              },
+            },
+          },
+          meta: {
+            alias: '2 event IDs',
+            negate: false,
+            disabled: false,
+            type: 'phrases',
+            key: '_id',
+            value: mixedIds.join(),
+            params: mixedIds,
           },
           $state: {
             store: FilterStateStore.APP_STATE,

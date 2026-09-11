@@ -286,11 +286,11 @@ const isSuppressedAlert = (ecsData: Ecs): boolean => {
 
 export const buildAlertsKqlFilter = (
   key: '_id' | 'signal.group.id' | 'kibana.alert.group.id',
-  alertIds: string[],
+  values: string[],
   label: string = 'Alert Ids'
 ): Filter[] => {
-  const singleId = alertIds.length === 1;
-  if (singleId) {
+  const singleValue = values.length === 1;
+  if (singleValue) {
     return [
       {
         meta: {
@@ -300,12 +300,12 @@ export const buildAlertsKqlFilter = (
           type: 'phrase',
           key,
           params: {
-            query: alertIds[0],
+            query: values[0],
           },
         },
         query: {
           match_phrase: {
-            _id: alertIds[0],
+            [key]: values[0],
           },
         },
         $state: {
@@ -319,11 +319,9 @@ export const buildAlertsKqlFilter = (
     {
       query: {
         bool: {
-          filter: {
-            ids: {
-              values: alertIds,
-            },
-          },
+          // The `ids` query only ever matches a document's own `_id`, so it can't be used
+          // to filter on `kibana.alert.group.id`/`signal.group.id`; use `terms` for those.
+          filter: key === '_id' ? { ids: { values } } : { terms: { [key]: values } },
         },
       },
       meta: {
@@ -332,8 +330,8 @@ export const buildAlertsKqlFilter = (
         disabled: false,
         type: 'phrases',
         key,
-        value: alertIds.join(),
-        params: alertIds,
+        value: values.join(),
+        params: values,
       },
       $state: {
         store: FilterStateStore.APP_STATE,
@@ -379,34 +377,31 @@ const buildTimelineDataProviderOrFilter = (
   };
 };
 
+const getAlertGroupId = (ecsData: Ecs): string => {
+  const alertGroupIdField = getField(ecsData, ALERT_GROUP_ID);
+  return Array.isArray(alertGroupIdField) ? alertGroupIdField[0] : alertGroupIdField;
+};
+
 const buildEqlDataProviderOrFilter = (
   alertIds: string[],
   ecs: Ecs[] | Ecs
 ): { filters: Filter[]; dataProviders: DataProvider[] } => {
   if (!isEmpty(alertIds) && Array.isArray(ecs) && ecs.length > 1) {
+    const alertGroupIds = ecs.reduce<string[]>((acc, ecsData) => {
+      const alertGroupId = getAlertGroupId(ecsData);
+      if (!acc.includes(alertGroupId)) {
+        return [...acc, alertGroupId];
+      }
+      return acc;
+    }, []);
     return {
       dataProviders: [],
-      filters: buildAlertsKqlFilter(
-        ALERT_GROUP_ID,
-        ecs.reduce<string[]>((acc, ecsData) => {
-          const alertGroupIdField = getField(ecsData, ALERT_GROUP_ID);
-          const alertGroupId = Array.isArray(alertGroupIdField)
-            ? alertGroupIdField[0]
-            : alertGroupIdField;
-          if (!acc.includes(alertGroupId)) {
-            return [...acc, alertGroupId];
-          }
-          return acc;
-        }, [])
-      ),
+      filters: buildAlertsKqlFilter(ALERT_GROUP_ID, alertGroupIds),
     };
   } else if (!Array.isArray(ecs) || ecs.length === 1) {
     const ecsData = Array.isArray(ecs) ? ecs[0] : ecs;
-    const alertGroupIdField = getField(ecsData, ALERT_GROUP_ID);
     const queryMatchField = getFieldKey(ecsData, ALERT_GROUP_ID);
-    const alertGroupId = Array.isArray(alertGroupIdField)
-      ? alertGroupIdField[0]
-      : alertGroupIdField;
+    const alertGroupId = getAlertGroupId(ecsData);
     return {
       dataProviders: [
         {
@@ -894,11 +889,14 @@ export const sendBulkEventsToTimelineAction = async (
 
   const { to, from } = determineToAndFrom({ ecs });
 
-  const { dataProviders, filters } = buildTimelineDataProviderOrFilter(
-    eventIds,
-    prefer,
-    label || `${ecs.length} event IDs`
-  );
+  // When every selected alert is an EQL sequence alert with a group id, expand each
+  // alert's kibana.alert.group.id (same as the single-alert path) so the correlated
+  // building-block events are included, instead of only matching the shell alert _ids.
+  const isEqlSequenceSelection = ecs.length > 0 && ecs.every(isEqlAlertWithGroupId);
+
+  const { dataProviders, filters } = isEqlSequenceSelection
+    ? buildEqlDataProviderOrFilter(eventIds, ecs)
+    : buildTimelineDataProviderOrFilter(eventIds, prefer, label || `${ecs.length} event IDs`);
 
   await createTimeline({
     from,

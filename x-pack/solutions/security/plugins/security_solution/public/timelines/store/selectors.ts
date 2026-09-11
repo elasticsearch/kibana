@@ -7,7 +7,7 @@
 
 import { createSelector } from 'reselect-v4';
 import { get, isEmpty } from 'lodash/fp';
-import type { Query } from '@kbn/es-query';
+import { isFilterDisabled, type Query } from '@kbn/es-query';
 import {
   UNTITLED_TEMPLATE,
   UNTITLED_TIMELINE,
@@ -104,6 +104,11 @@ const selectTimelineType = createSelector(selectTimelineById, (timeline) => time
 const selectTimelineKqlQuery = createSelector(selectTimelineById, (timeline) => timeline?.kqlQuery);
 
 /**
+ * Selector that returns the timeline filters.
+ */
+const selectTimelineFilters = createSelector(selectTimelineById, (timeline) => timeline?.filters);
+
+/**
  * Selector that returns the timeline esql saved search id.
  */
 export const selectTimelineESQLSavedSearchId = createSelector(
@@ -156,13 +161,20 @@ export const selectKqlQuery = createSelector(
 );
 
 /**
- * Selector that returns true if the timeline has data providers or a kqlQuery filterQuery expression.
+ * Selector that returns true if the timeline has data providers, a kqlQuery filterQuery
+ * expression, or at least one enabled filter.
  */
 export const selectDataInTimeline = createSelector(
   selectTimelineDataProviders,
   selectTimelineKqlQuery,
-  (dataProviders, kqlQuery): boolean => {
-    return !isEmpty(dataProviders) || !isEmpty(get('filterQuery.kuery.expression', kqlQuery));
+  selectTimelineFilters,
+  (dataProviders, kqlQuery, filters): boolean => {
+    const hasEnabledFilters = (filters ?? []).some((filter) => !isFilterDisabled(filter));
+    return (
+      !isEmpty(dataProviders) ||
+      !isEmpty(get('filterQuery.kuery.expression', kqlQuery)) ||
+      hasEnabledFilters
+    );
   }
 );
 

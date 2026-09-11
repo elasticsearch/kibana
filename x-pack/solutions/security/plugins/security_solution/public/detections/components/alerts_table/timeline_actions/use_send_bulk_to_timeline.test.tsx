@@ -138,6 +138,36 @@ describe('useSendBulkToTimeline', () => {
         'KqlFilter'
       );
     });
+
+    it('enriches ecs with kibana.alert.rule.type and kibana.alert.group.id from data', () => {
+      // Bulk selections only populate `item.ecs` with `_id`/`_index`; the real
+      // field values live in `item.data`. See https://github.com/elastic/kibana/issues/288404.
+      const eqlTimelineItems: TimelineItem[] = [
+        {
+          _id: 'eql-alert-a',
+          _index: 'test-index',
+          data: [
+            { field: 'kibana.alert.rule.type', value: ['eql'] },
+            { field: 'kibana.alert.group.id', value: ['group-a'] },
+          ],
+          ecs: { _id: 'eql-alert-a', _index: 'test-index' },
+        },
+      ];
+      const { result } = renderHookWithProviders();
+
+      act(() => {
+        result.current.sendBulkEventsToTimelineHandler(eqlTimelineItems);
+      });
+
+      const ecsData = mockSendBulkEventsToTimelineAction.mock.calls[0][1];
+      expect(ecsData).toEqual([
+        {
+          _id: 'eql-alert-a',
+          _index: 'test-index',
+          kibana: { alert: { rule: { type: ['eql'] }, group: { id: ['group-a'] } } },
+        },
+      ]);
+    });
   });
 
   describe('createTimeline', () => {
