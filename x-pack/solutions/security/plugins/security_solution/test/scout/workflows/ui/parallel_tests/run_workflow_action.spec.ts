@@ -8,8 +8,7 @@
 import { spaceTest, tags, CUSTOM_QUERY_RULE, FULL_KIBANA_SECURITY_ROLE } from '@kbn/scout-security';
 import { expect } from '@kbn/scout-security/ui';
 
-// Failing: See https://github.com/elastic/kibana/issues/261392
-spaceTest.describe.skip('Run workflow alert action', { tag: [...tags.stateful.classic] }, () => {
+spaceTest.describe('Run workflow alert action', { tag: [...tags.stateful.classic] }, () => {
   let ruleName: string;
 
   spaceTest.beforeAll(async ({ scoutSpace }) => {
@@ -17,12 +16,22 @@ spaceTest.describe.skip('Run workflow alert action', { tag: [...tags.stateful.cl
     await scoutSpace.uiSettings.set({ 'workflows:ui:enabled': true });
   });
 
-  spaceTest.beforeEach(async ({ browserAuth, apiServices, scoutSpace }) => {
+  spaceTest.beforeEach(async ({ browserAuth, apiServices, scoutSpace }, testInfo) => {
+    // Detection rule first-run can take a while under CI load before an alert lands.
+    // This is for rule execution, not the workflow create API (that cold-start is
+    // covered by StorageIndexAdapter.ensureReady in #283105).
+    testInfo.setTimeout(testInfo.timeout + 90_000);
+
     ruleName = `${CUSTOM_QUERY_RULE.name}_${scoutSpace.id}_${Date.now()}`;
     await apiServices.detectionRule.createCustomQueryRule({
       ...CUSTOM_QUERY_RULE,
       name: ruleName,
     });
+
+    // Wait for the rule to produce an alert before opening the browser. Without this,
+    // navigation races task-manager first-run scheduling and the alerts table never loads.
+    await apiServices.detectionAlerts.waitForAlerts(ruleName, 1, 90_000);
+
     // Use a custom role that includes workflowsManagement privileges (canExecuteWorkflow)
     // in addition to the security index privileges needed to view alerts
     await browserAuth.loginWithCustomRole(FULL_KIBANA_SECURITY_ROLE);
@@ -64,11 +73,16 @@ spaceTest.describe.skip('Run workflow alert action', { tag: [...tags.stateful.cl
           headers: { 'kbn-xsrf': 'true' },
         }
       );
+      if (!createResponse.ok()) {
+        throw new Error(
+          `Failed to create workflow: ${createResponse.status()} ${await createResponse.text()}`
+        );
+      }
       const { id: workflowId } = await createResponse.json();
 
       try {
         await alertsTablePage.navigate();
-        await alertsTablePage.waitForDetectionsAlertsWrapper();
+        await alertsTablePage.waitForRuleAlert(ruleName);
         await alertsTablePage.openAlertContextMenu(ruleName);
         await alertsTablePage.runWorkflowMenuItem.click();
 
@@ -117,7 +131,7 @@ spaceTest.describe.skip('Run workflow alert action', { tag: [...tags.stateful.cl
       const { alertsTablePage } = pageObjects;
 
       await alertsTablePage.navigate();
-      await alertsTablePage.waitForDetectionsAlertsWrapper();
+      await alertsTablePage.waitForRuleAlert(ruleName);
       await alertsTablePage.openAlertContextMenu(ruleName);
 
       await expect(alertsTablePage.runWorkflowMenuItem).toBeVisible();
@@ -135,16 +149,11 @@ spaceTest.describe.skip('Run workflow alert action', { tag: [...tags.stateful.cl
       const { alertsTablePage } = pageObjects;
 
       await alertsTablePage.navigate();
-      await alertsTablePage.waitForDetectionsAlertsWrapper();
+      await alertsTablePage.waitForRuleAlert(ruleName);
 
-      // Select the alert row matching the rule via its checkbox
-      const ruleNameCell = alertsTablePage.alertsTable
-        .getByTestId('ruleName')
-        .filter({ hasText: ruleName });
-      const alertCheckbox = ruleNameCell
-        .locator('xpath=ancestor::div[contains(@class,"euiDataGridRow")]')
-        .locator('.euiCheckbox__input');
-      await alertCheckbox.check();
+      // Prefer the page-object helper: a raw ancestor xpath can match nested
+      // euiDataGridRow nodes and trip Playwright strict mode.
+      await alertsTablePage.checkAlertRowCheckbox(ruleName);
 
       // Open the bulk-actions popover ("N selected" button) before clicking the menu item
       await alertsTablePage.selectedShowBulkActionsButton.click();
