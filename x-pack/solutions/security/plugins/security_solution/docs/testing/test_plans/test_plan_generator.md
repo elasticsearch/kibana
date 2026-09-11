@@ -221,6 +221,81 @@ Or with a full URL:
 /test-plan-generator create a test plan for https://github.com/elastic/kibana/issues/1234
 ```
 
+### Choosing a verbosity level (optional)
+
+Every command accepts an optional verbosity keyword — `lean`, `standard`, or `detailed` — that controls **prose density and per-scenario metadata only**. It never changes which scenarios are written, their priorities, or which `⚠️` entries appear in *Known Limitations*.
+
+```
+/test-plan-generator generate a lean test plan for issue #1234
+/test-plan-generator generate a detailed test plan for issue #1234
+```
+
+If you omit the keyword, the agent uses `standard` (the current default). The chosen level is persisted as a hidden `<!-- verbosity: … -->` marker in the published comment, so `update` runs preserve it automatically. To flip the level later, just include the keyword in the update invocation — the agent re-renders the whole plan at the new level and announces the change in its post-save message.
+
+**When to reach for `lean`** — small, well-understood changes; issues where the reviewer already knows the domain; drafts you plan to skim.
+
+**When to reach for `detailed`** — cross-team handovers; issues that will be read by people unfamiliar with the feature; drafts that need per-scenario traceability. `detailed` adds a `**Source:**` line that cites the scenario's origin from one of four categories: a consolidated AC (`AC1 (#1234)`), a PR artifact (endpoint / component / saved-object type / etc.), an always-evaluated coverage trigger (upgrade / CRUD per persisted object / dependency data lifecycle), or a code-derived fact discovered outside issue and PR bodies.
+
+#### Before / after — the `Overview` and per-scenario blocks under each level
+
+`standard`:
+
+````markdown
+## Overview
+
+This test plan covers the automated escalation policy feature introduced in #1234, which allows security engineers to define time-based escalation rules for security alerts. It validates end-to-end behaviour across rule creation, alert routing, and downstream notification, and confirms that the feature meets the acceptance criteria stated in the epic and the linked PR.
+
+...
+
+#### Scenario: Editor can create a new escalation rule
+
+**Priority:** P0
+
+**Automation coverage**: 2 unit tests (`escalation_rule_form.test.tsx` — "renders create form", "submits valid payload"), 1 e2e test (`escalation_rules.cy.ts` — "creates rule from empty state")
+
+```gherkin
+...
+```
+````
+
+`lean`:
+
+````markdown
+## Overview
+
+Validates the automated escalation policy feature from #1234 end-to-end (rule creation, alert routing, notifications).
+
+...
+
+#### Scenario: Editor can create a new escalation rule
+
+**Priority:** P0
+
+**Automation coverage**: 🤖 automated (3 tests)
+
+```gherkin
+...
+```
+````
+
+`detailed` (adds `**Source:**` between `**Priority:**` and `**Automation coverage**` — everything else identical to `standard`):
+
+````markdown
+#### Scenario: Editor can create a new escalation rule
+
+**Priority:** P0
+
+**Source:** AC1 (#1234); PR #5678 (endpoint `POST /rules`); PR #5678 (component `EscalationRuleForm`)
+
+**Automation coverage**: 2 unit tests (`escalation_rule_form.test.tsx` — "renders create form", "submits valid payload"), 1 e2e test (`escalation_rules.cy.ts` — "creates rule from empty state")
+
+```gherkin
+...
+```
+````
+
+The `Assumptions` section shrinks similarly under `lean` — only bullets whose value was **confirmed from a concrete source** (issue body, PR, Figma, sub-issue) are rendered as a compact `; `-separated line, and unconfirmed bullets remain in *Known Limitations* with their `⚠️` unchanged. The agent never invents defaults just to fill the section — that would violate the skill's core "never assume, always ask" rule. If nothing was confirmed, the section renders `See _Known Limitations_ for open assumptions.` and points there.
+
 ### Updating an existing test plan
 
 If the issue changes and you need to update the plan:
@@ -350,7 +425,7 @@ The skill files live in the repository under `x-pack/solutions/security/plugins/
 
 **How does the agent self-review the draft before saving?**
 Three layers, all run during Step 3 just before the draft is written, in this order:
-1. The *Red flags — STOP and ask* table at the top of `SKILL.md` (right below the Core rule). It is a 9-row table mapping the most common "I'll just rationalise this" thoughts (e.g. *"the image fetch failed, I'll describe it from alt text"*, *"the total scenarios count looks close enough — I'll round"*, *"the issue is thin but the PR fills the gaps"*, *"I found a PR that obviously implements this scope, but no issue cross-references it — I'll add it to the corpus"*) to the correct alternative behaviour. If the agent catches itself in any of those, it stops and asks instead of inventing.
+1. The *Red flags — STOP and ask* table at the top of `SKILL.md` (right below the Core rule). It maps the most common "I'll just rationalise this" thoughts (e.g. *"the image fetch failed, I'll describe it from alt text"*, *"the total scenarios count looks close enough — I'll round"*, *"the issue is thin but the PR fills the gaps"*, *"I found a PR that obviously implements this scope, but no issue cross-references it — I'll add it to the corpus"*) to the correct alternative behaviour. If the agent catches itself in any of those, it stops and asks instead of inventing.
 2. The expanded `references/common-mistakes.md` file. 8 frequent quality issues (hallucinated scenarios, duplicated sub-issue coverage, speculative optional sections, UI-step Gherkin, overlooked sub-issue ACs, overlooked PR artifacts, inconsistent Known Limitations, ignoring the Core rule) — each entry has a one-paragraph description, a concrete ❌ Bad example (most sourced from observed agent runs), and a ✅ Good alternative. On top of that, the Gherkin self-review in `references/output-formats.md` includes three mechanical sum-checks on the Test Coverage Summary table to catch undercounts and a structural check on the Issue Clarity Assessment block.
 3. The *draft coherence review* in `references/draft-coherence-review.md` — a holistic end-to-end re-read of the assembled draft against the gathered context corpus. The previous two layers are itemised (per-scenario rules, per-category mistakes, sum-checks); this layer compares sections of the draft against each other and against the issue / PR / Figma sources gathered in Step 1. It is split into two short tables: *Document-as-whole coherence* (D1–D9: e.g. *Overview* matches what scenarios actually test, *Scope* bullets map to scenarios bidirectionally, *Known Limitations* claims match the document, voice and detail level consistent across scenarios) and *Source fidelity* (S1–S8: e.g. ACs verbatim from the issue, *Feature Background* motivation traceable to source, UI element names / error strings / feature-flag names matching their origin tag). Each row is graded Consistent / Drift / Incoherent — Drift and Incoherent findings are fixed on the draft before saving, or recorded as a `⚠️` entry in *Known Limitations* if unresolvable. This layer is not published — its only externally visible effects are draft edits and new `⚠️` entries.
 

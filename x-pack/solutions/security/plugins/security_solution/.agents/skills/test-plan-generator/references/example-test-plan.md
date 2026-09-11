@@ -2,6 +2,8 @@
 
 This file is a worked example of a correctly-formed test plan for a **UI feature with a linked PR**. Use it as a reference when generating plans — it shows the correct structure, scenario format, automation coverage lines, and summary table for a realistic Security Solution feature. For a backend / parser feature without UI or a linked PR, see [`example-test-plan-backend.md`](example-test-plan-backend.md).
 
+> **This example is rendered at `VERBOSITY_LEVEL = standard`.** Do **not** copy the prose length of `Overview` / `Feature Background`, the four-bullet shape of `Assumptions`, or the itemised `**Automation coverage**:` lines when `VERBOSITY_LEVEL` is `lean` or `detailed`. Under `lean` / `detailed` the shape changes — follow [`output-formats.md` § Verbosity levels](output-formats.md#verbosity-levels) and the *Automation coverage rules* / *Source line rules* in [`output-formats.md` § Scenario format](output-formats.md#scenario-format), not the shape of this example. Everything else (section order, scenario Gherkin body, Execution block, Test Coverage Summary, Issue Clarity Assessment, footer) is level-independent and can be copied as-is.
+
 The example is **abbreviated** (6 scenarios, 2 feature areas) but **complete** — every required section is present, optional sections are omitted where the fictional issue does not warrant them, and all self-review checks pass. (Upgrade coverage does apply here — see *Known Limitations* — but the concrete scenarios are abbreviated for brevity.)
 
 ---
@@ -9,7 +11,7 @@ The example is **abbreviated** (6 scenarios, 2 feature areas) but **complete** �
 ## What this example demonstrates
 
 - All required sections from `references/document-structure.md`, in order
-- The two HTML marker lines that must open every published plan
+- The HTML marker lines that must open every published plan — three always required (`<!-- test-plan-generated -->`, `<!-- generated-by: … -->`, `<!-- verbosity: … -->`) and one conditional (`<!-- tokens: … -->` when the session-token script captured a value); see [`output-formats.md` § Token usage marker](output-formats.md#token-usage-marker) for the canonical order
 - Scenarios written in terms of user intent, not UI clicks (see Gherkin rules in `references/optional-scenarios.md`)
 - Scenario 1 ("User successfully adds a note") covers both display and persistence in a single `And` step — intentional for brevity; a real plan could split these into two P0 scenarios if independent verification is needed
 - Automation coverage lines that name specific test files and test descriptions — not aggregate counts
@@ -24,13 +26,14 @@ The example is **abbreviated** (6 scenarios, 2 feature areas) but **complete** �
 
 ## Full example
 
-The content below is exactly what would be saved to `.agents/tmp/test-plan-#12345.md` and posted to GitHub.
+The content below is the **published form** of the plan — the shape of the comment on GitHub after Step 4 runs. The draft file `.agents/tmp/test-plan-#12345.md` written by Step 3 sub-step 7 differs only in the top markers: at draft-save time the file begins with `<!-- verbosity: standard -->` (and, when captured, `<!-- tokens: … -->`) as the top marker(s); Step 4 prepends `<!-- test-plan-generated -->` and `<!-- generated-by: … -->` above those on publish. Marker order is defined in [`output-formats.md` § Token usage marker](output-formats.md#token-usage-marker).
 
 ---
 
 ```markdown
 <!-- test-plan-generated -->
 <!-- generated-by: claude-sonnet-4-6 -->
+<!-- verbosity: standard -->
 
 # Test Plan: Alert Notes
 

@@ -2,6 +2,8 @@
 
 This file is a worked example of a correctly-formed test plan for a **pure-backend / pure-parser feature with no UI, no PR linked yet, and no upgrade surface**. Use it as a reference alongside [`example-test-plan.md`](example-test-plan.md), which covers the UI-feature case.
 
+> **This example is rendered at `VERBOSITY_LEVEL = standard`.** Do **not** copy the prose length of `Overview` / `Feature Background`, the four-bullet shape of `Assumptions`, or the itemised `**Automation coverage**:` lines when `VERBOSITY_LEVEL` is `lean` or `detailed`. Under `lean` / `detailed` the shape changes — follow [`output-formats.md` § Verbosity levels](output-formats.md#verbosity-levels) and the *Automation coverage rules* / *Source line rules* in [`output-formats.md` § Scenario format](output-formats.md#scenario-format), not the shape of this example. In particular, under `detailed` the code-derived scenario in this file would carry a `**Source:**` line of the form `Code-derived (…)` — see the *Source line rules* table for the four allowed categories, including `Always-evaluated coverage (…)` for the upgrade / CRUD / dependency scenarios in a plan that has them.
+
 The example is **abbreviated** (6 scenarios, 1 feature area) but **complete** — every required section is present, upgrade is recorded under *Out of scope* (per the always-evaluated rule, with reason "no upgrade surface"), the other optional sections are omitted because the feature has no RBAC / space / tenant / CCS surface, and all self-review checks pass.
 
 ---
@@ -20,13 +22,14 @@ The example is **abbreviated** (6 scenarios, 1 feature area) but **complete** �
 
 ## Full example
 
-The content below is exactly what would be saved to `.agents/tmp/test-plan-#90201.md` and posted to GitHub. Issue numbers (`#90100`, `#90201`) are synthetic — do not match any real Kibana or planning issue.
+The content below is the **published form** of the plan — the shape of the comment on GitHub after Step 4 runs. The draft file `.agents/tmp/test-plan-#90201.md` written by Step 3 sub-step 7 differs only in the top markers: at draft-save time the file begins with `<!-- verbosity: standard -->` (and, when captured, `<!-- tokens: … -->`) as the top marker(s); Step 4 prepends `<!-- test-plan-generated -->` and `<!-- generated-by: … -->` above those on publish. Marker order is defined in [`output-formats.md` § Token usage marker](output-formats.md#token-usage-marker). Issue numbers (`#90100`, `#90201`) are synthetic — do not match any real Kibana or planning issue.
 
 ---
 
 ```markdown
 <!-- test-plan-generated -->
 <!-- generated-by: claude-sonnet-4-6 -->
+<!-- verbosity: standard -->
 
 # Test Plan: Parser support for FooBar helper variants
 
