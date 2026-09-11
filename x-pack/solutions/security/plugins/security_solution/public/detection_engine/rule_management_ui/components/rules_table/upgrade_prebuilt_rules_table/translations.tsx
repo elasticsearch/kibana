@@ -41,6 +41,27 @@ export const BULK_UPDATE_SELECTED_RULES_BUTTON_TOOLTIP_CONFLICTS = i18n.translat
   }
 );
 
+export const UPDATE_TO_ELASTIC_VERSION = i18n.translate(
+  'xpack.securitySolution.detectionEngine.rules.upgradeRules.updateToElasticVersion',
+  {
+    defaultMessage: 'Update to Elastic version',
+  }
+);
+
+export const UPDATE_SELECTED_RULES_MORE_ACTIONS_ARIA_LABEL = i18n.translate(
+  'xpack.securitySolution.detectionEngine.rules.upgradeRules.bulkButtons.selectedRules.moreActionsAriaLabel',
+  {
+    defaultMessage: 'More update options for selected rules',
+  }
+);
+
+export const UPDATE_ALL_RULES_MORE_ACTIONS_ARIA_LABEL = i18n.translate(
+  'xpack.securitySolution.detectionEngine.rules.upgradeRules.bulkButtons.allRules.moreActionsAriaLabel',
+  {
+    defaultMessage: 'More update options for all rules',
+  }
+);
+
 export const SEARCH_PLACEHOLDER = i18n.translate(
   'xpack.securitySolution.detectionEngine.rules.upgradeRules.searchBarPlaceholder',
   {

@@ -7,6 +7,7 @@
 
 export * from './field_upgrade_state_enum';
 export type * from './fields_upgrade_state';
+export type * from './rule_upgrade_customization_counts';
 export type * from './rule_upgrade_state';
 export type * from './rules_upgrade_state';
 export type * from './set_rule_field_resolved_value';

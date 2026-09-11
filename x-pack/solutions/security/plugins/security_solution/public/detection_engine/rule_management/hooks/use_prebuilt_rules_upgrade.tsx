@@ -9,7 +9,12 @@ import React, { useCallback, useMemo, useState } from 'react';
 import { EuiButton, EuiToolTip } from '@elastic/eui';
 import { useUserPrivileges } from '../../../common/components/user_privileges';
 import { RuleUpgradeEventTypes } from '../../../common/lib/telemetry/events/rule_upgrade/types';
-import { FieldUpgradeStateEnum, type RuleUpgradeState } from '../model/prebuilt_rule_upgrade';
+import { isRuleCustomized } from '../../../../common/detection_engine/rule_management/utils';
+import {
+  FieldUpgradeStateEnum,
+  type RuleUpgradeCustomizationCounts,
+  type RuleUpgradeState,
+} from '../model/prebuilt_rule_upgrade';
 import { PerFieldRuleDiffTab } from '../components/rule_details/per_field_rule_diff_tab';
 import { useIsInitializingPrebuiltRulesPackage } from '../logic/prebuilt_rules/use_is_initializing_prebuilt_rules_package';
 import { usePrebuiltRulesCustomizationStatus } from '../logic/prebuilt_rules/use_prebuilt_rules_customization_status';
@@ -119,6 +124,7 @@ export function usePrebuiltRulesUpgrade({
         ruleIds: filterOptions?.ruleIds,
       },
       searchTerm,
+      aggregations: { counts: ['isCustomized'] },
     },
     {
       refetchInterval: REVIEW_PREBUILT_RULES_UPGRADE_REFRESH_INTERVAL,
@@ -147,12 +153,14 @@ export function usePrebuiltRulesUpgrade({
 
   const upgradeRulesToResolved = useCallback(
     async (ruleIds: RuleSignatureId[]) => {
-      const ruleUpgradeSpecifiers: RuleUpgradeSpecifier[] = ruleIds.map((ruleId) => ({
-        rule_id: ruleId,
-        version: rulesUpgradeState[ruleId].target_rule.version,
-        revision: rulesUpgradeState[ruleId].revision,
-        fields: constructRuleFieldsToUpgrade(rulesUpgradeState[ruleId]),
-      }));
+      const ruleUpgradeSpecifiers: RuleUpgradeSpecifier[] = ruleIds
+        .filter((ruleId) => rulesUpgradeState[ruleId] !== undefined)
+        .map((ruleId) => ({
+          rule_id: ruleId,
+          version: rulesUpgradeState[ruleId].target_rule.version,
+          revision: rulesUpgradeState[ruleId].revision,
+          fields: constructRuleFieldsToUpgrade(rulesUpgradeState[ruleId]),
+        }));
 
       setLoadingRules((prev) => [...prev, ...ruleIds]);
 
@@ -184,11 +192,13 @@ export function usePrebuiltRulesUpgrade({
 
   const upgradeRulesToTarget = useCallback(
     async (ruleIds: RuleSignatureId[]) => {
-      const ruleUpgradeSpecifiers: RuleUpgradeSpecifier[] = ruleIds.map((ruleId) => ({
-        rule_id: ruleId,
-        version: rulesUpgradeState[ruleId].target_rule.version,
-        revision: rulesUpgradeState[ruleId].revision,
-      }));
+      const ruleUpgradeSpecifiers: RuleUpgradeSpecifier[] = ruleIds
+        .filter((ruleId) => rulesUpgradeState[ruleId] !== undefined)
+        .map((ruleId) => ({
+          rule_id: ruleId,
+          version: rulesUpgradeState[ruleId].target_rule.version,
+          revision: rulesUpgradeState[ruleId].revision,
+        }));
 
       setLoadingRules((prev) => [...prev, ...ruleIds]);
 
@@ -273,6 +283,68 @@ export function usePrebuiltRulesUpgrade({
     isRulesCustomizationEnabled,
     performUpgradeFilter,
   ]);
+
+  const upgradeAllRulesToTarget = useCallback(async () => {
+    if (filterOptions?.ruleIds?.length) {
+      await upgradeRulesToTarget(upgradeableRules.map((rule) => rule.rule_id));
+      return;
+    }
+
+    setLoadingRules((prev) => [...prev, ...upgradeableRules.map((rule) => rule.rule_id)]);
+
+    try {
+      // Handle MLJobs modal
+      if (!(await confirmLegacyMLJobs())) {
+        return;
+      }
+
+      await upgradeRulesRequest({
+        mode: 'ALL_RULES',
+        pick_version: 'TARGET',
+        filter: performUpgradeFilter,
+      });
+
+      if (onUpgrade) {
+        onUpgrade();
+      }
+    } catch {
+      // Error is handled by the mutation's onError callback, so no need to do anything here
+    } finally {
+      setLoadingRules([]);
+    }
+  }, [
+    confirmLegacyMLJobs,
+    filterOptions?.ruleIds,
+    onUpgrade,
+    performUpgradeFilter,
+    upgradeableRules,
+    upgradeRulesRequest,
+    upgradeRulesToTarget,
+  ]);
+
+  const getSelectedRulesCustomizationCounts = useCallback(
+    (ruleIds: RuleSignatureId[]): RuleUpgradeCustomizationCounts => {
+      const selectedRuleUpgradeStates = ruleIds
+        .map((ruleId) => rulesUpgradeState[ruleId])
+        .filter((state): state is RuleUpgradeState => state !== undefined);
+
+      return {
+        total: selectedRuleUpgradeStates.length,
+        customizedCount: selectedRuleUpgradeStates.filter((state) =>
+          isRuleCustomized(state.current_rule)
+        ).length,
+      };
+    },
+    [rulesUpgradeState]
+  );
+
+  const allRulesCustomizationCounts = useMemo<RuleUpgradeCustomizationCounts>(
+    () => ({
+      total: upgradeReviewResponse?.total ?? 0,
+      customizedCount: upgradeReviewResponse?.counts?.isCustomized?.true ?? 0,
+    }),
+    [upgradeReviewResponse]
+  );
 
   const subHeaderFactory = useCallback(
     (rule: RuleResponse) =>
@@ -464,6 +536,10 @@ export function usePrebuiltRulesUpgrade({
     reFetchRules: refetch,
     upgradeRules,
     upgradeAllRules,
+    upgradeRulesToTarget,
+    upgradeAllRulesToTarget,
+    getSelectedRulesCustomizationCounts,
+    allRulesCustomizationCounts,
   };
 }
 
