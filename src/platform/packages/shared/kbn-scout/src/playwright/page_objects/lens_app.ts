@@ -36,6 +36,11 @@ export class LensApp {
   protected readonly closeDimensionEditorButton;
   readonly applyFlyoutButton;
   readonly cancelFlyoutButton;
+  /**
+   * Series colour input of the open dimension editor. Matched with `~=` because the
+   * input carries two space-separated test subjects (`euiColorPickerAnchor` and this one).
+   */
+  readonly dimensionColorPicker;
   protected readonly codeEditor: KibanaCodeEditorWrapper;
 
   private readonly chartSwitchPopover;
@@ -64,6 +69,9 @@ export class LensApp {
     );
     this.applyFlyoutButton = this.page.getByTestId('applyFlyoutButton');
     this.cancelFlyoutButton = this.page.getByTestId('cancelFlyoutButton');
+    this.dimensionColorPicker = this.page.locator(
+      '[data-test-subj~="indexPattern-dimension-colorPicker"]'
+    );
     this.codeEditor = new KibanaCodeEditorWrapper(this.page);
   }
 
@@ -392,6 +400,20 @@ export class LensApp {
       [testSubj, want] as const,
       { timeout: WAIT_FOR_FUNCTION_TIMEOUT_MS }
     );
+  }
+
+  /**
+   * Opens the dimension editor for the XY chart's vertical axis, so callers can
+   * read or edit the series configuration.
+   *
+   * Deliberately does not wait: `lns-indexPattern-dimensionContainerClose` comes
+   * from the shared flyout container, so it can already be visible without the
+   * dimension editor being open, and waiting on it lets callers proceed too early.
+   * Assert on the control you actually need (e.g. {@link dimensionColorPicker});
+   * its own auto-waiting is the accurate readiness signal.
+   */
+  async openXYDimensionEditor() {
+    await this.page.testSubj.click('lnsXY_yDimensionPanel');
   }
 
   /**

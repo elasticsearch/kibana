@@ -22,4 +22,3 @@ enabled:
   - x-pack/platform/test/serverless/functional/configs/search/config.group12.ts
   - x-pack/platform/test/serverless/functional/configs/search/config.group18.ts
   - x-pack/platform/test/serverless/functional/configs/search/config.group19.ts
-  - x-pack/platform/test/serverless/functional/configs/search/config.feature_flags.ts

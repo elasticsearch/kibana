@@ -227,6 +227,26 @@ export abstract class NavigationMixin extends DiscoverAppBase {
       .waitFor({ state: wasOpen ? 'hidden' : 'visible' });
   }
 
+  /**
+   * Runs the given query from the open ES|QL history panel. The row's run button
+   * both loads the query into the editor and submits it. Matches the row by query
+   * text rather than index, so callers don't depend on history ordering.
+   */
+  async runEsqlHistoryQuery(query: string) {
+    const row = this.page.testSubj
+      .locator('ESQLEditor-queryHistory')
+      .locator('tr')
+      .filter({
+        // Match the whole text of the query cell rather than `hasText` on the
+        // row: that is a case-insensitive substring match over the timestamp and
+        // action buttons too, so one query would also match a row whose query
+        // merely contains it.
+        has: this.page.testSubj.locator('queryString').getByText(query, { exact: true }),
+      });
+    await row.locator('[data-test-subj="ESQLEditor-history-starred-queries-run-button"]').click();
+    await this.waitUntilSearchingHasFinished();
+  }
+
   async getEsqlEditorHeight(): Promise<number> {
     const editor = this.page.testSubj.locator('ESQLEditor');
     await editor.waitFor({ state: 'visible' });

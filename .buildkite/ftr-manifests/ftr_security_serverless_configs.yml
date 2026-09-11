@@ -58,7 +58,6 @@ enabled:
   - x-pack/platform/test/serverless/functional/configs/security/config.group15.ts
   - x-pack/platform/test/serverless/functional/configs/security/config.group16.ts
   - x-pack/platform/test/serverless/functional/configs/security/config.group18.ts
-  - x-pack/platform/test/serverless/functional/configs/security/config.feature_flags.ts
   - x-pack/solutions/security/test/security_solution_api_integration/test_suites/detections_response/detection_engine/actions/trial_license_complete_tier/configs/serverless.config.ts
   - x-pack/solutions/security/test/security_solution_api_integration/test_suites/detections_response/detection_engine/alerts/basic_license_essentials_tier/configs/serverless.config.ts
   - x-pack/solutions/security/test/security_solution_api_integration/test_suites/detections_response/detection_engine/alerts/trial_license_complete_tier/configs/serverless.config.ts

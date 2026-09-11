@@ -168,6 +168,7 @@ dependsOn:
   - '@kbn/core-security-server'
   - '@kbn/core-http-server'
   - '@kbn/ui-callout'
+  - '@kbn/field-formats-common'
 tags:
   - plugin
   - prod
