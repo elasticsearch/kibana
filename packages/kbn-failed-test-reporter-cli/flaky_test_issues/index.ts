@@ -7,6 +7,4 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
-export { runFailedTestsReporterCli } from './failed_tests_reporter/failed_tests_reporter_cli';
-export { runRetryResultCheckerCli } from './failed_tests_reporter/retry_result_checker';
-export { runCheckFlakyTestIssuesCli } from './flaky_test_issues';
+export { runCheckFlakyTestIssuesCli } from './check_flaky_test_issues_cli';

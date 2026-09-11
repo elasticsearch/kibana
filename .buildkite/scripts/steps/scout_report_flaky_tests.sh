@@ -58,8 +58,8 @@ mkdir -p "$REPORT_DIR"
 node scripts/scout discover-flaky-tests "${args[@]}"
 
 echo "--- Upload flaky test report"
-# Contract: downstream consumers (e.g. a future step that opens GitHub issues) download this
-# artifact by path. Update them if you rename it.
+# Contract: check_flaky_test_issues.sh downloads this artifact by path. Update it if you rename
+# the file.
 buildkite-agent artifact upload "$REPORT_PATH"
 
 echo "--- Annotate build"

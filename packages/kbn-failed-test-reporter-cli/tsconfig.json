@@ -20,6 +20,7 @@
     "@kbn/jest-serializers",
     "@kbn/journeys",
     "@kbn/repo-info",
+    "@kbn/scout-reporting",
   ],
   "exclude": [
     "target/**/*",
