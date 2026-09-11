@@ -24,6 +24,82 @@ To check for security updates, go to [Security announcements for the Elastic sta
 % FEATURES, ENHANCEMENTS, FIXES
 % Paste in index.md
 
+## 9.5.4 [kibana-9.5.4-release-notes]
+
+### Fixes [kibana-9.5.4-fixes]
+
+**Elastic Agent Builder**:
+* Fix MCP tools dropping extra arguments that the schema allows through `additionalProperties` before execution [#287815]({{kib-pull}}287815).
+% !!DEFERRED!! Not on the 9.5 branch (backport missing as of 2026-09-11). Re-verify against the next BC before publishing.
+% * Teach the Agent Builder cases-management skill to use `set_extended_fields` when case templates are enabled [#287638]({{kib-pull}}287638).
+% * Add an Agent Builder tool that finds case templates by name so you don't need the template ID to create a case from a template [#287744]({{kib-pull}}287744).
+
+**Alerting and cases**:
+* Relabel the top-level **Alerting** privilege as **Alerting V2** in the Roles UI and mark it experimental [#288163]({{kib-pull}}288163).
+* Fix the **Tracking containment** rule editor breaking when you select a data view [#289778]({{kib-pull}}289778).
+* Fix **Sync alerts** and **Extract observables** not applying when you change a case template from the sidebar [#288636]({{kib-pull}}288636).
+* Fix Alerting V2 not saving when you remove all tags from a rule [#288962]({{kib-pull}}288962).
+
+**Dashboards and Visualizations**:
+* Fix the **Update filter** button being unreachable when the filter editor is taller than the screen [#289163]({{kib-pull}}289163).
+* Fix sibling dashboard panels not dimming during inline editing on dashboards that have no controls [#288939]({{kib-pull}}288939).
+* Fix {{esql}} visualizations dropping field variable controls (`??field`) after you save them through the Visualizations API [#288785]({{kib-pull}}288785).
+* Fix Options list filters stopping after you delete a collapsible dashboard section [#287923]({{kib-pull}}287923).
+% !!DEFERRED!! Not yet confirmed in build candidate 9.5.4-a5c2bed4 (backport merged after BC cutoff). Re-verify against the next BC before publishing.
+% * Fix Go to URL drilldowns leaving Mustache tokens such as `event.values.[0]` unreplaced in the drilldown name [#290363]({{kib-pull}}290363).
+% * Increase the TinyMath expression length limit so longer visualization formulas no longer fail [#290314]({{kib-pull}}290314).
+
+**Data ingestion and {{fleet}}**:
+* Fix {{fleet}} blocking a package policy save with an incompatible-agent-version error when every enrolled agent is incompatible or reports a pre-release version. {{fleet}} now warns instead [#289596]({{kib-pull}}289596).
+* Fix managed integrations appearing in the {{fleet}} Agents list when they use a version-specific policy [#289394]({{kib-pull}}289394).
+* Fix package policy space assignments becoming stale after you move an agent policy to another {{kib}} space [#288966]({{kib-pull}}288966).
+* Fix Elastic Defend metadata transforms accumulating as duplicates in {{es}} across stack upgrades [#288379]({{kib-pull}}288379) [#288902]({{kib-pull}}288902).
+* Fix {{fleet}} agent policy advanced YAML settings rejecting values that contain only comments [#288430]({{kib-pull}}288430).
+% !!DEFERRED!! Not yet confirmed in build candidate 9.5.4-a5c2bed4 (backport merged after BC cutoff). Re-verify against the next BC before publishing.
+% * Fix deleted agentless policies leaving the agent record active by force-revoking the agent [#290181]({{kib-pull}}290181).
+
+**Data management**:
+* Fix classic streams leaving a stale {{es}} data stream mappings override after you remove all field overrides [#288788]({{kib-pull}}288788).
+
+**Developer tools**:
+* Fix Console treating request-like lines inside an unterminated triple-quoted string as standalone requests [#287547]({{kib-pull}}287547).
+
+**Discover**:
+* Cancel in-progress async searches in Discover and on dashboards when you navigate away in the browser, so {{es}} does not keep running them [#287949]({{kib-pull}}287949).
+* Fix custom time-range presets from the **Time filter quick ranges** advanced setting showing raw time values instead of their labels, and add a **(rounded)** suffix to rounded relative ranges [#289066]({{kib-pull}}289066).
+% !!DEFERRED!! Not yet confirmed in build candidate 9.5.4-a5c2bed4 (backport merged after BC cutoff). Re-verify against the next BC before publishing.
+% * Fix Discover {{esql}} breakdowns failing when a second `STATS` groups by an aggregate from the first `STATS` [#290259]({{kib-pull}}290259).
+% !!DEFERRED!! Not on the 9.5 branch (backport missing as of 2026-09-11). Re-verify against the next BC before publishing.
+% * Fix the Base64 Decode transform failing to decode on the server and mangling multi-byte UTF-8 characters in the browser [#281366]({{kib-pull}}281366).
+
+**{{es}} solution**:
+* Add an **Expand role members** toggle to {{sn}} connectors for compact document-level security [#288071]({{kib-pull}}288071).
+* Fix Query Rules document preview failing when the document ID contains slashes [#287214]({{kib-pull}}287214).
+
+**{{product.observability}} solution**:
+For the {{product.observability}} 9.5.4 release information, refer to [{{product.observability}} Solution Release Notes](docs-content://release-notes/elastic-observability/index.md).
+
+**{{elastic-sec}} solution**:
+For the {{elastic-sec}} 9.5.4 release information, refer to [{{elastic-sec}} Solution Release Notes](docs-content://release-notes/elastic-security/index.md).
+
+**{{kib}} platform**:
+* Fix unexpected logouts after an access token is refreshed during a search or dashboard refresh [#286038]({{kib-pull}}286038).
+* Fix user profile rows using the wrong height in user pickers [#288451]({{kib-pull}}288451).
+% !!DEFERRED!! Not yet confirmed in build candidate 9.5.4-a5c2bed4 (backport merged after BC cutoff). Re-verify against the next BC before publishing.
+% * Hide the **Activate user** action on deactivated users when you have read-only access [#289801]({{kib-pull}}289801).
+
+**Machine learning and {{infer}}**:
+* Fix Anomaly Explorer hanging when you add a geo job chart to a case [#289363]({{kib-pull}}289363).
+% !!DEFERRED!! Not on the 9.5 branch (backport missing as of 2026-09-11). Re-verify against the next BC before publishing.
+% * Fix LLM feature settings listing every connector when you lack inference privileges, instead of only the allowed connectors [#290457]({{kib-pull}}290457).
+
+% !!DEFERRED!! Workflows. Not on the 9.5 branch (backport missing as of 2026-09-11). Re-verify against the next BC before publishing.
+% * Add a `cases.extendedFieldsUpdated` workflow trigger that fires when extended-field values change on a case, including changes from a linked custom-field patch [#287043]({{kib-pull}}287043).
+% * Fix workflow custom steps failing with HTTP 404 when Kibana is configured with a base path [#283101]({{kib-pull}}283101).
+% * Fix a crash when opening the trigger tab in workflow step execution details [#282920]({{kib-pull}}282920).
+% * Fix the execution highlight in the workflow graph view for branching steps such as `if`, `switch`, and `parallel` [#281696]({{kib-pull}}281696).
+% * Fix overlapping nodes in the workflow graph layout for branching scenarios [#281304]({{kib-pull}}281304).
+
 ## 9.5.3 [kibana-9.5.3-release-notes]
 
 ### Features and enhancements [kibana-9.5.3-features-enhancements]
@@ -40,8 +116,6 @@ To check for security updates, go to [Security announcements for the Elastic sta
 **Elastic Agent Builder**:
 * Fix the research agent re-asking clarifying questions you already answered in the same round [#284800]({{kib-pull}}284800).
 * Fix disabled pre-execution workflows disappearing from Agent Builder settings so you cannot remove them. A disabled workflow stays visible and is labeled **(disabled)** [#286826]({{kib-pull}}286826).
-% !!DEFERRED!! Not on the 9.5 branch (backport missing as of 2026-09-02). Re-verify against the next BC before publishing.
-% * Teach the Agent Builder cases-management skill to use `set_extended_fields` when case templates are enabled [#287638]({{kib-pull}}287638).
 
 **Alerting and cases**:
 * Fix legacy custom fields and their v2 field-definition counterparts falling out of sync, by linking each legacy field to its definition and keeping both representations equal on every write [#282772]({{kib-pull}}282772).
@@ -59,8 +133,6 @@ To check for security updates, go to [Security announcements for the Elastic sta
 * Fix custom threshold **Rate** aggregations not firing when a counter increases from 0 to a positive value [#283973]({{kib-pull}}283973).
 * Fix experimental alerting system `.rule-events` and `.alert-actions` data streams requesting a replica on single-node clusters, which left those shards unassigned [#287544]({{kib-pull}}287544).
 * Fix alerting resource installation using unbounded concurrency, which could exhaust {{kib}} heap when many contexts and namespaces install at once [#287643]({{kib-pull}}287643).
-% !!DEFERRED!! Not yet confirmed in build candidate 9.5.3-8832a483 (backport merged after BC cutoff). Re-verify against the next BC before publishing.
-% * Relabel the top-level **Alerting** privilege as **Alerting V2** in the Roles UI and mark it experimental [#288163]({{kib-pull}}288163).
 
 **Dashboards and Visualizations**:
 * Fix by-reference visualization panels disappearing from dashboards when the panel's `savedObjectRef` reference is missing [#285476]({{kib-pull}}285476).
@@ -99,8 +171,6 @@ To check for security updates, go to [Security announcements for the Elastic sta
 
 **Discover**:
 * Fix {{esql}} filters generating invalid casts such as `::text` for types {{esql}} does not support [#287416]({{kib-pull}}287416).
-% !!DEFERRED!! Not on the 9.5 branch (backport missing as of 2026-09-02). Re-verify against a later 9.5.x BC before publishing.
-% * Fix the Base64 Decode transform failing to decode on the server and mangling multi-byte UTF-8 characters in the browser [#281366]({{kib-pull}}281366).
 
 **{{product.observability}} solution**:
 For the {{product.observability}} 9.5.3 release information, refer to [{{product.observability}} Solution Release Notes](docs-content://release-notes/elastic-observability/index.md).
@@ -122,11 +192,6 @@ For the {{elastic-sec}} 9.5.3 release information, refer to [{{elastic-sec}} Sol
 * Fix generated workflow edits stripping YAML comments and formatting [#288075]({{kib-pull}}288075).
 * Fix single-step workflow runs dropping `variables` from the historical context override [#287347]({{kib-pull}}287347).
 * Fix the **Filter executions** dropdown showing the same **Waiting** label for waiting-for-input and waiting-for-child statuses. The dropdown now uses **Waiting**, **Waiting for input**, and **Waiting for child workflow** [#285345]({{kib-pull}}285345).
-% !!DEFERRED!! Not on the 9.5 branch (backport missing as of 2026-09-02). Re-verify against a later 9.5.x BC before publishing.
-% * Fix workflow custom steps failing with HTTP 404 when Kibana is configured with a base path [#283101]({{kib-pull}}283101).
-% * Fix a crash when opening the trigger tab in workflow step execution details [#282920]({{kib-pull}}282920).
-% * Fix the execution highlight in the workflow graph view for branching steps such as `if`, `switch`, and `parallel` [#281696]({{kib-pull}}281696).
-% * Fix overlapping nodes in the workflow graph layout for branching scenarios [#281304]({{kib-pull}}281304).
 
 ## 9.5.2 [kibana-9.5.2-release-notes]
 
