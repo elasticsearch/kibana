@@ -5,13 +5,21 @@
  * 2.0.
  */
 
-import type { SavedObjectsFullModelVersion } from '@kbn/core-saved-objects-server';
 import { EngineDescriptorType } from './types';
 
-const modelVersions = EngineDescriptorType.modelVersions as Record<
-  number,
-  SavedObjectsFullModelVersion
->;
+interface TestSchema {
+  validate(input: unknown): unknown;
+}
+
+interface TestModelVersion {
+  changes: unknown[];
+  schemas?: {
+    create?: TestSchema;
+    forwardCompatibility?: TestSchema;
+  };
+}
+
+const modelVersions = EngineDescriptorType.modelVersions as Record<number, TestModelVersion>;
 
 /** Minimal valid v8-era descriptor. nonPriorityLogExtractionState is absent; v9 defaults it to null. */
 const BASE_DESCRIPTOR = {
