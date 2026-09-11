@@ -132,7 +132,7 @@ function convertDataLayerToAPI(
             ...(breakdown_by
               ? {}
               : { color: fromStaticColorLensStateToAPI(yConfig?.color) ?? AUTO_COLOR }),
-            ...(onAxis !== 'y' ? { axis: onAxis } : {}),
+            axis: onAxis,
           };
         })
         .filter(nonNullable) ?? [];
@@ -279,11 +279,10 @@ function convertReferenceLinesDecorationsToAPIFormat(
   ReferenceLineDef,
   'color' | 'stroke_dash' | 'stroke_width' | 'icon' | 'position' | 'fill' | 'axis' | 'text'
 > {
-  const resolvedOnAxis = (): ReferenceLineDef['axis'] | undefined => {
+  const resolvedOnAxis = (): ReferenceLineDef['axis'] => {
     if (!yConfig.axisMode || yConfig.axisMode === 'auto') return undefined;
     if (yConfig.axisMode === 'bottom') return 'x';
-    const axisId = resolveAxisId(yConfig.axisMode);
-    return axisId !== 'y' ? axisId : undefined;
+    return resolveAxisId(yConfig.axisMode);
   };
   return stripUndefined({
     color: fromStaticColorLensStateToAPI(yConfig.color) ?? AUTO_COLOR,

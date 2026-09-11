@@ -36,7 +36,6 @@ import {
   DEFAULT_BARS_MINIMUM_HEIGHT,
   DEFAULT_CURRENT_TIME_MARKER_VISIBLE,
   DEFAULT_DATA_LABELS_VISIBLE,
-  DEFAULT_LINES_INTERPOLATION,
   DEFAULT_PARTIAL_BUCKETS_VISIBLE,
   DEFAULT_POINTS_VISIBILITY,
 } from '../../transforms/charts/xy/defaults';
@@ -352,9 +351,10 @@ const xyStylingSchema = z
         z.literal(XY_API_LINE_INTERPOLATION.SMOOTH),
         z.literal(XY_API_LINE_INTERPOLATION.STEPPED),
       ])
-      .default(DEFAULT_LINES_INTERPOLATION)
       .optional()
-      .meta({ description: 'Curve interpolation method for line and area series' }),
+      .meta({
+        description: 'Curve interpolation method for line and area series. Defaults to linear.',
+      }),
     points: z
       .object({
         visibility: z
