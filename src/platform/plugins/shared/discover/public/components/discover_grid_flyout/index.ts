@@ -10,5 +10,7 @@
 import { withSuspense } from '@kbn/shared-ux-utility';
 import { lazy } from 'react';
 export type { DiscoverGridFlyoutProps } from './discover_grid_flyout';
+export { useCopyLocatorLink } from './use_copy_locator_link';
+export { useShareDirectLinkAction } from './use_share_direct_link_action';
 
 export const DiscoverGridFlyout = withSuspense(lazy(() => import('./discover_grid_flyout')));
