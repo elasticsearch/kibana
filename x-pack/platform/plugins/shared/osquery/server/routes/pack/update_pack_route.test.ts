@@ -2402,16 +2402,19 @@ describe('updatePackRoute', () => {
       const updatedPackagePolicy = packagePolicyUpdate.mock.calls[0][3];
       const writtenPack =
         updatedPackagePolicy.inputs[0].config.osquery.value.packs['default--my-pack'];
-      // Deterministic rule: the maximum of the two differing shards.
+      // The wire has one `shard` slot per pack block, so a shared package policy
+      // covering two differently-sharded agent policies must collapse to one
+      // value. Widest-wins (max) is order-independent and does not silently
+      // shrink the configured rollout.
       expect(writtenPack.shard).toBe(75);
     });
 
-    it('grouped write (mixed already-attached + newly-added): shared package policy is written once with the max shard', async () => {
+    it('grouped write (mixed already-attached + newly-added): shared package policy is written once with deterministic shard', async () => {
       // policy-a is already attached and policy-b is newly added; both resolve to
       // the SAME package policy. Before add/update were merged into a single
       // grouped-write pass, these were written from two separate passes over the
-      // same stale base — the second overwriting the first and dropping the
-      // deterministic max shard (policy-a's 75 → policy-b's 25).
+      // same stale base — the second overwriting the first and dropping policy-a's
+      // shard (75) with policy-b's (25).
       const currentSO = {
         ...basePackSO,
         references: [{ id: 'policy-a', name: 'policy-a', type: 'ingest-agent-policies' }],
@@ -2503,8 +2506,8 @@ describe('updatePackRoute', () => {
       const writtenPacks =
         packagePolicyUpdate.mock.calls[0][3].inputs[0].config.osquery.value.packs;
       expect(Object.keys(writtenPacks)).toHaveLength(1);
-      // The single write carries the order-independent max shard across both
-      // targeting agent policies, not just the newly-added one's shard.
+      // The single write carries the first-explicit shard (policy-a=75, which is
+      // first in the policiesList), not just the newly-added policy-b's shard (25).
       expect(writtenPacks['default--my-pack'].shard).toBe(75);
     });
 
@@ -3680,9 +3683,9 @@ describe('updatePackRoute', () => {
     });
 
     it('edit-only save preserves a deliberate shard on a SHARED package policy (no reset to 100)', async () => {
-      // `policyShards` is keyed off the pack's own targets, so co-tenants
-      // resolve to DEFAULT_PACK_SHARD and `Math.max` promotes 25 to 100 — the
-      // SO would read 25 while the wire ran on every agent.
+      // `policyShards` is keyed off the pack's own targets, and `agentPolicyIds`
+      // holds only the pack's targets (not the shared policy's co-tenants), so
+      // the max collapse sees just policy-a's explicit 25 and preserves it.
       const currentSO = {
         ...basePackSO,
         references: [{ id: 'policy-a', name: 'policy-a', type: 'ingest-agent-policies' }],
@@ -3718,7 +3721,12 @@ describe('updatePackRoute', () => {
         list: jest.fn().mockResolvedValue({ items: [] }),
       };
 
+      const dedicatedPolicy = buildWirePolicyWithPack('package-policy-dedicated', ['policy-a']);
+      dedicatedPolicy.inputs[0].config.osquery.value.packs['default--my-pack'].shard = 25;
       const packagePolicyUpdate = jest.fn().mockResolvedValue({});
+      const packagePolicyCreate = jest
+        .fn()
+        .mockResolvedValue({ ...dedicatedPolicy, id: 'package-policy-dedicated' });
       // One package policy shared by BOTH agent policies; the pack targets only policy-a.
       const sharedPolicy = buildWirePolicyWithPack('package-policy-shared', [
         'policy-a',
@@ -3744,6 +3752,7 @@ describe('updatePackRoute', () => {
             list: packagePolicyList,
             fetchAllItems: fetchAllItemsFromListMock(packagePolicyList),
             update: packagePolicyUpdate,
+            create: packagePolicyCreate,
           }),
         },
       } as unknown as OsqueryAppContext;
@@ -3763,12 +3772,18 @@ describe('updatePackRoute', () => {
       await routeHandler(buildMockContext() as any, mockRequest, mockResponse);
 
       expect(mockResponse.badRequest).not.toHaveBeenCalled();
+      // No dedicated policy: Fleet forbids a second osquery package policy on an
+      // agent policy that already has one, so the shared policy is written.
+      expect(packagePolicyCreate).not.toHaveBeenCalled();
       expect(packagePolicyUpdate).toHaveBeenCalledTimes(1);
+      expect(packagePolicyUpdate.mock.calls[0][2]).toBe('package-policy-shared');
       const writtenBlock =
         packagePolicyUpdate.mock.calls[0][3].inputs[0].config.osquery.value.packs[
           'default--my-pack'
         ];
-      // The pack's own shard survives; policy-b never promotes it to 100.
+      // The pack's own shard survives: `policyShards` is keyed off the pack's
+      // targets, so only policy-a contributes and the max is its explicit 25.
+      // Co-tenant policy-b is not in `agentPolicyIds` and never promotes it to 100.
       expect(writtenBlock.shard).toBe(25);
     });
 
@@ -4077,6 +4092,206 @@ describe('updatePackRoute', () => {
       // No heal write committed, so the response reports the pre-heal refs.
       const responseBody = (mockResponse.ok.mock.calls[0][0]?.body as any).data;
       expect(responseBody.policy_ids).toEqual(['policy-1']);
+    });
+  });
+
+  describe('over-broad shared integration (issue #285994)', () => {
+    // `osquery_manager` declares `multiple: false`, so Fleet permits only ONE
+    // osquery package policy per agent policy — a dedicated "targeted" policy can
+    // never be created. The pack is written to the shared policy and the
+    // over-reach is reported via `targeting_warning`.
+    const buildSharedPolicy = (id: string, policyIds: string[]) => ({
+      id,
+      policy_ids: policyIds,
+      package: { name: 'osquery_manager', version: '1.0.0' },
+      inputs: [
+        {
+          type: 'osquery',
+          streams: [],
+          config: { osquery: { value: { packs: {} } } },
+        },
+      ],
+    });
+
+    it('retarget: writes the shared policy and reports the untargeted agent policy', async () => {
+      const currentSO = {
+        ...basePackSO,
+        references: [
+          { id: 'policy-a', name: 'policy-a', type: 'ingest-agent-policies' },
+          { id: 'policy-b', name: 'policy-b', type: 'ingest-agent-policies' },
+        ],
+        attributes: {
+          ...basePackSO.attributes,
+          enabled: true,
+          schedule_type: 'interval' as const,
+          interval: 60,
+          rrule_schedule: null,
+        },
+      };
+      const updatedSO = {
+        ...currentSO,
+        references: [{ id: 'policy-a', name: 'policy-a', type: 'ingest-agent-policies' }],
+        attributes: { ...currentSO.attributes },
+      };
+
+      let getCallCount = 0;
+      const mockClient = {
+        get: jest.fn().mockImplementation(() => {
+          getCallCount += 1;
+
+          return Promise.resolve(getCallCount === 1 ? currentSO : updatedSO);
+        }),
+        find: jest.fn().mockResolvedValue({ saved_objects: [] }),
+        update: jest.fn().mockResolvedValue({
+          id: 'pack-id',
+          attributes: updatedSO.attributes,
+          references: updatedSO.references,
+        }),
+        list: jest.fn().mockResolvedValue({ items: [] }),
+      };
+
+      // Shared policy covers both; pack retargets to policy-a only.
+      const sharedPolicy = buildSharedPolicy('shared-pp-ab', ['policy-a', 'policy-b']);
+      const dedicatedPolicyForA = buildSharedPolicy('pp-dedicated-a', ['policy-a']);
+
+      const packagePolicyUpdate = jest.fn().mockResolvedValue({});
+      const packagePolicyCreate = jest.fn().mockResolvedValue(dedicatedPolicyForA);
+      const packagePolicyList = jest.fn().mockResolvedValue({ items: [sharedPolicy] });
+
+      (createInternalSavedObjectsClientForSpaceId as jest.Mock).mockResolvedValue(mockClient);
+
+      const mockRouter = createMockRouter();
+      mockOsqueryContext = {
+        logFactory: { get: jest.fn().mockReturnValue(loggingSystemMock.createLogger()) },
+        security: {},
+        getStartServices: jest.fn().mockResolvedValue([{}, { security: {} }, {}]),
+        experimentalFeatures: { rruleScheduling: true },
+        service: {
+          getActiveSpace: jest.fn().mockResolvedValue({ id: 'default' }),
+          getAgentPolicyService: jest.fn().mockReturnValue({
+            getByIds: jest.fn().mockResolvedValue([
+              { id: 'policy-a', name: 'policy-a' },
+              { id: 'policy-b', name: 'policy-b' },
+            ]),
+          }),
+          getPackagePolicyService: jest.fn().mockReturnValue({
+            list: packagePolicyList,
+            fetchAllItems: fetchAllItemsFromListMock(packagePolicyList),
+            update: packagePolicyUpdate,
+            create: packagePolicyCreate,
+          }),
+        },
+      } as unknown as OsqueryAppContext;
+
+      updatePackRoute(mockRouter, mockOsqueryContext);
+      const route = mockRouter.versioned.getRoute('put', '/api/osquery/packs/{id}');
+      const routeVersion = route.versions[API_VERSIONS.public.v1];
+      if (!routeVersion) throw new Error('no route version');
+      routeHandler = routeVersion.handler;
+
+      const mockRequest = httpServerMock.createKibanaRequest({
+        params: { id: 'pack-id' },
+        // Retarget: drop policy-b, keep policy-a.
+        body: { policy_ids: ['policy-a'] },
+      });
+      const mockResponse = httpServerMock.createResponseFactory();
+
+      await routeHandler(buildMockContext() as any, mockRequest, mockResponse);
+
+      expect(mockResponse.ok).toHaveBeenCalled();
+      // Never attempt a dedicated policy: Fleet would always reject it.
+      expect(packagePolicyCreate).not.toHaveBeenCalled();
+      // The pack still reaches policy-a — writing nothing would be a worse
+      // regression than the over-delivery being reported.
+      expect(packagePolicyUpdate).toHaveBeenCalledTimes(1);
+      expect(packagePolicyUpdate.mock.calls[0][2]).toBe('shared-pp-ab');
+      // The over-reach onto policy-b is surfaced rather than silently enforced.
+      expect((mockResponse.ok.mock.calls[0][0]?.body as any).data.targeting_warning).toEqual({
+        untargeted_agent_policy_names: ['policy-b'],
+      });
+    });
+
+    it('global pack (shards.*) is not split even when the policy is shared', async () => {
+      const currentSO = {
+        ...basePackSO,
+        references: [],
+        attributes: {
+          ...basePackSO.attributes,
+          enabled: false,
+          schedule_type: 'interval' as const,
+          interval: 60,
+          rrule_schedule: null,
+          shards: [{ key: '*', value: 100 }],
+        },
+      };
+      const updatedSO = { ...currentSO, attributes: { ...currentSO.attributes, enabled: true } };
+
+      let getCallCount = 0;
+      const mockClient = {
+        get: jest.fn().mockImplementation(() => {
+          getCallCount += 1;
+
+          return Promise.resolve(getCallCount === 1 ? currentSO : updatedSO);
+        }),
+        find: jest.fn().mockResolvedValue({ saved_objects: [] }),
+        update: jest.fn().mockResolvedValue({
+          id: 'pack-id',
+          attributes: updatedSO.attributes,
+          references: [],
+        }),
+        list: jest.fn().mockResolvedValue({ items: [] }),
+      };
+
+      const sharedPolicy = buildSharedPolicy('shared-pp-ab', ['policy-a', 'policy-b']);
+      const packagePolicyUpdate = jest.fn().mockResolvedValue({});
+      const packagePolicyCreate = jest.fn();
+      const packagePolicyList = jest.fn().mockResolvedValue({ items: [sharedPolicy] });
+
+      (createInternalSavedObjectsClientForSpaceId as jest.Mock).mockResolvedValue(mockClient);
+
+      const mockRouter = createMockRouter();
+      mockOsqueryContext = {
+        logFactory: { get: jest.fn().mockReturnValue(loggingSystemMock.createLogger()) },
+        security: {},
+        getStartServices: jest.fn().mockResolvedValue([{}, { security: {} }, {}]),
+        experimentalFeatures: { rruleScheduling: true },
+        service: {
+          getActiveSpace: jest.fn().mockResolvedValue({ id: 'default' }),
+          getAgentPolicyService: jest.fn().mockReturnValue({
+            getByIds: jest.fn().mockResolvedValue([
+              { id: 'policy-a', name: 'policy-a' },
+              { id: 'policy-b', name: 'policy-b' },
+            ]),
+          }),
+          getPackagePolicyService: jest.fn().mockReturnValue({
+            list: packagePolicyList,
+            fetchAllItems: fetchAllItemsFromListMock(packagePolicyList),
+            update: packagePolicyUpdate,
+            create: packagePolicyCreate,
+          }),
+        },
+      } as unknown as OsqueryAppContext;
+
+      updatePackRoute(mockRouter, mockOsqueryContext);
+      const route = mockRouter.versioned.getRoute('put', '/api/osquery/packs/{id}');
+      const routeVersion = route.versions[API_VERSIONS.public.v1];
+      if (!routeVersion) throw new Error('no route version');
+      routeHandler = routeVersion.handler;
+
+      const mockRequest = httpServerMock.createKibanaRequest({
+        params: { id: 'pack-id' },
+        body: { enabled: true, shards: { '*': 100 } },
+      });
+      const mockResponse = httpServerMock.createResponseFactory();
+
+      await routeHandler(buildMockContext() as any, mockRequest, mockResponse);
+
+      expect(mockResponse.ok).toHaveBeenCalled();
+      // Global pack: no split.
+      expect(packagePolicyCreate).not.toHaveBeenCalled();
+      // Wrote directly to the shared policy.
+      expect(packagePolicyUpdate).toHaveBeenCalledTimes(1);
+      expect(packagePolicyUpdate.mock.calls[0][2]).toBe('shared-pp-ab');
     });
   });
 });

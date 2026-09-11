@@ -28,11 +28,14 @@ import { satisfies } from 'semver';
 import type { SavedObjectsClientContract } from '@kbn/core/server';
 import type { AgentPolicy, PackagePolicy } from '@kbn/fleet-plugin/common';
 import { PACKAGE_POLICY_SAVED_OBJECT_TYPE } from '@kbn/fleet-plugin/common';
-import type { PackagePolicyClient } from '@kbn/fleet-plugin/server';
+import type { AgentPolicyServiceInterface, PackagePolicyClient } from '@kbn/fleet-plugin/server';
 import { OSQUERY_INTEGRATION_NAME } from '../../../common';
 import type { Shard } from '../../../common/utils/converters';
 import { DEFAULT_PLATFORM } from '../../../common/constants';
 import type { RRuleScheduleConfig, ScheduleType } from '../../../common';
+// Type-only, so the `types.ts` -> `utils.ts` import below stays erased at
+// compile time and no runtime cycle is introduced.
+import type { TargetingWarning } from './types';
 import { MAX_SPLAY_SECONDS } from '../../../common';
 import { removeMultilines } from '../../../common/utils/build_query/remove_multilines';
 import { convertECSMappingToArray, convertECSMappingToObject } from '../utils';
@@ -929,6 +932,14 @@ export const groupAgentPolicyIdsByPackagePolicy = (
  * "first seen"), so repeating the same operation always yields the same
  * result regardless of array/Map iteration order.
  *
+ * A shared package policy genuinely can cover several of the pack's agent
+ * policies with different shard values, and the wire has exactly one `shard`
+ * slot per pack block — so a collapse rule is unavoidable here. Widest-wins
+ * is the safe direction: the pack is already delivered to every agent policy
+ * on the shared package policy (see `buildTargetingWarning`), so picking the
+ * maximum keeps the configured rollout percentage of the most permissive
+ * target rather than silently shrinking it.
+ *
  * The reduce is seeded with `-Infinity` (the identity for `Math.max`) so a
  * single value — including a negative one — passes through unchanged, keeping
  * exact parity with the previous per-agent-policy `policyShards[id] ?? 100`
@@ -947,4 +958,104 @@ export const resolveSharedPackagePolicyShard = (
       Math.max(maxShard, policyShards[agentPolicyId] ?? DEFAULT_PACK_SHARD),
     -Infinity
   );
+};
+
+// ---------------------------------------------------------------------------
+// Targeting scope helpers
+// ---------------------------------------------------------------------------
+
+/** Classification of a resolved package policy relative to a pack's target set. */
+export type PackagePolicyScopeKind = 'exact' | 'over-broad';
+
+/** Result of classifying one resolved package policy. */
+export interface PackagePolicyScopeResult {
+  packagePolicy: PackagePolicy;
+  kind: PackagePolicyScopeKind;
+  /** The pack's targeted agent policy ids that this package policy covers. */
+  agentPolicyIds: string[];
+  /** Agent policy ids in `packagePolicy.policy_ids` that are outside the pack's target set. */
+  untargetedAgentPolicyIds: string[];
+}
+
+/**
+ * Classifies each resolved package policy as `exact` (its `policy_ids` ⊆ the
+ * pack's target set) or `over-broad` (covers agent policies outside the target
+ * set). Global (`*`-shard) packs are always `exact` — they intend to reach
+ * every agent policy.
+ *
+ * `writeTargets` is the output of `groupAgentPolicyIdsByPackagePolicy`.
+ * `isGlobalPack` is true when `shards` contains the `*` key.
+ */
+export const resolvePackTargetScope = (
+  writeTargets: Map<string, PackagePolicyWriteTarget>,
+  isGlobalPack: boolean
+): PackagePolicyScopeResult[] => {
+  const results: PackagePolicyScopeResult[] = [];
+
+  for (const { packagePolicy, agentPolicyIds } of writeTargets.values()) {
+    if (isGlobalPack) {
+      results.push({
+        packagePolicy,
+        kind: 'exact',
+        agentPolicyIds,
+        untargetedAgentPolicyIds: [],
+      });
+      continue;
+    }
+
+    const targetSet = new Set(agentPolicyIds);
+    const untargetedAgentPolicyIds = packagePolicy.policy_ids.filter((id) => !targetSet.has(id));
+
+    results.push({
+      packagePolicy,
+      kind: untargetedAgentPolicyIds.length > 0 ? 'over-broad' : 'exact',
+      agentPolicyIds,
+      untargetedAgentPolicyIds,
+    });
+  }
+
+  return results;
+};
+
+/**
+ * Builds the `targeting_warning` for a pack whose resolved package policies
+ * reach agent policies outside its target set, or `undefined` when targeting
+ * is exact.
+ *
+ * Kibana cannot enforce narrower delivery: `osquery_manager` declares
+ * `multiple: false`, so Fleet allows only one osquery package policy per agent
+ * policy and a dedicated "targeted" policy can never be created for an agent
+ * policy that already has one. The warning is therefore the remedy, not a
+ * fallback — it names the agent policies that also receive the pack so the user
+ * can split the integration in Fleet if they need true isolation. See #285994.
+ *
+ * An untargeted agent policy that no longer resolves (deleted between the write
+ * and this lookup) is reported by id rather than dropped: a warning listing
+ * fewer policies than actually receive the pack would understate the blast
+ * radius, which is the opposite of this field's purpose.
+ */
+export const buildTargetingWarning = async (
+  scopeResults: PackagePolicyScopeResult[],
+  agentPolicyService: AgentPolicyServiceInterface | undefined,
+  soClient: SavedObjectsClientContract
+): Promise<TargetingWarning | undefined> => {
+  const untargetedIds = uniq(
+    scopeResults
+      .filter((result) => result.kind === 'over-broad')
+      .flatMap((result) => result.untargetedAgentPolicyIds)
+  );
+
+  if (!untargetedIds.length) {
+    return undefined;
+  }
+
+  // `ignoreMissing`: a deleted agent policy must not fail the whole lookup.
+  const agentPolicies = await agentPolicyService?.getByIds(soClient, untargetedIds, {
+    ignoreMissing: true,
+  });
+  const nameById = new Map((agentPolicies ?? []).map((ap) => [ap.id, ap.name]));
+
+  return {
+    untargeted_agent_policy_names: untargetedIds.map((id) => nameById.get(id) ?? id),
+  };
 };

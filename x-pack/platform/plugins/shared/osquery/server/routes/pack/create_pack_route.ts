@@ -29,8 +29,10 @@ import {
   fetchAllPackagePolicies,
   findMatchingShards,
   getInitialPolicies,
+  buildTargetingWarning,
   groupAgentPolicyIdsByPackagePolicy,
   makePackKey,
+  resolvePackTargetScope,
   resolveSharedPackagePolicyShard,
   validatePackScheduleFields,
   buildScheduleResponseSlice,
@@ -39,7 +41,7 @@ import {
 } from './utils';
 import { convertShardsToArray } from '../utils';
 import type { PackSavedObject } from '../../common/types';
-import type { PackResponseData } from './types';
+import type { PackResponseData, TargetingWarning } from './types';
 import type { PackQueryInput } from './utils';
 import { createPackRequestBodySchema } from '../../../common/api';
 import { getUserInfo } from '../../lib/get_user_info';
@@ -89,6 +91,7 @@ export const createPackRoute = (router: IRouter, osqueryContext: OsqueryAppConte
           ? (await osqueryContext.service.getActiveSpace(request))?.id || DEFAULT_SPACE_ID
           : DEFAULT_SPACE_ID;
 
+        const logger = osqueryContext.logFactory.get('pack');
         const agentPolicyService = osqueryContext.service.getAgentPolicyService();
 
         const packagePolicyService = osqueryContext.service.getPackagePolicyService();
@@ -97,7 +100,7 @@ export const createPackRoute = (router: IRouter, osqueryContext: OsqueryAppConte
         const currentUser = await getUserInfo({
           request,
           security: (startPlugins as StartPlugins).security,
-          logger: osqueryContext.logFactory.get('pack'),
+          logger,
         });
         const username = currentUser?.username ?? undefined;
         const profileUid = currentUser?.profile_uid ?? undefined;
@@ -232,58 +235,88 @@ export const createPackRoute = (router: IRouter, osqueryContext: OsqueryAppConte
           }
         );
 
+        const isGlobalPack = Boolean(shards?.['*']);
+
+        // Group + classify write targets once so the Fleet write path and the
+        // targeting warning operate on the same resolved topology.
+        const packagePolicyWriteTargets = policiesList.length
+          ? groupAgentPolicyIdsByPackagePolicy(policiesList, packagePolicies)
+          : new Map<string, { packagePolicy: PackagePolicy; agentPolicyIds: string[] }>();
+        const scopeResults = resolvePackTargetScope(packagePolicyWriteTargets, isGlobalPack);
+
         if (enabled && policiesList.length) {
-          // Group by resolved package-policy id first: a package policy's
-          // `policy_ids` can span multiple of this pack's agent policies, so
-          // writing per-agent-policy-id (as before) could issue concurrent
-          // updates against the same package policy from the same stale base.
-          const packagePolicyWriteTargets = groupAgentPolicyIdsByPackagePolicy(
-            policiesList,
-            packagePolicies
-          );
+          const packKey = makePackKey(packSO.attributes.name, spaceId);
+          const { queries: builtQueries, ...packDefaults } = convertSOQueriesToPackConfig(queries, {
+            spaceId,
+            packSchedule: {
+              schedule_type: scheduleType,
+              interval: packInterval,
+              rrule_schedule: rruleSchedule,
+            },
+            isRruleFeatureEnabled,
+            fallbackStartDate: packSO.attributes.created_at,
+          });
 
+          const buildPackBlock = (agentPolicyIds: string[]) => ({
+            shard: resolveSharedPackagePolicyShard(agentPolicyIds, policyShards),
+            pack_id: packSO.id,
+            pack_name: packSO.attributes.name,
+            ...packDefaults,
+            queries: builtQueries,
+          });
+
+          // A shared package policy is written once, covering every agent policy
+          // in its `policy_ids`. Kibana cannot narrow that: `osquery_manager`
+          // declares `multiple: false`, so Fleet permits only ONE osquery
+          // package policy per agent policy and a dedicated "targeted" policy
+          // can never be created for an agent policy that already has one.
+          // Delivery therefore stays over-broad; `targeting_warning` below tells
+          // the user which agent policies also receive the pack, and how to
+          // separate them. See #285994.
           await Promise.all(
-            Array.from(packagePolicyWriteTargets.values()).map(
-              ({ packagePolicy, agentPolicyIds }) =>
-                packagePolicyService?.update(
-                  spaceScopedClient,
-                  esClient,
-                  packagePolicy.id,
-                  produce<PackagePolicy>(packagePolicy, (draft) => {
-                    unset(draft, 'id');
-                    if (!has(draft, 'inputs[0].streams')) {
-                      set(draft, 'inputs[0].streams', []);
-                    }
+            scopeResults.map(({ packagePolicy, agentPolicyIds }) =>
+              packagePolicyService?.update(
+                spaceScopedClient,
+                esClient,
+                packagePolicy.id,
+                produce<PackagePolicy>(packagePolicy, (draft) => {
+                  unset(draft, 'id');
+                  if (!has(draft, 'inputs[0].streams')) {
+                    set(draft, 'inputs[0].streams', []);
+                  }
 
-                    const packKey = makePackKey(packSO.attributes.name, spaceId);
-                    const { queries: builtQueries, ...packDefaults } = convertSOQueriesToPackConfig(
-                      queries,
-                      {
-                        spaceId,
-                        packSchedule: {
-                          schedule_type: scheduleType,
-                          interval: packInterval,
-                          rrule_schedule: rruleSchedule,
-                        },
-                        isRruleFeatureEnabled,
-                        fallbackStartDate: packSO.attributes.created_at,
-                      }
-                    );
-                    set(draft, `inputs[0].config.osquery.value.packs.${packKey}`, {
-                      shard: resolveSharedPackagePolicyShard(agentPolicyIds, policyShards),
-                      pack_id: packSO.id,
-                      // Human-readable name osquerybeat stamps on scheduled
-                      // result docs (config.Pack.pack_name contract).
-                      pack_name: packSO.attributes.name,
-                      ...packDefaults,
-                      queries: builtQueries,
-                    });
+                  set(
+                    draft,
+                    `inputs[0].config.osquery.value.packs.${packKey}`,
+                    buildPackBlock(agentPolicyIds)
+                  );
 
-                    return draft;
-                  })
-                )
+                  return draft;
+                })
+              )
             )
           );
+        }
+
+        // Detect over-broad package policies (targeting warning). Only meaningful
+        // when the pack was actually written above — a disabled pack reaches no
+        // agent policy at all, so warning about over-reach would be misleading.
+        // Advisory only: the pack SO and Fleet writes are already committed, so a
+        // failed name lookup must not turn a successful create into an error
+        // (same best-effort contract as update_pack_route).
+        let targetingWarning: TargetingWarning | undefined;
+        if (enabled && policiesList.length) {
+          try {
+            targetingWarning = await buildTargetingWarning(
+              scopeResults,
+              agentPolicyService,
+              spaceScopedClient
+            );
+          } catch (err) {
+            logger.warn(
+              `Failed to build targeting warning for pack ${packSO.id}: ${(err as Error).message}`
+            );
+          }
         }
 
         set(packSO, 'attributes.queries', queries);
@@ -310,6 +343,7 @@ export const createPackRoute = (router: IRouter, osqueryContext: OsqueryAppConte
             { schedule_type: scheduleType, interval: packInterval, rrule_schedule: rruleSchedule },
             isRruleFeatureEnabled
           ),
+          ...(targetingWarning ? { targeting_warning: targetingWarning } : {}),
         };
 
         return response.ok({

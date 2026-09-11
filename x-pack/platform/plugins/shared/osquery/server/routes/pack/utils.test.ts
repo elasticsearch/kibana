@@ -15,6 +15,8 @@ import {
   fetchAllPackagePolicies,
   groupAgentPolicyIdsByPackagePolicy,
   resolveSharedPackagePolicyShard,
+  resolvePackTargetScope,
+  buildTargetingWarning,
   DEFAULT_PACK_SHARD,
   validatePackScheduleFields,
   validateRruleConfig,
@@ -1748,23 +1750,219 @@ describe('resolveSharedPackagePolicyShard (deterministic shard for a shared pack
     ).toBe(30);
   });
 
+  it('passes a single agent policy shard through unchanged', () => {
+    expect(resolveSharedPackagePolicyShard(['agent-a'], { 'agent-a': 25 })).toBe(25);
+    expect(resolveSharedPackagePolicyShard(['agent-b'], { 'agent-b': 75 })).toBe(75);
+  });
+
   it('resolves differing shards deterministically via the max rule', () => {
     expect(
       resolveSharedPackagePolicyShard(['agent-a', 'agent-b'], { 'agent-a': 25, 'agent-b': 75 })
     ).toBe(75);
   });
 
-  it('is independent of agent-policy-id ordering (repeat operations agree)', () => {
-    const shards = { 'agent-a': 25, 'agent-b': 75, 'agent-c': 50 };
-    const forward = resolveSharedPackagePolicyShard(['agent-a', 'agent-b', 'agent-c'], shards);
-    const reversed = resolveSharedPackagePolicyShard(['agent-c', 'agent-b', 'agent-a'], shards);
-
-    expect(forward).toBe(75);
-    expect(reversed).toBe(forward);
+  it('is independent of agent-policy-id ordering', () => {
+    const shards = { 'agent-a': 25, 'agent-b': 75 };
+    expect(resolveSharedPackagePolicyShard(['agent-a', 'agent-b'], shards)).toBe(
+      resolveSharedPackagePolicyShard(['agent-b', 'agent-a'], shards)
+    );
   });
 
   it('mixes explicit and default-shard agent policies using the max rule', () => {
-    // agent-b has no explicit shard (defaults to 100), which wins over agent-a's 40.
-    expect(resolveSharedPackagePolicyShard(['agent-a', 'agent-b'], { 'agent-a': 40 })).toBe(100);
+    // `agent-b` has no explicit shard, so it contributes DEFAULT_PACK_SHARD (100),
+    // which is wider than agent-a's 40 and therefore wins.
+    expect(resolveSharedPackagePolicyShard(['agent-a', 'agent-b'], { 'agent-a': 40 })).toBe(
+      DEFAULT_PACK_SHARD
+    );
+  });
+
+  it('returns DEFAULT_PACK_SHARD when no agent policy in the list has an explicit shard', () => {
+    expect(resolveSharedPackagePolicyShard(['agent-a', 'agent-b'], {})).toBe(DEFAULT_PACK_SHARD);
+  });
+});
+
+describe('resolvePackTargetScope (classify package policies as exact or over-broad)', () => {
+  const makePackagePolicy = (id: string, policyIds: string[]): PackagePolicy =>
+    ({ id, policy_ids: policyIds } as PackagePolicy);
+
+  const makeWriteTargets = (
+    entries: Array<{ ppId: string; policyIds: string[]; agentPolicyIds: string[] }>
+  ) => {
+    const map = new Map<string, { packagePolicy: PackagePolicy; agentPolicyIds: string[] }>();
+    for (const { ppId, policyIds, agentPolicyIds } of entries) {
+      map.set(ppId, {
+        packagePolicy: makePackagePolicy(ppId, policyIds),
+        agentPolicyIds,
+      });
+    }
+
+    return map;
+  };
+
+  it('classifies a 1:1 package policy as exact', () => {
+    const targets = makeWriteTargets([
+      { ppId: 'pp-a', policyIds: ['agent-a'], agentPolicyIds: ['agent-a'] },
+    ]);
+    const [result] = resolvePackTargetScope(targets, false);
+    expect(result.kind).toBe('exact');
+    expect(result.untargetedAgentPolicyIds).toEqual([]);
+  });
+
+  it('classifies a shared package policy covering an extra agent policy as over-broad', () => {
+    const targets = makeWriteTargets([
+      { ppId: 'pp-shared', policyIds: ['agent-a', 'agent-b'], agentPolicyIds: ['agent-a'] },
+    ]);
+    const [result] = resolvePackTargetScope(targets, false);
+    expect(result.kind).toBe('over-broad');
+    expect(result.untargetedAgentPolicyIds).toEqual(['agent-b']);
+  });
+
+  it('global pack is always exact even if the package policy is shared', () => {
+    // `agentPolicyIds` is deliberately NARROWER than the package policy's
+    // `policy_ids`: with `isGlobalPack` false this is `over-broad`, so the
+    // assertion below only holds because the flag short-circuits. An identical
+    // fixture with `agentPolicyIds === policy_ids` would pass either way and
+    // would not pin this branch at all.
+    const targets = makeWriteTargets([
+      {
+        ppId: 'pp-shared',
+        policyIds: ['agent-a', 'agent-b'],
+        agentPolicyIds: ['agent-a'],
+      },
+    ]);
+    const [result] = resolvePackTargetScope(targets, true);
+    expect(result.kind).toBe('exact');
+    expect(result.untargetedAgentPolicyIds).toEqual([]);
+
+    // Same input, non-global: proves the flag is what makes the difference.
+    const [nonGlobal] = resolvePackTargetScope(targets, false);
+    expect(nonGlobal.kind).toBe('over-broad');
+    expect(nonGlobal.untargetedAgentPolicyIds).toEqual(['agent-b']);
+  });
+
+  it('returns empty array for an empty write-targets map', () => {
+    const results = resolvePackTargetScope(new Map(), false);
+    expect(results).toEqual([]);
+  });
+
+  it('returns multiple results for multiple package policies', () => {
+    const targets = makeWriteTargets([
+      { ppId: 'pp-a', policyIds: ['agent-a'], agentPolicyIds: ['agent-a'] },
+      { ppId: 'pp-shared', policyIds: ['agent-b', 'agent-c'], agentPolicyIds: ['agent-b'] },
+    ]);
+    const results = resolvePackTargetScope(targets, false);
+    expect(results).toHaveLength(2);
+    const byId = Object.fromEntries(results.map((r) => [r.packagePolicy.id, r]));
+    expect(byId['pp-a'].kind).toBe('exact');
+    expect(byId['pp-shared'].kind).toBe('over-broad');
+    expect(byId['pp-shared'].untargetedAgentPolicyIds).toEqual(['agent-c']);
+  });
+});
+
+describe('buildTargetingWarning (name the agent policies a pack also reaches)', () => {
+  const makePackagePolicy = (id: string, policyIds: string[]): PackagePolicy =>
+    ({ id, policy_ids: policyIds } as PackagePolicy);
+
+  const makeScopeResult = (
+    ppId: string,
+    policyIds: string[],
+    agentPolicyIds: string[],
+    untargetedAgentPolicyIds: string[]
+  ) => ({
+    packagePolicy: makePackagePolicy(ppId, policyIds),
+    kind: (untargetedAgentPolicyIds.length > 0 ? 'over-broad' : 'exact') as 'over-broad' | 'exact',
+    agentPolicyIds,
+    untargetedAgentPolicyIds,
+  });
+
+  const makeAgentPolicyService = (policies: Array<{ id: string; name: string }>) => ({
+    getByIds: jest.fn().mockResolvedValue(policies),
+  });
+
+  const soClient = {} as never;
+
+  it('returns undefined when every package policy is exactly targeted', async () => {
+    const agentPolicyService = makeAgentPolicyService([]);
+    const result = await buildTargetingWarning(
+      [makeScopeResult('pp-a', ['agent-a'], ['agent-a'], [])],
+      agentPolicyService as never,
+      soClient
+    );
+
+    expect(result).toBeUndefined();
+    expect(agentPolicyService.getByIds).not.toHaveBeenCalled();
+  });
+
+  it('names the untargeted agent policies of an over-broad package policy', async () => {
+    const agentPolicyService = makeAgentPolicyService([{ id: 'agent-b', name: 'Agent Policy B' }]);
+    const result = await buildTargetingWarning(
+      [makeScopeResult('pp-shared', ['agent-a', 'agent-b'], ['agent-a'], ['agent-b'])],
+      agentPolicyService as never,
+      soClient
+    );
+
+    expect(result).toEqual({ untargeted_agent_policy_names: ['Agent Policy B'] });
+    expect(agentPolicyService.getByIds).toHaveBeenCalledWith(soClient, ['agent-b'], {
+      ignoreMissing: true,
+    });
+  });
+
+  it('dedupes an agent policy reported by more than one over-broad package policy', async () => {
+    const agentPolicyService = makeAgentPolicyService([{ id: 'agent-c', name: 'Agent Policy C' }]);
+    const result = await buildTargetingWarning(
+      [
+        makeScopeResult('pp-1', ['agent-a', 'agent-c'], ['agent-a'], ['agent-c']),
+        makeScopeResult('pp-2', ['agent-b', 'agent-c'], ['agent-b'], ['agent-c']),
+      ],
+      agentPolicyService as never,
+      soClient
+    );
+
+    expect(result).toEqual({ untargeted_agent_policy_names: ['Agent Policy C'] });
+    expect(agentPolicyService.getByIds).toHaveBeenCalledWith(soClient, ['agent-c'], {
+      ignoreMissing: true,
+    });
+  });
+
+  it('falls back to the raw id when an untargeted agent policy no longer resolves', async () => {
+    // A deleted agent policy must not silently shrink the warning: understating
+    // the blast radius defeats the field's whole purpose.
+    const agentPolicyService = makeAgentPolicyService([{ id: 'agent-b', name: 'Agent Policy B' }]);
+    const result = await buildTargetingWarning(
+      [
+        makeScopeResult(
+          'pp-shared',
+          ['agent-a', 'agent-b', 'agent-gone'],
+          ['agent-a'],
+          ['agent-b', 'agent-gone']
+        ),
+      ],
+      agentPolicyService as never,
+      soClient
+    );
+
+    expect(result).toEqual({
+      untargeted_agent_policy_names: ['Agent Policy B', 'agent-gone'],
+    });
+  });
+
+  it('returns undefined when the agent policy service is unavailable and nothing is over-broad', async () => {
+    expect(
+      await buildTargetingWarning(
+        [makeScopeResult('pp-a', ['agent-a'], ['agent-a'], [])],
+        undefined,
+        soClient
+      )
+    ).toBeUndefined();
+  });
+
+  it('still reports ids when the agent policy service is unavailable', async () => {
+    expect(
+      await buildTargetingWarning(
+        [makeScopeResult('pp-shared', ['agent-a', 'agent-b'], ['agent-a'], ['agent-b'])],
+        undefined,
+        soClient
+      )
+    ).toEqual({ untargeted_agent_policy_names: ['agent-b'] });
   });
 });

@@ -15,6 +15,7 @@ import { PLUGIN_ID } from '../../common';
 import { pagePathGetters } from '../common/page_paths';
 import { PACKS_ID } from './constants';
 import { useErrorToast } from '../common/hooks/use_error_toast';
+import { showTargetingWarningToast } from './targeting_warning_toast';
 import type { PackSavedObject } from './types';
 
 interface UseUpdatePackProps {
@@ -66,6 +67,8 @@ export const useUpdatePack = ({ withRedirect, options }: UseUpdatePackProps) => 
             },
           })
         );
+
+        showTargetingWarningToast(toasts, response?.data?.targeting_warning);
       },
       ...options,
     }

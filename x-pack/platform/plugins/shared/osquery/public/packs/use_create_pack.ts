@@ -14,6 +14,7 @@ import { PLUGIN_ID } from '../../common';
 import { pagePathGetters } from '../common/page_paths';
 import { PACKS_ID, PACK_USERS_ID } from './constants';
 import { useErrorToast } from '../common/hooks/use_error_toast';
+import { showTargetingWarningToast } from './targeting_warning_toast';
 import type { PackItem, PackSavedObject } from './types';
 
 interface UseCreatePackProps {
@@ -58,6 +59,8 @@ export const useCreatePack = ({ withRedirect }: UseCreatePackProps) => {
             },
           })
         );
+
+        showTargetingWarningToast(toasts, payload.data?.targeting_warning);
       },
     }
   );
