@@ -6,9 +6,18 @@
  */
 
 import { ByteSizeValue } from '@kbn/config-schema';
-import { LOGSDB_INDEX_MODE, STANDARD_INDEX_MODE } from '../../common/constants';
+import {
+  IndexMode as INDEX_MODES,
+  LOGSDB_INDEX_MODE,
+  STANDARD_INDEX_MODE,
+} from '../../common/constants';
 import type { IndexMode } from '../../common/types/data_streams';
 import type { DataStream, EnhancedDataStreamFromEs, EsDataRetention, Health } from '../../common';
+
+const INDEX_MODE_VALUES: ReadonlySet<string> = new Set(Object.values(INDEX_MODES));
+
+const isIndexMode = (value: string | undefined): value is IndexMode =>
+  value !== undefined && INDEX_MODE_VALUES.has(value);
 
 const toLowercaseHealth = (status: EnhancedDataStreamFromEs['status']): Health => {
   switch (status) {
@@ -154,12 +163,11 @@ export function deserializeDataStream(
   }
   const failureStoreLifecycle = failureStore?.lifecycle;
 
-  const resolvedIndexMode: IndexMode =
-    indexMode === LOGSDB_INDEX_MODE || indexMode === STANDARD_INDEX_MODE
-      ? indexMode
-      : isLogsdbEnabled && /^logs-[^-]+-[^-]+$/.test(name)
-      ? LOGSDB_INDEX_MODE
-      : STANDARD_INDEX_MODE;
+  const resolvedIndexMode: IndexMode = isIndexMode(indexMode)
+    ? indexMode
+    : isLogsdbEnabled && /^logs-[^-]+-[^-]+$/.test(name)
+    ? LOGSDB_INDEX_MODE
+    : STANDARD_INDEX_MODE;
 
   const resolvedFailureStoreDefaultRetentionPeriod =
     failureStoreLifecycle?.retention_determined_by === 'default_failures_retention' &&

@@ -14,6 +14,7 @@ import {
   deleteDataStream,
   describeStorage,
   expectedDataStream,
+  getDataStream,
   testData,
 } from '../../fixtures';
 import { SERVERLESS_EXCEPT_MKI_SECURITY } from '../../tags';
@@ -38,6 +39,9 @@ apiTest.describe(
   { tag: SERVERLESS_EXCEPT_MKI_SECURITY },
   () => {
     let credentials: RoleApiCredentials;
+    // Serverless projects differ in their default index mode (vectordb defaults to `vectordb_document`),
+    // so the expected mode is read back from Elasticsearch instead of being hardcoded.
+    let expectedIndexMode: string;
 
     apiTest.beforeAll(async ({ requestAuth }) => {
       credentials = await requestAuth.getApiKey('admin');
@@ -46,6 +50,8 @@ apiTest.describe(
     apiTest.beforeEach(async ({ esClient }) => {
       await deleteDataStream(esClient, DATA_STREAM_NAME);
       await createDataStream(esClient, DATA_STREAM_NAME);
+      expectedIndexMode =
+        (await getDataStream(esClient, DATA_STREAM_NAME)).index_mode ?? 'standard';
     });
 
     apiTest.afterEach(async ({ esClient }) => {
@@ -72,6 +78,7 @@ apiTest.describe(
           uuid,
           health: expectedHealth,
           lifecycle: expectedLifecycle,
+          indexMode: expectedIndexMode,
         })
       );
     });
@@ -99,6 +106,7 @@ apiTest.describe(
           uuid,
           health: expectedHealth,
           lifecycle: expectedLifecycle,
+          indexMode: expectedIndexMode,
         }),
         ...expectedStats,
       });
@@ -122,6 +130,7 @@ apiTest.describe(
           uuid,
           health: expectedHealth,
           lifecycle: expectedLifecycle,
+          indexMode: expectedIndexMode,
         }),
         ...expectedStats,
       });

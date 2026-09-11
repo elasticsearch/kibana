@@ -7,7 +7,13 @@
 
 import type { EnhancedDataStreamFromEs } from '../../common';
 import { deserializeDataStream } from './data_stream_serialization';
-import { LOGSDB_INDEX_MODE, STANDARD_INDEX_MODE } from '../../common/constants';
+import {
+  LOGSDB_INDEX_MODE,
+  LOOKUP_INDEX_MODE,
+  STANDARD_INDEX_MODE,
+  TIME_SERIES_MODE,
+  VECTOR_DB_INDEX_MODE,
+} from '../../common/constants';
 
 describe('deserializeDataStream', () => {
   const mockDataStreamFromEs: EnhancedDataStreamFromEs = {
@@ -351,6 +357,69 @@ describe('deserializeDataStream', () => {
       const result = deserializeDataStream(dataStream, false);
 
       expect(result.indexMode).toBe('logsdb');
+    });
+
+    it.each([TIME_SERIES_MODE, LOOKUP_INDEX_MODE, VECTOR_DB_INDEX_MODE])(
+      'should use provided %s index mode instead of falling back to standard',
+      (indexMode) => {
+        const dataStream = {
+          ...mockDataStreamFromEs,
+          index_mode: indexMode,
+        } as EnhancedDataStreamFromEs;
+
+        const result = deserializeDataStream(dataStream, false);
+
+        expect(result.indexMode).toBe(indexMode);
+      }
+    );
+
+    it('should keep provided time_series index mode when logsdb is enabled and name matches logs pattern', () => {
+      const dataStream: EnhancedDataStreamFromEs = {
+        ...mockDataStreamFromEs,
+        name: 'logs-nginx-production',
+        index_mode: TIME_SERIES_MODE,
+      };
+
+      const result = deserializeDataStream(dataStream, true);
+
+      expect(result.indexMode).toBe(TIME_SERIES_MODE);
+    });
+
+    it('should keep provided standard index mode when logsdb is enabled and name matches logs pattern', () => {
+      const dataStream: EnhancedDataStreamFromEs = {
+        ...mockDataStreamFromEs,
+        name: 'logs-nginx-production',
+        index_mode: STANDARD_INDEX_MODE,
+      };
+
+      const result = deserializeDataStream(dataStream, true);
+
+      expect(result.indexMode).toBe(STANDARD_INDEX_MODE);
+    });
+
+    it('should default to standard mode when the provided index mode is unknown', () => {
+      const unknownIndexMode: string = 'unknown_mode';
+      const dataStream = {
+        ...mockDataStreamFromEs,
+        index_mode: unknownIndexMode,
+      } as EnhancedDataStreamFromEs;
+
+      const result = deserializeDataStream(dataStream, false);
+
+      expect(result.indexMode).toBe(STANDARD_INDEX_MODE);
+    });
+
+    it('should default to logsdb mode for logs pattern when logsdb is enabled and the provided index mode is unknown', () => {
+      const unknownIndexMode: string = 'unknown_mode';
+      const dataStream = {
+        ...mockDataStreamFromEs,
+        name: 'logs-nginx-production',
+        index_mode: unknownIndexMode,
+      } as EnhancedDataStreamFromEs;
+
+      const result = deserializeDataStream(dataStream, true);
+
+      expect(result.indexMode).toBe(LOGSDB_INDEX_MODE);
     });
 
     it('should default to logsdb mode for logs pattern when logsdb is enabled and no index mode provided', () => {
