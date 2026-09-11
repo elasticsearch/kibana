@@ -5,8 +5,9 @@
  * 2.0.
  */
 
+import React from 'react';
 import { renderHook, act, waitFor } from '@testing-library/react';
-import { TestProviders } from '../../../common/mock';
+import { QueryClient, QueryClientProvider } from '@kbn/react-query';
 import { EntityType } from '../../../../common/entity_analytics/types';
 import { useCalculateEntityRiskScore } from './use_calculate_entity_risk_score';
 
@@ -24,6 +25,16 @@ jest.mock('../../../common/hooks/use_app_toasts', () => ({
   }),
 }));
 
+const createWrapper = () => {
+  const client = new QueryClient({
+    defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+  });
+  const Wrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+    <QueryClientProvider client={client}>{children}</QueryClientProvider>
+  );
+  return Wrapper;
+};
+
 const identifierType = EntityType.user;
 const identifier = 'test-user';
 const params = {
@@ -40,7 +51,7 @@ describe('useCalculateEntityRiskScore', () => {
 
   it('calls calculateEntityRiskScoreV2 when the callback is invoked', async () => {
     const { result } = renderHook(() => useCalculateEntityRiskScore(params), {
-      wrapper: TestProviders,
+      wrapper: createWrapper(),
     });
 
     act(() => {
@@ -60,7 +71,7 @@ describe('useCalculateEntityRiskScore', () => {
   it('displays a toast error when the API returns an error', async () => {
     mockCalculateEntityRiskScoreV2.mockRejectedValue({});
     const { result } = renderHook(() => useCalculateEntityRiskScore(params), {
-      wrapper: TestProviders,
+      wrapper: createWrapper(),
     });
 
     act(() => {
@@ -73,7 +84,7 @@ describe('useCalculateEntityRiskScore', () => {
   it('forwards entityId to the V2 API call', async () => {
     const entityId = 'test-euid';
     const { result } = renderHook(() => useCalculateEntityRiskScore({ ...params, entityId }), {
-      wrapper: TestProviders,
+      wrapper: createWrapper(),
     });
 
     act(() => {
