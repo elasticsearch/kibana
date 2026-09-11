@@ -43,6 +43,7 @@ import {
   getIsAlertSuppressionActive,
 } from '../utils/get_is_alert_suppression_active';
 import { multiTermsComposite } from './multi_terms_composite';
+import { getBatchSizeReducedWarning, processInHalvingBatches } from './process_in_halving_batches';
 import type { GenericBulkCreateResponse } from '../utils/bulk_create_with_suppression';
 import type { RulePreviewLoggedRequest } from '../../../../../common/api/detection_engine/rule_preview/rule_preview.gen';
 import * as i18n from '../translations';
@@ -380,60 +381,79 @@ export const createNewTermsAlertType = (): SecurityAlertType<
             const actualNewTerms = pageSearchResult.aggregations.new_terms.buckets.map(
               (bucket) => bucket.key
             );
+            const stringifiedAfterKey = stringifyAfterKey(afterKey);
+            let alertsWereTruncated = false;
 
-            const docFetchSearchRequest = buildEventsSearchQuery({
-              aggregations: buildDocFetchAgg({
-                timestampField: aggregatableTimestampField,
-                field: params.newTermsFields[0],
-                include: actualNewTerms,
-              }),
-              runtimeMappings,
-              searchAfterSortIds: undefined,
-              index: inputIndex,
-              // For phase 3, we go back to aggregating only over the rule interval - excluding the history window
-              from: tuple.from.toISOString(),
-              to: tuple.to.toISOString(),
-              filter: esFilter,
-              size: 0,
-              primaryTimestamp,
-              secondaryTimestamp,
+            // Documents for all new terms are fetched in a single request. Every bucket carries a full source
+            // document, so the response can exceed `elasticsearch.maxResponseSize` when documents are large or
+            // when one document holds an array with many new terms. In that case the terms are split into
+            // smaller batches and retried.
+            await processInHalvingBatches({
+              items: actualNewTerms,
+              onBatchSizeReduced: (batchSizeChange) => {
+                const warningMessage = getBatchSizeReducedWarning(batchSizeChange);
+
+                ruleExecutionLogger.warn(warningMessage);
+                result.warningMessages.push(warningMessage);
+              },
+              processBatch: async (newTermsBatch) => {
+                const docFetchSearchRequest = buildEventsSearchQuery({
+                  aggregations: buildDocFetchAgg({
+                    timestampField: aggregatableTimestampField,
+                    field: params.newTermsFields[0],
+                    include: newTermsBatch,
+                  }),
+                  runtimeMappings,
+                  searchAfterSortIds: undefined,
+                  index: inputIndex,
+                  // For phase 3, we go back to aggregating only over the rule interval - excluding the history window
+                  from: tuple.from.toISOString(),
+                  to: tuple.to.toISOString(),
+                  filter: esFilter,
+                  size: 0,
+                  primaryTimestamp,
+                  secondaryTimestamp,
+                });
+                const {
+                  searchResult: docFetchSearchResult,
+                  searchDuration: docFetchSearchDuration,
+                  searchErrors: docFetchSearchErrors,
+                  loggedRequests: docFetchLoggedRequests = [],
+                } = await singleSearchAfter({
+                  searchRequest: docFetchSearchRequest,
+                  services,
+                  ruleExecutionLogger,
+                  loggedRequestsConfig: isLoggedRequestsEnabled
+                    ? {
+                        type: 'findDocuments',
+                        description: i18n.FIND_NEW_TERMS_EVENTS_DESCRIPTION(stringifiedAfterKey),
+                        skipRequestQuery: pageNumber > 2,
+                      }
+                    : undefined,
+                });
+                result.searchAfterTimes.push(docFetchSearchDuration);
+                result.errors.push(...docFetchSearchErrors);
+                loggedRequests.push(...docFetchLoggedRequests);
+
+                if (!docFetchSearchResult.aggregations) {
+                  throw new Error('Aggregations were missing on document fetch search result');
+                }
+
+                // Collect rule execution metrics
+                alertsCandidateCount = sum([
+                  alertsCandidateCount,
+                  docFetchSearchResult.aggregations.new_terms.buckets.length,
+                ]);
+
+                const bulkCreateResult = await createAlertsHook(docFetchSearchResult);
+
+                alertsWereTruncated = bulkCreateResult.alertsWereTruncated;
+
+                return { stop: alertsWereTruncated };
+              },
             });
-            const {
-              searchResult: docFetchSearchResult,
-              searchDuration: docFetchSearchDuration,
-              searchErrors: docFetchSearchErrors,
-              loggedRequests: docFetchLoggedRequests = [],
-            } = await singleSearchAfter({
-              searchRequest: docFetchSearchRequest,
-              services,
-              ruleExecutionLogger,
-              loggedRequestsConfig: isLoggedRequestsEnabled
-                ? {
-                    type: 'findDocuments',
-                    description: i18n.FIND_NEW_TERMS_EVENTS_DESCRIPTION(
-                      stringifyAfterKey(afterKey)
-                    ),
-                    skipRequestQuery: pageNumber > 2,
-                  }
-                : undefined,
-            });
-            result.searchAfterTimes.push(docFetchSearchDuration);
-            result.errors.push(...docFetchSearchErrors);
-            loggedRequests.push(...docFetchLoggedRequests);
 
-            if (!docFetchSearchResult.aggregations) {
-              throw new Error('Aggregations were missing on document fetch search result');
-            }
-
-            // Collect rule execution metrics
-            alertsCandidateCount = sum([
-              alertsCandidateCount,
-              docFetchSearchResult.aggregations.new_terms.buckets.length,
-            ]);
-
-            const bulkCreateResult = await createAlertsHook(docFetchSearchResult);
-
-            if (bulkCreateResult.alertsWereTruncated) {
+            if (alertsWereTruncated) {
               result.warningMessages.push(
                 isAlertSuppressionActive
                   ? getSuppressionMaxSignalsWarning()

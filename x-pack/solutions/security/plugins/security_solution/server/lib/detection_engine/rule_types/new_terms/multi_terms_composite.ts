@@ -7,6 +7,7 @@
 import pRetry from 'p-retry';
 import type { Moment } from 'moment';
 import type { Logger } from '@kbn/logging';
+import { isMaximumResponseSizeExceededError } from '@kbn/es-errors';
 import type { NewTermsRuleParams } from '../../rule_schema';
 import type { GetFilterArgs } from '../utils/get_filter';
 import { getFilter } from '../utils/get_filter';
@@ -37,6 +38,7 @@ import type {
 } from '../types';
 import type { RulePreviewLoggedRequest } from '../../../../../common/api/detection_engine/rule_preview/rule_preview.gen';
 import * as i18n from '../translations';
+import { getBatchSizeReducedWarning } from './process_in_halving_batches';
 
 /**
  * composite aggregation page batch size set to 500 as it shows th best performance(refer https://github.com/elastic/kibana/pull/157413) and
@@ -255,43 +257,92 @@ const multiTermsCompositeNonRetryable = async ({
 };
 
 /**
- * If request fails with batch size of BATCH_SIZE
- * We will try to reduce it in twice per each request, three times, up until 125
- * Per ES documentation, max_clause_count min value is 1,000 - so with 125 we should be able execute query below max_clause_count value
+ * Runs phase 2 and phase 3 for multiple new terms fields starting with a batch size of BATCH_SIZE.
+ * When a request fails because of too many clauses or because the response exceeded `elasticsearch.maxResponseSize`,
+ * the batch size gets halved and the whole pass is retried (see getReducedBatchSize for the limits).
  */
 export const multiTermsComposite = async (
   args: MultiTermsCompositeArgsBase
 ): Promise<MultiTermsCompositeResult> => {
   let retryBatchSize = BATCH_SIZE;
-  const ruleExecutionLogger = args.sharedParams.ruleExecutionLogger;
+  const { ruleExecutionLogger } = args.sharedParams;
+
   return pRetry(
     async (retryCount) => {
       try {
         const res = await multiTermsCompositeNonRetryable({ ...args, batchSize: retryBatchSize });
         return res;
       } catch (e) {
-        // do not retry if error not related to too many clauses
+        const reducedBatchSize = getReducedBatchSize(e, retryBatchSize);
+
+        // do not retry if error is not related to the batch size
         // if user's configured rule somehow has filter itself greater than max_clause_count, we won't get to this place anyway,
         // as rule would fail on phase 1
-        if (
-          ![
-            'query_shard_exception: failed to create query',
-            'Query contains too many nested clauses;',
-          ].some((errMessage) => e.message.includes(errMessage))
-        ) {
+        if (reducedBatchSize == null) {
           args.result.errors.push(e.message);
           return;
         }
 
-        retryBatchSize = retryBatchSize / 2;
-        ruleExecutionLogger.debug(
-          `New terms query failed due to too many clauses\nError: ${e.message}. Retrying #${retryCount} with ${retryBatchSize} for composite aggregation.`
-        );
+        if (isMaximumResponseSizeExceededError(e)) {
+          const warningMessage = getBatchSizeReducedWarning({
+            from: retryBatchSize,
+            to: reducedBatchSize,
+            error: e,
+          });
+
+          ruleExecutionLogger.warn(warningMessage);
+          args.result.warningMessages.push(warningMessage);
+        } else {
+          ruleExecutionLogger.debug(
+            `New terms query failed due to too many clauses\nError: ${e.message}. Retrying #${retryCount} with ${reducedBatchSize} for composite aggregation.`
+          );
+        }
+
+        retryBatchSize = reducedBatchSize;
         throw e;
       }
     },
     {
-      retries: 2,
+      retries: MAX_RETRIES,
+      // the errors are deterministic for a given batch size, waiting between attempts does not help
+      factor: 1,
+      minTimeout: 0,
     }
   );
 };
+
+/**
+ * Returns the halved batch size when the error can be worked around by a smaller batch, otherwise undefined.
+ * Too many clauses errors are retried down to a batch of MIN_TOO_MANY_CLAUSES_BATCH_SIZE terms. Per ES documentation,
+ * max_clause_count min value is 1,000 - so with 125 we should be able execute query below max_clause_count value.
+ * Oversized responses are retried down to a batch of a single term as every bucket carries a full source document.
+ */
+export const getReducedBatchSize = (error: unknown, batchSize: number): number | undefined => {
+  const halvedBatchSize = Math.floor(batchSize / 2);
+
+  if (isTooManyClausesError(error) && batchSize > MIN_TOO_MANY_CLAUSES_BATCH_SIZE) {
+    return halvedBatchSize;
+  }
+
+  if (isMaximumResponseSizeExceededError(error) && batchSize > 1) {
+    return halvedBatchSize;
+  }
+
+  return undefined;
+};
+
+const MIN_TOO_MANY_CLAUSES_BATCH_SIZE = 125;
+
+/**
+ * Enough attempts to halve BATCH_SIZE down to a single term
+ */
+const MAX_RETRIES = Math.ceil(Math.log2(BATCH_SIZE));
+
+const TOO_MANY_CLAUSES_ERROR_MESSAGES = [
+  'query_shard_exception: failed to create query',
+  'Query contains too many nested clauses;',
+];
+
+const isTooManyClausesError = (error: unknown): error is Error =>
+  error instanceof Error &&
+  TOO_MANY_CLAUSES_ERROR_MESSAGES.some((errMessage) => error.message.includes(errMessage));
