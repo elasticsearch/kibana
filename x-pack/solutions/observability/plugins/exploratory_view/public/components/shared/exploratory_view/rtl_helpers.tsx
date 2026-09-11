@@ -18,7 +18,7 @@ import type { History } from 'history';
 import { createMemoryHistory } from 'history';
 import type { CoreStart } from '@kbn/core/public';
 import { I18nProvider } from '@kbn/i18n-react';
-import { coreMock, themeServiceMock } from '@kbn/core/public/mocks';
+import { coreMock } from '@kbn/core/public/mocks';
 import type { KibanaServices } from '@kbn/kibana-react-plugin/public';
 import { KibanaContextProvider } from '@kbn/kibana-react-plugin/public';
 import { EuiThemeProvider } from '@elastic/eui';
@@ -32,6 +32,7 @@ import { casesPluginMock } from '@kbn/cases-plugin/public/mocks';
 import type { DataViewSpec } from '@kbn/data-views-plugin/public';
 import { settingsServiceMock } from '@kbn/core-ui-settings-browser-mocks';
 import * as useValuesListHook from '@kbn/observability-shared-plugin/public/hooks/use_values_list';
+import { MockAppHeaderProvider } from '@kbn/app-header/mocks';
 import { rumFieldFormats } from './configurations/rum/field_formats';
 import type { ExploratoryViewPublicPluginsStart } from '../../../plugin';
 import * as useAppDataViewHook from './hooks/use_app_data_view';
@@ -208,20 +209,20 @@ export function render<ExtraCore>(
 
   return {
     ...reactTestLibRender(
-      <MockRouter history={history} kibanaProps={kibanaProps} core={core}>
-        <ExploratoryViewContextProvider
-          reportTypes={reportTypesList}
-          dataTypes={dataTypes}
-          reportConfigMap={obsvReportConfigMap}
-          setHeaderActionMenu={jest.fn()}
-          theme$={themeServiceMock.createTheme$()}
-          {...defaultCore}
-        >
-          <UrlStorageContext.Provider value={{ ...seriesContextValue }}>
-            {ui}
-          </UrlStorageContext.Provider>
-        </ExploratoryViewContextProvider>
-      </MockRouter>,
+      <MockAppHeaderProvider>
+        <MockRouter history={history} kibanaProps={kibanaProps} core={core}>
+          <ExploratoryViewContextProvider
+            reportTypes={reportTypesList}
+            dataTypes={dataTypes}
+            reportConfigMap={obsvReportConfigMap}
+            {...defaultCore}
+          >
+            <UrlStorageContext.Provider value={{ ...seriesContextValue }}>
+              {ui}
+            </UrlStorageContext.Provider>
+          </ExploratoryViewContextProvider>
+        </MockRouter>
+      </MockAppHeaderProvider>,
       renderOptions
     ),
     history,

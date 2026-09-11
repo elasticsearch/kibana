@@ -6,56 +6,35 @@
  */
 
 import {
-  EuiButtonEmpty,
-  EuiPopover,
+  EuiButton,
   EuiCodeBlock,
-  EuiPopoverTitle,
+  EuiModal,
+  EuiModalBody,
+  EuiModalFooter,
+  EuiModalHeader,
+  EuiModalHeaderTitle,
   useGeneratedHtmlId,
 } from '@elastic/eui';
 import { i18n } from '@kbn/i18n';
-import React, { useState } from 'react';
-import type { TypedLensByValueInput } from '@kbn/lens-plugin/public';
+import React from 'react';
 import { useSeriesStorage } from '../hooks/use_series_storage';
 
-export function EmbedAction({
-  lensAttributes,
-}: {
-  lensAttributes: TypedLensByValueInput['attributes'] | null;
-}) {
-  const [isOpen, setIsOpen] = useState(false);
-  const embedActionPopoverTitleId = useGeneratedHtmlId();
-
+export function EmbedModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
+  const titleId = useGeneratedHtmlId();
   const { reportType, allSeries } = useSeriesStorage();
 
-  const button = (
-    <EuiButtonEmpty
-      data-test-subj="o11yEmbedActionButton"
-      size="s"
-      isDisabled={lensAttributes === null}
-      onClick={() => {
-        setIsOpen(!isOpen);
-      }}
-    >
-      {EMBED_LABEL}
-    </EuiButtonEmpty>
-  );
+  if (!isOpen) {
+    return null;
+  }
 
   return (
-    <EuiPopover
-      aria-labelledby={embedActionPopoverTitleId}
-      button={button}
-      isOpen={isOpen}
-      closePopover={() => setIsOpen(false)}
-    >
-      <EuiPopoverTitle id={embedActionPopoverTitleId}>{EMBED_TITLE_LABEL}</EuiPopoverTitle>
-      <EuiCodeBlock
-        language="jsx"
-        fontSize="m"
-        paddingSize="m"
-        isCopyable={true}
-        style={{ width: 500 }}
-      >
-        {`const { observability } = useKibana<>().services;
+    <EuiModal onClose={onClose} aria-labelledby={titleId} maxWidth={640}>
+      <EuiModalHeader>
+        <EuiModalHeaderTitle id={titleId}>{EMBED_TITLE_LABEL}</EuiModalHeaderTitle>
+      </EuiModalHeader>
+      <EuiModalBody>
+        <EuiCodeBlock language="jsx" fontSize="m" paddingSize="m" isCopyable={true}>
+          {`const { observability } = useKibana<>().services;
 
 const { ExploratoryViewEmbeddable } = observability;
 
@@ -65,8 +44,14 @@ const { ExploratoryViewEmbeddable } = observability;
         attributes={${JSON.stringify(allSeries, null, 2)}}
  />
         `}
-      </EuiCodeBlock>
-    </EuiPopover>
+        </EuiCodeBlock>
+      </EuiModalBody>
+      <EuiModalFooter>
+        <EuiButton data-test-subj="o11yEmbedActionCloseButton" onClick={onClose} fill={true}>
+          {CLOSE_LABEL}
+        </EuiButton>
+      </EuiModalFooter>
+    </EuiModal>
   );
 }
 
@@ -74,7 +59,10 @@ const EMBED_TITLE_LABEL = i18n.translate('xpack.exploratoryView.expView.heading.
   defaultMessage: 'Embed Exploratory view (Dev only feature)',
 });
 
-const EMBED_LABEL = i18n.translate('xpack.exploratoryView.expView.heading.embed', {
-  defaultMessage: 'Embed <></>',
-  ignoreTag: true,
+export const EMBED_LABEL = i18n.translate('xpack.exploratoryView.expView.heading.embed', {
+  defaultMessage: 'Embed',
+});
+
+const CLOSE_LABEL = i18n.translate('xpack.exploratoryView.expView.heading.embedClose', {
+  defaultMessage: 'Close',
 });

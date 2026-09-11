@@ -16,16 +16,10 @@ import {
 } from '@kbn/kibana-utils-plugin/public';
 import type { TypedLensByValueInput } from '@kbn/lens-plugin/public';
 import { useBreadcrumbs, useTrackPageview } from '@kbn/observability-shared-plugin/public';
-import { LastUpdated } from './header/last_updated';
 import { ExploratoryView } from './exploratory_view';
 import { useKibana } from './hooks/use_kibana';
 import { DataViewContextProvider } from './hooks/use_app_data_view';
 import { UrlStorageContextProvider } from './hooks/use_series_storage';
-import { RefreshButton } from './header/refresh_button';
-
-const PAGE_TITLE = i18n.translate('xpack.exploratoryView.expView.heading.label', {
-  defaultMessage: 'Explore data',
-});
 
 export interface ExploratoryViewPageProps {
   useSessionStorage?: boolean;
@@ -74,12 +68,7 @@ export function ExploratoryViewPage({
 
   return (
     <UrlStorageContextProvider storage={kbnUrlStateStorage}>
-      <ObservabilityPageTemplate
-        pageHeader={{
-          pageTitle: PAGE_TITLE,
-          rightSideItems: [<RefreshButton />, <LastUpdated />],
-        }}
-      >
+      <ObservabilityPageTemplate pageSectionProps={{ paddingSize: 'none' }}>
         <DataViewContextProvider>
           <ExploratoryView saveAttributes={saveAttributes} />
         </DataViewContextProvider>

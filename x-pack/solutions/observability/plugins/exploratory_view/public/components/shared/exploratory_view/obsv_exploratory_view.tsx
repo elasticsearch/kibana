@@ -32,7 +32,6 @@ import { getSyntheticsDistributionConfig } from './configurations/synthetics/dat
 import { getMobileKPIDistributionConfig } from './configurations/mobile/distribution_config';
 import { getMobileKPIConfig } from './configurations/mobile/kpi_over_time_config';
 import { getMobileDeviceDistributionConfig } from './configurations/mobile/device_distribution_config';
-import { usePluginContext } from '../../../hooks/use_plugin_context';
 import { getLogsKPIConfig } from './configurations/infra_logs/kpi_over_time_config';
 import { getSingleMetricConfig } from './configurations/rum/single_metric_config';
 import type { StartServices } from '../../../application';
@@ -109,14 +108,11 @@ export const obsvReportConfigMap = {
 };
 
 export function ObservabilityExploratoryView(props: { startServices: StartServices }) {
-  const { appMountParameters } = usePluginContext();
   return (
     <ExploratoryViewContextProvider
       reportTypes={reportTypesList}
       dataTypes={dataTypes}
       reportConfigMap={obsvReportConfigMap}
-      setHeaderActionMenu={appMountParameters.setHeaderActionMenu}
-      theme$={appMountParameters.theme$}
       {...props.startServices}
     >
       <ExploratoryViewPage />

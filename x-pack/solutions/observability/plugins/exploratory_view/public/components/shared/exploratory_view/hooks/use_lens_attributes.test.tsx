@@ -19,7 +19,7 @@ import * as useAppDataViewHook from './use_app_data_view';
 import * as theme from '@kbn/observability-shared-plugin/public/hooks/use_theme';
 import { dataTypes, obsvReportConfigMap, reportTypesList } from '../obsv_exploratory_view';
 import { ExploratoryViewContextProvider } from '../contexts/exploratory_view_config';
-import { coreMock, themeServiceMock } from '@kbn/core/public/mocks';
+import { coreMock } from '@kbn/core/public/mocks';
 
 const mockSingleSeries = [
   {
@@ -68,8 +68,6 @@ describe('useExpViewTimeRange', function () {
         reportTypes={reportTypesList}
         dataTypes={dataTypes}
         reportConfigMap={obsvReportConfigMap}
-        setHeaderActionMenu={jest.fn()}
-        theme$={themeServiceMock.createTheme$()}
         {...coreMock.createStart()}
       >
         <UrlStorageContextProvider storage={storage}>

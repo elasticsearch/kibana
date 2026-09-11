@@ -5,20 +5,17 @@
  * 2.0.
  */
 
-import { render } from '../../rtl_helpers';
-import { fireEvent, screen } from '@testing-library/react';
+import { fireEvent, screen, waitFor } from '@testing-library/react';
+import { openAppMenuOverflow } from '@kbn/app-header/test_helpers';
 import React from 'react';
-import { sampleAttribute } from '../../configurations/test_data/sample_attribute';
-import * as pluginHook from '../../../../../hooks/use_plugin_context';
-import type { TypedLensByValueInput } from '@kbn/lens-plugin/public';
-import { ExpViewActionMenuContent } from './action_menu';
+import { ExploratoryView } from '../../exploratory_view';
+import { mockAppDataView, render } from '../../rtl_helpers';
 import { observabilityAIAssistantPluginMock } from '@kbn/observability-ai-assistant-plugin/public/mock';
-
-jest.spyOn(pluginHook, 'usePluginContext').mockReturnValue({
-  appMountParameters: {
-    setHeaderActionMenu: jest.fn(),
-  },
-} as any);
+import {
+  EMBED_BUTTON_TEST_SUBJ,
+  OPEN_IN_LENS_BUTTON_TEST_SUBJ,
+  SAVE_BUTTON_TEST_SUBJ,
+} from '../../header/use_exploratory_view_app_header_menu';
 
 const mockObservabilityAIAssistant = observabilityAIAssistantPluginMock.createStartContract();
 
@@ -38,47 +35,54 @@ jest.mock('../../hooks/use_kibana', () => {
   };
 });
 
-describe('Action Menu', function () {
+describe('Exploratory view app header actions', () => {
+  mockAppDataView();
+
   afterAll(() => {
     jest.clearAllMocks();
   });
 
-  it('should be able to click open in lens', async function () {
-    const { findByText, core } = render(
-      <ExpViewActionMenuContent
-        lensAttributes={sampleAttribute as TypedLensByValueInput['attributes']}
-        timeRange={{ to: 'now', from: 'now-10m' }}
-      />
-    );
+  async function renderReadyView(core?: { isDev?: boolean }) {
+    const result = render(<ExploratoryView />, { core });
+    await screen.findByText(/Lens Embeddable Component/i);
+    await waitFor(() => {
+      expect(screen.getByTestId(SAVE_BUTTON_TEST_SUBJ)).toBeEnabled();
+    });
+    return result;
+  }
 
-    expect(await screen.findByText('Open in Lens')).toBeInTheDocument();
+  it('opens Lens from the header menu', async () => {
+    const { core } = await renderReadyView();
 
-    fireEvent.click(await findByText('Open in Lens'));
+    await openAppMenuOverflow();
+    fireEvent.click(await screen.findByTestId(OPEN_IN_LENS_BUTTON_TEST_SUBJ));
 
     expect(core.lens?.navigateToPrefilledEditor).toHaveBeenCalledTimes(1);
-    expect(core.lens?.navigateToPrefilledEditor).toHaveBeenCalledWith(
-      {
-        id: '',
-        attributes: sampleAttribute,
-        time_range: { to: 'now', from: 'now-10m' },
-      },
-      {
-        openInNewTab: true,
-      }
-    );
   });
 
-  it('should be able to click save', async function () {
-    const { findByText } = render(
-      <ExpViewActionMenuContent
-        lensAttributes={sampleAttribute as TypedLensByValueInput['attributes']}
-      />
-    );
+  it('opens the save modal from the primary action', async () => {
+    await renderReadyView();
 
-    expect(await screen.findByText('Save')).toBeInTheDocument();
-
-    fireEvent.click(await findByText('Save'));
+    fireEvent.click(await screen.findByTestId(SAVE_BUTTON_TEST_SUBJ));
 
     expect(await screen.findByText('Lens Save Modal Component')).toBeInTheDocument();
+  });
+
+  it('opens the embed modal from the overflow menu in dev mode', async () => {
+    await renderReadyView({ isDev: true });
+
+    await openAppMenuOverflow();
+    fireEvent.click(await screen.findByTestId(EMBED_BUTTON_TEST_SUBJ));
+
+    expect(
+      await screen.findByText('Embed Exploratory view (Dev only feature)')
+    ).toBeInTheDocument();
+  });
+
+  it('hides Embed outside dev mode', async () => {
+    await renderReadyView({ isDev: false });
+
+    await openAppMenuOverflow();
+    expect(screen.queryByTestId(EMBED_BUTTON_TEST_SUBJ)).not.toBeInTheDocument();
   });
 });

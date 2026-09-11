@@ -20994,7 +20994,6 @@
     "xpack.exploratoryView.expView.heading.addToCase.notification": "已成功将可视化添加到案例：{caseTitle}",
     "xpack.exploratoryView.expView.heading.addToCase.notification.error": "未能将可视化添加到所选案例。",
     "xpack.exploratoryView.expView.heading.addToCase.notification.viewCase": "查看案例",
-    "xpack.exploratoryView.expView.heading.embed": "嵌入 <></>",
     "xpack.exploratoryView.expView.heading.embedTitle": "嵌入浏览视图（仅用于开发的功能）",
     "xpack.exploratoryView.expView.heading.label": "浏览数据",
     "xpack.exploratoryView.expView.heading.openInLens": "在 Lens 中打开",

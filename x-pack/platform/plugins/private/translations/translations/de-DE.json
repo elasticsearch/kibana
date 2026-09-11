@@ -20924,7 +20924,6 @@
     "xpack.exploratoryView.expView.heading.addToCase.notification": "Visualisierung erfolgreich zum Fall hinzugefügt: {caseTitle}",
     "xpack.exploratoryView.expView.heading.addToCase.notification.error": "Dem ausgewählten Fall konnte keine Visualisierung hinzugefügt werden.",
     "xpack.exploratoryView.expView.heading.addToCase.notification.viewCase": "Fall anzeigen",
-    "xpack.exploratoryView.expView.heading.embed": "Einbetten <></>",
     "xpack.exploratoryView.expView.heading.embedTitle": "Explorative Ansicht einbetten (Funktion nur für Entwickler)",
     "xpack.exploratoryView.expView.heading.label": "Daten erkunden",
     "xpack.exploratoryView.expView.heading.openInLens": "In Lens öffnen",

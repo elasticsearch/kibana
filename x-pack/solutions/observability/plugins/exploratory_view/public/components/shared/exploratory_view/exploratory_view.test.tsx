@@ -11,15 +11,8 @@ import userEvent from '@testing-library/user-event';
 import { render, mockAppDataView } from './rtl_helpers';
 import { ExploratoryView } from './exploratory_view';
 import * as obsvDataViews from '../../../utils/observability_data_views/observability_data_views';
-import * as pluginHook from '../../../hooks/use_plugin_context';
 import { createStubIndexPattern } from '@kbn/data-plugin/common/stubs';
 import { observabilityAIAssistantPluginMock } from '@kbn/observability-ai-assistant-plugin/public/mock';
-
-jest.spyOn(pluginHook, 'usePluginContext').mockReturnValue({
-  appMountParameters: {
-    setHeaderActionMenu: jest.fn(),
-  },
-} as any);
 
 const mockObservabilityAIAssistant = observabilityAIAssistantPluginMock.createStartContract();
 
@@ -91,6 +84,6 @@ describe('ExploratoryView', () => {
     await userEvent.click(toggleButton);
 
     expect(toggleButton.textContent).toBe('Show chart');
-    expect(screen.queryByText('Refresh')).toBeNull();
+    expect(screen.getByText('Refresh')).toBeInTheDocument();
   });
 });

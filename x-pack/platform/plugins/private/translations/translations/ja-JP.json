@@ -20986,7 +20986,6 @@
     "xpack.exploratoryView.expView.heading.addToCase.notification": "ビジュアライゼーションが正常にケースに追加されました：{caseTitle}",
     "xpack.exploratoryView.expView.heading.addToCase.notification.error": "選択したケースにビジュアライゼーションを追加できませんでした。",
     "xpack.exploratoryView.expView.heading.addToCase.notification.viewCase": "ケースの表示",
-    "xpack.exploratoryView.expView.heading.embed": "埋め込み <></>",
     "xpack.exploratoryView.expView.heading.embedTitle": "調査ビューを埋め込み（開発者専用機能）",
     "xpack.exploratoryView.expView.heading.label": "データの探索",
     "xpack.exploratoryView.expView.heading.openInLens": "Lensで開く",

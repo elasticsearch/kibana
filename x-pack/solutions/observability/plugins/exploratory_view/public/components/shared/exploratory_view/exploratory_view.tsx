@@ -6,16 +6,18 @@
  */
 
 import { i18n } from '@kbn/i18n';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import styled from '@emotion/styled';
 import {
   EuiButtonEmpty,
+  EuiPageSection,
   EuiResizableContainer,
   EuiTitle,
   EuiFlexGroup,
   EuiFlexItem,
 } from '@elastic/eui';
 import type { PanelDirection } from '@elastic/eui/src/components/resizable_container/types';
+import { AppHeader } from '@kbn/app-header';
 import type { TypedLensByValueInput } from '@kbn/lens-plugin/public';
 import { useKibana } from './hooks/use_kibana';
 import { useSeriesStorage } from './hooks/use_series_storage';
@@ -25,10 +27,18 @@ import { SeriesViews } from './views/series_views';
 import { LensEmbeddable } from './lens_embeddable';
 import { EmptyView } from './components/empty_view';
 import { useExpViewTimeRange } from './hooks/use_time_range';
-import { ExpViewActionMenu } from './components/action_menu';
 import { useExploratoryView } from './contexts/exploratory_view_config';
+import { AddToCaseAction } from './header/add_to_case_action';
+import { EmbedModal } from './header/embed_action';
+import { LastUpdated } from './header/last_updated';
+import { RefreshButton } from './header/refresh_button';
+import { useExploratoryViewAppHeaderMenu } from './header/use_exploratory_view_app_header_menu';
 
 export type PanelId = 'seriesPanel' | 'chartPanel';
+
+export const PAGE_TITLE = i18n.translate('xpack.exploratoryView.expView.heading.label', {
+  defaultMessage: 'Explore data',
+});
 
 export function ExploratoryView({
   saveAttributes,
@@ -36,7 +46,7 @@ export function ExploratoryView({
   saveAttributes?: (attr: TypedLensByValueInput['attributes'] | null) => void;
 }) {
   const {
-    services: { lens },
+    services: { lens, isDev },
   } = useKibana();
   const seriesBuilderRef = useRef<HTMLDivElement>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
@@ -100,76 +110,159 @@ export function ExploratoryView({
     }
   };
 
-  return lens ? (
+  const [isSaveOpen, setIsSaveOpen] = useState(false);
+  const [isEmbedOpen, setIsEmbedOpen] = useState(false);
+  const [isCasesOpen, setIsCasesOpen] = useState(false);
+
+  const canUseEditor = Boolean(lens?.canUseEditor());
+  const hasLensAttributes = lensAttributes !== null;
+
+  const onSave = useCallback(() => {
+    if (hasLensAttributes) {
+      setIsSaveOpen(true);
+    }
+  }, [hasLensAttributes]);
+
+  const onOpenInLens = useCallback(() => {
+    if (lensAttributes) {
+      lens.navigateToPrefilledEditor(
+        {
+          id: '',
+          time_range: timeRange,
+          attributes: lensAttributes,
+        },
+        {
+          openInNewTab: true,
+        }
+      );
+    }
+  }, [lens, lensAttributes, timeRange]);
+
+  const onAddToCase = useCallback(() => {
+    if (hasLensAttributes && timeRange) {
+      setIsCasesOpen(true);
+    }
+  }, [hasLensAttributes, timeRange]);
+
+  const onEmbed = useCallback(() => {
+    if (hasLensAttributes) {
+      setIsEmbedOpen(true);
+    }
+  }, [hasLensAttributes]);
+
+  const menu = useExploratoryViewAppHeaderMenu({
+    canUseEditor,
+    hasLensAttributes,
+    hasTimeRange: Boolean(timeRange),
+    isDev: Boolean(isDev),
+    onSave,
+    onOpenInLens,
+    onAddToCase,
+    onEmbed,
+  });
+
+  const LensSaveModalComponent = lens?.SaveModalComponent;
+
+  return (
     <>
-      <ExpViewActionMenu timeRange={timeRange} lensAttributes={lensAttributes} />
-      <LensWrapper ref={wrapperRef} height={height}>
-        <ResizableContainer direction="vertical" onToggleCollapsed={onCollapse}>
-          {(EuiResizablePanel, _EuiResizableButton, { togglePanel }) => {
-            collapseFn.current = (id, direction) => togglePanel?.(id, { direction });
+      <AppHeader title={PAGE_TITLE} menu={menu} />
+      {timeRange && (
+        <AddToCaseAction
+          autoOpen={isCasesOpen}
+          setAutoOpen={setIsCasesOpen}
+          lensAttributes={lensAttributes}
+          timeRange={timeRange}
+        />
+      )}
+      <EmbedModal isOpen={isEmbedOpen} onClose={() => setIsEmbedOpen(false)} />
+      {isSaveOpen && lensAttributes && LensSaveModalComponent && (
+        <LensSaveModalComponent
+          initialInput={{ attributes: lensAttributes }}
+          onClose={() => setIsSaveOpen(false)}
+          onSave={() => {}}
+        />
+      )}
+      {lens ? (
+        <EuiPageSection paddingSize="l" restrictWidth={false}>
+          <EuiFlexGroup justifyContent="flexEnd" alignItems="center" gutterSize="s">
+            <EuiFlexItem grow={false}>
+              <LastUpdated />
+            </EuiFlexItem>
+            <EuiFlexItem grow={false}>
+              <RefreshButton />
+            </EuiFlexItem>
+          </EuiFlexGroup>
+          <LensWrapper ref={wrapperRef} height={height}>
+            <ResizableContainer direction="vertical" onToggleCollapsed={onCollapse}>
+              {(EuiResizablePanel, _EuiResizableButton, { togglePanel }) => {
+                collapseFn.current = (id, direction) => togglePanel?.(id, { direction });
 
-            return (
-              <>
-                <EuiFlexGroup alignItems="center" gutterSize="none">
-                  <EuiFlexItem grow={false}>
-                    <EuiButtonEmpty
-                      data-test-subj="o11yExploratoryViewButton"
-                      size="xs"
-                      {...(hiddenPanel === 'chartPanel'
-                        ? { iconType: 'chevronSingleRight' }
-                        : { iconType: 'chevronSingleDown' })}
-                      onClick={() => onChange('chartPanel')}
+                return (
+                  <>
+                    <EuiFlexGroup alignItems="center" gutterSize="none">
+                      <EuiFlexItem grow={false}>
+                        <EuiButtonEmpty
+                          data-test-subj="o11yExploratoryViewButton"
+                          size="xs"
+                          {...(hiddenPanel === 'chartPanel'
+                            ? { iconType: 'chevronSingleRight' }
+                            : { iconType: 'chevronSingleDown' })}
+                          onClick={() => onChange('chartPanel')}
+                        >
+                          {hiddenPanel === 'chartPanel' ? SHOW_CHART_LABEL : HIDE_CHART_LABEL}
+                        </EuiButtonEmpty>
+                      </EuiFlexItem>
+                    </EuiFlexGroup>
+
+                    <EuiResizablePanel
+                      initialSize={isEditMode ? 40 : 60}
+                      minSize={'30%'}
+                      mode={'collapsible'}
+                      id="chartPanel"
+                      paddingSize="s"
                     >
-                      {hiddenPanel === 'chartPanel' ? SHOW_CHART_LABEL : HIDE_CHART_LABEL}
-                    </EuiButtonEmpty>
-                  </EuiFlexItem>
-                </EuiFlexGroup>
+                      {lensAttributes ? (
+                        <LensEmbeddable
+                          setChartTimeRangeContext={setChartTimeRangeContext}
+                          lensAttributes={lensAttributes}
+                        />
+                      ) : (
+                        <EmptyView series={firstSeries} loading={loading} reportType={reportType} />
+                      )}
+                    </EuiResizablePanel>
 
-                <EuiResizablePanel
-                  initialSize={isEditMode ? 40 : 60}
-                  minSize={'30%'}
-                  mode={'collapsible'}
-                  id="chartPanel"
-                  paddingSize="s"
-                >
-                  {lensAttributes ? (
-                    <LensEmbeddable
-                      setChartTimeRangeContext={setChartTimeRangeContext}
-                      lensAttributes={lensAttributes}
-                    />
-                  ) : (
-                    <EmptyView series={firstSeries} loading={loading} reportType={reportType} />
-                  )}
-                </EuiResizablePanel>
-
-                <EuiResizablePanel
-                  initialSize={isEditMode ? 60 : 40}
-                  minSize="10%"
-                  mode={'main'}
-                  id="seriesPanel"
-                  color="subdued"
-                  className="paddingTopSmall"
-                >
-                  <SeriesViews
-                    seriesBuilderRef={seriesBuilderRef}
-                    onSeriesPanelCollapse={onChange}
-                  />
-                </EuiResizablePanel>
-              </>
-            );
-          }}
-        </ResizableContainer>
-        {hiddenPanel === 'seriesPanel' && (
-          <ShowPreview onClick={() => onChange('seriesPanel')} iconType="chevronSingleUp">
-            {PREVIEW_LABEL}
-          </ShowPreview>
-        )}
-      </LensWrapper>
+                    <EuiResizablePanel
+                      initialSize={isEditMode ? 60 : 40}
+                      minSize="10%"
+                      mode={'main'}
+                      id="seriesPanel"
+                      color="subdued"
+                      className="paddingTopSmall"
+                    >
+                      <SeriesViews
+                        seriesBuilderRef={seriesBuilderRef}
+                        onSeriesPanelCollapse={onChange}
+                      />
+                    </EuiResizablePanel>
+                  </>
+                );
+              }}
+            </ResizableContainer>
+            {hiddenPanel === 'seriesPanel' && (
+              <ShowPreview onClick={() => onChange('seriesPanel')} iconType="chevronSingleUp">
+                {PREVIEW_LABEL}
+              </ShowPreview>
+            )}
+          </LensWrapper>
+        </EuiPageSection>
+      ) : (
+        <EuiPageSection paddingSize="l" restrictWidth={false}>
+          <EuiTitle>
+            <h2>{LENS_NOT_AVAILABLE}</h2>
+          </EuiTitle>
+        </EuiPageSection>
+      )}
     </>
-  ) : (
-    <EuiTitle>
-      <h2>{LENS_NOT_AVAILABLE}</h2>
-    </EuiTitle>
   );
 }
 const LensWrapper = styled.div<{ height: string }>`

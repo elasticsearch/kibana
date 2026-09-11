@@ -5,15 +5,7 @@
  * 2.0.
  */
 
-import type { ReactNode } from 'react';
-import type { AppMountParameters } from '@kbn/core/public';
 import type { UXMetrics } from '@kbn/observability-shared-plugin/public';
-
-export interface HeaderMenuPortalProps {
-  children: ReactNode;
-  setHeaderActionMenu: AppMountParameters['setHeaderActionMenu'];
-  theme$: AppMountParameters['theme$'];
-}
 
 export interface CoreVitalProps {
   loading: boolean;
