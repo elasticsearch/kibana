@@ -187,8 +187,8 @@ export const jobExistsResponse = () =>
       schema.arrayOf(
         schema.object({
           id: schema.string({ maxLength: 10000 }),
-          earliestTimestampMs: schema.number(),
-          latestTimestampMs: schema.number(),
+          earliestTimestampMs: schema.maybe(schema.number()),
+          latestTimestampMs: schema.maybe(schema.number()),
           latestResultsTimestampMs: schema.maybe(schema.number()),
         }),
         { maxSize: 10000 }
