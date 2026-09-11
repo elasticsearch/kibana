@@ -7,7 +7,6 @@
 
 import { AttachmentType } from '@kbn/agent-builder-common/attachments';
 import type { Logger } from '@kbn/logging';
-import { AGENT_BUILDER_EXPERIMENTAL_FEATURES_SETTING_ID } from '@kbn/management-settings-ids';
 import type {
   ConnectorLifecyclePostCreateParams,
   ConnectorLifecyclePostDeleteParams,
@@ -48,16 +47,8 @@ export function createConnectorLifecycleHandler(deps: ConnectorLifecycleHandlerD
       }
 
       try {
-        const [coreStart, startDeps] = await getStartServices();
+        const [, startDeps] = await getStartServices();
         const request = params.request;
-        const soClient = coreStart.savedObjects.getScopedClient(request);
-        const uiSettingsClient = coreStart.uiSettings.asScopedToClient(soClient);
-        // SML ingest lives in the Agent Builder family, so crawling connectors
-        // into SML requires only the Agent Builder experimental flag.
-        const isExperimentalEnabled = await uiSettingsClient.get<boolean>(
-          AGENT_BUILDER_EXPERIMENTAL_FEATURES_SETTING_ID
-        );
-        if (!isExperimentalEnabled) return;
 
         try {
           await startDeps.agentBuilderSml.indexAttachment({

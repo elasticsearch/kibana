@@ -119,7 +119,7 @@ describe('sml_task_definitions', () => {
       expect(mockGetCrawlerDeps).not.toHaveBeenCalled();
     });
 
-    it('skips crawl when Agent Builder experimental features are disabled', async () => {
+    it('skips crawl for non-connector types when Agent Builder experimental features are disabled', async () => {
       mockUiSettingsClient.get.mockResolvedValue(false);
       const definition = createMockDefinition({ id: 'visualization' });
       mockSmlService.getTypeDefinition.mockReturnValue(definition);
@@ -132,6 +132,18 @@ describe('sml_task_definitions', () => {
         "SML crawler: Agent Builder experimental features disabled — skipping crawl for type 'visualization'"
       );
       expect(mockCrawler.crawl).not.toHaveBeenCalled();
+    });
+
+    it('does not skip crawl for connector type even when experimental features are disabled', async () => {
+      mockUiSettingsClient.get.mockResolvedValue(false);
+      const definition = createMockDefinition({ id: 'connector' });
+      mockSmlService.getTypeDefinition.mockReturnValue(definition);
+      mockSmlService.listTypeDefinitions.mockReturnValue([definition]);
+
+      const runner = getRegisteredTaskRunner({ attachmentType: 'connector' });
+      await runner.run();
+
+      expect(mockCrawler.crawl).toHaveBeenCalled();
     });
 
     it('awaits getCrawlerDeps and calls crawler.crawl with correct params', async () => {

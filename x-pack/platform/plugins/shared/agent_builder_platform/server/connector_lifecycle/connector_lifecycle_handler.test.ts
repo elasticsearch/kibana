@@ -113,19 +113,6 @@ describe('createConnectorLifecycleHandler', () => {
       );
     });
 
-    it('skips when Agent Builder experimental features are disabled', async () => {
-      const uiSettingsClient = createMockUiSettingsClient(false);
-      const agentBuilderSml = createMockAgentBuilderSml();
-      const handler = createConnectorLifecycleHandler({
-        logger,
-        getStartServices: createMockGetStartServices(uiSettingsClient, agentBuilderSml),
-      });
-
-      await handler.onPostCreate(createBaseParams() as any);
-
-      expect(agentBuilderSml.indexAttachment).not.toHaveBeenCalled();
-    });
-
     it('indexes connector into SML', async () => {
       const agentBuilderSml = createMockAgentBuilderSml();
       const handler = createConnectorLifecycleHandler({

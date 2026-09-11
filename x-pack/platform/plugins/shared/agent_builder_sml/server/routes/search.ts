@@ -16,7 +16,7 @@ import {
   SmlAuthzEnumerationIncompleteError,
   SmlCorpusTooLargeError,
 } from '../services/sml/sml_errors';
-import { READ_SECURITY, withSmlFeatureFlag } from './common';
+import { READ_SECURITY, getEffectiveFilters } from './common';
 
 const SML_SEARCH_SIZE_MAX = 1000;
 const SML_SEARCH_FILTER_ARRAY_MAX = 100;
@@ -86,12 +86,14 @@ export const registerSearchRoute = ({
       options: { access: 'internal' },
       security: READ_SECURITY,
     },
-    withSmlFeatureFlag(async (ctx, request, response) => {
+    async (ctx, request, response) => {
       try {
         const sml = getSmlService();
         const coreContext = await ctx.core;
         const { query, size, fields, constraints, filters } = request.body;
         const esClient = coreContext.elasticsearch.client;
+
+        const effectiveFilters = await getEffectiveFilters(coreContext.uiSettings.client, filters);
 
         const [, startDeps] = await coreSetup.getStartServices();
         const spaceId = startDeps.spaces?.spacesService?.getSpaceId(request) ?? 'default';
@@ -104,7 +106,7 @@ export const registerSearchRoute = ({
           esClient,
           request,
           constraints,
-          filters,
+          filters: effectiveFilters,
         });
 
         const body: SmlSearchHttpResponse = {
@@ -142,6 +144,6 @@ export const registerSearchRoute = ({
         logger.error(`SML search route error: ${(error as Error).message}`);
         throw error;
       }
-    })
+    }
   );
 };

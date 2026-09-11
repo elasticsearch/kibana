@@ -10,7 +10,6 @@ import { platformCoreTools, ToolType } from '@kbn/agent-builder-common';
 import { ToolResultType } from '@kbn/agent-builder-common/tools/tool_result';
 import type { BuiltinToolDefinition } from '@kbn/agent-builder-server';
 import { getToolResultId, createErrorResult } from '@kbn/agent-builder-server';
-import { AGENT_BUILDER_EXPERIMENTAL_FEATURES_SETTING_ID } from '@kbn/management-settings-ids';
 import { SmlSearchFilterType } from '@kbn/agent-builder-sml-plugin/server';
 import type { SmlToolsOptions } from './types';
 
@@ -85,22 +84,6 @@ export const createSmlSearchTool = ({
     destructiveHint: false,
     idempotentHint: true,
     openWorldHint: false,
-  },
-  availability: {
-    cacheMode: 'global',
-    // SML lives inside Agent Builder, so it requires only the Agent Builder
-    // experimental flag.
-    handler: async ({ uiSettings }) => {
-      const experimentalEnabled = await uiSettings.get<boolean>(
-        AGENT_BUILDER_EXPERIMENTAL_FEATURES_SETTING_ID
-      );
-      return experimentalEnabled
-        ? { status: 'available' }
-        : {
-            status: 'unavailable',
-            reason: 'SML features require Agent Builder experimental features to be enabled',
-          };
-    },
   },
   handler: async ({ query, size, types, tags }, context) => {
     const agentBuilderSml = getAgentBuilderSml();

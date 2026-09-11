@@ -11,7 +11,6 @@ import { AuthorizationStatus, isAuthorizationMethod } from '@kbn/agent-builder-c
 import { ToolResultType } from '@kbn/agent-builder-common/tools/tool_result';
 import type { BuiltinToolDefinition } from '@kbn/agent-builder-server';
 import { getToolResultId, createErrorResult } from '@kbn/agent-builder-server';
-import { AGENT_BUILDER_EXPERIMENTAL_FEATURES_SETTING_ID } from '@kbn/management-settings-ids';
 import { getConnectorSpec, isToolAction } from '@kbn/connector-specs';
 import type { ConnectorToolsOptions } from './types';
 
@@ -77,18 +76,6 @@ export const createExecuteConnectorSubActionTool = ({
     destructiveHint: true,
     idempotentHint: false,
     openWorldHint: true,
-  },
-  availability: {
-    cacheMode: 'global',
-    handler: async ({ uiSettings }) => {
-      const enabled = await uiSettings.get<boolean>(AGENT_BUILDER_EXPERIMENTAL_FEATURES_SETTING_ID);
-      return enabled
-        ? { status: 'available' }
-        : {
-            status: 'unavailable',
-            reason: 'Connector tools require Agent Builder experimental features to be enabled',
-          };
-    },
   },
   handler: async ({ connectorId, subAction, params }, context) => {
     const actions = await getActions();

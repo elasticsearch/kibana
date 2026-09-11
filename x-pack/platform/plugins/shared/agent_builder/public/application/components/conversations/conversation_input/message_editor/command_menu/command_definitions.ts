@@ -5,13 +5,11 @@
  * 2.0.
  */
 
-import { useMemo } from 'react';
 import { i18n } from '@kbn/i18n';
 import { Skills } from './menus/skills';
 import { Sml } from './menus/sml';
 import type { CommandDefinition } from './types';
 import { CommandId } from './types';
-import { useExperimentalFeatures } from '../../../../../hooks/use_experimental_features';
 
 const semanticKnowledgeCommandName = i18n.translate(
   'xpack.agentBuilder.conversationInput.commandMenu.semanticKnowledgeCommandName',
@@ -27,7 +25,6 @@ const COMMAND_DEFINITIONS: readonly CommandDefinition[] = [
     sequence: '@',
     name: semanticKnowledgeCommandName,
     menuComponent: Sml,
-    experimental: true,
   },
 ];
 
@@ -46,19 +43,5 @@ export const getCommandDefinitionByScheme = (scheme: string) => {
   return commandDefinition;
 };
 
-/**
- * Returns the list of command definitions available based on feature flags.
- * The `/` skill command is always available (GA).
- * The `@` SML command lives inside Agent Builder, so it requires only the
- * Agent Builder experimental flag.
- */
-export const useAvailableCommandDefinitions = (): readonly CommandDefinition[] => {
-  const isSmlEnabled = useExperimentalFeatures();
-
-  return useMemo(() => {
-    if (isSmlEnabled) {
-      return sortedCommandDefinitions;
-    }
-    return sortedCommandDefinitions.filter((c) => !c.experimental);
-  }, [isSmlEnabled]);
-};
+export const useAvailableCommandDefinitions = (): readonly CommandDefinition[] =>
+  sortedCommandDefinitions;

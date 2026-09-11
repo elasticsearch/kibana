@@ -72,10 +72,12 @@ describe('registerAutocompleteRoute', () => {
     return response;
   };
 
-  it('returns 404 when feature flag is disabled', async () => {
-    const response = await callHandler({ query: 'git', size: 5 }, false);
-    expect(response.notFound).toHaveBeenCalled();
-    expect(mockSmlService.autocomplete).not.toHaveBeenCalled();
+  it('restricts results to connector type when experimental features are disabled', async () => {
+    mockSmlService.autocomplete.mockResolvedValue({ results: [] });
+    await callHandler({ query: 'git', size: 5 }, false);
+    expect(mockSmlService.autocomplete).toHaveBeenCalledWith(
+      expect.objectContaining({ filters: expect.objectContaining({ types: ['connector'] }) })
+    );
   });
 
   it('returns 200 with autocomplete results when enabled', async () => {

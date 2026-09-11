@@ -8,12 +8,12 @@
 import { buildAgentBuilderDeepLinks } from './register';
 
 describe('buildAgentBuilderDeepLinks', () => {
-  it('omits plugins and connectors when experimental features are disabled', () => {
+  it('omits plugins when experimental features are disabled', () => {
     const links = buildAgentBuilderDeepLinks(false);
-    expect(links.map((l) => l.id)).toEqual(['agents', 'skills', 'tools']);
+    expect(links.map((l) => l.id)).toEqual(['agents', 'skills', 'connectors', 'tools']);
   });
 
-  it('includes plugins and connectors when experimental features are enabled', () => {
+  it('includes plugins when experimental features are enabled', () => {
     const links = buildAgentBuilderDeepLinks(true);
     expect(links.map((l) => l.id)).toEqual(['agents', 'skills', 'plugins', 'connectors', 'tools']);
   });

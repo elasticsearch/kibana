@@ -46,7 +46,6 @@ const AGENT_BUILDER_DEEP_LINK_SOURCES: readonly AgentBuilderDeepLinkSource[] = [
     title: i18n.translate('xpack.agentBuilder.connectors.title', {
       defaultMessage: 'Connectors',
     }),
-    isExperimental: true,
   },
   {
     id: 'tools',

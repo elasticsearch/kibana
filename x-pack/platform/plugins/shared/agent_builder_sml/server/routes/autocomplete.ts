@@ -18,7 +18,7 @@ import {
 import { smlAutocompletePath } from '../../common/constants';
 import type { SmlService } from '../services/sml/types';
 import type { AgentBuilderSmlStartDependencies, AgentBuilderSmlPluginStart } from '../types';
-import { READ_SECURITY, withSmlFeatureFlag } from './common';
+import { READ_SECURITY, getEffectiveFilters } from './common';
 
 const SML_AUTOCOMPLETE_SIZE_MAX = 50;
 
@@ -70,12 +70,14 @@ export const registerAutocompleteRoute = ({
       options: { access: 'internal' },
       security: READ_SECURITY,
     },
-    withSmlFeatureFlag(async (ctx, request, response) => {
+    async (ctx, request, response) => {
       try {
         const sml = getSmlService();
         const { query, size, constraints, filters } = request.body;
         const coreContext = await ctx.core;
         const esClient = coreContext.elasticsearch.client;
+
+        const effectiveFilters = await getEffectiveFilters(coreContext.uiSettings.client, filters);
 
         const [, startDeps] = await coreSetup.getStartServices();
         const spaceId = startDeps.spaces?.spacesService?.getSpaceId(request) ?? 'default';
@@ -87,7 +89,7 @@ export const registerAutocompleteRoute = ({
           esClient,
           request,
           constraints,
-          filters,
+          filters: effectiveFilters,
         });
 
         const body: SmlAutocompleteHttpResponse = {
@@ -106,6 +108,6 @@ export const registerAutocompleteRoute = ({
         logger.error(`SML autocomplete route error: ${(error as Error).message}`);
         throw error;
       }
-    })
+    }
   );
 };

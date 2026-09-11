@@ -49,10 +49,12 @@ describe('registerSearchRoute', () => {
     return response;
   };
 
-  it('returns 404 when feature flag is disabled', async () => {
-    const response = await callHandler({ query: 'test', size: 10 }, false);
-    expect(response.notFound).toHaveBeenCalled();
-    expect(mockSmlService.search).not.toHaveBeenCalled();
+  it('restricts results to connector type when experimental features are disabled', async () => {
+    mockSmlService.search.mockResolvedValue({ results: [] });
+    await callHandler({ query: 'test', size: 10 }, false);
+    expect(mockSmlService.search).toHaveBeenCalledWith(
+      expect.objectContaining({ filters: expect.objectContaining({ types: ['connector'] }) })
+    );
   });
 
   it('returns 200 with the hit body when enabled', async () => {

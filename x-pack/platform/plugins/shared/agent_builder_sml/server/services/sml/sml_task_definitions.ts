@@ -100,7 +100,7 @@ export const registerSmlCrawlerTaskDefinition = ({
             const experimentalFeaturesEnabled = await uiSettingsClient.get<boolean>(
               AGENT_BUILDER_EXPERIMENTAL_FEATURES_SETTING_ID
             );
-            if (!experimentalFeaturesEnabled) {
+            if (!experimentalFeaturesEnabled && attachmentType !== 'connector') {
               logger.debug(
                 `SML crawler: Agent Builder experimental features disabled — skipping crawl for type '${attachmentType}'`
               );

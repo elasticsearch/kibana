@@ -8,17 +8,8 @@
 import { platformCoreTools, ToolType } from '@kbn/agent-builder-common';
 import { ToolResultType, type OtherResult } from '@kbn/agent-builder-common/tools/tool_result';
 import type { ToolHandlerContext } from '@kbn/agent-builder-server/tools/handler';
-import type { ToolAvailabilityContext } from '@kbn/agent-builder-server';
 import type { SmlSearchResult } from '@kbn/agent-builder-sml-plugin/server';
-import { AGENT_BUILDER_EXPERIMENTAL_FEATURES_SETTING_ID } from '@kbn/management-settings-ids';
 import { createSmlSearchTool } from './sml_search';
-
-const buildAvailabilityContext = (flags: Record<string, boolean>) =>
-  ({
-    uiSettings: {
-      get: jest.fn(async (key: string) => flags[key]),
-    },
-  } as unknown as ToolAvailabilityContext);
 
 const mockSearch = jest.fn();
 const getAgentBuilderSml = jest.fn(() => ({
@@ -48,28 +39,6 @@ describe('createSmlSearchTool', () => {
     expect(tool.id).toBe(platformCoreTools.smlSearch);
     expect(tool.type).toBe(ToolType.builtin);
     expect(tool.tags).toEqual(['sml', 'search']);
-  });
-
-  describe('availability', () => {
-    it('is available when experimental features are enabled', async () => {
-      const tool = createSmlSearchTool({ getAgentBuilderSml });
-      const result = await tool.availability!.handler(
-        buildAvailabilityContext({
-          [AGENT_BUILDER_EXPERIMENTAL_FEATURES_SETTING_ID]: true,
-        })
-      );
-      expect(result.status).toBe('available');
-    });
-
-    it('is unavailable when experimental features are disabled', async () => {
-      const tool = createSmlSearchTool({ getAgentBuilderSml });
-      const result = await tool.availability!.handler(
-        buildAvailabilityContext({
-          [AGENT_BUILDER_EXPERIMENTAL_FEATURES_SETTING_ID]: false,
-        })
-      );
-      expect(result.status).toBe('unavailable');
-    });
   });
 
   it('description mentions workflows, wildcard query, and the types/tags filters', () => {
