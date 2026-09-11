@@ -9,7 +9,7 @@
 
 import React, { useEffect, useCallback } from 'react';
 import { i18n } from '@kbn/i18n';
-import { get } from 'lodash';
+import { get, isEqual } from 'lodash';
 import { EuiFlexGroup, EuiFlexItem, EuiSpacer } from '@elastic/eui';
 import { KbnInfoCallout, KbnWarningCallout } from '@kbn/ui-callout';
 
@@ -28,12 +28,11 @@ import { useFieldPreviewContext } from '../preview';
 
 import { RUNTIME_FIELD_OPTIONS } from './constants';
 import { schema } from './form_schema';
-import { getNameFieldConfig, getFieldPreviewChanges } from './lib';
+import { getNameFieldConfig } from './lib';
 import { TypeField } from './form_fields';
 import { FieldDetail } from './field_detail';
 import { CompositeEditor } from './composite_editor';
 import type { TypeSelection } from './types';
-import { ChangeType } from '../preview/types';
 
 export interface FieldEditorFormState {
   isValid: boolean | undefined;
@@ -179,25 +178,32 @@ const FieldEditorComponent = ({ field, onChange, onFormModifiedChange, isDisable
   useEffect(() => {
     const existingCompositeField = !!Object.keys(subfields$.getValue() || {}).length;
 
-    const changes$ = getFieldPreviewChanges(fieldPreview$, updatedName);
+    // Project the subfields list directly from the latest preview so a single emission always
+    // reconciles the full field set, while preserving any user-selected type for surviving subfields.
+    const subChanges = fieldPreview$.subscribe((previewFields) => {
+      if (previewFields === undefined) {
+        return;
+      }
 
-    const subChanges = changes$.subscribe((previewFields) => {
-      const fields = subfields$.getValue();
+      const currentSubfields = subfields$.getValue() ?? {};
+      const parentPrefix = `${updatedName}.`;
 
-      const modifiedFields = { ...fields };
+      const nextSubfields = previewFields.reduce<Record<string, { type: RuntimePrimitiveTypes }>>(
+        (acc, item) => {
+          const name = item.key.substring(parentPrefix.length);
+          acc[name] = {
+            type: currentSubfields[name]?.type ?? (item.type as RuntimePrimitiveTypes),
+          };
+          return acc;
+        },
+        {}
+      );
 
-      Object.entries(previewFields).forEach(([name, change]) => {
-        if (change.changeType === ChangeType.DELETE) {
-          delete modifiedFields[name];
-        }
-        if (change.changeType === ChangeType.UPSERT) {
-          modifiedFields[name] = { type: change.type! };
-        }
-      });
-
-      subfields$.next(modifiedFields);
-      // necessary to maintain script code when changing types
-      form.updateFieldValues({ ...form.getFormData() });
+      if (!isEqual(nextSubfields, currentSubfields)) {
+        subfields$.next(nextSubfields);
+        // necessary to maintain script code when changing types
+        form.updateFieldValues({ ...form.getFormData() });
+      }
     });
 
     // first preview value is skipped for saved fields, need to populate for new fields and rerenders
