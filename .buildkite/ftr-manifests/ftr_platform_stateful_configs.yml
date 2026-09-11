@@ -335,7 +335,6 @@ enabled:
   - x-pack/platform/test/api_integration/apis/cases/config.ts
   - x-pack/platform/test/api_integration/apis/cloud/config.ts
   - x-pack/platform/test/api_integration/apis/cloud/saml.config.ts
-  - x-pack/platform/test/api_integration/apis/console/config.ts
   - x-pack/platform/test/api_integration/apis/anonymization/config.ts
   - x-pack/platform/test/api_integration/apis/features/config.ts
   - x-pack/platform/test/api_integration/apis/es/config.ts

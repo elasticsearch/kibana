@@ -1,5 +1,5 @@
 {
-  "sha1": "945a4a1ca3e8affb32730d1e5b2399515ead8da9",
+  "sha1": "857752f5174e6c0a57b66bb7b9b49be062abbb98",
   "testChannels": [
     "ci-on-commit"
   ],
@@ -276,6 +276,154 @@
         "file": "src/platform/plugins/shared/console/test/scout/api/tests/es_config.spec.ts",
         "line": 32,
         "column": 13
+      }
+    },
+    {
+      "id": "ca98c8324f87e6e-a1d1a801efddc65",
+      "title": "POST /api/console/proxy — authorization for built-in roles accepts the kibana_user role",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic",
+        "@cloud-stateful-classic"
+      ],
+      "location": {
+        "file": "src/platform/plugins/shared/console/test/scout/api/tests/proxy_route_authz_stateful.spec.ts",
+        "line": 18,
+        "column": 17
+      }
+    },
+    {
+      "id": "ca98c8324f87e6e-9bacf724385e49d",
+      "title": "POST /api/console/proxy — authorization for built-in roles accepts the kibana_admin role",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic",
+        "@cloud-stateful-classic"
+      ],
+      "location": {
+        "file": "src/platform/plugins/shared/console/test/scout/api/tests/proxy_route_authz_stateful.spec.ts",
+        "line": 24,
+        "column": 24
+      }
+    },
+    {
+      "id": "23b3e90eed215f4-453120f62a28f6f",
+      "title": "POST /api/console/proxy — authorization rejects an unauthenticated request",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic",
+        "@cloud-stateful-classic",
+        "@local-serverless-search",
+        "@cloud-serverless-search",
+        "@local-serverless-observability_complete",
+        "@cloud-serverless-observability_complete",
+        "@local-serverless-security_complete",
+        "@cloud-serverless-security_complete"
+      ],
+      "location": {
+        "file": "src/platform/plugins/shared/console/test/scout/api/tests/proxy_route_authz.spec.ts",
+        "line": 73,
+        "column": 38
+      }
+    },
+    {
+      "id": "23b3e90eed215f4-b8cf3bd8ffc9923",
+      "title": "POST /api/console/proxy — authorization accepts a role with global all privileges",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic",
+        "@cloud-stateful-classic",
+        "@local-serverless-search",
+        "@cloud-serverless-search",
+        "@local-serverless-observability_complete",
+        "@cloud-serverless-observability_complete",
+        "@local-serverless-security_complete",
+        "@cloud-serverless-security_complete"
+      ],
+      "location": {
+        "file": "src/platform/plugins/shared/console/test/scout/api/tests/proxy_route_authz.spec.ts",
+        "line": 76,
+        "column": 9
+      }
+    },
+    {
+      "id": "23b3e90eed215f4-3ff26cabf7afaaa",
+      "title": "POST /api/console/proxy — authorization accepts a role with global read privileges",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic",
+        "@cloud-stateful-classic",
+        "@local-serverless-search",
+        "@cloud-serverless-search",
+        "@local-serverless-observability_complete",
+        "@cloud-serverless-observability_complete",
+        "@local-serverless-security_complete",
+        "@cloud-serverless-security_complete"
+      ],
+      "location": {
+        "file": "src/platform/plugins/shared/console/test/scout/api/tests/proxy_route_authz.spec.ts",
+        "line": 83,
+        "column": 24
+      }
+    },
+    {
+      "id": "23b3e90eed215f4-04be4f2a14b0387",
+      "title": "POST /api/console/proxy — authorization rejects a role without dev_tools access",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic",
+        "@cloud-stateful-classic",
+        "@local-serverless-search",
+        "@cloud-serverless-search",
+        "@local-serverless-observability_complete",
+        "@cloud-serverless-observability_complete",
+        "@local-serverless-security_complete",
+        "@cloud-serverless-security_complete"
+      ],
+      "location": {
+        "file": "src/platform/plugins/shared/console/test/scout/api/tests/proxy_route_authz.spec.ts",
+        "line": 90,
+        "column": 76
+      }
+    },
+    {
+      "id": "23b3e90eed215f4-a1d69f908e88a7a",
+      "title": "POST /api/console/proxy — authorization accepts a space-scoped role in the space that grants dev_tools",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic",
+        "@cloud-stateful-classic",
+        "@local-serverless-search",
+        "@cloud-serverless-search",
+        "@local-serverless-observability_complete",
+        "@cloud-serverless-observability_complete",
+        "@local-serverless-security_complete",
+        "@cloud-serverless-security_complete"
+      ],
+      "location": {
+        "file": "src/platform/plugins/shared/console/test/scout/api/tests/proxy_route_authz.spec.ts",
+        "line": 94,
+        "column": 9
+      }
+    },
+    {
+      "id": "23b3e90eed215f4-58be25247d6c161",
+      "title": "POST /api/console/proxy — authorization rejects a space-scoped role in a space that does not grant dev_tools",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic",
+        "@cloud-stateful-classic",
+        "@local-serverless-search",
+        "@cloud-serverless-search",
+        "@local-serverless-observability_complete",
+        "@cloud-serverless-observability_complete",
+        "@local-serverless-security_complete",
+        "@cloud-serverless-security_complete"
+      ],
+      "location": {
+        "file": "src/platform/plugins/shared/console/test/scout/api/tests/proxy_route_authz.spec.ts",
+        "line": 103,
+        "column": 44
       }
     },
     {
