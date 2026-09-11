@@ -49,3 +49,34 @@ export const DUPLICATE_PACKAGE_NAME_ERROR = (packageName: string) =>
     defaultMessage: 'A package named "{packageName}" already exists.',
     values: { packageName },
   });
+
+export const AUTOMATIC_IMPORT_PACKAGE_ERROR = (packageName: string) =>
+  i18n.translate(
+    'xpack.automaticImport.createIntegrationUpload.automaticImportPackageErrorMessage',
+    {
+      defaultMessage:
+        '"{packageName}" is an Automatic Import integration, please update it in Manage my integrations instead.',
+      values: { packageName },
+    }
+  );
+
+export const VERSION_NOT_NEWER_ERROR = (
+  packageName: string,
+  zipVersion: string,
+  installedVersion: string
+) =>
+  i18n.translate('xpack.automaticImport.createIntegrationUpload.versionNotNewerErrorMessage', {
+    defaultMessage:
+      'Version {zipVersion} of "{packageName}" is not newer than the installed version {installedVersion}.',
+    values: { packageName, zipVersion, installedVersion },
+  });
+
+export const INVALID_PACKAGE_VERSION_ERROR = (packageName: string) =>
+  i18n.translate(
+    'xpack.automaticImport.createIntegrationUpload.invalidPackageVersionErrorMessage',
+    {
+      defaultMessage:
+        'Cannot upgrade "{packageName}" because the uploaded or installed version is missing or invalid.',
+      values: { packageName },
+    }
+  );

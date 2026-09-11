@@ -29,8 +29,20 @@ export interface RequestDeps {
   abortSignal?: AbortSignal;
 }
 
+export interface EpmPackageInstallationInfo {
+  install_source?: string;
+  version?: string;
+}
+
+export interface EpmPackageItem {
+  id: string;
+  type: string;
+  version?: string;
+  installationInfo?: EpmPackageInstallationInfo;
+}
+
 export interface EpmPackageResponse {
-  items: Array<{ id: string; type: string }>;
+  items: EpmPackageItem[];
   _meta?: {
     install_source: string;
     name: string;

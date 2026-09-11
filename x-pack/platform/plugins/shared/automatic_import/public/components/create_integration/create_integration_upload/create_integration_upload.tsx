@@ -5,7 +5,7 @@
  * 2.0.
  */
 
-import React, { useCallback, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import JSZip from 'jszip';
 import { parse as parseYaml } from 'yaml';
 import useObservable from 'react-use/lib/useObservable';
@@ -23,17 +23,25 @@ import { useKibana } from '../../../common/hooks/use_kibana';
 import { ButtonsFooter } from '../../../common/components/button_footer';
 import {
   getIntegrationNameFromResponse,
-  fetchTakenPackageNames,
   runInstallPackage,
   type RequestDeps,
 } from '../../../common';
+import {
+  evaluateUploadedZipPackage,
+  type UploadPackageEvaluation,
+} from '../../../common/lib/evaluate_upload_package';
 import { PAGE_RESTRICT_WIDTH } from '../../integration_management/constants';
 import { LicensePaywallCard } from '../../license_paywall/license_paywall_card';
 import { useTelemetry } from '../../telemetry_context';
 import { DocsLinkSubtitle } from './docs_link_subtitle';
 import * as i18n from './translations';
 
-const extractPackageNameFromZip = async (file: Blob): Promise<string | null> => {
+interface ZipPackageManifest {
+  name: string;
+  version: string | null;
+}
+
+const extractPackageManifestFromZip = async (file: Blob): Promise<ZipPackageManifest | null> => {
   try {
     const zip = await JSZip.loadAsync(file);
     // Top-level manifest one directory deep: <name>-<version>/manifest.yml
@@ -43,10 +51,33 @@ const extractPackageNameFromZip = async (file: Blob): Promise<string | null> => 
     if (!manifestEntry) return null;
     const content = await manifestEntry.async('string');
     const parsed = parseYaml(content);
-    return typeof parsed?.name === 'string' ? parsed.name : null;
+    if (typeof parsed?.name !== 'string') return null;
+    return {
+      name: parsed.name,
+      version: typeof parsed.version === 'string' ? parsed.version : null,
+    };
   } catch {
     return null;
   }
+};
+
+const evaluationErrorMessage = (
+  evaluation: Extract<UploadPackageEvaluation, { kind: 'error' }>
+) => {
+  if (evaluation.reason === 'not_newer' && evaluation.zipVersion && evaluation.installedVersion) {
+    return i18n.VERSION_NOT_NEWER_ERROR(
+      evaluation.packageName,
+      evaluation.zipVersion,
+      evaluation.installedVersion
+    );
+  }
+  if (evaluation.reason === 'invalid_version') {
+    return i18n.INVALID_PACKAGE_VERSION_ERROR(evaluation.packageName);
+  }
+  if (evaluation.reason === 'automatic_import') {
+    return i18n.AUTOMATIC_IMPORT_PACKAGE_ERROR(evaluation.packageName);
+  }
+  return i18n.DUPLICATE_PACKAGE_NAME_ERROR(evaluation.packageName);
 };
 
 export const CreateIntegrationUpload = React.memo(() => {
@@ -68,7 +99,16 @@ export const CreateIntegrationUpload = React.memo(() => {
   const [error, setError] = useState<string>();
   const [integrationName, setIntegrationName] = useState<string>();
   const validateAbortRef = useRef<AbortController | null>(null);
+  const installAbortRef = useRef<AbortController | null>(null);
   const integrationsHref = useMemo(() => application.getUrlForApp('integrations'), [application]);
+
+  useEffect(
+    () => () => {
+      validateAbortRef.current?.abort();
+      installAbortRef.current?.abort();
+    },
+    []
+  );
 
   const onBack = useCallback(() => {
     application.navigateToUrl(integrationsHref);
@@ -97,14 +137,15 @@ export const CreateIntegrationUpload = React.memo(() => {
       setIsValidating(true);
 
       try {
-        const packageName = await extractPackageNameFromZip(selectedFile);
-        if (!packageName || abortController.signal.aborted) return;
-        const takenNames = await fetchTakenPackageNames({
+        const manifest = await extractPackageManifestFromZip(selectedFile);
+        if (!manifest || abortController.signal.aborted) return;
+        const evaluation = await evaluateUploadedZipPackage(manifest.name, manifest.version, {
           http,
           abortSignal: abortController.signal,
         });
-        if (!abortController.signal.aborted && takenNames.has(packageName)) {
-          setError(i18n.DUPLICATE_PACKAGE_NAME_ERROR(packageName));
+        if (abortController.signal.aborted) return;
+        if (evaluation.kind === 'error') {
+          setError(evaluationErrorMessage(evaluation));
         }
       } catch {
         // Silently ignore — the install step will surface any errors
@@ -121,6 +162,7 @@ export const CreateIntegrationUpload = React.memo(() => {
     }
     setIsLoading(true);
     const abortController = new AbortController();
+    installAbortRef.current = abortController;
     (async () => {
       try {
         const deps: RequestDeps = { http, abortSignal: abortController.signal };
@@ -138,7 +180,9 @@ export const CreateIntegrationUpload = React.memo(() => {
           setError(`${i18n.UPLOAD_ERROR}: ${errorMessage}`);
         }
       } finally {
-        setIsLoading(false);
+        if (!abortController.signal.aborted) {
+          setIsLoading(false);
+        }
       }
     })();
   }, [file, http]);
