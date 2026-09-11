@@ -6,5 +6,5 @@
  */
 
 // compile typescript on the fly
-require('@kbn/babel-register').install();
+require('@kbn/swc-register').install();
 require('./create_functional_tests_archive');

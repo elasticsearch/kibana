@@ -7,35 +7,6 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
-/** @typedef {import('./types').Cache} CacheInterface */
+import type { Cache } from '../cache/types';
 
-/**
- * @implements {CacheInterface}
- */
-class NoCacheCache {
-  getKey() {
-    return '';
-  }
-
-  getCode() {
-    return undefined;
-  }
-
-  getMtime() {
-    return undefined;
-  }
-
-  getSourceMap() {
-    return undefined;
-  }
-
-  async update() {
-    return undefined;
-  }
-
-  close() {}
-}
-
-module.exports = {
-  NoCacheCache,
-};
+export type Transform = (path: string, source: string, cache?: Cache) => string;

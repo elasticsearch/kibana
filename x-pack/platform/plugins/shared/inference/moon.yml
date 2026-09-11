@@ -22,7 +22,7 @@ dependsOn:
   - '@kbn/esql-validation-autocomplete'
   - '@kbn/core'
   - '@kbn/logging'
-  - '@kbn/babel-register'
+  - '@kbn/swc-register'
   - '@kbn/dev-cli-runner'
   - '@kbn/expect'
   - '@kbn/tooling-log'

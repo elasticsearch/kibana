@@ -7,8 +7,25 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
-module.exports = {
-  preset: '@kbn/test/jest_node',
-  rootDir: '../../../../..',
-  roots: ['<rootDir>/src/platform/packages/shared/kbn-babel-register'],
+/** @type {import('./types').Transform} */
+const yamlTransform = (path, source, cache) => {
+  const key = cache?.getKey(path, source);
+  if (cache && key) {
+    const cached = cache.getCode(key);
+    if (cached !== undefined) {
+      return cached;
+    }
+  }
+
+  const code = `module.exports = ${JSON.stringify(source)};\n`;
+
+  if (cache && key) {
+    cache.update(key, {
+      code,
+    });
+  }
+
+  return code;
 };
+
+module.exports = { yamlTransform };

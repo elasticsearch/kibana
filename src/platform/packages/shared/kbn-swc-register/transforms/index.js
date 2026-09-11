@@ -7,23 +7,23 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
-const { transformCode } = require('@kbn/babel-transform');
+const { dotTextTransform } = require('./dot_text');
+const { yamlTransform } = require('./yaml');
+const { swcTransform } = require('./swc');
 
 /** @type {import('./types').Transform} */
-const babelTransform = (path, source, cache) => {
-  const key = cache.getKey(path, source);
-  const cached = cache.getCode(key);
-  if (cached) {
-    return cached;
-  }
+const peggyTransform = (path, source, cache) =>
+  require('./peggy').peggyTransform(path, source, cache);
 
-  const result = transformCode(path, source);
-  cache.update(key, {
-    code: result.code,
-    map: result.map,
-  });
-
-  return result.code;
+module.exports = {
+  /**
+   * @type {Record<string, import('./types').Transform>}
+   */
+  TRANSFORMS: {
+    '.peggy': peggyTransform,
+    '.text': dotTextTransform,
+    '.yaml': yamlTransform,
+    '.yml': yamlTransform,
+    default: swcTransform,
+  },
 };
-
-module.exports = { babelTransform };

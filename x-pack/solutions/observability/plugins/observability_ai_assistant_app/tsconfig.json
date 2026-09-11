@@ -43,7 +43,7 @@
     "@kbn/shared-ux-link-redirect-app",
     "@kbn/dev-cli-runner",
     "@kbn/tooling-log",
-    "@kbn/babel-register",
+    "@kbn/swc-register",
     "@kbn/expect",
     "@kbn/apm-synthtrace-client",
     "@kbn/alerting-plugin",

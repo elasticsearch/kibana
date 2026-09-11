@@ -23,10 +23,6 @@ const ALLOWED_UNSAFE_HASHES = [
     path: 'x-pack/platform/test/cases_api_integration/common/plugins/cases/server/routes.ts',
     algorithms: ['sha1'],
   },
-  {
-    path: 'src/platform/packages/shared/kbn-babel-register/cache/lmdb_cache.js',
-    algorithms: ['sha1'],
-  },
 ];
 
 const allowedAlgorithms = ['sha256', 'sha3-256', 'sha512'];

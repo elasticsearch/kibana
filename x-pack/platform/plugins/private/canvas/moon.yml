@@ -57,7 +57,7 @@ dependsOn:
   - '@kbn/core-apps-server-internal'
   - '@kbn/flot-charts'
   - '@kbn/shared-ux-router'
-  - '@kbn/babel-register'
+  - '@kbn/swc-register'
   - '@kbn/shared-ux-button-toolbar'
   - '@kbn/saved-objects-finder-plugin'
   - '@kbn/core-saved-objects-server'

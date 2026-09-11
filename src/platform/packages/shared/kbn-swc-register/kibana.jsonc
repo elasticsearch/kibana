@@ -1,6 +1,6 @@
 {
   "type": "shared-common",
-  "id": "@kbn/babel-register",
+  "id": "@kbn/swc-register",
   "owner": [
     "@elastic/kibana-operations"
   ],

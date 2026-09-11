@@ -14,9 +14,9 @@ import { ScoutTestTarget } from '@kbn/scout-info';
 
 jest.mock('../utils', () => ({
   execPromise: jest.fn(),
-  withKibanaBabelRegister: jest.fn((env = {}) => ({
+  withKibanaSwcRegister: jest.fn((env = {}) => ({
     ...env,
-    NODE_OPTIONS: [env.NODE_OPTIONS, '--require=@kbn/babel-register/install']
+    NODE_OPTIONS: [env.NODE_OPTIONS, '--require=@kbn/swc-register/install']
       .filter(Boolean)
       .join(' '),
   })),
@@ -82,7 +82,7 @@ describe('hasTestsInPlaywrightConfig', () => {
       expect.objectContaining({
         env: expect.objectContaining({
           SCOUT_REPORTER_ENABLED: 'false',
-          NODE_OPTIONS: expect.stringContaining('--require=@kbn/babel-register/install'),
+          NODE_OPTIONS: expect.stringContaining('--require=@kbn/swc-register/install'),
         }),
       })
     );

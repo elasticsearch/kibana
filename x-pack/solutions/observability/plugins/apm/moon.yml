@@ -70,7 +70,7 @@ dependsOn:
   - '@kbn/std'
   - '@kbn/core-saved-objects-api-server-mocks'
   - '@kbn/field-types'
-  - '@kbn/babel-register'
+  - '@kbn/swc-register'
   - '@kbn/core-elasticsearch-server'
   - '@kbn/safer-lodash-set'
   - '@kbn/shared-ux-router'

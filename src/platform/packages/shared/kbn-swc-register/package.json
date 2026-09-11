@@ -1,5 +1,5 @@
 {
-  "name": "@kbn/babel-register",
+  "name": "@kbn/swc-register",
   "private": true,
   "version": "1.0.0",
   "license": "Elastic License 2.0 OR AGPL-3.0-only OR SSPL-1.0"

@@ -10,7 +10,7 @@
 import { REPO_ROOT } from '@kbn/repo-info';
 import { spawn, type SpawnOptions } from 'node:child_process';
 import type { ToolingLog } from '@kbn/tooling-log';
-import { withKibanaBabelRegister } from '../utils';
+import { withKibanaSwcRegister } from '../utils';
 
 export interface PlaywrightCLIResult {
   exitCode: number;
@@ -28,7 +28,7 @@ export async function runPlaywrightCLI(
   const playwrightBinPath = './node_modules/.bin/playwright';
   const options: SpawnOptions = {
     cwd: REPO_ROOT,
-    env: withKibanaBabelRegister(
+    env: withKibanaSwcRegister(
       env ? { ...process.env, ...env } : { ...process.env }
     ) as NodeJS.ProcessEnv,
     stdio: log ? 'pipe' : 'inherit',

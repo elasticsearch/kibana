@@ -5,6 +5,6 @@
   "author": "Kibana Core",
   "license": "Elastic License 2.0 OR AGPL-3.0-only OR SSPL-1.0",
   "scripts": {
-    "start": "node -r '@kbn/babel-register/install' ./scripts/init"
+    "start": "node -r '@kbn/swc-register/install' ./scripts/init"
   }
 }

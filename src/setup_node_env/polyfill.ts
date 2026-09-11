@@ -7,7 +7,5 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
-// require these polyfills after setting up the require hook so that @babel/preset-env
-// will spot the import in the polyfill file and replace it with the necessary polyfills
-// for the current node.js version
+// SWC does not inject polyfills, so load them explicitly for the Node.js runtime.
 import 'core-js/stable';

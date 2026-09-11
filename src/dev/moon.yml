@@ -49,7 +49,7 @@ dependsOn:
   - '@kbn/core-i18n-server-internal'
   - '@kbn/yarn-lock-validator'
   - '@kbn/sort-package-json'
-  - '@kbn/babel-register'
+  - '@kbn/swc-register'
   - '@kbn/dev-validation-runner'
 tags:
   - tooling

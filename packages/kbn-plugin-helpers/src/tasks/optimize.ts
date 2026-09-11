@@ -64,7 +64,7 @@ export async function optimize({
 
     const proc = fork(require.resolve('./optimize_worker'), {
       cwd: REPO_ROOT,
-      execArgv: ['--require=@kbn/babel-register/install'],
+      execArgv: ['--require=@kbn/swc-register/install'],
       stdio: ['ignore', 'pipe', 'pipe', 'ipc'],
     });
 

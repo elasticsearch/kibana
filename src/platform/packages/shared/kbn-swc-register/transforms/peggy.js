@@ -11,13 +11,15 @@ const Peggy = require('@kbn/peggy');
 
 /** @type {import('./types').Transform} */
 const peggyTransform = (path, source, cache) => {
-  const config = Peggy.findConfigFile(path);
-  const key = cache.getKey(path, source);
-
-  const cached = cache.getCode(key);
-  if (cached) {
-    return cached;
+  const key = cache?.getKey(path, source);
+  if (cache && key) {
+    const cached = cache.getCode(key);
+    if (cached !== undefined) {
+      return cached;
+    }
   }
+
+  const config = Peggy.findConfigFile(path);
 
   const code = Peggy.getJsSourceSync({
     content: source,
@@ -28,9 +30,11 @@ const peggyTransform = (path, source, cache) => {
     skipConfigSearch: true,
   }).source;
 
-  cache.update(key, {
-    code,
-  });
+  if (cache && key) {
+    cache.update(key, {
+      code,
+    });
+  }
 
   return code;
 };

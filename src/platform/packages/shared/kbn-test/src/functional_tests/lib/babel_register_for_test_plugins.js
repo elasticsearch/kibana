@@ -11,7 +11,7 @@ const Path = require('path');
 
 const { REPO_ROOT } = require('@kbn/repo-info');
 
-require('@kbn/babel-register').install({
+require('@kbn/swc-register').install({
   only: [
     'test',
     'x-pack/platform/test',

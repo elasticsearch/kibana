@@ -13,5 +13,5 @@
  * Usage: node create-apm-users.js
  ******************************/
 
-require('@kbn/babel-register').install();
+require('@kbn/swc-register').install();
 require('./create_apm_users/create_apm_users_cli');

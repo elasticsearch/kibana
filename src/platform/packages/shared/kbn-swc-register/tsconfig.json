@@ -10,14 +10,14 @@
   },
   "include": [
     "**/*.js",
-    "**/*.ts",
+    "**/*.ts"
   ],
   "kbn_references": [
     "@kbn/repo-info",
-    "@kbn/babel-transform",
     "@kbn/peggy",
+    "@kbn/swc-config"
   ],
   "exclude": [
-    "target/**/*",
+    "target/**/*"
   ]
 }

@@ -11,30 +11,42 @@ const Fs = require('fs');
 const Path = require('path');
 const Crypto = require('crypto');
 
-const babel = require('@babel/core');
-const peggy = require('@kbn/peggy');
+const { version: swcVersion } = require('@swc/core/package.json');
+const { version: peggyVersion } = require('peggy/package.json');
+
 const { REPO_ROOT, UPSTREAM_BRANCH } = require('@kbn/repo-info');
-const { getBabelOptions } = require('@kbn/babel-transform');
+const { getNodeRegisterSwcConfig } = require('@kbn/swc-config/node_register');
 
 /**
- * @babel/register uses a JSON encoded copy of the config + babel.version
- * as the cache key for files, so we do something similar but we don't need
- * a unique cache key for every file as our config isn't different for
- * different files (by design). Instead we determine a unique prefix and
- * automatically prepend all paths with the prefix to create cache keys
+ * @param {string} path
  */
-function determineCachePrefix() {
-  const json = JSON.stringify({
-    babelVersion: babel.version,
-    peggyVersion: peggy.version,
-    // get a config for a fake js, ts, and tsx file to make sure we
-    // capture conditional config portions based on the file extension
-    js: babel.loadOptions(getBabelOptions(Path.resolve('foo.js'))),
-    ts: babel.loadOptions(getBabelOptions(Path.resolve('foo.ts'))),
-    tsx: babel.loadOptions(getBabelOptions(Path.resolve('foo.tsx'))),
+function getCachePrefixSwcConfig(path) {
+  const config = getNodeRegisterSwcConfig(path, {
+    inlineSourceMaps: false,
+    inlineSourcesContent: false,
   });
 
-  return Crypto.createHash('sha256').update(json).digest('hex').slice(0, 10);
+  return {
+    swcrc: config.swcrc,
+    configFile: config.configFile,
+    sourceMaps: config.sourceMaps,
+    inlineSourcesContent: config.inlineSourcesContent,
+    jsc: config.jsc,
+    module: config.module,
+  };
+}
+
+function determineCachePrefix() {
+  const json = JSON.stringify({
+    cacheVersion: 1,
+    swcVersion,
+    peggyVersion,
+    js: getCachePrefixSwcConfig('foo.js'),
+    ts: getCachePrefixSwcConfig('foo.ts'),
+    tsx: getCachePrefixSwcConfig('foo.tsx'),
+  });
+
+  return Crypto.hash('sha256', json, 'hex').slice(0, 10);
 }
 
 /** @type {boolean} */
@@ -45,7 +57,6 @@ let lmdbDisabledReason;
 function lmdbAvailable() {
   try {
     if (process.env.CODEX_SANDBOX) {
-      // Codex sandbox disallows LMDB-backed caches, so skip them entirely here.
       lmdbDisabledReason = 'CODEX_SANDBOX is set';
       return false;
     }
@@ -68,36 +79,38 @@ function logLmdbDisabledOnce(reason) {
 
   lmdbDisabledLogged = true;
   const detail = reason ? ` (${reason})` : '';
-  console.warn(`LMDB cache disabled for @kbn/babel-register${detail}`);
+  console.warn(`LMDB cache disabled for @kbn/swc-register${detail}`);
 }
 
 /**
- * @returns {import('./types').Cache}
+ * @returns {import('./types').Cache | undefined}
  */
 function getCache() {
-  const log = process.env.DEBUG_BABEL_REGISTER_CACHE
-    ? Fs.createWriteStream('babel_register_cache.log', { flags: 'a' })
+  const prefix = determineCachePrefix();
+  const log = process.env.DEBUG_SWC_REGISTER_CACHE
+    ? Fs.createWriteStream('swc_register_cache.log', { flags: 'a' })
     : undefined;
 
-  if (process.env.DISABLE_BABEL_REGISTER_CACHE) {
+  if (process.env.DISABLE_SWC_REGISTER_CACHE) {
     log?.end('lmdb cache is disabled\n');
-    return new (require('./no_cache_cache').NoCacheCache)();
+    return undefined;
   }
 
   if (lmdbAvailable()) {
     log?.write('lmdb is available, using lmdb cache\n');
     return new (require('./lmdb_cache').LmdbCache)({
-      dir: Path.resolve(REPO_ROOT, 'data/babel_register_cache', UPSTREAM_BRANCH),
-      prefix: determineCachePrefix(),
+      dir: Path.resolve(REPO_ROOT, 'data/swc_register_cache', UPSTREAM_BRANCH),
+      prefix,
       log,
     });
   }
 
   log?.end('lmdb is unavailable, disabling cache\n');
   logLmdbDisabledOnce(lmdbDisabledReason);
-  return new (require('./no_cache_cache').NoCacheCache)();
+  return undefined;
 }
 
 module.exports = {
   getCache,
+  determineCachePrefix,
 };

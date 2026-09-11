@@ -7,19 +7,4 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
-import { Writable } from 'stream';
-
-export interface CacheConfig {
-  dir: string;
-  prefix: string;
-  log?: Writable;
-}
-
-export interface Cache {
-  getKey(path: string, source: string): string;
-  getCode(key: string): string | undefined;
-  getSourceMap(key: string): object | undefined;
-  update(key: string, entry: { code: string; map?: object | null }): Promise<void>;
-}
-
-export type CacheEntry = [atime: number, code: string, sourceMap: object];
+module.exports = require('./src/node_register');

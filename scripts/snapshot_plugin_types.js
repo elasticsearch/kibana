@@ -7,7 +7,20 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
-require('@kbn/setup-node-env');
+require('@kbn/setup-node-env/setup_env');
+require('@kbn/setup-node-env/dns_ipv4_first');
+
+require('@kbn/swc-register').install({ ignore: [/\.(?:js|ts|tsx)$/] });
+require('@babel/register')({
+  extensions: ['.js', '.ts', '.tsx'],
+  presets: [require.resolve('@kbn/babel-preset/node_preset')],
+  babelrc: false,
+  sourceMaps: 'both',
+});
+
+require('@kbn/setup-node-env/polyfill');
+require('@kbn/security-hardening');
+require('reflect-metadata');
 
 var command = process.argv[2];
 

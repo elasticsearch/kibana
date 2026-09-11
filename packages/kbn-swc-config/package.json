@@ -1,0 +1,11 @@
+{
+  "name": "@kbn/swc-config",
+  "private": true,
+  "license": "Elastic License 2.0 OR AGPL-3.0-only OR SSPL-1.0",
+  "version": "1.0.0",
+  "main": "./src/node_register.js",
+  "exports": {
+    ".": "./src/node_register.js",
+    "./node_register": "./node_register.js"
+  }
+}

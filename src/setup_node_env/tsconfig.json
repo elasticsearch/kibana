@@ -11,7 +11,7 @@
     "*.ts",
   ],
   "kbn_references": [
-    "@kbn/babel-register",
+    "@kbn/swc-register",
     "@kbn/security-hardening",
   ],
   "exclude": [

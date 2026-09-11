@@ -7,15 +7,10 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
-const { peggyTransform } = require('./peggy');
-const { babelTransform } = require('./babel');
-
-module.exports = {
-  /**
-   * @type {Record<string, import('./types').Transform>}
-   */
-  TRANSFORMS: {
-    '.peggy': peggyTransform,
-    default: babelTransform,
-  },
-};
+{
+  "type": "shared-common",
+  "id": "@kbn/swc-config",
+  "owner": "@elastic/kibana-operations",
+  "description": "SWC configuration for Kibana Node.js runtime registration",
+  "devOnly": true
+}

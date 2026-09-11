@@ -36,7 +36,7 @@ export function startTSWorker<Message>({
   ...forkOptions
 }: StartTSWorkerArgs) {
   const fork = ChildProcess.fork(src, {
-    execArgv: ['--require=@kbn/babel-register/install', ...execArgv],
+    execArgv: ['--require=@kbn/swc-register/install', ...execArgv],
     cwd,
     stdio,
     ...forkOptions,

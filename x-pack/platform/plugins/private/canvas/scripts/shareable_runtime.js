@@ -5,7 +5,7 @@
  * 2.0.
  */
 
-require('@kbn/babel-register').install();
+require('@kbn/swc-register').install();
 
 const fs = require('fs');
 const path = require('path');

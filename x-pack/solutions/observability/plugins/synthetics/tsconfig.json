@@ -101,7 +101,7 @@
     "@kbn/search-types",
     "@kbn/slo-schema",
     "@kbn/alerting-types",
-    "@kbn/babel-register",
+    "@kbn/swc-register",
     "@kbn/slo-plugin",
     "@kbn/ebt-tools",
     "@kbn/alerting-types",

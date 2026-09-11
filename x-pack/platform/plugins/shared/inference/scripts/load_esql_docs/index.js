@@ -5,6 +5,6 @@
  * 2.0.
  */
 
-require('@kbn/babel-register').install();
+require('@kbn/swc-register').install();
 
 require('./load_esql_docs');

@@ -97,7 +97,7 @@ export class Watcher {
 
           // ignore changes in any devOnly package, these can't power the server so we can ignore them
           if (pkg?.devOnly) {
-            return pkg.id === '@kbn/babel-register';
+            return pkg.id === '@kbn/swc-register';
           }
 
           const result = this.classifier.classify(event.path);

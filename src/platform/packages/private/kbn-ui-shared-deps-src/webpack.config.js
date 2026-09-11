@@ -8,7 +8,7 @@
  */
 
 // setup ts/pkg support in this webpack process
-require('@kbn/babel-register').install();
+require('@kbn/swc-register').install();
 
 const Path = require('path');
 

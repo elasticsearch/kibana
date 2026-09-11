@@ -54,7 +54,7 @@ dependsOn:
   - '@kbn/test-suites-src'
   - '@kbn/openapi-common'
   - '@kbn/scout-info'
-  - '@kbn/babel-register'
+  - '@kbn/swc-register'
   - '@kbn/config-schema'
   - '@kbn/test-suites-xpack-platform'
   - '@kbn/response-ops-rule-params'

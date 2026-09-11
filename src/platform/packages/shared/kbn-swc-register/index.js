@@ -49,7 +49,6 @@ const { addHook } = require('pirates');
 const sourceMapSupport = require('source-map-support');
 
 const { getCache } = require('./cache');
-
 const { TRANSFORMS } = require('./transforms');
 
 /** @typedef {RegExp | string} Matcher */
@@ -61,13 +60,16 @@ const IGNORE_PATTERNS = [
 
   // ignore packages with "babel" in their names
   /[\/\\]packages[\/\\]([^\/\\]+-)?babel(-[^\/\\]+)?[\/\\]/,
+  // ignore babel plugins
+  /lazy_babel_plugin\.js$/,
 
   // ignore paths matching `/canvas/canvas_plugin/`
   /[\/\\]canvas[\/\\]canvas_plugin[\/\\]/,
+
+  /[\\/]+kbn-swc-register[\\/]+/,
 ];
 
 /**
- *
  * @param {string} path
  * @param {Matcher[] | undefined} matchers
  */
@@ -107,6 +109,10 @@ function install(options = undefined) {
     environment: 'node',
     // @ts-expect-error bad source-map-support types
     retrieveSourceMap(path) {
+      if (!cache) {
+        return null;
+      }
+
       if (!Path.isAbsolute(path)) {
         return null;
       }
@@ -134,7 +140,7 @@ function install(options = undefined) {
       return transform(path, code, cache);
     },
     {
-      exts: ['.js', '.ts', '.tsx', '.peggy'],
+      exts: ['.js', '.ts', '.tsx', '.text', '.peggy', '.yaml', '.yml'],
       ignoreNodeModules: false,
       matcher(path) {
         if (options?.only && !match(path, options.only)) {

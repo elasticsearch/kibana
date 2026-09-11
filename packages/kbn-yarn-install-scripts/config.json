@@ -52,7 +52,7 @@
       "path": "lmdb",
       "lifecycle": "install",
       "required": false,
-      "reason": "Builds native bindings for LMDB, used by @kbn/babel-register cache.  Prebuilds are sufficient."
+      "reason": "Builds native bindings for LMDB, used by @kbn/swc-register cache.  Prebuilds are sufficient."
     },
     {
       "path": "ms-chromium-edge-driver",
