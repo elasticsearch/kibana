@@ -170,7 +170,7 @@
     "@elastic/opentelemetry-node": "1.17.0",
     "@elastic/react-search-ui": "1.24.2",
     "@elastic/react-search-ui-views": "1.24.2",
-    "@elastic/request-converter": "9.5.1",
+    "@elastic/request-converter": "9.6.0",
     "@elastic/request-crypto": "2.0.4",
     "@elastic/schemas": "0.7.2",
     "@elastic/search-ui": "1.24.2",
