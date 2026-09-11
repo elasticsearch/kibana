@@ -56,7 +56,7 @@ export const initializeInlineEditingApi = ({
   selectedTabId$,
   savedObjectId$,
   searchEmbeddable,
-  blockingError$,
+  setSearchError,
   dataLoading$,
 }: {
   uuid: string;
@@ -66,7 +66,7 @@ export const initializeInlineEditingApi = ({
   selectedTabId$: BehaviorSubject<string | undefined>;
   savedObjectId$: BehaviorSubject<string | undefined>;
   searchEmbeddable: SearchEmbeddableDeps;
-  blockingError$: BehaviorSubject<Error | undefined>;
+  setSearchError: (error: Error | undefined) => void;
   dataLoading$: BehaviorSubject<boolean | undefined>;
 }): InlineEditingApi => {
   const draftSelectedTabId$ = new BehaviorSubject<string | undefined>(selectedTabId$.getValue());
@@ -92,7 +92,7 @@ export const initializeInlineEditingApi = ({
 
       return true;
     } catch (error) {
-      blockingError$.next(error as Error);
+      setSearchError(error as Error);
       dataLoading$.next(false);
 
       return false;
@@ -190,7 +190,7 @@ export const initializeInlineEditingApi = ({
       try {
         await searchEmbeddable.reinitializeState(inlineEditStateSnapshot);
       } catch (error) {
-        blockingError$.next(error as Error);
+        setSearchError(error as Error);
         dataLoading$.next(false);
       }
     }

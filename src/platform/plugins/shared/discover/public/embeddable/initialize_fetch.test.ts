@@ -86,7 +86,7 @@ describe('initialize fetch', () => {
   });
 
   it('should catch and emit error', async () => {
-    expect(mockedApi.blockingError$.getValue()).toBeUndefined();
+    expect(mockedApi.searchError$.getValue()).toBeUndefined();
     searchSource.fetch$ = jest.fn().mockImplementation(
       () =>
         new Observable(() => {
@@ -95,8 +95,8 @@ describe('initialize fetch', () => {
     );
     mockedApi.savedSearch$.next(savedSearch);
     await waitOneTick();
-    expect(mockedApi.blockingError$.getValue()).toBeDefined();
-    expect(mockedApi.blockingError$.getValue()?.message).toBe('Search failed');
+    expect(mockedApi.searchError$.getValue()).toBeDefined();
+    expect(mockedApi.searchError$.getValue()?.message).toBe('Search failed');
   });
 
   it('should correctly handle aborted requests', async () => {

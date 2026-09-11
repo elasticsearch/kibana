@@ -37,13 +37,18 @@ import {
   type ContextAwarenessToolkit,
 } from '../context_awareness';
 import { TEST_PROFILE_STATE_DEF } from '../context_awareness/__mocks__/profile_state';
-import { mockInitializeDrilldownsManager } from '@kbn/embeddable-plugin/public/mocks';
+import {
+  mockInitializeDrilldownsManager,
+  setStubKibanaServices,
+} from '@kbn/embeddable-plugin/public/mocks';
 import { renderWithI18n } from '@kbn/test-jest-helpers';
 import { initializeDrilldownsManager } from '@kbn/embeddable-plugin/public/drilldowns/drilldowns_manager';
 
 jest.mock('./utils/serialization_utils', () => ({}));
 
 describe('saved search embeddable', () => {
+  setStubKibanaServices();
+
   const dataViewMock = buildDataViewMock({ name: 'the-data-view', fields: deepMockedFields });
 
   const getInitialRuntimeState = ({
@@ -137,6 +142,18 @@ describe('saved search embeddable', () => {
     return { search, resolveSearch: () => resolveSearch() };
   };
 
+  const createSearchErrorFnMock = (error: Error) => {
+    let rejectSearch = () => {};
+    const search = jest.fn(() => {
+      return new Observable((subscriber) => {
+        rejectSearch = () => {
+          subscriber.error(error);
+        };
+      });
+    });
+    return { search, rejectSearch: () => rejectSearch() };
+  };
+
   const finalizeApiMock = (
     api: EmbeddableApiRegistration<SearchEmbeddablePanelApiState, SearchEmbeddableApi>
   ) => ({
@@ -226,6 +243,64 @@ describe('saved search embeddable', () => {
       expect(api.dataLoading$.getValue()).toBe(false);
 
       expect(discoverComponent.queryByTestId('dscFieldStatsEmbeddedContent')).toBeInTheDocument();
+    });
+
+    it('should defer to the platform blocking panel when the query fails outside inline editing', async () => {
+      const searchError = new Error('Query failed');
+      const { search, rejectSearch } = createSearchErrorFnMock(searchError);
+      runtimeState = getInitialRuntimeState({ searchMock: search });
+      const { Component, api } = await factory.buildEmbeddable({
+        initializeDrilldownsManager: mockInitializeDrilldownsManager,
+        initialState: { ref_id: 'id', overrides: {} },
+        finalizeApi: finalizeApiMock,
+        uuid,
+        parentApi: mockedDashboardApi,
+      });
+      await waitOneTick(); // wait for build to complete
+      const discoverComponent = renderWithI18n(<Component />);
+
+      rejectSearch();
+      await waitOneTick();
+
+      // the platform panel reads blockingError$ and renders the error itself,
+      // so the embeddable hands the error over and renders nothing of its own
+      expect(api.blockingError$.getValue()).toBe(searchError);
+      expect(discoverComponent.container).toBeEmptyDOMElement();
+    });
+
+    it('should keep a query failure non-blocking while inline editing so apply/discard stay reachable', async () => {
+      const searchError = new Error('Query failed');
+      const { search, rejectSearch } = createSearchErrorFnMock(searchError);
+      runtimeState = getInitialRuntimeState({
+        searchMock: search,
+        partialState: { savedObjectId: 'id' },
+      });
+
+      const { Component, api } = await factory.buildEmbeddable({
+        initializeDrilldownsManager: mockInitializeDrilldownsManager,
+        initialState: { savedObjectId: 'id' },
+        finalizeApi: finalizeEditableApiMock,
+        uuid,
+        parentApi: mockedEditableDashboardApi,
+      });
+      await waitOneTick(); // wait for build to complete
+      const discoverComponent = renderWithI18n(<Component />);
+
+      await act(async () => {
+        await api.onEdit?.();
+      });
+      rejectSearch();
+      await waitOneTick();
+
+      // there should be no blocking error in the inline editing mode
+      expect(api.blockingError$.getValue()).toBe(undefined);
+
+      await waitFor(() => {
+        expect(discoverComponent.getByTestId('embeddableError')).toBeInTheDocument();
+      });
+      expect(
+        discoverComponent.getByTestId('discoverEmbeddableInlineEditDiscardButton')
+      ).toBeInTheDocument();
     });
   });
 

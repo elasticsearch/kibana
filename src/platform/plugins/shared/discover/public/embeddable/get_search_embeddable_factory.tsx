@@ -8,7 +8,7 @@
  */
 
 import React, { useEffect, useMemo, useRef } from 'react';
-import { BehaviorSubject, firstValueFrom, map, merge, skip } from 'rxjs';
+import { BehaviorSubject, combineLatest, firstValueFrom, map, merge, skip } from 'rxjs';
 import { CellActionsProvider } from '@kbn/cell-actions';
 import { generateFilters } from '@kbn/data-plugin/public';
 import { SEARCH_EMBEDDABLE_TYPE } from '@kbn/discover-utils';
@@ -32,12 +32,14 @@ import type { DocViewFilterFn } from '@kbn/unified-doc-viewer/types';
 import type { DataTableRecord } from '@kbn/discover-utils/types';
 import type { DocViewerApi } from '@kbn/unified-doc-viewer';
 import { ON_APPLY_FILTER, ON_OPEN_PANEL_MENU } from '@kbn/ui-actions-plugin/common/trigger_ids';
+import { PresentationPanelError } from '@kbn/embeddable-plugin/public';
 import { getDiscoverSessionEmbeddableComparators } from './utils/get_search_embeddable_comparators';
 import type { DiscoverServices } from '../build_services';
 import { SearchEmbeddablFieldStatsTableComponent } from './components/search_embeddable_field_stats_table_component';
 import { SearchEmbeddableGridComponent } from './components/search_embeddable_grid_component';
 import { SearchEmbeddableInlineEditHoverActions } from './components/search_embeddable_inline_edit_hover_actions';
 import { SearchEmbeddableDeletedTabPrompt } from './components/search_embeddable_deleted_tab_prompt';
+import { SavedSearchEmbeddableBase } from './components/saved_search_embeddable_base';
 import { SearchEmbeddableMissingDataViewPrompt } from './components/search_embeddable_missing_data_view_prompt';
 import { initializeEditApi } from './initialize_edit_api';
 import { initializeFetch, isEsqlMode } from './initialize_fetch';
@@ -101,6 +103,7 @@ export const getSearchEmbeddableFactory = ({
       const defaultState = { selected_tab_id: tabs[0]?.id };
 
       /** All other state */
+      const searchError$ = new BehaviorSubject<Error | undefined>(undefined);
       const blockingError$ = new BehaviorSubject<Error | undefined>(undefined);
       const dataLoading$ = new BehaviorSubject<boolean | undefined>(true);
       const fetchContext$ = new BehaviorSubject<FetchContext | undefined>(undefined);
@@ -137,8 +140,17 @@ export const getSearchEmbeddableFactory = ({
         selectedTabId$,
         savedObjectId$,
         searchEmbeddable,
-        blockingError$,
+        setSearchError: (error: Error | undefined) => searchError$.next(error),
         dataLoading$,
+      });
+
+      // Search errors surface in the platform's blocking panel like Lens and Vega, except
+      // while inline editing, where they must render in-panel to keep apply/cancel reachable.
+      const blockingErrorSubscription = combineLatest([
+        searchError$,
+        inlineEditingApi.isInlineEditing$,
+      ]).subscribe(([searchError, isInlineEditing]) => {
+        blockingError$.next(isInlineEditing ? undefined : searchError);
       });
 
       const stateApi = initializeStateApi<SearchEmbeddablePanelApiState>({
@@ -327,7 +339,6 @@ export const getSearchEmbeddableFactory = ({
           dataViews$: searchEmbeddable.api.dataViews$,
           savedObjectId$,
           dataLoading$,
-          blockingError$,
           fetchContext$,
           fetchWarnings$,
         },
@@ -336,7 +347,7 @@ export const getSearchEmbeddableFactory = ({
         scopedProfilesManager,
         refreshTrigger$,
         setDataLoading: (dataLoading: boolean | undefined) => dataLoading$.next(dataLoading),
-        setBlockingError: (error: Error | undefined) => blockingError$.next(error),
+        setSearchError: (error: Error | undefined) => searchError$.next(error),
         setApproximationApplied: searchEmbeddable.internalApi.setApproximationApplied,
       });
       cancelRequests = _cancelRequests;
@@ -351,13 +362,15 @@ export const getSearchEmbeddableFactory = ({
             draftSelectedTabId,
             selectedTabId,
             isInlineEditDirty,
+            searchError,
           ] = useBatchedPublishingSubjects(
             api.savedSearch$,
             api.dataViews$,
             inlineEditingApi.isInlineEditing$,
             inlineEditingApi.draftSelectedTabId$,
             selectedTabId$,
-            inlineEditingApi.inlineEditDirty$
+            inlineEditingApi.inlineEditDirty$,
+            searchError$
           );
 
           const expandedDoc = useObservable(expandedDoc$, expandedDoc$.getValue());
@@ -378,6 +391,7 @@ export const getSearchEmbeddableFactory = ({
               drilldownsManager.cleanup();
               searchEmbeddable.cleanup();
               cleanupFetch();
+              blockingErrorSubscription.unsubscribe();
             };
           }, []);
 
@@ -428,6 +442,26 @@ export const getSearchEmbeddableFactory = ({
                 onEditInDiscover={editApi?.onEdit}
               />
             );
+          }
+
+          if (searchError) {
+            return isInlineEditing ? (
+              <KibanaRenderContextProvider {...discoverServices.core}>
+                <SavedSearchEmbeddableBase
+                  inlineEditing={{
+                    hasPendingChanges: hasPendingInlineTabChanges,
+                    isActive: isInlineEditing,
+                    onApply: inlineEditingApi.applyInlineTabSelection,
+                    onCancel: inlineEditingApi.cancelInlineTabSelection,
+                  }}
+                  isLoading={false}
+                >
+                  <div style={{ height: '100%' }} data-test-subj="discoverEmbeddableErrorCallout">
+                    <PresentationPanelError error={searchError} />
+                  </div>
+                </SavedSearchEmbeddableBase>
+              </KibanaRenderContextProvider>
+            ) : null;
           }
 
           return (

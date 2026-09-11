@@ -82,7 +82,7 @@ const setupApi = (
   const analytics = analyticsServiceMock.createAnalyticsServiceStart();
   const selectedTabId$ = new BehaviorSubject<string | undefined>(initialSelectedTabId);
   const savedObjectId$ = new BehaviorSubject<string | undefined>(savedObjectId);
-  const blockingError$ = new BehaviorSubject<Error | undefined>(undefined);
+  const searchError$ = new BehaviorSubject<Error | undefined>(undefined);
   const dataLoading$ = new BehaviorSubject<boolean | undefined>(undefined);
 
   const api = initializeInlineEditingApi({
@@ -93,11 +93,11 @@ const setupApi = (
     selectedTabId$,
     savedObjectId$,
     searchEmbeddable: buildSearchEmbeddable(),
-    blockingError$,
+    setSearchError: (error: Error | undefined) => searchError$.next(error),
     dataLoading$,
   });
 
-  return { api, analytics, selectedTabId$, savedObjectId$ };
+  return { api, analytics, selectedTabId$, savedObjectId$, searchError$ };
 };
 
 describe('initializeInlineEditingApi', () => {
