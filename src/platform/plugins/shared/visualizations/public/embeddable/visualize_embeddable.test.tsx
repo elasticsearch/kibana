@@ -9,7 +9,7 @@
 
 import { VISUALIZE_EMBEDDABLE_TYPE } from '@kbn/visualizations-common';
 import { waitFor } from '@testing-library/react';
-import { apiPublishesESQLQuery } from '@kbn/presentation-publishing';
+import { apiPublishesEsql } from '@kbn/presentation-publishing';
 import type { VisualizeApi } from './types';
 import { visualizeEmbeddableFactory } from './visualize_embeddable';
 import { getExpressionRendererProps } from './get_expression_renderer_props';
@@ -30,19 +30,17 @@ const mockVisTypeRegistry: Record<
   string,
   {
     name: string;
-    usesEsql?: () => boolean;
     getEsqlQuery?: (visParams?: { spec?: string }) => { esql: string } | undefined;
   }
 > = {
   metric: { name: 'metric' },
   'vega-esql': {
     name: 'vega',
-    usesEsql: () => true,
     getEsqlQuery: (visParams) => ({
       esql: visParams?.spec ?? 'FROM logs-* | WHERE os == ?fizzbuzz',
     }),
   },
-  'vega-no-esql': { name: 'vega', usesEsql: () => false },
+  'vega-no-esql': { name: 'vega' },
 };
 
 jest.mock('./create_vis_instance', () => {
@@ -137,53 +135,7 @@ describe('visualizeEmbeddable', () => {
     });
   });
 
-  describe('usesEsql$', () => {
-    test('should be false by default when the vis type does not provide usesEsql', () => {
-      expect(embeddableApi.usesEsql$.getValue()).toBe(false);
-    });
-
-    const buildEmbeddableWithVisType = async (type: string) => {
-      const parent = {};
-      const uuid = '1';
-      const finalizeApi = (api: any) => ({
-        ...api,
-        uuid,
-        parent,
-        type: VISUALIZE_EMBEDDABLE_TYPE,
-        phase$: new BehaviorSubject(undefined),
-      });
-      const { api } = await visualizeEmbeddableFactory.buildEmbeddable({
-        initializeDrilldownsManager,
-        initialState: {
-          savedVis: {
-            title: 'esql test',
-            type,
-            data: {
-              aggs: [],
-              searchSource: {},
-            },
-            params: {},
-          },
-        },
-        finalizeApi,
-        uuid: '1',
-        parentApi: {},
-      });
-      return api;
-    };
-
-    test('should reflect true when the vis type reports it uses ES|QL', async () => {
-      const api = await buildEmbeddableWithVisType('vega-esql');
-      expect(api.usesEsql$.getValue()).toBe(true);
-    });
-
-    test('should reflect false when the vis type reports it does not use ES|QL', async () => {
-      const api = await buildEmbeddableWithVisType('vega-no-esql');
-      expect(api.usesEsql$.getValue()).toBe(false);
-    });
-  });
-
-  describe('query$', () => {
+  describe('esql$', () => {
     const buildEmbeddableWithVisType = async (type: string, spec?: string) => {
       const parent = {};
       const uuid = '1';
@@ -214,40 +166,44 @@ describe('visualizeEmbeddable', () => {
       return api;
     };
 
-    test('does not publish an ES|QL query when the vis type has no getEsqlQuery', () => {
-      expect(embeddableApi.query$.getValue()).toBeUndefined();
-      expect(apiPublishesESQLQuery(embeddableApi)).toBe(false);
+    test('esql$ is empty when the vis type has no getEsqlQuery', () => {
+      expect(embeddableApi.esql$.getValue()).toEqual([]);
+      expect(apiPublishesEsql(embeddableApi)).toBe(true);
     });
 
-    test('publishes ES|QL query$ when the vis type reports one', async () => {
+    test('esql$ contains the query when the vis type reports one', async () => {
       const api = await buildEmbeddableWithVisType('vega-esql');
-      expect(api.query$.getValue()).toEqual({
-        esql: 'FROM logs-* | WHERE os == ?fizzbuzz',
-      });
-      expect(apiPublishesESQLQuery(api)).toBe(true);
+      expect(api.esql$.getValue()).toEqual([
+        {
+          esql: 'FROM logs-* | WHERE os == ?fizzbuzz',
+        },
+      ]);
     });
 
-    test('does not publish an ES|QL query when the vis type reports none', async () => {
+    test('esql$ is empty when the vis type reports no ES|QL query', async () => {
       const api = await buildEmbeddableWithVisType('vega-no-esql');
-      expect(api.query$.getValue()).toBeUndefined();
-      expect(apiPublishesESQLQuery(api)).toBe(false);
+      expect(api.esql$.getValue()).toEqual([]);
     });
 
-    test('updates query$ when the vis params change', async () => {
+    test('updates esql$ when the vis params change', async () => {
       const api = await buildEmbeddableWithVisType(
         'vega-esql',
         'FROM logs-* | WHERE os == ?fizzbuzz'
       );
-      expect(api.query$.getValue()).toEqual({
-        esql: 'FROM logs-* | WHERE os == ?fizzbuzz',
-      });
+      expect(api.esql$.getValue()).toEqual([
+        {
+          esql: 'FROM logs-* | WHERE os == ?fizzbuzz',
+        },
+      ]);
 
       api.updateVis({ params: { spec: 'FROM logs-* | WHERE color == ?color' } });
 
       await waitFor(() => {
-        expect(api.query$.getValue()).toEqual({
-          esql: 'FROM logs-* | WHERE color == ?color',
-        });
+        expect(api.esql$.getValue()).toEqual([
+          {
+            esql: 'FROM logs-* | WHERE color == ?color',
+          },
+        ]);
       });
     });
   });

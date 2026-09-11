@@ -38,8 +38,7 @@ import {
   type PublishesDataViews,
   type PublishesWritableDescription,
   type PublishesWritableTitle,
-  type PublishesESQLQuery,
-  type PublishesEsqlUsage,
+  type PublishesEsql,
   type PublishesProjectRoutingOverrides,
   type PublishesRendered,
   type HasSupportedTriggers,
@@ -60,7 +59,7 @@ import type { VegaPluginStartDependencies, VegaVisualizationDependencies } from 
 import type { VegaParser } from '../data_model/vega_parser';
 import { extractIndexPatternsFromSpec } from '../lib/extract_index_pattern';
 import { extractProjectRoutingOverrides } from '../lib/extract_project_routing_overrides';
-import { getPublishedEsqlQuery, specUsesEsql } from '../lib/spec_uses_esql';
+import { getEsqlQueriesFromSpec } from '../lib/spec_uses_esql';
 import { reportVegaRender } from '../lib/vega_render_telemetry';
 import { createInspectorAdapters } from '../vega_inspector';
 import type { VegaByValueState } from '../../server';
@@ -95,8 +94,7 @@ export type VegaEmbeddableApi = DefaultEmbeddableApi<VegaByValueState> &
   PublishesDataLoading &
   PublishesWritableDescription &
   PublishesWritableTitle &
-  PublishesESQLQuery &
-  PublishesEsqlUsage &
+  PublishesEsql &
   PublishesProjectRoutingOverrides &
   PublishesDataViews &
   PublishesRendered;
@@ -122,9 +120,8 @@ export const vegaEmbeddableFactory = (
     const timeRangeManager = initializeTimeRangeManager(initialState);
     const drilldownsManager = initializeDrilldownsManager(uuid, initialState);
     const spec$ = new BehaviorSubject(initialState.spec);
-    const usesEsql$ = new BehaviorSubject(false);
+    const esql$ = new BehaviorSubject<AggregateQuery[]>([]);
     const approximationApplied$ = new BehaviorSubject<boolean | undefined>(undefined);
-    const query$ = new BehaviorSubject<AggregateQuery | undefined>(undefined);
     const projectRoutingOverrides$ = new BehaviorSubject<ProjectRoutingOverrides>(undefined);
     const dataViews$ = new BehaviorSubject<DataView[] | undefined>(undefined);
 
@@ -141,8 +138,7 @@ export const vegaEmbeddableFactory = (
           }
         }),
         tap((spec) => {
-          usesEsql$.next(spec ? specUsesEsql(spec) : false);
-          query$.next(getPublishedEsqlQuery(spec));
+          esql$.next(spec ? getEsqlQueriesFromSpec(spec).map((esql) => ({ esql })) : []);
           projectRoutingOverrides$.next(spec ? extractProjectRoutingOverrides(spec) : undefined);
         }),
         switchMap((spec) => (spec ? extractIndexPatternsFromSpec(spec) : EMPTY))
@@ -196,9 +192,8 @@ export const vegaEmbeddableFactory = (
       blockingError$,
       dataLoading$,
       rendered$,
-      usesEsql$,
+      esql$,
       approximationApplied$,
-      query$,
       projectRoutingOverrides$,
       dataViews$,
       supportedTriggers: () => VEGA_SUPPORTED_TRIGGERS,

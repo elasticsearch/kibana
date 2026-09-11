@@ -8,16 +8,16 @@
  */
 
 import { i18n } from '@kbn/i18n';
-import type { EmbeddableApiContext, PublishesEsqlUsage } from '@kbn/presentation-publishing';
-import { apiPublishesEsqlUsage } from '@kbn/presentation-publishing';
+import type { EmbeddableApiContext, PublishesEsql } from '@kbn/presentation-publishing';
+import { apiPublishesEsql } from '@kbn/presentation-publishing';
 import type { ActionDefinition } from '@kbn/ui-actions-plugin/public/actions';
 import { map } from 'rxjs';
 import { APPROXIMATION_APPLIED_BADGE } from './constants';
 
-export type ApproximationAppliedBadgeApi = Pick<PublishesEsqlUsage, 'approximationApplied$'>;
+export type ApproximationAppliedBadgeApi = Pick<PublishesEsql, 'approximationApplied$'>;
 
 const isApiCompatible = (api: unknown | null): api is ApproximationAppliedBadgeApi =>
-  apiPublishesEsqlUsage(api);
+  apiPublishesEsql(api);
 
 export const approximationAppliedBadge: ActionDefinition<EmbeddableApiContext> = {
   id: APPROXIMATION_APPLIED_BADGE,

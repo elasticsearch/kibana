@@ -21,7 +21,6 @@ import type {
   HasType,
   HasUniqueId,
   PublishesDataLoading,
-  PublishesESQLQuery,
   PublishesRelatedPanels,
   PublishesUnsavedChanges,
   PublishingSubject,
@@ -37,7 +36,6 @@ export type ESQLControlApi<State> = DefaultEmbeddableApi<
 > &
   CanCancelRequests &
   PublishesESQLVariable &
-  PublishesESQLQuery &
   PublishesUnsavedChanges &
   PublishesRelatedPanels &
   HasEditCapabilities &

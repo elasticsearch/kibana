@@ -11,7 +11,7 @@ import type { AggregateQuery } from '@kbn/es-query';
 import type { ESQLControlVariable } from '@kbn/esql-types';
 import { getESQLQueryVariables } from '@kbn/esql-utils';
 import {
-  apiPublishesESQLQuery,
+  apiPublishesEsql,
   type PublishingSubject,
   type RelatedPanelsConfig,
 } from '@kbn/presentation-publishing';
@@ -25,13 +25,12 @@ export const panelIsRelatedByEsqlVariable = ({
 
   return {
     dependentObservables,
-    siblingDependentObservableNames: ['query$'],
-    isRelated: (sibling, [selfESQLVariable], [siblingQuery]) => {
-      if (!apiPublishesESQLQuery(sibling)) return false;
-      const { esql: siblingESQL } = siblingQuery ?? {};
-      return Boolean(
-        siblingESQL && getESQLQueryVariables(siblingESQL).includes(selfESQLVariable.key)
+    siblingDependentObservableNames: ['esql$'],
+    isRelated: (sibling, [selfESQLVariable], [siblingEsql]) => {
+      if (!apiPublishesEsql(sibling)) return false;
+      return ((siblingEsql as AggregateQuery[]) ?? []).some((q) =>
+        getESQLQueryVariables(q.esql).includes(selfESQLVariable.key)
       );
     },
-  } satisfies RelatedPanelsConfig<typeof dependentObservables, [AggregateQuery | undefined]>;
+  } satisfies RelatedPanelsConfig<typeof dependentObservables, [AggregateQuery[] | undefined]>;
 };

@@ -16,7 +16,7 @@ import type {
   PublishesDataLoading,
   PublishesDataViews,
   PublishesDisabledActionIds,
-  PublishesEsqlUsage,
+  PublishesEsql,
   PublishesProjectRoutingOverrides,
   PublishesRendered,
   PublishesSavedObjectId,
@@ -123,7 +123,7 @@ export type LensApi = Simplify<
     // Let the container know about unsaved changes
     PublishesUnsavedChanges &
     PublishesProjectRoutingOverrides &
-    PublishesEsqlUsage &
+    PublishesEsql &
     // Lens specific API methods:
     // Let the container know when the data has been loaded/updated
     LensInspectorAdapters &

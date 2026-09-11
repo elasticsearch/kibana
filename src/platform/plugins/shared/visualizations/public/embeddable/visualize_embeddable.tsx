@@ -97,13 +97,9 @@ export const visualizeEmbeddableFactory: EmbeddablePublicDefinition<
       initialProjectRoutingOverrides
     );
 
-    const usesEsql$ = new BehaviorSubject<boolean>(
-      initialVisInstance.type.usesEsql?.(initialVisInstance.params) ?? false
-    );
+    const initialEsqlQuery = initialVisInstance.type.getEsqlQuery?.(initialVisInstance.params);
+    const esql$ = new BehaviorSubject<AggregateQuery[]>(initialEsqlQuery ? [initialEsqlQuery] : []);
     const approximationApplied$ = new BehaviorSubject<boolean | undefined>(undefined);
-    const query$ = new BehaviorSubject<AggregateQuery | undefined>(
-      initialVisInstance.type.getEsqlQuery?.(initialVisInstance.params)
-    );
 
     const getUsedDataViews = async (visInstance: Vis) => {
       if (visInstance.type.getUsedIndexPattern) {
@@ -136,14 +132,10 @@ export const visualizeEmbeddableFactory: EmbeddablePublicDefinition<
             }
           }
 
-          const usesEsql = vis.type.usesEsql?.(vis.params) ?? false;
-          if (usesEsql$.getValue() !== usesEsql) {
-            usesEsql$.next(usesEsql);
-          }
-
           const nextQuery = vis.type.getEsqlQuery?.(vis.params);
-          if (!isEqual(query$.getValue(), nextQuery)) {
-            query$.next(nextQuery);
+          const nextEsql = nextQuery ? [nextQuery] : [];
+          if (!isEqual(esql$.getValue(), nextEsql)) {
+            esql$.next(nextEsql);
           }
 
           try {
@@ -284,10 +276,8 @@ export const visualizeEmbeddableFactory: EmbeddablePublicDefinition<
       dataLoading$,
       dataViews$,
       projectRoutingOverrides$,
-      usesEsql$,
+      esql$,
       approximationApplied$,
-      // `undefined` until the vis type reports an ES|QL query; `apiPublishesESQLQuery` is the runtime check.
-      query$: query$ as VisualizeApi['query$'],
       rendered$: hasRendered$,
       renderCount$,
       supportedTriggers: () => [

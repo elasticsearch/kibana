@@ -20,7 +20,7 @@ import type {
   PublishesBlockingError,
   PublishesDataLoading,
   PublishesDescription,
-  PublishesEsqlUsage,
+  PublishesEsql,
   PublishesProjectRoutingOverrides,
   PublishesSavedObjectId,
   PublishesWritableTitle,
@@ -106,7 +106,7 @@ export type SearchEmbeddableApi = DefaultEmbeddableApi<SearchEmbeddablePanelApiS
   PublishesWritableDataViews &
   PublishesWritableUnifiedSearch &
   PublishesProjectRoutingOverrides &
-  PublishesEsqlUsage &
+  PublishesEsql &
   HasLibraryTransforms &
   HasTimeRange &
   HasInspectorAdapters &

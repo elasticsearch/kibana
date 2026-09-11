@@ -424,7 +424,7 @@ describe('DashboardCanvasAttachment', () => {
     act(() => {
       mockApi.children$.next({
         'esql-panel': {
-          usesEsql$: new BehaviorSubject(true),
+          esql$: new BehaviorSubject([{ esql: 'FROM logs | LIMIT 10' }]),
           approximationApplied$: new BehaviorSubject<boolean | undefined>(undefined),
         },
       });

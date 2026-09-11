@@ -313,7 +313,7 @@ describe('saved search embeddable', () => {
       expect(search).toHaveBeenCalledTimes(1);
     });
 
-    it('should reflect whether the initial query is an ES|QL query via usesEsql$', async () => {
+    it('should reflect whether the initial query is an ES|QL query via esql$', async () => {
       const { search } = createSearchFnMock(1);
       runtimeState = getInitialRuntimeState({ searchMock: search });
 
@@ -337,10 +337,10 @@ describe('saved search embeddable', () => {
       });
       await waitOneTick();
 
-      expect(api.usesEsql$.getValue()).toBe(true);
+      expect(api.esql$.getValue().length).toBeGreaterThan(0);
     });
 
-    it('should be false for usesEsql$ when the initial query is not an ES|QL query', async () => {
+    it('should be empty for esql$ when the initial query is not an ES|QL query', async () => {
       const { search } = createSearchFnMock(1);
       runtimeState = getInitialRuntimeState({ searchMock: search });
 
@@ -353,7 +353,7 @@ describe('saved search embeddable', () => {
       });
       await waitOneTick();
 
-      expect(api.usesEsql$.getValue()).toBe(false);
+      expect(api.esql$.getValue()).toEqual([]);
     });
 
     it('should not provide inline editing overrides for by-value embeddables', async () => {

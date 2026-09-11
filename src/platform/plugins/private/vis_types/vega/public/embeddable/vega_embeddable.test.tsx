@@ -16,7 +16,7 @@ import { openLazyFlyout } from '@kbn/presentation-util';
 import { BehaviorSubject } from 'rxjs';
 import { ESQLVariableType } from '@kbn/esql-types';
 import { getESQLQueryVariables } from '@kbn/esql-utils';
-import { apiPublishesESQLQuery, type ViewMode } from '@kbn/presentation-publishing';
+import { apiPublishesEsql, type ViewMode } from '@kbn/presentation-publishing';
 import { getMockPresentationContainer } from '@kbn/presentation-publishing/interfaces/containers/mocks';
 import { ON_APPLY_FILTER, ON_OPEN_PANEL_MENU } from '@kbn/ui-actions-plugin/common/trigger_ids';
 import type { VegaParser } from '../data_model/vega_parser';
@@ -448,7 +448,7 @@ describe('vegaEmbeddableFactory', () => {
     });
   });
 
-  it('publishes a verbatim ES|QL query$ for a single-source spec', async () => {
+  it('publishes ES|QL queries via esql$ for a single-source spec', async () => {
     const query = 'FROM logs-* | WHERE machine.os.keyword == ?fizzbuzz';
     const { api } = await buildEmbeddable();
 
@@ -460,19 +460,18 @@ describe('vegaEmbeddableFactory', () => {
       title: 'Initial title',
     });
 
-    expect(api.query$.getValue()).toEqual({ esql: query });
-    expect(apiPublishesESQLQuery(api)).toBe(true);
-    expect(api).not.toHaveProperty('filters$');
+    expect(api.esql$.getValue()).toEqual([{ esql: query }]);
+    expect(apiPublishesEsql(api)).toBe(true);
   });
 
-  it('does not publish an ES|QL query for non-ES|QL specs', async () => {
+  it('publishes an empty esql$ for non-ES|QL specs', async () => {
     const { api } = await buildEmbeddable();
 
-    expect(api.query$.getValue()).toBeUndefined();
-    expect(apiPublishesESQLQuery(api)).toBe(false);
+    expect(api.esql$.getValue()).toEqual([]);
+    expect(apiPublishesEsql(api)).toBe(true);
   });
 
-  it('updates query$ when the spec changes without waiting for a fetch', async () => {
+  it('updates esql$ when the spec changes without waiting for a fetch', async () => {
     mockVegaRequestHandler.mockImplementation(() => new Promise(() => {}));
     const { api } = await buildEmbeddable();
 
@@ -483,7 +482,7 @@ describe('vegaEmbeddableFactory', () => {
       },
       title: 'Initial title',
     });
-    expect(getESQLQueryVariables(api.query$.getValue()!.esql)).toContain('fizzbuzz');
+    expect(getESQLQueryVariables(api.esql$.getValue()[0].esql)).toContain('fizzbuzz');
 
     api.applySerializedState({
       spec: {
@@ -492,7 +491,7 @@ describe('vegaEmbeddableFactory', () => {
       },
       title: 'Initial title',
     });
-    expect(getESQLQueryVariables(api.query$.getValue()!.esql)).toEqual(['color']);
-    expect(getESQLQueryVariables(api.query$.getValue()!.esql)).not.toContain('fizzbuzz');
+    expect(getESQLQueryVariables(api.esql$.getValue()[0].esql)).toEqual(['color']);
+    expect(getESQLQueryVariables(api.esql$.getValue()[0].esql)).not.toContain('fizzbuzz');
   });
 });

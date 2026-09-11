@@ -9,7 +9,7 @@ import type { Filter, Query, AggregateQuery } from '@kbn/es-query';
 import { isOfAggregateQueryType } from '@kbn/es-query';
 import type {
   ProjectRoutingOverrides,
-  PublishesEsqlUsage,
+  PublishesEsql,
   PublishesProjectRoutingOverrides,
   PublishesUnifiedSearch,
   StateComparators,
@@ -22,7 +22,7 @@ import { BehaviorSubject, merge, map, distinctUntilChanged } from 'rxjs';
 import { isEqual } from 'lodash';
 import { getProjectRoutingFromEsqlQuery } from '@kbn/esql-utils';
 import type { LensInternalApi, LensRuntimeState, LensUnifiedSearchContext } from '@kbn/lens-common';
-import { getRepresentativeQuery, isTextBasedAttributes } from '@kbn/lens-common';
+import { getChartScopedFilterQuery, getTextBasedLayerQueries } from '@kbn/lens-common';
 import type { LensWireAPIConfig } from '@kbn/lens-common-2';
 
 import type { LensEmbeddableStartServices } from '../types';
@@ -40,7 +40,7 @@ export interface SearchContextConfig {
   api: PublishesUnifiedSearch &
     PublishesSearchSession &
     PublishesProjectRoutingOverrides &
-    PublishesEsqlUsage;
+    PublishesEsql;
   internalApi: {
     setApproximationApplied: (value: boolean | undefined) => void;
   };
@@ -76,21 +76,20 @@ export function initializeSearchContext(
     injectFilterReferences(attributes.state.filters, attributes.references)
   );
 
-  // Representative document query: for text-based documents the (first)
-  // authoritative ES|QL layer query, for form-based documents the
-  // chart-scoped KQL/Lucene filter. Consumers of `query$` (e.g. ES|QL
-  // controls variable detection, project routing below) rely on this.
+  // Part of PublishesUnifiedSearch. Contains the top-level KQL/Lucene query
+  // applied across all layers.
   const query$ = new BehaviorSubject<Query | AggregateQuery | undefined>(
-    getRepresentativeQuery(attributes)
+    getChartScopedFilterQuery(attributes.state?.query)
   );
 
   const timeslice$ = new BehaviorSubject<[number, number] | undefined>(undefined);
 
+  const esql$ = new BehaviorSubject<AggregateQuery[]>(getTextBasedLayerQueries(attributes));
+
   const projectRoutingOverrides$ = new BehaviorSubject<ProjectRoutingOverrides>(
-    getProjectRoutingOverrides(query$.getValue())
+    getProjectRoutingOverrides(esql$.getValue()[0])
   );
 
-  const usesEsql$ = new BehaviorSubject<boolean>(isTextBasedAttributes(attributes));
   const approximationApplied$ = new BehaviorSubject<boolean | undefined>(undefined);
 
   const timeRangeManager = initializeTimeRangeManager(initialState);
@@ -98,7 +97,7 @@ export function initializeSearchContext(
   const subscriptions = [
     internalApi.attributes$
       .pipe(
-        map((attrs) => getRepresentativeQuery(attrs)),
+        map((attrs) => getChartScopedFilterQuery(attrs.state?.query)),
         distinctUntilChanged(isEqual)
       )
       .subscribe(query$),
@@ -108,12 +107,18 @@ export function initializeSearchContext(
         distinctUntilChanged(isEqual)
       )
       .subscribe(filters$),
-    query$
-      .pipe(map(getProjectRoutingOverrides), distinctUntilChanged(isEqual))
+    esql$
+      .pipe(
+        map((queries) => getProjectRoutingOverrides(queries[0])),
+        distinctUntilChanged(isEqual)
+      )
       .subscribe(projectRoutingOverrides$),
     internalApi.attributes$
-      .pipe(map(isTextBasedAttributes), distinctUntilChanged())
-      .subscribe(usesEsql$),
+      .pipe(
+        map((attrs) => getTextBasedLayerQueries(attrs)),
+        distinctUntilChanged(isEqual)
+      )
+      .subscribe(esql$),
   ];
 
   return {
@@ -123,7 +128,7 @@ export function initializeSearchContext(
       query$,
       timeslice$,
       projectRoutingOverrides$,
-      usesEsql$,
+      esql$,
       approximationApplied$,
       isCompatibleWithUnifiedSearch: () => true,
       ...timeRangeManager.api,

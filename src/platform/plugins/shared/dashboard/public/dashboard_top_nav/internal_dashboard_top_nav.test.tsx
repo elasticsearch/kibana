@@ -339,11 +339,11 @@ describe('Internal dashboard top nav', () => {
       });
     });
 
-    it('should be enabled when a panel publishes usesEsql$ as true (e.g. a Vega panel using ES|QL)', async () => {
+    it('should be enabled when a panel publishes esql$ with queries (e.g. a Vega panel using ES|QL)', async () => {
       const { api, internalApi } = buildMockDashboardApi();
       api.registerChildApi({
         uuid: 'vega-panel',
-        usesEsql$: new BehaviorSubject(true),
+        esql$: new BehaviorSubject([{ esql: 'FROM logs | LIMIT 10' }]),
         approximationApplied$: new BehaviorSubject<boolean | undefined>(undefined),
       } as unknown as Parameters<typeof api.registerChildApi>[0]);
 
