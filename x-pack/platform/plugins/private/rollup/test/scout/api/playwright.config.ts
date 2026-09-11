@@ -5,10 +5,8 @@
  * 2.0.
  */
 
-export default function ({ loadTestFile }) {
-  describe('rollup', () => {
-    loadTestFile(require.resolve('./rollup'));
-    loadTestFile(require.resolve('./index_patterns_extensions'));
-    loadTestFile(require.resolve('./rollup_search'));
-  });
-}
+import { createPlaywrightConfig } from '@kbn/scout';
+
+export default createPlaywrightConfig({
+  testDir: './tests',
+});

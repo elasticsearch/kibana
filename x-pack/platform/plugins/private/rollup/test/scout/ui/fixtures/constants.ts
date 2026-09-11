@@ -5,9 +5,7 @@
  * 2.0.
  */
 
-// From 8.15 ES only unhides the rollup UI when the cluster already has rollup usage; this mock
-// index (with a `_meta._rollup` mapping) simulates it so the wizard is reachable.
-export const MOCK_ROLLUP_INDEX_NAME = 'mock-rollup-index';
+export { MOCK_ROLLUP_INDEX_NAME } from '../../common/fixtures/constants';
 
 // Source index prefix the wizard's index pattern (`to-be*`) matches; docs are seeded here.
 export const SOURCE_INDEX_PREFIX = 'to-be';

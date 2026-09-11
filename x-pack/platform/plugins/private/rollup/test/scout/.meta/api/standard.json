@@ -1,0 +1,294 @@
+{
+  "sha1": "2e8c845e11216fc85ef4c89c821b2b6733b82fe3",
+  "testChannels": [
+    "ci-on-commit"
+  ],
+  "tests": [
+    {
+      "id": "38e2b856dabda6d-7d4d0fcffcaa1ac",
+      "title": "Data view fields for a rollup index requires a pattern query param",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic",
+        "@cloud-stateful-classic"
+      ],
+      "location": {
+        "file": "x-pack/platform/plugins/private/rollup/test/scout/api/tests/index_pattern_fields.spec.ts",
+        "line": 51,
+        "column": 33
+      }
+    },
+    {
+      "id": "38e2b856dabda6d-53c593a751c478d",
+      "title": "Data view fields for a rollup index returns 404 when the rollup index does not exist",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic",
+        "@cloud-stateful-classic"
+      ],
+      "location": {
+        "file": "x-pack/platform/plugins/private/rollup/test/scout/api/tests/index_pattern_fields.spec.ts",
+        "line": 55,
+        "column": 32
+      }
+    },
+    {
+      "id": "38e2b856dabda6d-6c9178fbeac54db",
+      "title": "Data view fields for a rollup index returns the rolled-up fields of a matching index",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic",
+        "@cloud-stateful-classic"
+      ],
+      "location": {
+        "file": "x-pack/platform/plugins/private/rollup/test/scout/api/tests/index_pattern_fields.spec.ts",
+        "line": 59,
+        "column": 56
+      }
+    },
+    {
+      "id": "52a8a49f8bad515-ca82962cd40a9ab",
+      "title": "Rollup index pattern validity reports date, numeric and keyword fields for a matching index",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic",
+        "@cloud-stateful-classic"
+      ],
+      "location": {
+        "file": "x-pack/platform/plugins/private/rollup/test/scout/api/tests/index_pattern_validity.spec.ts",
+        "line": 31,
+        "column": 13
+      }
+    },
+    {
+      "id": "52a8a49f8bad515-37d25d067ebc373",
+      "title": "Rollup index pattern validity reports no fields when the pattern doesn't match any index",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic",
+        "@cloud-stateful-classic"
+      ],
+      "location": {
+        "file": "x-pack/platform/plugins/private/rollup/test/scout/api/tests/index_pattern_validity.spec.ts",
+        "line": 71,
+        "column": 23
+      }
+    },
+    {
+      "id": "47f6fb325b80399-57af5f4940ab906",
+      "title": "Rollup indices without rollup usage in the cluster returns no rollup indices",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic"
+      ],
+      "location": {
+        "file": "x-pack/platform/plugins/private/rollup/test/scout/api/tests/rollup_indices.spec.ts",
+        "line": 32,
+        "column": 33
+      }
+    },
+    {
+      "id": "47f6fb325b80399-cf5b8a610297fb5",
+      "title": "Rollup indices without rollup usage in the cluster rejects job creation",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic"
+      ],
+      "location": {
+        "file": "x-pack/platform/plugins/private/rollup/test/scout/api/tests/rollup_indices.spec.ts",
+        "line": 36,
+        "column": 47
+      }
+    },
+    {
+      "id": "d4be1e5ea9d2425-5668095cc179e12",
+      "title": "Rollup job actions starts a job",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic",
+        "@cloud-stateful-classic"
+      ],
+      "location": {
+        "file": "x-pack/platform/plugins/private/rollup/test/scout/api/tests/rollup_job_actions.spec.ts",
+        "line": 43,
+        "column": 7
+      }
+    },
+    {
+      "id": "d4be1e5ea9d2425-a935c8900785f8c",
+      "title": "Rollup job actions succeeds when starting an already started job",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic",
+        "@cloud-stateful-classic"
+      ],
+      "location": {
+        "file": "x-pack/platform/plugins/private/rollup/test/scout/api/tests/rollup_job_actions.spec.ts",
+        "line": 56,
+        "column": 14
+      }
+    },
+    {
+      "id": "d4be1e5ea9d2425-3109eeb83acf6ff",
+      "title": "Rollup job actions stops a job",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic",
+        "@cloud-stateful-classic"
+      ],
+      "location": {
+        "file": "x-pack/platform/plugins/private/rollup/test/scout/api/tests/rollup_job_actions.spec.ts",
+        "line": 64,
+        "column": 7
+      }
+    },
+    {
+      "id": "d4be1e5ea9d2425-16713ec811d7162",
+      "title": "Rollup job actions succeeds when stopping an already stopped job",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic",
+        "@cloud-stateful-classic"
+      ],
+      "location": {
+        "file": "x-pack/platform/plugins/private/rollup/test/scout/api/tests/rollup_job_actions.spec.ts",
+        "line": 81,
+        "column": 14
+      }
+    },
+    {
+      "id": "27f98cf5675b78a-e3c7e3286fa64c1",
+      "title": "Rollup jobs creation returns an empty job list when no jobs exist",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic"
+      ],
+      "location": {
+        "file": "x-pack/platform/plugins/private/rollup/test/scout/api/tests/rollup_jobs_crud.spec.ts",
+        "line": 37,
+        "column": 5
+      }
+    },
+    {
+      "id": "27f98cf5675b78a-3669849b927fb87",
+      "title": "Rollup jobs creation creates a rollup job",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic"
+      ],
+      "location": {
+        "file": "x-pack/platform/plugins/private/rollup/test/scout/api/tests/rollup_jobs_crud.spec.ts",
+        "line": 43,
+        "column": 11
+      }
+    },
+    {
+      "id": "27f98cf5675b78a-7643b4c3ca96322",
+      "title": "Rollup jobs creation lists a newly created job",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic"
+      ],
+      "location": {
+        "file": "x-pack/platform/plugins/private/rollup/test/scout/api/tests/rollup_jobs_crud.spec.ts",
+        "line": 46,
+        "column": 84
+      }
+    },
+    {
+      "id": "27f98cf5675b78a-aa12cf3e94b965c",
+      "title": "Rollup jobs creation rejects a duplicate job id",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic"
+      ],
+      "location": {
+        "file": "x-pack/platform/plugins/private/rollup/test/scout/api/tests/rollup_jobs_crud.spec.ts",
+        "line": 54,
+        "column": 22
+      }
+    },
+    {
+      "id": "27f98cf5675b78a-3beadd54818e5c2",
+      "title": "Rollup jobs creation surfaces Elasticsearch validation errors",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic"
+      ],
+      "location": {
+        "file": "x-pack/platform/plugins/private/rollup/test/scout/api/tests/rollup_jobs_crud.spec.ts",
+        "line": 63,
+        "column": 24
+      }
+    },
+    {
+      "id": "27f98cf5675b78a-0ad0109c38281b1",
+      "title": "Rollup jobs creation exposes the aggregations of the created rollup index",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic"
+      ],
+      "location": {
+        "file": "x-pack/platform/plugins/private/rollup/test/scout/api/tests/rollup_jobs_crud.spec.ts",
+        "line": 75,
+        "column": 17
+      }
+    },
+    {
+      "id": "088f418d8429afd-536c042d711ee43",
+      "title": "Rollup jobs deletion deletes a stopped job",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic",
+        "@cloud-stateful-classic"
+      ],
+      "location": {
+        "file": "x-pack/platform/plugins/private/rollup/test/scout/api/tests/rollup_jobs_delete.spec.ts",
+        "line": 39,
+        "column": 13
+      }
+    },
+    {
+      "id": "088f418d8429afd-2471eafea033de3",
+      "title": "Rollup jobs deletion refuses to delete a started job",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic",
+        "@cloud-stateful-classic"
+      ],
+      "location": {
+        "file": "x-pack/platform/plugins/private/rollup/test/scout/api/tests/rollup_jobs_delete.spec.ts",
+        "line": 49,
+        "column": 19
+      }
+    },
+    {
+      "id": "020cb3fb00558d2-57560fcf563417e",
+      "title": "Rollup search returns 404 for a missing rollup index",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic",
+        "@cloud-stateful-classic"
+      ],
+      "location": {
+        "file": "x-pack/platform/plugins/private/rollup/test/scout/api/tests/rollup_search.spec.ts",
+        "line": 34,
+        "column": 33
+      }
+    },
+    {
+      "id": "020cb3fb00558d2-22c5477ae6cc1b0",
+      "title": "Rollup search searches an existing rollup index",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic",
+        "@cloud-stateful-classic"
+      ],
+      "location": {
+        "file": "x-pack/platform/plugins/private/rollup/test/scout/api/tests/rollup_search.spec.ts",
+        "line": 42,
+        "column": 64
+      }
+    }
+  ]
+}

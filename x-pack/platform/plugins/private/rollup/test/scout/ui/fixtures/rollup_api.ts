@@ -6,41 +6,10 @@
  */
 
 import type { EsClient } from '@kbn/scout';
+import { deleteIndicesMatching } from '../../common/fixtures/rollup_api';
 import { MOCK_ROLLUP_INDEX_NAME, SOURCE_INDEX_PREFIX, TARGET_INDEX_NAME } from './constants';
 
-/**
- * Create the mock rollup index whose `_meta._rollup` mapping makes ES treat the cluster as having
- * rollup usage, which unhides the deprecated rollup UI. Replaces the FTR `createMockRollupIndex`.
- */
-export const createMockRollupIndex = async (esClient: EsClient) => {
-  await esClient.indices.create({
-    index: MOCK_ROLLUP_INDEX_NAME,
-    mappings: {
-      _meta: {
-        _rollup: {
-          logs_job: {
-            id: 'mockRollupJob',
-            index_pattern: MOCK_ROLLUP_INDEX_NAME,
-            rollup_index: 'rollup_index',
-            cron: '0 0 0 ? * 7',
-            page_size: 1000,
-            groups: {
-              date_histogram: {
-                interval: '24h',
-                delay: '1d',
-                time_zone: 'UTC',
-                field: 'testCreatedField',
-              },
-              terms: { fields: ['testTotalField', 'testTagField'] },
-              histogram: { interval: '7', fields: ['testTotalField'] },
-            },
-          },
-        },
-        'rollup-version': '',
-      },
-    },
-  });
-};
+export { createMockRollupIndex, deleteAllRollupJobs } from '../../common/fixtures/rollup_api';
 
 // `MM-DD-YYYY`, matching the FTR `mockIndices` index naming.
 const formatDay = (date: Date) =>
@@ -62,44 +31,6 @@ export const seedSourceIndices = async (esClient: EsClient) => {
       refresh: 'wait_for',
       document: { '@timestamp': day.toISOString(), foo_metric: 1 },
     });
-  }
-};
-
-/**
- * Stop and delete every rollup job in the cluster. Rollup jobs are cluster-global, so run this
- * defensively before the wizard spec (a crashed prior run can leave a job that breaks the
- * empty-list precondition) and in teardown. Best-effort: ignore jobs that are already gone.
- */
-export const deleteAllRollupJobs = async (esClient: EsClient) => {
-  const { jobs = [] } = await esClient.rollup.getJobs({ id: '_all' });
-  for (const job of jobs) {
-    const id = job.config?.id;
-    if (!id) continue;
-    try {
-      await esClient.rollup.stopJob({ id, wait_for_completion: true });
-    } catch {
-      // Not running or already gone — safe to skip.
-    }
-    try {
-      await esClient.rollup.deleteJob({ id });
-    } catch {
-      // Already deleted — safe to skip.
-    }
-  }
-};
-
-/**
- * ES blocks wildcard/`_all` deletes (`action.destructive_requires_name`), so resolve the patterns
- * to concrete index names (a read, which allows wildcards) and delete those.
- */
-const deleteIndicesMatching = async (esClient: EsClient, patterns: string[]) => {
-  const resolved = await esClient.indices.get(
-    { index: patterns, allow_no_indices: true, ignore_unavailable: true },
-    { ignore: [404] }
-  );
-  const names = Object.keys(resolved ?? {});
-  if (names.length > 0) {
-    await esClient.indices.delete({ index: names }, { ignore: [404] });
   }
 };
 

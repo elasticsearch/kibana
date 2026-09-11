@@ -11,7 +11,6 @@ export default function ({ loadTestFile }: FtrProviderContext) {
   describe('management', () => {
     loadTestFile(require.resolve('./advanced_settings'));
     loadTestFile(require.resolve('./remote_clusters'));
-    loadTestFile(require.resolve('./rollup'));
     loadTestFile(require.resolve('./index_lifecycle_management'));
     loadTestFile(require.resolve('./snapshot_restore'));
   });
