@@ -199,6 +199,22 @@ describe('RowAction', () => {
     expect(refetch).toHaveBeenCalledTimes(1);
   });
 
+  test('uses the onExpandFlyout override when provided instead of opening the flyout directly', () => {
+    const onExpandFlyout = jest.fn();
+    const wrapper = render(
+      <TestProviders>
+        <RowAction {...defaultProps} onExpandFlyout={onExpandFlyout} />
+      </TestProviders>
+    );
+
+    fireEvent.click(wrapper.getByTestId('expand-event'));
+
+    expect(onExpandFlyout).toHaveBeenCalledTimes(1);
+    expect(mockOpenFlyout).not.toHaveBeenCalled();
+    expect(flyoutApi.openDocumentFlyoutFromIndex).not.toHaveBeenCalled();
+    expect(mockedTelemetry.reportEvent).not.toHaveBeenCalled();
+  });
+
   test('binds the new document flyout cell actions to the table scope and details-flyout trigger', () => {
     jest.mocked(useIsNewFlyoutEnabled).mockReturnValue(true);
 

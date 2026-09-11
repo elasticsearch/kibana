@@ -224,8 +224,6 @@
     "@kbn/data-stream-adapter",
     "@kbn/core-lifecycle-server",
     "@kbn/core-user-profile-common",
-    "@kbn/core-user-profile-server",
-    "@kbn/core-user-profile-server-mocks",
     "@kbn/langchain",
     "@kbn/discover-shared-plugin",
     "@kbn/react-hooks",
@@ -312,5 +310,7 @@
     "@kbn/core-mount-utils-browser",
     "@kbn/ui-callout",
     "@kbn/shared-ux-utility",
+    "@kbn/core-user-profile-server-mocks",
+    "@kbn/core-user-profile-server",
   ]
 }

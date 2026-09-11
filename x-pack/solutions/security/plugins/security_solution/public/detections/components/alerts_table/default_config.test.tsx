@@ -371,6 +371,7 @@ describe('alerts default_config', () => {
 
       const expected = {
         ...tableDefaults,
+        itemsPerPage: 50,
         showCheckboxes: true,
         columns: [
           { columnHeaderType: 'not-filtered', id: '@timestamp', initialWidth: 200 },
@@ -399,6 +400,7 @@ describe('alerts default_config', () => {
 
       const expected = {
         ...tableDefaults,
+        itemsPerPage: 50,
         showCheckboxes: true,
         columns: [
           { columnHeaderType: 'not-filtered', id: '@timestamp', initialWidth: 200 },

@@ -7,7 +7,7 @@
 
 import type { FC } from 'react';
 import React, { memo, useMemo } from 'react';
-import { EuiFlexGroup, EuiFlexItem, EuiSpacer, EuiText } from '@elastic/eui';
+import { EuiFlexGroup, EuiFlexItem, EuiPagination, EuiSpacer } from '@elastic/eui';
 import { css } from '@emotion/react';
 import { i18n } from '@kbn/i18n';
 import type { DataTableRecord } from '@kbn/discover-utils';
@@ -32,11 +32,20 @@ import { useUserPrivileges } from '../../../common/components/user_privileges';
 import { ShareUrlIconButton } from '../../shared/components/share_url_icon_button';
 import { useGetFlyoutLink } from '../../../flyout/document_details/right/hooks/use_get_flyout_link';
 import { isRulePreviewDocument } from '../../shared/utils/is_rule_preview_document';
+import { useFlyoutPagination } from '../pagination/use_flyout_pagination';
+import { FLYOUT_V2_DOCUMENT_PAGINATION_TEST_ID } from './components/test_ids';
 
 const SHARE_ALERT_LABEL = i18n.translate(
   'xpack.securitySolution.flyoutV2.document.header.shareAlertLabel',
   {
     defaultMessage: 'Share alert',
+  }
+);
+
+const PAGINATION_ARIA_LABEL = i18n.translate(
+  'xpack.securitySolution.flyoutV2.document.header.paginationAriaLabel',
+  {
+    defaultMessage: 'Navigate between documents',
   }
 );
 
@@ -66,6 +75,12 @@ export interface HeaderProps {
    * Callback that opens the notes details view.
    */
   onShowNotes: () => void;
+  /**
+   * `true` when the rendered hit is no longer the document the flyout is showing — pagination is
+   * still fetching the next one, or the requested one could not be resolved. The hit is kept around
+   * only to preserve non-mutating header context, so alert actions that would mutate it are hidden.
+   */
+  isDocumentStale?: boolean;
 }
 
 /**
@@ -74,7 +89,13 @@ export interface HeaderProps {
  * and alert-only summary blocks (status, risk score assignees, and notes).
  */
 export const Header: FC<HeaderProps> = memo(
-  ({ hit, renderCellActions = noopCellActionRenderer, onAlertUpdated, onShowNotes }) => {
+  ({
+    hit,
+    renderCellActions = noopCellActionRenderer,
+    onAlertUpdated,
+    onShowNotes,
+    isDocumentStale = false,
+  }) => {
     const canReadRules = useUserPrivileges().rulesPrivileges.rules.read;
     const isAlert = useMemo(
       () => (getFieldValue(hit, EVENT_KIND) as string) === EventKind.signal,
@@ -88,6 +109,10 @@ export const Header: FC<HeaderProps> = memo(
       timestamp: String(hit.flattened?.['@timestamp'] ?? ''),
     });
 
+    const { flyoutDocumentIndex, totalDocumentCount, openDocumentFlyout } = useFlyoutPagination();
+    const showPagination =
+      totalDocumentCount > 1 && flyoutDocumentIndex != null && flyoutDocumentIndex >= 0;
+
     return (
       <>
         <div css={shareButtonStyles}>
@@ -98,16 +123,34 @@ export const Header: FC<HeaderProps> = memo(
             dataTestSubj={DOCUMENT_FLYOUT_HEADER_SHARE_BUTTON_TEST_ID}
           />
         </div>
-        <DocumentSeverity hit={hit}>
-          <EuiSpacer size="s" />
-        </DocumentSeverity>
-        <EuiText size="s">
-          <Timestamp hit={hit} />
-        </EuiText>
-        <EuiSpacer size="xs" />
-
+        <EuiFlexGroup
+          gutterSize="s"
+          justifyContent="spaceBetween"
+          alignItems="center"
+          responsive={false}
+        >
+          <EuiFlexItem grow={false}>
+            <DocumentSeverity hit={hit} />
+          </EuiFlexItem>
+          {showPagination && (
+            <EuiFlexItem grow={false}>
+              <EuiPagination
+                aria-label={PAGINATION_ARIA_LABEL}
+                pageCount={totalDocumentCount}
+                activePage={flyoutDocumentIndex}
+                onPageClick={openDocumentFlyout}
+                compressed
+                data-test-subj={FLYOUT_V2_DOCUMENT_PAGINATION_TEST_ID}
+              />
+            </EuiFlexItem>
+          )}
+        </EuiFlexGroup>
+        <EuiSpacer size="s" />
+        <Timestamp hit={hit}>
+          <EuiSpacer size="xs" />
+        </Timestamp>
         <Title hit={hit} hideLink={!canReadRules || isRulePreview} />
-        {isAlert && (
+        {isAlert && !isDocumentStale && (
           <>
             <EuiSpacer size="m" />
             <EuiFlexGroup

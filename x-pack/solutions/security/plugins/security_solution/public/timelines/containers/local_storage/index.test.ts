@@ -637,7 +637,7 @@ describe('SiemLocalStorage', () => {
         filters: [],
         indexNames: ['.alerts-security.alerts-default'],
         isSelectAllChecked: false,
-        itemsPerPage: 25,
+        itemsPerPage: 50,
         itemsPerPageOptions: [10, 25, 50, 100],
         loadingEventIds: [],
         showCheckboxes: true,

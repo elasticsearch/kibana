@@ -6,11 +6,15 @@
  */
 
 import React, { memo, useCallback, useMemo } from 'react';
+import type { ReactNode } from 'react';
 import {
+  EuiFlexGroup,
+  EuiFlexItem,
   EuiFlyoutBody,
   EuiFlyoutFooter,
   EuiFlyoutHeader,
   EuiLink,
+  EuiLoadingSpinner,
   EuiSpacer,
   EuiTab,
   EuiTabs,
@@ -46,6 +50,7 @@ import { RemoteDocumentCallout } from './components/remote_document_callout';
 import { getAncestorsIndexById } from './utils/get_ancestors_index_by_id';
 import { FLYOUT_ORIGIN, FLYOUT_TYPE } from '../../../common/lib/telemetry';
 import { isRulePreviewDocument } from '../../shared/utils/is_rule_preview_document';
+import { FLYOUT_V2_LOADING_SPINNER_TEST_ID } from './components/test_ids';
 
 const footerStyles = css`
   @media (max-width: 767px) {
@@ -99,14 +104,37 @@ export interface DocumentFlyoutProps {
    * Optional test subject applied to the existing flyout header.
    */
   dataTestSubj?: string;
+  /**
+   * `true` while in-flyout pagination is resolving the document on another page
+   * of the source. The previously displayed document is kept mounted (so the
+   * header keeps its pagination controls) while the body shows a spinner.
+   */
+  isPaginationLoading?: boolean;
+  /**
+   * Callout rendered in the flyout body when the requested document could not be resolved (it was
+   * not found, or the fetch failed). `hit` then holds the last document that did resolve, so the
+   * header — and with it the pagination controls — survives a bad target and the user can page back
+   * instead of having to close and reopen the flyout.
+   */
+  unavailableDocumentCallout?: ReactNode;
 }
 
 /**
  * Content for the document flyout, combining the header and overview tab.
  */
 export const DocumentFlyout = memo(
-  ({ hit, onAlertUpdated, renderCellActions, dataTestSubj }: DocumentFlyoutProps) => {
+  ({
+    hit,
+    onAlertUpdated,
+    renderCellActions,
+    dataTestSubj,
+    isPaginationLoading = false,
+    unavailableDocumentCallout,
+  }: DocumentFlyoutProps) => {
     const { openNotes, openDocumentFlyoutFromPattern } = useFlyoutApi();
+    // In both cases the rendered `hit` is no longer the document the flyout is resolving, so the
+    // body is swapped out and the controls that would act on `hit` are withheld.
+    const isDocumentStale = isPaginationLoading || unavailableDocumentCallout != null;
     const isAlert = useMemo(
       () => (getFieldValue(hit, EVENT_KIND) as string) === EventKind.signal,
       [hit]
@@ -115,7 +143,6 @@ export const DocumentFlyout = memo(
     const isSecurityApp = useIsInSecurityApp();
     const { hasAlertsRead, loading } = useAlertsPrivileges();
     const missingAlertsPrivilege = !loading && !hasAlertsRead && isAlert;
-
     // The Table and JSON tabs are only available in Security Solution, not in Discover.
     // The selected tab is persisted to localStorage.
     const { selectedTabId, setSelectedTabId } = useTabs<DocumentFlyoutTabId>({
@@ -218,60 +245,81 @@ export const DocumentFlyout = memo(
     return (
       <>
         <RemoteDocumentCallout hit={hit} />
-        <EuiFlyoutHeader css={headerStyles} data-test-subj={dataTestSubj}>
+        <EuiFlyoutHeader
+          css={isDocumentStale ? undefined : headerStyles}
+          data-test-subj={dataTestSubj}
+        >
           <Header
             hit={hit}
             renderCellActions={renderCellActions}
             onAlertUpdated={onAlertUpdated}
             onShowNotes={onShowNotesFromHeader}
+            isDocumentStale={isDocumentStale}
           />
         </EuiFlyoutHeader>
         <EuiFlyoutBody>
-          {isSecurityApp && (
+          {unavailableDocumentCallout ? (
+            unavailableDocumentCallout
+          ) : isPaginationLoading ? (
+            <EuiFlexGroup
+              alignItems="center"
+              justifyContent="center"
+              css={{ height: '100%' }}
+              data-test-subj={FLYOUT_V2_LOADING_SPINNER_TEST_ID}
+            >
+              <EuiFlexItem grow={false}>
+                <EuiLoadingSpinner size="xl" />
+              </EuiFlexItem>
+            </EuiFlexGroup>
+          ) : (
             <>
-              <EuiTabs>
-                <EuiTab
-                  isSelected={selectedTabId === 'overview'}
-                  onClick={() => setSelectedTabId('overview')}
-                  data-test-subj={OVERVIEW_TAB_TEST_ID}
-                >
-                  {OVERVIEW_TAB_LABEL}
-                </EuiTab>
-                <EuiTab
-                  isSelected={selectedTabId === 'table'}
-                  onClick={() => setSelectedTabId('table')}
-                  data-test-subj={TABLE_TAB_TEST_ID}
-                >
-                  {TABLE_TAB_LABEL}
-                </EuiTab>
-                <EuiTab
-                  isSelected={selectedTabId === 'json'}
-                  onClick={() => setSelectedTabId('json')}
-                  data-test-subj={JSON_TAB_TEST_ID}
-                >
-                  {JSON_TAB_LABEL}
-                </EuiTab>
-              </EuiTabs>
-              <EuiSpacer size="m" />
+              {isSecurityApp && (
+                <>
+                  <EuiTabs>
+                    <EuiTab
+                      isSelected={selectedTabId === 'overview'}
+                      onClick={() => setSelectedTabId('overview')}
+                      data-test-subj={OVERVIEW_TAB_TEST_ID}
+                    >
+                      {OVERVIEW_TAB_LABEL}
+                    </EuiTab>
+                    <EuiTab
+                      isSelected={selectedTabId === 'table'}
+                      onClick={() => setSelectedTabId('table')}
+                      data-test-subj={TABLE_TAB_TEST_ID}
+                    >
+                      {TABLE_TAB_LABEL}
+                    </EuiTab>
+                    <EuiTab
+                      isSelected={selectedTabId === 'json'}
+                      onClick={() => setSelectedTabId('json')}
+                      data-test-subj={JSON_TAB_TEST_ID}
+                    >
+                      {JSON_TAB_LABEL}
+                    </EuiTab>
+                  </EuiTabs>
+                  <EuiSpacer size="m" />
+                </>
+              )}
+              {isSecurityApp && selectedTabId === 'table' ? (
+                <TableTab
+                  hit={hit}
+                  renderCellActions={renderCellActions}
+                  renderFlyoutLink={renderFlyoutLink}
+                />
+              ) : isSecurityApp && selectedTabId === 'json' ? (
+                <JsonTab hit={hit} isRulePreview={isRulePreview} />
+              ) : (
+                <OverviewTab
+                  hit={hit}
+                  renderCellActions={renderCellActions}
+                  onAlertUpdated={onAlertUpdated}
+                />
+              )}
             </>
           )}
-          {isSecurityApp && selectedTabId === 'table' ? (
-            <TableTab
-              hit={hit}
-              renderCellActions={renderCellActions}
-              renderFlyoutLink={renderFlyoutLink}
-            />
-          ) : isSecurityApp && selectedTabId === 'json' ? (
-            <JsonTab hit={hit} isRulePreview={isRulePreview} />
-          ) : (
-            <OverviewTab
-              hit={hit}
-              renderCellActions={renderCellActions}
-              onAlertUpdated={onAlertUpdated}
-            />
-          )}
         </EuiFlyoutBody>
-        {!isRulePreview && (
+        {!isRulePreview && !isDocumentStale && (
           <EuiFlyoutFooter css={footerStyles}>
             <Footer hit={hit} onAlertUpdated={onAlertUpdated} onShowNotes={onShowNotesFromFooter} />
           </EuiFlyoutFooter>

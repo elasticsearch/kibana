@@ -216,9 +216,12 @@ export const buildAlertAssigneesFilter = (assigneesIds: AssigneesIdsSelection[])
   ];
 };
 
+export const ALERTS_TABLE_DEFAULT_ITEMS_PER_PAGE = 50;
+
 export const getAlertsDefaultModel = (license?: LicenseService): SubsetDataTableModel => ({
   ...tableDefaults,
   columns: getColumns(license),
+  itemsPerPage: ALERTS_TABLE_DEFAULT_ITEMS_PER_PAGE,
   showCheckboxes: true,
 });
 
@@ -226,6 +229,7 @@ export const getAlertsPreviewDefaultModel = (license?: LicenseService): SubsetDa
   ...getAlertsDefaultModel(license),
   columns: getRulePreviewColumns(license),
   defaultColumns: getRulePreviewColumns(license),
+  itemsPerPage: tableDefaults.itemsPerPage,
   sort: [
     {
       columnId: 'kibana.alert.original_time',

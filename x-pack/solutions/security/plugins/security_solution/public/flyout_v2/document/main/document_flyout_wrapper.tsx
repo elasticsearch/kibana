@@ -6,20 +6,21 @@
  */
 
 import React, { memo, useCallback, useMemo } from 'react';
-import { EuiCallOut } from '@elastic/eui';
+import { KbnDangerCallout } from '@kbn/ui-callout';
 import { i18n } from '@kbn/i18n';
 import { FormattedMessage } from '@kbn/i18n-react';
 import { ElasticRequestState } from '@kbn/unified-doc-viewer';
-import { useEsDocSearch } from '@kbn/unified-doc-viewer-plugin/public';
 import { getFieldValue } from '@kbn/discover-utils';
 import { EVENT_KIND } from '@kbn/rule-data-utils';
 import type { CellActionRenderer } from '../../shared/components/cell_actions';
 import { useAlertsPrivileges } from '../../../detections/containers/detection_engine/alerts/use_alerts_privileges';
 import { FlyoutLoading } from '../../shared/components/flyout_loading';
 import { FlyoutMissingAlertsPrivilege } from './components/flyout_missing_alerts_privilege';
+import { DocumentUnavailableCallout } from './components/document_unavailable_callout';
 import { DataViewDegradedCallout } from '../../../data_view_manager/components/data_view_degraded_callout';
 import { PageScope } from '../../../data_view_manager/constants';
 import { useDataView } from '../../../data_view_manager/hooks/use_data_view';
+import { useResolvedDocument } from './hooks/use_resolved_document';
 import { EventKind } from './constants/event_kinds';
 import { DocumentFlyout } from '.';
 
@@ -27,20 +28,6 @@ const DATA_VIEW_ERROR = i18n.translate(
   'xpack.securitySolution.flyout.document.overviewWrapper.dataViewError',
   {
     defaultMessage: 'Unable to retrieve the data view for analyzer.',
-  }
-);
-
-const DOCUMENT_NOT_FOUND = i18n.translate(
-  'xpack.securitySolution.flyout.document.overviewWrapper.documentNotFound',
-  {
-    defaultMessage: 'Cannot find document. No documents match that ID.',
-  }
-);
-
-const FETCH_ERROR = i18n.translate(
-  'xpack.securitySolution.flyout.document.overviewWrapper.fetchError',
-  {
-    defaultMessage: 'Unable to fetch document details.',
   }
 );
 
@@ -65,6 +52,12 @@ export interface DocumentFlyoutWrapperProps {
    * Optional test subject forwarded to the document flyout header without adding a layout wrapper.
    */
   dataTestSubj?: string;
+  /**
+   * `true` while in-flyout pagination is still resolving which document to show (e.g. it navigated
+   * to a page the source hasn't loaded yet). Forwarded to `DocumentFlyout` so the previously
+   * displayed document stays mounted behind a spinner instead of unmounting the whole flyout.
+   */
+  isPaginationLoading?: boolean;
 }
 
 /**
@@ -79,6 +72,7 @@ export const DocumentFlyoutWrapper = memo(
     renderCellActions,
     onAlertUpdated,
     dataTestSubj,
+    isPaginationLoading,
   }: DocumentFlyoutWrapperProps) => {
     const { dataView, status } = useDataView(PageScope.default);
 
@@ -91,12 +85,13 @@ export const DocumentFlyoutWrapper = memo(
       [dataView, documentId, indexName, isDataViewInvalid, isDataViewLoading]
     );
 
-    const [requestState, hit, refetchDocument] = useEsDocSearch({
-      id: documentId ?? '',
-      index: indexName,
-      dataView,
-      skip: shouldSkipSearch,
-    });
+    const { requestState, displayedHit, isResolving, isReloading, refetchDocument } =
+      useResolvedDocument({
+        documentId,
+        indexName,
+        dataView,
+        skip: shouldSkipSearch,
+      });
 
     const handleAlertUpdated = useCallback(() => {
       onAlertUpdated();
@@ -104,17 +99,21 @@ export const DocumentFlyoutWrapper = memo(
     }, [onAlertUpdated, refetchDocument]);
 
     const isAlert = useMemo(
-      () => hit && (getFieldValue(hit, EVENT_KIND) as string) === EventKind.signal,
-      [hit]
+      () =>
+        displayedHit && (getFieldValue(displayedHit, EVENT_KIND) as string) === EventKind.signal,
+      [displayedHit]
     );
 
     const { hasAlertsRead, loading: isAlertsPrivilegesLoading } = useAlertsPrivileges();
     const missingAlertsPrivilege = isAlert && !isAlertsPrivilegesLoading && !hasAlertsRead;
 
+    // Only drop to the bare loading state on a cold load. Once a document has been
+    // resolved, `isReloading` keeps the flyout mounted and lets the body render its own
+    // spinner, so paginating doesn't tear down the header.
     if (
       isDataViewLoading ||
       (isAlert && isAlertsPrivilegesLoading) ||
-      requestState === ElasticRequestState.Loading
+      (isResolving && !isReloading)
     ) {
       return <FlyoutLoading data-test-subj="document-overview-wrapper-loading" />;
     }
@@ -125,17 +124,15 @@ export const DocumentFlyoutWrapper = memo(
 
     if (isDataViewInvalid) {
       return (
-        <EuiCallOut
+        <KbnDangerCallout
           announceOnMount
-          color="danger"
-          iconType="warning"
           title={DATA_VIEW_ERROR}
           data-test-subj="document-overview-wrapper-data-view-error"
         />
       );
     }
 
-    if (requestState === ElasticRequestState.Found && hit) {
+    if ((requestState === ElasticRequestState.Found || isReloading) && displayedHit) {
       return (
         <>
           {isDataViewDegraded && (
@@ -151,35 +148,36 @@ export const DocumentFlyoutWrapper = memo(
             </DataViewDegradedCallout>
           )}
           <DocumentFlyout
-            hit={hit}
+            hit={displayedHit}
             renderCellActions={renderCellActions}
             onAlertUpdated={handleAlertUpdated}
             dataTestSubj={dataTestSubj}
+            isPaginationLoading={isPaginationLoading || isReloading}
           />
         </>
       );
     }
 
-    if (requestState === ElasticRequestState.NotFound) {
-      return (
-        <EuiCallOut
-          announceOnMount
-          color="danger"
-          iconType="warning"
-          title={DOCUMENT_NOT_FOUND}
-          data-test-subj="document-overview-wrapper-not-found"
-        />
-      );
-    }
+    const isDocumentUnavailable =
+      requestState === ElasticRequestState.NotFound || requestState === ElasticRequestState.Error;
 
-    if (requestState === ElasticRequestState.Error) {
+    if (isDocumentUnavailable) {
+      // Paginating onto a document that no longer resolves (deleted, or moved out of its index)
+      // must not take the whole panel down with it: keep the last document that did resolve
+      // mounted so the header's pagination controls survive, and surface the failure in the body
+      // instead. Without a previous document there is nothing to keep mounted, so the callout
+      // stands alone.
+      if (!displayedHit) {
+        return <DocumentUnavailableCallout requestState={requestState} />;
+      }
+
       return (
-        <EuiCallOut
-          announceOnMount
-          color="danger"
-          iconType="warning"
-          title={FETCH_ERROR}
-          data-test-subj="document-overview-fetch-error"
+        <DocumentFlyout
+          hit={displayedHit}
+          renderCellActions={renderCellActions}
+          onAlertUpdated={handleAlertUpdated}
+          dataTestSubj={dataTestSubj}
+          unavailableDocumentCallout={<DocumentUnavailableCallout requestState={requestState} />}
         />
       );
     }

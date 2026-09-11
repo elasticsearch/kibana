@@ -7,8 +7,10 @@
 
 import React from 'react';
 import { render } from '@testing-library/react';
-import { AlertsTable as ResponseOpsAlertsTable } from '@kbn/response-ops-alerts-table';
-import type { TimelineItem } from '@kbn/response-ops-alerts-table/types';
+import type {
+  AlertsTableProps as ResponseOpsAlertsTableProps,
+  TimelineItem,
+} from '@kbn/response-ops-alerts-table/types';
 import { TableId } from '@kbn/securitysolution-data-table';
 import { TestProviders } from '../../../common/mock';
 import { BULK_ALERTS_ATTACHMENT_PROMPT } from '../../../agent_builder/components/prompts';
@@ -16,9 +18,16 @@ import { alertsToAttachmentGroup } from '../../../agent_builder/helpers';
 import { useReportAddToChat } from '../../../agent_builder/hooks/use_report_add_to_chat';
 import { AlertsTable } from '.';
 
-jest.mock('@kbn/response-ops-alerts-table', () => ({
-  AlertsTable: jest.fn(() => null),
-}));
+const mockResponseOpsAlertsTable = jest.fn((_props: ResponseOpsAlertsTableProps) => null);
+jest.mock('@kbn/response-ops-alerts-table', () => {
+  const { forwardRef } = jest.requireActual<typeof import('react')>('react');
+  return {
+    AlertsTable: forwardRef<unknown, ResponseOpsAlertsTableProps>((props, _ref) =>
+      mockResponseOpsAlertsTable(props)
+    ),
+    alertsTableQueryClient: { mount: jest.fn(), unmount: jest.fn() },
+  };
+});
 jest.mock('../../../agent_builder/hooks/use_report_add_to_chat');
 jest.mock('../../../agent_builder/hooks/use_agent_builder_availability', () => ({
   useAgentBuilderAvailability: jest.fn(() => ({
@@ -122,6 +131,12 @@ jest.mock('../../configurations/security_solution_detections', () => ({
 jest.mock('../../../timelines/components/timeline/body/control_columns', () => ({
   getDefaultControlColumn: jest.fn(() => [{ width: 124 }]),
 }));
+jest.mock('@kbn/alerts-ui-shared/src/common/hooks/use_search_alerts_query', () => ({
+  useSearchAlertsQuery: jest.fn(() => ({ data: undefined, isFetching: false })),
+}));
+jest.mock('../../../flyout_v2/shared/hooks/use_open_flyout', () => ({
+  useOpenFlyout: jest.fn(() => jest.fn()),
+}));
 
 const makeItem = (id: string): TimelineItem =>
   ({ _id: id, data: [], ecs: { _id: id, _index: '' } } as unknown as TimelineItem);
@@ -141,7 +156,11 @@ describe('Alerts Page Table — bulkAddToChatConfig', () => {
         <AlertsTable tableType={tableType} isLoading={false} />
       </TestProviders>
     );
-    return (ResponseOpsAlertsTable as jest.Mock).mock.calls[0][0].bulkAddToChatConfig;
+    const config = mockResponseOpsAlertsTable.mock.calls[0][0].bulkAddToChatConfig;
+    if (!config) {
+      throw new Error('Expected bulkAddToChatConfig');
+    }
+    return config;
   };
 
   it('passes BULK_ALERTS_ATTACHMENT_PROMPT as initialMessage', () => {
