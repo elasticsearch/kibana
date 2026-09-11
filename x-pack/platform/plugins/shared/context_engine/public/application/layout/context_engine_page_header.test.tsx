@@ -57,11 +57,11 @@ describe('ContextEngineSubPageHeader', () => {
 
   it('suppresses the chrome fallback back button in the project layout', () => {
     services.chrome.getChromeStyle.mockReturnValue('project');
-    services.chrome.next.appHeader.set.mockReturnValue(jest.fn());
+    services.chrome.appHeader.set.mockReturnValue(jest.fn());
 
     renderHeader(services);
 
-    expect(services.chrome.next.appHeader.set).toHaveBeenCalledWith(
+    expect(services.chrome.appHeader.set).toHaveBeenCalledWith(
       expect.objectContaining({ back: false })
     );
   });
@@ -79,6 +79,6 @@ describe('ContextEngineSubPageHeader', () => {
 
     renderHeader(services);
 
-    expect(services.chrome.next.appHeader.set).not.toHaveBeenCalled();
+    expect(services.chrome.appHeader.set).not.toHaveBeenCalled();
   });
 });

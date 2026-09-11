@@ -269,19 +269,6 @@ export function createChromeApi({
     help,
     appHeader,
     inlineAppHeader,
-    next: {
-      aiButton: controls.aiButton,
-      globalSearch: controls.globalSearch,
-      contextSwitcher: controls.contextSwitcher,
-      projectPicker: controls.projectPicker,
-      userMenu: controls.userMenu,
-      inlineAppHeader,
-      appHeader,
-      registerFeedbackHandler: help.registerFeedbackHandler,
-      getFeedbackHandler$: help.getFeedbackHandler$,
-      registerNewsfeedHandler: help.registerNewsfeedHandler,
-      getNewsfeedHandler$: help.getNewsfeedHandler$,
-    },
     sidebar,
   };
 

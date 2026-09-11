@@ -42,7 +42,6 @@ export type {
   AppHeaderTitle,
   AppHeaderTitleSaveResult,
 } from './app_header';
-export type { ChromeNext } from './chrome_next';
 export type { ChromeAiButton, ChromeControls, GlobalSearchConfig } from './controls';
 export type { ChromeHelp, ChromeNewsfeedHandler } from './help';
 export type { ChromeSetup, ChromeStart } from './contracts';

@@ -158,7 +158,7 @@ describe('BackLink', () => {
   it('suppresses the chrome back button when return params are present', () => {
     const chrome = coreMock.createStart().chrome;
     chrome.getChromeStyle.mockReturnValue('project');
-    chrome.next.appHeader.set.mockReturnValue(jest.fn());
+    chrome.appHeader.set.mockReturnValue(jest.fn());
 
     const queryParams = new URLSearchParams();
     queryParams.set('returnAppId', 'observabilityOnboarding');
@@ -166,21 +166,19 @@ describe('BackLink', () => {
 
     renderBackLink(<BackLink queryParams={queryParams} integrationsPath="/browse" />, chrome);
 
-    expect(chrome.next.appHeader.set).toHaveBeenCalledWith(
-      expect.objectContaining({ back: false })
-    );
+    expect(chrome.appHeader.set).toHaveBeenCalledWith(expect.objectContaining({ back: false }));
   });
 
   it('does not suppress the chrome back button when return params are absent', () => {
     const chrome = coreMock.createStart().chrome;
     chrome.getChromeStyle.mockReturnValue('project');
-    chrome.next.appHeader.set.mockReturnValue(jest.fn());
+    chrome.appHeader.set.mockReturnValue(jest.fn());
 
     renderBackLink(
       <BackLink queryParams={new URLSearchParams()} integrationsPath="/browse" />,
       chrome
     );
 
-    expect(chrome.next.appHeader.set).not.toHaveBeenCalled();
+    expect(chrome.appHeader.set).not.toHaveBeenCalled();
   });
 });

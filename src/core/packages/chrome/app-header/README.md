@@ -33,8 +33,7 @@ small for pages with sticky or shared top-nav constraints while still using the 
 Use `useChromeAppHeaderRegistration` only for lower-level wrappers that need to compose registration
 with other hooks. Most apps should use `ChromeAppHeaderRegistration`.
 
-Use deprecated `chrome.next.appHeader.set` only when a React adapter is not practical. It is the
-imperative primitive behind the React APIs.
+Do not register app-header state through `core.chrome`. Use the React adapters in this package.
 
 ## Migrating route headers
 
@@ -94,7 +93,7 @@ back from breadcrumbs, mount:
 migration over long-lived suppression.
 
 Tri-state `back` lives only on chrome registration (`ChromeAppHeaderConfig` via
-`ChromeAppHeaderRegistration` / `chrome.next.appHeader.set`). The rendered `AppHeader` component
+`ChromeAppHeaderRegistration`). The rendered `AppHeader` component
 does not accept `false`:
 
 - value — explicit chrome back (no breadcrumb fallback)

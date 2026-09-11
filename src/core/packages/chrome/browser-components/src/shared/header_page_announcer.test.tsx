@@ -296,8 +296,8 @@ describe('ChromeNextPageAnnouncer', () => {
 
   it('lets an inline title win over registered, document, and navigation titles', () => {
     const { chrome, docTitleParts$, navigation$, renderAnnouncer } = createHarness();
-    chrome.next.appHeader.set({ title: 'Registered' });
-    chrome.next.inlineAppHeader.register('Inline');
+    chrome.appHeader.set({ title: 'Registered' });
+    chrome.inlineAppHeader.register('Inline');
     docTitleParts$.next(['Document title', 'Elastic']);
     navigation$.next({
       activeNodes: [[createNavNode('root', 'Observability')]],
@@ -311,7 +311,7 @@ describe('ChromeNextPageAnnouncer', () => {
 
   it('appends the default brand, and custom branding when set', () => {
     const { chrome, deps, renderAnnouncer } = createHarness();
-    chrome.next.inlineAppHeader.register('SLOs');
+    chrome.inlineAppHeader.register('SLOs');
 
     const { getByLabelText } = renderAnnouncer();
     flushAnnouncement();
@@ -336,8 +336,8 @@ describe('ChromeNextPageAnnouncer', () => {
 
   it('does not expose a registered or fallback title while updating an inline title', () => {
     const { chrome, docTitleParts$, renderAnnouncer } = createHarness();
-    chrome.next.appHeader.set({ title: 'Registered' });
-    const inline = chrome.next.inlineAppHeader.register('First');
+    chrome.appHeader.set({ title: 'Registered' });
+    const inline = chrome.inlineAppHeader.register('First');
     docTitleParts$.next(['Document title', 'Elastic']);
 
     const { getByLabelText } = renderAnnouncer();
@@ -357,7 +357,7 @@ describe('ChromeNextPageAnnouncer', () => {
 
   it('uses editable inline title text, then placeholder', () => {
     const { chrome, renderAnnouncer } = createHarness();
-    const inline = chrome.next.inlineAppHeader.register({
+    const inline = chrome.inlineAppHeader.register({
       text: 'Named dashboard',
       placeholder: 'Untitled dashboard',
       onSave: jest.fn(),
@@ -378,8 +378,8 @@ describe('ChromeNextPageAnnouncer', () => {
 
   it('suppresses a registered title while an inline loading header is mounted', () => {
     const { chrome, docTitleParts$, renderAnnouncer } = createHarness();
-    chrome.next.appHeader.set({ title: 'Registered' });
-    chrome.next.inlineAppHeader.register();
+    chrome.appHeader.set({ title: 'Registered' });
+    chrome.inlineAppHeader.register();
     docTitleParts$.next(['Document page', 'Elastic']);
 
     const { getByLabelText } = renderAnnouncer();
@@ -390,7 +390,7 @@ describe('ChromeNextPageAnnouncer', () => {
 
   it('lets a registered title win when no inline header is mounted', () => {
     const { chrome, docTitleParts$, navigation$, renderAnnouncer } = createHarness();
-    chrome.next.appHeader.set({ title: 'Registered' });
+    chrome.appHeader.set({ title: 'Registered' });
     docTitleParts$.next(['Document title', 'Elastic']);
     navigation$.next({
       activeNodes: [[createNavNode('root', 'Observability')]],
@@ -434,7 +434,7 @@ describe('ChromeNextPageAnnouncer', () => {
 
   it('does not change the live region when project breadcrumbs are replaced', () => {
     const { chrome, breadcrumbs$, renderAnnouncer } = createHarness();
-    chrome.next.inlineAppHeader.register('Dashboards');
+    chrome.inlineAppHeader.register('Dashboards');
 
     const { getByLabelText } = renderAnnouncer();
     flushAnnouncement();
@@ -454,7 +454,7 @@ describe('ChromeNextPageAnnouncer', () => {
 
   it('re-announces the same title when the location changes', () => {
     const { chrome, currentLocation$, renderAnnouncer } = createHarness();
-    chrome.next.inlineAppHeader.register('Dashboards');
+    chrome.inlineAppHeader.register('Dashboards');
 
     const { getByLabelText } = renderAnnouncer();
     flushAnnouncement();
@@ -487,7 +487,7 @@ describe('ChromeNextPageAnnouncer', () => {
     expect(announcer).toHaveTextContent('');
 
     act(() => {
-      chrome.next.inlineAppHeader.register('Details');
+      chrome.inlineAppHeader.register('Details');
     });
     flushAnnouncement();
 
@@ -511,7 +511,7 @@ describe('ChromeNextPageAnnouncer', () => {
 
   it('does not arm the skip link on a title-only change', () => {
     const { chrome, renderAnnouncer } = createHarness();
-    const inline = chrome.next.inlineAppHeader.register('First');
+    const inline = chrome.inlineAppHeader.register('First');
     const { getByTestId } = renderAnnouncer();
     const skipLink = getByTestId('skipToMainButton');
     skipLink.focus = jest.fn();

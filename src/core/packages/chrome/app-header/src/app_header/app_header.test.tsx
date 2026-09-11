@@ -155,7 +155,7 @@ describe('AppHeader adapter', () => {
   it('adds a feedback item from the registered handler', async () => {
     const chrome = chromeServiceMock.createStartContract();
     const feedbackHandler = jest.fn();
-    chrome.next.getFeedbackHandler$.mockReturnValue(
+    chrome.help.getFeedbackHandler$.mockReturnValue(
       new BehaviorSubject<(() => void) | undefined>(feedbackHandler)
     );
 

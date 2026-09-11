@@ -152,14 +152,14 @@ describe('Lens App', () => {
       (services.chrome.getChromeStyle$ as jest.Mock).mockReturnValue(
         new BehaviorSubject('project')
       );
-      (services.chrome.next.appHeader.set as jest.Mock).mockReturnValue(jest.fn());
+      (services.chrome.appHeader.set as jest.Mock).mockReturnValue(jest.fn());
     }
 
     it('registers title and leaves menu to setHeaderActionMenu / search bar separate', async () => {
       enableChromeNextProjectHeader();
       await renderApp();
 
-      expect(services.chrome.next.appHeader.set).toHaveBeenCalledWith(
+      expect(services.chrome.appHeader.set).toHaveBeenCalledWith(
         expect.objectContaining({
           title: undefined,
           back: undefined,
@@ -188,7 +188,7 @@ describe('Lens App', () => {
         },
       });
 
-      expect(services.chrome.next.appHeader.set).toHaveBeenCalledWith(
+      expect(services.chrome.appHeader.set).toHaveBeenCalledWith(
         expect.objectContaining({
           title: 'My Lens visualization',
         })
@@ -203,7 +203,7 @@ describe('Lens App', () => {
         },
       });
 
-      expect(services.chrome.next.appHeader.set).toHaveBeenCalledWith(
+      expect(services.chrome.appHeader.set).toHaveBeenCalledWith(
         expect.objectContaining({
           badges: expect.arrayContaining([
             expect.objectContaining({
@@ -225,7 +225,7 @@ describe('Lens App', () => {
 
       await renderApp();
 
-      expect(services.chrome.next.appHeader.set).toHaveBeenCalledWith(
+      expect(services.chrome.appHeader.set).toHaveBeenCalledWith(
         expect.objectContaining({
           back: expect.objectContaining({
             href: expect.stringContaining('dashboards'),
@@ -235,9 +235,7 @@ describe('Lens App', () => {
         })
       );
 
-      const registeredConfig = (services.chrome.next.appHeader.set as jest.Mock).mock.calls.at(
-        -1
-      )?.[0];
+      const registeredConfig = (services.chrome.appHeader.set as jest.Mock).mock.calls.at(-1)?.[0];
       const event = { preventDefault: jest.fn() };
       registeredConfig.back.onClick(event);
       expect(event.preventDefault).toHaveBeenCalled();

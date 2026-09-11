@@ -141,8 +141,8 @@ export const ChromeNextPageAnnouncer: FC = () => {
   const chrome = useChromeService();
   const { application } = useChromeComponentsDeps();
 
-  const inline$ = useMemo(() => chrome.next.inlineAppHeader.get$(), [chrome]);
-  const registered$ = useMemo(() => chrome.next.appHeader.get$(), [chrome]);
+  const inline$ = useMemo(() => chrome.inlineAppHeader.get$(), [chrome]);
+  const registered$ = useMemo(() => chrome.appHeader.get$(), [chrome]);
   const navigation$ = useMemo(() => chrome.project.getNavigation$(), [chrome]);
 
   const inline = useObservable(inline$, undefined);

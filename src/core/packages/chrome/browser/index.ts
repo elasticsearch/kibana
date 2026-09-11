@@ -45,7 +45,6 @@ export type {
   ChromeControls,
   ChromeHelp,
   ChromeNewsfeedHandler,
-  ChromeNext,
   ChromeSetBreadcrumbsParams,
   ChromeBreadcrumbsAppendExtension,
   ChromeDocTitle,

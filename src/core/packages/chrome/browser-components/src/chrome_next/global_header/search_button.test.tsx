@@ -26,7 +26,7 @@ const { useKeyboardShortcut } = jest.mocked(
 
 const renderButton = (config?: { onClick: () => void }) => {
   const chrome = chromeServiceMock.createStartContract();
-  (chrome.next.globalSearch.get$ as jest.Mock).mockReturnValue(new BehaviorSubject(config));
+  (chrome.controls.globalSearch.get$ as jest.Mock).mockReturnValue(new BehaviorSubject(config));
   return render(
     <TestChromeProviders chrome={chrome}>
       <SearchButton />

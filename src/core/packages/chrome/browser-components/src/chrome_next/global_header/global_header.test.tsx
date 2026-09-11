@@ -19,8 +19,8 @@ import { ChromeNextGlobalHeader } from './global_header';
 describe('ChromeNextGlobalHeader', () => {
   it('renders the project picker beside the context switcher', () => {
     const chrome = chromeServiceMock.createStartContract();
-    chrome.next.contextSwitcher.set(<span>Context switcher</span>);
-    chrome.next.projectPicker.set(<span>Project picker</span>);
+    chrome.controls.contextSwitcher.set(<span>Context switcher</span>);
+    chrome.controls.projectPicker.set(<span>Project picker</span>);
 
     renderWithI18n(
       <TestChromeProviders chrome={chrome}>
@@ -53,7 +53,7 @@ describe('ChromeNextGlobalHeader', () => {
     const chrome = chromeServiceMock.createStartContract();
     chrome.getChromeStyle.mockReturnValue('project');
     chrome.getChromeStyle$.mockReturnValue(new BehaviorSubject('project'));
-    chrome.next.getNewsfeedHandler$.mockReturnValue(
+    chrome.help.getNewsfeedHandler$.mockReturnValue(
       new BehaviorSubject({
         open: jest.fn(),
         hasNew$: new BehaviorSubject(false),
@@ -75,7 +75,7 @@ describe('ChromeNextGlobalHeader', () => {
     const chrome = chromeServiceMock.createStartContract();
     chrome.getChromeStyle.mockReturnValue('project');
     chrome.getChromeStyle$.mockReturnValue(new BehaviorSubject('project'));
-    chrome.next.getNewsfeedHandler$.mockReturnValue(
+    chrome.help.getNewsfeedHandler$.mockReturnValue(
       new BehaviorSubject({
         open: jest.fn(),
         hasNew$: new Subject<boolean>(),
@@ -98,7 +98,7 @@ describe('ChromeNextGlobalHeader', () => {
     const hasNew$ = new BehaviorSubject(true);
     chrome.getChromeStyle.mockReturnValue('project');
     chrome.getChromeStyle$.mockReturnValue(new BehaviorSubject('project'));
-    chrome.next.getNewsfeedHandler$.mockReturnValue(
+    chrome.help.getNewsfeedHandler$.mockReturnValue(
       new BehaviorSubject({
         open: jest.fn(),
         hasNew$,
@@ -130,7 +130,7 @@ describe('ChromeNextGlobalHeader', () => {
     const chrome = chromeServiceMock.createStartContract();
     const breadcrumbs$ = new BehaviorSubject([{ text: 'Should not be announced' }]);
     chrome.project.getBreadcrumbs$.mockReturnValue(breadcrumbs$);
-    chrome.next.inlineAppHeader.register('Dashboards');
+    chrome.inlineAppHeader.register('Dashboards');
 
     renderWithI18n(
       <TestChromeProviders chrome={chrome}>

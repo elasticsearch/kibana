@@ -10,7 +10,6 @@
 import type { ReactNode } from 'react';
 import type { Observable } from 'rxjs';
 import type { AppMenuConfig } from '@kbn/app-menu';
-import type { ChromeNext } from './chrome_next';
 import type { ChromeControls } from './controls';
 import type { ChromeHelp } from './help';
 import type { ChromeNavLink, ChromeNavLinks } from './nav_links';
@@ -85,14 +84,6 @@ export interface ChromeStart {
    * {@inheritdoc ChromeHelp}
    */
   help: ChromeHelp;
-
-  /**
-   * Deprecated compatibility facade for the former Chrome Next rollout namespace.
-   *
-   * @deprecated Use {@link ChromeStart.controls} and {@link ChromeStart.help}.
-   * {@inheritdoc ChromeNext}
-   */
-  next: ChromeNext;
 
   /**
    * Get an observable of the current visibility state of the chrome.
