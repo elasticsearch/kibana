@@ -35,6 +35,9 @@ const mockedGenerateEsql = jest.mocked(generateEsql);
 const mockedExecuteEsql = jest.mocked(executeEsql);
 const mockedValidateEsqlQuery = jest.mocked(validateEsqlQuery);
 
+// The real LangGraph compile+invoke can exceed the default 5s budget on first run under CI's parallel worker load.
+jest.setTimeout(30_000);
+
 const RECOVERED_ESQL = 'FROM kibana_sample_data_logs | STATS count = COUNT() BY response.keyword';
 
 const existingSpec = JSON.stringify({
@@ -47,8 +50,7 @@ const existingSpec = JSON.stringify({
 const createMockLogger = (): Logger =>
   ({ debug: jest.fn(), error: jest.fn(), info: jest.fn(), warn: jest.fn() } as unknown as Logger);
 
-// Failing: See https://github.com/elastic/kibana/issues/276821
-describe.skip('recover_esql end-to-end (real build_config + real graph)', () => {
+describe('recover_esql end-to-end (real build_config + real graph)', () => {
   const events = {} as ToolEventEmitter;
   const esClient = { asCurrentUser: {} } as IScopedClusterClient;
 
