@@ -1,0 +1,55 @@
+steps:
+  classify_proposal:
+    step: ai.agent
+    with:
+      can_apply_query: "change_type == 'query' && proposed_query != '' && steps.fetch_rule.output.type == 'query'"
+      can_apply_exception: "change_type == 'exception' && exception_entries != null"
+      can_apply_suppression: "change_type == 'suppression' && suppression_group_by != null"
+      can_apply_disable: "change_type == 'disable'"
+      can_apply_risk_score: "change_type == 'risk_score' && risk_score != null"
+
+  fetch_rule:
+    step: security.find_rules
+    with:
+      id: "{{ rule_id }}"
+
+  review_tuning:
+    step: workflow.wait_for_input
+    prompt: "Analyst review of proposed tuning"
+    timeout_minutes: 60
+
+  apply_query_tuning:
+    step: security.updateRule
+    if: "steps.review_tuning.output.response.approved == true && steps.classify_proposal.output.can_apply_query == true"
+    with:
+      rule_id: "{{ rule_id }}"
+      query: "{{ proposed_query }}"
+
+  apply_exception_tuning:
+    step: security.updateRule
+    if: "steps.review_tuning.output.response.approved == true && steps.classify_proposal.output.can_apply_exception == true"
+    with:
+      rule_id: "{{ rule_id }}"
+      exception_entries: "{{ exception_entries }}"
+
+  apply_suppression_tuning:
+    step: security.updateRule
+    if: "steps.review_tuning.output.response.approved == true && steps.classify_proposal.output.can_apply_suppression == true"
+    with:
+      rule_id: "{{ rule_id }}"
+      alert_suppression:
+        group_by: "{{ suppression_group_by }}"
+
+  apply_disable_tuning:
+    step: security.updateRule
+    if: "steps.review_tuning.output.response.approved == true && steps.classify_proposal.output.can_apply_disable == true"
+    with:
+      rule_id: "{{ rule_id }}"
+      enabled: false
+
+  apply_risk_score_tuning:
+    step: security.updateRule
+    if: "steps.review_tuning.output.response.approved == true && steps.classify_proposal.output.can_apply_risk_score == true"
+    with:
+      rule_id: "{{ rule_id }}"
+      risk_score: "{{ risk_score }}"

@@ -1,0 +1,52 @@
+steps:
+  classify_proposal:
+    step: ai.agent
+    with:
+      can_apply_query: "change_type == 'query' && proposed_query != '' && steps.fetch_rule.output.type == 'query'"
+      can_apply_exception: "change_type == 'exception' && exception_entries != null"
+      can_apply_suppression: "change_type == 'suppression' && suppression_group_by != null && (steps.fetch_rule.output.type == 'query' || steps.fetch_rule.output.type == 'saved_query' || steps.fetch_rule.output.type == 'eql' || steps.fetch_rule.output.type == 'threshold')"
+      can_apply_risk_score: "change_type == 'risk_score' && proposed_risk_score != null && proposed_severity != null"
+      can_apply_disable: "change_type == 'disable'"
+
+  review_tuning:
+    step: input.wait_for_approval
+    prompt: "Analyst review of proposed rule tuning"
+
+  apply_query_tuning:
+    step: kibana.request
+    if: "steps.review_tuning.output.response.approved == true && steps.classify_proposal.output.can_apply_query == true"
+    with: { tags_to_remove: [] }
+
+  apply_exception_tuning:
+    step: kibana.request
+    if: "steps.review_tuning.output.response.approved == true && steps.classify_proposal.output.can_apply_exception == true"
+    with: { tags_to_remove: [] }
+
+  apply_suppression_tuning:
+    step: kibana.request
+    if: "steps.review_tuning.output.response.approved == true && steps.classify_proposal.output.can_apply_suppression == true"
+    with: { tags_to_remove: [] }
+
+  apply_risk_score_tuning:
+    step: kibana.request
+    if: "steps.review_tuning.output.response.approved == true && steps.classify_proposal.output.can_apply_risk_score == true"
+    with: { tags_to_remove: [] }
+
+  apply_disable_tuning:
+    step: kibana.request
+    # steps.review_tuning.output.response.approved == true
+    if: "steps.classify_proposal.output.can_apply_disable == true"
+    with: { tags_to_remove: [] }
+
+  classify_apply_failures:
+    step: data.set
+    with:
+      query_failed: "steps.classify_proposal.output.can_apply_query == true && steps.apply_query_tuning.error != null"
+      exception_failed: "steps.classify_proposal.output.can_apply_exception == true && steps.apply_exception_tuning.error != null"
+      suppression_failed: "steps.classify_proposal.output.can_apply_suppression == true && steps.apply_suppression_tuning.error != null"
+      risk_score_failed: "steps.classify_proposal.output.can_apply_risk_score == true && steps.apply_risk_score_tuning.error != null"
+      disable_failed: "steps.classify_proposal.output.can_apply_disable == true && steps.apply_disable_tuning.error != null"
+
+  mark_alerts_applied:
+    step: kibana.request
+    if: "steps.classify_apply_failures.output.query_failed != true && steps.classify_apply_failures.output.exception_failed != true && steps.classify_apply_failures.output.suppression_failed != true && steps.classify_apply_failures.output.risk_score_failed != true && steps.classify_apply_failures.output.disable_failed != true"
