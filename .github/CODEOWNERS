@@ -3823,6 +3823,12 @@ x-pack/solutions/observability/plugins/synthetics/server/saved_objects/synthetic
 /.github/workflows/label-scout-prs.yml @elastic/appex-qa
 /.github/labeler-scout.yml @elastic/appex-qa
 
+# AlertZero Eval Coverage Reviewer
+/.github/agents/alertzero-reviewer.md @elastic/security-solution
+/.github/workflows/reviewer-alertzero.md @elastic/security-solution
+/.github/workflows/reviewer-alertzero.lock.yml @elastic/security-solution
+/x-pack/solutions/security/plugins/pnd/.agents/skills/alertzero-eval-coverage-reviewer @elastic/security-solution
+
 # Kibana Localization
 /src/dev/i18n_tools/  @elastic/kibana-localization @elastic/kibana-core
 #CC# /x-pack/platform/plugins/private/translations/ @elastic/kibana-localization @elastic/kibana-core
