@@ -16,6 +16,7 @@ import {
   calculateProceduralFidelityScore,
 } from './scoring';
 import type { CorrectnessAnalysis } from './types';
+import { normalizeCorrectnessAnalysis } from './normalize';
 import { parseSelectedEvaluators } from '../filter';
 
 const QUALITATIVE_EVALUATOR_NAME = 'Correctness Analysis';
@@ -78,7 +79,7 @@ export function createCorrectnessAnalysisEvaluator({
           throw new Error('No tool call found in LLM response');
         }
 
-        return toolCall.function.arguments;
+        return normalizeCorrectnessAnalysis(toolCall.function.arguments);
       }
 
       const correctnessAnalysisResult = await pRetry(runCorrectnessAnalysis, {

@@ -43,12 +43,14 @@ Follow these steps rigorously:
 
 5.  Provide Justification: For every claim, you MUST provide a `justification_snippet` from the `[Ground Truth Response]` that supports your verdict. If the verdict is `NOT_IN_GROUND_TRUTH`, this field should be `null`.
 
-6.  Final Summary: After analyzing all claims, provide a final summary with two categorical verdicts:
+6.  Final Summary: After analyzing all claims, provide a final summary with two categorical verdicts.
 
-      * `factual_accuracy_summary`:
+      CRITICAL: Summary fields use a DIFFERENT vocabulary from claim-level `verdict`. Never copy claim verdicts (`FULLY_SUPPORTED`, `PARTIALLY_SUPPORTED`, `CONTRADICTED`, `NOT_IN_GROUND_TRUTH`) into `factual_accuracy_summary` or any other summary field.
+
+      * `factual_accuracy_summary` (exactly one of these three strings):
           * `ACCURATE`: All claims are `FULLY_SUPPORTED` or `PARTIALLY_SUPPORTED`.
           * `MINOR_INACCURACIES`: Contains `CONTRADICTED` or `NOT_IN_GROUND_TRUTH` claims that are `peripheral`.
-          * `MAJOR_INACCURACIES`: Contains `CONTRADICTED` or `NOT_IN_GROUND_TRUTH` claims that are `central` to the user's query.
+          * `MAJOR_INACCURACIES`: Contains `CONTRADICTED` or `NOT_IN_GROUND_TRUTH` claims that are `central` to the user's query. (Use this when central claims are `NOT_IN_GROUND_TRUTH`.)
       * `relevance_summary`:
           * `RELEVANT`: The response contains only `central` claims.
           * `PARTIALLY_RELEVANT`: The response answers the core query but also contains one or more `peripheral` claims.

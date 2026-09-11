@@ -39,20 +39,23 @@ export const LlmCorrectnessEvaluationPrompt = createPrompt({
             summary: {
               type: 'object',
               properties: {
+                // Keep as free-form strings (allowed values documented below). Strict enums
+                // caused hard toolValidationError failures when judges copied claim-level
+                // verdicts (e.g. NOT_IN_GROUND_TRUTH) into summary fields.
                 factual_accuracy_summary: {
                   type: 'string',
-                  description: 'Overall factual accuracy assessment.',
-                  enum: ['ACCURATE', 'MINOR_INACCURACIES', 'MAJOR_INACCURACIES'],
+                  description:
+                    'Overall factual accuracy assessment. Must be exactly one of: ACCURATE, MINOR_INACCURACIES, MAJOR_INACCURACIES. Do not use claim verdict values.',
                 },
                 relevance_summary: {
                   type: 'string',
-                  description: 'Overall relevance assessment of the response.',
-                  enum: ['RELEVANT', 'PARTIALLY_RELEVANT', 'IRRELEVANT'],
+                  description:
+                    'Overall relevance assessment of the response. Must be exactly one of: RELEVANT, PARTIALLY_RELEVANT, IRRELEVANT.',
                 },
                 sequence_accuracy_summary: {
                   type: 'string',
-                  description: 'Overall sequence accuracy assessment for procedural queries.',
-                  enum: ['MATCH', 'MISMATCH', 'NOT_APPLICABLE'],
+                  description:
+                    'Overall sequence accuracy assessment for procedural queries. Must be exactly one of: MATCH, MISMATCH, NOT_APPLICABLE.',
                 },
               },
               required: [
