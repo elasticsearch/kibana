@@ -40,7 +40,7 @@ describe('createSkillInvocationEvaluator', () => {
     jest.useRealTimers();
   });
 
-  it('should build a query filtering by skill name in the filestore.read parameters', async () => {
+  it('should build a query filtering by skill name in the skill-loading tool parameters', async () => {
     const evaluator = createSkillInvocationEvaluator({
       traceEsClient: mockEsClient,
       log: mockLog,
@@ -62,7 +62,9 @@ describe('createSkillInvocationEvaluator', () => {
     expect(calledQuery).toContain(`trace.id == "${VALID_TRACE_ID}"`);
     expect(calledQuery).toContain('total_spans = COUNT(*)');
     expect(calledQuery).toContain('attributes.elastic.inference.span.kind == "TOOL"');
-    expect(calledQuery).toContain('attributes.gen_ai.tool.name == "filestore.read"');
+    expect(calledQuery).toContain(
+      'attributes.gen_ai.tool.name IN ("load_skill", "filestore.read")'
+    );
     expect(calledQuery).toContain('*/data-exploration/SKILL.md*');
   });
 
@@ -160,6 +162,37 @@ describe('createSkillInvocationEvaluator', () => {
 
     expect(result.score).toBe(1);
     expect(mockEsClient.esql.query).toHaveBeenCalledTimes(2);
+  });
+
+  it('detects a skill loaded through load_skill, not just filestore.read', async () => {
+    // Agent Builder activates a skill by calling `load_skill` with a
+    // `{"skill":"<name>"}` argument. Matching only `filestore.read` against a
+    // `/<name>/SKILL.md` path makes this evaluator score 0 for every model on
+    // every run, which is what golden shows: 415 observations, never a 1.
+    const evaluator = createSkillInvocationEvaluator({
+      traceEsClient: mockEsClient,
+      log: mockLog,
+      skillName: 'data-exploration',
+    });
+
+    (mockEsClient.esql.query as jest.Mock).mockResolvedValueOnce({
+      columns: [
+        { name: 'total_spans', type: 'long' },
+        { name: 'total_tool_spans', type: 'long' },
+        { name: 'skill_invoked', type: 'long' },
+      ],
+      values: [[50, 3, 1]],
+    });
+
+    const promise = evaluateWith(evaluator, VALID_TRACE_ID);
+    await jest.advanceTimersByTimeAsync(60_000);
+    await promise;
+
+    const sentQuery = (mockEsClient.esql.query as jest.Mock).mock.calls[0][0].query as string;
+
+    expect(sentQuery).toContain('load_skill');
+    expect(sentQuery).toContain('"skill\\":\\"data-exploration');
+    expect(sentQuery).toContain('/data-exploration/SKILL.md');
   });
 
   it('should include the skill name in the evaluator name', () => {
