@@ -128,6 +128,8 @@ export const getAlertDetailsContextHandler = (
 
     const dataFetchers: Array<() => Promise<AlertDetailsContextualInsight>> = [];
 
+    const hasEntityFilters = !!(serviceName || hostName || containerId || kubernetesPodName);
+
     // service summary
     if (serviceName) {
       dataFetchers.push(async () => {
@@ -166,69 +168,71 @@ export const getAlertDetailsContextHandler = (
       });
     }
 
-    // log rate analysis
-    dataFetchers.push(async () => {
-      const { logRateAnalysisType, significantItems } = await getLogRateAnalysisForAlert({
-        esClient,
-        logSourcesService,
-        arguments: {
-          alertStartedAt: moment(alertStartedAt).toISOString(),
-          alertRuleParameterTimeSize: query.alert_rule_parameter_time_size
-            ? parseInt(query.alert_rule_parameter_time_size, 10)
-            : undefined,
-          alertRuleParameterTimeUnit: query.alert_rule_parameter_time_unit,
-          entities: {
-            'service.name': serviceName,
-            'host.name': hostName,
-            'container.id': containerId,
-            'kubernetes.pod.name': kubernetesPodName,
+    if (hasEntityFilters) {
+      // log rate analysis
+      dataFetchers.push(async () => {
+        const { logRateAnalysisType, significantItems } = await getLogRateAnalysisForAlert({
+          esClient,
+          logSourcesService,
+          arguments: {
+            alertStartedAt: moment(alertStartedAt).toISOString(),
+            alertRuleParameterTimeSize: query.alert_rule_parameter_time_size
+              ? parseInt(query.alert_rule_parameter_time_size, 10)
+              : undefined,
+            alertRuleParameterTimeUnit: query.alert_rule_parameter_time_unit,
+            entities: {
+              'service.name': serviceName,
+              'host.name': hostName,
+              'container.id': containerId,
+              'kubernetes.pod.name': kubernetesPodName,
+            },
           },
-        },
-      });
+        });
 
-      if (logRateAnalysisType !== 'spike' || significantItems.length === 0) {
+        if (logRateAnalysisType !== 'spike' || significantItems.length === 0) {
+          return {
+            key: 'logRateAnalysis',
+            description:
+              'Log rate analysis did not identify any significant metadata or log patterns.',
+            data: [],
+          };
+        }
+
         return {
           key: 'logRateAnalysis',
-          description:
-            'Log rate analysis did not identify any significant metadata or log patterns.',
-          data: [],
+          description: `Statistically significant log metadata and log message patterns occurring in the lookback period before the alert was triggered.`,
+          data: significantItems,
         };
-      }
-
-      return {
-        key: 'logRateAnalysis',
-        description: `Statistically significant log metadata and log message patterns occurring in the lookback period before the alert was triggered.`,
-        data: significantItems,
-      };
-    });
-
-    // log categories
-    dataFetchers.push(async () => {
-      const downstreamDependencies = await downstreamDependenciesPromise;
-      const { logCategories, entities } = await getLogCategories({
-        apmEventClient,
-        esClient,
-        logSourcesService,
-        arguments: {
-          start: moment(alertStartedAt).subtract(15, 'minute').toISOString(),
-          end: alertStartedAt,
-          entities: {
-            'service.name': serviceName,
-            'host.name': hostName,
-            'container.id': containerId,
-            'kubernetes.pod.name': kubernetesPodName,
-          },
-        },
       });
 
-      const entitiesAsString = entities.map(({ key, value }) => `${key}:${value}`).join(', ');
+      // log categories
+      dataFetchers.push(async () => {
+        const downstreamDependencies = await downstreamDependenciesPromise;
+        const { logCategories, entities } = await getLogCategories({
+          apmEventClient,
+          esClient,
+          logSourcesService,
+          arguments: {
+            start: moment(alertStartedAt).subtract(15, 'minute').toISOString(),
+            end: alertStartedAt,
+            entities: {
+              'service.name': serviceName,
+              'host.name': hostName,
+              'container.id': containerId,
+              'kubernetes.pod.name': kubernetesPodName,
+            },
+          },
+        });
 
-      return {
-        key: 'logCategories',
-        description: `Log events occurring up to 15 minutes before the alert was triggered. Filtered by the entities: ${entitiesAsString}`,
-        data: logCategoriesWithDownstreamServiceName(logCategories, downstreamDependencies),
-      };
-    });
+        const entitiesAsString = entities.map(({ key, value }) => `${key}:${value}`).join(', ');
+
+        return {
+          key: 'logCategories',
+          description: `Log events occurring up to 15 minutes before the alert was triggered. Filtered by the entities: ${entitiesAsString}`,
+          data: logCategoriesWithDownstreamServiceName(logCategories, downstreamDependencies),
+        };
+      });
+    }
 
     // apm errors
     if (serviceName) {
