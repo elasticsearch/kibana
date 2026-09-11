@@ -41,6 +41,12 @@ describe('createInitialState', () => {
     expect(state.queryCommitted).toBe(true);
   });
 
+  it('sets queryCommitted true in clone mode without aliasing clone to edit', () => {
+    const state = createInitialState({ mode: 'clone', initialKind: 'signal' });
+
+    expect(state.queryCommitted).toBe(true);
+  });
+
   it('keeps the query sandbox closed in create mode', () => {
     const state = createInitialState({ mode: 'create' });
 

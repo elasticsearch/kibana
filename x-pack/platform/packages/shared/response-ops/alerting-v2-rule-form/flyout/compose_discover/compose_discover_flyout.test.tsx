@@ -510,6 +510,28 @@ describe('ComposeDiscoverFlyout', () => {
         expect.objectContaining({ isEditing: false })
       );
     });
+
+    it('treats the cloned query as committed', () => {
+      renderFlyout({
+        mode: 'clone',
+        rule: {
+          id: 'rule-1',
+          kind: 'signal',
+          enabled: true,
+          metadata: { name: 'CPU high', version: 1, owner: 'test', tags: [] },
+          time_field: '@timestamp',
+          schedule: { every: '1m', lookback: '5m' },
+          query: { format: 'standalone', breach: { query: 'FROM logs-* | LIMIT 1' } },
+          created_by: 'test',
+          created_at: '2026-01-01T00:00:00Z',
+          updated_by: 'test',
+          updated_at: '2026-01-01T00:00:00Z',
+        } as ComposeDiscoverFlyoutProps['rule'],
+      });
+
+      expect(getLatestFormProps().state.queryCommitted).toBe(true);
+      expect(getLatestFormProps().isEditing).toBe(false);
+    });
   });
 
   describe('footer navigation', () => {
