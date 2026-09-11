@@ -1094,6 +1094,7 @@
     "@kbn/saved-objects-tagging-plugin": "workspace:*",
     "@kbn/saved-search-component": "workspace:*",
     "@kbn/saved-search-plugin": "workspace:*",
+    "@kbn/schema-string-helpers": "workspace:*",
     "@kbn/screenshot-mode-example-plugin": "workspace:*",
     "@kbn/screenshot-mode-plugin": "workspace:*",
     "@kbn/screenshotting-example-plugin": "workspace:*",

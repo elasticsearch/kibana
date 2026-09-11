@@ -868,6 +868,7 @@ packages:
   - 'src/platform/packages/shared/kbn-rule-data-utils'
   - 'src/platform/packages/shared/kbn-safer-lodash-set'
   - 'src/platform/packages/shared/kbn-saved-search-component'
+  - 'src/platform/packages/shared/kbn-schema-string-helpers'
   - 'src/platform/packages/shared/kbn-scout'
   - 'src/platform/packages/shared/kbn-scout-synthtrace'
   - 'src/platform/packages/shared/kbn-search-agent'

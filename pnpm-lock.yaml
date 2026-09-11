@@ -3002,6 +3002,9 @@ importers:
       '@kbn/saved-search-plugin':
         specifier: workspace:*
         version: link:src/platform/plugins/shared/saved_search
+      '@kbn/schema-string-helpers':
+        specifier: workspace:*
+        version: link:src/platform/packages/shared/kbn-schema-string-helpers
       '@kbn/screenshot-mode-example-plugin':
         specifier: workspace:*
         version: link:examples/screenshot_mode_example
@@ -7940,6 +7943,8 @@ importers:
   src/platform/packages/shared/kbn-safer-lodash-set: {}
 
   src/platform/packages/shared/kbn-saved-search-component: {}
+
+  src/platform/packages/shared/kbn-schema-string-helpers: {}
 
   src/platform/packages/shared/kbn-scout: {}
 

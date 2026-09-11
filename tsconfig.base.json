@@ -2233,6 +2233,8 @@
       "@kbn/saved-search-component/*": ["./src/platform/packages/shared/kbn-saved-search-component/*"],
       "@kbn/saved-search-plugin": ["./src/platform/plugins/shared/saved_search"],
       "@kbn/saved-search-plugin/*": ["./src/platform/plugins/shared/saved_search/*"],
+      "@kbn/schema-string-helpers": ["./src/platform/packages/shared/kbn-schema-string-helpers"],
+      "@kbn/schema-string-helpers/*": ["./src/platform/packages/shared/kbn-schema-string-helpers/*"],
       "@kbn/scout": ["./src/platform/packages/shared/kbn-scout"],
       "@kbn/scout/*": ["./src/platform/packages/shared/kbn-scout/*"],
       "@kbn/scout-info": ["./src/platform/packages/private/kbn-scout-info"],

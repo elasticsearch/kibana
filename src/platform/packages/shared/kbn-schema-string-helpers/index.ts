@@ -7,17 +7,10 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
-export { offeringBasedSchema } from './offering_based_schema';
 export {
-  savedObjectId,
-  savedObjectType,
-  savedObjectVersion,
-  spaceId,
-  displayName,
-  description,
-  searchFilter,
-  aggregation,
-  querySortField,
-  unboundedString,
-} from './string_helpers';
-export type { SchemaHelper, StringWarnOptions, UnboundedStringOptions } from './string_helpers';
+  STRING_HELPER_DEFAULTS,
+  getStringHelperLimits,
+  assertUnboundedStringReason,
+} from './limits';
+export type { StringHelperName, StringHelperLimits } from './limits';
+export { reportStringLengthViolation } from './report_string_length_violation';

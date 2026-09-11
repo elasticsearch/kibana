@@ -9,6 +9,18 @@
 
 import type { Duration } from 'moment';
 import type { Stream } from 'stream';
+import {
+  savedObjectId,
+  savedObjectType,
+  savedObjectVersion,
+  spaceId,
+  displayName,
+  description,
+  searchFilter,
+  aggregation,
+  querySortField,
+  unboundedString,
+} from './src/helpers';
 
 import type { ByteSizeValue } from './src/byte_size_value';
 import type { Reference } from './src/references';
@@ -68,7 +80,20 @@ export type { SchemaValidationOptions } from './src/types';
 export { ByteSizeValue } from './src/byte_size_value';
 export { SchemaTypeError, ValidationError } from './src/errors';
 export { isConfigSchema } from './src/typeguards';
-export { offeringBasedSchema } from './src/helpers';
+export {
+  offeringBasedSchema,
+  savedObjectId,
+  savedObjectType,
+  savedObjectVersion,
+  spaceId,
+  displayName,
+  description,
+  searchFilter,
+  aggregation,
+  querySortField,
+  unboundedString,
+} from './src/helpers';
+export type { SchemaHelper, StringWarnOptions, UnboundedStringOptions } from './src/helpers';
 
 function any(options?: TypeOptions<any>) {
   return new AnyType(options);
@@ -769,6 +794,16 @@ export const schema = {
   recordOf,
   stream,
   siblingRef,
+  savedObjectId,
+  savedObjectType,
+  savedObjectVersion,
+  spaceId,
+  displayName,
+  description,
+  searchFilter,
+  aggregation,
+  querySortField,
+  unboundedString,
   string,
   uri,
 };

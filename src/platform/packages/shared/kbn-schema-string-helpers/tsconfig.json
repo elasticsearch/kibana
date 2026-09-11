@@ -13,5 +13,5 @@
   "exclude": [
     "target/**/*"
   ],
-  "kbn_references": ["@kbn/schema-string-helpers"]
+  "kbn_references": []
 }
