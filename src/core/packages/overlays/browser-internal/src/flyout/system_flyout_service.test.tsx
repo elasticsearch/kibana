@@ -331,16 +331,22 @@ describe('SystemFlyoutService', () => {
       expect(ref.onClose).toBeInstanceOf(Promise);
     });
 
-    it('accepts a custom onClose handler', () => {
+    it('accepts a custom onClose handler', async () => {
       const onClose = jest.fn();
       const ref = systemFlyouts.open(<div>System flyout content</div>, {
         onClose,
       });
+      const refClosed = jest.fn();
+      ref.onClose.then(refClosed);
 
-      // The onClose handler is passed to EuiFlyout
-      // It will be called when the flyout's close button is clicked
-      expect(ref).toHaveProperty('close');
-      expect(ref).toHaveProperty('onClose');
+      const euiFlyoutElement = mockReactDomRender.mock.calls[0][0].props.children;
+      euiFlyoutElement.props.onClose();
+
+      expect(onClose).toHaveBeenCalledTimes(1);
+      expect(onClose).toHaveBeenCalledWith();
+
+      await ref.onClose;
+      expect(refClosed).toHaveBeenCalledTimes(1);
     });
 
     describe('with multiple active flyouts', () => {

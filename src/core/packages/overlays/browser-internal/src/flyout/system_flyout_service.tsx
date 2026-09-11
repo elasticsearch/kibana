@@ -72,9 +72,7 @@ export class SystemFlyoutService {
         });
 
         const onCloseFlyout = () => {
-          if (options.onClose) {
-            options.onClose(flyoutRef);
-          }
+          options.onClose?.();
           flyoutRef.close();
         };
 

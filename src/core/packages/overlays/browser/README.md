@@ -190,3 +190,11 @@ overlays.openSystemFlyout(<MyContent />, {
 
 - **`openFlyout`**: Traditional method that requires `toMountPoint`. Opens flyouts with `session="never"`. Content should include `EuiFlyoutHeader` and `EuiFlyoutBody`. Optionally include `EuiFlyoutFooter`.
 - **`openSystemFlyout`**: Modern method that accepts React elements directly. Opens flyouts with `session="start"` for full EUI Flyout System integration, supporting features like flyout navigation and stacking. Content should not include `EuiFlyoutHeader`, as an `EuiFlyoutMenu` is created automatically from the `title` option. Content should include `EuiFlyoutBody`, and optionally `EuiFlyoutFooter`.
+
+#### `onClose`
+
+The two methods hand the handler different arguments, and the difference is meaningful.
+
+`openFlyout` passes the `OverlayRef` and leaves the flyout open until something calls `close()` on it. A handler that never calls `close()` keeps the flyout open, which is how callers such as the Data View Field Editor block dismissal while there are unsaved changes.
+
+`openSystemFlyout` passes nothing and closes the flyout once the handler returns. Use it to react to a dismissal, not to gate one. Blocking dismissal needs a `beforeClose` affordance in the EUI Flyout Manager, tracked in [#290414](https://github.com/elastic/kibana/issues/290414).
