@@ -6,7 +6,7 @@
  */
 
 import type { SmlTypeDefinition } from '@kbn/agent-builder-sml-plugin/server';
-import { kibanaPermissions } from '@kbn/agent-builder-sml-plugin/server';
+import { getSmlOriginId, kibanaPermissions } from '@kbn/agent-builder-sml-plugin/server';
 import {
   DASHBOARD_ATTACHMENT_TYPE,
   dashboardStateToAttachmentData,
@@ -110,12 +110,10 @@ export const createDashboardSmlType = ({
   getPermissions: () => kibanaPermissions({ kiType: DASHBOARD_KI_TYPE }),
 
   toAttachment: async (item, context) => {
+    const originId = getSmlOriginId(item);
     try {
       const dashboardClient = await getDashboardClient();
-      const dashboard = await dashboardClient.read(
-        context.savedObjectsClient,
-        item.origin_id ?? ''
-      );
+      const dashboard = await dashboardClient.read(context.savedObjectsClient, originId);
 
       return {
         type: DASHBOARD_ATTACHMENT_TYPE,
@@ -124,7 +122,7 @@ export const createDashboardSmlType = ({
       };
     } catch (error) {
       throw new Error(
-        `SML dashboard: failed to get data for '${item.origin_id}': ${(error as Error).message}`
+        `SML dashboard: failed to get data for '${originId}': ${(error as Error).message}`
       );
     }
   },

@@ -5,12 +5,24 @@
  * 2.0.
  */
 
-import type { Logger, ElasticsearchClient } from '@kbn/core/server';
-import type { IndexStorageSettings } from '@kbn/storage-adapter';
-import { StorageIndexAdapter, types } from '@kbn/storage-adapter';
-import type { SmlDocument } from './types';
+import type { ElasticsearchClient } from '@kbn/core-elasticsearch-server';
+import type { Logger } from '@kbn/logging';
+import { isResponseError } from '@kbn/es-errors';
 
-export const smlIndexName = 'ai-index-idx-sml-data';
+/** The Elastic AI index. Kibana owns its creation; Elasticsearch owns its mappings. */
+export const smlIndexName = '.ai-index-idx-elastic-index';
+
+/**
+ * Elasticsearch-managed index template that owns the SML data index mappings (`ai-index@mappings`
+ * plus `ai-index-managed@mappings`). SML has no template of its own.
+ */
+const smlIndexTemplateName = 'ai-index-idx-managed';
+
+/**
+ * Records in the index's own `_meta` which template version its mappings came from, so a
+ * template bump can be detected without diffing mappings Elasticsearch has already normalized.
+ */
+const templateVersionMetaKey = 'ai_index_template_version';
 
 /**
  * Plain description of what this index holds. Shared by the Context Engine AI index registration
@@ -20,99 +32,122 @@ export const smlAiIndexDescription =
   'Kibana resources available for use in Agent Builder, including dashboards, visualizations, ' +
   'connectors, workflows, alerting rules, action policies, and significant events.';
 
-const SEMANTIC_MULTI_FIELD = {
-  semantic: types.semantic_text({}),
+const isAlreadyExists = (error: unknown): boolean =>
+  isResponseError(error) &&
+  error.statusCode === 400 &&
+  (error.body as { error?: { type?: string } } | undefined)?.error?.type ===
+    'resource_already_exists_exception';
+
+/** Version of the Elasticsearch-managed template, `undefined` when it is not installed. */
+const getTemplateVersion = async (esClient: ElasticsearchClient): Promise<number | undefined> => {
+  try {
+    const { index_templates: templates } = await esClient.indices.getIndexTemplate({
+      name: smlIndexTemplateName,
+    });
+    return templates[0]?.index_template.version;
+  } catch (error) {
+    if (isResponseError(error) && error.statusCode === 404) return undefined;
+    throw error;
+  }
 };
 
-/**
- * Single source of truth for SML data index field mappings (storage + Elasticsearch).
- *
- * Each text source field carries a `semantic` multi-field (`title.semantic`,
- * `description.semantic`, `content.semantic`) so the RRF retriever can address
- * them independently without a separate top-level field or `copy_to`.
- */
-const smlStorageSchemaProperties = {
-  id: types.keyword({}),
-  /** Normalized to lowercase so the @ menu's `prefix` query is case-insensitive. */
-  type: types.keyword({ normalizer: 'lowercase' }),
-  title: types.text({ fields: SEMANTIC_MULTI_FIELD }),
-  origin: types.object({
-    properties: {
-      uri: types.keyword({}),
-    },
-  }),
-  content: types.text({ fields: SEMANTIC_MULTI_FIELD }),
-  description: types.text({ fields: SEMANTIC_MULTI_FIELD }),
-  tags: types.keyword({ normalizer: 'lowercase' }),
-  references: types.object({
-    properties: {
-      uri: types.keyword({}),
-    },
-  }),
-  extended_attrs: types.flattened({}),
-  user_id: types.keyword({}),
-  created_at: types.date({}),
-  updated_at: types.date({}),
-  permissions: types.object({
-    properties: {
-      kibana: types.object({
-        properties: {
-          /**
-           * One element per space, each listing the actions that space requires plus a count of
-           * them.
-           *
-           * Caveat: ES|QL cannot read `nested` leaves (its index resolution filters them out), so
-           * the read path authorizes via a `nested` Query DSL filter pushed into the `_query`
-           * `filter` parameter rather than a WHERE clause or a projected column.
-           */
-          privileges: types.nested({
-            properties: {
-              name: types.keyword({}),
-              space: types.keyword({}),
-              count: types.long({}),
-            },
-          }),
-        },
-      }),
-    },
-  }),
-  ingestion_method: types.keyword({}),
+/** Template version the live mappings were built from, `undefined` when never stamped. */
+const getAppliedTemplateVersion = async (
+  esClient: ElasticsearchClient
+): Promise<number | undefined> => {
+  const response = await esClient.indices.getMapping({ index: smlIndexName });
+  const meta = response[smlIndexName]?.mappings._meta as Record<string, unknown> | undefined;
+  const version = meta?.[templateVersionMetaKey];
+  return typeof version === 'number' ? version : undefined;
 };
 
-export const storageSettings = {
-  name: smlIndexName,
-  /**
-   * Ensure the SML backing index name has a higher priority than built-in AI index templates.
-   */
-  priority: 600,
-  schema: {
-    properties: smlStorageSchemaProperties,
-  },
-} satisfies IndexStorageSettings;
-
-/**
- * Elasticsearch `mappings` block for the SML data index (e.g. integration tests, tooling).
- * Field definitions match `smlStorageSchemaProperties` / `storageSettings`.
- */
-export const smlElasticsearchIndexMappings = {
-  dynamic: 'strict' as const,
-  properties: smlStorageSchemaProperties,
-};
-
-type SmlStorageSettings = typeof storageSettings;
-
-export type SmlStorage = StorageIndexAdapter<SmlStorageSettings, SmlDocument>;
-
-export const createSmlStorage = ({
-  logger,
+/** Creates the index bare — `smlIndexTemplateName` supplies the mappings. */
+const createIndex = async ({
   esClient,
+  logger,
+  templateVersion,
 }: {
-  logger: Logger;
   esClient: ElasticsearchClient;
-}): SmlStorage => {
-  return new StorageIndexAdapter<SmlStorageSettings, SmlDocument>(
-    esClient,
-    logger,
-    storageSettings
+  logger: Logger;
+  templateVersion: number | undefined;
+}): Promise<void> => {
+  logger.info(`SML storage: creating index '${smlIndexName}'`);
+
+  try {
+    await esClient.indices.create({ index: smlIndexName });
+  } catch (error) {
+    // Another Kibana node won the race; the version stamp below still applies.
+    if (!isAlreadyExists(error)) throw error;
+  }
+
+  await esClient.indices.putMapping({
+    index: smlIndexName,
+    _meta: { [templateVersionMetaKey]: templateVersion },
+  });
+};
+
+const applyTemplateMappings = async ({
+  esClient,
+  templateVersion,
+}: {
+  esClient: ElasticsearchClient;
+  templateVersion: number | undefined;
+}): Promise<void> => {
+  const { template } = await esClient.indices.simulateIndexTemplate({ name: smlIndexName });
+
+  // Only the two keys the AI index components actually set; not every `MappingTypeMapping` key
+  // is valid on put_mapping.
+  await esClient.indices.putMapping({
+    index: smlIndexName,
+    dynamic: template?.mappings?.dynamic,
+    properties: template?.mappings?.properties,
+    _meta: { [templateVersionMetaKey]: templateVersion },
+  });
+};
+
+/**
+ * Create the SML data index when missing, and bring its mappings in line with the
+ * Elasticsearch-managed template.
+ *
+ * Elasticsearch applies templates at index creation only, so a template version bump has to be
+ * pushed onto the live index. A rejected push is logged and left alone rather than resolved by
+ * dropping the index: crawled entries would be rebuilt, but `ingestion_method: 'manual'` entries
+ * are user-curated and unrecoverable.
+ */
+export const reconcileSmlIndex = async ({
+  esClient,
+  logger,
+}: {
+  esClient: ElasticsearchClient;
+  logger: Logger;
+}): Promise<void> => {
+  const templateVersion = await getTemplateVersion(esClient);
+
+  if (!(await esClient.indices.exists({ index: smlIndexName }))) {
+    await createIndex({ esClient, logger, templateVersion });
+    return;
+  }
+
+  const appliedVersion = await getAppliedTemplateVersion(esClient);
+  if (appliedVersion === templateVersion) return;
+
+  logger.info(
+    `SML storage: index '${smlIndexName}' carries template version ${
+      appliedVersion ?? 'unknown'
+    } — applying version ${templateVersion ?? 'unknown'}`
   );
+
+  try {
+    await applyTemplateMappings({ esClient, templateVersion });
+  } catch (error) {
+    if (!isResponseError(error)) throw error;
+
+    // Deliberately not stamped, so this retries on the next crawl tick.
+    logger.error(
+      `SML storage: could not apply template version ${templateVersion ?? 'unknown'} to ` +
+        `'${smlIndexName}' (${error.statusCode} ${
+          (error.body as { error?: { type?: string } })?.error?.type ?? error.message
+        }) — it keeps its current mappings.`
+    );
+  }
 };

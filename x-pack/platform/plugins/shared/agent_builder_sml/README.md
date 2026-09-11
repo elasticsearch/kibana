@@ -71,6 +71,6 @@ SML was previously also gated behind a dedicated `contextEngine:enabled` setting
 
 ## Index naming
 
-SML data is stored in `.chat-sml-data` and crawler state in `.chat-sml-crawler-state`, using the `.chat-*` system index prefix registered in the Elasticsearch `kibana_system` role.
+SML data is stored in `.ai-index-idx-elastic-index` — the Elastic AI index. Kibana creates it bare and the Elasticsearch-managed `ai-index-idx-managed` index template owns its mappings; the `kibana_system` role grants access through its `.ai-index-idx-*` pattern.
 
-The `permissions` mapping no longer has an `elasticsearch.indices` sub-object (removed once every registered type was confirmed to hardcode it empty) — if a `.chat-sml-data` document from before that change ever populated `permissions.elasticsearch.indices`, it needs a reindex before this mapping change is safe; this has not been verified against a live deployment.
+Crawler state is stored separately in `.chat-sml-crawler-state`, using the `.chat-*` system index prefix registered in the Elasticsearch `kibana_system` role.

@@ -6,7 +6,7 @@
  */
 
 import type { SmlTypeDefinition } from '@kbn/agent-builder-sml-plugin/server';
-import { kibanaPermissions } from '@kbn/agent-builder-sml-plugin/server';
+import { getSmlOriginId, kibanaPermissions } from '@kbn/agent-builder-sml-plugin/server';
 import type { SortResults } from '@elastic/elasticsearch/lib/api/types';
 import { WORKFLOW_YAML_ATTACHMENT_TYPE } from '@kbn/workflows/common/constants';
 import { WORKFLOW_KI_TYPE } from '@kbn/agent-builder-elastic-ai-index-ki-types';
@@ -123,7 +123,7 @@ export const createWorkflowSmlType = (api: WorkflowsManagementApi): SmlTypeDefin
   getPermissions: () => kibanaPermissions({ kiType: WORKFLOW_KI_TYPE }),
 
   toAttachment: async (item, context) => {
-    const workflow = await api.getWorkflow(item.origin_id ?? '', context.spaceId);
+    const workflow = await api.getWorkflow(getSmlOriginId(item), context.spaceId);
     if (!workflow) return undefined;
 
     return {

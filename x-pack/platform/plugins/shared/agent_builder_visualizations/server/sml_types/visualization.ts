@@ -6,7 +6,7 @@
  */
 
 import type { SmlTypeDefinition } from '@kbn/agent-builder-sml-plugin/server';
-import { kibanaPermissions } from '@kbn/agent-builder-sml-plugin/server';
+import { getSmlOriginId, kibanaPermissions } from '@kbn/agent-builder-sml-plugin/server';
 import { isSavedObjectErrorResult } from '@kbn/core/server';
 import type { LensAttributes } from '@kbn/lens-embeddable-utils';
 import { VISUALIZATION_KI_TYPE } from '@kbn/agent-builder-elastic-ai-index-ki-types';
@@ -73,7 +73,8 @@ export const visualizationSmlType: SmlTypeDefinition = {
   getPermissions: () => kibanaPermissions({ kiType: VISUALIZATION_KI_TYPE }),
 
   toAttachment: async (item, context) => {
-    const resolveResult = await context.savedObjectsClient.resolve('lens', item.origin_id ?? '');
+    const originId = getSmlOriginId(item);
+    const resolveResult = await context.savedObjectsClient.resolve('lens', originId);
     const savedObject = resolveResult.saved_object;
     if (isSavedObjectErrorResult(savedObject)) {
       return undefined;
@@ -88,7 +89,7 @@ export const visualizationSmlType: SmlTypeDefinition = {
     return {
       type: VISUALIZATION_KI_TYPE,
       data: {
-        query: lensAttributes.title ?? item.origin_id,
+        query: lensAttributes.title ?? originId,
         visualization: lensApiConfig as unknown as Record<string, unknown>,
         chart_type: toSupportedChartType(lensApiConfig.type),
         esql: extractEsqlFromLens(lensAttributes),

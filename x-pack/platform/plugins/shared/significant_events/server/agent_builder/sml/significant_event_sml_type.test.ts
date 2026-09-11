@@ -140,14 +140,16 @@ describe('createSignificantEventSmlType', () => {
     await expect(
       smlType.toAttachment(
         {
-          id: 'chunk-1',
           type: SIGNIFICANT_EVENT_KI_TYPE,
           title: 'Payment outage',
-          origin_id: 'payment-outage',
-          origin: { uri: `${SIGNIFICANT_EVENT_KI_TYPE}://payment-outage` },
           content: 'Payment outage',
-          created_at: '2026-01-01T00:00:00.000Z',
-          updated_at: '2026-01-01T00:00:00.000Z',
+          attributes: {
+            id: 'chunk-1',
+            origin: { uri: `${SIGNIFICANT_EVENT_KI_TYPE}://payment-outage` },
+            created_at: '2026-01-01T00:00:00.000Z',
+            updated_at: '2026-01-01T00:00:00.000Z',
+            ingestion_method: 'manual',
+          },
           permissions: {
             kibana: {
               privileges: [
@@ -159,7 +161,6 @@ describe('createSignificantEventSmlType', () => {
               ],
             },
           },
-          ingestion_method: 'manual',
         },
         {
           request: {} as KibanaRequest,

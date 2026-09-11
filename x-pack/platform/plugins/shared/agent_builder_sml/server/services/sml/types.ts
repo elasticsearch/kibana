@@ -74,7 +74,7 @@ export interface SmlEntry {
    * keyword-searchable for sub-path filtering. SML treats this opaquely;
    * type writers own its shape.
    */
-  extended_attrs?: Record<string, unknown>;
+  attributes?: Record<string, unknown>;
   /** Owner or last-modifier user id when known */
   user_id?: string;
   /** Other SML entries this item references. Each entry carries a `uri` field. */
@@ -194,46 +194,53 @@ export interface SmlTypeDefinition {
 export type SmlIngestionMethod = 'manual' | 'crawled';
 
 /**
- * An SML document as stored in the system index.
+ * An SML document, exactly as stored in the index and as handed to consumers (notably
+ * {@link SmlTypeDefinition.toAttachment}).
+ *
+ * The index is `dynamic: strict` with mappings owned by the shared AI index templates, so SML's
+ * own bookkeeping lives under the `flattened` `attributes` field. Query DSL can address those
+ * keys as `attributes.x`; ES|QL needs `FIELD_EXTRACT(attributes, "x")` — see `buildSmlEsqlQuery`.
  */
 export interface SmlDocument {
-  /** Unique id of the entry */
-  id: string;
   /** SML type (e.g., 'visualization', 'dashboard') */
   type: string;
   /** Display title */
   title: string;
-  /** Raw origin id (e.g. saved object ID). Not stored in the index — derived at read time from `origin.uri`. */
-  origin_id?: string;
-  /** Self-describing URI for the origin, e.g. `${type}://${origin_id}`. */
-  origin: { uri: string };
   /** Searchable content (`semantic_text` in the index) */
   content: string;
   /** Semantic summary (`semantic_text` in the index) */
   description?: string;
   /** Free-form labels */
   tags?: string[];
-  /** Type-specific structured data (`flattened` mapping) */
-  extended_attrs?: Record<string, unknown>;
-  /** Owner or last-modifier user id */
-  user_id?: string;
   /** Other SML entries this item references. Each entry carries a `uri` field; the object shape allows sub-fields (e.g. relationship kind) without a future migration. */
   references?: Array<{ uri: string }>;
-  /** Timestamp when first created */
-  created_at: string;
-  /** Timestamp when last updated */
-  updated_at: string;
   /**
    * Permissions required to access this entry. See {@link SmlPermissions} for the per-space group shape.
    */
   permissions: SmlPermissions;
+  /** SML bookkeeping keys, written over the type writer's own {@link SmlEntry.attributes}. */
+  attributes: SmlDocumentAttributes;
+}
+
+/** The `attributes` payload of an {@link SmlDocument}. */
+export interface SmlDocumentAttributes extends Record<string, unknown> {
+  /** Unique id of the entry */
+  id: string;
+  /** Self-describing URI for the origin, e.g. `${type}://${originId}`. `getSmlOriginId` parses the raw origin id back out. */
+  origin: { uri: string };
+  /** Timestamp when first created */
+  created_at: string;
+  /** Timestamp when last updated */
+  updated_at: string;
   /** How this entry was produced. */
   ingestion_method: SmlIngestionMethod;
+  /** Owner or last-modifier user id */
+  user_id?: string;
 }
 
 /**
  * Compact SML search result — LLM-shaped. Drops the full `content` blob, the
- * full `extended_attrs`, and bookkeeping fields. Callers fetch full content via the
+ * full `attributes`, and bookkeeping fields. Callers fetch full content via the
  * lookup tool (`sml_read`) when they need it.
  *
  * `permissions` is retained here so callers (route / tool wrapper) can apply
@@ -258,7 +265,7 @@ export interface SmlSearchResult {
 /**
  * An SML autocomplete result — narrower than {@link SmlSearchResult}, tuned for
  * @ menu / typeahead rendering. Drops bulk content (`content`, `description`,
- * `extended_attrs`, etc.).
+ * `attributes`, etc.).
  */
 export interface SmlAutocompleteResult {
   id: string;

@@ -28,6 +28,8 @@
     "@kbn/core-logging-server-mocks",
     "@kbn/logging-mocks",
     "@kbn/es-errors",
-    "@kbn/context-engine-plugin"
+    "@kbn/context-engine-plugin",
+    "@kbn/core-elasticsearch-client-server-mocks",
+    "@kbn/core-elasticsearch-server-mocks"
   ]
 }

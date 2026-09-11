@@ -6,7 +6,7 @@
  */
 
 import type { SmlEntry, SmlTypeDefinition } from '@kbn/agent-builder-sml-plugin/server';
-import { kibanaPermissions } from '@kbn/agent-builder-sml-plugin/server';
+import { getSmlOriginId, kibanaPermissions } from '@kbn/agent-builder-sml-plugin/server';
 import { type SignificantEvent } from '@kbn/significant-events-schema';
 import { DEFAULT_SPACE_ID } from '@kbn/core-spaces-common';
 import { SIGNIFICANT_EVENT_KI_TYPE } from '@kbn/agent-builder-elastic-ai-index-ki-types';
@@ -106,11 +106,12 @@ export const createSignificantEventSmlType = ({
     getPermissions: () => kibanaPermissions({ kiType: SIGNIFICANT_EVENT_KI_TYPE }),
 
     toAttachment: async (item, context) => {
-      if (!item.origin_id) {
+      const originId = getSmlOriginId(item);
+      if (!originId) {
         return undefined;
       }
       const { getEventClient } = await getScopedClients({ request: context.request });
-      const { hits } = await getEventClient().findByEventId(item.origin_id);
+      const { hits } = await getEventClient().findByEventId(originId);
       const event = hits.at(-1);
 
       if (!event) {

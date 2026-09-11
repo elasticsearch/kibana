@@ -98,13 +98,9 @@ const runSmlCrawlerSoon = async (kbnClient: KbnClient, typeId: string): Promise<
 // with names, so that combination is only reachable by writing it by hand.
 const indexEntryWithCount = async (sysEsClient: Client, count: number): Promise<void> => {
   const document: SmlDocument = {
-    id: MALFORMED_ENTRY_ID,
     type: SML_TEST_MALFORMED_KI_TYPE,
     title: `${SML_TEST_SEARCH_TOKEN} ${SML_TEST_MALFORMED_KI_TYPE}`,
-    origin: { uri: `${SML_TEST_MALFORMED_KI_TYPE}://${MALFORMED_ENTRY_ID}` },
     content: `${SML_TEST_SEARCH_TOKEN} malformed permission element fixture`,
-    created_at: '2024-01-01T00:00:00.000Z',
-    updated_at: '2024-01-01T00:00:00.000Z',
     permissions: {
       kibana: {
         privileges: [
@@ -112,7 +108,13 @@ const indexEntryWithCount = async (sysEsClient: Client, count: number): Promise<
         ],
       },
     },
-    ingestion_method: 'crawled',
+    attributes: {
+      id: MALFORMED_ENTRY_ID,
+      origin: { uri: `${SML_TEST_MALFORMED_KI_TYPE}://${MALFORMED_ENTRY_ID}` },
+      created_at: '2024-01-01T00:00:00.000Z',
+      updated_at: '2024-01-01T00:00:00.000Z',
+      ingestion_method: 'crawled',
+    },
   };
   await sysEsClient.index({
     index: smlIndexName,
@@ -129,8 +131,7 @@ const indexEntryWithCount = async (sysEsClient: Client, count: number): Promise<
  * No currently shipped SML type omits `getPermissions`, so this is driven by a fixture plugin
  * registering one such type (plus a gated twin as the control).
  */
-// Failing: See https://github.com/elastic/kibana/issues/289967
-apiTest.describe.skip(
+apiTest.describe(
   'Agent Builder — SML type permission contract',
   { tag: [...tags.stateful.classic] },
   () => {

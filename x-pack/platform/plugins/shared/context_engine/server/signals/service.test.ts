@@ -26,7 +26,7 @@ const makeToolCallSignal = (overrides: Partial<Signal> = {}): Signal => ({
   data: {
     tool: 'platform.core.execute_esql',
     query_kind: 'ki_retrieval',
-    target_index: '.ai-index-idx-sml-data',
+    target_index: '.ai-index-idx-elastic-index',
     status: 'Ok',
     looped: false,
     fell_back_to_raw: false,

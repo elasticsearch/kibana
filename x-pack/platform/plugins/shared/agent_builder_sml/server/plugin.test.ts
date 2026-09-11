@@ -27,7 +27,7 @@ describe('AgentBuilderSmlPlugin.setup()', () => {
     expect(registerAiIndex).toHaveBeenCalledTimes(1);
     expect(registerAiIndex).toHaveBeenCalledWith('elastic', {
       description: expect.stringContaining('Agent Builder'),
-      dest: { type: 'index', value: 'ai-index-idx-sml-data' },
+      dest: { type: 'index', value: '.ai-index-idx-elastic-index' },
       automations: [],
       sources: [],
     });

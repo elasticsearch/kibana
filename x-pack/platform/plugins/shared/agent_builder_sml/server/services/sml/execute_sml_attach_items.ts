@@ -95,7 +95,7 @@ export const resolveSmlAttachItems = async ({
           attachment: {
             type: 'text',
             data: { title: smlDoc.title, content: smlDoc.content },
-            origin: smlDoc.origin.uri,
+            origin: smlDoc.attributes.origin.uri,
             description: `${smlDoc.type}/${smlDoc.title}`,
           },
         };
@@ -123,7 +123,7 @@ export const resolveSmlAttachItems = async ({
           attachment: {
             type: convertedAttachment.type,
             data: convertedAttachment.data,
-            origin: convertedAttachment.origin ?? smlDoc.origin.uri,
+            origin: convertedAttachment.origin ?? smlDoc.attributes.origin.uri,
             description: convertedAttachment.description ?? `${smlDoc.type}/${smlDoc.title}`,
           },
         };

@@ -274,17 +274,17 @@ describe('createActionPolicySmlType', () => {
     const buildSmlDocument = (overrides: Partial<{ origin_id: string }> = {}) => {
       const originId = overrides.origin_id ?? 'policy-1';
       return {
-        id: 'sml-1',
         type: ACTION_POLICY_KI_TYPE,
         title: 'Critical alerts → Slack',
-        origin_id: originId,
-        origin: { uri: `${ACTION_POLICY_KI_TYPE}://${originId}` },
         content: '',
-        created_at: '2026-04-10T00:00:00.000Z',
-        updated_at: '2026-04-10T00:00:00.000Z',
-        spaces: ['default'],
         permissions: { kibana: { privileges: [] } },
-        ingestion_method: 'crawled' as const,
+        attributes: {
+          id: 'sml-1',
+          origin: { uri: `${ACTION_POLICY_KI_TYPE}://${originId}` },
+          created_at: '2026-04-10T00:00:00.000Z',
+          updated_at: '2026-04-10T00:00:00.000Z',
+          ingestion_method: 'crawled' as const,
+        },
       };
     };
 
@@ -326,18 +326,13 @@ describe('createActionPolicySmlType', () => {
       expect(result).toBeUndefined();
     });
 
-    it('uses an empty string when the SML document has no origin_id', async () => {
-      // Defensive contract: `toAttachment` is invoked via the SML
-      // service which currently always sets `origin_id`, but the type
-      // is `string | undefined` and a missing value used to crash the
-      // call. Verifying the helper gracefully threads an empty string
-      // down to `getActionPolicy` so a refactor that loosens that
-      // invariant fails loud rather than 500-ing in production.
+    it('uses an empty string when the origin uri carries no id', async () => {
+      // Defensive contract: the origin id is parsed out of `attributes.origin.uri`. A malformed
+      // uri must thread an empty string down to `getActionPolicy` rather than crash the call.
       getActionPolicy.mockResolvedValueOnce({ ...baseActionPolicyAttrs, id: '' });
 
       const document = buildSmlDocument();
-      // @ts-expect-error — intentionally clearing origin_id for the test
-      delete document.origin_id;
+      document.attributes.origin.uri = `${ACTION_POLICY_KI_TYPE}://`;
 
       await buildDefinition().toAttachment(document, buildToAttachmentContext());
 

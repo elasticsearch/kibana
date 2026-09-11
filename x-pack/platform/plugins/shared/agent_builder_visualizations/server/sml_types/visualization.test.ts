@@ -297,7 +297,7 @@ describe('visualizationSmlType', () => {
       });
 
       await visualizationSmlType.toAttachment!(
-        { origin_id: 'viz-1' } as never,
+        { attributes: { origin: { uri: 'lens://viz-1' } } } as never,
         createContext() as never
       );
 
@@ -332,7 +332,7 @@ describe('visualizationSmlType', () => {
       });
 
       const result = await visualizationSmlType.toAttachment!(
-        { origin_id: 'viz-1' } as never,
+        { attributes: { origin: { uri: 'lens://viz-1' } } } as never,
         createContext() as never
       );
 
@@ -366,7 +366,7 @@ describe('visualizationSmlType', () => {
       });
 
       const result = await visualizationSmlType.toAttachment!(
-        { origin_id: 'viz-1' } as never,
+        { attributes: { origin: { uri: 'lens://viz-1' } } } as never,
         createContext() as never
       );
 
@@ -384,7 +384,7 @@ describe('visualizationSmlType', () => {
       });
 
       const result = await visualizationSmlType.toAttachment!(
-        { origin_id: 'viz-1' } as never,
+        { attributes: { origin: { uri: 'lens://viz-1' } } } as never,
         createContext() as never
       );
 
@@ -396,7 +396,7 @@ describe('visualizationSmlType', () => {
 
       await expect(
         visualizationSmlType.toAttachment!(
-          { origin_id: 'viz-1' } as never,
+          { attributes: { origin: { uri: 'lens://viz-1' } } } as never,
           createContext() as never
         )
       ).rejects.toThrow('Connection failed');
@@ -429,7 +429,7 @@ describe('visualizationSmlType', () => {
       });
 
       const result = await visualizationSmlType.toAttachment!(
-        { origin_id: 'viz-1' } as never,
+        { attributes: { origin: { uri: 'lens://viz-1' } } } as never,
         createContext() as never
       );
 

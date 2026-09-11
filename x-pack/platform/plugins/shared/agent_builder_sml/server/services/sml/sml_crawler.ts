@@ -22,7 +22,7 @@ import {
   createSmlCrawlerStateStorage,
   type SmlCrawlerStateStorage,
 } from './sml_crawler_state_storage';
-import { createSmlStorage, smlIndexName, type SmlStorage } from './sml_storage';
+import { reconcileSmlIndex, smlIndexName } from './sml_storage';
 
 export type { SmlCrawler };
 
@@ -63,19 +63,16 @@ export class SmlCrawlerImpl implements SmlCrawler {
       logger: this.logger,
     };
 
-    const storage = createSmlStorage({ logger: this.logger, esClient });
     const crawlStartTime = new Date().toISOString();
     this.logger.debug(`SML crawler: starting crawl for type '${definition.id}' across all spaces`);
 
-    const indexRebuilt = await this.applyMappingsOrRebuild({ storage });
+    await reconcileSmlIndex({ esClient, logger: this.logger });
 
-    const integrityResetNeeded =
-      indexRebuilt ||
-      (await this.checkDataIntegrity({
-        esClient,
-        stateClient,
-        attachmentType: definition.id,
-      }));
+    const integrityResetNeeded = await this.checkDataIntegrity({
+      esClient,
+      stateClient,
+      attachmentType: definition.id,
+    });
 
     // Stream source items page by page. For each page, batch-lookup state
     // docs by ID, diff, and write state updates stamped with crawlStartTime.
@@ -141,30 +138,6 @@ export class SmlCrawlerImpl implements SmlCrawler {
       savedObjectsClient,
       stateClient,
     });
-  }
-
-  /** Returns true when the index was dropped due to a mapping update failure. */
-  private async applyMappingsOrRebuild({ storage }: { storage: SmlStorage }): Promise<boolean> {
-    try {
-      await storage.getClient().reconcileMappings();
-      return false;
-    } catch (error) {
-      if (!isResponseError(error)) throw error;
-      if (error.statusCode === 404) return false;
-
-      const errorType = (error.body as { error?: { type?: string } })?.error?.type ?? error.message;
-      this.logger.warn(
-        `SML crawler: mapping update failed (${error.statusCode} ${errorType}) — dropping index '${smlIndexName}' and re-crawling immediately`
-      );
-      try {
-        await storage.getClient().clean();
-      } catch (cleanError) {
-        if (!isResponseError(cleanError) || cleanError.statusCode !== 404) {
-          throw cleanError;
-        }
-      }
-      return true;
-    }
   }
 
   /**
@@ -468,27 +441,25 @@ export class SmlCrawlerImpl implements SmlCrawler {
     if (originUris.length === 0) return result;
 
     try {
-      const response = await esClient.search<{ origin?: { uri?: string } }>({
+      const response = await esClient.search<{ attributes?: { origin?: { uri?: string } } }>({
         index: smlIndexName,
         ignore_unavailable: true,
         allow_no_indices: true,
         size: originUris.length,
         track_total_hits: false,
-        _source: ['origin.uri'],
+        _source: ['attributes.origin.uri'],
         query: {
           bool: {
             filter: [
-              { terms: { 'origin.uri': originUris } },
-              { term: { ingestion_method: 'manual' } },
+              { terms: { 'attributes.origin.uri': originUris } },
+              { term: { 'attributes.ingestion_method': 'manual' } },
             ],
           },
         },
-        // Collapse so we get at most one hit per origin.uri.
-        collapse: { field: 'origin.uri' },
       });
 
       for (const hit of response.hits.hits) {
-        const originUri = hit._source?.origin?.uri;
+        const originUri = hit._source?.attributes?.origin?.uri;
         if (originUri) {
           result.add(originUri);
         }

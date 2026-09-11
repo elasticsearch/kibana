@@ -9,7 +9,7 @@ import { loggerMock } from '@kbn/logging-mocks';
 import type { ElasticsearchClient } from '@kbn/core-elasticsearch-server';
 import type { ISavedObjectsRepository } from '@kbn/core-saved-objects-api-server';
 import { createSmlCrawlerStateStorage } from './sml_crawler_state_storage';
-import { createSmlStorage } from './sml_storage';
+import { reconcileSmlIndex } from './sml_storage';
 import { SmlCrawlerImpl } from './sml_crawler';
 import type { SmlTypeDefinition, SmlListItem } from './types';
 
@@ -28,16 +28,9 @@ jest.mock('./sml_crawler_state_storage', () => {
   };
 });
 
-const EXPECTED_SCHEMA_VERSION = 'current-schema-hash';
-
-jest.mock('@kbn/storage-adapter', () => ({
-  getSchemaVersion: jest.fn().mockReturnValue(EXPECTED_SCHEMA_VERSION),
-}));
-
 jest.mock('./sml_storage', () => ({
   smlIndexName: '.test-sml-data',
-  storageSettings: { name: '.test-sml-data', schema: { properties: {} } },
-  createSmlStorage: jest.fn(),
+  reconcileSmlIndex: jest.fn(),
 }));
 
 jest.mock('@kbn/es-errors', () => ({
@@ -45,16 +38,6 @@ jest.mock('@kbn/es-errors', () => ({
     (error: unknown) => typeof (error as { statusCode?: unknown })?.statusCode === 'number'
   ),
 }));
-
-const mockUpdateMappingsIfNeeded = jest.fn();
-
-const mockSmlClient = {
-  clean: jest.fn().mockResolvedValue({ acknowledged: true }),
-  existsIndex: jest.fn().mockResolvedValue(false),
-  reconcileMappings: mockUpdateMappingsIfNeeded,
-};
-
-const getMockSmlClient = () => mockSmlClient;
 
 const getMockStateClient = () =>
   (createSmlCrawlerStateStorage as jest.Mock)({ logger: {}, esClient: {} }).getClient();
@@ -85,27 +68,15 @@ const createMockLogger = () => {
   return log;
 };
 
-const createMockEsClient = (): jest.Mocked<ElasticsearchClient> => {
-  const indices = {
-    exists: jest.fn().mockResolvedValue(false),
-    existsAlias: jest.fn().mockResolvedValue(false),
-    delete: jest.fn().mockResolvedValue({ acknowledged: true }),
-    deleteIndexTemplate: jest.fn().mockResolvedValue({ acknowledged: true }),
-    get: jest.fn().mockResolvedValue({}),
-    getMapping: jest.fn().mockResolvedValue({
-      '.test-sml-data-000001': {
-        mappings: { _meta: { version: EXPECTED_SCHEMA_VERSION } },
-      },
-    }),
-  };
-  return {
-    indices,
+// Index plumbing lives behind the mocked `reconcileSmlIndex`, so the crawler only touches
+// `count` and `search` on the SML data index directly.
+const createMockEsClient = (): jest.Mocked<ElasticsearchClient> =>
+  ({
     count: jest.fn().mockResolvedValue({ count: 0 }),
     // findManualOriginIds (in sml_crawler.ts) calls search on the SML data index.
     // Default: no manual entries for any origin id.
     search: jest.fn().mockResolvedValue({ hits: { hits: [] } }),
-  } as unknown as jest.Mocked<ElasticsearchClient>;
-};
+  } as unknown as jest.Mocked<ElasticsearchClient>);
 
 const createMockSavedObjectsClient = (): jest.Mocked<ISavedObjectsRepository> =>
   ({} as jest.Mocked<ISavedObjectsRepository>);
@@ -124,12 +95,7 @@ describe('SmlCrawlerImpl', () => {
     mockStateClient = getMockStateClient();
     mockStateClient.search.mockResolvedValue({ hits: { hits: [], total: { value: 0 } } });
     mockStateClient.bulk.mockResolvedValue({ errors: false, items: [] });
-    mockSmlClient.existsIndex.mockResolvedValue(false);
-    mockSmlClient.clean.mockResolvedValue({ acknowledged: true });
-    mockUpdateMappingsIfNeeded.mockResolvedValue(undefined);
-    (createSmlStorage as jest.Mock).mockReturnValue({
-      getClient: jest.fn().mockReturnValue(getMockSmlClient()),
-    });
+    (reconcileSmlIndex as jest.Mock).mockResolvedValue(undefined);
   });
 
   describe('new items detected', () => {
@@ -519,7 +485,7 @@ describe('SmlCrawlerImpl', () => {
       // findManualOriginUris returns one of the candidates as manual
       (esClient.search as jest.Mock).mockResolvedValue({
         hits: {
-          hits: [{ _source: { origin: { uri: 'test-type://manual-origin' } } }],
+          hits: [{ _source: { attributes: { origin: { uri: 'test-type://manual-origin' } } } }],
         },
       });
 
@@ -638,14 +604,8 @@ describe('SmlCrawlerImpl', () => {
     });
   });
 
-  describe('schema version check', () => {
-    it('mapping update failure: drops index and forces full re-index', async () => {
-      const mappingError = {
-        statusCode: 400,
-        body: { error: { type: 'mapper_parsing_exception' } },
-      };
-      mockUpdateMappingsIfNeeded.mockRejectedValue(mappingError);
-
+  describe('index reconciliation', () => {
+    it('reconciles the index once per crawl before listing items', async () => {
       const items = [{ id: 'a', updatedAt: '2024-01-01', spaces: ['default'] }];
       const definition = createMockDefinition({
         list: jest.fn().mockReturnValue(yieldPages(items)),
@@ -655,75 +615,21 @@ describe('SmlCrawlerImpl', () => {
       const crawler = new SmlCrawlerImpl({ indexer: mockIndexer, logger });
       await crawler.crawl({ definition, esClient, savedObjectsClient });
 
-      expect(mockUpdateMappingsIfNeeded).toHaveBeenCalledTimes(1);
-      expect(mockSmlClient.clean).toHaveBeenCalledTimes(1);
-      expect(logger.warn).toHaveBeenCalledWith(expect.stringContaining('mapping update failed'));
-      const createOp = mockStateClient.bulk.mock.calls
-        .flatMap((c: unknown[]) => (c[0] as { operations?: unknown[] }).operations ?? [])
-        .find(
-          (op: { index?: { document?: { update_action?: string } } }) =>
-            op.index?.document?.update_action === 'create'
-        );
-      expect(createOp).toBeDefined();
+      expect(reconcileSmlIndex).toHaveBeenCalledTimes(1);
+      expect(definition.list).toHaveBeenCalled();
     });
 
-    it('non-response error propagates immediately without retrying', async () => {
-      const networkError = new Error('connection refused');
-      mockUpdateMappingsIfNeeded.mockRejectedValue(networkError);
+    it('reconciliation failure propagates rather than crawling against a stale index', async () => {
+      (reconcileSmlIndex as jest.Mock).mockRejectedValue(new Error('connection refused'));
 
       const definition = createMockDefinition();
-      mockStateClient.search.mockResolvedValue({ hits: { hits: [], total: { value: 0 } } });
 
       const crawler = new SmlCrawlerImpl({ indexer: mockIndexer, logger });
       await expect(crawler.crawl({ definition, esClient, savedObjectsClient })).rejects.toThrow(
         'connection refused'
       );
 
-      expect(mockUpdateMappingsIfNeeded).toHaveBeenCalledTimes(1);
-      expect(mockSmlClient.clean).not.toHaveBeenCalled();
-    });
-
-    it('additive mapping change: applies in-place without cleaning', async () => {
-      const items = [{ id: 'a', updatedAt: '2024-01-01', spaces: ['default'] }];
-      const definition = createMockDefinition({
-        list: jest.fn().mockReturnValue(yieldPages(items)),
-      });
-      mockStateClient.search.mockResolvedValue({ hits: { hits: [], total: { value: 0 } } });
-
-      const crawler = new SmlCrawlerImpl({ indexer: mockIndexer, logger });
-      await crawler.crawl({ definition, esClient, savedObjectsClient });
-
-      expect(mockUpdateMappingsIfNeeded).toHaveBeenCalledTimes(1);
-      expect(mockSmlClient.clean).not.toHaveBeenCalled();
-    });
-
-    it('index does not exist: updateMappingsIfNeeded resolves cleanly, crawl proceeds without cleaning', async () => {
-      const items = [{ id: 'a', updatedAt: '2024-01-01', spaces: ['default'] }];
-      const definition = createMockDefinition({
-        list: jest.fn().mockReturnValue(yieldPages(items)),
-      });
-      mockStateClient.search.mockResolvedValue({ hits: { hits: [], total: { value: 0 } } });
-
-      const crawler = new SmlCrawlerImpl({ indexer: mockIndexer, logger });
-      await crawler.crawl({ definition, esClient, savedObjectsClient });
-
-      expect(mockUpdateMappingsIfNeeded).toHaveBeenCalledTimes(1);
-      expect(mockSmlClient.clean).not.toHaveBeenCalled();
-    });
-
-    it('404 from mapping update: race condition treated as no-op, does not clean', async () => {
-      mockUpdateMappingsIfNeeded.mockRejectedValueOnce({ statusCode: 404 });
-
-      const items = [{ id: 'a', updatedAt: '2024-01-01', spaces: ['default'] }];
-      const definition = createMockDefinition({
-        list: jest.fn().mockReturnValue(yieldPages(items)),
-      });
-      mockStateClient.search.mockResolvedValue({ hits: { hits: [], total: { value: 0 } } });
-
-      const crawler = new SmlCrawlerImpl({ indexer: mockIndexer, logger });
-      await crawler.crawl({ definition, esClient, savedObjectsClient });
-
-      expect(mockSmlClient.clean).not.toHaveBeenCalled();
+      expect(definition.list).not.toHaveBeenCalled();
     });
   });
 
