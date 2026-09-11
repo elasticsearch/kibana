@@ -7,18 +7,22 @@
 
 import { validateThresholdBase } from '../../../../../utils/request_validation/threshold';
 import { validateThreatMapping } from '../../../../../utils/request_validation/indicator_match';
+import { validateRuleSchedule } from '../../../../../utils/request_validation/rule_schedule';
 import type { PatchRuleRequestBody } from './patch_rule_route.gen';
 
 /**
  * Additional validation that is implemented outside of the schema itself.
  */
 export const validatePatchRuleRequestBody = (rule: PatchRuleRequestBody): string[] => {
+  // Complete schedules are checked here. Partial schedules are checked after they are merged with
+  // the existing rule in applyRulePatch.
   return [
     ...validateId(rule),
     ...validateTimelineId(rule),
     ...validateTimelineTitle(rule),
     ...validateThreshold(rule),
     ...validateThreatMapping(rule),
+    ...validateRuleSchedule(rule),
   ];
 };
 

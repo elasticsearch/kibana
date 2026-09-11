@@ -72,6 +72,38 @@ describe('Patch rule request schema, additional validation', () => {
       expect(errors).toEqual(['either "id" or "rule_id" must be set']);
     });
 
+    test.each([
+      {
+        name: 'shorter than the rule interval',
+        from: 'now-7m',
+        to: 'now-5m',
+        expectedErrors: [
+          'the time range defined by "from" and "to" must be greater than or equal to "interval"',
+        ],
+      },
+      {
+        name: 'equal to the rule interval',
+        from: 'now-10m',
+        to: 'now-5m',
+        expectedErrors: [],
+      },
+      {
+        name: 'longer than the rule interval',
+        from: 'now-10m',
+        to: 'now',
+        expectedErrors: [],
+      },
+    ])('validates a time range that is $name', ({ from, to, expectedErrors }) => {
+      const schema: PatchRuleRequestBody = {
+        ...getPatchRulesSchemaMock(),
+        interval: '5m',
+        from,
+        to,
+      };
+
+      expect(validatePatchRuleRequestBody(schema)).toEqual(expectedErrors);
+    });
+
     test('threshold.cardinality[0].field should not be in threshold.field', () => {
       const schema: ThresholdRulePatchProps = {
         ...getPatchThresholdRulesSchemaMock(),

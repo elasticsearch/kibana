@@ -7,6 +7,7 @@
 
 import { validateThresholdBase } from '../../../../../utils/request_validation/threshold';
 import { validateThreatMapping } from '../../../../../utils/request_validation/indicator_match';
+import { validateRuleScheduleWithDefaults } from '../../../../../utils/request_validation/rule_schedule';
 import type { RuleCreateProps } from '../../../model';
 
 /**
@@ -19,6 +20,7 @@ export const validateCreateRuleProps = (props: RuleCreateProps): string[] => {
     ...validateThreatMatchConcurrentSearches(props),
     ...validateThreshold(props),
     ...validateThreatMapping(props),
+    ...validateRuleScheduleWithDefaults(props),
   ];
 };
 

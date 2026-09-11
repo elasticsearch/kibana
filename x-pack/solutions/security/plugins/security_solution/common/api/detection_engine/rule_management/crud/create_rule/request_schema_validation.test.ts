@@ -53,6 +53,51 @@ describe('Create rule request schema, additional validation', () => {
     expect(errors).toEqual(['when "timeline_title" exists, "timeline_id" must also exist']);
   });
 
+  test.each([
+    {
+      name: 'shorter than the rule interval',
+      from: 'now-7m',
+      to: 'now-5m',
+      expectedErrors: [
+        'the time range defined by "from" and "to" must be greater than or equal to "interval"',
+      ],
+    },
+    {
+      name: 'equal to the rule interval',
+      from: 'now-10m',
+      to: 'now-5m',
+      expectedErrors: [],
+    },
+    {
+      name: 'longer than the rule interval',
+      from: 'now-10m',
+      to: 'now',
+      expectedErrors: [],
+    },
+  ])('validates a time range that is $name', ({ from, to, expectedErrors }) => {
+    const schema: RuleCreateProps = {
+      ...getCreateRulesSchemaMock(),
+      interval: '5m',
+      from,
+      to,
+    };
+
+    expect(validateCreateRuleProps(schema)).toEqual(expectedErrors);
+  });
+
+  test('validates the effective default time range when schedule fields are omitted', () => {
+    const schema: RuleCreateProps = {
+      ...getCreateRulesSchemaMock(),
+      interval: '10m',
+    };
+    delete schema.from;
+    delete schema.to;
+
+    expect(validateCreateRuleProps(schema)).toEqual([
+      'the time range defined by "from" and "to" must be greater than or equal to "interval"',
+    ]);
+  });
+
   test('validates that both "items_per_search" and "concurrent_searches" works when together', () => {
     const schema: RuleCreateProps = {
       ...getCreateThreatMatchRulesSchemaMock(),

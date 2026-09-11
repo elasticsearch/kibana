@@ -16,6 +16,7 @@ import type {
   RuleSource,
   TypeSpecificCreateProps,
 } from '../../../../../../../common/api/detection_engine/model/rule_schema';
+import { DEFAULT_RULE_SCHEDULE } from '../../../../../../../common/api/detection_engine/model/rule_schema/rule_schedule';
 import {
   DEFAULT_INDICATOR_SOURCE_PATH,
   DEFAULT_MAX_SIGNALS,
@@ -31,9 +32,7 @@ export const RULE_DEFAULTS = {
   enabled: false,
   risk_score_mapping: [],
   severity_mapping: [],
-  interval: '5m' as const,
-  to: 'now' as const,
-  from: 'now-6m' as const,
+  ...DEFAULT_RULE_SCHEDULE,
   exceptions_list: [],
   false_positives: [],
   max_signals: DEFAULT_MAX_SIGNALS,

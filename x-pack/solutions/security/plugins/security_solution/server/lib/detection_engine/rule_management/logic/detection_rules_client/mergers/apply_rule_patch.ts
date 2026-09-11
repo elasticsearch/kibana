@@ -43,6 +43,7 @@ import {
   normalizeMachineLearningJobIds,
   normalizeThresholdObject,
 } from '../../../../../../../common/detection_engine/utils';
+import { validateRuleSchedule } from '../../../../../../../common/utils/request_validation/rule_schedule';
 import { assertUnreachable } from '../../../../../../../common/utility_types';
 import type { IPrebuiltRuleAssetsClient } from '../../../../prebuilt_rules/logic/rule_assets/prebuilt_rule_assets_client';
 import { calculateRuleSource } from './rule_source/calculate_rule_source';
@@ -118,6 +119,11 @@ export const applyRulePatch = async ({
     response_actions: rulePatch.response_actions ?? existingRule.response_actions,
     ...typeSpecificParams,
   };
+
+  const [scheduleError] = validateRuleSchedule(nextRule);
+  if (scheduleError != null) {
+    throw new BadRequestError(scheduleError);
+  }
 
   nextRule.rule_source = await calculateRuleSource({
     nextRule,

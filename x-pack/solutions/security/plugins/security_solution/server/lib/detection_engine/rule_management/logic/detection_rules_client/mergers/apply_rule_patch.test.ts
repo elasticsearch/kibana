@@ -487,4 +487,26 @@ describe('applyRulePatch', () => {
       })
     );
   });
+
+  test('should reject a partial schedule patch that makes the effective time range too short', async () => {
+    const rulePatch = {
+      interval: '10m',
+    };
+    const existingRule = {
+      ...getRulesSchemaMock(),
+      interval: '5m',
+      from: 'now-6m',
+      to: 'now',
+    };
+
+    await expect(
+      applyRulePatch({
+        rulePatch,
+        existingRule,
+        prebuiltRuleAssetClient,
+      })
+    ).rejects.toThrowError(
+      'the time range defined by "from" and "to" must be greater than or equal to "interval"'
+    );
+  });
 });

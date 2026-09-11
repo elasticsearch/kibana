@@ -16,6 +16,12 @@ export const RuleSchedule = z.object({
   to: RuleIntervalTo,
 });
 
+export const DEFAULT_RULE_SCHEDULE = {
+  interval: '5m',
+  from: 'now-6m',
+  to: 'now',
+} as const satisfies RuleSchedule;
+
 /**
  * Simpler version of RuleSchedule. It's only feasible when
  * - `to` equals `now` (current moment in time)
