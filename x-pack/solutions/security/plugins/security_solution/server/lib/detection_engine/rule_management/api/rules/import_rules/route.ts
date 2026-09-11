@@ -8,7 +8,7 @@
 import { schema } from '@kbn/config-schema';
 import type { IKibanaResponse, Logger } from '@kbn/core/server';
 import { transformError } from '@kbn/securitysolution-es-utils';
-import { chunk, partition } from 'lodash/fp';
+import { partition } from 'lodash/fp';
 import { extname } from 'path';
 import { buildRouteValidationWithZod } from '@kbn/zod-helpers/v4';
 import { RULES_API_ALL } from '@kbn/security-solution-features/constants';
@@ -20,16 +20,10 @@ import {
 import { DETECTION_ENGINE_RULES_IMPORT_URL } from '../../../../../../../common/constants';
 import type { ConfigType } from '../../../../../../config';
 import type { HapiReadableStream, SecuritySolutionPluginRouter } from '../../../../../../types';
-import {
-  buildSiemResponse,
-  createBulkErrorObject,
-  isBulkError,
-  isImportRegular,
-} from '../../../../routes/utils';
+import { buildSiemResponse, createBulkErrorObject } from '../../../../routes/utils';
 import { createPrebuiltRuleAssetsClient } from '../../../../prebuilt_rules/logic/rule_assets/prebuilt_rule_assets_client';
 import { importRuleActionConnectors } from '../../../logic/import/action_connectors/import_rule_action_connectors';
 import { validateRuleActions } from '../../../logic/import/action_connectors/validate_rule_actions';
-import { createRuleSourceImporter } from '../../../logic/import/rule_source_importer';
 import { importRules } from '../../../logic/import/import_rules';
 
 import { createPromiseFromRuleImportStream } from '../../../logic/import/create_promise_from_rule_import_stream';
@@ -39,10 +33,9 @@ import {
   getTupleDuplicateErrorsAndUniqueRules,
   migrateLegacyActionsIds,
 } from '../../../utils/utils';
-import { RULE_MANAGEMENT_IMPORT_EXPORT_SOCKET_TIMEOUT_MS } from '../../timeouts';
-import { createPrebuiltRuleObjectsClient } from '../../../../prebuilt_rules/logic/rule_objects/prebuilt_rule_objects_client';
-
-const CHUNK_PARSED_OBJECT_SIZE = 50;
+import { RULE_MANAGEMENT_IMPORT_EXPORT_SOCKET_TIMEOUT_MS } from '../../constants';
+import { SecurityRuleChangeTrackingAction } from '../../../../../../../common/detection_engine/rule_management/rule_change_tracking';
+import { ensureLatestRulesPackageInstalled } from '../../../../prebuilt_rules/logic/integrations/ensure_latest_rules_package_installed';
 
 export const importRulesRoute = (
   router: SecuritySolutionPluginRouter,
@@ -85,13 +78,11 @@ export const importRulesRoute = (
           const ctx = await context.resolve([
             'core',
             'securitySolution',
-            'alerting',
             'actions',
             'lists',
             'licensing',
           ]);
 
-          const rulesClient = await ctx.alerting.getRulesClient();
           const detectionRulesClient = ctx.securitySolution.getDetectionRulesClient();
           const actionsClient = ctx.actions.getActionsClient();
           const actionSOClient = ctx.core.savedObjects.getClient({
@@ -156,12 +147,13 @@ export const importRulesRoute = (
             actionsClient
           );
 
-          const ruleSourceImporter = createRuleSourceImporter({
-            context: ctx.securitySolution,
-            prebuiltRuleAssetsClient: createPrebuiltRuleAssetsClient(savedObjectsClient),
-            prebuiltRuleObjectsClient: createPrebuiltRuleObjectsClient(rulesClient),
-            logger,
-          });
+          // Ensure the prebuilt rules package is installed once per request so
+          // the import path can look up prebuilt assets during rule_source calc.
+          await ensureLatestRulesPackageInstalled(
+            createPrebuiltRuleAssetsClient(savedObjectsClient),
+            ctx.securitySolution,
+            logger
+          );
 
           const [parsedRules, parsedRuleErrors] = partition(
             isRuleToImport,
@@ -187,18 +179,16 @@ export const importRulesRoute = (
                 ctx.securitySolution.getCheckOsqueryResponseActionAuthz(),
             });
 
-          const ruleChunks = chunk(CHUNK_PARSED_OBJECT_SIZE, validatedResponseActionsRules);
-
-          const importRuleResponse = await importRules({
-            ruleChunks,
+          const { successes, errors: importErrors } = await importRules({
+            rules: validatedResponseActionsRules,
             changeTracking: {
+              action: SecurityRuleChangeTrackingAction.ruleImport,
               metadata: {
                 bulkCount: validatedResponseActionsRules.length,
               },
             },
             overwriteRules: request.query.overwrite,
             allowMissingConnectorSecrets: !!actionConnectors.length,
-            ruleSourceImporter,
             detectionRulesClient,
           });
 
@@ -208,7 +198,6 @@ export const importRulesRoute = (
               message: error.message,
             })
           );
-          const importErrors = importRuleResponse.filter(isBulkError);
           const errors = [
             ...parseErrors,
             ...duplicateIdErrors,
@@ -216,14 +205,6 @@ export const importRulesRoute = (
             ...missingActionErrors,
             ...responseActionsErrors,
           ];
-
-          const successes = importRuleResponse.filter((resp) => {
-            if (isImportRegular(resp)) {
-              return resp.status_code === 200;
-            } else {
-              return false;
-            }
-          });
 
           const importRulesResponse: ImportRulesResponse = {
             success: errors.length === 0,

@@ -11,6 +11,8 @@ import { isCustomizedPrebuiltRule } from '../../../../../../common/api/detection
 import type { RuleAlertType } from '../../../rule_schema';
 import { DETECTION_RULE_DUPLICATE_EVENT } from '../../../../telemetry/event_based/events';
 
+export type RuleLifecycleTelemetryData = Pick<RuleResponse, 'id' | 'type' | 'rule_source'>;
+
 export interface RuleLifecycleTelemetry {
   ruleId: string;
   ruleType: RuleResponse['type'];
@@ -21,7 +23,7 @@ export interface RuleLifecycleTelemetry {
 export function sendRuleLifecycleTelemetryEvent(
   analytics: AnalyticsServiceSetup,
   eventType: EventTypeOpts<RuleLifecycleTelemetry>,
-  rule: RuleResponse,
+  rule: RuleLifecycleTelemetryData,
   logger?: Logger
 ): void {
   try {
@@ -54,7 +56,9 @@ export function sendRuleDuplicateTelemetryEvent(
   }
 }
 
-function createRuleLifecycleTelemetryEvent(rule: RuleResponse): RuleLifecycleTelemetry {
+function createRuleLifecycleTelemetryEvent(
+  rule: RuleLifecycleTelemetryData
+): RuleLifecycleTelemetry {
   return {
     ruleId: rule.id,
     ruleType: rule.type,

@@ -6,7 +6,7 @@
  */
 
 import { getExceptionListSchemaMock } from '@kbn/lists-plugin/common/schemas/response/exception_list_schema.mock';
-import { getImportRulesSchemaMock } from '../../../../../../common/api/detection_engine/rule_management/mocks';
+import { getImportRulesSchemaMock } from '../../../../../../../../common/api/detection_engine/rule_management/mocks';
 import { checkRuleExceptionReferences } from './check_rule_exception_references';
 
 describe('checkRuleExceptionReferences', () => {

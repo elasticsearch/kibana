@@ -5,8 +5,8 @@
  * 2.0.
  */
 
-import { getRulesSchemaMock } from '../../../../../../common/api/detection_engine/model/rule_schema/rule_response_schema.mock';
-import { getPrebuiltRuleMock } from '../../../prebuilt_rules/mocks';
+import { getRulesSchemaMock } from '../../../../../../../../common/api/detection_engine/model/rule_schema/rule_response_schema.mock';
+import { getPrebuiltRuleMock } from '../../../../../prebuilt_rules/mocks';
 import { calculateRuleSourceForImport } from './calculate_rule_source_for_import';
 
 describe('calculateRuleSourceForImport', () => {

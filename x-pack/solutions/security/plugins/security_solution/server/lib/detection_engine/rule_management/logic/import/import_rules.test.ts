@@ -6,213 +6,124 @@
  */
 
 import { getImportRulesSchemaMock } from '../../../../../../common/api/detection_engine/rule_management/mocks';
-import { getRulesSchemaMock } from '../../../../../../common/api/detection_engine/model/rule_schema/rule_response_schema.mock';
 
 import { importRules } from './import_rules';
 import type { IDetectionRulesClient } from '../detection_rules_client/detection_rules_client_interface';
 import { detectionRulesClientMock } from '../detection_rules_client/__mocks__/detection_rules_client';
-import { ruleSourceImporterMock } from './rule_source_importer/rule_source_importer.mock';
-import { createRuleImportErrorObject } from './errors';
+import { createRuleImportErrorObject } from '../detection_rules_client/methods/import_rules/errors';
+import { RULE_IMPORT_BULK_CREATE_BATCH_SIZE } from '../../api/constants';
 
 describe('importRules', () => {
   let ruleToImport: ReturnType<typeof getImportRulesSchemaMock>;
-
   let detectionRulesClient: jest.Mocked<IDetectionRulesClient>;
-  let mockRuleSourceImporter: ReturnType<typeof ruleSourceImporterMock.create>;
 
   beforeEach(() => {
     jest.clearAllMocks();
 
     detectionRulesClient = detectionRulesClientMock.create();
-    detectionRulesClient.importRules.mockResolvedValue([]);
+    detectionRulesClient.importRules.mockResolvedValue({ successes: [], errors: [] });
     ruleToImport = getImportRulesSchemaMock();
-    mockRuleSourceImporter = ruleSourceImporterMock.create();
   });
 
   it('returns an empty rules response if no rules to import', async () => {
     const result = await importRules({
-      ruleChunks: [],
+      rules: [],
       overwriteRules: false,
       detectionRulesClient,
-      ruleSourceImporter: mockRuleSourceImporter,
     });
 
-    expect(result).toEqual([]);
+    expect(result).toEqual({ successes: [], errors: [] });
   });
 
-  it('returns 400 errors if client import returns generic errors', async () => {
-    detectionRulesClient.importRules.mockResolvedValueOnce([
-      createRuleImportErrorObject({
-        ruleId: 'rule-id',
-        message: 'import error',
-      }),
-      createRuleImportErrorObject({
-        ruleId: 'rule-id-2',
-        message: 'import error',
-      }),
-    ]);
+  it('sends all rules within a single batch to one importRules call', async () => {
+    const r1 = { ...ruleToImport, rule_id: 'r1' };
+    const r2 = { ...ruleToImport, rule_id: 'r2' };
+    const r3 = { ...ruleToImport, rule_id: 'r3' };
 
-    const result = await importRules({
-      ruleChunks: [[ruleToImport]],
-      overwriteRules: false,
-      detectionRulesClient,
-      ruleSourceImporter: mockRuleSourceImporter,
+    detectionRulesClient.importRules.mockResolvedValueOnce({
+      successes: [
+        {
+          rule_id: 'r1',
+          telemetry: { id: 'id-r1', type: 'query', rule_source: { type: 'internal' } },
+        },
+        {
+          rule_id: 'r2',
+          telemetry: { id: 'id-r2', type: 'query', rule_source: { type: 'internal' } },
+        },
+        {
+          rule_id: 'r3',
+          telemetry: { id: 'id-r3', type: 'query', rule_source: { type: 'internal' } },
+        },
+      ],
+      errors: [],
     });
 
-    expect(result).toEqual([
-      {
-        error: {
-          message: 'import error',
-          status_code: 400,
-        },
-        rule_id: 'rule-id',
-      },
-      {
-        error: {
-          message: 'import error',
-          status_code: 400,
-        },
-        rule_id: 'rule-id-2',
-      },
-    ]);
+    const result = await importRules({
+      rules: [r1, r2, r3],
+      overwriteRules: false,
+      detectionRulesClient,
+    });
+
+    expect(detectionRulesClient.importRules).toHaveBeenCalledTimes(1);
+    const args = detectionRulesClient.importRules.mock.calls[0][0];
+    expect(args.rules.map((r) => r.rule_id)).toEqual(['r1', 'r2', 'r3']);
+    expect(result).toEqual({
+      successes: [{ rule_id: 'r1' }, { rule_id: 'r2' }, { rule_id: 'r3' }],
+      errors: [],
+    });
   });
 
-  it('returns multiple errors for the same rule if client import returns generic errors', async () => {
-    detectionRulesClient.importRules.mockResolvedValueOnce([
-      createRuleImportErrorObject({
-        ruleId: 'rule-id',
-        message: 'import error',
-      }),
-      createRuleImportErrorObject({
-        ruleId: 'rule-id',
-        message: 'import error 2',
-      }),
-    ]);
+  it('chunks the outer loop at RULE_IMPORT_BULK_CREATE_BATCH_SIZE', async () => {
+    const total = RULE_IMPORT_BULK_CREATE_BATCH_SIZE + 1;
+    const manyRules = Array.from({ length: total }, (_, i) => ({
+      ...ruleToImport,
+      rule_id: `r${i}`,
+    }));
 
-    const result = await importRules({
-      ruleChunks: [[ruleToImport]],
+    detectionRulesClient.importRules.mockResolvedValue({ successes: [], errors: [] });
+
+    await importRules({
+      rules: manyRules,
       overwriteRules: false,
       detectionRulesClient,
-      ruleSourceImporter: mockRuleSourceImporter,
     });
 
-    expect(result).toEqual([
-      {
-        error: {
-          message: 'import error',
-          status_code: 400,
-        },
-        rule_id: 'rule-id',
-      },
-      {
-        error: {
-          message: 'import error 2',
-          status_code: 400,
-        },
-        rule_id: 'rule-id',
-      },
-    ]);
+    expect(detectionRulesClient.importRules).toHaveBeenCalledTimes(2);
+    const [first, second] = detectionRulesClient.importRules.mock.calls;
+    expect(first[0].rules).toHaveLength(RULE_IMPORT_BULK_CREATE_BATCH_SIZE);
+    expect(second[0].rules).toHaveLength(1);
   });
 
-  it('returns 409 errors if client import returns conflict errors', async () => {
-    detectionRulesClient.importRules.mockResolvedValueOnce([
-      createRuleImportErrorObject({
-        ruleId: 'rule-id',
-        message: 'import conflict',
-        type: 'conflict',
-      }),
-      createRuleImportErrorObject({
-        ruleId: 'rule-id-2',
-        message: 'import conflict',
-        type: 'conflict',
-      }),
-    ]);
-
-    const result = await importRules({
-      ruleChunks: [[ruleToImport]],
-      overwriteRules: false,
-      detectionRulesClient,
-      ruleSourceImporter: mockRuleSourceImporter,
+  it('maps per-rule errors from importRules to 4xx import responses', async () => {
+    detectionRulesClient.importRules.mockResolvedValueOnce({
+      successes: [
+        {
+          rule_id: 'rule-b',
+          telemetry: { id: 'id-rule-b', type: 'query', rule_source: { type: 'internal' } },
+        },
+      ],
+      errors: [
+        createRuleImportErrorObject({ ruleId: 'rule-a', message: 'boom' }),
+        createRuleImportErrorObject({
+          ruleId: 'rule-c',
+          message: 'conflict',
+          type: 'conflict',
+        }),
+      ],
     });
 
-    expect(result).toEqual([
-      {
-        error: {
-          message: 'import conflict',
-          status_code: 409,
-        },
-        rule_id: 'rule-id',
-      },
-      {
-        error: {
-          message: 'import conflict',
-          status_code: 409,
-        },
-        rule_id: 'rule-id-2',
-      },
-    ]);
-  });
-
-  it('returns a combination of 200s and 4xxs if some rules were imported and some errored', async () => {
-    detectionRulesClient.importRules.mockResolvedValueOnce([
-      createRuleImportErrorObject({
-        ruleId: 'rule-id',
-        message: 'parse error',
-      }),
-      getRulesSchemaMock(),
-      createRuleImportErrorObject({
-        ruleId: 'rule-id-2',
-        message: 'import conflict',
-        type: 'conflict',
-      }),
-      getRulesSchemaMock(),
-    ]);
-    const successfulRuleId = getRulesSchemaMock().rule_id;
-
     const result = await importRules({
-      ruleChunks: [[ruleToImport]],
+      rules: [ruleToImport],
       overwriteRules: false,
       detectionRulesClient,
-      ruleSourceImporter: mockRuleSourceImporter,
     });
 
-    expect(result).toEqual([
-      {
-        error: {
-          message: 'parse error',
-          status_code: 400,
-        },
-        rule_id: 'rule-id',
-      },
-      { rule_id: successfulRuleId, status_code: 200 },
-      {
-        error: {
-          message: 'import conflict',
-          status_code: 409,
-        },
-        rule_id: 'rule-id-2',
-      },
-      { rule_id: successfulRuleId, status_code: 200 },
-    ]);
-  });
-
-  it('returns 200s if all rules were imported successfully', async () => {
-    detectionRulesClient.importRules.mockResolvedValueOnce([
-      getRulesSchemaMock(),
-      getRulesSchemaMock(),
-    ]);
-    const successfulRuleId = getRulesSchemaMock().rule_id;
-
-    const result = await importRules({
-      ruleChunks: [[ruleToImport]],
-      overwriteRules: false,
-      detectionRulesClient,
-      ruleSourceImporter: mockRuleSourceImporter,
+    expect(result).toEqual({
+      successes: [{ rule_id: 'rule-b' }],
+      errors: [
+        { error: { message: 'boom', status_code: 400 }, rule_id: 'rule-a' },
+        { error: { message: 'conflict', status_code: 409 }, rule_id: 'rule-c' },
+      ],
     });
-
-    expect(result).toEqual([
-      { rule_id: successfulRuleId, status_code: 200 },
-      { rule_id: successfulRuleId, status_code: 200 },
-    ]);
   });
 });

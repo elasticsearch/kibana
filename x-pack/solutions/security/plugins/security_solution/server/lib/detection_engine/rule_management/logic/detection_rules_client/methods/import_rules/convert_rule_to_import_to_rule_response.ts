@@ -6,8 +6,11 @@
  */
 
 import { v4 as uuidv4 } from 'uuid';
-import { applyRuleDefaults } from '../../detection_rules_client/mergers/apply_rule_defaults';
-import { RuleResponse, type RuleToImport } from '../../../../../../../common/api/detection_engine';
+import { applyRuleDefaults } from '../../mergers/apply_rule_defaults';
+import {
+  RuleResponse,
+  type RuleToImport,
+} from '../../../../../../../../common/api/detection_engine';
 
 export const convertRuleToImportToRuleResponse = (ruleToImport: RuleToImport): RuleResponse => {
   const ruleResponseSpecificFields = {

@@ -9,10 +9,10 @@ import type {
   RuleResponse,
   RuleSource,
   ValidatedRuleToImport,
-} from '../../../../../../common/api/detection_engine';
-import type { PrebuiltRuleAsset } from '../../../prebuilt_rules';
-import { calculateExternalRuleSource } from '../detection_rules_client/mergers/rule_source/calculate_external_rule_source';
-import { convertRuleToImportToRuleResponse } from './converters/convert_rule_to_import_to_rule_response';
+} from '../../../../../../../../common/api/detection_engine';
+import type { PrebuiltRuleAsset } from '../../../../../prebuilt_rules';
+import { calculateExternalRuleSource } from '../../mergers/rule_source/calculate_external_rule_source';
+import { convertRuleToImportToRuleResponse } from './convert_rule_to_import_to_rule_response';
 
 /**
  * Calculates the rule_source field for a rule being imported

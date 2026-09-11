@@ -5,5 +5,5 @@
  * 2.0.
  */
 
-export type * from './rule_source_importer_interface';
-export * from './rule_source_importer';
+export { importRules } from './import_rules';
+export type { ImportRulesResult } from './types';

@@ -6,22 +6,7 @@
  */
 
 import { has } from 'lodash';
-
-export type RuleImportErrorType = 'conflict' | 'unknown';
-
-/**
- * Generic interface representing a server-side failure during rule import.
- * Used by utilities that import rules or related entities.
- *
- * NOTE that this does not inherit from Error
- */
-export interface RuleImportErrorObject {
-  error: {
-    ruleId: string;
-    message: string;
-    type: RuleImportErrorType;
-  };
-}
+import type { ImportRuleError, RuleImportErrorType } from './types';
 
 export const createRuleImportErrorObject = ({
   ruleId,
@@ -31,7 +16,7 @@ export const createRuleImportErrorObject = ({
   ruleId: string;
   message: string;
   type?: RuleImportErrorType;
-}): RuleImportErrorObject => ({
+}): ImportRuleError => ({
   error: {
     ruleId,
     message,
@@ -39,11 +24,8 @@ export const createRuleImportErrorObject = ({
   },
 });
 
-export const isRuleImportError = (obj: unknown): obj is RuleImportErrorObject =>
+export const isRuleImportError = (obj: unknown): obj is ImportRuleError =>
   has(obj, 'error') &&
   has(obj, 'error.ruleId') &&
   has(obj, 'error.type') &&
   has(obj, 'error.message');
-
-export const isRuleConflictError = (error: RuleImportErrorObject): boolean =>
-  error.error.type === 'conflict';

@@ -8,7 +8,7 @@ import type { ExceptionListSchema, ListArray } from '@kbn/securitysolution-io-ts
 import type { SavedObjectsClientContract } from '@kbn/core/server';
 import type { ExceptionListQueryInfo } from '@kbn/lists-plugin/server/services/exception_lists/utils/import/find_all_exception_list_types';
 import { getAllListTypes } from '@kbn/lists-plugin/server/services/exception_lists/utils/import/find_all_exception_list_types';
-import type { RuleToImport } from '../../../../../../common/api/detection_engine/rule_management';
+import type { RuleToImport } from '../../../../../../../../common/api/detection_engine/rule_management';
 
 /**
  * splitting out the parsing of the lists from the fetching

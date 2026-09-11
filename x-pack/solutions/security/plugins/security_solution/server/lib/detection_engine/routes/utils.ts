@@ -5,7 +5,7 @@
  * 2.0.
  */
 
-import { has, snakeCase } from 'lodash/fp';
+import { snakeCase } from 'lodash/fp';
 import { BadRequestError } from '@kbn/securitysolution-es-utils';
 
 import type {
@@ -78,26 +78,6 @@ export const createBulkErrorObject = ({
       },
     };
   }
-};
-
-export interface ImportRegular {
-  rule_id: string;
-  status_code: number;
-  message?: string;
-}
-
-export type ImportRuleResponse = ImportRegular | BulkError;
-
-export const isBulkError = (
-  importRuleResponse: ImportRuleResponse
-): importRuleResponse is BulkError => {
-  return has('error', importRuleResponse);
-};
-
-export const isImportRegular = (
-  importRuleResponse: ImportRuleResponse
-): importRuleResponse is ImportRegular => {
-  return !has('error', importRuleResponse) && has('status_code', importRuleResponse);
 };
 
 export const transformBulkError = (

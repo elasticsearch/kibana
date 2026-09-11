@@ -46,7 +46,7 @@ import {
   validateBulkDuplicateRule,
 } from '../../../logic/bulk_actions/validations';
 import { getExportByObjectIds } from '../../../logic/export/get_export_by_object_ids';
-import { RULE_MANAGEMENT_BULK_ACTION_SOCKET_TIMEOUT_MS } from '../../timeouts';
+import { RULE_MANAGEMENT_BULK_ACTION_SOCKET_TIMEOUT_MS } from '../../constants';
 import type { BulkActionError } from './bulk_actions_response';
 import { buildBulkResponse } from './bulk_actions_response';
 import { bulkEnableDisableRules } from './bulk_enable_disable_rules';
