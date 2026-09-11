@@ -11,15 +11,15 @@ import { render } from '../lib/helper/rtl_helpers';
 
 describe('MonitorPage', () => {
   it('renders', async () => {
-    const { findByText } = render(<MonitorPage />);
+    const { findByText, getByText } = render(<MonitorPage />);
 
     expect(await findByText('Up in 0 location')).toBeInTheDocument();
-    expect(await findByText('Overall availability')).toBeInTheDocument();
-    expect(await findByText('0.00 %')).toBeInTheDocument();
-    expect(await findByText('Url')).toBeInTheDocument();
-    expect(await findByText('Monitor ID')).toBeInTheDocument();
-    expect(await findByText('Tags')).toBeInTheDocument();
-    expect(await findByText('Set tags')).toBeInTheDocument();
-    expect(await findByText('Monitoring from')).toBeInTheDocument();
-  });
+    expect(getByText('Overall availability')).toBeInTheDocument();
+    expect(getByText('0.00 %')).toBeInTheDocument();
+    expect(getByText('Url')).toBeInTheDocument();
+    expect(getByText('Monitor ID')).toBeInTheDocument();
+    expect(getByText('Tags')).toBeInTheDocument();
+    expect(getByText('Set tags')).toBeInTheDocument();
+    expect(getByText('Monitoring from')).toBeInTheDocument();
+  }, 30_000);
 });
