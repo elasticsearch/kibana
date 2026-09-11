@@ -9,6 +9,7 @@
 import type { ComponentProps } from 'react';
 import React, { useCallback, useEffect, useState, useRef, useMemo } from 'react';
 import useDebounce from 'react-use/lib/useDebounce';
+import type { EuiFlyoutProps } from '@elastic/eui';
 import {
   EuiFlyout,
   useEuiTheme,
@@ -28,6 +29,11 @@ interface DocumentationFlyoutProps {
   onHelpMenuVisibilityChange: (status: boolean) => void;
   searchInDescription?: boolean;
   linkToDocumentation?: string;
+  /**
+   * Flyout width. Defaults to a fixed pixel width. Pass a named size (e.g. `'s'`)
+   * when this flyout is opened as a child of another flyout.
+   */
+  size?: EuiFlyoutProps['size'];
 }
 
 function DocumentationFlyout({
@@ -35,6 +41,7 @@ function DocumentationFlyout({
   linkToDocumentation,
   isHelpMenuOpen,
   onHelpMenuVisibilityChange,
+  size,
 }: DocumentationFlyoutProps) {
   const [documentationSections, setDocumentationSections] =
     useState<LanguageDocumentationSections>();
@@ -94,7 +101,7 @@ function DocumentationFlyout({
           data-test-subj="esqlInlineDocumentationFlyout"
           css={{ zIndex: 1 }}
           type="push"
-          size={DEFAULT_WIDTH}
+          size={size ?? DEFAULT_WIDTH}
           paddingSize="m"
           className="esqlInlineDocumentationFlyout"
         >

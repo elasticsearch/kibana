@@ -7,6 +7,7 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 import React, { useMemo, useState, useCallback, useEffect, useRef } from 'react';
+import type { EuiFlyoutProps } from '@elastic/eui';
 import {
   EuiPopover,
   EuiButtonIcon,
@@ -41,7 +42,9 @@ import { helpLabel } from './menu_i18n';
 
 export const HelpPopover: React.FC<{
   onESQLDocsFlyoutVisibilityChanged?: (isOpen: boolean) => void;
-}> = ({ onESQLDocsFlyoutVisibilityChanged }) => {
+  /** Size for the docs flyout. Pass a named size when embedded in another flyout. */
+  docsFlyoutSize?: EuiFlyoutProps['size'];
+}> = ({ onESQLDocsFlyoutVisibilityChanged, docsFlyoutSize }) => {
   const kibana = useKibana<ESQLEditorDeps>();
   const { core, data } = kibana.services;
   const { docLinks, http, chrome, analytics } = core;
@@ -334,6 +337,7 @@ export const HelpPopover: React.FC<{
           linkToDocumentation={docLinks?.links?.query?.queryESQL ?? ''}
           isHelpMenuOpen={isLanguageComponentOpen}
           onHelpMenuVisibilityChange={onHelpMenuVisibilityChange}
+          size={docsFlyoutSize}
         />
       )}
     </>

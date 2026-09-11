@@ -7,6 +7,7 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 import React, { Suspense } from 'react';
+import type { EuiFlyoutProps } from '@elastic/eui';
 import { EuiButtonIcon, EuiToolTip } from '@elastic/eui';
 import { KibanaContextProvider } from '@kbn/kibana-react-plugin/public';
 import { helpLabel } from '@kbn/esql-editor';
@@ -38,6 +39,7 @@ const helpPopoverFallback = (
 export const ESQLMenu: React.FC<{
   hideHistory?: boolean;
   onESQLDocsFlyoutVisibilityChanged?: (isOpen: boolean) => void;
+  docsFlyoutSize?: EuiFlyoutProps['size'];
 }> = (props) => {
   const deps = useKibanaServices();
 
