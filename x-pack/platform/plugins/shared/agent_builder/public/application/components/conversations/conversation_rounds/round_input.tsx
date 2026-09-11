@@ -66,6 +66,7 @@ export const RoundInput = ({
   const {
     profile: authorProfile,
     name: authorName,
+    avatarName: authorAvatarName,
     isCurrentUser,
   } = useRoundInputAuthor({ author, origin, isPendingCurrentRound });
 
@@ -95,7 +96,7 @@ export const RoundInput = ({
       data-test-subj="agentBuilderRoundInputLayout"
     >
       <EuiFlexItem grow={false} data-test-subj="agentBuilderRoundInputAvatar">
-        <RoundInputAvatar profile={authorProfile} name={authorName} />
+        <RoundInputAvatar profile={authorProfile} name={authorAvatarName} />
       </EuiFlexItem>
       <EuiFlexItem
         grow={false}

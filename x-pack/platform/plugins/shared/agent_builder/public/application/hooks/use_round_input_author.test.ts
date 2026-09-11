@@ -94,6 +94,20 @@ describe('useRoundInputAuthor', () => {
     expect(mockUseUserProfiles).toHaveBeenCalledWith({ uids: [] });
     expect(result.current.profile).toBeUndefined();
     expect(result.current.name).toBe('Jane Doe');
+    expect(result.current.avatarName).toBe('Jane Doe');
+  });
+
+  it('has no avatar for a Kibana author whose profile cannot be resolved', () => {
+    const { result } = renderHook(() =>
+      useRoundInputAuthor({
+        author: { id: 'api_key_owner', username: 'api_key_owner' },
+        isPendingCurrentRound: false,
+      })
+    );
+
+    expect(result.current.profile).toBeUndefined();
+    expect(result.current.name).toBe('api_key_owner');
+    expect(result.current.avatarName).toBeUndefined();
   });
 
   it('attributes a pending round without a persisted author to the current user', () => {

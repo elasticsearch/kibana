@@ -5,6 +5,7 @@
  * 2.0.
  */
 
+import type { CurrentUser } from '@kbn/agent-builder-common';
 import {
   type ConversationRound,
   ConversationRoundStatus,
@@ -57,8 +58,11 @@ export const createRound = (parts: Partial<ConversationRound>): ConversationRoun
   };
 };
 
-export const createConversationClientMock = (): ConversationClientMock => {
+export const createConversationClientMock = ({
+  user = { id: 'profile-1', username: 'jane', isAdmin: false },
+}: { user?: CurrentUser } = {}): ConversationClientMock => {
   return {
+    user,
     get: jest.fn(),
     exists: jest.fn(),
     getByOrigin: jest.fn(),

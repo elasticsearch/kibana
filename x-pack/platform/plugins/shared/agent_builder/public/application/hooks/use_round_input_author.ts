@@ -23,6 +23,12 @@ interface UseRoundInputAuthorArgs {
 export interface RoundInputAuthor {
   profile?: UserProfileWithAvatar;
   name?: string;
+  /**
+   * Name to seed an initials avatar with, for authors that have a name but can never have a Kibana
+   * profile picture (external systems). Kibana users whose profile did not resolve get no avatar
+   * rather than initials for an identity we only partially know.
+   */
+  avatarName?: string;
   isCurrentUser: boolean;
 }
 
@@ -53,12 +59,14 @@ export const useRoundInputAuthor = ({
   }
 
   const authorId = author?.id ?? profile?.uid;
+  const name = profile
+    ? getUserDisplayName(profile.user)
+    : getConversationRoundAuthorDisplayName(author);
 
   return {
     profile,
-    name: profile
-      ? getUserDisplayName(profile.user)
-      : getConversationRoundAuthorDisplayName(author),
+    name,
+    ...(origin && name ? { avatarName: name } : {}),
     isCurrentUser: Boolean(authorId) && authorId === currentUser?.uid,
   };
 };

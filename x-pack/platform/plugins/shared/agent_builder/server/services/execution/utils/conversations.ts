@@ -18,7 +18,7 @@ import type {
   RoundCompleteEvent,
   ConversationAction,
   TimelineEvent,
-  UserIdAndName,
+  CurrentUser,
   ChatEvent,
 } from '@kbn/agent-builder-common';
 import {
@@ -62,8 +62,6 @@ export const createConversation$ = ({
     switchMap(({ title, roundCompletedEvent }) => {
       // Persistent sub-agent creations: link to the parent and snapshot the parent's user
       const isPersistentSubagentCreate = Boolean(conversation.parent_conversation);
-      const hasResolvedParentUser =
-        Boolean(conversation.user) && !isPlaceholderUser(conversation.user);
 
       return conversationClient.create({
         id: conversation.id,
@@ -75,7 +73,7 @@ export const createConversation$ = ({
         state: roundCompletedEvent.data.conversation_state,
         status: roundCompletedEvent.data.round.status,
         rounds: [roundCompletedEvent.data.round],
-        ...(isPersistentSubagentCreate && hasResolvedParentUser ? { user: conversation.user } : {}),
+        ...(isPersistentSubagentCreate ? { user: conversation.user } : {}),
         ...(conversation.parent_conversation
           ? { parent_conversation: conversation.parent_conversation }
           : {}),
@@ -195,8 +193,6 @@ export const persistRoundInput = async ({
 
   if (conversation.operation === 'CREATE') {
     const isPersistentSubagentCreate = Boolean(conversation.parent_conversation);
-    const hasResolvedParentUser =
-      Boolean(conversation.user) && !isPlaceholderUser(conversation.user);
     try {
       await conversationClient.create({
         id: conversation.id,
@@ -207,7 +203,7 @@ export const persistRoundInput = async ({
         read_only: conversation.read_only,
         rounds: [],
         events: [event],
-        ...(isPersistentSubagentCreate && hasResolvedParentUser ? { user: conversation.user } : {}),
+        ...(isPersistentSubagentCreate ? { user: conversation.user } : {}),
         ...(conversation.parent_conversation
           ? { parent_conversation: conversation.parent_conversation }
           : {}),
@@ -428,7 +424,13 @@ export const getConversation = async ({
     }
 
     return {
-      ...placeholderConversation({ agentId, accessControl, origin, readOnly }),
+      ...placeholderConversation({
+        agentId,
+        accessControl,
+        origin,
+        readOnly,
+        user: conversationClient.user,
+      }),
       operation: 'CREATE',
     };
   }
@@ -466,6 +468,7 @@ export const getConversation = async ({
           agentId,
           accessControl: parent.access_control,
           origin,
+          user: conversationClient.user,
         }),
         title: subagentCreation.subagentName,
         user: parent.user,
@@ -480,6 +483,7 @@ export const getConversation = async ({
         accessControl,
         origin,
         readOnly,
+        user: conversationClient.user,
       }),
       title: subagentCreation.subagentName,
       parent_conversation: parentLink,
@@ -488,35 +492,39 @@ export const getConversation = async ({
   }
 
   return {
-    ...placeholderConversation({ conversationId, agentId, accessControl, origin }),
+    ...placeholderConversation({
+      conversationId,
+      agentId,
+      accessControl,
+      origin,
+      user: conversationClient.user,
+    }),
     operation: 'CREATE',
   };
 };
 
 /**
- * Sentinel user attached to a placeholder conversation.
+ * In-memory conversation used before the conversation document exists.
+ *
+ * `user` is the identity the conversation will be created with, so rounds persisted before the
+ * document exists are attributed to the real caller. It carries no profile id when the caller has
+ * none (e.g. an API key whose owner has no activated profile), in which case authorship falls back
+ * to the username.
  */
-export const PLACEHOLDER_USER: UserIdAndName = {
-  id: 'unknown',
-  username: 'unknown',
-};
-
-export const isPlaceholderUser = (user: UserIdAndName | undefined): boolean => {
-  return user?.id === PLACEHOLDER_USER.id && user?.username === PLACEHOLDER_USER.username;
-};
-
 export const placeholderConversation = ({
   agentId,
   conversationId,
   accessControl,
   origin,
   readOnly,
+  user,
 }: {
   agentId: string;
   conversationId?: string;
   accessControl?: Pick<ConversationAccessControl, 'access_mode'>;
   origin?: ConversationOrigin;
   readOnly?: boolean;
+  user: CurrentUser;
 }): Conversation => {
   return {
     id: conversationId ?? uuidv4(),
@@ -528,6 +536,6 @@ export const placeholderConversation = ({
     ...(origin ? { origin } : {}),
     updated_at: new Date().toISOString(),
     created_at: new Date().toISOString(),
-    user: PLACEHOLDER_USER,
+    user: { ...(user.id ? { id: user.id } : {}), username: user.username },
   };
 };

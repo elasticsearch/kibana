@@ -19,6 +19,7 @@ import {
   ConversationAccessControlMode,
   ConversationRoundStatus,
   ConversationRoundStepType,
+  EventActorType,
   TimelineEventType,
   createConversationAlreadyExistsError,
   createConversationNotFoundError,
@@ -74,6 +75,20 @@ describe('conversations utils', () => {
         expect(result.operation).toBe('UPDATE');
         expect(result.id).toBe('existing-conversation');
         expect(conversationClient.getByOrigin).toHaveBeenCalledWith(origin);
+      });
+
+      it('attributes a new conversation placeholder to the user the client is scoped to', async () => {
+        const conversationClient = createConversationClientMock({
+          user: { username: 'api_key_owner', isAdmin: false },
+        });
+
+        const result = await getConversation({
+          agentId: 'test-agent',
+          conversationId: undefined,
+          conversationClient,
+        });
+
+        expect(result.user).toEqual({ username: 'api_key_owner' });
       });
 
       it('defaults access control to private for new conversation placeholders', async () => {
@@ -445,6 +460,26 @@ describe('conversations utils', () => {
 
       // No separate append on the happy CREATE path — the event is inside the create.
       expect(conversationClient.appendEvents).not.toHaveBeenCalled();
+    });
+
+    it('attributes the first round to the scoped user when the caller has no profile id', async () => {
+      const conversationClient = createConversationClientMock({
+        user: { username: 'api_key_owner', isAdmin: false },
+      });
+      const conversation = await getConversation({
+        agentId: 'agent-1',
+        conversationId: undefined,
+        conversationClient,
+      });
+
+      await runReceipt({ conversation, conversationClient });
+
+      const [createArgs] = conversationClient.create.mock.calls[0];
+      expect(createArgs.events![0].actor).toEqual({
+        type: EventActorType.user,
+        id: 'api_key_owner',
+        username: 'api_key_owner',
+      });
     });
 
     it('skips create for UPDATE but still appends the user_message', async () => {

@@ -102,6 +102,8 @@ function computeChangedFields(
 }
 
 export interface ConversationClient {
+  /** Identity this client is scoped to: the owner of the conversations it creates. */
+  readonly user: CurrentUser;
   get(conversationId: string): Promise<ConversationWithPermissions>;
   exists(conversationId: string): Promise<boolean>;
   getByOrigin(origin: ConversationOrigin): Promise<Conversation | undefined>;
@@ -186,7 +188,7 @@ class ConversationClientImpl implements ConversationClient {
   private readonly space: string;
   private readonly storage: ConversationStorage;
   private readonly esClient: ElasticsearchClient;
-  private readonly user: CurrentUser;
+  public readonly user: CurrentUser;
   private readonly agentRegistry: AgentRegistry;
   private readonly logger: Logger;
   private readonly onMetadataPatched?: (payload: ConversationMetadataPatchedPayload) => void;
