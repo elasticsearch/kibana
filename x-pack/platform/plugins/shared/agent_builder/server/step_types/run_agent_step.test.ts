@@ -97,6 +97,41 @@ describe('ai.agent workflow step (Agent Builder)', () => {
     executeAgent: jest.fn().mockResolvedValue({ executionId: 'exec-1', events$ }),
   });
 
+  // Regression: the agent loop emits one round_complete per round; the step's
+  // output must be the FINAL round (the terminal structured answer), not the
+  // first intermediate research round. `find` returned round r-1 and silently
+  // dropped the structured output whenever the agent researched first.
+  it('returns the FINAL round_complete when the agent runs multiple rounds', async () => {
+    const events$ = of(
+      {
+        type: ChatEventType.roundComplete,
+        data: {
+          round: {
+            id: 'r-1',
+            response: { message: 'intermediate research round' },
+          },
+        },
+      },
+      {
+        type: ChatEventType.roundComplete,
+        data: {
+          round: {
+            id: 'r-2',
+            response: {
+              message: 'final answer',
+              structured_output: { isIncident: true },
+            },
+          },
+        },
+      }
+    );
+    const execution = createExecutionMock(events$);
+    const step = getRunAgentStepDefinition({ internalStart: { execution } } as any);
+    const res = await step.handler(createContext({ input: { message: 'hi' } }));
+    expect(res.output?.structured_output).toEqual({ isIncident: true });
+    expect(res.output?.message).toContain('final answer');
+  });
+
   it('creates and persists a conversation when create_conversation is true, and emits conversation_id', async () => {
     const events$ = of(
       {
@@ -998,8 +1033,9 @@ describe('ai.agent workflow step (Agent Builder)', () => {
 
       const res = await step.handler(createContext({ input: { message: 'hi' } }));
 
-      // Output should be from the first round (events.find returns first match)
-      expect(res.output?.message).toBe('intermediate');
+      // Output should be from the FINAL round: the terminal answer carries the
+      // structured output; intermediate research rounds do not.
+      expect(res.output?.message).toBe('final');
       // Usage should be the sum across all rounds
       expect(res.output?.metadata?.usage).toEqual({
         connectorId: 'c',

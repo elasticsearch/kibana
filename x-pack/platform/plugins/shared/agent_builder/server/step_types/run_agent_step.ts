@@ -187,7 +187,12 @@ export const getRunAgentStepDefinition = (serviceManager: ServiceManager) => {
           )
         );
 
-        const roundEvent = events.find(isRoundCompleteEvent);
+        // The agent loop emits one round_complete per round (research cycles
+        // + the terminal structured answer). The workflow step's output is the
+        // FINAL round: `find` returned the first intermediate round whenever
+        // the agent did research before answering, silently dropping the
+        // structured output the caller asked for.
+        const roundEvent = events.findLast(isRoundCompleteEvent);
         if (!roundEvent) {
           throw new Error('No round_complete event received from execution service');
         }
