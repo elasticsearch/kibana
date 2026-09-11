@@ -37,6 +37,7 @@ interface UseCreationOptionsProps {
   embedSettings?: DashboardEmbedSettings;
   incomingEmbeddables: IncomingEmbeddables;
   validateOutcome: DashboardCreationOptions['validateLoadedSavedObject'];
+  isPlaylistPlayback?: boolean;
 }
 
 export const useCreationOptions = ({
@@ -46,6 +47,7 @@ export const useCreationOptions = ({
   embedSettings,
   incomingEmbeddables,
   validateOutcome,
+  isPlaylistPlayback = false,
 }: UseCreationOptionsProps) => {
   return useCallback((): Promise<DashboardCreationOptions> => {
     const searchSessionIdFromURL = getSearchSessionIdFromURL(history);
@@ -121,8 +123,10 @@ export const useCreationOptions = ({
       getInitialInput,
       validateLoadedSavedObject: validateOutcome,
       fullScreenMode:
-        kbnUrlStateStorage.get<{ fullScreenMode?: boolean }>(DASHBOARD_STATE_STORAGE_KEY)
-          ?.fullScreenMode ?? false,
+        isPlaylistPlayback ||
+        (kbnUrlStateStorage.get<{ fullScreenMode?: boolean }>(DASHBOARD_STATE_STORAGE_KEY)
+          ?.fullScreenMode ??
+          false),
       isEmbeddedExternally: Boolean(embedSettings),
       getEmbeddableAppContext: (dashboardId) => ({
         currentAppId: DASHBOARD_APP_ID,
@@ -136,5 +140,6 @@ export const useCreationOptions = ({
     getScopedHistory,
     kbnUrlStateStorage,
     incomingEmbeddables,
+    isPlaylistPlayback,
   ]);
 };

@@ -25,6 +25,7 @@ import type {
   Plugin,
   Logger,
   SavedObjectsClientContract,
+  RequestHandlerContext,
   UiSettingsParams,
 } from '@kbn/core/server';
 import { registerContentInsights } from '@kbn/content-management-content-insights-server';
@@ -52,6 +53,8 @@ import { setKibanaServices } from './kibana_services';
 import { scanDashboards } from './scan_dashboards';
 import { registerDashboardDrilldown } from './dashboard_drilldown/register_dashboard_drilldown';
 import { getDashboardStateSchema } from './api/dashboard_state_schemas';
+import { dashboardPlaylistSavedObjectType } from './playlist_saved_object';
+import { registerPlaylistRoutes } from './playlist_routes';
 
 export const DEFER_BELOW_FOLD = `labs:dashboard:deferBelowFold` as const;
 
@@ -91,6 +94,7 @@ export class DashboardPlugin
         },
       })
     );
+    core.savedObjects.registerType(dashboardPlaylistSavedObjectType);
 
     plugins.contentManagement.favorites.registerFavoriteType('dashboard');
 
@@ -149,6 +153,7 @@ export class DashboardPlugin
     core.uiSettings.register(dashboardUiSettings);
 
     registerRoutes(core.http, this.apiUsageCounter, this.logger);
+    registerPlaylistRoutes(core.http.createRouter<RequestHandlerContext>().versioned, this.logger);
 
     void registerAccessControl({
       http: core.http,

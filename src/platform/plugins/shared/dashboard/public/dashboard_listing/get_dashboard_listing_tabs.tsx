@@ -33,6 +33,8 @@ import type {
   DashboardListingTab,
   DashboardSavedObjectUserContent,
 } from './types';
+import { PlaylistListing } from './playlist_listing';
+import { playlistStrings } from './_playlist_strings';
 
 type GetDashboardListingTabsParams = Pick<
   DashboardListingProps,
@@ -132,9 +134,15 @@ export const getDashboardListingTabs = ({
       goToDashboard();
     },
   };
+  const playlistsTab: DashboardListingTab = {
+    title: playlistStrings.tabTitle,
+    id: 'playlists',
+    deepLink: { title: playlistStrings.tabTitle },
+    getTableList: () => <PlaylistListing />,
+  };
 
   // Additional tabs (e.g., visualizations and annotation groups)
   const additionalTabs = getTabs ? getTabs() : [];
 
-  return [dashboardsTab, ...additionalTabs];
+  return [dashboardsTab, playlistsTab, ...additionalTabs];
 };

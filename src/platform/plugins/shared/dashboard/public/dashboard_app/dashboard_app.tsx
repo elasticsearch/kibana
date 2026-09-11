@@ -91,6 +91,7 @@ export function DashboardApp({
   >(undefined);
   const showPlainSpinner = useObservable(coreServices.customBranding.hasCustomBranding$, false);
   const { scopedHistory: getScopedHistory } = useDashboardMountContext();
+  const isPlaylistPlayback = new URLSearchParams(history.location.search).has('playlistId');
 
   useObservabilityAIAssistantContext({
     dashboardApi,
@@ -155,6 +156,7 @@ export function DashboardApp({
     embedSettings,
     incomingEmbeddables,
     validateOutcome,
+    isPlaylistPlayback,
   });
 
   useEffect(() => {

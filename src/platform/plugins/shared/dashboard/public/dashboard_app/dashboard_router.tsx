@@ -27,6 +27,7 @@ import { DashboardApp } from './dashboard_app';
 import { DashboardMountContext } from './hooks/dashboard_mount_context';
 import { DashboardListingPage } from './listing_page/dashboard_listing_page';
 import { DashboardNoMatch } from './listing_page/dashboard_no_match';
+import { PlaylistRunner } from './playlist_runner';
 import type { DashboardEmbedSettings, DashboardMountContextProps } from './types';
 import {
   CREATE_NEW_DASHBOARD_URL,
@@ -164,6 +165,7 @@ export async function mountApp({
     <KibanaRenderContextProvider {...coreStart}>
       <DashboardMountContext.Provider value={mountContext}>
         <HashRouter>
+          <PlaylistRunner />
           <Routes>
             <Route
               path={[
@@ -178,6 +180,7 @@ export async function mountApp({
               path={[LANDING_PAGE_PATH, `${LANDING_PAGE_PATH}/:activeTab`]}
               render={renderListingPage}
             />
+            <Route exact path="/playlist/:id" render={() => null} />
             <Route exact path="/">
               <Redirect to={LANDING_PAGE_PATH} />
             </Route>

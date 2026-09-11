@@ -12,5 +12,11 @@ export { dashboardClient } from './dashboard_client';
 export { findService } from './find_service';
 export { searchAction } from './search_action';
 export { getDashboardsByIdsAction } from './get_dashboard_by_id_action';
+export { playlistClient } from './playlist_client';
+export {
+  createPlaylistPlaybackController,
+  type PlaylistPlaybackController,
+  type PlaylistPlaybackState,
+} from './playlist_playback_controller';
 
 export type { FindDashboardsByIdResponse, FindDashboardsService } from './types';
