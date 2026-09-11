@@ -8,6 +8,7 @@
 import type { QueryDslQueryContainer } from '@elastic/elasticsearch/lib/api/types';
 import type { InternalIStorageClient, StorageIndexAdapter } from '@kbn/storage-adapter';
 import { isResponseError } from '@kbn/es-errors';
+import { isEqual } from 'lodash';
 import type { Logger } from '@kbn/logging';
 import semverCompare from 'semver/functions/compare';
 import semverInc from 'semver/functions/inc';
@@ -28,6 +29,31 @@ import { InvalidEvaluatorNameError } from './invalid_evaluator_name_error';
 import type { EvaluatorStorageProperties, evaluatorsStorageSettings } from './evaluators_storage';
 
 type EvaluatorStorageDocument = EvaluatorStorageProperties & { _id?: string };
+
+/**
+ * Compares two judge configs by meaning rather than representation, so a definition written
+ * through the API and one round-tripped through a form agree. `evidence` and
+ * `reference_data_keys` are sets the evaluator is given, so neither order nor an omitted
+ * empty list distinguishes them. Score order is left alone: it is the order a reader sees.
+ */
+const isSameJudge = (a: LlmJudgeConfig, b: LlmJudgeConfig): boolean => {
+  const normalize = (judge: LlmJudgeConfig) => ({
+    ...judge,
+    evidence: [...judge.evidence].sort(),
+    reference_data_keys: [...(judge.reference_data_keys ?? [])].sort(),
+    output: {
+      ...judge.output,
+      // Order is kept: it is the order a reader sees. Only a blank description is
+      // normalized, since the form omits one and the API accepts an empty string.
+      scores: judge.output.scores.map(({ description, ...score }) => ({
+        ...score,
+        ...(description?.trim() ? { description: description.trim() } : {}),
+      })),
+    },
+  });
+
+  return isEqual(normalize(a), normalize(b));
+};
 
 export type EvaluatorsStorageAdapter = StorageIndexAdapter<
   typeof evaluatorsStorageSettings,
@@ -197,7 +223,8 @@ export class EvaluatorDefinitionClient {
   /**
    * Writes the next version of a definition. The caller's fields are layered
    * over the latest version, so an update that only changes the description
-   * carries the judge config forward unchanged.
+   * carries the judge config forward unchanged. An update that changes nothing
+   * returns the current version instead of writing a duplicate of it.
    */
   async update(
     name: string,
@@ -216,6 +243,16 @@ export class EvaluatorDefinitionClient {
         throw new EvaluatorNotFoundError(name);
       }
 
+      const nextDescription = description ?? current.description;
+      const nextJudge = judge ?? current.judge;
+
+      // Saving without changing anything would otherwise mint a version identical to the one
+      // below it, inflating a history `listVersions` caps and making `name@version` ambiguous
+      // about which edit it represents.
+      if (nextDescription === current.description && isSameJudge(nextJudge, current.judge)) {
+        return current;
+      }
+
       const nextVersion = semverInc(current.version, 'minor');
       if (!nextVersion) {
         throw new Error(
@@ -228,8 +265,8 @@ export class EvaluatorDefinitionClient {
         name,
         version: nextVersion,
         kind: 'llm',
-        description: description ?? current.description,
-        judge: judge ?? current.judge,
+        description: nextDescription,
+        judge: nextJudge,
         space_ids: [this.spaceId],
         created_at: timestamp,
         updated_at: timestamp,

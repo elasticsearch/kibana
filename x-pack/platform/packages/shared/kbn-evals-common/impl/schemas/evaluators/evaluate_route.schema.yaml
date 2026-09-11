@@ -23,47 +23,7 @@ paths:
                 - evaluators
               properties:
                 subject:
-                  type: object
-                  required:
-                    - traces
-                  properties:
-                    mode:
-                      type: string
-                      enum:
-                        - single-turn
-                        - multi-turn
-                      default: single-turn
-                    traces:
-                      type: array
-                      minItems: 1
-                      maxItems: 1
-                      items:
-                        type: object
-                        required:
-                          - trace_id
-                        properties:
-                          trace_id:
-                            type: string
-                            maxLength: 256
-                          reference_data:
-                            type: object
-                            additionalProperties: true
-                    instrumentation:
-                      type: object
-                      description: >-
-                        Optional instrumentation profile selection. When omitted,
-                        the elastic-inference profile is used.
-                      required:
-                        - profile
-                      properties:
-                        profile:
-                          type: string
-                          enum:
-                            - elastic-inference
-                            - otel-genai-events
-                            - otel-genai-attributes
-                            - claude-code
-                          default: elastic-inference
+                  $ref: '../common_attributes.schema.yaml#/components/schemas/EvaluationSubject'
                 evaluators:
                   type: array
                   minItems: 1

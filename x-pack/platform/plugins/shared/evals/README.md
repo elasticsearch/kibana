@@ -180,7 +180,15 @@ All routes are internal (`elastic-api-version: 1`). Read routes require the `rea
 - **Experiments** — list, detail, scores, dataset-level examples, and statistical comparison of two experiments
 - **Experiment execution (Workflows)** — launch a run, save it as a reusable workflow, preview the generated YAML, list run templates, and poll or cancel a run. Requires an Enterprise license; otherwise returns `501`.
 - **Datasets** — full CRUD for datasets and their examples, plus a bulk upsert endpoint. The listing accepts `tags` and `maturity` filters and returns facet counts for both (see [Dataset tags and maturity](#dataset-tags-and-maturity)). Supports remote forwarding to a configured golden-cluster Kibana.
-- **Evaluators** — list every evaluator available in the space, and create, read, update, or delete user-defined ones
+- **Evaluators** — `/internal/evals/evaluators` lists every evaluator available in the space and creates, reads, updates, or deletes user-defined ones. Built-in names cannot be created, updated, or deleted, and cannot be used for a draft; each returns `409`. Four action routes operate on traces, and they do not all sit under the same path segment:
+
+  | Route                                             | Purpose                                                              |
+  | ------------------------------------------------- | -------------------------------------------------------------------- |
+  | `/internal/evals/_evaluate`                       | Grade a trace with one or more saved evaluators                       |
+  | `/internal/evals/evaluators/_test`                | Run an unsaved draft definition against a trace, before it exists     |
+  | `/internal/evals/evaluators/_validate`            | Report whether a trace carries the evidence each evaluator declares   |
+  | `/internal/evals/traces/_resolve_instrumentation` | Probe which instrumentation profiles a trace matches                  |
+
 - **Scores** — bulk ingestion of evaluation score documents
 - **Examples** — per-example score history across experiments
 - **Traces** — span retrieval for a given trace ID
@@ -204,7 +212,9 @@ Concurrent writes are guarded with optimistic concurrency, so a suite adding exa
 
 ## Instrumentation profiles
 
-Evaluator routes reconstruct a normalized evidence round (`input.message`, `response.message`, `steps`) from a trace using an **instrumentation profile**. Pass `subject.instrumentation.profile` on `_validate` / `_evaluate`; when omitted, **`elastic-inference`** is used.
+Evaluator routes reconstruct a normalized evidence round (`input.message`, `response.message`, `steps`) from a trace using an **instrumentation profile**. Pass `subject.instrumentation.profile` on `_validate` / `_evaluate` / `_test`; when omitted, **`elastic-inference`** is used. User-defined judges receive the same normalized round as built-in LLM evaluators, so a judge prompt describes what to assess rather than how to query a trace.
+
+`_evaluate` and `_test` wait for a trace to finish exporting before grading it, so an in-flight response is not scored as if it were final. `_validate` deliberately does not wait: it reports the evidence present now, because "not indexed yet" is a useful answer when you are diagnosing instrumentation.
 
 | Profile                       | `user_query`                                                | `agent_response`                                             | `tool_calls`                               |
 | ----------------------------- | ----------------------------------------------------------- | ------------------------------------------------------------ | ------------------------------------------ |
@@ -217,10 +227,11 @@ Profile definitions live in [`server/evaluators/evidence/profiles.ts`](server/ev
 
 ## UI pages
 
-The plugin UI is organized into four navigation tabs:
+The plugin UI is organized into five navigation tabs:
 
 - **Experiments** — paginated listing of evaluation experiments, detail view with per-evaluator stats, and a comparison view with paired t-test results. The **New experiment** flow launches or saves workflow-based runs and streams live progress on the detail page (see [Workflow-based experiment execution](#workflow-based-experiment-execution)).
 - **Datasets** — manage evaluation datasets and examples (CRUD, JSON editor), tag and set the maturity of a dataset, and filter the listing by tag or maturity
+- **Evaluators** — a catalog of every evaluator in the space, searchable and filterable by kind (LLM judge or code) and origin (built-in or user-defined), showing each one's version and required inputs. Built-ins are read-only; user-defined judges can be created, edited, and deleted here by users holding `manage_evals`. The editor collects the judge's prompts, the trace evidence it needs, and its output scores, and can run the draft against a real trace ID before saving — the connector chosen for that test is not stored on the definition.
 - **Tracing** — browse tracing projects with metrics, drill into individual traces with a waterfall view
 - **Remotes** — configure remote Kibana instances for cross-cluster dataset management
 

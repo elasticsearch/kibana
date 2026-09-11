@@ -346,6 +346,127 @@ describe('EvaluatorDefinitionClient', () => {
       );
     });
 
+    it('leaves the history alone when the update changes nothing', async () => {
+      const { client, docs } = createClient();
+      const created = await client.create({ name: 'tone', description: 'Tone', judge: JUDGE });
+      const sizeAfterCreate = docs.size;
+
+      const unchanged = await client.update('tone', { description: 'Tone', judge: JUDGE });
+
+      expect(unchanged.version).toBe('1.0.0');
+      expect(unchanged.id).toBe(created.id);
+      expect(docs.size).toBe(sizeAfterCreate);
+    });
+
+    it('treats an update that omits every field as a no-op', async () => {
+      const { client, docs } = createClient();
+      await client.create({ name: 'tone', description: 'Tone', judge: JUDGE });
+      const sizeAfterCreate = docs.size;
+
+      await expect(client.update('tone', {})).resolves.toEqual(
+        expect.objectContaining({ version: '1.0.0' })
+      );
+      expect(docs.size).toBe(sizeAfterCreate);
+    });
+
+    it('treats an omitted reference_data_keys and an empty one as the same judge', async () => {
+      const { client, docs } = createClient();
+      const { reference_data_keys: _omitted, ...judgeWithoutKeys } = JUDGE;
+      await client.create({ name: 'tone', description: 'Tone', judge: judgeWithoutKeys });
+      const sizeAfterCreate = docs.size;
+
+      // The form always sends the key, so a definition created through the API would
+      // otherwise mint a version the first time anyone opened and saved it unchanged.
+      const unchanged = await client.update('tone', {
+        judge: { ...judgeWithoutKeys, reference_data_keys: [] },
+      });
+
+      expect(unchanged.version).toBe('1.0.0');
+      expect(docs.size).toBe(sizeAfterCreate);
+    });
+
+    it('ignores the order of evidence, which is a set of requirements', async () => {
+      const { client, docs } = createClient();
+      await client.create({
+        name: 'tone',
+        description: 'Tone',
+        judge: { ...JUDGE, evidence: ['input', 'response'] },
+      });
+      const sizeAfterCreate = docs.size;
+
+      const unchanged = await client.update('tone', {
+        judge: { ...JUDGE, evidence: ['response', 'input'] },
+      });
+
+      expect(unchanged.version).toBe('1.0.0');
+      expect(docs.size).toBe(sizeAfterCreate);
+    });
+
+    it('treats a blank score description as no description', async () => {
+      const { client, docs } = createClient();
+      await client.create({
+        name: 'tone',
+        description: 'Tone',
+        judge: {
+          ...JUDGE,
+          output: { scores: [{ name: 'tone', type: 'number', description: '  ' }] },
+        },
+      });
+      const sizeAfterCreate = docs.size;
+
+      // The form omits a blank description, so it would otherwise read as a change.
+      const unchanged = await client.update('tone', {
+        judge: { ...JUDGE, output: { scores: [{ name: 'tone', type: 'number' }] } },
+      });
+
+      expect(unchanged.version).toBe('1.0.0');
+      expect(docs.size).toBe(sizeAfterCreate);
+    });
+
+    it('still writes when a score description changes in substance', async () => {
+      const { client } = createClient();
+      await client.create({
+        name: 'tone',
+        description: 'Tone',
+        judge: { ...JUDGE, output: { scores: [{ name: 'tone', type: 'number' }] } },
+      });
+
+      const updated = await client.update('tone', {
+        judge: {
+          ...JUDGE,
+          output: { scores: [{ name: 'tone', type: 'number', description: 'Be strict' }] },
+        },
+      });
+
+      expect(updated.version).toBe('1.1.0');
+    });
+
+    it('still writes when the evidence set itself changes', async () => {
+      const { client } = createClient();
+      await client.create({
+        name: 'tone',
+        description: 'Tone',
+        judge: { ...JUDGE, evidence: ['response'] },
+      });
+
+      const updated = await client.update('tone', {
+        judge: { ...JUDGE, evidence: ['response', 'steps'] },
+      });
+
+      expect(updated.version).toBe('1.1.0');
+    });
+
+    it('still writes when only the judge config changes', async () => {
+      const { client } = createClient();
+      await client.create({ name: 'tone', description: 'Tone', judge: JUDGE });
+
+      const updated = await client.update('tone', {
+        judge: { ...JUDGE, prompt: 'Rate {{{agent_response}}} strictly.' },
+      });
+
+      expect(updated.version).toBe('1.1.0');
+    });
+
     it('carries omitted fields forward from the version it read', async () => {
       const { client } = createClient();
       await client.create({ name: 'tone', description: 'Tone', judge: JUDGE });

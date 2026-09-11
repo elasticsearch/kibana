@@ -19,20 +19,7 @@ paths:
         content:
           application/json:
             schema:
-              type: object
-              properties:
-                name:
-                  $ref: '../common_attributes.schema.yaml#/components/schemas/EvaluatorName'
-                description:
-                  type: string
-                  minLength: 1
-                  maxLength: 2048
-                judge:
-                  $ref: '../common_attributes.schema.yaml#/components/schemas/LlmJudgeConfig'
-              required:
-                - name
-                - description
-                - judge
+              $ref: '../common_attributes.schema.yaml#/components/schemas/UserDefinedEvaluatorDraft'
       responses:
         '200':
           description: Successful response

@@ -17,7 +17,7 @@ import { DEFAULT_SPACE_ID } from '@kbn/core-spaces-common';
 import { EVALS_API_PRIVILEGES } from '../../../common';
 import { EvaluatorNotFoundError } from '../../storage/evaluators/evaluator_not_found_error';
 import type { RouteDependencies } from '../register_routes';
-import { builtInEvaluatorMessage, handleEvaluatorError } from './shared/handle_evaluator_error';
+import { builtInEvaluatorConflict, handleEvaluatorError } from './shared/handle_evaluator_error';
 
 export const registerDeleteEvaluatorRoute = ({
   router,
@@ -49,7 +49,7 @@ export const registerDeleteEvaluatorRoute = ({
         const { version } = request.query;
 
         if (evaluatorRegistry.isBuiltIn(name)) {
-          return response.badRequest({ body: { message: builtInEvaluatorMessage(name) } });
+          return builtInEvaluatorConflict(response, name);
         }
 
         try {

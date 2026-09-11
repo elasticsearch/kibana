@@ -16,9 +16,11 @@
 
 import { z, lazySchema } from '@kbn/zod/v4';
 
+import { EvaluationTraceId, EvaluationInstrumentationProfile } from '../common_attributes.gen';
+
 export const ResolveInstrumentationRequestBody = lazySchema(() =>
   z.object({
-    trace_id: z.string().max(256),
+    trace_id: EvaluationTraceId,
   })
 );
 export type ResolveInstrumentationRequestBody = z.infer<typeof ResolveInstrumentationRequestBody>;
@@ -30,7 +32,7 @@ export const ResolveInstrumentationResponse = lazySchema(() =>
   z.object({
     profiles: z.array(
       z.object({
-        profile: z.string().max(128),
+        profile: EvaluationInstrumentationProfile,
         evidence: z.object({
           user_query: z.object({
             status: z.enum(['found', 'not_found', 'content_redacted']),
@@ -52,7 +54,7 @@ export const ResolveInstrumentationResponse = lazySchema(() =>
     ),
     recommended_instrumentation: z
       .object({
-        profile: z.string().max(128),
+        profile: EvaluationInstrumentationProfile,
       })
       .nullable(),
   })

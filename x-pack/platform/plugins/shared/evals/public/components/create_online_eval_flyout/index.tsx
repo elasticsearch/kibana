@@ -31,7 +31,7 @@ import {
 import { i18n } from '@kbn/i18n';
 import { useKibana } from '@kbn/kibana-react-plugin/public';
 import { useCreateOnlineEvalWorkflow } from '../../hooks/use_online_eval_workflows';
-import { useEvaluators } from '../../hooks/use_experiments_api';
+import { useEvaluators } from '../../hooks/use_evaluators_api';
 import { useModelConnectors } from '../../hooks/use_model_connectors';
 import { buildOnlineEvalWorkflowYaml } from '../../../common/online_evals/workflow_yaml';
 import { ConnectorSelector, type ConnectorSelectorOption } from '../shared/connector_selector';

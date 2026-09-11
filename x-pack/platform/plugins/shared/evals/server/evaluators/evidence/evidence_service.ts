@@ -11,6 +11,7 @@ import { getInstrumentationProfile } from './resolve_instrumentation';
 import {
   EVIDENCE_ITEM_KEYS,
   type EvidenceItemKey,
+  type InstrumentationProfile,
   type InstrumentationProfileSpec,
   type EvidenceMessageItemSpec,
   type EvidenceRound,
@@ -33,7 +34,7 @@ export interface EvidenceItemProbeResult {
 }
 
 export interface InstrumentationProfileProbeResult {
-  profile: string;
+  profile: InstrumentationProfile;
   evidence: Record<EvidenceItemKey, EvidenceItemProbeResult>;
 }
 

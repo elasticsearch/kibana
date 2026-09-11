@@ -10,14 +10,12 @@ import { isHttpFetchError } from '@kbn/core-http-browser';
 import { useKibana } from '@kbn/kibana-react-plugin/public';
 import {
   API_VERSIONS,
-  EVALS_EVALUATORS_URL,
   EVALS_EXPERIMENTS_RUN_URL,
   EVALS_EXPERIMENTS_SAVE_WORKFLOW_URL,
   EVALS_EXPERIMENTS_PREVIEW_URL,
   EVALS_EXPERIMENT_TEMPLATES_URL,
   EVALS_EXPERIMENT_EXECUTION_URL,
   EVALS_EXPERIMENT_EXECUTION_CANCEL_URL,
-  type ListEvaluatorsResponse,
 } from '@kbn/evals-common';
 import type {
   RunExperimentRequest,
@@ -60,20 +58,6 @@ export const useExperimentTemplates = () => {
     queryKey: ['evals', 'experiment-templates'],
     queryFn: async (): Promise<GetExperimentTemplatesResponse> =>
       services.http!.get<GetExperimentTemplatesResponse>(EVALS_EXPERIMENT_TEMPLATES_URL, {
-        version: API_VERSIONS.internal.v1,
-      }),
-    retry: retryOnServerError,
-    refetchOnWindowFocus: false,
-  });
-};
-
-export const useEvaluators = () => {
-  const { services } = useKibana();
-
-  return useQuery({
-    queryKey: ['evals', 'evaluators'],
-    queryFn: async (): Promise<ListEvaluatorsResponse> =>
-      services.http!.get<ListEvaluatorsResponse>(EVALS_EVALUATORS_URL, {
         version: API_VERSIONS.internal.v1,
       }),
     retry: retryOnServerError,

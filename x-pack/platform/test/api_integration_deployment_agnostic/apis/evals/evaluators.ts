@@ -9,6 +9,7 @@ import expect from '@kbn/expect';
 import {
   EVALS_EVALUATORS_URL,
   EVALS_EVALUATOR_URL,
+  EVALS_TEST_EVALUATOR_URL,
   EVALS_VALIDATE_URL,
   type CreateEvaluatorResponse,
   type DeleteEvaluatorResponse,
@@ -78,6 +79,75 @@ export default function ({ getService }: DeploymentAgnosticFtrProviderContext) {
         }
       });
 
+      it('validates draft evaluator tests without persisting them', async () => {
+        const draftName = `draft-${suffix}`;
+
+        await adminClient
+          .post(EVALS_TEST_EVALUATOR_URL)
+          .send({
+            definition: {
+              name: draftName,
+              description: 'Unsaved evaluator',
+              judge: { ...judge, prompt: '{{{undeclared_reference}}}' },
+            },
+            connector_id: 'missing-connector',
+            subject: { traces: [{ trace_id: '1234567890abcdef1234567890abcdef' }] },
+          })
+          .expect(400);
+
+        await adminClient.get(evaluatorPath(draftName)).expect(404);
+      });
+
+      it('validates evaluator test execution inputs at the API boundary', async () => {
+        const definition = {
+          name: `draft-input-${suffix}`,
+          description: 'Unsaved evaluator',
+          judge,
+        };
+
+        await adminClient
+          .post(EVALS_TEST_EVALUATOR_URL)
+          .send({
+            definition,
+            connector_id: 'missing-connector',
+            subject: { traces: [{ trace_id: 'not-a-trace' }] },
+          })
+          .expect(400);
+        await adminClient
+          .post(EVALS_TEST_EVALUATOR_URL)
+          .send({
+            definition,
+            subject: { traces: [{ trace_id: '1234567890abcdef1234567890abcdef' }] },
+          })
+          .expect(400);
+        await adminClient
+          .post(EVALS_TEST_EVALUATOR_URL)
+          .send({
+            definition,
+            connector_id: 'missing-connector',
+            subject: {
+              traces: [{ trace_id: '1234567890abcdef1234567890abcdef' }],
+              instrumentation: { profile: 'unsupported' },
+            },
+          })
+          .expect(400);
+      });
+
+      it('requires manage_evals to test a draft', async () => {
+        await viewerClient
+          .post(EVALS_TEST_EVALUATOR_URL)
+          .send({
+            definition: {
+              name: `viewer-draft-${suffix}`,
+              description: 'Unsaved evaluator',
+              judge,
+            },
+            connector_id: 'missing-connector',
+            subject: { traces: [{ trace_id: '1234567890abcdef1234567890abcdef' }] },
+          })
+          .expect(403);
+      });
+
       it('rejects a definition without a system prompt', async () => {
         const { system_prompt: _systemPrompt, ...judgeWithoutSystemPrompt } = judge;
 
@@ -117,8 +187,8 @@ export default function ({ getService }: DeploymentAgnosticFtrProviderContext) {
         await adminClient
           .put(evaluatorPath('correctness'))
           .send({ description: 'Changed' })
-          .expect(400);
-        await adminClient.delete(evaluatorPath('correctness')).expect(400);
+          .expect(409);
+        await adminClient.delete(evaluatorPath('correctness')).expect(409);
       });
 
       it('creates a user-defined evaluator with manage_evals', async () => {

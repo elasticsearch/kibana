@@ -544,7 +544,7 @@ describe('POST /internal/evals/traces/_resolve_instrumentation', () => {
 
     expect(response.status).toBe(404);
     expect(response.payload).toEqual({
-      message: `Error: Trace ${ABSENT_TRACE_ID} is not ready: no documents indexed in traces-* or logs-* yet`,
+      message: `Trace ${ABSENT_TRACE_ID} is not ready: no documents indexed in traces-* or logs-* yet`,
     });
   });
 });

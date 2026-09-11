@@ -915,7 +915,7 @@ describe('POST /internal/evals/_evaluate', () => {
           kind: 'llm',
           direction: 'maximize',
         },
-        error: { message: 'Error: failed badly' },
+        error: { message: 'failed badly' },
       },
       expect.objectContaining({
         status: 'ok',
@@ -1166,7 +1166,7 @@ describe('POST /internal/evals/_evaluate', () => {
     expect(response.status).toBe(404);
     expect(response.payload).toEqual({
       message:
-        'TraceReadinessError: Trace abc123 has documents but evidence is unresolvable for profile "elastic-inference"',
+        'Trace abc123 has documents but evidence is unresolvable for profile "elastic-inference"',
     });
     expect(groundedness.evaluate).not.toHaveBeenCalled();
     expect(latency.evaluate).not.toHaveBeenCalled();
@@ -1200,8 +1200,7 @@ describe('POST /internal/evals/_evaluate', () => {
 
     expect(response.status).toBe(404);
     expect(response.payload).toEqual({
-      message:
-        'TraceReadinessError: Trace abc123 is not ready: no documents indexed in traces-* or logs-* yet',
+      message: 'Trace abc123 is not ready: no documents indexed in traces-* or logs-* yet',
     });
     expect(groundedness.evaluate).not.toHaveBeenCalled();
   });

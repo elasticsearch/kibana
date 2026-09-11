@@ -66,7 +66,7 @@ export const registerResolveInstrumentationRoute = ({ router }: RouteDependencie
         if (!(await hasTraceDocuments(traceAccessor))) {
           return response.notFound({
             body: {
-              message: `Error: Trace ${traceId} is not ready: no documents indexed in traces-* or logs-* yet`,
+              message: `Trace ${traceId} is not ready: no documents indexed in traces-* or logs-* yet`,
             },
           });
         }

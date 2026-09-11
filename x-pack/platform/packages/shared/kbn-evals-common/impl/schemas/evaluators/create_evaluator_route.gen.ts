@@ -16,15 +16,9 @@
 
 import { z, lazySchema } from '@kbn/zod/v4';
 
-import { EvaluatorName, LlmJudgeConfig, PersistedEvaluator } from '../common_attributes.gen';
+import { UserDefinedEvaluatorDraft, PersistedEvaluator } from '../common_attributes.gen';
 
-export const CreateEvaluatorRequestBody = lazySchema(() =>
-  z.object({
-    name: EvaluatorName,
-    description: z.string().min(1).max(2048),
-    judge: LlmJudgeConfig,
-  })
-);
+export const CreateEvaluatorRequestBody = lazySchema(() => UserDefinedEvaluatorDraft);
 export type CreateEvaluatorRequestBody = z.infer<typeof CreateEvaluatorRequestBody>;
 export type CreateEvaluatorRequestBodyInput = z.input<typeof CreateEvaluatorRequestBody>;
 

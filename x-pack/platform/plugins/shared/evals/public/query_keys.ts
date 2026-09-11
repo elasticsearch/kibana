@@ -6,6 +6,12 @@
  */
 
 export const queryKeys = {
+  evaluators: {
+    all: ['evals', 'evaluators'] as const,
+    list: () => ['evals', 'evaluators', 'list'] as const,
+    detail: (name: string, version?: string) =>
+      ['evals', 'evaluators', 'detail', name, version] as const,
+  },
   datasets: {
     all: ['evals', 'datasets'] as const,
     lists: ['evals', 'datasets', 'list'] as const,

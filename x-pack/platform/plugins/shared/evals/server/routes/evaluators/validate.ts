@@ -123,6 +123,10 @@ export const registerValidateRoute = ({
           traceId,
           esClient: coreContext.elasticsearch.client.asInternalUser,
         });
+
+        // A dry run, so it neither waits for the trace nor requires one to exist: callers use
+        // it to check whether an evaluator's evidence requirements *could* be satisfied, and
+        // an absent trace is reported per evaluator as unmet rather than as a failed request.
         const round = await normalizeEvidence(traceAccessor, resolvedMapping);
 
         const validationResults: ValidateResponse['evaluators'] = resolvedEvaluators.map(

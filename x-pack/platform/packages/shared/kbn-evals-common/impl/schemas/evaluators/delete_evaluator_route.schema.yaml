@@ -46,10 +46,21 @@ paths:
                 required:
                   - success
                   - deleted
-        '400':
-          description: Built-in evaluators cannot be deleted
         '404':
           description: Evaluator not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: number
+                  error:
+                    type: string
+                  message:
+                    type: string
+        '409':
+          description: Built-in evaluators cannot be deleted
           content:
             application/json:
               schema:

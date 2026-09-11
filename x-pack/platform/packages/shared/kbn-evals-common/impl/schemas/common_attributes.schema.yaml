@@ -372,6 +372,57 @@ components:
         Whether the evaluator ships with Kibana or was defined by a user.
         Built-in evaluators are read-only.
 
+    EvaluationTraceId:
+      type: string
+      maxLength: 32
+      pattern: '^[0-9a-fA-F]{32}$'
+      description: A 128-bit OpenTelemetry trace identifier encoded as 32 hexadecimal characters.
+
+    EvaluationInstrumentationProfile:
+      type: string
+      enum:
+        - elastic-inference
+        - otel-genai-events
+        - otel-genai-attributes
+        - claude-code
+
+    EvaluationSubject:
+      type: object
+      required:
+        - traces
+      properties:
+        mode:
+          type: string
+          enum:
+            - single-turn
+            - multi-turn
+          default: single-turn
+        traces:
+          type: array
+          minItems: 1
+          maxItems: 1
+          items:
+            type: object
+            required:
+              - trace_id
+            properties:
+              trace_id:
+                $ref: '#/components/schemas/EvaluationTraceId'
+              reference_data:
+                type: object
+                additionalProperties: true
+        instrumentation:
+          type: object
+          description: >-
+            Optional instrumentation profile selection. When omitted, the
+            elastic-inference profile is used.
+          required:
+            - profile
+          properties:
+            profile:
+              $ref: '#/components/schemas/EvaluationInstrumentationProfile'
+              default: elastic-inference
+
     JudgeEvidence:
       type: array
       minItems: 1
@@ -487,6 +538,22 @@ components:
         - system_prompt
         - evidence
         - output
+
+    UserDefinedEvaluatorDraft:
+      type: object
+      properties:
+        name:
+          $ref: '#/components/schemas/EvaluatorName'
+        description:
+          type: string
+          minLength: 1
+          maxLength: 2048
+        judge:
+          $ref: '#/components/schemas/LlmJudgeConfig'
+      required:
+        - name
+        - description
+        - judge
 
     PersistedEvaluator:
       type: object

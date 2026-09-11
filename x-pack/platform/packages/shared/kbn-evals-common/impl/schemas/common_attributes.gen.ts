@@ -227,6 +227,48 @@ export type EvaluatorOriginEnum = typeof EvaluatorOrigin.enum;
 export const EvaluatorOriginEnum = EvaluatorOrigin.enum;
 
 /**
+ * A 128-bit OpenTelemetry trace identifier encoded as 32 hexadecimal characters.
+ */
+export const EvaluationTraceId = lazySchema(() =>
+  z
+    .string()
+    .max(32)
+    .regex(/^[0-9a-fA-F]{32}$/)
+);
+export type EvaluationTraceId = z.infer<typeof EvaluationTraceId>;
+
+export const EvaluationInstrumentationProfile = lazySchema(() =>
+  z.enum(['elastic-inference', 'otel-genai-events', 'otel-genai-attributes', 'claude-code'])
+);
+export type EvaluationInstrumentationProfile = z.infer<typeof EvaluationInstrumentationProfile>;
+export type EvaluationInstrumentationProfileEnum = typeof EvaluationInstrumentationProfile.enum;
+export const EvaluationInstrumentationProfileEnum = EvaluationInstrumentationProfile.enum;
+
+export const EvaluationSubject = lazySchema(() =>
+  z.object({
+    mode: z.enum(['single-turn', 'multi-turn']).optional().default('single-turn'),
+    traces: z
+      .array(
+        z.object({
+          trace_id: EvaluationTraceId,
+          reference_data: z.object({}).catchall(z.unknown()).optional(),
+        })
+      )
+      .min(1)
+      .max(1),
+    /**
+     * Optional instrumentation profile selection. When omitted, the elastic-inference profile is used.
+     */
+    instrumentation: z
+      .object({
+        profile: EvaluationInstrumentationProfile.default('elastic-inference'),
+      })
+      .optional(),
+  })
+);
+export type EvaluationSubject = z.infer<typeof EvaluationSubject>;
+
+/**
  * Which parts of the normalized trace the judge is shown, and therefore requires: the user query (`input`), the agent response (`response`), and the tool calls (`steps`). Rendered into the prompt as `user_query`, `agent_response`, and `tool_calls`. A trace missing any of them is reported as unmet rather than judged.
  */
 export const JudgeEvidence = lazySchema(() =>
@@ -295,6 +337,15 @@ export const LlmJudgeConfig = lazySchema(() =>
   })
 );
 export type LlmJudgeConfig = z.infer<typeof LlmJudgeConfig>;
+
+export const UserDefinedEvaluatorDraft = lazySchema(() =>
+  z.object({
+    name: EvaluatorName,
+    description: z.string().min(1).max(2048),
+    judge: LlmJudgeConfig,
+  })
+);
+export type UserDefinedEvaluatorDraft = z.infer<typeof UserDefinedEvaluatorDraft>;
 
 /**
  * A persisted evaluator definition.

@@ -34,10 +34,19 @@ interface TemplateVariables {
   escaped: string[];
 }
 
-/** Reads variables and records interpolations that Mustache would HTML-escape. */
+/**
+ * Reads variables and records interpolations that Mustache would HTML-escape.
+ *
+ * Parses through a per-call writer, whose cache is discarded with it, because the
+ * module-level `Mustache.parse` memoizes every template it sees into a process-global
+ * cache with no eviction — and validation runs on drafts that are never stored. This
+ * only covers validation; rendering a judge still goes through Mustache's default
+ * writer inside the inference plugin.
+ */
 const getTemplateVariables = (template: string): TemplateVariables => {
   const all = new Set<string>();
   const escaped = new Set<string>();
+  const writer = new Mustache.Writer();
 
   const collect = (tokens: unknown[]): void => {
     for (const token of tokens) {
@@ -59,7 +68,7 @@ const getTemplateVariables = (template: string): TemplateVariables => {
     }
   };
 
-  collect(Mustache.parse(template));
+  collect(writer.parse(template));
   return { all: [...all], escaped: [...escaped] };
 };
 

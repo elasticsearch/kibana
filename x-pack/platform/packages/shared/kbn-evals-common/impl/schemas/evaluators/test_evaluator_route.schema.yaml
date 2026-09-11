@@ -1,0 +1,114 @@
+openapi: 3.0.0
+info:
+  title: Test Evaluator API endpoint
+  version: '1'
+paths:
+  /internal/evals/evaluators/_test:
+    post:
+      x-codegen-enabled: true
+      x-labels: [ess, serverless]
+      operationId: TestEvaluator
+      description: Executes an unsaved user-defined evaluator against a trace
+      summary: Test evaluator
+      tags:
+        - Evals API
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - definition
+                - connector_id
+                - subject
+              properties:
+                definition:
+                  $ref: '../common_attributes.schema.yaml#/components/schemas/UserDefinedEvaluatorDraft'
+                connector_id:
+                  type: string
+                  minLength: 1
+                  maxLength: 256
+                subject:
+                  $ref: '../common_attributes.schema.yaml#/components/schemas/EvaluationSubject'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - result
+                properties:
+                  result:
+                    type: object
+                    required:
+                      - status
+                      - evaluator
+                    properties:
+                      status:
+                        type: string
+                        enum:
+                          - ok
+                          - error
+                      evaluator:
+                        type: object
+                        required:
+                          - name
+                          - kind
+                          - direction
+                        properties:
+                          name:
+                            type: string
+                            maxLength: 128
+                          kind:
+                            type: string
+                            enum:
+                              - llm
+                          direction:
+                            type: string
+                            enum:
+                              - maximize
+                              - minimize
+                              - neutral
+                            description: >-
+                              Whether a higher score is an improvement (`maximize`),
+                              a lower score is an improvement (`minimize`), or the
+                              score cannot be compared across arms at all (`neutral`).
+                          model:
+                            $ref: '../common_attributes.schema.yaml#/components/schemas/Model'
+                      scores:
+                        type: array
+                        items:
+                          type: object
+                          required:
+                            - name
+                          properties:
+                            name:
+                              type: string
+                              maxLength: 256
+                            score:
+                              type: number
+                              nullable: true
+                            label:
+                              type: string
+                              maxLength: 1024
+                            explanation:
+                              type: string
+                              maxLength: 8192
+                            metadata:
+                              type: object
+                              additionalProperties: true
+                      error:
+                        type: object
+                        required:
+                          - message
+                        properties:
+                          code:
+                            type: string
+                            enum:
+                              - evidence_unmet
+                          message:
+                            type: string
+                            maxLength: 8192

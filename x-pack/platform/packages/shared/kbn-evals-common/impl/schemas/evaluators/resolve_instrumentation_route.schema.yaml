@@ -22,8 +22,7 @@ paths:
                 - trace_id
               properties:
                 trace_id:
-                  type: string
-                  maxLength: 256
+                  $ref: '../common_attributes.schema.yaml#/components/schemas/EvaluationTraceId'
       responses:
         '200':
           description: Successful response
@@ -44,8 +43,7 @@ paths:
                         - evidence
                       properties:
                         profile:
-                          type: string
-                          maxLength: 128
+                          $ref: '../common_attributes.schema.yaml#/components/schemas/EvaluationInstrumentationProfile'
                         evidence:
                           type: object
                           required:
@@ -111,5 +109,4 @@ paths:
                       - profile
                     properties:
                       profile:
-                        type: string
-                        maxLength: 128
+                        $ref: '../common_attributes.schema.yaml#/components/schemas/EvaluationInstrumentationProfile'

@@ -5,25 +5,38 @@
  * 2.0.
  */
 
+import semverCompare from 'semver/functions/compare';
 import type { EvaluatorDefinition, EvaluatorRegistry } from './types';
 
-/**
- * A registry resolving only the definitions it is given, for tests of routes
- * that take one but do not exercise it.
- */
+const latestOf = (definitions: EvaluatorDefinition[]): EvaluatorDefinition | undefined =>
+  [...definitions].sort((left, right) => semverCompare(right.version, left.version))[0];
+
+/** Creates an in-memory evaluator registry for route tests. */
 export const createEvaluatorRegistryMock = (
   definitions: EvaluatorDefinition[] = []
 ): EvaluatorRegistry => {
-  const byName = new Map(definitions.map((definition) => [definition.name, definition]));
+  const byName = new Map<string, EvaluatorDefinition[]>();
+  for (const definition of definitions) {
+    byName.set(definition.name, [...(byName.get(definition.name) ?? []), definition]);
+  }
+
+  const visibleDefinitions = (name: string): EvaluatorDefinition[] => {
+    const namedDefinitions = byName.get(name) ?? [];
+    const builtIns = namedDefinitions.filter((definition) => definition.origin === 'built_in');
+    return builtIns.length > 0 ? builtIns : namedDefinitions;
+  };
 
   return {
-    isBuiltIn: (name) => byName.get(name)?.origin === 'built_in',
+    isBuiltIn: (name) => visibleDefinitions(name).some(({ origin }) => origin === 'built_in'),
     asScoped: () => ({
-      list: async () => definitions,
-      get: async (name, version) => {
-        const definition = byName.get(name);
-        return !definition || (version && definition.version !== version) ? undefined : definition;
-      },
+      list: async () =>
+        [...byName.keys()]
+          .map((name) => latestOf(visibleDefinitions(name)))
+          .filter((definition): definition is EvaluatorDefinition => definition !== undefined),
+      get: async (name, version) =>
+        version
+          ? visibleDefinitions(name).find((definition) => definition.version === version)
+          : latestOf(visibleDefinitions(name)),
     }),
   };
 };

@@ -49,9 +49,22 @@ paths:
                 required:
                   - evaluator
         '400':
-          description: Invalid update or an attempt to update a built-in evaluator
+          description: Invalid update
         '404':
           description: Evaluator not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: number
+                  error:
+                    type: string
+                  message:
+                    type: string
+        '409':
+          description: The name is built-in and cannot be redefined
           content:
             application/json:
               schema:
