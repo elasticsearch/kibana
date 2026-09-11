@@ -42,6 +42,7 @@ export const enableQueryStreams = async (kbnClient: KbnClient) => {
   await kbnClient.uiSettings.update({
     [OBSERVABILITY_STREAMS_ENABLE_WIRED_STREAM_VIEWS]: true,
   });
+  await kbnClient.uiSettings.waitForEventualCacheRefresh();
 };
 
 export const disableQueryStreams = async (kbnClient: KbnClient) => {
@@ -51,6 +52,7 @@ export const disableQueryStreams = async (kbnClient: KbnClient) => {
   await kbnClient.uiSettings.update({
     [OBSERVABILITY_STREAMS_ENABLE_WIRED_STREAM_VIEWS]: false,
   });
+  await kbnClient.uiSettings.waitForEventualCacheRefresh();
 };
 
 export const createQueryStream = async (
