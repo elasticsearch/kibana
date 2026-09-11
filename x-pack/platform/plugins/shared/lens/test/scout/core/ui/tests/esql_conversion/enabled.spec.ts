@@ -5,6 +5,7 @@
  * 2.0.
  */
 
+import { KibanaCodeEditorWrapper } from '@kbn/scout';
 import { expect } from '@kbn/scout/ui';
 import {
   applyLensInlineEditorAndWaitClosed,
@@ -47,7 +48,9 @@ test.describe('Lens Convert to ES|QL', { tag: '@local-stateful-classic' }, () =>
     // `setDynamicConfigOverrides` merges by flattened key, so an empty object here is a
     // no-op: the override must be nulled out explicitly to actually remove it.
     await apiServices.core.settings({
-      'feature_flags.overrides': { 'lens.enable_esql_conversion': null },
+      'feature_flags.overrides': {
+        'lens.enable_esql_conversion': null,
+      },
     });
   });
 
@@ -55,7 +58,12 @@ test.describe('Lens Convert to ES|QL', { tag: '@local-stateful-classic' }, () =>
     pageObjects,
     page,
   }) => {
-    const { lens } = pageObjects;
+    const { dashboard, lens } = pageObjects;
+    // Scoped to the panel embeddable — the dashboard also has a library metric with the same title.
+    const inlineMetricPanel = dashboard.getPanelByEmbeddableId(
+      testData.ESQL_CONVERSION_PANEL_IDS.INLINE_METRIC
+    );
+    const metricVis = inlineMetricPanel.getByTestId('mtrVis');
 
     await openInlineEditorAndWaitVisible(
       pageObjects,
@@ -64,17 +72,53 @@ test.describe('Lens Convert to ES|QL', { tag: '@local-stateful-classic' }, () =>
 
     await convertToEsqlViaModal({ pageObjects, page });
 
-    await applyLensInlineEditorAndWaitClosed({ lens });
+    await test.step('assert converted query and panel after convert', async () => {
+      const codeEditor = new KibanaCodeEditorWrapper(page);
+      await codeEditor.waitCodeEditorReady('InlineEditingESQLEditor');
+      await expect
+        .poll(() => codeEditor.getCodeEditorValue())
+        .toContain('static_max_value = 10000');
+      const query = await codeEditor.getCodeEditorValue();
+      expect(query).toContain('FROM logstash-*');
+      expect(query).toContain('AVG(bytes)');
+      expect(query).toContain('?_tstart');
+      expect(query).toContain('?_tend');
 
-    // Open editor again and check the "Apply and close" button is disabled
-    await openInlineEditorAndWaitVisible(
-      pageObjects,
-      testData.ESQL_CONVERSION_PANEL_IDS.INLINE_METRIC
-    );
-    await expect(page.getByText('ES|QL Query Results')).toBeVisible();
-    await expect(lens.applyFlyoutButton).toBeDisabled();
+      // Text-based layers use `lns-dimensionTrigger-textBased`, not the form-based trigger.
+      await expect(
+        page.testSubj.locator(
+          'lnsMetric_primaryMetricDimensionPanel > lns-dimensionTrigger-textBased'
+        )
+      ).toHaveText('Average of bytes');
+      await expect(metricVis).toContainText('Average of bytes');
+      await expect(metricVis.locator('.echMetricText__valueBlock')).not.toHaveText('');
+      await expect(inlineMetricPanel.locator(lens.metric.metricProgressBar)).toBeVisible();
+    });
 
-    // TODO: Add conversion assertions: https://github.com/elastic/kibana/issues/250385
+    await test.step('apply conversion', async () => {
+      await applyLensInlineEditorAndWaitClosed({ lens });
+    });
+
+    await test.step('assert panel after apply', async () => {
+      await expect(metricVis).toContainText('Average of bytes');
+      await expect(metricVis.locator('.echMetricText__valueBlock')).not.toHaveText('');
+      await expect(inlineMetricPanel.locator(lens.metric.metricProgressBar)).toBeVisible();
+    });
+
+    await test.step('reopen and assert query persisted', async () => {
+      await openInlineEditorAndWaitVisible(
+        pageObjects,
+        testData.ESQL_CONVERSION_PANEL_IDS.INLINE_METRIC
+      );
+      await expect(page.getByText('ES|QL Query Results')).toBeVisible();
+      await expect(lens.applyFlyoutButton).toBeDisabled();
+
+      const codeEditor = new KibanaCodeEditorWrapper(page);
+      await codeEditor.waitCodeEditorReady('InlineEditingESQLEditor');
+      await expect
+        .poll(() => codeEditor.getCodeEditorValue())
+        .toContain('static_max_value = 10000');
+    });
   });
 
   test('should update and reflect the visualization configuration after the conversion', async ({
