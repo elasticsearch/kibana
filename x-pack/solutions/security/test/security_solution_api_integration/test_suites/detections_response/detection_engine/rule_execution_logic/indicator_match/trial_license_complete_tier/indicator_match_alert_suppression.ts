@@ -26,7 +26,7 @@ import type { ThreatMatchRuleCreateProps } from '@kbn/security-solution-plugin/c
 import { RuleExecutionStatusEnum } from '@kbn/security-solution-plugin/common/api/detection_engine/rule_monitoring';
 
 import { ALERT_ORIGINAL_TIME } from '@kbn/security-solution-plugin/common/field_maps/field_names';
-import { createRule } from '@kbn/detections-response-ftr-services';
+import { createRule, waitFor } from '@kbn/detections-response-ftr-services';
 import {
   getOpenAlerts,
   getPreviewAlerts,
@@ -133,6 +133,44 @@ export default ({ getService }: FtrProviderContext) => {
       }),
     });
 
+  // On stateless serverless ES, `refresh: true` on the bulk index doesn't guarantee the docs are
+  // visible on the search tier before the rule's first (immediate) execution queries them, so wait
+  // until the source events and threats the rule matches are searchable before creating the rule.
+  const waitForRuleDocuments = async ({
+    id,
+    sourceEventsCount,
+    threatsCount: expectedThreatsCount,
+  }: {
+    id: string;
+    sourceEventsCount: number;
+    threatsCount: number;
+  }) => {
+    await waitFor(
+      async () => {
+        const [{ count: sourceEvents }, { count: threats }] = await Promise.all([
+          es.count({
+            index: 'ecs_compliant',
+            query: {
+              bool: {
+                filter: [{ term: { id } }],
+                must_not: [{ term: { 'agent.type': 'threat' } }],
+              },
+            },
+          }),
+          es.count({
+            index: 'ecs_compliant',
+            query: {
+              bool: { filter: [{ term: { id } }, { term: { 'agent.type': 'threat' } }] },
+            },
+          }),
+        ]);
+        return sourceEvents >= sourceEventsCount && threats >= expectedThreatsCount;
+      },
+      `waitForRuleDocuments id:${id}`,
+      log
+    );
+  };
+
   // for simplicity IM rule query source events and threats from the same index
   // all events with agent.type:threat are categorized as threats
   // the rest will be source ones
@@ -173,7 +211,6 @@ export default ({ getService }: FtrProviderContext) => {
     });
 
     cases.forEach(({ eventsCount, threatsCount, title }) => {
-      // FLAKY: https://github.com/elastic/kibana/issues/197765
       describe(`Code execution path: ${title}`, () => {
         it('should suppress an alert on real rule executions', async () => {
           const id = uuidv4();
@@ -215,6 +252,11 @@ export default ({ getService }: FtrProviderContext) => {
             from: 'now-35m',
             interval: '30m',
           };
+          await waitForRuleDocuments({
+            id,
+            sourceEventsCount: eventsCount + 1,
+            threatsCount: threatsCount + 1,
+          });
           const createdRule = await createRule(supertest, log, rule);
           const alerts = await getOpenAlerts(supertest, log, es, createdRule);
           expect(alerts.hits.hits).toHaveLength(1);
@@ -327,6 +369,11 @@ export default ({ getService }: FtrProviderContext) => {
             from: 'now-35m',
             interval: '30m',
           };
+          await waitForRuleDocuments({
+            id,
+            sourceEventsCount: eventsCount + 1,
+            threatsCount: threatsCount + 1,
+          });
           const createdRule = await createRule(supertest, log, rule);
           const alerts = await getOpenAlerts(supertest, log, es, createdRule);
 
