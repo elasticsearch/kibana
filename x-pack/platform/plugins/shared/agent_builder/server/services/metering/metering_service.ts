@@ -64,37 +64,55 @@ class MeteringServiceImpl implements MeteringService {
       return;
     }
 
-    const { agentId, executionId, conversationId, round, roundCount, modelProvider } = execution;
+    const {
+      agentId,
+      executionId,
+      conversationId,
+      modelProvider,
+      roundId,
+      roundCount,
+      executionCount,
+      usage,
+      status,
+      startedAt,
+      timeToFirstToken,
+      timeToLastToken,
+      steps,
+      messageLength,
+      responseLength,
+    } = execution;
 
-    const toolCallSteps =
-      round.steps?.filter((step) => step.type === ConversationRoundStepType.toolCall) ?? [];
+    const toolCallSteps = steps.filter((step) => step.type === ConversationRoundStepType.toolCall);
 
     const toolCallErrors = toolCallSteps.filter(({ results }) => {
       return results.length > 0 && results.every((r) => r.type === ToolResultType.error);
     });
 
     const usageMeta: Record<string, string> = {
-      time_to_first_token_ms: String(round.time_to_first_token),
-      time_to_last_token_ms: String(round.time_to_last_token),
+      time_to_first_token_ms: String(timeToFirstToken),
+      time_to_last_token_ms: String(timeToLastToken),
       agent_id: agentId,
       conversation_id: conversationId ?? 'unknown',
       execution_id: executionId,
-      round_id: round.id,
+      round_id: roundId,
       round_number: String(roundCount),
-      round_status: round.status,
-      llm_calls: String(round.model_usage.llm_calls),
-      input_tokens: String(round.model_usage.input_tokens),
-      output_tokens: String(round.model_usage.output_tokens),
+      execution_count: String(executionCount),
+      round_status: status,
+      started_at: startedAt,
+      llm_calls: String(usage.llm_calls),
+      input_tokens: String(usage.input_tokens),
+      cached_input_tokens: String(usage.cached_input_tokens ?? 0),
+      output_tokens: String(usage.output_tokens),
       tool_calls: String(toolCallSteps.length),
       tool_call_errors: String(toolCallErrors.length),
-      message_length: String(round.input.message.length),
-      response_length: String(round.response.message.length),
-      model: round.model_usage.model ?? 'unknown',
+      message_length: String(messageLength),
+      response_length: String(responseLength),
+      model: usage.model ?? 'unknown',
       model_provider: modelProvider,
     };
 
-    // one unit per 50k input tokens used during execution
-    const usageQuantity = Math.max(1, Math.ceil(round.model_usage.input_tokens / 50_000));
+    // one unit per 50k input tokens used across the turn
+    const usageQuantity = Math.max(1, Math.ceil(usage.input_tokens / 50_000));
 
     const source: UsageRecord['source'] = {
       id: METERING_SOURCE_ID,
@@ -119,7 +137,7 @@ class MeteringServiceImpl implements MeteringService {
       usage: {
         type: AGENT_EXECUTION_USAGE_TYPE,
         quantity: usageQuantity,
-        period_seconds: Math.ceil(round.time_to_last_token / 1000) || 1,
+        period_seconds: Math.ceil(timeToLastToken / 1000) || 1,
         metadata: usageMeta,
       },
       source,

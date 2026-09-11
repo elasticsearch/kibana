@@ -223,6 +223,17 @@ export const parseExecutionId = (id: string): { roundId: string; index: number }
   return { roundId: match[1], index: Number(match[2] ?? 0) };
 };
 
+/**
+ * How many executions a round already has on the timeline, which is also the index the next
+ * execution will take. Shared by the resume write path and telemetry so the two cannot drift.
+ */
+export const roundExecutionCount = (events: TimelineEvent[], roundId: string): number =>
+  new Set(
+    events
+      .map((event) => event.execution_id)
+      .filter((id): id is string => id !== undefined && parseExecutionId(id)?.roundId === roundId)
+  ).size;
+
 /** The `execution_terminated` event id for an execution index (0 = the initial run). */
 export const executionTerminatedEventId = (roundId: string, executionIndex: number): string =>
   executionIndex === 0

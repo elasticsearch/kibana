@@ -221,14 +221,17 @@ Fired when a custom tool is created.
 
 ### `agent_builder_round_complete`
 
-Fired at the end of each successful conversation round.
+Fired once per conversation round, on the execution that ends it. A round paused for human input
+emits this only when it is finally answered, and the values are the round's totals across every
+execution. For per-execution figures, and for pauses that were never resumed, see
+`agent_builder_execution_complete`.
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
 | `agent_id` | keyword | yes | Normalized agent ID. |
 | `attachments` | keyword[] | no | Attachment types (e.g. `file`, `screenshot`), if any. |
 | `conversation_id` | keyword | no | Conversation ID. |
-| `execution_id` | keyword | no | Agent execution ID. |
+| `execution_id` | keyword | no | Agent run ID for the converse call. Not the timeline execution ID: identify an execution as `round_id` + `execution_index`. |
 | `input_tokens` | integer | yes | Input tokens consumed in this round. |
 | `cached_input_tokens` | integer | no | Input tokens served from cache in this round (subset of `input_tokens`), when reported by the provider. |
 | `llm_calls` | integer | yes | Number of LLM calls made during the round. |
@@ -240,12 +243,56 @@ Fired at the end of each successful conversation round.
 | `round_status` | keyword | yes | Final status of the round. |
 | `response_length` | integer | yes | Character length of the assistant's response. |
 | `round_number` | integer | yes | 1-based round index within the conversation. |
-| `started_at` | keyword | yes | ISO timestamp when the round started. |
+| `started_at` | date | yes | Timestamp when the round started. |
 | `time_to_first_token` | integer | yes | Milliseconds to first token. |
 | `time_to_last_token` | integer | yes | Milliseconds to last token (end-to-end latency). |
 | `tool_calls` | integer | yes | Total number of tool-call steps in this round. |
 | `tool_call_errors` | integer | yes | Number of tool calls where all results were errors. |
 | `tools_invoked` | keyword[] | yes | Normalized tool IDs invoked (may contain duplicates for per-tool counts). |
+
+### `agent_builder_execution_complete`
+
+Fired once per **execution**. A round normally has one; a round paused for human input has one for
+the pause and one for each resume, each carrying only its own usage and latency.
+
+Use this event, not `agent_builder_round_complete`, for anything about human-in-the-loop: pause
+rates, how long people take to answer, and whether they accept or decline. Note that the
+browser-side `agent_builder_hitl_prompt_shown` and `agent_builder_hitl_question_answered` events
+cover a different population: they are UI-only, and only for `ask_user_question`.
+
+An execution with `outcome: prompt_requested` and no `agent_builder_round_complete` for the same
+`round_id` is a pause that was never resumed.
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `agent_id` | keyword | yes | Normalized agent ID. |
+| `attachments` | keyword[] | no | Attachment types on the round's input, if any. |
+| `conversation_id` | keyword | no | Conversation ID. |
+| `execution_id` | keyword | no | Agent run ID for the converse call. Not the timeline execution ID. |
+| `round_id` | keyword | yes | Round this execution belongs to. |
+| `round_number` | integer | yes | 1-based round index within the conversation. |
+| `execution_index` | integer | yes | 0 for the initial run, k for the k-th resume. |
+| `trigger` | keyword | yes | `user_message` or `prompt_response`. |
+| `outcome` | keyword | yes | `responded` if it ended the round, `prompt_requested` if it paused. |
+| `input_tokens` | integer | yes | Input tokens consumed by this execution alone. |
+| `cached_input_tokens` | integer | no | Cache reads, a subset of `input_tokens`. |
+| `output_tokens` | integer | yes | Output tokens produced by this execution alone. |
+| `llm_calls` | integer | yes | LLM calls made by this execution alone. |
+| `model` | keyword | no | LLM model identifier. |
+| `model_provider` | keyword | no | LLM provider identifier. |
+| `started_at` | date | yes | When this execution started. |
+| `time_to_first_token` | integer | yes | Milliseconds to first token, for this execution. |
+| `time_to_last_token` | integer | yes | Milliseconds to last token, for this execution. |
+| `tool_calls` | integer | yes | Tool-call steps in this execution. |
+| `tool_call_errors` | integer | yes | Tool calls where every result was an error. |
+| `tools_invoked` | keyword[] | yes | Normalized tool IDs, duplicated once per call. |
+| `message_length` | integer | yes | Length of the round's user message, repeated on every execution since a resume has none of its own. |
+| `response_length` | integer | yes | Length of this execution's response; 0 when it paused. |
+| `prompt_count` | integer | no | Prompts this execution paused on. |
+| `prompt_types` | keyword[] | no | `confirmation`, `authorization` or `ask_user_question`. |
+| `prompt_response_types` | keyword[] | no | Types of the prompts this execution was resumed with. |
+| `prompt_response_outcomes` | keyword[] | no | `accepted`, `declined`, `authorized`, `authorization_declined`, `answered` or `skipped`, index-aligned with `prompt_response_types`. |
+| `human_latency_ms` | integer | no | Time from the pause to this resume. Absent on the initial execution, and on legacy conversations whose timeline timestamps are derived rather than measured. |
 
 ### `agent_builder_round_error`
 
@@ -390,6 +437,9 @@ period configured by Kibana (defaults to several days).
 - `agent_builder_rounds_21-50`
 - `agent_builder_rounds_51+`
   - Count of conversation rounds bucketed by current round number.
+  - Counts rounds **started**, incremented on a round's first execution. A round paused for human
+    input and never resumed still counts here. Compare against `agent_builder_round_complete`,
+    which counts rounds **completed**: the difference is the abandonment rate.
 
 ### Skill invocation counters
 - `agent_builder_skill_invocation_builtin`

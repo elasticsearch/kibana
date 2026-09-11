@@ -96,12 +96,25 @@ const createModelProviderMock = () => ({
   }),
 });
 
+const createTelemetryMocks = () => ({
+  meteringService: { reportExecution: jest.fn().mockResolvedValue(undefined) },
+  trackingService: { trackConversationRound: jest.fn(), trackError: jest.fn() },
+  analyticsService: {
+    reportRoundComplete: jest.fn(),
+    reportExecutionComplete: jest.fn(),
+    reportRoundError: jest.fn(),
+  },
+});
+type TelemetryMocks = ReturnType<typeof createTelemetryMocks>;
+
 const createDeps = ({
   conversationClient,
   getConversationRoundAuthor = jest.fn().mockResolvedValue(undefined),
+  telemetry = createTelemetryMocks(),
 }: {
   conversationClient: ReturnType<typeof createConversationClientMock>;
   getConversationRoundAuthor?: jest.Mock;
+  telemetry?: TelemetryMocks;
 }) =>
   ({
     logger: loggingSystemMock.createLogger(),
@@ -111,9 +124,7 @@ const createDeps = ({
         .fn()
         .mockResolvedValue({ get: jest.fn().mockResolvedValue({ name: 'Test agent' }) }),
     },
-    meteringService: {
-      reportExecution: jest.fn().mockResolvedValue(undefined),
-    },
+    ...telemetry,
     conversationService: {
       getConversationRoundAuthor,
     },
@@ -180,17 +191,21 @@ const stubResolveServices = (
 const runHandle = ({
   agentParams,
   conversationClient,
+  telemetry,
+  executionId = 'execution-1',
 }: {
   agentParams: Record<string, unknown>;
   conversationClient: ReturnType<typeof createConversationClientMock>;
+  telemetry?: TelemetryMocks;
+  executionId?: string;
 }) =>
   handleAgentExecution({
     execution: {
-      executionId: 'execution-1',
+      executionId,
       executionMode: AgentExecutionMode.conversation,
       agentParams,
     } as never,
-    deps: createDeps({ conversationClient }),
+    deps: createDeps({ conversationClient, telemetry }),
     request: { headers: {} } as never,
     abortSignal: new AbortController().signal,
   });
@@ -571,6 +586,206 @@ describe('handleAgentExecution', () => {
 
       expect(conversationClient.upsertRound).toHaveBeenCalledTimes(1);
       expect(conversationClient.appendEvents).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('HITL pause and resume telemetry', () => {
+    const usage = (input: number, output: number, llmCalls: number) => ({
+      connector_id: 'c1',
+      llm_calls: llmCalls,
+      input_tokens: input,
+      output_tokens: output,
+    });
+
+    /**
+     * A pause then a resume, driven as two converse calls with shared telemetry mocks. The resume's
+     * `round_complete` carries the folded round (10 tokens); only `resume_execution` carries this
+     * execution's own 4. Reporting the folded number is the double count this guards against.
+     */
+    it('bills the turn once while reporting each execution to analytics', async () => {
+      const telemetry = createTelemetryMocks();
+      const pausedRound = createRound({
+        id: 'r1',
+        status: ConversationRoundStatus.awaitingPrompt,
+        response: { message: '' },
+        model_usage: usage(6, 1, 1),
+      });
+
+      // --- the pause
+      const beforePause = createEmptyConversation({ id: 'conversation-1', agent_id: 'test-agent' });
+      const pauseClient = createConversationClientMock();
+      pauseClient.get.mockResolvedValue(beforePause);
+      pauseClient.appendEvents.mockResolvedValue(beforePause);
+      pauseClient.replaceRoundEvents.mockResolvedValue(beforePause);
+      mockAgentStream([
+        makeRoundStartedEvent('r1'),
+        {
+          type: ChatEventType.roundComplete,
+          data: { round: pausedRound },
+        } as RoundCompleteEvent,
+      ]);
+      stubResolveServices(pauseClient);
+
+      await lastValueFrom(
+        (
+          await runHandle({
+            agentParams: {
+              agentId: 'test-agent',
+              conversationId: 'conversation-1',
+              nextInput: { message: 'do it' },
+            },
+            conversationClient: pauseClient,
+            telemetry,
+          })
+        ).pipe(toArray())
+      );
+
+      // --- the resume, against the stored pause
+      const afterPause = createEmptyConversation({
+        id: 'conversation-1',
+        agent_id: 'test-agent',
+        schema_version: CONVERSATION_SCHEMA_VERSION,
+        events: pausedAndResumedRoundTimeline().slice(0, 4),
+        rounds: [pausedRound],
+      });
+      const resumeClient = createConversationClientMock();
+      resumeClient.get.mockResolvedValue(afterPause);
+      resumeClient.appendEvents.mockResolvedValue(afterPause);
+      mockAgentStream([
+        {
+          type: ChatEventType.roundComplete,
+          data: {
+            round: createRound({
+              id: 'r1',
+              status: ConversationRoundStatus.completed,
+              model_usage: usage(10, 3, 2),
+            }),
+            resumed: true,
+            resume_execution: {
+              follow_up_round: createRound({
+                id: 'throwaway',
+                status: ConversationRoundStatus.completed,
+                model_usage: usage(4, 2, 1),
+              }),
+            },
+          },
+        } as RoundCompleteEvent,
+      ]);
+      stubResolveServices(resumeClient);
+
+      await lastValueFrom(
+        (
+          await runHandle({
+            agentParams: {
+              agentId: 'test-agent',
+              conversationId: 'conversation-1',
+              nextInput: { prompts: { p1: { type: 'confirmation', allow: true } } },
+            },
+            conversationClient: resumeClient,
+            telemetry,
+            executionId: 'execution-2',
+          })
+        ).pipe(toArray())
+      );
+
+      // billing is per turn: one record, when the turn answers, carrying the turn's totals.
+      // The pause must not bill, or a turn paused once is charged twice.
+      expect(telemetry.meteringService.reportExecution).toHaveBeenCalledTimes(1);
+      expect(telemetry.meteringService.reportExecution).toHaveBeenCalledWith(
+        expect.objectContaining({
+          roundId: 'r1',
+          executionCount: 2,
+          usage: expect.objectContaining({ input_tokens: 10 }),
+        })
+      );
+
+      // the round bucket counts rounds started, so once
+      expect(telemetry.trackingService.trackConversationRound).toHaveBeenCalledTimes(1);
+
+      // the round event fires once, on the terminal execution, with the folded totals
+      expect(telemetry.analyticsService.reportRoundComplete).toHaveBeenCalledTimes(1);
+      expect(telemetry.analyticsService.reportRoundComplete).toHaveBeenCalledWith(
+        expect.objectContaining({
+          round: expect.objectContaining({
+            id: 'r1',
+            status: ConversationRoundStatus.completed,
+            model_usage: expect.objectContaining({ input_tokens: 10 }),
+          }),
+        })
+      );
+
+      // the execution event fires per execution, in order
+      expect(telemetry.analyticsService.reportExecutionComplete).toHaveBeenCalledTimes(2);
+      expect(
+        telemetry.analyticsService.reportExecutionComplete.mock.calls.map(([call]) => [
+          call.telemetry.executionIndex,
+          call.telemetry.isRoundTerminal,
+          call.telemetry.roundId,
+        ])
+      ).toEqual([
+        [0, false, 'r1'],
+        [1, true, 'r1'],
+      ]);
+    });
+
+    it('keeps resume_execution off the client stream while telemetry still sees it', async () => {
+      const telemetry = createTelemetryMocks();
+      const conversation = createEmptyConversation({
+        id: 'conversation-1',
+        agent_id: 'test-agent',
+        schema_version: CONVERSATION_SCHEMA_VERSION,
+        events: pausedAndResumedRoundTimeline().slice(0, 4),
+        rounds: [createRound({ id: 'r1', status: ConversationRoundStatus.awaitingPrompt })],
+      });
+      const conversationClient = createConversationClientMock();
+      conversationClient.get.mockResolvedValue(conversation);
+      conversationClient.appendEvents.mockResolvedValue(conversation);
+      mockAgentStream([
+        {
+          type: ChatEventType.roundComplete,
+          data: {
+            round: createRound({
+              id: 'r1',
+              status: ConversationRoundStatus.completed,
+              model_usage: usage(10, 3, 2),
+            }),
+            resumed: true,
+            resume_execution: {
+              follow_up_round: createRound({
+                id: 'throwaway',
+                status: ConversationRoundStatus.completed,
+                model_usage: usage(4, 2, 1),
+              }),
+            },
+          },
+        } as RoundCompleteEvent,
+      ]);
+      stubResolveServices(conversationClient);
+
+      const events = await lastValueFrom(
+        (
+          await runHandle({
+            agentParams: {
+              agentId: 'test-agent',
+              conversationId: 'conversation-1',
+              nextInput: { prompts: { p1: { type: 'confirmation', allow: true } } },
+            },
+            conversationClient,
+            telemetry,
+          })
+        ).pipe(toArray())
+      );
+
+      // telemetry saw the unmerged execution: 4 is only reachable via resume_execution,
+      // since the folded round on this event reads 10
+      expect(
+        telemetry.analyticsService.reportExecutionComplete.mock.calls[0][0].telemetry.executionRound
+          .model_usage.input_tokens
+      ).toBe(4);
+      // the client did not
+      const emitted = events.find((event) => event.type === ChatEventType.roundComplete);
+      expect(emitted).toBeDefined();
+      expect((emitted as RoundCompleteEvent).data.resume_execution).toBeUndefined();
     });
   });
 

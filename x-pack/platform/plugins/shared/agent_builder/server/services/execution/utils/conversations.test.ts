@@ -29,6 +29,7 @@ import {
   createRound,
   createConversationClientMock,
 } from '../../../test_utils';
+import { resumeExecutionId, roundExecutionCount } from '../../conversation/client/rounds_to_events';
 import type { ConversationWithOperation } from './conversations';
 import {
   appendResumeExecution$,
@@ -709,6 +710,19 @@ describe('conversations utils', () => {
           },
         },
       ] as never,
+    });
+
+    it('derives the same execution index telemetry reports, so the two cannot drift', () => {
+      // `roundExecutionCount` is the single source of the index: this write path stamps it into
+      // the event ids, and `buildExecutionTelemetry` reports it. A divergence would silently
+      // mislabel which execution a billing record belongs to.
+      const events = pausedConversation().events ?? [];
+
+      expect(roundExecutionCount(events, 'round-1')).toBe(1);
+      expect(resumeExecutionId('round-1', roundExecutionCount(events, 'round-1'))).toBe(
+        'round-1::execution::1'
+      );
+      expect(roundExecutionCount(events, 'some-other-round')).toBe(0);
     });
 
     const followUpRound = () => ({

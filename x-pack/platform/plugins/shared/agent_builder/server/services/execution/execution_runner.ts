@@ -75,6 +75,7 @@ import {
   convertErrors,
   type ConversationWithOperation,
 } from './utils';
+import { reportRoundTelemetry } from './utils/report_round_telemetry';
 import { createConversationIdSetEvent } from './utils/events';
 import type { AnalyticsService, TrackingService } from '../../telemetry';
 import { withConverseSpan } from '../../tracing';
@@ -344,9 +345,6 @@ const handleConversationExecution = async ({
 
       return merge(conversationIdEvent$, agentEvents$, persistenceEvents$, titleAttr$).pipe(
         filter((event) => !isRoundStartedEvent(event)),
-        // `resume_execution` is persistence-layer plumbing consumed by buildPersistenceEvents; strip
-        // it from the client-facing stream so it doesn't duplicate the follow-up round's steps.
-        map(stripResumeExecution),
         handleCancellation(abortSignal),
         tap((event) => {
           if (isConversationCreatedEvent(event) && !author) {
@@ -356,45 +354,25 @@ const handleConversationExecution = async ({
             });
           }
 
-          try {
-            if (isRoundCompleteEvent(event)) {
-              const isReplacingRound = action === 'regenerate' || event.data?.resumed === true;
-              const currentRoundCount = isReplacingRound
-                ? conversation.rounds.length
-                : (conversation.rounds?.length ?? 0) + 1;
-
-              // metering
-              meteringService
-                .reportExecution({
-                  conversationId: conversation.id,
-                  executionId: execution.executionId,
-                  roundCount: currentRoundCount,
-                  agentId,
-                  round: event.data.round,
-                  modelProvider: connectorProvider,
-                })
-                .catch((err) => {
-                  logger.warn(`Failed to report execution metering: ${err}`);
-                });
-
-              // snapshot telemetry tracking
-              trackingService?.trackConversationRound(conversation.id, currentRoundCount);
-
-              // EBT tracking
-              analyticsService?.reportRoundComplete({
-                conversationId: conversation.id,
-                executionId: execution.executionId,
-                roundCount: currentRoundCount,
-                agentId,
-                round: event.data.round,
-                modelProvider: connectorProvider,
-                conversationAttachments: event.data.attachments ?? conversation.attachments ?? [],
-              });
-            }
-          } catch (error) {
-            logger.error(`Failed to report round complete telemetry: ${error}`);
+          if (isRoundCompleteEvent(event)) {
+            reportRoundTelemetry({
+              event,
+              conversation,
+              nextInput,
+              action,
+              agentId,
+              executionId: execution.executionId,
+              modelProvider: connectorProvider,
+              meteringService,
+              trackingService,
+              analyticsService,
+              logger,
+            });
           }
         }),
+        // Must stay below the telemetry tap: `resume_execution` carries the unmerged per-execution
+        // round that telemetry needs, and is only stripped so it doesn't reach the client.
+        map(stripResumeExecution),
         convertErrors({
           agentId,
           logger,

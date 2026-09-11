@@ -26,6 +26,7 @@ export const AGENT_BUILDER_EVENT_TYPES = {
   SkillInvoked: `${TELEMETRY_PREFIX}_skill_invoked`,
   PluginImported: `${TELEMETRY_PREFIX}_plugin_imported`,
   RoundComplete: `${TELEMETRY_PREFIX}_round_complete`,
+  ExecutionComplete: `${TELEMETRY_PREFIX}_execution_complete`,
   RoundError: `${TELEMETRY_PREFIX}_round_error`,
   ToolCallSuccess: `${TELEMETRY_PREFIX}_tool_call_success`,
   ToolCallError: `${TELEMETRY_PREFIX}_tool_call_error`,
@@ -116,6 +117,46 @@ export interface ReportRoundCompleteParams {
   tool_calls: number;
   tool_call_errors: number;
   tools_invoked: string[];
+}
+
+/** How a human resolved a HITL prompt. */
+export type PromptResponseOutcomeValue =
+  | 'accepted'
+  | 'declined'
+  | 'authorized'
+  | 'authorization_declined'
+  | 'answered'
+  | 'skipped';
+
+export interface ReportExecutionCompleteParams {
+  agent_id: string;
+  attachments?: string[];
+  conversation_id?: string;
+  execution_id?: string;
+  round_id: string;
+  round_number: number;
+  execution_index: number;
+  trigger: 'user_message' | 'prompt_response';
+  outcome: 'responded' | 'prompt_requested';
+  input_tokens: number;
+  cached_input_tokens?: number;
+  llm_calls: number;
+  output_tokens: number;
+  model?: string;
+  model_provider?: string;
+  started_at: string;
+  time_to_first_token: number;
+  time_to_last_token: number;
+  tool_calls: number;
+  tool_call_errors: number;
+  tools_invoked: string[];
+  message_length: number;
+  response_length: number;
+  prompt_count?: number;
+  prompt_types?: string[];
+  prompt_response_types?: string[];
+  prompt_response_outcomes?: PromptResponseOutcomeValue[];
+  human_latency_ms?: number;
 }
 
 export interface ReportRoundErrorParams {
@@ -386,6 +427,7 @@ export interface AgentBuilderTelemetryEventsMap {
   /** Fired when a custom plugin is imported. */
   [AGENT_BUILDER_EVENT_TYPES.PluginImported]: ReportPluginImportedParams;
   [AGENT_BUILDER_EVENT_TYPES.RoundComplete]: ReportRoundCompleteParams;
+  [AGENT_BUILDER_EVENT_TYPES.ExecutionComplete]: ReportExecutionCompleteParams;
   [AGENT_BUILDER_EVENT_TYPES.RoundError]: ReportRoundErrorParams;
   [AGENT_BUILDER_EVENT_TYPES.ToolCallSuccess]: ReportToolCallSuccessParams;
   [AGENT_BUILDER_EVENT_TYPES.ToolCallError]: ReportToolCallErrorParams;
@@ -415,6 +457,7 @@ export type AgentBuilderTelemetryEvent =
   | EventTypeOpts<ReportSkillInvokedParams>
   | EventTypeOpts<ReportPluginImportedParams>
   | EventTypeOpts<ReportRoundCompleteParams>
+  | EventTypeOpts<ReportExecutionCompleteParams>
   | EventTypeOpts<ReportRoundErrorParams>
   | EventTypeOpts<ReportToolCallSuccessParams>
   | EventTypeOpts<ReportToolCallErrorParams>
@@ -443,6 +486,7 @@ export type AgentBuilderEventTypes =
   | typeof AGENT_BUILDER_EVENT_TYPES.SkillInvoked
   | typeof AGENT_BUILDER_EVENT_TYPES.PluginImported
   | typeof AGENT_BUILDER_EVENT_TYPES.RoundComplete
+  | typeof AGENT_BUILDER_EVENT_TYPES.ExecutionComplete
   | typeof AGENT_BUILDER_EVENT_TYPES.RoundError
   | typeof AGENT_BUILDER_EVENT_TYPES.ToolCallSuccess
   | typeof AGENT_BUILDER_EVENT_TYPES.ToolCallError
@@ -1052,6 +1096,202 @@ const ROUND_COMPLETE_EVENT: AgentBuilderTelemetryEvent = {
   },
 };
 
+const EXECUTION_COMPLETE_EVENT: AgentBuilderTelemetryEvent = {
+  eventType: AGENT_BUILDER_EVENT_TYPES.ExecutionComplete,
+  schema: {
+    agent_id: {
+      type: 'keyword',
+      _meta: {
+        description:
+          'ID of the agent (normalized: built-in agents keep ID, custom agents become "custom-<sha256_prefix>")',
+        optional: false,
+      },
+    },
+    attachments: {
+      type: 'array',
+      items: { type: 'keyword', _meta: { description: 'Type of attachment' } },
+      _meta: { description: 'Types of attachments', optional: true },
+    },
+    conversation_id: {
+      type: 'keyword',
+      _meta: { description: 'Conversation ID', optional: true },
+    },
+    execution_id: {
+      type: 'keyword',
+      _meta: {
+        description:
+          'Agent run ID for the converse call. Not the timeline execution ID: identify an execution as round_id + execution_index.',
+        optional: true,
+      },
+    },
+    round_id: {
+      type: 'keyword',
+      _meta: { description: 'ID of the round this execution belongs to', optional: false },
+    },
+    round_number: {
+      type: 'integer',
+      _meta: {
+        description: 'Position of the round in the conversation (1-based)',
+        optional: false,
+      },
+    },
+    execution_index: {
+      type: 'integer',
+      _meta: {
+        description:
+          'Position of this execution within the round. 0 is the initial run; k is the k-th resume after a human-in-the-loop pause.',
+        optional: false,
+      },
+    },
+    trigger: {
+      type: 'keyword',
+      _meta: {
+        description: 'What started this execution: user_message or prompt_response',
+        optional: false,
+      },
+    },
+    outcome: {
+      type: 'keyword',
+      _meta: {
+        description:
+          'How this execution ended: responded (the round is finished) or prompt_requested (paused for human input)',
+        optional: false,
+      },
+    },
+    input_tokens: {
+      type: 'integer',
+      _meta: { description: 'Input tokens used by this execution alone', optional: false },
+    },
+    cached_input_tokens: {
+      type: 'integer',
+      _meta: {
+        description: 'Input tokens served from cache in this execution, a subset of input_tokens',
+        optional: true,
+      },
+    },
+    output_tokens: {
+      type: 'integer',
+      _meta: { description: 'Output tokens produced by this execution alone', optional: false },
+    },
+    llm_calls: {
+      type: 'integer',
+      _meta: { description: 'LLM calls made by this execution alone', optional: false },
+    },
+    model: {
+      type: 'keyword',
+      _meta: { description: 'Model used for this execution', optional: true },
+    },
+    model_provider: {
+      type: 'keyword',
+      _meta: { description: 'Provider of the model used for this execution', optional: true },
+    },
+    started_at: {
+      type: 'date',
+      _meta: { description: 'When this execution started', optional: false },
+    },
+    time_to_first_token: {
+      type: 'integer',
+      _meta: { description: 'Time to first token for this execution, in ms', optional: false },
+    },
+    time_to_last_token: {
+      type: 'integer',
+      _meta: { description: 'Time to last token for this execution, in ms', optional: false },
+    },
+    tools_invoked: {
+      type: 'array',
+      items: {
+        type: 'keyword',
+        _meta: {
+          description:
+            'Tool ID invoked (normalized: built-in tools keep ID, custom tools become "custom-<sha256_prefix>")',
+        },
+      },
+      _meta: {
+        description:
+          'Tool IDs invoked in this execution. Intentionally includes duplicates (one entry per tool call) so counts per tool can be computed downstream by aggregating over this array.',
+        optional: false,
+      },
+    },
+    tool_calls: {
+      type: 'integer',
+      _meta: { description: 'Tool calls performed in this execution', optional: false },
+    },
+    tool_call_errors: {
+      type: 'integer',
+      _meta: {
+        description: 'Tool calls that returned only errors in this execution',
+        optional: false,
+      },
+    },
+    message_length: {
+      type: 'integer',
+      _meta: {
+        description:
+          "Length of the round's user message. Carried on every execution of the round, since a resume has no user message of its own.",
+        optional: false,
+      },
+    },
+    response_length: {
+      type: 'integer',
+      _meta: {
+        description: "Length of this execution's assistant response; 0 when it paused",
+        optional: false,
+      },
+    },
+    prompt_count: {
+      type: 'integer',
+      _meta: {
+        description: 'Number of prompts this execution paused on, when outcome is prompt_requested',
+        optional: true,
+      },
+    },
+    prompt_types: {
+      type: 'array',
+      items: {
+        type: 'keyword',
+        _meta: { description: 'confirmation, authorization or ask_user_question' },
+      },
+      _meta: {
+        description: 'Types of the prompts this execution paused on',
+        optional: true,
+      },
+    },
+    prompt_response_types: {
+      type: 'array',
+      items: {
+        type: 'keyword',
+        _meta: { description: 'confirmation, authorization or ask_user_question' },
+      },
+      _meta: {
+        description: 'Types of the prompts this execution was resumed with',
+        optional: true,
+      },
+    },
+    prompt_response_outcomes: {
+      type: 'array',
+      items: {
+        type: 'keyword',
+        _meta: {
+          description:
+            'accepted, declined, authorized, authorization_declined, answered or skipped',
+        },
+      },
+      _meta: {
+        description: 'How each prompt was resolved, index-aligned with prompt_response_types',
+        optional: true,
+      },
+    },
+    human_latency_ms: {
+      type: 'integer',
+      _meta: {
+        description:
+          'Time between the pause and this resume, in ms. Absent on the initial execution and on legacy conversations, whose timeline timestamps are derived rather than measured.',
+        optional: true,
+      },
+    },
+  },
+};
+
 const ROUND_ERROR_SCHEMA: AgentBuilderTelemetryEvent['schema'] = {
   error_type: {
     type: 'keyword',
@@ -1583,6 +1823,7 @@ export const agentBuilderPublicEbtEvents: Array<EventTypeOpts<Record<string, unk
 ];
 
 export const agentBuilderServerEbtEvents: Array<EventTypeOpts<Record<string, unknown>>> = [
+  EXECUTION_COMPLETE_EVENT,
   AGENT_CREATED_EVENT,
   AGENT_UPDATED_EVENT,
   TOOL_CREATED_EVENT,

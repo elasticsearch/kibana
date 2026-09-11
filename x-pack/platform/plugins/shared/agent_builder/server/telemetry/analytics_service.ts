@@ -22,6 +22,7 @@ import type {
   ReportAgentCreatedParams,
   ReportAgentUpdatedParams,
   ReportPluginImportedParams,
+  ReportExecutionCompleteParams,
   ReportRoundCompleteParams,
   ReportRoundErrorParams,
   ReportSkillCreatedParams,
@@ -36,6 +37,7 @@ import type {
   SkillSolutionArea,
 } from '@kbn/agent-builder-common/telemetry/agent_builder_events';
 import type { ModelProvider } from '@kbn/inference-common';
+import type { ExecutionTelemetry } from '../services/execution/utils/report_round_telemetry';
 import { normalizeErrorType, sanitizeForCounterName } from './error_utils';
 import {
   normalizeAgentIdForTelemetry,
@@ -344,6 +346,86 @@ export class AnalyticsService {
     } catch (error) {
       // Do not fail the request if telemetry fails
       this.logger.debug('Failed to report RoundComplete telemetry event', { error });
+    }
+  }
+
+  /**
+   * One row per execution. A round paused for human input reports several: the pause, then one per
+   * resume, each carrying only its own usage. Round totals live on `reportRoundComplete`.
+   */
+  reportExecutionComplete({
+    agentId,
+    conversationId,
+    executionId,
+    modelProvider,
+    telemetry,
+  }: {
+    agentId: string;
+    conversationId?: string;
+    executionId?: string;
+    modelProvider: ModelProvider;
+    telemetry: ExecutionTelemetry;
+  }): void {
+    try {
+      const { executionRound, roundTotals } = telemetry;
+      const toolCallSteps =
+        executionRound.steps?.filter((step) => step.type === ConversationRoundStepType.toolCall) ??
+        [];
+      const toolCallErrors = toolCallSteps.filter(
+        ({ results }) => results.length > 0 && results.every((r) => r.type === ToolResultType.error)
+      );
+      const attachments = roundTotals.input.attachments?.length
+        ? roundTotals.input.attachments.map((a) => a.type || 'unknown')
+        : undefined;
+
+      this.analytics.reportEvent<ReportExecutionCompleteParams>(
+        AGENT_BUILDER_EVENT_TYPES.ExecutionComplete,
+        {
+          agent_id: normalizeAgentIdForTelemetry(agentId) ?? 'unknown',
+          attachments,
+          conversation_id: conversationId,
+          execution_id: executionId,
+          round_id: telemetry.roundId,
+          round_number: telemetry.roundCount,
+          execution_index: telemetry.executionIndex,
+          trigger: telemetry.isResume ? 'prompt_response' : 'user_message',
+          outcome: telemetry.isRoundTerminal ? 'responded' : 'prompt_requested',
+          input_tokens: executionRound.model_usage.input_tokens,
+          cached_input_tokens: executionRound.model_usage.cached_input_tokens,
+          output_tokens: executionRound.model_usage.output_tokens,
+          llm_calls: executionRound.model_usage.llm_calls,
+          model: executionRound.model_usage.model,
+          model_provider: modelProvider,
+          started_at: executionRound.started_at,
+          time_to_first_token: executionRound.time_to_first_token,
+          time_to_last_token: executionRound.time_to_last_token,
+          tools_invoked: toolCallSteps.map((step) =>
+            normalizeToolIdForTelemetry(step.tool_id, step.tool_type)
+          ),
+          tool_calls: toolCallSteps.length,
+          tool_call_errors: toolCallErrors.length,
+          message_length: roundTotals.input.message.length,
+          response_length: executionRound.response.message.length,
+          ...(telemetry.pendingPromptTypes.length > 0
+            ? {
+                prompt_count: telemetry.pendingPromptTypes.length,
+                prompt_types: telemetry.pendingPromptTypes,
+              }
+            : {}),
+          ...(telemetry.promptResponseTypes.length > 0
+            ? {
+                prompt_response_types: telemetry.promptResponseTypes,
+                prompt_response_outcomes: telemetry.promptResponseOutcomes,
+              }
+            : {}),
+          ...(telemetry.humanLatencyMs !== undefined
+            ? { human_latency_ms: telemetry.humanLatencyMs }
+            : {}),
+        }
+      );
+    } catch (error) {
+      // Do not fail the request if telemetry fails
+      this.logger.debug('Failed to report ExecutionComplete telemetry event', { error });
     }
   }
 

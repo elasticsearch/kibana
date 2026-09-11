@@ -34,7 +34,7 @@ import {
   promptResponseEvent,
   resumeExecutionToEvents,
   executionTerminatedEventId,
-  parseExecutionId,
+  roundExecutionCount,
 } from '../../conversation/client/rounds_to_events';
 import { createConversationUpdatedEvent, createConversationCreatedEvent } from './events';
 
@@ -327,15 +327,7 @@ export const appendResumeExecution$ = ({
           const followUpRound = resumeExecution.follow_up_round;
 
           // Derive the resume index from the executions already stored for this round.
-          const storedEvents = conversation.events ?? [];
-          const roundExecutionIds = new Set(
-            storedEvents
-              .map((event) => event.execution_id)
-              .filter(
-                (id): id is string => id !== undefined && parseExecutionId(id)?.roundId === round.id
-              )
-          );
-          const resumeIndex = roundExecutionIds.size;
+          const resumeIndex = roundExecutionCount(conversation.events ?? [], round.id);
           if (resumeIndex < 1) {
             throw new Error(
               `appendResumeExecution$: no prior execution stored for round ${round.id}; cannot resume`
