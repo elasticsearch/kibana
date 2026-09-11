@@ -15,7 +15,6 @@ import {
   type XYLensAppearanceState,
 } from './appearances';
 import {
-  DEFAULT_AREAS_FILL,
   DEFAULT_AREAS_FILL_OPACITY,
   DEFAULT_BARS_MINIMUM_HEIGHT,
   DEFAULT_CURRENT_TIME_MARKER_VISIBLE,
@@ -34,18 +33,30 @@ describe('XY Appearances Transforms', () => {
     expect(result).toEqual({});
   });
 
-  it('should default areaFill when omitted to solid', () => {
+  it('should default areaFill when omitted to gradient', () => {
     expect(convertStylingToStateFormat({ areas: { fill_opacity: 0.5 } }, ['area'])).toEqual({
       fillOpacity: 0.5,
-      areaFill: 'solid' as const,
+      areaFill: 'gradient' as const,
     });
+  });
+
+  it('should report a state without areaFill as solid rather than the new default', () => {
+    const result = convertStylingToAPIFormat({ fillOpacity: 0.5 }, ['area']);
+    expect(result.areas?.fill).toBe('solid');
+  });
+
+  it('should report an explicit areaFill unchanged', () => {
+    expect(convertStylingToAPIFormat({ areaFill: 'solid' }, ['area']).areas?.fill).toBe('solid');
+    expect(convertStylingToAPIFormat({ areaFill: 'gradient' }, ['area']).areas?.fill).toBe(
+      'gradient'
+    );
   });
 
   it('should fill styling defaults when converting empty state to API format', () => {
     const result = convertStylingToAPIFormat({}, allLayersPresent);
     expect(result.bars?.minimum_height).toBe(DEFAULT_BARS_MINIMUM_HEIGHT);
     expect(result.areas?.fill_opacity).toBe(DEFAULT_AREAS_FILL_OPACITY);
-    expect(result.areas?.fill).toBe(DEFAULT_AREAS_FILL);
+    expect(result.areas?.fill).toBe('solid'); // Legacy default
     expect(result.points?.visibility).toBe(DEFAULT_POINTS_VISIBILITY);
     expect(result.interpolation).toBe(DEFAULT_LINES_INTERPOLATION);
     expect(result.overlays?.partial_buckets?.visible).toBe(DEFAULT_PARTIAL_BUCKETS_VISIBLE);

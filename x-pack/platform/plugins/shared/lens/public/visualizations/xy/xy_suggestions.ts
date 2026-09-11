@@ -10,7 +10,7 @@ import { LENS_DATASOURCE_ID } from '@kbn/lens-common';
 import { i18n } from '@kbn/i18n';
 import { partition } from 'lodash';
 import { Position } from '@elastic/charts';
-import { AreaFillOptions, FittingFunctions, LayerTypes } from '@kbn/expression-xy-plugin/public';
+import { FittingFunctions, LayerTypes } from '@kbn/expression-xy-plugin/public';
 import { Parser } from '@elastic/esql';
 
 import type {
@@ -24,6 +24,7 @@ import { getColorMappingDefaults } from '../../utils';
 import type { XYVisualizationState, XYLayerConfig, XYDataLayerConfig, SeriesType } from './types';
 import { visualizationSubtypes, defaultSeriesType } from './types';
 import { flipSeriesType, getIconForSeries } from './state_helpers';
+import { applyChartDefaultsIfNeeded } from './apply_defaults';
 import { getDefaultPalette } from './default_palette';
 import { getDataLayers, isDataLayer, isDateHistogramOperation } from './visualization_helpers';
 
@@ -647,7 +648,7 @@ function buildSuggestion({
     fittingFunction: currentState?.fittingFunction ?? FittingFunctions.LINEAR,
     curveType: currentState?.curveType,
     fillOpacity: currentState?.fillOpacity,
-    areaFill: currentState ? currentState.areaFill : AreaFillOptions.SOLID,
+    areaFill: currentState?.areaFill,
     pointVisibility: currentState?.pointVisibility,
     xTitle: currentState?.xTitle,
     yTitle: currentState?.yTitle,
@@ -699,7 +700,7 @@ function buildSuggestion({
         isIncomplete ||
         // Don't advertise charts without at least one split
         (!xValue && !splitBy)),
-    state,
+    state: applyChartDefaultsIfNeeded(state),
     incomplete: isIncomplete,
     previewIcon: getIconForSeries(seriesType),
   };

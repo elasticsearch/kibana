@@ -385,7 +385,7 @@ const xyStylingSchema = z
           .default(DEFAULT_AREAS_FILL)
           .optional()
           .meta({
-            description: 'Area fill type: solid or gradient. Defaults to solid.',
+            description: 'Area fill type: solid or gradient.',
             openapi: {
               availability: {
                 since: '9.6.0',

@@ -10,6 +10,7 @@ import type { GeneralDatasourceStates, XYVisualizationState } from '@kbn/lens-co
 import { convertXYToRawColorMappings } from '../../../../../common/content_management/v1/transforms/raw_color_mappings/xy';
 import { convertXYToLegendStats } from '../../../../../common/content_management/v1/transforms/legend_stats/xy';
 import { convertToSplitAccessorsFn } from '../../../../../common/content_management/v2/transforms/split_accessors/xy';
+import { convertAreaFill } from './area_fill';
 
 export const getRuntimeConverters = (datasourceStates?: Readonly<GeneralDatasourceStates>) => [
   // v1
@@ -17,4 +18,5 @@ export const getRuntimeConverters = (datasourceStates?: Readonly<GeneralDatasour
   (state: XYVisualizationState) => convertXYToRawColorMappings(state, datasourceStates),
   // v2
   convertToSplitAccessorsFn,
+  convertAreaFill,
 ];

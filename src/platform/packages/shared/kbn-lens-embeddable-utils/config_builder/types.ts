@@ -311,6 +311,7 @@ export interface LensXYConfigBase {
   fittingFunction?: 'None' | 'Zero' | 'Linear' | 'Carry' | 'Lookahead' | 'Average' | 'Nearest';
   yBounds?: LensYBoundsConfig;
   valueLabels?: 'hide' | 'show';
+  areaFill?: 'solid' | 'gradient';
 }
 export interface BuildDependencies {
   dataViewsAPI: DataViewsCommon;

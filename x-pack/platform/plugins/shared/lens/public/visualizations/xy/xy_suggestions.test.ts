@@ -1558,6 +1558,7 @@ describe('xy_suggestions', () => {
       expect.objectContaining({
         ...currentState,
         preferredSeriesType: 'area_stacked',
+        areaFill: 'gradient',
         layers: [
           expect.objectContaining({
             ...currentState.layers[0],
@@ -1603,6 +1604,7 @@ describe('xy_suggestions', () => {
       expect.objectContaining({
         ...currentState,
         preferredSeriesType: 'area',
+        areaFill: 'gradient',
         layers: [
           expect.objectContaining({
             ...currentState.layers[0],

@@ -11,6 +11,7 @@ import { buildXY } from './xy';
 import { mockDataViewsService } from './mock_utils';
 import type { XYVisualizationState } from '@kbn/lens-common';
 import { LegendValue } from '@elastic/charts';
+import type { LensSeriesLayer, LensXYConfig } from '../types';
 
 test('generates xy chart config', async () => {
   const result = await buildXY(
@@ -593,5 +594,47 @@ describe('annotation layer handling', () => {
     // no spurious datasource-style reference for the annotation layer
     const allRefs = [...result.references, ...(result.state.internalReferences ?? [])];
     expect(allRefs.some((r) => r.name === 'indexpattern-datasource-layer-layer_1')).toBe(false);
+  });
+});
+
+describe('areaFill handling', () => {
+  const buildWithLayers = async (
+    layers: LensXYConfig['layers'],
+    areaFill?: LensXYConfig['areaFill']
+  ) => {
+    const result = await buildXY(
+      {
+        chartType: 'xy',
+        title: 'test',
+        dataset: { esql: 'from test | count=count() by @timestamp' },
+        layers,
+        ...(areaFill ? { areaFill } : {}),
+      },
+      { dataViewsAPI: mockDataViewsService() as any }
+    );
+
+    return result.state.visualization as XYVisualizationState;
+  };
+
+  const seriesLayer = (seriesType: LensSeriesLayer['seriesType']): LensSeriesLayer => ({
+    type: 'series',
+    seriesType,
+    xAxis: '@timestamp',
+    yAxis: [{ label: 'test', value: 'count' }],
+  });
+
+  it('defaults area charts to a gradient fill', async () => {
+    const xyState = await buildWithLayers([seriesLayer('area')]);
+    expect(xyState.areaFill).toBe('gradient');
+  });
+
+  it('preserves an explicitly configured fill', async () => {
+    const xyState = await buildWithLayers([seriesLayer('area')], 'solid');
+    expect(xyState.areaFill).toBe('solid');
+  });
+
+  it('omits areaFill entirely for charts without area layers', async () => {
+    const xyState = await buildWithLayers([seriesLayer('bar'), seriesLayer('line')]);
+    expect(xyState).not.toHaveProperty('areaFill');
   });
 });

@@ -122,7 +122,7 @@ export function convertStylingToAPIFormat(
     // Series-type specific (alphabetical)
     areas: layerPresence.hasAreas
       ? {
-          fill: config.areaFill ?? DEFAULT_AREAS_FILL,
+          fill: config.areaFill ?? ('solid' as const), // Preserve legacy default when no area fill is provided
           fill_opacity: config.fillOpacity ?? DEFAULT_AREAS_FILL_OPACITY,
         }
       : undefined,
