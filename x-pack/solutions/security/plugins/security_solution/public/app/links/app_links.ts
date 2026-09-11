@@ -10,7 +10,10 @@ import { AIChatExperience } from '@kbn/ai-assistant-common';
 import { AI_CHAT_EXPERIENCE_TYPE } from '@kbn/management-settings-ids';
 
 import type { ExperimentalFeatures } from '../../../common';
-import { ENABLE_ALERTS_AND_ATTACKS_ALIGNMENT_SETTING } from '../../../common/constants';
+import {
+  ENABLE_ALERTS_AND_ATTACKS_ALIGNMENT_SETTING,
+  USE_NEW_ENTITY_ANALYTICS_HOME_PAGE_FLAG,
+} from '../../../common/constants';
 import { aiValueLinks } from '../../reports/links';
 import { configurationsLinks, getConfigurationsLinks } from '../../configurations/links';
 import { links as attackDiscoveryLinks } from '../../attack_discovery/links';
@@ -29,7 +32,11 @@ import { launchPadLinks, onboardingLinks } from '../../onboarding/links';
 import { findingsLinks } from '../../cloud_security_posture/links';
 import type { StartPlugins } from '../../types';
 import { dashboardsLinks } from '../../dashboards/links';
-import { entityAnalyticsLinks, entityAnalyticsV2Links } from '../../entity_analytics/links';
+import {
+  entityAnalyticsLinks,
+  entityAnalyticsV2Links,
+  entityAnalyticsHomeLink,
+} from '../../entity_analytics/links';
 
 export const appLinks: AppLinkItems = Object.freeze([
   dashboardsLinks,
@@ -91,6 +98,9 @@ export const getFilteredLinks = async (
     experimentalFeatures.entityAnalyticsNewHomePageEnabled
       ? entityAnalyticsV2Links
       : entityAnalyticsLinks,
+    ...(core.featureFlags.getBooleanValue(USE_NEW_ENTITY_ANALYTICS_HOME_PAGE_FLAG, false)
+      ? [entityAnalyticsHomeLink]
+      : []),
     assetInventoryLinks,
     rulesLinks,
     siemMigrationsLinks,
