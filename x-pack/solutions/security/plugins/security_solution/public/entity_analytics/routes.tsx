@@ -17,6 +17,7 @@ import {
   ENTITY_ANALYTICS_PRIVILEGED_USER_MONITORING_PATH,
   ENTITY_ANALYTICS_OVERVIEW_PATH,
   ENTITY_ANALYTICS_HOME_PAGE_PATH,
+  ENTITY_ANALYTICS_ZOO_PAGE_PATH,
   SecurityPageName,
 } from '../../common/constants';
 import { EntityAnalyticsManagementPage } from './pages/entity_analytics_management_page';
@@ -25,6 +26,7 @@ import { EntityAnalyticsLandingPage } from './pages/entity_analytics_landing';
 import { EntityAnalyticsPrivilegedUserMonitoringPage } from './pages/entity_analytics_privileged_user_monitoring_page';
 import { OverviewDashboard } from './pages/entity_analytics_overview_page';
 import { EntityAnalyticsHomePage } from './pages/entity_analytics_home_page';
+import { EntityAnalyticsTestPage } from './pages/entity_analytics_test_page';
 import { useIsExperimentalFeatureEnabled } from '../common/hooks/use_experimental_features';
 
 // ---- Management routes ----
@@ -238,6 +240,26 @@ export const routes = [
     path: ENTITY_ANALYTICS_HOME_PAGE_PATH,
     component: withSecurityRoutePageWrapper(
       EntityAnalyticsHomePageContainer,
+      SecurityPageName.entityAnalyticsHomePage
+    ),
+  },
+  {
+    path: ENTITY_ANALYTICS_ZOO_PAGE_PATH,
+    component: withSecurityRoutePageWrapper(
+      () => (
+        <Routes>
+          <Route
+            path={ENTITY_ANALYTICS_ZOO_PAGE_PATH}
+            exact
+            component={() => (
+              <PluginTemplateWrapper>
+                <EntityAnalyticsTestPage />
+              </PluginTemplateWrapper>
+            )}
+          />
+          <Route component={NotFoundPage} />
+        </Routes>
+      ),
       SecurityPageName.entityAnalyticsHomePage
     ),
   },

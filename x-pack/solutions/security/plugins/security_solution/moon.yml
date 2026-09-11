@@ -308,6 +308,7 @@ dependsOn:
   - '@kbn/core-mount-utils-browser'
   - '@kbn/ui-callout'
   - '@kbn/shared-ux-utility'
+  - '@kbn/app-header'
 tags:
   - plugin
   - prod
