@@ -47,7 +47,9 @@ const isPolicyEnabled = (packagePolicy: PackagePolicy) => {
 };
 
 const combineConditions = (conditions: Array<string | null | undefined>): string | undefined => {
-  const filtered = conditions.map((c) => c?.trim()).filter((c): c is string => Boolean(c));
+  const filtered = conditions
+    .map((c) => (typeof c === 'string' ? c.trim() : undefined))
+    .filter((c): c is string => Boolean(c));
   if (filtered.length === 0) return undefined;
   if (filtered.length === 1) return filtered[0];
   return filtered.map((c) => `(${c})`).join(' and ');

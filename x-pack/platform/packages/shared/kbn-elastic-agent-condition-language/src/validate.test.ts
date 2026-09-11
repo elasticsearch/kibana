@@ -14,6 +14,17 @@ describe('validateAgentConditionExpression', () => {
     });
   });
 
+  describe('non-string input (runtime type mismatch)', () => {
+    // condition fields can be stored as non-string values (e.g. boolean `true`); guard against #273082
+    it.each([true, false, 1, null, {}, []] as any[])(
+      'returns [] without throwing for non-string %p',
+      (input) => {
+        expect(() => validateAgentConditionExpression(input)).not.toThrow();
+        expect(validateAgentConditionExpression(input)).toEqual([]);
+      }
+    );
+  });
+
   describe('valid expressions', () => {
     it.each([
       "${host.platform} == 'linux'",
