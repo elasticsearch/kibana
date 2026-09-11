@@ -82,10 +82,15 @@ export function useExpressionRenderer(
   const errorRenderHandlerRef = useRef<IInterpreterRenderHandlers | null>(null);
 
   useEffect(() => {
-    if (abortController?.signal)
-      abortController.signal.onabort = () => {
+    if (abortController?.signal) {
+      if (abortController.signal.aborted) {
         expressionLoaderRef.current?.cancel(abortController.signal.reason);
-      };
+      } else {
+        abortController.signal.onabort = () => {
+          expressionLoaderRef.current?.cancel(abortController.signal.reason);
+        };
+      }
+    }
   }, [abortController]);
 
   /* eslint-disable react-hooks/exhaustive-deps */

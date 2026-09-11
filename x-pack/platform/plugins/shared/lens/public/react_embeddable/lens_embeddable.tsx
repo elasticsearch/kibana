@@ -200,10 +200,9 @@ export const createLensEmbeddableFactory = (
           ...stateConfig.api,
           ...dashboardConfig.api,
           supportsJsonExport: true,
-          cancelRequests: () => {
+          cancelRequests: (reason) => {
             const abortController = internalApi.expressionAbortController$.getValue();
-            abortController.abort();
-            internalApi.updateAbortController(new AbortController());
+            abortController.abort(reason);
           },
         }
       );

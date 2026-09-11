@@ -14,6 +14,7 @@
     "@kbn/utility-types",
     "@kbn/presentation-publishing-schemas",
     "@kbn/esql-types",
-    "@kbn/safer-lodash-set"
+    "@kbn/safer-lodash-set",
+    "@kbn/kibana-utils-plugin"
   ]
 }

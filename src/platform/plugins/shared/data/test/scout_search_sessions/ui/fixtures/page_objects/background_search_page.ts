@@ -24,8 +24,7 @@ const ROW_RESTORE_LINK = 'sessionManagementNameLink';
 const SUBMIT_BUTTON = 'querySubmitButton';
 const CANCEL_BUTTON = 'queryCancelButton';
 // While a search is in flight the split button switches from `querySubmitButton-*` to
-// `queryCancelButton-*`, and only then does it offer "Send to background". Dashboards are the
-// exception: they don't put the split button into the loading state.
+// `queryCancelButton-*`, and only then does it offer "Send to background".
 const SEND_TO_BACKGROUND_FROM_CANCEL = 'queryCancelButton-secondary-button';
 const SEND_TO_BACKGROUND_FROM_SUBMIT = 'querySubmitButton-secondary-button';
 const MANAGEMENT_TABLE = 'searchSessionsMgmtUiTable';
@@ -41,9 +40,15 @@ const ERROR_OR_WARNING_PATTERN =
 export interface SendToBackgroundOptions {
   /**
    * Read the secondary button from the submit-state split button instead of the cancel-state
-   * one. Dashboards do not put the split button into the loading state.
+   * one. Only applicable when the search bar is not in a loading/cancel state.
    */
   isSubmitButton?: boolean;
+  /**
+   * Skip the initial submit-button click and wait-for-cancel-button step. Use this when the
+   * search is already in flight before `sendToBackground` is called (e.g., the dashboard is
+   * still loading when navigation arrives), so the submit button is hidden by the cancel button.
+   */
+  alreadyInFlight?: boolean;
 }
 
 /**
@@ -77,27 +82,46 @@ export class BackgroundSearchPage {
   }
 
   /**
-   * Re-run the current query and send the resulting in-flight search to the background, then
-   * wait for the confirmation toast.
+   * Send the in-flight search to the background, then wait for the confirmation toast.
+   *
+   * By default (no options), re-submits the query first: waits for the submit button, clicks it,
+   * waits for the cancel button to appear (confirming a search is in flight), then clicks the
+   * "Send to background" secondary action.
+   *
+   * Pass `alreadyInFlight: true` when the search is already in flight before this method is
+   * called (e.g., the dashboard is still loading on arrival). In that case the submit button is
+   * hidden by the cancel button, so we skip straight to the secondary action.
    */
-  async sendToBackground({ isSubmitButton = false }: SendToBackgroundOptions = {}) {
-    const submitButton = this.page.testSubj.locator(SUBMIT_BUTTON);
-    // While a search is in flight the submit button is swapped for the cancel button, so wait
-    // for it to come back before clicking. Raised above the default because a preceding search
-    // is subject to the 5s stalling filter these specs use.
-    await submitButton.waitFor({ state: 'visible', timeout: 30_000 });
-    await submitButton.click();
+  async sendToBackground({
+    isSubmitButton = false,
+    alreadyInFlight = false,
+  }: SendToBackgroundOptions = {}) {
+    if (alreadyInFlight) {
+      // The search is already in flight; the cancel button is shown in place of the submit button.
+      // Wait for it and click the "Send to background" secondary action directly.
+      await this.page.testSubj
+        .locator(CANCEL_BUTTON)
+        .waitFor({ state: 'visible', timeout: 30_000 });
+      await this.page.testSubj.locator(SEND_TO_BACKGROUND_FROM_CANCEL).click();
+    } else {
+      const submitButton = this.page.testSubj.locator(SUBMIT_BUTTON);
+      // While a search is in flight the submit button is swapped for the cancel button, so wait
+      // for it to come back before clicking. Raised above the default because a preceding search
+      // is subject to the 5s stalling filter these specs use.
+      await submitButton.waitFor({ state: 'visible', timeout: 30_000 });
+      await submitButton.click();
 
-    // Confirm the search is actually in flight before reaching for the secondary action.
-    // Without this, a query that returns instantly makes the next click race a DOM swap and
-    // fail with a confusing "element is not enabled / was detached" error.
-    if (!isSubmitButton) {
-      await this.page.testSubj.locator(CANCEL_BUTTON).waitFor({ state: 'visible' });
+      // Confirm the search is actually in flight before reaching for the secondary action.
+      // Without this, a query that returns instantly makes the next click race a DOM swap and
+      // fail with a confusing "element is not enabled / was detached" error.
+      if (!isSubmitButton) {
+        await this.page.testSubj.locator(CANCEL_BUTTON).waitFor({ state: 'visible' });
+      }
+
+      await this.page.testSubj
+        .locator(isSubmitButton ? SEND_TO_BACKGROUND_FROM_SUBMIT : SEND_TO_BACKGROUND_FROM_CANCEL)
+        .click();
     }
-
-    await this.page.testSubj
-      .locator(isSubmitButton ? SEND_TO_BACKGROUND_FROM_SUBMIT : SEND_TO_BACKGROUND_FROM_CANCEL)
-      .click();
     await this.savedToastLink.waitFor({ state: 'visible', timeout: 30_000 });
   }
 

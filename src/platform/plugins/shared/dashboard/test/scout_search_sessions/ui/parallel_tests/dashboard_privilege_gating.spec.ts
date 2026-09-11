@@ -93,7 +93,7 @@ spaceTest.describe(
         await pageObjects.dashboard.openDashboardWithId(delayedDashboardId);
         await pageObjects.dashboard.waitForRenderComplete();
 
-        await pageObjects.backgroundSearch.sendToBackground({ isSubmitButton: true });
+        await pageObjects.backgroundSearch.sendToBackground();
         await pageObjects.backgroundSearch.openCompletedSearchFromToast();
 
         await pageObjects.dashboard.waitForRenderComplete();

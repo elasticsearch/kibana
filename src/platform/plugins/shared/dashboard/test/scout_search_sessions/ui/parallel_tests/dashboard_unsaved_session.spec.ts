@@ -55,7 +55,7 @@ spaceTest.describe(
       await pageObjects.dashboard.addPanelFromLibrary(SAVED_SEARCH_TITLE);
       // Re-submit so a search is genuinely in flight when we send it to the background.
       // The render is not awaited here: each test decides which surface it waits on.
-      await pageObjects.backgroundSearch.sendToBackground({ isSubmitButton: true });
+      await pageObjects.backgroundSearch.sendToBackground();
     });
 
     spaceTest.afterEach(async ({ apiServices, page, pageObjects, scoutSpace }) => {

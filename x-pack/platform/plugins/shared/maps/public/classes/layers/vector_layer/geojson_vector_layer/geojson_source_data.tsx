@@ -41,8 +41,14 @@ export async function syncGeojsonSourceData({
   source: IVectorSource;
   getUpdateDueToTimeslice: (timeslice?: Timeslice) => boolean;
 }): Promise<{ refreshed: boolean; featureCollection: FeatureCollection }> {
-  const { startLoading, stopLoading, onLoadError, registerCancelCallback, isRequestStillActive } =
-    syncContext;
+  const {
+    startLoading,
+    stopLoading,
+    onLoadError,
+    onLoadAbort,
+    registerCancelCallback,
+    isRequestStillActive,
+  } = syncContext;
   const dataRequestId = SOURCE_DATA_REQUEST_ID;
   const requestToken = Symbol(`${layerId}-${dataRequestId}`);
 
@@ -97,7 +103,9 @@ export async function syncGeojsonSourceData({
       featureCollection: layerFeatureCollection,
     };
   } catch (error) {
-    if (!(error instanceof DataRequestAbortError)) {
+    if (error instanceof DataRequestAbortError) {
+      onLoadAbort(dataRequestId, requestToken);
+    } else {
       onLoadError(dataRequestId, requestToken, error);
     }
     throw error;

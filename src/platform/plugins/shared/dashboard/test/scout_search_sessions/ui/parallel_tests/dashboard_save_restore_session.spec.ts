@@ -107,7 +107,7 @@ spaceTest.describe(
       'navigating to the dashboard listing drops the session',
       async ({ page, pageObjects }) => {
         await pageObjects.dashboard.openDashboardWithId(delayedDashboardId);
-        await pageObjects.backgroundSearch.sendToBackground({ isSubmitButton: true });
+        await pageObjects.backgroundSearch.sendToBackground();
 
         await page.gotoApp('dashboards');
         await expect(pageObjects.backgroundSearch.flyoutEntrypoint).toBeHidden();
@@ -118,7 +118,7 @@ spaceTest.describe(
       'restores a TSVB and Timelion dashboard with every search it grouped',
       async ({ page, pageObjects }) => {
         await pageObjects.dashboard.openDashboardWithId(tsvbTimelionDashboardId);
-        await pageObjects.backgroundSearch.sendToBackground({ isSubmitButton: true });
+        await pageObjects.backgroundSearch.sendToBackground();
 
         await pageObjects.backgroundSearchManagement.goTo();
         await pageObjects.backgroundSearchManagement.waitForRowStatus('complete');

@@ -512,8 +512,12 @@ export const visualizeEmbeddableFactory: EmbeddablePublicDefinition<
       api,
       Component: () => {
         const expressionParams = useStateFromPublishingSubject(expressionParams$);
+        const abortController = useStateFromPublishingSubject(expressionAbortController$);
         const domNode = useRef<HTMLDivElement>(null);
-        const { error, isLoading } = useExpressionRenderer(domNode, expressionParams);
+        const { error, isLoading } = useExpressionRenderer(domNode, {
+          ...expressionParams,
+          abortController,
+        });
         const errorTextStyle = useErrorTextStyle();
 
         useEffect(() => {

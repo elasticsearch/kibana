@@ -63,6 +63,7 @@ export type DataRequestContext = {
     resultsMeta?: DataRequestMeta
   ): void;
   onLoadError(dataId: string, requestToken: symbol, error: Error): void;
+  onLoadAbort(dataId: string, requestToken: symbol): void;
   setJoinError(joinIndex: number, errorMessage?: string): void;
   updateSourceData(newData: object): void;
   isRequestStillActive(dataId: string, requestToken: symbol): boolean;
@@ -94,7 +95,9 @@ export function cancelAllInFlightRequests() {
     getState: () => MapStoreState
   ) => {
     getLayerList(getState()).forEach((layer) => {
-      dispatch(clearDataRequests(layer));
+      layer.getInFlightRequestTokens().forEach((requestToken: symbol) => {
+        dispatch(cancelRequest(requestToken));
+      });
     });
   };
 }
@@ -134,6 +137,8 @@ function getDataRequestContext(
       dispatch(endDataLoad(layerId, dataId, requestToken, data, meta)),
     onLoadError: (dataId: string, requestToken: symbol, error: Error) =>
       dispatch(onDataLoadError(layerId, dataId, requestToken, error)),
+    onLoadAbort: (dataId: string, requestToken: symbol) =>
+      dispatch(onDataLoadAbort(layerId, dataId, requestToken)),
     setJoinError: (joinIndex: number, errorMessage?: string) => {
       dispatch(setJoinError(layerId, joinIndex, errorMessage));
     },
@@ -344,6 +349,27 @@ function onDataLoadError(layerId: string, dataId: string, requestToken: symbol, 
       layerId,
       dataId,
       error,
+      requestToken,
+    });
+  };
+}
+
+function onDataLoadAbort(layerId: string, dataId: string, requestToken: symbol) {
+  return (
+    dispatch: ThunkDispatch<MapStoreState, void, AnyAction>,
+    getState: () => MapStoreState
+  ) => {
+    dispatch(unregisterCancelCallback(requestToken));
+    const dataRequest = getDataRequestDescriptor(getState(), layerId, dataId);
+    if (dataRequest && dataRequest.dataRequestToken !== requestToken) {
+      return;
+    }
+    dispatch({
+      type: LAYER_DATA_LOAD_ENDED,
+      layerId,
+      dataId,
+      data: {},
+      meta: {},
       requestToken,
     });
   };

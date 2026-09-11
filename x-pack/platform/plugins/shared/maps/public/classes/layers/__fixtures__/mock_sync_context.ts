@@ -14,6 +14,7 @@ export class MockSyncContext implements DataRequestContext {
   dataFilters: DataFilters;
   isRequestStillActive: (dataId: string, requestToken: symbol) => boolean;
   onLoadError: (dataId: string, requestToken: symbol, error: Error) => void;
+  onLoadAbort: (dataId: string, requestToken: symbol) => void;
   registerCancelCallback: (requestToken: symbol, callback: () => void) => void;
   startLoading: (dataId: string, requestToken: symbol, meta: DataRequestMeta) => void;
   stopLoading: (dataId: string, requestToken: symbol, data: object, meta: DataRequestMeta) => void;
@@ -41,6 +42,7 @@ export class MockSyncContext implements DataRequestContext {
     this.dataFilters = mapFilters;
     this.isRequestStillActive = sinon.spy();
     this.onLoadError = sinon.spy();
+    this.onLoadAbort = sinon.spy();
     this.registerCancelCallback = sinon.spy();
     this.startLoading = sinon.spy();
     this.stopLoading = sinon.spy();

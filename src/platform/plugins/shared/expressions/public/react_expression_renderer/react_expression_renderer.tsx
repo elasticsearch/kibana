@@ -45,6 +45,7 @@ export function ReactExpressionRenderer({
   const { euiTheme } = useEuiTheme();
   const { error, isEmpty, isLoading } = useExpressionRenderer(nodeRef, {
     ...expressionRendererOptions,
+    abortController,
     hasCustomErrorRenderer: !!renderError,
   });
 

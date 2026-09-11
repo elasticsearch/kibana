@@ -98,22 +98,16 @@ spaceTest.describe(
         await spaceTest.step(
           'navigate and save as background search while Lens is loading',
           async () => {
-            // Set up the request waiter before navigation so it catches the first ESE call.
-            const firstEseRequest = page.waitForRequest(
-              (r) => r.url().includes('/internal/search/ese') && r.method() === 'POST'
-            );
             await pageObjects.dashboard.openDashboardWithId(dashboardId, { waitForRender: false });
-            // Wait until Lens has actually fired at least one search before saving.
-            await firstEseRequest;
-            // isSubmitButton:true because Dashboard panels keep the split button in submit state
-            // even while searches are in flight.
-            await pageObjects.backgroundSearch.sendToBackground({ isSubmitButton: true });
+            // The dashboard swaps the submit button for a cancel button while searches are in
+            // flight. Use alreadyInFlight so sendToBackground waits for the cancel button and
+            // saves without re-submitting.
+            await pageObjects.backgroundSearch.sendToBackground({ alreadyInFlight: true });
           }
         );
 
-        // "Send to background" re-runs the query, so the search the session was saved around is
-        // the most recent request, not the first — earlier ones were superseded and abandoned by
-        // the client, and would never produce a response.
+        // The search saved to background is the one that was in flight when the session was
+        // saved. Earlier requests that reached Kibana before the session was saved are included;
         savedSearch.index = eseRequestCount;
 
         // Wait for the response, not just the release: the navigation that follows cancels

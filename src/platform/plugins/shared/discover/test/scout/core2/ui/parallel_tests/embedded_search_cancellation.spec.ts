@@ -20,8 +20,56 @@ spaceTest.describe(
   'Discover session embedded in dashboard - request cancellation',
   { tag: '@local-stateful-classic' },
   () => {
-    spaceTest.beforeAll(async ({ discoverScoutSpace }) => {
+    let dashboardId: string;
+
+    spaceTest.beforeAll(async ({ discoverScoutSpace, apiServices, scoutSpace }) => {
       await discoverScoutSpace.setupDiscoverDefaults();
+      dashboardId = await apiServices.dashboard.create(
+        {
+          title: `Discover Session Dashboard ${Date.now()}`,
+          time_range: {
+            from: LOGSTASH_ABSOLUTE_RANGE.from,
+            to: LOGSTASH_ABSOLUTE_RANGE.to,
+            mode: 'absolute',
+          },
+          panels: [
+            {
+              type: SEARCH_EMBEDDABLE_TYPE,
+              grid: { x: 0, y: 0, w: 24, h: 15 },
+              config: {
+                tabs: [
+                  {
+                    data_source: {
+                      type: 'esql',
+                      query: 'FROM logstash-* | LIMIT 10',
+                    },
+                  },
+                ],
+              },
+            },
+          ],
+          filters: [
+            {
+              type: 'dsl',
+              dsl: {
+                query: {
+                  error_query: {
+                    indices: [
+                      {
+                        name: '*',
+                        error_type: 'warning',
+                        message: "'Watch out!'",
+                        stall_time_seconds: 5,
+                      },
+                    ],
+                  },
+                },
+              },
+            },
+          ],
+        },
+        scoutSpace.id
+      );
     });
 
     spaceTest.beforeEach(async ({ browserAuth }) => {
@@ -34,56 +82,7 @@ spaceTest.describe(
 
     spaceTest(
       'cancels async search when navigating away from the dashboard',
-      async ({ page, apiServices, scoutSpace, pageObjects, network }) => {
-        const title = `Discover Session Dashboard ${Date.now()}`;
-
-        const dashboardId = await apiServices.dashboard.create(
-          {
-            title,
-            time_range: {
-              from: LOGSTASH_ABSOLUTE_RANGE.from,
-              to: LOGSTASH_ABSOLUTE_RANGE.to,
-              mode: 'absolute',
-            },
-            panels: [
-              {
-                type: SEARCH_EMBEDDABLE_TYPE,
-                grid: { x: 0, y: 0, w: 24, h: 15 },
-                config: {
-                  tabs: [
-                    {
-                      data_source: {
-                        type: 'esql',
-                        query: 'FROM logstash-* | LIMIT 10',
-                      },
-                    },
-                  ],
-                },
-              },
-            ],
-            filters: [
-              {
-                type: 'dsl',
-                dsl: {
-                  query: {
-                    error_query: {
-                      indices: [
-                        {
-                          name: '*',
-                          error_type: 'warning',
-                          message: "'Watch out!'",
-                          stall_time_seconds: 5,
-                        },
-                      ],
-                    },
-                  },
-                },
-              },
-            ],
-          },
-          scoutSpace.id
-        );
-
+      async ({ page, pageObjects, network }) => {
         // Set up listener before opening the dashboard to avoid race conditions
         const esqlRequestPromise = page.waitForResponse(
           (req) => req.url().endsWith('/esql_async') && req.ok()
@@ -99,6 +98,33 @@ spaceTest.describe(
             }
           )
         ).toBe(1);
+      }
+    );
+
+    spaceTest(
+      'cancels async search when clicking the cancel button',
+      async ({ page, pageObjects, network }) => {
+        // Set up listener before opening the dashboard to avoid race conditions
+        const esqlRequestPromise = page.waitForResponse(
+          (req) => req.url().endsWith('/esql_async') && req.ok()
+        );
+        await pageObjects.dashboard.openDashboardWithId(dashboardId, { waitForRender: false });
+        await esqlRequestPromise;
+
+        const cancelButton = page.testSubj.locator('queryCancelButton');
+        await cancelButton.waitFor({ state: 'visible' });
+
+        expect(
+          await network.countMatchingRequests(
+            { endpoint: '/esql_async', method: 'DELETE' },
+            async () => {
+              await cancelButton.click();
+            }
+          )
+        ).toBe(1);
+
+        // Verify cancel button disappears (no more in-flight requests)
+        await cancelButton.waitFor({ state: 'hidden' });
       }
     );
   }

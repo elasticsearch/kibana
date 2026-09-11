@@ -58,5 +58,34 @@ spaceTest.describe(
         ).toBe(1);
       }
     );
+
+    spaceTest(
+      'cancels async search when clicking the cancel button',
+      async ({ page, pageObjects, network }) => {
+        // Set up listener before opening the dashboard to avoid race conditions
+        const vegaResponsePromise = page.waitForResponse(
+          (req) => req.url().endsWith('/internal/search/esql_async') && req.ok()
+        );
+        // Open dashboard WITHOUT waiting for render
+        await pageObjects.dashboard.openDashboardWithId(dashboardId, { waitForRender: false });
+        await vegaResponsePromise;
+
+        const cancelButton = page.testSubj.locator('queryCancelButton');
+        await cancelButton.waitFor({ state: 'visible' });
+
+        // Click cancel button and verify cancellation DELETE request is sent
+        expect(
+          await network.countMatchingRequests(
+            { endpoint: '/internal/search/esql_async', method: 'DELETE' },
+            async () => {
+              await cancelButton.click();
+            }
+          )
+        ).toBe(1);
+
+        // Verify cancel button disappears (no more in-flight requests)
+        await cancelButton.waitFor({ state: 'hidden' });
+      }
+    );
   }
 );

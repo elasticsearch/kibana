@@ -34,6 +34,7 @@ describe('useExpressionRenderer', () => {
       events$: new Subject(),
       loading$: new Subject(),
       render$: new Subject(),
+      cancel: jest.fn(),
       destroy: jest.fn(),
       inspect: jest.fn(),
       update: jest.fn(),
@@ -215,5 +216,25 @@ describe('useExpressionRenderer', () => {
     expect(expressionLoader.update).not.toHaveBeenCalled();
     reload$.next();
     expect(expressionLoader.update).toHaveBeenCalledWith('something', {});
+  });
+
+  it('should cancel the loader when abortController signal is aborted', () => {
+    const abortController = new AbortController();
+    hook.rerender({ expression: 'something', abortController });
+
+    expect(expressionLoader.cancel).not.toHaveBeenCalled();
+
+    abortController.abort('test reason');
+
+    expect(expressionLoader.cancel).toHaveBeenCalledWith('test reason');
+  });
+
+  it('should immediately cancel the loader when abortController is already aborted', () => {
+    const abortController = new AbortController();
+    abortController.abort('pre-aborted');
+
+    hook.rerender({ expression: 'something', abortController });
+
+    expect(expressionLoader.cancel).toHaveBeenCalledWith('pre-aborted');
   });
 });

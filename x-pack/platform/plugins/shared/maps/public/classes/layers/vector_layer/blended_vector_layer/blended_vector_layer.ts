@@ -340,7 +340,9 @@ export class BlendedVectorLayer extends GeoJsonVectorLayer implements IVectorLay
           { ...requestMeta, warnings }
         );
       } catch (error) {
-        if (!(error instanceof DataRequestAbortError) || !isSearchSourceAbortError(error)) {
+        if (error instanceof DataRequestAbortError || isSearchSourceAbortError(error)) {
+          syncContext.onLoadAbort(dataRequestId, requestToken);
+        } else {
           syncContext.onLoadError(dataRequestId, requestToken, error);
         }
         return;

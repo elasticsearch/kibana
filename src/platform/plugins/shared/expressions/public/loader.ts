@@ -87,7 +87,7 @@ export class ExpressionLoader {
 
     this.setParams(params);
 
-    if (expression) {
+    if (expression && !params?.abortController?.signal.aborted) {
       this.loadingSubject.next(true);
       this.loadData(expression, this.params);
     }
@@ -123,6 +123,10 @@ export class ExpressionLoader {
 
   update(expression?: string | ExpressionAstExpression, params?: IExpressionLoaderParams): void {
     this.setParams(params);
+
+    if (params?.abortController?.signal.aborted) {
+      return;
+    }
 
     this.loadingSubject.next(true);
     if (expression) {

@@ -5,7 +5,7 @@
  * 2.0.
  */
 
-import { spaceTest } from '@kbn/scout';
+import { test } from '@kbn/scout';
 import { expect } from '@kbn/scout/ui';
 
 const MAPS_DASHBOARD_ARCHIVE =
@@ -13,13 +13,13 @@ const MAPS_DASHBOARD_ARCHIVE =
 
 const GEO_INDEX = 'maps-cancellation-test';
 
-spaceTest.describe(
+test.describe(
   'Maps embedded in dashboard - request cancellation',
   { tag: '@local-stateful-classic' },
   () => {
     let dashboardId: string;
 
-    spaceTest.beforeAll(async ({ scoutSpace, esClient }) => {
+    test.beforeAll(async ({ kbnClient, esClient }) => {
       const indexExists = await esClient.indices.exists({ index: GEO_INDEX });
       if (!indexExists) {
         await esClient.indices.create({
@@ -33,49 +33,83 @@ spaceTest.describe(
         });
       }
 
-      const loaded = await scoutSpace.savedObjects.load(MAPS_DASHBOARD_ARCHIVE);
-      const dashboard = loaded.find((obj) => obj.type === 'dashboard');
+      const response = await kbnClient.importExport.load(MAPS_DASHBOARD_ARCHIVE, {
+        createNewCopies: true,
+      });
+      const dashboard = (
+        response.successResults as Array<{ type: string; destinationId: string }>
+      ).find((r) => r.type === 'dashboard');
       if (!dashboard) {
         throw new Error('Dashboard saved object not found in fixture');
       }
-      dashboardId = dashboard.id;
+      dashboardId = dashboard.destinationId;
     });
 
-    spaceTest.beforeEach(async ({ browserAuth }) => {
+    test.beforeEach(async ({ browserAuth }) => {
       await browserAuth.loginAsViewer();
     });
 
-    spaceTest.afterAll(async ({ scoutSpace, esClient }) => {
-      await scoutSpace.savedObjects.cleanStandardList();
+    test.afterAll(async ({ kbnClient, esClient }) => {
+      await kbnClient.savedObjects.cleanStandardList();
       await esClient.indices.delete({ index: GEO_INDEX, ignore_unavailable: true });
     });
 
-    spaceTest(
-      'cancels search when navigating away from the dashboard',
-      async ({ page, pageObjects }) => {
-        // Set up listeners before opening the dashboard to avoid race conditions
-        const esqlRequestPromise = page.waitForRequest(
-          (req) => req.url().includes('/internal/search/esql') && req.method() === 'POST'
-        );
+    test('cancels search when navigating away from the dashboard', async ({
+      page,
+      pageObjects,
+    }) => {
+      // Set up listeners before opening the dashboard to avoid race conditions
+      const esqlRequestPromise = page.waitForRequest(
+        (req) => req.url().includes('/internal/search/esql') && req.method() === 'POST'
+      );
 
-        // Open dashboard WITHOUT waiting for render
-        await pageObjects.dashboard.openDashboardWithId(dashboardId, { waitForRender: false });
+      // Open dashboard WITHOUT waiting for render
+      await pageObjects.dashboard.openDashboardWithId(dashboardId, { waitForRender: false });
 
-        // Wait for the map to initiate the ES|QL search (stalled by error_query)
-        await esqlRequestPromise;
+      // Wait for the map to initiate the ES|QL search (stalled by error_query)
+      await esqlRequestPromise;
 
-        const esqlAbortedPromise = page.waitForEvent(
-          'requestfailed',
-          (req) => req.url().includes('/internal/search/esql') && req.method() === 'POST'
-        );
+      const esqlAbortedPromise = page.waitForEvent(
+        'requestfailed',
+        (req) => req.url().includes('/internal/search/esql') && req.method() === 'POST'
+      );
 
-        // Navigate away - this should abort the pending request
-        await pageObjects.collapsibleNav.clickItem('Discover');
+      // Navigate away - this should abort the pending request
+      await pageObjects.collapsibleNav.clickItem('Discover');
 
-        // Verify the in-flight request was aborted
-        const failedRequest = await esqlAbortedPromise;
-        expect(failedRequest.failure()).not.toBeNull();
-      }
-    );
+      // Verify the in-flight request was aborted
+      const failedRequest = await esqlAbortedPromise;
+      expect(failedRequest.failure()).not.toBeNull();
+    });
+
+    test('cancels search when clicking the cancel button', async ({ page, pageObjects }) => {
+      // Set up listeners before opening the dashboard to avoid race conditions
+      const esqlRequestPromise = page.waitForRequest(
+        (req) => req.url().includes('/internal/search/esql') && req.method() === 'POST'
+      );
+
+      // Open dashboard WITHOUT waiting for render
+      await pageObjects.dashboard.openDashboardWithId(dashboardId, { waitForRender: false });
+
+      // Wait for the map to initiate the ES|QL search (stalled by error_query)
+      await esqlRequestPromise;
+
+      const esqlAbortedPromise = page.waitForEvent(
+        'requestfailed',
+        (req) => req.url().includes('/internal/search/esql') && req.method() === 'POST'
+      );
+
+      // Click cancel button - this should abort the pending request
+      const cancelButton = page.testSubj.locator('queryCancelButton');
+      await cancelButton.waitFor({ state: 'visible' });
+      await cancelButton.click();
+
+      // Verify the in-flight request was aborted
+      const failedRequest = await esqlAbortedPromise;
+      expect(failedRequest.failure()).not.toBeNull();
+
+      // Verify cancel button disappears (no more in-flight requests)
+      await cancelButton.waitFor({ state: 'hidden' });
+    });
   }
 );

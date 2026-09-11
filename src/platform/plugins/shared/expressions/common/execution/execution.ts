@@ -179,10 +179,11 @@ function takeUntilAborted<T>(signal: AbortSignal) {
   return (source: Observable<T>) =>
     new Observable<T>((subscriber) => {
       const throwAbortError = (e?: Event) => {
-        // If the execution was aborted due to end user cancellation, we still want to let
-        // the execution complete and handle the partial results
-        if ((e?.target as AbortSignal)?.reason !== AbortReason.CANCELED)
+        const reason = (e?.target as AbortSignal)?.reason;
+        // For CANCELED, let the chain continue so partial results can flow through.
+        if (reason !== AbortReason.CANCELED) {
           subscriber.error(new AbortError());
+        }
       };
 
       subscriber.add(source.subscribe(subscriber));
@@ -316,6 +317,15 @@ export class Execution<
       getExecutionContext: () => execution.params.executionContext,
     };
 
+    // Cancel children when this execution is aborted.
+    // Uses queueMicrotask so the parent's error path completes before child
+    // errors can re-enter the parent's chain.
+    this.abortController.signal.addEventListener('abort', () => {
+      queueMicrotask(() => {
+        this.childExecutions.forEach((child) => child.cancel(this.abortController.signal.reason));
+      });
+    });
+
     this.result = this.input$.pipe(
       switchMap((input) =>
         this.invokeChain<Output>(this.state.get().ast.chain, input).pipe(
@@ -328,10 +338,6 @@ export class Execution<
       ),
       catchError((error) => {
         if (this.abortController.signal.aborted) {
-          this.childExecutions.forEach((childExecution) =>
-            childExecution.cancel(this.abortController.signal.reason)
-          );
-
           return of({ result: createAbortErrorValue(), partial: false });
         }
 
@@ -721,7 +727,6 @@ export class Execution<
           variables: this.context.variables,
         });
         this.childExecutions.push(execution);
-
         return execution.start(input, true);
       case 'string':
       case 'number':

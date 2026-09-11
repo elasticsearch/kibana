@@ -172,6 +172,16 @@ export function loadEmbeddableData(
   ) {
     addLog(`Embeddable reload reason: ${sourceId}`);
 
+    const currentAbortController = internalApi.expressionAbortController$.getValue();
+
+    // If the current controller is already aborted, create a fresh one for this reload
+    // This happens when cancelRequests() was called before this reload started
+    let activeController = currentAbortController;
+    if (currentAbortController.signal.aborted) {
+      activeController = new AbortController();
+      internalApi.updateAbortController(activeController);
+    }
+
     resetMessages();
 
     // reset the render on reload
@@ -260,7 +270,6 @@ export function loadEmbeddableData(
       services
     );
 
-    // Go concurrently: build the expression and fetch the dataViews
     const [{ params, abortController, ...rest }, dataViewIds] = await Promise.all([
       getExpressionRendererParams(currentState, {
         searchContext,
@@ -273,7 +282,7 @@ export function loadEmbeddableData(
         renderMode: getRenderMode(parentApi),
         services,
         searchSessionId: api.searchSessionId$.getValue(),
-        abortController: internalApi.expressionAbortController$.getValue(),
+        abortController: activeController,
         getExecutionContext,
         logError: getLogError(getExecutionContext),
         addUserMessages,
@@ -309,8 +318,6 @@ export function loadEmbeddableData(
     if (params?.expression != null && !hasBlockingErrors) {
       internalApi.updateExpressionParams(params);
     }
-
-    internalApi.updateAbortController(abortController ?? new AbortController());
   }
 
   // Build a custom operator to be resused for various observables

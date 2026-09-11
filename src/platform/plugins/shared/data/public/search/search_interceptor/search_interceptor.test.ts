@@ -2314,6 +2314,40 @@ describe('SearchInterceptor', () => {
         expect(error).not.toHaveBeenCalled();
       });
 
+      test('should not attempt to fetch partial results when aborted before getting an async search ID', async () => {
+        const responses = [
+          {
+            time: 500,
+            value: getMockSearchResponse({
+              isPartial: false,
+              isRunning: false,
+              rawResponse: {},
+              id: '1',
+            }),
+          },
+        ];
+        mockCoreSetup.http.post.mockImplementation(getHttpMock(responses));
+
+        const abortController = new AbortController();
+        // Abort immediately, before the initial submit completes
+        setTimeout(() => abortController.abort(AbortReason.CANCELED), 10);
+
+        const response = searchInterceptor.search(
+          {},
+          { abortSignal: abortController.signal, pollInterval: 0 }
+        );
+        response.subscribe({ next, error });
+
+        await timeTravel(10);
+
+        expect(error).toHaveBeenCalled();
+        expect(error.mock.calls[0][0]).toBeInstanceOf(AbortError);
+
+        // Should only make the initial POST request, no attempt to fetch partial results
+        expect(mockCoreSetup.http.post).toHaveBeenCalledTimes(1);
+        expect(mockCoreSetup.http.delete).not.toHaveBeenCalled();
+      });
+
       test('should not request partial results and throw error if canceled for a reason other than CANCELED/TIMEOUT', async () => {
         const abortController = new AbortController();
         setTimeout(() => {

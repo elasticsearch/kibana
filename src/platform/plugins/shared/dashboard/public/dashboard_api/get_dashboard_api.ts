@@ -229,6 +229,19 @@ export function getDashboardApi({
 
   const pauseFetchManager = initializePauseFetchManager(filtersManager);
 
+  const canCancel$ = new BehaviorSubject<boolean>(false);
+  const canCancelSubscription = combineLatest([
+    dataLoadingManager.api.dataLoading$,
+    filtersManager.api.childFiltersLoading$,
+  ])
+    .pipe(
+      map(([dataLoading, childFiltersLoading]) => {
+        // Only allow cancel when data is loading AND filters are not loading
+        return Boolean(dataLoading && !childFiltersLoading);
+      })
+    )
+    .subscribe((value) => canCancel$.next(value));
+
   const dashboardApi = {
     ...viewModeManager.api,
     ...dataLoadingManager.api,
@@ -246,6 +259,7 @@ export function getDashboardApi({
     esqlVariables$: esqlVariablesManager.api.publishedEsqlVariables$,
     ...timesliceManager.api,
     ...pauseFetchManager.api,
+    canCancel$,
     ...initializeTrackContentfulRender(),
     anyStateChange$,
     executionContext: {
@@ -401,6 +415,8 @@ export function getDashboardApi({
       timesliceManager.cleanup();
       projectRoutingManager?.cleanup();
       pauseFetchManager.cleanup();
+      canCancelSubscription.unsubscribe();
+      canCancel$.complete();
       trackPanel.cleanup();
       historyManager.cleanup();
     },

@@ -9,6 +9,7 @@
 
 import { waitFor } from '@testing-library/react';
 import { lastValueFrom } from 'rxjs';
+import { AbortReason } from '@kbn/kibana-utils-plugin/common';
 import { Execution } from './execution';
 import { parseExpression } from '../ast';
 import { createUnitTestExecutor } from '../test_helpers';
@@ -150,6 +151,78 @@ describe('Execution abortion tests', () => {
 
     expect(started).toHaveBeenCalledTimes(1);
     expect(aborted).toHaveBeenCalledTimes(1);
+    expect(completed).toHaveBeenCalledTimes(0);
+
+    jest.useFakeTimers({ legacyFakeTimers: true });
+  });
+
+  test('nested expressions are aborted when parent cancelled with CANCELED reason', async () => {
+    jest.useRealTimers();
+    const started = jest.fn();
+    const completed = jest.fn();
+    const aborted = jest.fn();
+    const abortedReasons: unknown[] = [];
+
+    const defer: ExpressionFunctionDefinition<'defer', unknown, { time: number }, unknown> = {
+      name: 'defer',
+      args: {
+        time: {
+          aliases: ['_'],
+          help: 'Calls function from a context after delay unless aborted',
+          types: ['number'],
+        },
+      },
+      help: '',
+      fn: async (input, args, { abortSignal }) => {
+        started();
+        await new Promise((r) => {
+          const timeout = setTimeout(() => {
+            if (!abortSignal.aborted) {
+              completed();
+            }
+            r(undefined);
+          }, args.time);
+
+          abortSignal.addEventListener('abort', () => {
+            aborted();
+            abortedReasons.push(abortSignal.reason);
+            clearTimeout(timeout);
+            r(undefined);
+          });
+        });
+
+        return args.time;
+      },
+    };
+
+    const expression = 'defer time={defer time={defer time=300}}';
+    const executor = createUnitTestExecutor();
+    executor.registerFunction(defer);
+    const execution = new Execution({
+      executor,
+      ast: parseExpression(expression),
+      params: {},
+    });
+
+    execution.start().toPromise();
+
+    await waitFor(() => expect(started).toHaveBeenCalledTimes(1));
+
+    execution.cancel(AbortReason.CANCELED);
+
+    const { result } = await lastValueFrom(execution.result);
+
+    // CANCELED should not produce an AbortError — the expression completes with a numeric result
+    expect(result).not.toEqual(
+      expect.objectContaining({
+        type: 'error',
+        error: expect.objectContaining({ name: 'AbortError' }),
+      })
+    );
+
+    // The innermost child's abort signal should have fired with the CANCELED reason
+    await waitFor(() => expect(aborted).toHaveBeenCalledTimes(1));
+    expect(abortedReasons[0]).toBe(AbortReason.CANCELED);
     expect(completed).toHaveBeenCalledTimes(0);
 
     jest.useFakeTimers({ legacyFakeTimers: true });
