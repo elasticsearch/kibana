@@ -6,9 +6,10 @@
  */
 
 import React from 'react';
-import useResizeObserver from 'use-resize-observer/polyfilled';
 import type { Dispatch } from 'redux-v4';
-import { render, screen } from '@testing-library/react';
+import type { EuiDataGridCellValueElementProps, EuiDataGridControlColumn } from '@elastic/eui';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { useExpandableFlyoutApi } from '@kbn/expandable-flyout';
 
 import { DefaultCellRenderer } from '../../cell_rendering/default_cell_renderer';
 import { defaultHeaders, mockTimelineData } from '../../../../../common/mock';
@@ -17,7 +18,6 @@ import { defaultRowRenderers } from '../../body/renderers';
 import type { SortColumnTimeline as Sort } from '../../../../../../common/types/timeline';
 import { TimelineId } from '../../../../../../common/types/timeline';
 import { useTimelineEvents } from '../../../../containers';
-import { useTimelineEventsDetails } from '../../../../containers/details';
 import type { Props as PinnedTabContentComponentProps } from '.';
 import { PinnedTabContentComponent } from '.';
 import { Direction } from '../../../../../../common/search_strategy';
@@ -28,20 +28,25 @@ import { useKibana } from '../../../../../common/lib/kibana';
 import { createStartServicesMock } from '../../../../../common/lib/kibana/kibana_react.mock';
 import { useUserPrivileges } from '../../../../../common/components/user_privileges';
 import { initialUserPrivilegesState } from '../../../../../common/components/user_privileges/user_privileges_context';
-import { useExpandableFlyoutApi } from '@kbn/expandable-flyout';
 import { createExpandableFlyoutApiMock } from '../../../../../common/mock/expandable_flyout';
 import { useFlyoutApi } from '../../../../../flyout_v2/use_flyout_api';
 import { createFlyoutApiMock } from '../../../../../flyout_v2/use_flyout_api.mock';
 import { useIsNewFlyoutEnabled } from '../../../../../common/hooks/use_is_new_flyout_enabled';
+import type { UnifiedTimelineDataGridCellContext } from '../../types';
+import { FLYOUT_ORIGIN } from '../../../../../common/lib/telemetry';
+
+/**
+ * `onToggleShowNotes` is declared inline in `PinnedTabContentComponent` and reaches the
+ * notes button only through the data grid's leading control column, so covering it means
+ * rendering that column rather than calling a hook. `UnifiedTimelineBody` is stubbed to
+ * render the column on its own: the callback, the control column and the notes button are
+ * all the real ones, and the `EuiDataGrid` mount that surrounds them in production is not.
+ * `use_timeline_control_columns.test.tsx` cannot make these assertions, because it supplies
+ * its own `onToggleShowNotes` mock and so never runs the branch that picks a flyout.
+ */
 
 jest.mock('../../../../containers', () => ({
   useTimelineEvents: jest.fn(),
-}));
-jest.mock('../../../../containers/details', () => ({
-  useTimelineEventsDetails: jest.fn(),
-}));
-jest.mock('../../../fields_browser', () => ({
-  useFieldBrowserOptions: jest.fn(),
 }));
 
 jest.mock('../../../../../common/components/user_privileges');
@@ -53,10 +58,6 @@ jest.mock('../../../../../common/hooks/use_is_new_flyout_enabled');
 jest.mock('../../../../../common/hooks/use_experimental_features');
 const useIsExperimentalFeatureEnabledMock = useIsExperimentalFeatureEnabled as jest.Mock;
 
-const mockUseResizeObserver: jest.Mock = useResizeObserver as jest.Mock;
-jest.mock('use-resize-observer/polyfilled');
-mockUseResizeObserver.mockImplementation(() => ({}));
-
 jest.mock('../../../../../common/lib/kibana', () => {
   const originalModule = jest.requireActual('../../../../../common/lib/kibana');
   return {
@@ -66,14 +67,42 @@ jest.mock('../../../../../common/lib/kibana', () => {
   };
 });
 
+type ControlColumnCellRender = (
+  props: EuiDataGridCellValueElementProps & UnifiedTimelineDataGridCellContext
+) => React.JSX.Element;
+
+jest.mock('../../body/unified_timeline_body', () => ({
+  UnifiedTimelineBody: ({
+    leadingControlColumns,
+  }: {
+    leadingControlColumns: EuiDataGridControlColumn[];
+  }) => {
+    const RowCellRender = leadingControlColumns[0].rowCellRender as ControlColumnCellRender;
+
+    return (
+      <RowCellRender
+        colIndex={0}
+        columnId="default-timeline-control-column"
+        isDetails={false}
+        isExpandable={false}
+        isExpanded={false}
+        rowIndex={0}
+        setCellProps={() => {}}
+      />
+    );
+  },
+}));
+
 const kibanaMockResult = {
   services: createStartServicesMock(),
 };
 
 const useKibanaMock = useKibana as jest.Mock;
 
-describe('PinnedTabContent', () => {
+describe('PinnedTabContent Leading actions - notes', () => {
   let props = {} as PinnedTabContentComponentProps;
+  let flyoutApi: ReturnType<typeof createFlyoutApiMock>;
+  const mockOpenFlyout = jest.fn();
   const sort: Sort[] = [
     {
       columnId: '@timestamp',
@@ -83,32 +112,22 @@ describe('PinnedTabContent', () => {
     },
   ];
 
-  beforeAll(() => {
-    // https://github.com/atlassian/react-beautiful-dnd/blob/4721a518356f72f1dac45b5fd4ee9d466aa2996b/docs/guides/setup-problem-detection-and-error-recovery.md#disable-logging
-    Object.defineProperty(window, '__@hello-pangea/dnd-disable-dev-warnings', {
-      get() {
-        return true;
-      },
-    });
-  });
-
   beforeEach(() => {
     jest.clearAllMocks();
 
-    HTMLElement.prototype.getBoundingClientRect = jest.fn(() => {
-      return {
-        width: 1000,
-        height: 1000,
-        x: 0,
-        y: 0,
-      } as DOMRect;
-    });
-
+    // The notes control column only renders when the corresponding rawEvent is present,
+    // so we provide a rawEvent that matches the first (and only) event.
     (useTimelineEvents as jest.Mock).mockReturnValue([
       false,
       {
         events: mockTimelineData.slice(0, 1),
-        rawEvents: [],
+        rawEvents: [
+          {
+            _id: mockTimelineData[0]._id,
+            _index: 'test-index',
+            _source: {},
+          },
+        ],
         pageInfo: {
           activePage: 0,
           totalPages: 1,
@@ -118,7 +137,6 @@ describe('PinnedTabContent', () => {
         timedOut: false,
       },
     ]);
-    (useTimelineEventsDetails as jest.Mock).mockReturnValue([false, {}]);
 
     (useIsExperimentalFeatureEnabledMock as jest.Mock).mockImplementation(
       (feature: keyof ExperimentalFeatures) => {
@@ -132,8 +150,12 @@ describe('PinnedTabContent', () => {
       timelinePrivileges: { crud: true, read: true },
     });
 
-    jest.mocked(useExpandableFlyoutApi).mockReturnValue(createExpandableFlyoutApiMock());
-    jest.mocked(useFlyoutApi).mockReturnValue(createFlyoutApiMock());
+    flyoutApi = createFlyoutApiMock();
+    jest.mocked(useExpandableFlyoutApi).mockReturnValue({
+      ...createExpandableFlyoutApiMock(),
+      openFlyout: mockOpenFlyout,
+    });
+    jest.mocked(useFlyoutApi).mockReturnValue(flyoutApi);
     jest.mocked(useIsNewFlyoutEnabled).mockReturnValue(false);
 
     useKibanaMock.mockReturnValue(kibanaMockResult);
@@ -147,20 +169,54 @@ describe('PinnedTabContent', () => {
       renderCellValue: DefaultCellRenderer,
       rowRenderers: defaultRowRenderers,
       sort,
-      pinnedEventIds: {},
+      pinnedEventIds: { [mockTimelineData[0]._id]: true },
       eventIdToNoteIds: {},
     };
   });
 
-  describe('rendering', () => {
-    test('should render timeline table correctly', async () => {
-      render(
-        <TestProviders>
-          <PinnedTabContentComponent {...props} />
-        </TestProviders>
-      );
+  it('should open the legacy notes flyout when the new flyout is disabled', async () => {
+    render(
+      <TestProviders>
+        <PinnedTabContentComponent {...props} />
+      </TestProviders>
+    );
 
-      expect(await screen.findByTestId('discoverDocTable')).toBeVisible();
+    const notesButton = await screen.findByTestId('timeline-notes-button-small');
+    expect(notesButton).not.toBeDisabled();
+
+    fireEvent.click(notesButton);
+
+    await waitFor(() => {
+      expect(mockOpenFlyout).toHaveBeenCalledWith(
+        expect.objectContaining({
+          right: expect.objectContaining({ id: 'document-details-right' }),
+          left: expect.objectContaining({ id: 'document-details-left' }),
+        })
+      );
     });
+    expect(flyoutApi.openNotes).not.toHaveBeenCalled();
+  });
+
+  it('should open the new notes flyout when the new flyout is enabled', async () => {
+    jest.mocked(useIsNewFlyoutEnabled).mockReturnValue(true);
+
+    render(
+      <TestProviders>
+        <PinnedTabContentComponent {...props} />
+      </TestProviders>
+    );
+
+    const notesButton = await screen.findByTestId('timeline-notes-button-small');
+    expect(notesButton).not.toBeDisabled();
+
+    fireEvent.click(notesButton);
+
+    await waitFor(() => {
+      expect(flyoutApi.openNotes).toHaveBeenCalledWith({
+        hit: expect.objectContaining({ _id: mockTimelineData[0]._id }),
+        origin: FLYOUT_ORIGIN.TIMELINE,
+      });
+    });
+    expect(mockOpenFlyout).not.toHaveBeenCalled();
   });
 });
