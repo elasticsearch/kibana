@@ -841,23 +841,9 @@ export const QueryBarTopRow = React.memo(
       }
       let isDisabled: boolean | { display: React.ReactNode } = Boolean(props.isDisabled);
 
-      // Consumers (e.g. Discover, Dashboard) opt into a disabled picker via `showDatePicker={{ disabled: true }}`.
-      const isConsumerDisabled =
+      const isDatePickerDisabled =
         typeof props.showDatePicker === 'object' && props.showDatePicker.disabled === true;
 
-      // ES|QL self-detects a missing @timestamp on its ad-hoc data view, unless the consumer already disabled it.
-      const esqlNoTimeField =
-        !isConsumerDisabled &&
-        Boolean(isQueryLangSelected) &&
-        !props.isDirty &&
-        (() => {
-          const adHocDataview = props.indexPatterns?.[0];
-          return (
-            !!adHocDataview && typeof adHocDataview !== 'string' && !adHocDataview.timeFieldName
-          );
-        })();
-
-      const isDatePickerDisabled = isConsumerDisabled || esqlNoTimeField;
       const enableTooltip = isDatePickerDisabled;
 
       if (isDatePickerDisabled) {

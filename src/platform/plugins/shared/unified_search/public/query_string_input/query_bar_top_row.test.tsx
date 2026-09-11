@@ -806,7 +806,7 @@ describe('QueryBarTopRowTopRow', () => {
       });
     });
 
-    it('Should render disabled date picker if on text based languages mode and no timeFieldName', async () => {
+    it('Should render disabled date picker if on text based languages mode showDatePicker.disabled is true', async () => {
       const dataView = {
         ...stubIndexPattern,
         timeFieldName: undefined,
@@ -819,7 +819,7 @@ describe('QueryBarTopRowTopRow', () => {
           screenTitle: 'SQL Screen',
           timeHistory: mockTimeHistory,
           indexPatterns: [dataView],
-          showDatePicker: true,
+          showDatePicker: { disabled: true },
           dateRangeFrom: 'now-7d',
           dateRangeTo: 'now',
         })
