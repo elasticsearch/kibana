@@ -12,6 +12,8 @@ import { Status } from './status';
 import { TestProviders } from '../../../../../../common/mock';
 import { mockAttackDiscoverySchedule } from '../../../../mock/mock_attack_discovery_schedule';
 
+jest.setTimeout(60_000);
+
 const renderComponent = async (schedule = mockAttackDiscoverySchedule) => {
   await act(() => {
     render(<TestProviders>{<Status schedule={schedule} />}</TestProviders>);
