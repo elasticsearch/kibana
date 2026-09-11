@@ -9,15 +9,11 @@ import Boom from '@hapi/boom';
 import { injectable } from 'inversify';
 import { stringifyZodError } from '@kbn/zod-helpers/v4';
 import { treeifyError } from '@kbn/zod/v4';
-import {
-  MAX_BUILDER_FIELDS_ARRAY_ITEMS,
-  MAX_BUILDER_FIELDS_BYTES,
-  MAX_BUILDER_FIELDS_STRING_LENGTH,
-} from '@kbn/alerting-v2-constants';
 import { BuilderQueryGenerationError } from '@kbn/alerting-v2-rule-builders';
 import { ALERTING_ERROR_CODES } from '../errors/error_codes';
-import { assertBoundedSchema } from '../bounded_schema';
 import { assertValidDefinition } from './assert_valid_definition';
+import { globalFoldedVersions } from './folded_versions';
+import type { FoldedVersionsRecord } from './folded_versions';
 import type {
   GeneratedQuery,
   OpaqueBuilderFields,
@@ -25,28 +21,38 @@ import type {
   RegisteredBuilderType,
 } from './types';
 
-const BUILDER_FIELDS_SUBJECT = {
-  kind: 'Builder type',
-  schemaProperty: 'builderFieldsSchema',
-  rootPath: 'builder_fields',
-  limits: {
-    stringLength: MAX_BUILDER_FIELDS_STRING_LENGTH,
-    arrayItems: MAX_BUILDER_FIELDS_ARRAY_ITEMS,
-    totalBytes: MAX_BUILDER_FIELDS_BYTES,
-  },
-} as const;
-
 @injectable()
 export class BuilderTypeRegistry {
   private readonly types = new Map<string, RegisteredBuilderType>();
 
-  public register(definition: RegisteredBuilderType): void {
-    assertValidDefinition(definition);
-    assertBoundedSchema(definition.builderFieldsSchema, definition.type, BUILDER_FIELDS_SUBJECT);
+  /**
+   * Record of (type, version) pairs that have been folded into alerting_v2's
+   * model versions. Defaults to the module-level singleton populated by
+   * fromBuilderManifest() calls in rule_model_versions.ts (step 2.3).
+   * Override via withFoldedVersions() in tests to inject a fixture.
+   */
+  private foldedVersions: FoldedVersionsRecord = globalFoldedVersions;
 
+  /**
+   * Injects a custom FoldedVersionsRecord for use in tests.
+   * Returns `this` for chaining: `new BuilderTypeRegistry().withFoldedVersions(fixture)`.
+   */
+  public withFoldedVersions(record: FoldedVersionsRecord): this {
+    this.foldedVersions = record;
+    return this;
+  }
+
+  public register(definition: RegisteredBuilderType): void {
+    // Check 1a: setup-phase-only — enforced at the bind_contract level by
+    //   restricting registerBuilderType to the setup contract only.
+    // Check 1b: no duplicate id — fail fast before the more expensive checks.
     if (this.types.has(definition.type)) {
       throw new Error(`Builder type "${definition.type}" is already registered`);
     }
+
+    // Checks 2–8 (id format, bounded schema, ignore_above, kind pin,
+    // manifest consistency, managed-type completeness, mode consistency).
+    assertValidDefinition(definition, this.foldedVersions);
 
     this.types.set(definition.type, Object.freeze({ ...definition }));
   }

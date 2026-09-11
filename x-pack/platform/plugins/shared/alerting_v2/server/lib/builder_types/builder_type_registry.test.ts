@@ -9,6 +9,7 @@ import { z } from '@kbn/zod/v4';
 import { BuilderQueryGenerationError } from '@kbn/alerting-v2-rule-builders';
 import type { GeneratedQuery, RegisteredBuilderType } from '@kbn/alerting-v2-rule-builders';
 import { BuilderTypeRegistry } from './builder_type_registry';
+import { FoldedVersionsSet } from './folded_versions';
 import { ALERTING_ERROR_CODES } from '../errors/error_codes';
 
 // ---------------------------------------------------------------------------
@@ -406,5 +407,108 @@ describe('BuilderTypeRegistry.generate — parse-and-call', () => {
     const ruleCtx = makeRuleContext();
     registry.generate('test.parse_type', raw, ruleCtx);
     expect(generateQuery).toHaveBeenCalledWith({ fields: { value: 'test-value' }, rule: ruleCtx });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Composite: fully-declared managed type and half-declared variants
+//
+// Verifies check 2 through check 8 interact correctly when a complete managed
+// type definition is registered vs individual missing pieces.
+// ---------------------------------------------------------------------------
+
+describe('BuilderTypeRegistry — composite: managed type registration', () => {
+  /**
+   * Build a FoldedVersionsSet with the given type's version 1 recorded.
+   * Mirrors what fromBuilderManifest() does in production (step 2.3).
+   */
+  function makeFoldedFor(type: string): FoldedVersionsSet {
+    const set = new FoldedVersionsSet();
+    set.record(type, 1);
+    return set;
+  }
+
+  const TYPE = 'security.detection.mytype';
+  const MANIFEST = {
+    type: TYPE,
+    currentVersion: 1,
+    versions: { 1: {} },
+  };
+
+  /** A complete, fully-valid managed definition. */
+  function fullManagedDefinition(): RegisteredBuilderType {
+    return {
+      type: TYPE,
+      name: 'My detection type',
+      builderFieldsSchema:
+        simpleSchema as unknown as RegisteredBuilderType['builderFieldsSchema'],
+      generateQuery: jest.fn(() => makeQuery()),
+      ownership: { solution: 'security', domain: 'detection' },
+      compilation: 'execution_time',
+      manifest: MANIFEST,
+    };
+  }
+
+  it('registers a fully-declared managed type cleanly', () => {
+    const registry = new BuilderTypeRegistry().withFoldedVersions(makeFoldedFor(TYPE));
+    expect(() => registry.register(fullManagedDefinition())).not.toThrow();
+    expect(registry.has(TYPE)).toBe(true);
+  });
+
+  it('fails with a message naming check 2 when the id format is bad', () => {
+    const registry = new BuilderTypeRegistry().withFoldedVersions(makeFoldedFor(TYPE));
+    expect(() =>
+      registry.register({ ...fullManagedDefinition(), type: 'Bad-Id!' })
+    ).toThrow(/id format check/);
+  });
+
+  it('fails when compilation is missing (managed-type completeness check)', () => {
+    const registry = new BuilderTypeRegistry().withFoldedVersions(makeFoldedFor(TYPE));
+    expect(() =>
+      registry.register({ ...fullManagedDefinition(), compilation: undefined })
+    ).toThrow(/managed-type completeness check/);
+  });
+
+  it('fails when manifest is missing (managed-type completeness check)', () => {
+    const registry = new BuilderTypeRegistry().withFoldedVersions(makeFoldedFor(TYPE));
+    expect(() =>
+      registry.register({ ...fullManagedDefinition(), manifest: undefined })
+    ).toThrow(/managed-type completeness check/);
+  });
+
+  it('fails when the manifest version is unfolded (manifest consistency check)', () => {
+    // No versions folded — simulates a developer who published a manifest change
+    // without adding the fromBuilderManifest() fold line.
+    const empty = new FoldedVersionsSet();
+    const registry = new BuilderTypeRegistry().withFoldedVersions(empty);
+    expect(() => registry.register(fullManagedDefinition())).toThrow(/manifest consistency check/);
+  });
+
+  it('fails when ownership segments do not match the id (managed-type completeness check)', () => {
+    const registry = new BuilderTypeRegistry().withFoldedVersions(makeFoldedFor(TYPE));
+    expect(() =>
+      registry.register({
+        ...fullManagedDefinition(),
+        ownership: { solution: 'observability', domain: 'slo' },
+      })
+    ).toThrow(/managed-type completeness check/);
+  });
+
+  it('fails when deriveRuleFields is set on a write-time managed type (mode consistency check)', () => {
+    const registry = new BuilderTypeRegistry().withFoldedVersions(makeFoldedFor(TYPE));
+    expect(() =>
+      registry.register({
+        ...fullManagedDefinition(),
+        compilation: 'write_time',
+        deriveRuleFields: jest.fn(),
+      })
+    ).toThrow(/mode consistency check/);
+  });
+
+  it('fails the duplicate check before any other check on a second registration', () => {
+    const registry = new BuilderTypeRegistry().withFoldedVersions(makeFoldedFor(TYPE));
+    registry.register(fullManagedDefinition());
+    // The duplicate check (check 1) fires before the format check (check 2).
+    expect(() => registry.register(fullManagedDefinition())).toThrow(/already registered/);
   });
 });

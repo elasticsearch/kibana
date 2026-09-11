@@ -6,6 +6,7 @@
  */
 
 import { z } from '@kbn/zod/v4';
+import { MAX_BUILDER_FIELDS_ARRAY_ITEMS } from '@kbn/alerting-v2-constants';
 
 type JsonSchemaNode = Record<string, unknown>;
 
@@ -33,6 +34,12 @@ export function assertBoundedSchema(
 ): void {
   const ctx: Ctx = { ...subject, typeName };
 
+  // Check 3 (companion walk): reject Zod wrapper types that make the parsed
+  // value differ from the input — defaults, transforms (.transform()/.pipe()),
+  // and catch fallbacks. Transforms are invisible on the input side of the
+  // JSON-Schema projection, so they must be caught in the Zod tree itself.
+  assertNoDefaultsOrTransforms(schema, ctx.rootPath, ctx);
+
   let json: JsonSchemaNode;
   try {
     // `input` io bounds what a client may send, and is the only mode that tells a
@@ -56,6 +63,83 @@ export function assertBoundedSchema(
   }
 }
 
+// ---------------------------------------------------------------------------
+// Companion Zod tree walk: check 3 no-defaults/no-transforms rule
+// ---------------------------------------------------------------------------
+
+/**
+ * Walks the Zod schema tree and rejects any wrapper types that cause the
+ * parsed value to differ from the raw input: ZodDefault (.default()),
+ * ZodPipe (.transform() and .pipe()), and ZodCatch (.catch()). These are
+ * invisible or partially invisible on the input side of the JSON-Schema
+ * projection, so they are detected here in the Zod tree rather than (or in
+ * addition to) the JSON-Schema walk.
+ *
+ * Ref: rule-validation.md "No defaults, no transforms"
+ */
+function assertNoDefaultsOrTransforms(schema: z.ZodType, path: string, ctx: Ctx): void {
+  // Access the internal Zod v4 definition. The _def property is the runtime
+  // representation; its `type` discriminates the schema kind.
+  const def = (schema as unknown as { _def?: { type?: string } })._def;
+  if (!def) return;
+
+  const typeName = def.type;
+
+  if (typeName === 'default') {
+    throw new Error(
+      `${prefix(ctx)} at ${path}: .default() is not allowed; ` +
+        `builder schemas must not carry defaults (defaults belong in the API layer)`
+    );
+  }
+  if (typeName === 'pipe') {
+    throw new Error(
+      `${prefix(ctx)} at ${path}: .transform() and .pipe() are not allowed; ` +
+        `builder schemas must not carry transforms`
+    );
+  }
+  if (typeName === 'catch') {
+    throw new Error(
+      `${prefix(ctx)} at ${path}: .catch() is not allowed; ` +
+        `builder schemas must not carry catch fallbacks`
+    );
+  }
+
+  // Recurse into child schemas.
+  const s = schema as unknown as {
+    _def: {
+      type?: string;
+      shape?: Record<string, z.ZodType>;
+      element?: z.ZodType;
+      innerType?: z.ZodType;
+      options?: z.ZodType[];
+      in?: z.ZodType;
+    };
+  };
+
+  if (typeName === 'object' && s._def.shape) {
+    for (const [key, child] of Object.entries(s._def.shape)) {
+      assertNoDefaultsOrTransforms(child, `${path}.${key}`, ctx);
+    }
+  } else if (typeName === 'array' && s._def.element) {
+    assertNoDefaultsOrTransforms(s._def.element, `${path}[]`, ctx);
+  } else if (
+    (typeName === 'optional' || typeName === 'nullable') &&
+    s._def.innerType
+  ) {
+    assertNoDefaultsOrTransforms(s._def.innerType, path, ctx);
+  } else if (typeName === 'union' && s._def.options) {
+    for (let i = 0; i < s._def.options.length; i++) {
+      assertNoDefaultsOrTransforms(s._def.options[i], `${path}|${i}`, ctx);
+    }
+  }
+  // Leaf types (string, number, boolean, enum, literal, null, integer) need
+  // no recursion — they carry no inner schemas.
+}
+
+// ---------------------------------------------------------------------------
+// JSON-Schema walk: bounds verification and default-keyword rejection
+// ---------------------------------------------------------------------------
+
 function assertBoundedNode(
   node: JsonSchemaNode,
   path: string,
@@ -70,6 +154,17 @@ function assertBoundedNode(
   if (typeof node.$ref === 'string') {
     throw new Error(
       `${prefix(ctx)} at ${path} uses $ref; recursive / deferred schemas are not supported`
+    );
+  }
+
+  // Check 3: reject the `default` keyword — surfaces from .default() and
+  // .catch(). Transforms (.transform()/.pipe()) are invisible here and are
+  // caught by the companion Zod walk above.
+  if (node.default !== undefined) {
+    throw new Error(
+      `${prefix(ctx)} at ${path} has a default value; ` +
+        `builder schemas must not carry defaults or catch fallbacks ` +
+        `(use .default() and .catch() only in the API layer)`
     );
   }
 
@@ -211,6 +306,21 @@ function assertBoundedObject(
   // The check above already rejects those.
 
   const properties = (node.properties ?? {}) as Record<string, JsonSchemaNode>;
+
+  // Check 3: top-level key count. The wire schema enforces this cap at
+  // request time via MAX_BUILDER_FIELDS_KEYS; registration proves it
+  // statically so violations surface at setup rather than at the first
+  // write. The constant is MAX_BUILDER_FIELDS_ARRAY_ITEMS (same value: 64).
+  if (path === ctx.rootPath) {
+    const keyCount = Object.keys(properties).length;
+    if (keyCount > MAX_BUILDER_FIELDS_ARRAY_ITEMS) {
+      throw new Error(
+        `${prefix(ctx)} at ${path}: top-level key count ${keyCount} exceeds ` +
+          `framework cap ${MAX_BUILDER_FIELDS_ARRAY_ITEMS}`
+      );
+    }
+  }
+
   let total = 2; // `{` `}`
   let first = true;
   for (const [key, child] of Object.entries(properties)) {

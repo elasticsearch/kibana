@@ -240,6 +240,135 @@ describe('assertBoundedSchema rejection: disallowed constructs', () => {
 });
 
 // ---------------------------------------------------------------------------
+// Check 3 extension: top-level key count cap
+// ---------------------------------------------------------------------------
+
+describe('assertBoundedSchema check 3: top-level key count', () => {
+  // The cap is MAX_BUILDER_FIELDS_ARRAY_ITEMS = 64.
+
+  it('accepts an object with exactly 64 top-level keys', () => {
+    const shape: Record<string, z.ZodType> = {};
+    for (let i = 0; i < 64; i++) {
+      shape[`field_${i}`] = z.string().max(10);
+    }
+    passes(z.object(shape).strict());
+  });
+
+  it('rejects an object with 65 top-level keys', () => {
+    const shape: Record<string, z.ZodType> = {};
+    for (let i = 0; i < 65; i++) {
+      shape[`field_${i}`] = z.string().max(10);
+    }
+    rejects(
+      z.object(shape).strict(),
+      /top-level key count 65 exceeds framework cap 64/
+    );
+  });
+
+  it('does not apply the key-count cap to nested objects', () => {
+    // A nested object with many keys is fine — the cap is for the root only.
+    const nestedShape: Record<string, z.ZodType> = {};
+    for (let i = 0; i < 65; i++) {
+      nestedShape[`nested_${i}`] = z.string().max(10);
+    }
+    const schema = z
+      .object({ wrapper: z.object(nestedShape).strict() })
+      .strict();
+    // This will fail the total-bytes cap before the key count, so just confirm
+    // the error message does NOT mention the top-level key count.
+    expect(() => assertBoundedSchema(schema, 'test.type', subject())).not.toThrow(
+      /top-level key count/
+    );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Check 3 extension: no defaults (JSON-schema `default` keyword)
+// ---------------------------------------------------------------------------
+
+describe('assertBoundedSchema check 3: no default keyword', () => {
+  it('rejects a schema with .default() (caught by the companion Zod walk)', () => {
+    // The Zod tree walk runs first and catches ZodDefault before the JSON
+    // schema walk sees the `default` keyword.
+    const schema = z.object({ val: z.string().max(10).default('x') }).strict();
+    rejects(schema, /\.default\(\) is not allowed/);
+  });
+
+  it('rejects a schema with .catch() (caught by the companion Zod walk)', () => {
+    // The Zod tree walk catches ZodCatch; the JSON schema walk would also see
+    // the emitted `default` keyword but does not get there first.
+    const schema = z.object({ val: z.string().max(10).catch('fallback') }).strict();
+    rejects(schema, /\.catch\(\) is not allowed/);
+  });
+
+  it('rejects a default nested inside an array item', () => {
+    // The companion Zod walk catches this; the JSON-schema walk would too if
+    // the default keyword propagates. Either way the schema is rejected.
+    const schema = z
+      .object({
+        tags: z.array(z.string().max(10).default('x')).max(5),
+      })
+      .strict();
+    rejects(schema, /\.default\(\)|\.catch\(\)/);
+  });
+
+  it('accepts a schema with optional fields (no default, just optional)', () => {
+    const schema = z.object({ val: z.string().max(10).optional() }).strict();
+    passes(schema);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Check 3 extension: no transforms (companion Zod tree walk)
+// ---------------------------------------------------------------------------
+
+describe('assertBoundedSchema check 3: no transforms', () => {
+  it('rejects a schema with .transform()', () => {
+    const schema = z
+      .object({ val: z.string().max(10).transform((x) => x.toUpperCase()) })
+      .strict();
+    rejects(schema, /transform/);
+  });
+
+  it('rejects a schema with .pipe()', () => {
+    const schema = z
+      .object({ val: z.string().max(10).pipe(z.string().max(5)) })
+      .strict();
+    rejects(schema, /transform|pipe/);
+  });
+
+  it('rejects a .transform() nested inside an array item', () => {
+    const schema = z
+      .object({
+        items: z.array(z.string().max(10).transform((x) => x)).max(5),
+      })
+      .strict();
+    rejects(schema, /transform/);
+  });
+
+  it('rejects a .transform() on a nested object field', () => {
+    const schema = z
+      .object({
+        inner: z
+          .object({ val: z.string().max(10).transform((x) => x) })
+          .strict(),
+      })
+      .strict();
+    rejects(schema, /transform/);
+  });
+
+  it('accepts a schema with .optional() (not a transform)', () => {
+    const schema = z.object({ val: z.string().max(10).optional() }).strict();
+    passes(schema);
+  });
+
+  it('accepts a schema with .nullable() (not a transform)', () => {
+    const schema = z.object({ val: z.string().max(10).nullable() }).strict();
+    passes(schema);
+  });
+});
+
+// ---------------------------------------------------------------------------
 // Rejection: total byte cap
 // ---------------------------------------------------------------------------
 
