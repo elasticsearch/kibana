@@ -197,32 +197,6 @@ const registerHttpRequestMockHelpers = (
   const setLoadEnrichPoliciesResponse = (response?: HttpResponse, error?: ResponseError) =>
     mockResponse('GET', `${INTERNAL_API_BASE_PATH}/enrich_policies`, response, error);
 
-  const setGetMatchingIndices = (response?: HttpResponse, error?: ResponseError) =>
-    mockResponse(
-      'POST',
-      `${INTERNAL_API_BASE_PATH}/enrich_policies/get_matching_indices`,
-      response,
-      error
-    );
-  const setGetMatchingDataStreams = (response?: HttpResponse, error?: ResponseError) =>
-    mockResponse(
-      'POST',
-      `${INTERNAL_API_BASE_PATH}/enrich_policies/get_matching_data_streams`,
-      response,
-      error
-    );
-
-  const setGetFieldsFromIndices = (response?: HttpResponse, error?: ResponseError) =>
-    mockResponse(
-      'POST',
-      `${INTERNAL_API_BASE_PATH}/enrich_policies/get_fields_from_indices`,
-      response,
-      error
-    );
-
-  const setCreateEnrichPolicy = (response?: HttpResponse, error?: ResponseError) =>
-    mockResponse('POST', `${INTERNAL_API_BASE_PATH}/enrich_policies`, response, error);
-
   const setDeleteEnrichPolicyResponse = (
     policyName: string,
     response?: HttpResponse,
@@ -313,11 +287,7 @@ const registerHttpRequestMockHelpers = (
     setExecuteEnrichPolicyResponse,
     setLoadIndexDetailsResponse,
     setCreateIndexResponse,
-    setGetMatchingIndices,
-    setGetFieldsFromIndices,
-    setCreateEnrichPolicy,
     setInferenceModels,
-    setGetMatchingDataStreams,
     setUserStartPrivilegesResponse,
     setLoadIndexDocumentsSampleResponse,
     setLoadIndexDocCountResponse,
