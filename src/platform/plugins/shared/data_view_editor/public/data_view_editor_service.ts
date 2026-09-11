@@ -75,6 +75,7 @@ interface DataViewEditorState {
   isLoadingSourcesInternal: boolean;
   loadingTimestampFields: boolean;
   timestampFieldOptions: TimestampOption[];
+  timestampFieldsError?: Error;
   rollupIndexName?: string | null;
   rollupCaps?: RollupIndiciesCapability;
 }
@@ -85,6 +86,7 @@ const defaultDataViewEditorState: DataViewEditorState = {
   isLoadingSourcesInternal: false,
   loadingTimestampFields: false,
   timestampFieldOptions: [],
+  timestampFieldsError: undefined,
   rollupIndexName: undefined,
 };
 
@@ -126,6 +128,7 @@ export class DataViewEditorService {
     this.isLoadingSources$ = stateSelector((state) => state.isLoadingSourcesInternal);
     this.loadingTimestampFields$ = stateSelector((state) => state.loadingTimestampFields);
     this.timestampFieldOptions$ = stateSelector((state) => state.timestampFieldOptions);
+    this.timestampFieldsError$ = stateSelector((state) => state.timestampFieldsError);
     this.rollupIndex$ = stateSelector((state) => state.rollupIndexName);
     this.rollupCaps$ = stateSelector((state) => state.rollupCaps);
 
@@ -177,6 +180,8 @@ export class DataViewEditorService {
   isLoadingSources$: Observable<boolean>;
   loadingTimestampFields$: Observable<boolean>;
   timestampFieldOptions$: Observable<TimestampOption[]>;
+  // error thrown while fetching the field list, so the UI can explain why no timestamp field is selectable
+  timestampFieldsError$: Observable<Error | undefined>;
 
   // current matched rollup index
   rollupIndex$: Observable<string | undefined | null>;
@@ -349,12 +354,8 @@ export class DataViewEditorService {
     getFieldsOptions: GetFieldsOptions,
     requireTimestampField: boolean
   ) => {
-    try {
-      const fields = await ensureMinimumTime(this.dataViews.getFieldsForWildcard(getFieldsOptions));
-      return extractTimeFields(fields as DataViewField[], requireTimestampField);
-    } catch (e) {
-      return [];
-    }
+    const fields = await ensureMinimumTime(this.dataViews.getFieldsForWildcard(getFieldsOptions));
+    return extractTimeFields(fields as DataViewField[], requireTimestampField);
   };
 
   private getTimestampOptionsForWildcardCached = async (
@@ -381,7 +382,11 @@ export class DataViewEditorService {
   private loadTimestampFields = async () => {
     const currentState = this.state$.getValue();
     if (currentState.matchedIndices.exactMatchedIndices.length === 0) {
-      this.updateState({ timestampFieldOptions: [], loadingTimestampFields: false });
+      this.updateState({
+        timestampFieldOptions: [],
+        timestampFieldsError: undefined,
+        loadingTimestampFields: false,
+      });
       return;
     }
     const currentLoadingTimestampFieldsIdx = ++this.currentLoadingTimestampFields;
@@ -398,14 +403,22 @@ export class DataViewEditorService {
     }
 
     let timestampFieldOptions: TimestampOption[] = [];
+    let timestampFieldsError: Error | undefined;
     try {
       timestampFieldOptions = await this.getTimestampOptionsForWildcardCached(
         getFieldsOptions,
         this.requireTimestampField
       );
+    } catch (error) {
+      // keep the error around so the UI can explain why the timestamp field can't be selected
+      timestampFieldsError = error instanceof Error ? error : new Error(String(error));
     } finally {
       if (currentLoadingTimestampFieldsIdx === this.currentLoadingTimestampFields) {
-        this.updateState({ timestampFieldOptions, loadingTimestampFields: false });
+        this.updateState({
+          timestampFieldOptions,
+          timestampFieldsError,
+          loadingTimestampFields: false,
+        });
       }
     }
   };
