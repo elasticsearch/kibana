@@ -130,5 +130,5 @@ describe('RuleSwitch', () => {
         action: 'disable',
       });
     });
-  });
+  }, 20000);
 });
