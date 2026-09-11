@@ -25,6 +25,7 @@ export const toAIConnector = (connector: ApiInferenceConnector): AIConnector => 
   isConnectorTypeDeprecated: connector.isConnectorTypeDeprecated ?? false,
   isMissingSecrets: connector.isMissingSecrets ?? false,
   isRecommended: connector.isRecommended,
+  metadata: connector.metadata,
   apiProvider:
     !connector.isPreconfigured &&
     connector.config?.apiProvider !== undefined &&
