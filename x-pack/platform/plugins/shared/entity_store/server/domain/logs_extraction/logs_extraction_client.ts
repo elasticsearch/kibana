@@ -142,7 +142,9 @@ export class LogsExtractionClient {
   };
 
   private cursorPatch(state: EngineLogExtractionState): Partial<EngineDescriptor> {
-    return { [LogsExtractionClient.CURSOR_FIELD[this.extractionMode]]: state } as Partial<EngineDescriptor>;
+    return {
+      [LogsExtractionClient.CURSOR_FIELD[this.extractionMode]]: state,
+    } as Partial<EngineDescriptor>;
   }
 
   private async getLogExtractionConfigAndState(
