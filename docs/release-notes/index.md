@@ -793,6 +793,62 @@ For the {{elastic-sec}} 9.5.0 release information, refer to [{{elastic-sec}} Sol
 * Fix slow workflow template rendering for workflows with large step outputs [#265027]({{kib-pull}}265027).
 * Fix connector and step icons in the workflows list showing the generic plugs fallback [#263880]({{kib-pull}}263880).
 
+
+## 9.4.7 [kibana-9.4.7-release-notes]
+
+### Fixes [kibana-9.4.7-fixes]
+
+**Alerting and cases**:
+* Fix alerting resource installation using unbounded concurrency, which could exhaust {{kib}} heap when many contexts and namespaces install at once [#287643]({{kib-pull}}287643).
+* Fix the **Additional fields** editor on the {{sn-itsm}}, {{sn-sir}}, and Jira connectors rejecting Mustache context variables as invalid JSON [#286578]({{kib-pull}}286578).
+% !!DEFERRED!! Not on the 9.4 branch (backport missing as of 2026-09-11). Re-verify against the next BC before publishing.
+% * Fix the **Tracking containment** rule editor breaking when you select a data view [#289778]({{kib-pull}}289778).
+
+**Dashboards and Visualizations**:
+* Fix the **Update filter** button being unreachable when the filter editor is taller than the screen [#289163]({{kib-pull}}289163).
+* Fix Options list filters stopping after you delete a collapsible dashboard section [#287923]({{kib-pull}}287923).
+* Fix Canvas functions API creating data tables with more than 50 columns per row [#287935]({{kib-pull}}287935).
+* Fix the Maps timeslider close button registering clicks only on the top quarter of the control [#287441]({{kib-pull}}287441).
+% !!DEFERRED!! Not yet confirmed in build candidate 9.4.7-114f131b (backport merged after BC cutoff). Re-verify against the next BC before publishing.
+% * Fix Go to URL drilldowns leaving Mustache tokens such as `event.values.[0]` unreplaced in the drilldown name [#290363]({{kib-pull}}290363).
+% * Increase the TinyMath expression length limit so longer visualization formulas no longer fail [#290314]({{kib-pull}}290314).
+
+**Data ingestion and {{fleet}}**:
+* Fix {{fleet}} blocking a package policy save with an incompatible-agent-version error when every enrolled agent is incompatible or reports a pre-release version. {{fleet}} now warns instead [#289596]({{kib-pull}}289596).
+* Fix managed integrations appearing in the {{fleet}} Agents list when they use a version-specific policy [#289394]({{kib-pull}}289394).
+* Fix package policy space assignments becoming stale after you move an agent policy to another {{kib}} space [#288966]({{kib-pull}}288966).
+* Fix Elastic Defend metadata transforms accumulating as duplicates in {{es}} across stack upgrades [#288379]({{kib-pull}}288379) [#288902]({{kib-pull}}288902).
+* Fix {{fleet}} agent policy advanced YAML settings rejecting values that contain only comments [#288430]({{kib-pull}}288430).
+* Fix stale version-specific Fleet policies remaining after their agent version dropped out of the bounded set, and refresh variants that still have enrolled agents [#287095]({{kib-pull}}287095).
+* Fix the version-specific policy icon showing on agents that already meet the policy's version requirements [#287504]({{kib-pull}}287504).
+* Fix managed integration orphan cleanup so it respects package-policy ownership and the force flag [#287571]({{kib-pull}}287571).
+* Fix Fleet package policies keeping stale secret references after you rotate credentials [#287642]({{kib-pull}}287642).
+* Fix slow Fleet outputs fetching on Fleet setup and Integrations UI page load [#287113]({{kib-pull}}287113).
+% !!DEFERRED!! Not yet confirmed in build candidate 9.4.7-114f131b (backport merged after BC cutoff). Re-verify against the next BC before publishing.
+% * Fix deleted agentless policies leaving the agent record active by force-revoking the agent [#290181]({{kib-pull}}290181).
+
+**Data management**:
+* Fix classic streams leaving a stale {{es}} data stream mappings override after you remove all field overrides [#288788]({{kib-pull}}288788).
+
+**Developer tools**:
+* Fix Console treating request-like lines inside an unterminated triple-quoted string as standalone requests [#287547]({{kib-pull}}287547).
+* Fix Console body autocomplete preferring a same-name global rule over an explicit field rule [#286703]({{kib-pull}}286703).
+
+**{{es}} solution**:
+* Add an **Expand role members** toggle to {{sn}} connectors for compact document-level security [#288071]({{kib-pull}}288071).
+
+**{{product.observability}} solution**:
+For the {{product.observability}} 9.4.7 release information, refer to [{{product.observability}} Solution Release Notes](docs-content://release-notes/elastic-observability/index.md).
+
+**{{elastic-sec}} solution**:
+For the {{elastic-sec}} 9.4.7 release information, refer to [{{elastic-sec}} Solution Release Notes](docs-content://release-notes/elastic-security/index.md).
+
+**{{kib}} platform**:
+* Fix unexpected logouts after an access token is refreshed during a search or dashboard refresh [#286038]({{kib-pull}}286038).
+* Fix audit log records omitting the client IP address for requests made over HTTP/2 [#285344]({{kib-pull}}285344).
+% !!DEFERRED!! Not yet confirmed in build candidate 9.4.7-114f131b (backport merged after BC cutoff). Re-verify against the next BC before publishing.
+% * Hide the **Activate user** action on deactivated users when you have read-only access [#289801]({{kib-pull}}289801).
+
 ## 9.4.6 [kibana-9.4.6-release-notes]
 
 ::::{important} 
