@@ -182,6 +182,18 @@ export class StorageIndexAdapter<
 
   private readonly logger: Logger;
   private updateMappingsPromise: Promise<void> | undefined;
+  /**
+   * In-flight bootstrap shared by concurrent `ensureReady` / write callers.
+   * Cleared when the attempt settles so the write path can re-validate later
+   * (e.g. after an out-of-band index delete).
+   */
+  private bootstrapPromise: Promise<void> | undefined;
+  /**
+   * Schema version last successfully seen by the public `ensureReady()` API.
+   * Does not short-circuit the write path, which still re-validates so
+   * StorageIndexAdapter keeps self-healing if the template/index disappears.
+   */
+  private lastReadySchemaVersion: string | undefined;
   private serverlessCheck: Promise<boolean | undefined> | undefined;
   private isServerless: boolean | undefined;
 
@@ -389,13 +401,57 @@ export class StorageIndexAdapter<
   }
 
   /**
-   * Validates whether:
-   * - an index template exists
-   * - the index template has the right version (if not, update it)
-   * - the index exists (if it doesn't, create it)
-   * - the index has the right version (if not, update it)
+   * Runs bootstrap with in-flight dedupe only. After the attempt settles the
+   * next caller starts a fresh bootstrap, so writes keep self-healing if the
+   * template or write index were removed out-of-band.
    */
-  private async validateComponentsBeforeWriting<T>(cb: () => Promise<T>): Promise<T> {
+  private async bootstrapWithDedupe(): Promise<void> {
+    if (!this.bootstrapPromise) {
+      const attempt = this.bootstrapComponents().finally(() => {
+        if (this.bootstrapPromise === attempt) {
+          this.bootstrapPromise = undefined;
+        }
+      });
+      this.bootstrapPromise = attempt;
+    }
+    await this.bootstrapPromise;
+  }
+
+  /**
+   * Public warm-up path: ensures the index template and backing write index
+   * exist, and that mappings match the current schema version. Concurrent
+   * callers share one in-flight bootstrap. Success is cached for the current
+   * schema version so repeated plugin-start calls are cheap. Cleared on
+   * schema-version change, bootstrap failure, and `clean()`.
+   *
+   * This cache does not apply to the write path (`validateComponentsBeforeWriting`),
+   * which still re-validates so out-of-band deletes self-heal on the next write.
+   */
+  private async ensureReadyInternal(): Promise<void> {
+    const expectedSchemaVersion = getSchemaVersion(this.storage);
+    if (this.lastReadySchemaVersion === expectedSchemaVersion) {
+      return;
+    }
+
+    try {
+      await this.bootstrapWithDedupe();
+      this.lastReadySchemaVersion = getSchemaVersion(this.storage);
+    } catch (error) {
+      this.lastReadySchemaVersion = undefined;
+      throw error;
+    }
+
+    // Schema version may have changed while we waited on an in-flight attempt.
+    if (this.lastReadySchemaVersion !== getSchemaVersion(this.storage)) {
+      await this.ensureReadyInternal();
+    }
+  }
+
+  /**
+   * Creates/updates the index template, creates the write index when missing,
+   * and reconciles mappings when the schema version has changed.
+   */
+  private async bootstrapComponents(): Promise<void> {
     const expectedSchemaVersion = getSchemaVersion(this.storage);
     await this.createOrUpdateIndexTemplate();
 
@@ -403,15 +459,26 @@ export class StorageIndexAdapter<
     if (!writeIndex) {
       this.logger.debug(`Creating index`);
       await this.createIndex();
-    } else {
-      if (writeIndex.state.mappings?._meta?.version !== expectedSchemaVersion) {
-        this.logger.debug(`Updating mappings of existing index due to schema version mismatch`);
-        await this.updateMappingsOfExistingIndex({
-          name: writeIndex.name,
-        });
-      }
+      return;
     }
 
+    if (writeIndex.state.mappings?._meta?.version !== expectedSchemaVersion) {
+      this.logger.debug(`Updating mappings of existing index due to schema version mismatch`);
+      await this.updateMappingsOfExistingIndex({
+        name: writeIndex.name,
+      });
+    }
+  }
+
+  /**
+   * Validates whether:
+   * - an index template exists
+   * - the index template has the right version (if not, update it)
+   * - the index exists (if it doesn't, create it)
+   * - the index has the right version (if not, update it)
+   */
+  private async validateComponentsBeforeWriting<T>(cb: () => Promise<T>): Promise<T> {
+    await this.bootstrapWithDedupe();
     return await cb();
   }
 
@@ -592,6 +659,12 @@ export class StorageIndexAdapter<
   };
 
   private clean: StorageClientClean = async (): Promise<StorageClientCleanResponse> => {
+    // Drop cached readiness/mapping work so the next write/read re-bootstraps
+    // after indices and templates are removed.
+    this.bootstrapPromise = undefined;
+    this.lastReadySchemaVersion = undefined;
+    this.updateMappingsPromise = undefined;
+
     const allIndices = await this.getExistingIndices();
     const hasIndices = Object.keys(allIndices).length > 0;
     // Delete all indices
@@ -825,6 +898,7 @@ export class StorageIndexAdapter<
       existsIndex: this.existsIndex,
       esql: this.esql,
       reconcileMappings: () => this.updateMappingsIfNeeded(),
+      ensureReady: () => this.ensureReadyInternal(),
     };
   }
 }

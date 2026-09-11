@@ -242,6 +242,20 @@ export class WorkflowsService {
       esClient: this.esClient,
     });
 
+    // Bootstrap the workflows index at start so the first create/update request
+    // does not pay StorageIndexAdapter cold-start latency (template + write index).
+    // Run in parallel with the rest of init; failures are non-fatal because the
+    // next write path retries via ensureReady.
+    const storageReadyPromise = this.workflowStorage
+      .getClient()
+      .ensureReady()
+      .catch((error) => {
+        this.logger.warn(
+          'Workflows Management: Failed to bootstrap workflows storage index; will retry on first write',
+          { error }
+        );
+      });
+
     this.workflowsExecutionEngine = pluginsStart.workflowsExecutionEngine;
     this.workflowsExtensions = pluginsStart.workflowsExtensions;
 
@@ -297,6 +311,8 @@ export class WorkflowsService {
       isStopping: () => this.stopController.signal.aborted,
       audit: new WorkflowManagementAuditLog({ service: this }),
     });
+
+    await storageReadyPromise;
   }
 
   public async getWorkflowsExecutionEngine(): Promise<WorkflowsExecutionEnginePluginStart> {

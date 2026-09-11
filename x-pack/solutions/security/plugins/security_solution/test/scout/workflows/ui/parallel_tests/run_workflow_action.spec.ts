@@ -9,6 +9,9 @@ import { spaceTest, tags, CUSTOM_QUERY_RULE, FULL_KIBANA_SECURITY_ROLE } from '@
 import { expect } from '@kbn/scout-security/ui';
 
 // Failing: See https://github.com/elastic/kibana/issues/261392
+// Create cold-start (the original failure) is fixed via StorageIndexAdapter.ensureReady
+// in this change. The suite stays skipped because unskip still needs Scout setup work
+// (auditbeat archive + waitForAlerts) that is separate from the product fix.
 spaceTest.describe.skip('Run workflow alert action', { tag: [...tags.stateful.classic] }, () => {
   let ruleName: string;
 

@@ -13,6 +13,7 @@ import { errors } from '@elastic/elasticsearch';
 import { esql } from '@elastic/esql';
 import type { StorageClientBulkRequest, StorageTransportOptions } from '../..';
 import { StorageIndexAdapter, type StorageSettings } from '../..';
+import * as getSchemaVersionModule from '../get_schema_version';
 
 const createLoggerMock = (): jest.Mocked<Logger> => {
   const logger = {
@@ -78,6 +79,8 @@ const createMockEsClient = () => {
       }),
       create: jest.fn().mockResolvedValue({}),
       exists: jest.fn().mockResolvedValue(true),
+      delete: jest.fn().mockResolvedValue({}),
+      deleteIndexTemplate: jest.fn().mockResolvedValue({}),
       simulateIndexTemplate: jest.fn().mockResolvedValue({
         template: { mappings: {} },
       }),
@@ -396,6 +399,8 @@ describe('StorageIndexAdapter - transport options forwarding', () => {
     await client.index({ id: 'doc1', document: { foo: 'bar' } });
     await client.index({ id: 'doc2', document: { foo: 'baz' } });
 
+    // Write path re-validates every write: first write does settings attempt +
+    // serverless retry, second write puts without settings (isServerless cached).
     expect(esClient.indices.putIndexTemplate).toHaveBeenCalledTimes(3);
     expect(esClient.indices.putIndexTemplate).toHaveBeenNthCalledWith(
       3,
@@ -689,5 +694,140 @@ describe('StorageIndexAdapter - esql method', () => {
     await esqlPromise;
 
     expect(esqlQuery).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('StorageIndexAdapter - ensureReady', () => {
+  let esClient: jest.Mocked<ElasticsearchClient>;
+  let loggerMock: jest.Mocked<Logger>;
+
+  beforeEach(() => {
+    esClient = createMockEsClient();
+    loggerMock = createLoggerMock();
+  });
+
+  it('creates the index template and write index when missing', async () => {
+    (esClient.indices.getAlias as jest.Mock).mockRejectedValue(
+      new errors.ResponseError({
+        statusCode: 404,
+        body: {},
+        headers: {},
+        warnings: [],
+        meta: {} as TransportResult['meta'],
+      } as TransportResult)
+    );
+    (esClient.indices.get as jest.Mock).mockResolvedValue({});
+
+    const adapter = new StorageIndexAdapter(esClient, loggerMock, storageSettings);
+    await adapter.getClient().ensureReady();
+
+    expect(esClient.indices.putIndexTemplate).toHaveBeenCalledTimes(1);
+    expect(esClient.indices.create).toHaveBeenCalledTimes(1);
+  });
+
+  it('dedupes concurrent ensureReady callers into one bootstrap', async () => {
+    let releaseCreate: () => void = () => undefined;
+    const createGate = new Promise<void>((resolve) => {
+      releaseCreate = resolve;
+    });
+
+    (esClient.indices.getAlias as jest.Mock).mockRejectedValue(
+      new errors.ResponseError({
+        statusCode: 404,
+        body: {},
+        headers: {},
+        warnings: [],
+        meta: {} as TransportResult['meta'],
+      } as TransportResult)
+    );
+    (esClient.indices.get as jest.Mock).mockResolvedValue({});
+    (esClient.indices.create as jest.Mock).mockImplementation(async () => {
+      await createGate;
+      return {};
+    });
+
+    const adapter = new StorageIndexAdapter(esClient, loggerMock, storageSettings);
+    const client = adapter.getClient();
+
+    const first = client.ensureReady();
+    const second = client.ensureReady();
+
+    releaseCreate();
+    await Promise.all([first, second]);
+
+    expect(esClient.indices.putIndexTemplate).toHaveBeenCalledTimes(1);
+    expect(esClient.indices.create).toHaveBeenCalledTimes(1);
+  });
+
+  it('skips create when the write index already exists', async () => {
+    const adapter = new StorageIndexAdapter(esClient, loggerMock, storageSettings);
+    await adapter.getClient().ensureReady();
+
+    expect(esClient.indices.putIndexTemplate).toHaveBeenCalledTimes(1);
+    expect(esClient.indices.create).not.toHaveBeenCalled();
+  });
+
+  it('caches a successful ensureReady so later calls do not re-bootstrap', async () => {
+    const adapter = new StorageIndexAdapter(esClient, loggerMock, storageSettings);
+    const client = adapter.getClient();
+
+    await client.ensureReady();
+    await client.ensureReady();
+
+    expect(esClient.indices.putIndexTemplate).toHaveBeenCalledTimes(1);
+  });
+
+  it('still re-validates on write after a successful ensureReady', async () => {
+    const adapter = new StorageIndexAdapter(esClient, loggerMock, storageSettings);
+    const client = adapter.getClient();
+
+    await client.ensureReady();
+    await client.index({ id: 'doc1', document: { foo: 'bar' } });
+
+    // ensureReady cache must not short-circuit the write path's self-heal checks.
+    expect(esClient.indices.putIndexTemplate).toHaveBeenCalledTimes(2);
+  });
+
+  it('re-bootstraps when the schema version changes after a successful ensureReady', async () => {
+    const schemaVersionSpy = jest
+      .spyOn(getSchemaVersionModule, 'getSchemaVersion')
+      .mockReturnValue('v1');
+
+    const adapter = new StorageIndexAdapter(esClient, loggerMock, storageSettings);
+    const client = adapter.getClient();
+
+    await client.ensureReady();
+    expect(esClient.indices.putIndexTemplate).toHaveBeenCalledTimes(1);
+
+    schemaVersionSpy.mockReturnValue('v2');
+    await client.ensureReady();
+
+    expect(esClient.indices.putIndexTemplate).toHaveBeenCalledTimes(2);
+    schemaVersionSpy.mockRestore();
+  });
+
+  it('retries ensureReady after a failed bootstrap', async () => {
+    (esClient.indices.putIndexTemplate as jest.Mock)
+      .mockRejectedValueOnce(new Error('es unavailable'))
+      .mockResolvedValue({});
+
+    const adapter = new StorageIndexAdapter(esClient, loggerMock, storageSettings);
+    const client = adapter.getClient();
+
+    await expect(client.ensureReady()).rejects.toThrow('es unavailable');
+    await client.ensureReady();
+
+    expect(esClient.indices.putIndexTemplate).toHaveBeenCalledTimes(2);
+  });
+
+  it('re-bootstraps after clean clears the readiness cache', async () => {
+    const adapter = new StorageIndexAdapter(esClient, loggerMock, storageSettings);
+    const client = adapter.getClient();
+
+    await client.ensureReady();
+    await client.clean();
+    await client.ensureReady();
+
+    expect(esClient.indices.putIndexTemplate).toHaveBeenCalledTimes(2);
   });
 });
