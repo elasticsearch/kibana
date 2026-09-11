@@ -24,3 +24,5 @@ export const configSchema = schema.object({
 export type InferenceConfig = TypeOf<typeof configSchema>;
 
 export type AnonymizationWorkerConfig = InferenceConfig['workers']['anonymization'];
+// TODO(#288762): replace with workers.workflowAnonymization block once that PR lands.
+export type WorkflowAnonymizationWorkerConfig = AnonymizationWorkerConfig;
