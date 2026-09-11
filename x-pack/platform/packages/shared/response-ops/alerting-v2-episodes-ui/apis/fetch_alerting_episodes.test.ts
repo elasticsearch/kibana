@@ -7,8 +7,9 @@
 
 import { ESQLVariableType } from '@kbn/esql-types';
 import type { ExpressionsStart } from '@kbn/expressions-plugin/public';
-import { executeEsqlQuery } from '../utils/execute_esql_query';
+import type { Filter } from '@kbn/es-query';
 import { buildEpisodesQuery } from '@kbn/alerting-v2-common-queries';
+import { executeEsqlQuery } from '../utils/execute_esql_query';
 import { fetchAlertingEpisodes } from './fetch_alerting_episodes';
 
 jest.mock('../utils/execute_esql_query');
@@ -119,6 +120,42 @@ describe('fetchAlertingEpisodes', () => {
       },
       abortSignal,
     });
+  });
+
+  it('should apply the time range to the alert events only, as a request filter', async () => {
+    await fetchAlertingEpisodes({
+      spaceId: SPACE_ID,
+      pageSize: 10,
+      timeRange: { from: '2026-09-10T10:00:00.000Z', to: '2026-09-10T12:00:00.000Z' },
+      services: { expressions: mockExpressions },
+    });
+
+    const { input, timeField } = mockExecuteEsqlQuery.mock.calls[0][0] as {
+      input: { timeRange?: unknown; filters?: Filter[] };
+      timeField?: string;
+    };
+    expect(timeField).toBeUndefined();
+    expect(input.timeRange).toBeUndefined();
+    expect(input.filters).toHaveLength(1);
+    expect(input.filters?.[0].query?.bool.should).toEqual([
+      {
+        bool: {
+          filter: [
+            { term: { type: 'alert' } },
+            {
+              range: {
+                '@timestamp': {
+                  format: 'strict_date_optional_time',
+                  gte: '2026-09-10T10:00:00.000Z',
+                  lte: '2026-09-10T12:00:00.000Z',
+                },
+              },
+            },
+          ],
+        },
+      },
+      { exists: { field: 'action_type' } },
+    ]);
   });
 
   it('should call executeEsqlQuery with custom sort parameters', async () => {

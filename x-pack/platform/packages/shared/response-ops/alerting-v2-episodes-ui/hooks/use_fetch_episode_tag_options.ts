@@ -36,7 +36,7 @@ export const useFetchEpisodeTagOptions = ({
     ),
     queryFn: async ({ signal }) => {
       const [v2Tags, sourceTags] = await Promise.all([
-        fetchEpisodeTagOptions({ spaceId, services, timeRange, abortSignal: signal }),
+        fetchEpisodeTagOptions({ spaceId, services, abortSignal: signal }),
         fetchFromSource(additionalEpisodesDataSource, (source) =>
           source.fetchTagOptions?.({ services, timeRange, abortSignal: signal })
         ),

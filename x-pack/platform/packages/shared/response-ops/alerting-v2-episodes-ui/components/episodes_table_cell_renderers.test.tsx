@@ -11,6 +11,7 @@ import userEvent from '@testing-library/user-event';
 import { I18nProvider } from '@kbn/i18n-react';
 import type { FindRulesResponse } from '@kbn/alerting-v2-schemas';
 import {
+  EpisodeDurationCell,
   EpisodeStatusCell,
   EpisodeTagsCell,
   EpisodeRuleCell,
@@ -72,6 +73,45 @@ describe('EpisodeStatusCell', () => {
     expect(screen.getByText('Active')).toBeInTheDocument();
     expect(screen.queryByTestId('alertEpisodeStatusCellSnoozeIndicator')).not.toBeInTheDocument();
     expect(screen.queryByTestId('alertEpisodeStatusCellAckIndicator')).not.toBeInTheDocument();
+  });
+});
+
+describe('EpisodeDurationCell', () => {
+  const mockDataView = {
+    getFieldByName: jest.fn().mockReturnValue({ name: 'duration' }),
+    getFormatterForField: jest
+      .fn()
+      .mockReturnValue({ convertToText: (value: number) => `${value} ms` }),
+  } as never;
+  const durationCellProps = { ...baseCellProps, columnId: 'duration', dataView: mockDataView };
+
+  it('renders the formatted duration when the episode start was seen', () => {
+    renderWithI18n(
+      <EpisodeDurationCell
+        {...durationCellProps}
+        row={makeRow({ duration: 840000, duration_is_lower_bound: false })}
+      />
+    );
+
+    expect(screen.getByText('840000 ms')).toBeInTheDocument();
+    expect(screen.queryByTestId('episodeDurationLowerBound')).not.toBeInTheDocument();
+  });
+
+  it('marks the duration as a lower bound when the episode started before the time range', () => {
+    renderWithI18n(
+      <EpisodeDurationCell
+        {...durationCellProps}
+        row={makeRow({ duration: 840000, duration_is_lower_bound: true })}
+      />
+    );
+
+    expect(screen.getByTestId('episodeDurationLowerBound')).toHaveTextContent('≥ 840000 ms');
+  });
+
+  it('renders an empty value when the row has no duration', () => {
+    renderWithI18n(<EpisodeDurationCell {...durationCellProps} row={makeRow({})} />);
+
+    expect(screen.getByText('—')).toBeInTheDocument();
   });
 });
 

@@ -18,6 +18,7 @@ import { useSpaceId } from './use_space_id';
 import { queryKeys } from '../query_keys';
 import { buildEpisodesHistogramQuery } from '../queries/episodes_query';
 import { executeEsqlQuery } from '../utils/execute_esql_query';
+import { buildAlertEventsTimeRangeFilter } from '../utils/build_alert_events_time_range_filter';
 import { fetchFromSource } from '../utils/fetch_from_sources';
 import { useAdditionalEpisodesDataSource } from '../context/episode_data_source_context';
 import {
@@ -78,6 +79,7 @@ export const useEpisodesHistogramQuery = ({
       additionalEpisodesDataSource?.id
     ),
     queryFn: async ({ signal }) => {
+      const timeRangeFilter = buildAlertEventsTimeRangeFilter(timeRange);
       const [v2Rows, sourceHistograms] = await Promise.all([
         executeEsqlQuery<HistogramEpisodeRow>({
           expressions: services.expressions,
@@ -85,7 +87,7 @@ export const useEpisodesHistogramQuery = ({
           input: {
             type: 'kibana_context' as const,
             esqlVariables: [],
-            ...(timeRange ? { timeRange } : {}),
+            ...(timeRangeFilter ? { filters: [timeRangeFilter] } : {}),
           },
           abortSignal: signal,
         }),

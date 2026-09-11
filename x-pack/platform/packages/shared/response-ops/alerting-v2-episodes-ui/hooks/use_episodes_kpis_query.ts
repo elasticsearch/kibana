@@ -16,6 +16,7 @@ import { useSpaceId } from './use_space_id';
 import { useCurrentUserProfile } from './use_current_user_profile';
 import { buildEpisodesKpisQuery } from '../queries/episodes_query';
 import { executeEsqlQuery } from '../utils/execute_esql_query';
+import { buildAlertEventsTimeRangeFilter } from '../utils/build_alert_events_time_range_filter';
 import { fetchFromSource } from '../utils/fetch_from_sources';
 import { useAdditionalEpisodesDataSource } from '../context/episode_data_source_context';
 import { mergeKpis } from '../utils/merge_kpis';
@@ -86,6 +87,7 @@ export const useEpisodesKpisQuery = ({
       additionalEpisodesDataSource?.id
     ),
     queryFn: async ({ signal }) => {
+      const timeRangeFilter = buildAlertEventsTimeRangeFilter(timeRange);
       const [v2Rows, sourceKpis] = await Promise.all([
         executeEsqlQuery<EpisodesKpisRow>({
           expressions: services.expressions,
@@ -93,7 +95,7 @@ export const useEpisodesKpisQuery = ({
           input: {
             type: 'kibana_context' as const,
             esqlVariables: [],
-            ...(timeRange ? { timeRange } : {}),
+            ...(timeRangeFilter ? { filters: [timeRangeFilter] } : {}),
           },
           abortSignal: signal,
         }),

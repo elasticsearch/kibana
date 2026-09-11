@@ -35,6 +35,12 @@ export const alertEpisodeSchema = z
     first_timestamp: z.iso.datetime(),
     last_timestamp: z.iso.datetime(),
     duration: z.number(),
+    /**
+     * True when the query did not see the episode's first event, i.e. the
+     * episode started before the selected time range, so `duration` and
+     * `first_timestamp` only cover the part inside the range.
+     */
+    duration_is_lower_bound: z.boolean().nullable().optional(),
     /** ISO timestamp of the first event where episode.status === 'active'. */
     triggered_at: z.iso.datetime().nullable().optional(),
     last_ack_action: z.enum(['ack', 'unack']).nullable().optional(),

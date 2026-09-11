@@ -118,7 +118,7 @@ export const addEpisodeAggregation = (query: ComposerQuery) => {
   // prettier-ignore
   query
     .pipe`EVAL extracted_data = JSON_EXTRACT(_source, "data")`
-    .pipe`INLINE STATS first_timestamp = MIN(@timestamp), last_timestamp = MAX(@timestamp), triggered_at = MIN(@timestamp) WHERE \`episode.status\` == "active", episode_data = LAST(extracted_data, @timestamp) WHERE extracted_data != "{}", severity = LAST(severity, @timestamp) WHERE status == "breached" AND severity IS NOT NULL BY episode.id`
+    .pipe`INLINE STATS first_timestamp = MIN(@timestamp), last_timestamp = MAX(@timestamp), triggered_at = MIN(@timestamp) WHERE \`episode.status\` == "active", start_event_timestamp = MIN(@timestamp) WHERE \`episode.status\` == "pending" AND \`episode.status_count\` == 1, episode_data = LAST(extracted_data, @timestamp) WHERE extracted_data != "{}", severity = LAST(severity, @timestamp) WHERE status == "breached" AND severity IS NOT NULL BY episode.id`
     .pipe`EVAL duration = DATE_DIFF("ms", first_timestamp, last_timestamp)`
     .pipe`WHERE @timestamp == last_timestamp`;
 };
@@ -128,7 +128,8 @@ const addGroupHashActionStats = (query: ComposerQuery) => {
   query
     .pipe`INLINE STATS last_snooze_action = LAST(action_type, @timestamp) WHERE action_type IN ("snooze", "unsnooze"),
                        snooze_expiry      = LAST(expiry, @timestamp)      WHERE action_type == "snooze",
-                       last_tags          = LAST(tags, @timestamp)        WHERE action_type == "tag"
+                       last_tags          = LAST(tags, @timestamp)        WHERE action_type == "tag",
+                       first_series_event_timestamp = MIN(@timestamp)    WHERE type == "alert"
           BY group_hash`;
 };
 
@@ -272,6 +273,24 @@ export const buildEpisodesBaseQuery = (
   return query;
 };
 
+export const DURATION_LOWER_BOUND_FIELD = 'duration_is_lower_bound';
+
+/**
+ * Flags the episodes whose first event was not part of the scanned rows, so
+ * `first_timestamp` and `duration` only cover the selected time range. The
+ * start was seen when the earliest row is the event that opened the episode
+ * (`pending` with `status_count` 1), or when an earlier alert event of the
+ * same series is present, which can only belong to a previous episode. Rules
+ * that skip the pending state and have no earlier episode in range still get
+ * the flag: showing a lower bound is always true, hiding a truncation is not.
+ */
+const addDurationLowerBoundFlag = (query: ComposerQuery) => {
+  // prettier-ignore
+  query.pipe(
+    `EVAL ${DURATION_LOWER_BOUND_FIELD} = (start_event_timestamp IS NULL OR start_event_timestamp != first_timestamp) AND first_series_event_timestamp >= first_timestamp`
+  );
+};
+
 /**
  * Builds an ES|QL query for episodes request with sorting and filtering.
  *
@@ -299,7 +318,12 @@ export const buildEpisodesQuery = (
 
   const sortField = resolveSortField(sortState.sortField);
 
+  addDurationLowerBoundFlag(query);
+
   return asTypedEsqlQuery<AlertEpisodeEsqlRow>(
-    query.sort([sortField, sortDir]).pipe`LIMIT ${pageSizeParam}`.keep(...ALERT_EPISODE_FIELDS)
+    query.sort([sortField, sortDir]).pipe`LIMIT ${pageSizeParam}`.keep(
+      ...ALERT_EPISODE_FIELDS,
+      DURATION_LOWER_BOUND_FIELD
+    )
   );
 };

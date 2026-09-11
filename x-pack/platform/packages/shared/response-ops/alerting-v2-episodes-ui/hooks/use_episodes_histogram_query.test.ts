@@ -6,6 +6,7 @@
  */
 
 import React from 'react';
+import type { Filter } from '@kbn/es-query';
 import { renderHook, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@kbn/react-query';
 import type { ExpressionsStart } from '@kbn/expressions-plugin/public';
@@ -190,7 +191,7 @@ describe('useEpisodesHistogramQuery', () => {
     expect(secondBucket?.count).toBe(0);
   });
 
-  it('includes timeRange in the executeEsqlQuery input', async () => {
+  it('sends the time range as an alert-events-only request filter', async () => {
     mockExecuteEsqlQuery.mockResolvedValue([]);
 
     renderHook(
@@ -206,9 +207,18 @@ describe('useEpisodesHistogramQuery', () => {
 
     await waitFor(() => expect(mockExecuteEsqlQuery).toHaveBeenCalled());
     const inputArg = mockExecuteEsqlQuery.mock.calls[0][0].input as {
-      timeRange?: typeof mockTimeRange;
+      timeRange?: unknown;
+      filters?: Filter[];
     };
-    expect(inputArg.timeRange).toEqual(mockTimeRange);
+    // The range is sent as a request filter on the alert events only, so the
+    // action documents are kept whatever their timestamp.
+    expect(inputArg.timeRange).toBeUndefined();
+    expect(inputArg.filters).toHaveLength(1);
+    const should = inputArg.filters?.[0].query?.bool.should;
+    expect(should[0].bool.filter[1].range['@timestamp']).toEqual(
+      expect.objectContaining({ gte: mockTimeRange.from, lte: mockTimeRange.to })
+    );
+    expect(should[1]).toEqual({ exists: { field: 'action_type' } });
   });
 
   it('concatenates source histogram rows with v2 rows', async () => {

@@ -52,6 +52,7 @@ import { useAlertingRuleSourceDataViews } from '@kbn/alerting-v2-episodes-ui/hoo
 import { getBreachEsqlQuery } from '@kbn/alerting-v2-schemas';
 import { createEpisodeActions, type EpisodeAction } from '@kbn/alerting-v2-episodes-ui/actions';
 import {
+  EpisodeDurationCell,
   EpisodeStatusCell,
   EpisodeTagsCell,
   EpisodeRuleCell,
@@ -484,6 +485,7 @@ const AlertEpisodesListPageContent = () => {
   const externalCustomRenderers = useMemo<CustomCellRenderer>(
     () => ({
       'episode.status': (props) => <EpisodeStatusCell {...props} />,
+      duration: (props) => <EpisodeDurationCell {...props} />,
       severity: (props) => <EpisodeSeverityCell {...props} />,
       tags: (props) => <EpisodeTagsCell {...props} />,
       rule_tags: (props) => (

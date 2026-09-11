@@ -79,6 +79,30 @@ describe('buildEpisodesBaseQuery', () => {
   });
 });
 
+describe('duration lower bound flag', () => {
+  it('computes the start event and the first series event in the aggregations', () => {
+    const queryString = buildEpisodesBaseQuery(SPACE_ID).print('basic');
+
+    expect(queryString).toContain(
+      'start_event_timestamp = MIN(@timestamp) WHERE `episode.status` == "pending" AND `episode.status_count` == 1'
+    );
+    expect(queryString).toContain(
+      'first_series_event_timestamp = MIN(@timestamp) WHERE type == "alert"'
+    );
+  });
+
+  it('flags episodes whose start was not seen, in the list query only', () => {
+    const listQuery = buildEpisodesQuery(SPACE_ID).print('basic');
+    const baseQuery = buildEpisodesBaseQuery(SPACE_ID).print('basic');
+
+    expect(listQuery).toContain(
+      'EVAL duration_is_lower_bound = ((start_event_timestamp IS NULL OR start_event_timestamp != first_timestamp) AND first_series_event_timestamp >= first_timestamp)'
+    );
+    expect(listQuery).toMatch(/KEEP .*duration_is_lower_bound/);
+    expect(baseQuery).not.toContain('duration_is_lower_bound');
+  });
+});
+
 describe('buildEpisodesQuery', () => {
   it('should join both data streams', () => {
     const query = buildEpisodesQuery(SPACE_ID);

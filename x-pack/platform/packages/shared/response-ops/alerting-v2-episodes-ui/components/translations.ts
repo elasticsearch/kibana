@@ -63,6 +63,20 @@ export const getRuleCellCopyRuleIdTooltip = (ruleId: string) =>
     values: { ruleId },
   });
 
+export const getDurationLowerBoundLabel = (duration: string) =>
+  i18n.translate('xpack.alertingV2EpisodesUi.durationCell.lowerBoundLabel', {
+    defaultMessage: '≥ {duration}',
+    values: { duration },
+  });
+
+export const DURATION_LOWER_BOUND_TOOLTIP = i18n.translate(
+  'xpack.alertingV2EpisodesUi.durationCell.lowerBoundTooltip',
+  {
+    defaultMessage:
+      'The episode started before the selected time range, so its actual duration is longer. Widen the time range or open the episode to see it.',
+  }
+);
+
 export const RULE_CELL_RULE_ID_COPIED = i18n.translate(
   'xpack.alertingV2EpisodesUi.ruleCell.ruleIdCopied',
   {
