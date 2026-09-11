@@ -7,5 +7,13 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
-export { injectionServiceMock } from './src/service.mock';
-export { setup, start } from './src/utils';
+import type { Container } from 'inversify';
+import { OnSetup, OnStart } from '@kbn/core-di';
+
+export function setup(container: Container): void {
+  return container.getAll(OnSetup, { chained: true }).forEach((fn) => fn(container));
+}
+
+export function start(container: Container): void {
+  return container.getAll(OnStart, { chained: true }).forEach((fn) => fn(container));
+}

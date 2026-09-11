@@ -9,12 +9,17 @@
 
 import { ContainerModule, type ContainerModuleLoadOptions } from 'inversify';
 import type { LoggerFactory } from '@kbn/logging';
-import type { ServiceToken } from '@kbn/core-di';
+import type { ServiceToken, CoreDiServiceStart } from '@kbn/core-di';
 import { PluginSetup, PluginStart } from '@kbn/core-di';
 
 /** @internal */
 export interface InternalPluginInitializerContext {
   logger: LoggerFactory;
+}
+
+/** @internal */
+export interface InternalCoreStartContext {
+  injection: CoreDiServiceStart;
 }
 
 /** @internal */
@@ -44,7 +49,10 @@ export const InternalPluginInitializer =
 export const InternalCoreSetup = createServiceIdentifierFactory('core', 'setup');
 
 /** @internal */
-export const InternalCoreStart = createServiceIdentifierFactory('core', 'start');
+export const InternalCoreStart = createServiceIdentifierFactory<InternalCoreStartContext>(
+  'core',
+  'start'
+);
 
 /** @internal */
 export function createSetupModule<
@@ -64,10 +72,10 @@ export function createSetupModule<
 }
 
 /** @internal */
-export function createStartModule<TCoreStartContext extends object, TPluginsStart extends object>(
-  coreStartContext: TCoreStartContext,
-  plugins: TPluginsStart
-) {
+export function createStartModule<
+  TCoreStartContext extends InternalCoreStartContext,
+  TPluginsStart extends object
+>(coreStartContext: TCoreStartContext, plugins: TPluginsStart) {
   return new ContainerModule((options) => {
     loadEach(options, coreStartContext, InternalCoreStart);
     loadEach(options, plugins, PluginStart);

@@ -54,7 +54,7 @@ const Parent = Symbol('Parent') as ServiceIdentifier<Container>;
  * The factory creates a new container for the plugin dependencies.
  * Services registered in this scope are not visible outside unless they are explicitely exposed using the `Global` symbol.
  */
-export const Scope = createToken<ScopeFactory>('Scope');
+export const Plugin = createToken<ScopeFactory>('Plugin');
 
 /**
  * Isolated child context factory.
@@ -76,7 +76,7 @@ export class PluginModule extends ContainerModule {
       bind(Container).toConstantValue(root);
       bind(Fork).toDynamicValue(this.getForkFactory.bind(this)).inRequestScope();
       bind(OnSetup).toConstantValue(this.registerGlobals.bind(this));
-      bind(Scope).toDynamicValue(this.getScopeFactory.bind(this)).inRequestScope();
+      bind(Plugin).toDynamicValue(this.getPluginFactory.bind(this)).inRequestScope();
       bind(Setup).toResolvedValue(this.getDefaultContract.bind(this)).inRequestScope();
       bind(Start).toResolvedValue(this.getDefaultContract.bind(this)).inRequestScope();
       onActivation(Global, this.onGlobalActivation.bind(this));
@@ -125,7 +125,7 @@ export class PluginModule extends ContainerModule {
       .toResolvedValue<[Container, Container | undefined]>(
         // eslint-disable-next-line @typescript-eslint/no-shadow
         (origin, context = origin) => {
-          const target = context.get(Scope)(id);
+          const target = context.get(Plugin)(id);
 
           this.registerGlobals(origin);
           this.inheritGlobals(target);
@@ -154,11 +154,11 @@ export class PluginModule extends ContainerModule {
         );
       }
 
-      return fork.get(Scope)(id);
+      return fork.get(Plugin)(id);
     };
   }
 
-  protected getScopeFactory({ get }: ResolutionContext): ScopeFactory {
+  protected getPluginFactory({ get }: ResolutionContext): ScopeFactory {
     const context = get(Container);
 
     return (id) => {
@@ -167,7 +167,7 @@ export class PluginModule extends ContainerModule {
       }
 
       if (!context.isCurrentBound(id)) {
-        const parent = context.get(Parent, { optional: true })?.get(Scope)(id) ?? context;
+        const parent = context.get(Parent, { optional: true })?.get(Plugin)(id) ?? context;
         const scope = this.createChild(parent);
 
         scope.bind(Id).toConstantValue(id);

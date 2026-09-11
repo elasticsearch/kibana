@@ -10,7 +10,7 @@
 import { Container } from 'inversify';
 import type { PluginOpaqueId } from '@kbn/core-base-common';
 import { OnSetup, OnStart, Setup, Start } from '@kbn/core-di';
-import { Fork, Global, PluginModule, Scope } from './plugin';
+import { Fork, Global, Plugin, PluginModule } from './plugin';
 
 describe('PluginModule', () => {
   const token1 = Symbol.for('token1');
@@ -26,7 +26,7 @@ describe('PluginModule', () => {
 
   describe('Scope', () => {
     it('should create an isolated child container', () => {
-      const child = root.get(Scope)(token1);
+      const child = root.get(Plugin)(token1);
       root.bind('something').toConstantValue('value');
 
       expect(child).toBeInstanceOf(Container);
@@ -35,19 +35,19 @@ describe('PluginModule', () => {
     });
 
     it('should return the same child container instance for the same id', () => {
-      const child1 = root.get(Scope)(token1);
-      const child2 = root.get(Scope)(token2);
+      const child1 = root.get(Plugin)(token1);
+      const child2 = root.get(Plugin)(token2);
 
-      expect(root.get(Scope)(token1)).toBe(child1);
-      expect(root.get(Scope)(token2)).toBe(child2);
+      expect(root.get(Plugin)(token1)).toBe(child1);
+      expect(root.get(Plugin)(token2)).toBe(child2);
     });
 
     it('should return the current container if no id specified', () => {
-      expect(root.get(Scope)()).toBe(root);
+      expect(root.get(Plugin)()).toBe(root);
     });
 
     it('should dispose the child container when the parent is disposed', async () => {
-      const child = root.get(Scope)(token1);
+      const child = root.get(Plugin)(token1);
       child.bind('test').toConstantValue('test');
       await root.unbindAllAsync();
 
@@ -55,10 +55,10 @@ describe('PluginModule', () => {
     });
 
     it('should disassociate the child container from the parent when disposed', async () => {
-      const child = root.get(Scope)(token1);
+      const child = root.get(Plugin)(token1);
       await child.unbindAllAsync();
 
-      expect(root.get(Scope)(token1)).not.toBe(child);
+      expect(root.get(Plugin)(token1)).not.toBe(child);
     });
   });
 
@@ -73,7 +73,7 @@ describe('PluginModule', () => {
     });
 
     it('should create scoped child container from the parent', () => {
-      const child1 = root.get(Scope)(token1);
+      const child1 = root.get(Plugin)(token1);
       const forkedChild1 = root.get(Fork)(token1);
 
       root.bind('service1').toConstantValue('value1');
@@ -88,12 +88,12 @@ describe('PluginModule', () => {
     });
 
     it('should dispose the entire forked scope when deactivating the plugin scope', async () => {
-      const child1 = root.get(Scope)(token2);
+      const child1 = root.get(Plugin)(token2);
       child1.bind('service1').toResolvedValue((service2) => service2, ['service2']);
       child1.bind(Global).toConstantValue('service1');
 
       const forkedChild2 = root.get(Fork)(token2);
-      const forkedChild1 = forkedChild2.get(Scope)(token1);
+      const forkedChild1 = forkedChild2.get(Plugin)(token1);
 
       forkedChild1.bind('something').toConstantValue('value');
       forkedChild2.bind('service2').toConstantValue('value2');
@@ -109,19 +109,19 @@ describe('PluginModule', () => {
 
   describe('Global', () => {
     function activate(id: PluginOpaqueId) {
-      root.get(Scope)(id).get(Setup);
+      root.get(Plugin)(id).get(Setup);
     }
 
     let plugin1: Container;
     let plugin2: Container;
 
     beforeEach(() => {
-      plugin1 = root.get(Scope)(token1);
+      plugin1 = root.get(Plugin)(token1);
       plugin1.bind('service1').toConstantValue('service1');
       plugin1.bind('service2').toConstantValue('service2');
       plugin1.bind(Global).toConstantValue('service1');
 
-      plugin2 = root.get(Scope)(token2);
+      plugin2 = root.get(Plugin)(token2);
       plugin2.bind('service3').toConstantValue('service3.1');
       plugin2.bind('service3').toConstantValue('service3.2');
       plugin2.bind('service4').toConstantValue('service4');
@@ -151,7 +151,7 @@ describe('PluginModule', () => {
       });
 
       it('should allow transitive bindings', () => {
-        const plugin3 = root.get(Scope)(token3);
+        const plugin3 = root.get(Plugin)(token3);
         plugin3.bind('service5').toService('service1');
 
         expect(plugin3.get('service5')).toBe('service1');
@@ -175,7 +175,7 @@ describe('PluginModule', () => {
       let plugin3: Container;
 
       beforeEach(() => {
-        plugin3 = root.get(Scope)(token3);
+        plugin3 = root.get(Plugin)(token3);
         plugin3
           .bind('service5')
           .toDynamicValue(({ getAll }) => getAll('service6'))
@@ -214,7 +214,7 @@ describe('PluginModule', () => {
     let plugin: Container;
 
     beforeEach(() => {
-      plugin = root.get(Scope)(token1);
+      plugin = root.get(Plugin)(token1);
       plugin.bind('service1').toConstantValue('service1');
       plugin.bind('service2').toConstantValue('service2');
     });
@@ -268,7 +268,7 @@ describe('PluginModule', () => {
     });
 
     it('should call the hook function only once per scope', () => {
-      const plugin2 = root.get(Scope)(token2);
+      const plugin2 = root.get(Plugin)(token2);
       const handler1 = jest.fn();
       const handler2 = jest.fn();
       const handler3 = jest.fn();

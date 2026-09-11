@@ -7,13 +7,19 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
-import { Container } from 'inversify';
+import { Container, type ContainerOptions } from 'inversify';
 import { once } from 'lodash';
-import type { CoreDiServiceSetup, CoreDiServiceStart } from '@kbn/core-di';
-import type {
-  CoreInjectionService,
-  InternalCoreDiServiceSetup,
-  InternalCoreDiServiceStart,
+import {
+  type CoreDiServiceSetup,
+  type CoreDiServiceStart,
+  Scope,
+  type ScopedContainer,
+} from '@kbn/core-di';
+import {
+  type CoreInjectionService,
+  type InternalCoreDiServiceSetup,
+  type InternalCoreDiServiceStart,
+  InternalCoreStart,
 } from '@kbn/core-di-internal';
 import type { MethodKeysOf, PublicMethodsOf } from '@kbn/utility-types';
 import { lazyObject } from '@kbn/lazy-object';
@@ -25,8 +31,8 @@ function create(): jest.Mocked<PublicMethodsOf<CoreInjectionService>> {
   });
 }
 
-function createContainer() {
-  const container = new Container({ defaultScope: 'Singleton' });
+function createContainer(options?: ContainerOptions) {
+  const container = new Container({ defaultScope: 'Singleton', ...options });
   container.bind(Container).toConstantValue(container);
 
   for (const method of [
@@ -51,19 +57,31 @@ function createSetupContract(): jest.MockedObjectDeep<CoreDiServiceSetup> {
 }
 
 function createStartContract(): jest.MockedObjectDeep<CoreDiServiceStart> {
-  const getContainer = once(createContainer);
-
-  return lazyObject({
-    fork: jest.fn().mockImplementation(
-      once(() => {
-        const container = new Container({ defaultScope: 'Singleton', parent: getContainer() });
-        container.bind(Container).toConstantValue(container);
-
-        return container;
-      })
-    ),
-    getContainer: jest.fn().mockImplementation(getContainer),
+  const root = createContainer();
+  const injection = lazyObject({
+    fork: jest.fn().mockImplementation(once(() => createContainer({ parent: root }))),
+    getContainer: jest.fn().mockImplementation(() => root),
   });
+
+  root.bind(InternalCoreStart('injection')).toConstantValue(injection);
+  root
+    .bind(Scope)
+    .toDynamicValue(() => {
+      const scope = Object.defineProperties(injection.fork(), {
+        expose: {
+          value: jest.fn(((serviceIdentifier) =>
+            scope.bind(serviceIdentifier)) as ScopedContainer['expose']),
+        },
+        dispose: {
+          value: jest.fn(),
+        },
+      }) as jest.Mocked<ScopedContainer>;
+
+      return scope;
+    })
+    .inSingletonScope();
+
+  return injection;
 }
 
 function createInternalSetupContract(): jest.MockedObjectDeep<InternalCoreDiServiceSetup> {

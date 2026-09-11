@@ -9,7 +9,9 @@
 
 import { ContainerModule } from 'inversify';
 import { loadLogging } from './logging';
+import { loadScope } from './scope';
 
 export const core = new ContainerModule((options) => {
   loadLogging(options);
+  loadScope(options);
 });

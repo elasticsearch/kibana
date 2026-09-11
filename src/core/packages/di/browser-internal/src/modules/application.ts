@@ -7,38 +7,29 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
-import type { ContainerModuleLoadOptions } from 'inversify';
 import { isPromise } from '@kbn/std';
-import type { AppUnmount } from '@kbn/core-application-browser';
-import { Application, ApplicationParameters, CoreSetup, CoreStart } from '@kbn/core-di-browser';
-import { Global } from '@kbn/core-di-internal';
-import { OnSetup } from '@kbn/core-di';
+import type { App, AppUnmount } from '@kbn/core-application-browser';
+import { type KibanaContainerModuleLoadOptions, Scope } from '@kbn/core-di';
+import { Application, ApplicationParameters, CoreSetup } from '@kbn/core-di-browser';
 
-export function loadApplication({ bind, onActivation }: ContainerModuleLoadOptions) {
-  onActivation(Application, ({ get }, definition) => {
-    get(CoreSetup('application')).register({
+export function loadApplication({ onSetup }: KibanaContainerModuleLoadOptions) {
+  onSetup(Application, CoreSetup('application'), ({ inject }, definition, application) => {
+    application.register({
       ...definition,
-      mount(params) {
-        const scope = get(CoreStart('injection')).fork();
-        scope.bind(ApplicationParameters).toConstantValue(params);
-        scope.bind(Global).toConstantValue(ApplicationParameters);
+      mount: inject(Scope, (scope, params) => {
+        scope.expose(ApplicationParameters).toConstantValue(params);
+
         const unmount = scope.get(definition, { autobind: true }).mount();
         const wrap = (callback: AppUnmount) => () => {
           try {
             return callback();
           } finally {
-            scope.unbindAllAsync();
+            scope.dispose();
           }
         };
 
         return isPromise(unmount) ? unmount.then(wrap) : wrap(unmount);
-      },
+      }) as App['mount'],
     });
-
-    return definition;
-  });
-
-  bind(OnSetup).toConstantValue((container) => {
-    container.getAll(Application);
   });
 }

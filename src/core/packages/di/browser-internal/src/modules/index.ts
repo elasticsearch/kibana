@@ -7,12 +7,12 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
-import { ContainerModule } from 'inversify';
+import { KibanaContainerModule } from '@kbn/core-di';
 import { loadApplication } from './application';
 import { loadSecurity } from './security';
 import { loadSettings } from './settings';
 
-export const core = new ContainerModule((options) => {
+export const core = new KibanaContainerModule((options) => {
   loadApplication(options);
   loadSecurity(options);
   loadSettings(options);

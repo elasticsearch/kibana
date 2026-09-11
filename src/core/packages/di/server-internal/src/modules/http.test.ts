@@ -7,10 +7,10 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
-import { type Container, ContainerModule } from 'inversify';
+import { type Container } from 'inversify';
 import { inject, injectable, optional } from 'inversify';
-import { createToken, OnSetup } from '@kbn/core-di';
-import { injectionServiceMock } from '@kbn/core-di-mocks';
+import { createToken, KibanaContainerModule, Scope } from '@kbn/core-di';
+import { injectionServiceMock, setup, start } from '@kbn/core-di-mocks';
 import { CoreSetup, CoreStart, Request, Response, Route, Router } from '@kbn/core-di-server';
 import type { KibanaRequest, KibanaResponseFactory } from '@kbn/core-http-server';
 import type { CoreSetup as TCoreSetup } from '@kbn/core-lifecycle-server';
@@ -60,17 +60,13 @@ describe('http', () => {
   let http: jest.Mocked<TCoreSetup['http']>;
   let router: jest.Mocked<ReturnType<typeof http.createRouter>>;
 
-  function setup() {
-    container.get(OnSetup)(container);
-  }
-
   beforeEach(() => {
     jest.clearAllMocks();
     injection = injectionServiceMock.createStartContract();
     router = { post: jest.fn(), handleLegacyErrors: jest.fn() } as unknown as typeof router;
     http = { createRouter: jest.fn().mockReturnValue(router) } as unknown as typeof http;
     container = injection.getContainer();
-    container.load(new ContainerModule(loadHttp));
+    container.load(new KibanaContainerModule(loadHttp));
     container.bind(CoreSetup('http')).toConstantValue(http);
     container.bind(CoreStart('injection')).toConstantValue(injection);
     container.bind(Route).toConstantValue(TestRoute);
@@ -92,7 +88,7 @@ describe('http', () => {
 
   it('should register a route', () => {
     container.bind(Route).toConstantValue(TestRoute);
-    setup();
+    setup(container);
 
     expect(router.post).toHaveBeenCalledWith(expectedRouteConfig, expect.any(Function));
   });
@@ -100,12 +96,13 @@ describe('http', () => {
   it('should not register a route if there are no corresponding bindings ', () => {
     container.unbind(Route);
 
-    expect(setup).not.toThrow();
+    expect(() => setup(container)).not.toThrow();
     expect(router.post).not.toHaveBeenCalled();
   });
 
   it('should handle a request', async () => {
-    setup();
+    setup(container);
+    start(container);
 
     const handleSpy = jest.spyOn(TestRoute.prototype, 'handle');
     expect(router.post).toHaveBeenCalledWith(expectedRouteConfig, expect.any(Function));
@@ -114,8 +111,8 @@ describe('http', () => {
     const response = {
       ok: jest.fn(() => 'something'),
     } as unknown as jest.Mocked<KibanaResponseFactory>;
-    const fork = injection.fork();
-    const unbindAllSpy = jest.spyOn(fork, 'unbindAllAsync');
+    const scope = container.get(Scope);
+    const disposeSpy = jest.spyOn(scope, 'dispose');
 
     await expect(handler({} as any, request, response)).resolves.toBe('something');
     expect(response.ok).toHaveBeenCalled();
@@ -124,12 +121,13 @@ describe('http', () => {
 
     expect(route.request).toBe(request);
     expect(route.response).toBe(response);
-    expect(unbindAllSpy).toHaveBeenCalled();
+    expect(disposeSpy).toHaveBeenCalled();
   });
 
   it('should handle a request with an asynchronously bound dependency', async () => {
     container.bind(AsyncValue).toResolvedValue(async () => 'resolved-value');
-    setup();
+    setup(container);
+    start(container);
 
     const [, handler] = router.post.mock.lastCall!;
     const response = {
@@ -147,7 +145,7 @@ describe('http', () => {
     router.handleLegacyErrors.mockReturnValue(wrapper);
     TestRoute.handleLegacyErrors = true;
     container.bind(Route).toConstantValue(TestRoute);
-    setup();
+    setup(container);
     TestRoute.handleLegacyErrors = false;
 
     expect(router.post).toHaveBeenCalledWith(expectedRouteConfig, wrapper);

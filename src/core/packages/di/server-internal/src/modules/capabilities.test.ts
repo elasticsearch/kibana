@@ -7,10 +7,10 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
-import { type Container, ContainerModule } from 'inversify';
-import { OnSetup } from '@kbn/core-di';
+import { type Container } from 'inversify';
+import { KibanaContainerModule } from '@kbn/core-di';
 import { capabilitiesServiceMock } from '@kbn/core-capabilities-server-mocks';
-import { injectionServiceMock } from '@kbn/core-di-mocks';
+import { injectionServiceMock, setup } from '@kbn/core-di-mocks';
 import {
   CapabilitiesProvider,
   CapabilitiesResolver,
@@ -30,10 +30,6 @@ describe('loadCapabilities', () => {
   let capabilitiesStart: ReturnType<typeof capabilitiesServiceMock.createStartContract>;
   let request: KibanaRequest;
 
-  function setup() {
-    container.get(OnSetup)(container);
-  }
-
   beforeEach(() => {
     jest.clearAllMocks();
     injection = injectionServiceMock.createStartContract();
@@ -41,7 +37,7 @@ describe('loadCapabilities', () => {
     capabilitiesStart = capabilitiesServiceMock.createStartContract();
     request = httpServerMock.createKibanaRequest();
     container = injection.getContainer();
-    container.load(new ContainerModule(loadCapabilities));
+    container.load(new KibanaContainerModule(loadCapabilities));
     container.bind(CoreSetup('capabilities')).toConstantValue(capabilitiesSetup);
     container.bind(CoreStart('capabilities')).toConstantValue(capabilitiesStart);
     container.bind(Request).toConstantValue(request);
@@ -50,7 +46,7 @@ describe('loadCapabilities', () => {
   it('should register capabilities', () => {
     const capabilitiesProvider = () => ({});
     container.bind(CapabilitiesProvider).toConstantValue(capabilitiesProvider);
-    setup();
+    setup(container);
 
     expect(capabilitiesSetup.registerProvider).toHaveBeenCalledWith(capabilitiesProvider);
   });
@@ -61,7 +57,7 @@ describe('loadCapabilities', () => {
       switch: () => ({}),
     };
     container.bind(CapabilitiesSwitcher).toConstantValue(switcher);
-    setup();
+    setup(container);
 
     expect(capabilitiesSetup.registerSwitcher).toHaveBeenCalledWith(
       switcher.switch,

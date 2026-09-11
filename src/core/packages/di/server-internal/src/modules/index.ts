@@ -7,7 +7,7 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
-import { ContainerModule } from 'inversify';
+import { KibanaContainerModule } from '@kbn/core-di';
 import { loadCapabilities } from './capabilities';
 import { loadElasticsearch } from './elasticsearch';
 import { loadHttp } from './http';
@@ -16,7 +16,7 @@ import { loadSecurity } from './security';
 import { loadUiSettings } from './ui_settings';
 import { loadUserProfile } from './user_profile';
 
-export const core = new ContainerModule((options) => {
+export const core = new KibanaContainerModule((options) => {
   loadCapabilities(options);
   loadElasticsearch(options);
   loadHttp(options);

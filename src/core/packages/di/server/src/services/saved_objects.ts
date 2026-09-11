@@ -7,7 +7,6 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
-import type { Factory } from 'inversify';
 import { createToken } from '@kbn/core-di';
 import type { ServiceToken } from '@kbn/core-di';
 import type { SavedObjectsClientContract } from '@kbn/core-saved-objects-api-server';
@@ -21,10 +20,9 @@ import type {
  * @see {@link SavedObjectsClientContract}
  * @public
  */
-export type ISavedObjectsClientFactory = Factory<
-  SavedObjectsClientContract,
-  [SavedObjectsClientProviderOptions?]
->;
+export type ISavedObjectsClientFactory = (
+  options?: SavedObjectsClientProviderOptions
+) => SavedObjectsClientContract;
 
 /**
  * The Saved Objects client instance in the current HTTP request context.

@@ -7,7 +7,7 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
-import type { ContainerModuleLoadOptions } from 'inversify';
+import { type KibanaContainerModuleLoadOptions } from '@kbn/core-di';
 import { cacheInScope } from '@kbn/core-di-internal';
 import {
   CapabilitiesProvider,
@@ -18,24 +18,14 @@ import {
   type ICapabilitiesResolver,
   Request,
 } from '@kbn/core-di-server';
-import { OnSetup } from '@kbn/core-di';
 
-export function loadCapabilities({ bind, onActivation }: ContainerModuleLoadOptions): void {
-  onActivation(CapabilitiesProvider, ({ get }, provider) => {
-    get(CoreSetup('capabilities')).registerProvider(provider);
-
-    return provider;
+export function loadCapabilities({ bind, onSetup }: KibanaContainerModuleLoadOptions): void {
+  onSetup(CapabilitiesProvider, CoreSetup('capabilities'), (_, provider, capabilities) => {
+    capabilities.registerProvider(provider);
   });
 
-  onActivation(CapabilitiesSwitcher, ({ get }, switcher) => {
-    get(CoreSetup('capabilities')).registerSwitcher(switcher.switch, switcher);
-
-    return switcher;
-  });
-
-  bind(OnSetup).toConstantValue((container) => {
-    container.getAll(CapabilitiesProvider);
-    container.getAll(CapabilitiesSwitcher);
+  onSetup(CapabilitiesSwitcher, CoreSetup('capabilities'), (_, switcher, capabilities) => {
+    capabilities.registerSwitcher(switcher.switch, switcher);
   });
 
   bind(CapabilitiesResolver)

@@ -7,7 +7,6 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
-import type { Factory } from 'inversify';
 import { createToken } from '@kbn/core-di';
 import type { ServiceToken } from '@kbn/core-di';
 import type {
@@ -21,7 +20,7 @@ import type {
  * @see {@link IScopedClusterClient}
  * @public
  */
-export type IScopedClusterClientFactory = Factory<IScopedClusterClient, [AsScopedOptions?]>;
+export type IScopedClusterClientFactory = (options?: AsScopedOptions) => IScopedClusterClient;
 
 /**
  * The Elasticsearch client authenticated as the user of the current HTTP request.

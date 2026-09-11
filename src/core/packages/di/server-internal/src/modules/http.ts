@@ -7,34 +7,28 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
-import type { ContainerModuleLoadOptions } from 'inversify';
 import type { RequestHandler, RouteRegistrar } from '@kbn/core-http-server';
-import { CoreSetup, CoreStart, Request, Response, Route, Router } from '@kbn/core-di-server';
+import { CoreSetup, Request, Response, Route, Router } from '@kbn/core-di-server';
 import type { RequestHandlerContext } from '@kbn/core-http-request-handler-context-server';
-import { cacheInScope, Global } from '@kbn/core-di-internal';
-import { OnSetup } from '@kbn/core-di';
+import { cacheInScope } from '@kbn/core-di-internal';
+import { type KibanaContainerModuleLoadOptions, Scope } from '@kbn/core-di';
 
-export function loadHttp({ bind, onActivation }: ContainerModuleLoadOptions): void {
-  onActivation(Route, ({ get }, route) => {
-    const router = get(Router);
+export function loadHttp({ bind, onSetup }: KibanaContainerModuleLoadOptions): void {
+  onSetup(Route, Router, ({ inject }, route, router) => {
     const register = router[route.method] as RouteRegistrar<
       typeof route.method,
       RequestHandlerContext
     >;
-    let handler: RequestHandler = async (_context, request, response) => {
-      const scope = get(CoreStart('injection')).fork();
-
-      scope.bind(Request).toConstantValue(request);
-      scope.bind(Response).toConstantValue(response);
-      scope.bind(Global).toConstantValue(Request);
-      scope.bind(Global).toConstantValue(Response);
+    let handler: RequestHandler = inject(Scope, async (scope, _context, request, response) => {
+      scope.expose(Request).toConstantValue(request);
+      scope.expose(Response).toConstantValue(response);
 
       try {
         return await (await scope.getAsync(route, { autobind: true })).handle();
       } finally {
-        scope.unbindAllAsync();
+        scope.dispose();
       }
-    };
+    });
 
     if (route.handleLegacyErrors) {
       handler = router.handleLegacyErrors(handler);
@@ -56,16 +50,10 @@ export function loadHttp({ bind, onActivation }: ContainerModuleLoadOptions): vo
       },
       handler
     );
-
-    return route;
   });
 
   bind(Router)
     .toResolvedValue((httpSetup) => httpSetup.createRouter(), [CoreSetup('http')])
     .inRequestScope()
     .onActivation(cacheInScope(Router));
-
-  bind(OnSetup).toConstantValue((container) => {
-    container.getAll(Route);
-  });
 }

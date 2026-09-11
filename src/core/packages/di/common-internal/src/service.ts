@@ -11,7 +11,7 @@ import { Container } from 'inversify';
 import type { PluginOpaqueId } from '@kbn/core-base-common';
 import type { InternalCoreDiServiceSetup, InternalCoreDiServiceStart } from './contracts';
 import { core } from './modules/core';
-import { Fork, PluginModule, Scope } from './modules/plugin';
+import { Fork, PluginModule, Plugin } from './modules/plugin';
 
 /** @internal */
 export class CoreInjectionService {
@@ -29,7 +29,7 @@ export class CoreInjectionService {
   }
 
   protected getContainer(id?: PluginOpaqueId, container: Container = this.root): Container {
-    return container.get(Scope)(id);
+    return container.get(Plugin)(id);
   }
 
   protected fork(id?: PluginOpaqueId, container: Container = this.root): Container {
