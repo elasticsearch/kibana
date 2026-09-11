@@ -12,10 +12,10 @@ This skill is not about generating these KIs, that is a separate skill.
 AI indices have three dedicated tools. Use them in this order, and use nothing else to read an
 AI index:
 
-1. **`list_ai_indices`** — the AI indices available to you in the current space. Each entry has
-   an `id`, the `esql_target` to put in `FROM`, and a description. Entries whose visibility probe
-   fails, or whose documents all belong to other spaces, are omitted; empty or unresolved targets
-   may remain listed. Skip this when your instructions already name the index.
+1. **`list_ai_indices`** — the AI indices you can use in the current space. Each entry has
+   an `id`, the `esql_target` to put in `FROM`, and a description. An AI index is left out when
+   you cannot read its backing index, or when every document in it belongs to another space; an
+   empty AI index is still listed. Skip this when your instructions already name the index.
 2. **`describe_ai_index`** — takes an `id` and returns a context block you can read and copy
    ES|QL from: what the index holds, its fields and which are semantic, KI type and tag counts,
    and example queries. Fields differ between AI indices, so describe one before filtering on a
