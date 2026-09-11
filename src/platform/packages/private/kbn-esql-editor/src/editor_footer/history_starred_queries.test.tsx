@@ -10,7 +10,8 @@
 import React from 'react';
 import { KibanaContextProvider } from '@kbn/kibana-react-plugin/public';
 import { coreMock } from '@kbn/core/public/mocks';
-import { render, screen, waitFor, fireEvent } from '@testing-library/react';
+import { Storage } from '@kbn/kibana-utils-plugin/public';
+import { render, screen, waitFor, fireEvent, within } from '@testing-library/react';
 import {
   QueryHistoryAction,
   getTableColumns,
@@ -20,7 +21,8 @@ import {
 import { BehaviorSubject } from 'rxjs';
 import { act } from 'react-dom/test-utils';
 import { getHistoryItems, getStorageStats } from '../history_local_storage';
-import type { EsqlStarredQueriesService, StarredQueryItem } from './esql_starred_queries_service';
+import { EsqlStarredQueriesService } from './esql_starred_queries_service';
+import type { StarredQueryItem } from './esql_starred_queries_service';
 
 jest.mock('../history_local_storage', () => ({
   getHistoryItems: jest.fn(),
@@ -252,6 +254,61 @@ describe('Starred and History queries components', () => {
   });
 
   describe('HistoryAndStarredQueriesTabs', () => {
+    it('removes a starred query after confirming discard', async () => {
+      const core = coreMock.createStart();
+      const queryString = 'FROM logstash-* | SORT @timestamp DESC';
+      core.userProfile.getEnabled$.mockReturnValue(new BehaviorSubject(true));
+      core.http.get.mockResolvedValue({
+        favoriteIds: ['starred-query'],
+        favoriteMetadata: {
+          'starred-query': {
+            queryString,
+            createdAt: '2026-01-01T00:00:00Z',
+            status: 'success',
+          },
+        },
+      });
+      core.http.post.mockResolvedValue({ favoriteIds: [], favoriteMetadata: {} });
+      const starredQueriesService = await EsqlStarredQueriesService.initialize({
+        http: core.http,
+        userProfile: core.userProfile,
+        storage: new Storage(window.sessionStorage),
+      });
+
+      render(
+        <KibanaContextProvider services={{ ...services, core }}>
+          <HistoryAndStarredQueriesTabs
+            containerCSS={{}}
+            containerWidth={1024}
+            onUpdateAndSubmit={jest.fn()}
+            onClose={jest.fn()}
+            height={200}
+            starredQueriesService={starredQueriesService}
+          />
+        </KibanaContextProvider>
+      );
+
+      fireEvent.click(screen.getByTestId('starred-queries-tab'));
+      const starredTable = within(screen.getByTestId('ESQLEditor-starredQueries'));
+      expect(starredTable.getByText(queryString)).toBeInTheDocument();
+      fireEvent.click(
+        starredTable.getByRole('button', { name: 'Remove ES|QL query from Starred' })
+      );
+
+      const dialog = await screen.findByRole('dialog', { name: 'Discard starred query' });
+      expect(core.http.post).not.toHaveBeenCalled();
+      fireEvent.click(within(dialog).getByRole('button', { name: 'Discard query' }));
+
+      await waitFor(() => {
+        expect(core.http.post).toHaveBeenCalledWith(
+          '/internal/content_management/favorites/esql_query/starred-query/unfavorite'
+        );
+        expect(starredTable.queryByText(queryString)).not.toBeInTheDocument();
+        expect(starredTable.getByText('No items found')).toBeInTheDocument();
+        expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+      });
+    });
+
     it('should render two tabs', () => {
       render(
         <KibanaContextProvider services={services}>

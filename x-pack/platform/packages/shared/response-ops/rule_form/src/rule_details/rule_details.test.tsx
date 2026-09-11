@@ -10,6 +10,7 @@ import { fireEvent, render as rtlRender, screen, within } from '@testing-library
 import userEvent from '@testing-library/user-event';
 import type { ContentManagementPublicStart } from '@kbn/content-management-plugin/public';
 import { __IntlProvider as IntlProvider } from '@kbn/i18n-react';
+import { uiActionsPluginMock } from '@kbn/ui-actions-plugin/public/mocks';
 import { RuleDetails } from './rule_details';
 
 jest.mock('../hooks', () => ({
@@ -48,6 +49,31 @@ describe('RuleDetails', () => {
     render(<RuleDetails />);
 
     expect(screen.getByTestId('ruleDetails')).toBeInTheDocument();
+  });
+
+  test('shows related dashboards when uiActions is available', () => {
+    useRuleFormState.mockReturnValue({
+      plugins: {
+        contentManagement: {} as ContentManagementPublicStart,
+        uiActions: uiActionsPluginMock.createStartContract(),
+      },
+      formData: {
+        name: 'test',
+        tags: [],
+      },
+    });
+
+    render(<RuleDetails />);
+
+    const section = screen.getByTestId('ruleLinkedDashboards');
+    expect(section).toBeVisible();
+    expect(within(section).getByText('Related dashboards')).toBeVisible();
+  });
+
+  test('omits related dashboards when uiActions is unavailable', () => {
+    render(<RuleDetails />);
+
+    expect(screen.queryByTestId('ruleLinkedDashboards')).not.toBeInTheDocument();
   });
 
   test('Should allow name to be changed', () => {
