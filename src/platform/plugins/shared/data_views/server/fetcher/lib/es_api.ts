@@ -8,9 +8,67 @@
  */
 
 import type { ElasticsearchClient } from '@kbn/core/server';
-import type { ExpandWildcard, MappingRuntimeFields } from '@elastic/elasticsearch/lib/api/types';
+import type {
+  ExpandWildcard,
+  FieldCapsResponse,
+  MappingRuntimeFields,
+} from '@elastic/elasticsearch/lib/api/types';
 import type { QueryDslQueryContainer } from '../../../common/types';
 import { convertEsError } from './errors';
+import { mergeFieldCapsResponses } from './field_capabilities/merge_field_caps_responses';
+
+// Elasticsearch defaults to a 4096 request-line limit. Leave headroom for the
+// `_field_caps` suffix and the other request-line components.
+const FIELD_CAPS_INDEX_PATH_LENGTH_LIMIT = 3000;
+
+// This mirrors the Elasticsearch JS client's serialization of `params.index`.
+const encodedIndexPathLength = (indices: string[]): number =>
+  encodeURIComponent(indices.join(',')).length;
+
+const getFieldCapsIndexBatches = (
+  indices: string[] | string | undefined
+): string[][] | undefined => {
+  if (indices === undefined) {
+    return undefined;
+  }
+
+  const indexExpressions = typeof indices === 'string' ? indices.split(',') : indices;
+  if (encodedIndexPathLength(indexExpressions) <= FIELD_CAPS_INDEX_PATH_LENGTH_LIMIT) {
+    return undefined;
+  }
+
+  const positiveExpressions = indexExpressions.filter((index) => !index.startsWith('-'));
+  const negativeExpressions = indexExpressions.filter((index) => index.startsWith('-'));
+  // Exclusions affect every positive expression, so every batch repeats them and
+  // includes their encoded length in its budget.
+  if (
+    positiveExpressions.length === 0 ||
+    positiveExpressions.some(
+      (index) =>
+        encodedIndexPathLength([index, ...negativeExpressions]) > FIELD_CAPS_INDEX_PATH_LENGTH_LIMIT
+    )
+  ) {
+    return undefined;
+  }
+
+  const batches: string[][] = [];
+  let positiveBatch: string[] = [];
+  for (const index of positiveExpressions) {
+    const candidate = [...positiveBatch, index, ...negativeExpressions];
+    if (
+      positiveBatch.length > 0 &&
+      encodedIndexPathLength(candidate) > FIELD_CAPS_INDEX_PATH_LENGTH_LIMIT
+    ) {
+      batches.push([...positiveBatch, ...negativeExpressions]);
+      positiveBatch = [index];
+    } else {
+      positiveBatch.push(index);
+    }
+  }
+  batches.push([...positiveBatch, ...negativeExpressions]);
+
+  return batches.length > 1 ? batches : undefined;
+};
 
 /**
  *  Call the index.getAlias API for a list of indices.
@@ -84,22 +142,46 @@ export async function callFieldCapsApi(params: FieldCapsApiParams) {
     abortSignal,
     projectRouting,
   } = params;
+  const requestOptions = {
+    fields,
+    ignore_unavailable: true,
+    index_filter: indexFilter,
+    expand_wildcards: expandWildcards,
+    types: fieldTypes,
+    include_empty_fields: includeEmptyFields ?? true,
+    runtime_mappings: runtimeMappings,
+    ...(projectRouting ? { project_routing: projectRouting } : {}),
+    ...fieldCapsOptions,
+  };
+  const transportOptions = { meta: true as const, signal: abortSignal };
   try {
-    return await callCluster.fieldCaps(
-      {
-        index: indices,
-        fields,
-        ignore_unavailable: true,
-        index_filter: indexFilter,
-        expand_wildcards: expandWildcards,
-        types: fieldTypes,
-        include_empty_fields: includeEmptyFields ?? true,
-        runtime_mappings: runtimeMappings,
-        ...(projectRouting ? { project_routing: projectRouting } : {}),
-        ...fieldCapsOptions,
-      },
-      { meta: true, signal: abortSignal }
+    const batches = getFieldCapsIndexBatches(indices);
+    if (!batches) {
+      return await callCluster.fieldCaps({ index: indices, ...requestOptions }, transportOptions);
+    }
+
+    const [firstBatch, ...remainingBatches] = batches;
+    const firstResponse = await callCluster.fieldCaps(
+      // Unmapped coverage is required to reconstruct a single logical response.
+      { index: firstBatch, ...requestOptions, include_unmapped: true },
+      transportOptions
     );
+    const responseBodies: FieldCapsResponse[] = [firstResponse.body];
+    // Sequential calls bound cluster load, preserve deterministic ordering, and
+    // stop immediately when a batch fails.
+    for (const batch of remainingBatches) {
+      const response = await callCluster.fieldCaps(
+        { index: batch, ...requestOptions, include_unmapped: true },
+        transportOptions
+      );
+      responseBodies.push(response.body);
+    }
+
+    return {
+      // Only the body is aggregateable; consumers expect the first call's transport metadata.
+      ...firstResponse,
+      body: mergeFieldCapsResponses(responseBodies, fieldCapsOptions.include_unmapped === true),
+    };
   } catch (error) {
     // return an empty set for closed indices
     if (
