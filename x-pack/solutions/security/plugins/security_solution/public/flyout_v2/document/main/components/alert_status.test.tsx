@@ -61,15 +61,14 @@ describe('<AlertStatus />', () => {
     });
   });
 
-  it('should render alert status history information', async () => {
-    const { findByTestId } = renderAlertStatus(alertHitWithStatus);
+  it('should render alert status history information', () => {
+    const { getByTestId } = renderAlertStatus(alertHitWithStatus);
 
-    expect(await findByTestId(WORKFLOW_STATUS_TITLE_TEST_ID)).toBeInTheDocument();
-    expect(await findByTestId(WORKFLOW_STATUS_DETAILS_TEST_ID)).toBeInTheDocument();
-    expect(await findByTestId(WORKFLOW_STATUS_DETAILS_TEST_ID)).toHaveTextContent(
-      'Alert status updated by'
-    );
-    expect(await findByTestId(WORKFLOW_STATUS_DETAILS_TEST_ID)).toHaveTextContent('User 1');
+    const details = getByTestId(WORKFLOW_STATUS_DETAILS_TEST_ID);
+    expect(getByTestId(WORKFLOW_STATUS_TITLE_TEST_ID)).toBeInTheDocument();
+    expect(details).toBeInTheDocument();
+    expect(details).toHaveTextContent('Alert status updated by');
+    expect(details).toHaveTextContent('User 1');
     expect(mockUseBulkGetUserProfiles).toHaveBeenCalledWith({ uids: new Set(['user-id-1']) });
   });
 
