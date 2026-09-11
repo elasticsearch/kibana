@@ -1,25 +1,21 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
 exports[`SolutionPanel renders the solution panel for the given solution 1`] = `
-<EuiFlexItem
-  css="unknown styles"
+<EuiCard
+  className="homeSolutionPanel homeSolutionPanel--kibana"
   data-test-subj="homeSolutionPanel homeSolutionPanel_kibana"
->
-  <EuiCard
-    className="homeSolutionPanel homeSolutionPanel--kibana"
-    description="Explore and analyze your data"
-    href="kibana_landing_page"
-    icon={
-      <KibanaPageTemplateSolutionNavAvatar
-        iconType="logoKibana"
-        name="Kibana"
-        size="xl"
-      />
-    }
-    image="/plugins/kibanaReact/assets/solutions_kibana.svg"
-    onClick={[Function]}
-    title="Kibana"
-    titleElement="h2"
-  />
-</EuiFlexItem>
+  description="Explore and analyze your data"
+  href="kibana_landing_page"
+  icon={
+    <KibanaPageTemplateSolutionNavAvatar
+      iconType="logoKibana"
+      name="Kibana"
+      size="xl"
+    />
+  }
+  image="/plugins/kibanaReact/assets/solutions_kibana.svg"
+  onClick={[Function]}
+  title="Kibana"
+  titleElement="h2"
+/>
 `;

@@ -18,6 +18,7 @@ project:
   sourceRoot: x-pack/solutions/search/plugins/search_homepage
 dependsOn:
   - '@kbn/core'
+  - '@kbn/css-utils'
   - '@kbn/react-kibana-context-render'
   - '@kbn/kibana-react-plugin'
   - '@kbn/i18n-react'
@@ -53,6 +54,7 @@ dependsOn:
   - '@kbn/agent-builder-browser'
   - '@kbn/workflows-ui'
   - '@kbn/scout-search'
+  - '@kbn/announcement-banner'
 tags:
   - plugin
   - prod

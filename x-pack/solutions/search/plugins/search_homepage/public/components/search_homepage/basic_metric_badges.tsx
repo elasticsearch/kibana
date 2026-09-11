@@ -7,7 +7,8 @@
 
 import React from 'react';
 
-import { EuiBadge, EuiFlexGroup, EuiText, EuiTextColor, useEuiTheme } from '@elastic/eui';
+import { EuiBadge, EuiText, EuiTextColor, useEuiTheme } from '@elastic/eui';
+import { layoutRowCss } from '@kbn/css-utils/public/layout_css';
 import { i18n } from '@kbn/i18n';
 import { css } from '@emotion/react';
 import { useDashboardsStats } from '../../hooks/api/use_dashboards_stats';
@@ -74,6 +75,7 @@ const BasicMetricPanel = ({ type, title, metric, isError = false }: BasicMetricP
 };
 
 export const BasicMetricBadges = () => {
+  const { euiTheme } = useEuiTheme();
   const { data: storageStats, isError: isErrorStorageStats } = useStats();
   const { data: indicesData, isError: isErrorIndicesStats } = useIndicesStats();
   const { data: dashboardsData, isError: isErrorDashboards } = useDashboardsStats();
@@ -131,7 +133,10 @@ export const BasicMetricBadges = () => {
     },
   ];
   return (
-    <EuiFlexGroup gutterSize="s" data-test-subj="searchHomepageMetricBadges">
+    <div
+      css={layoutRowCss({ gap: euiTheme.size.s, shrinkItems: false })}
+      data-test-subj="searchHomepageMetricBadges"
+    >
       {basicPanels.map((panel) => {
         return (
           <BasicMetricPanel
@@ -143,6 +148,6 @@ export const BasicMetricBadges = () => {
           />
         );
       })}
-    </EuiFlexGroup>
+    </div>
   );
 };

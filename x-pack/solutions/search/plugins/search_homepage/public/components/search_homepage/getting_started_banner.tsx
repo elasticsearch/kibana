@@ -6,73 +6,40 @@
  */
 import { i18n } from '@kbn/i18n';
 
-import {
-  EuiButton,
-  EuiFlexGroup,
-  EuiFlexItem,
-  EuiImage,
-  EuiPanel,
-  EuiTitle,
-  useEuiTheme,
-} from '@elastic/eui';
+import { EuiIllustration } from '@elastic/eui';
+import { featurePackedBox } from '@elastic/eui-illustrations';
 import React from 'react';
-import { FormattedMessage } from '@kbn/i18n-react';
-import { css } from '@emotion/react';
-import { useAssetBasePath } from '../../hooks/use_asset_base_path';
+import { AnnouncementBanner } from '@kbn/announcement-banner';
 import { useKibana } from '../../hooks/use_kibana';
 
 export const GettingStartedBanner = () => {
   const {
     services: { application },
   } = useKibana();
-  const assetBasePath = useAssetBasePath();
-  const { euiTheme } = useEuiTheme();
+
   return (
-    <EuiPanel hasBorder paddingSize="none">
-      <EuiFlexGroup justifyContent="center" alignItems="center">
-        <EuiFlexItem grow={1}>
-          <EuiImage size="" src={`${assetBasePath}/search_toolbox_clipped.svg`} alt="" />
-        </EuiFlexItem>
-        <EuiFlexItem
-          grow={3}
-          css={css({
-            padding: euiTheme.size.l,
-          })}
-        >
-          <EuiFlexGroup direction="column" gutterSize="s">
-            <EuiFlexItem>
-              <EuiTitle size="xs">
-                <h4>
-                  {i18n.translate(
-                    'xpack.searchHomepage.gettingStartedBanner.h4.exploreAPITutorialsAndLabel',
-                    {
-                      defaultMessage:
-                        'Explore API tutorials and connect Elasticsearch to your application.',
-                    }
-                  )}
-                </h4>
-              </EuiTitle>
-            </EuiFlexItem>
-            <EuiFlexItem>
-              <div>
-                <EuiButton
-                  data-test-subj="searchHomepageGettingStartedBannerGetStartedWithElasticsearchButton"
-                  iconSide="left"
-                  iconType="rocket"
-                  color="primary"
-                  size="s"
-                  onClick={() => application.navigateToApp('searchGettingStarted')}
-                >
-                  <FormattedMessage
-                    id="xpack.searchHomepage.gettingStartedBanner.getStartedWithElasticsearchButtonLabel"
-                    defaultMessage="Get started with Elasticsearch"
-                  />
-                </EuiButton>
-              </div>
-            </EuiFlexItem>
-          </EuiFlexGroup>
-        </EuiFlexItem>
-      </EuiFlexGroup>
-    </EuiPanel>
+    <AnnouncementBanner
+      data-test-subj="searchHomepageGettingStartedBanner"
+      title={i18n.translate(
+        'xpack.searchHomepage.gettingStartedBanner.h4.exploreAPITutorialsAndLabel',
+        {
+          defaultMessage: 'Explore API tutorials and connect Elasticsearch to your application.',
+        }
+      )}
+      headingElement="h4"
+      media={<EuiIllustration type={featurePackedBox} alt="" />}
+      color="plain"
+      actionProps={{
+        primary: {
+          children: i18n.translate(
+            'xpack.searchHomepage.gettingStartedBanner.getStartedWithElasticsearchButtonLabel',
+            { defaultMessage: 'Get started with Elasticsearch' }
+          ),
+          iconType: 'rocket',
+          onClick: () => application.navigateToApp('searchGettingStarted'),
+          'data-test-subj': 'searchHomepageGettingStartedBannerGetStartedWithElasticsearchButton',
+        },
+      }}
+    />
   );
 };

@@ -8,7 +8,6 @@
 import React from 'react';
 import { i18n } from '@kbn/i18n';
 import {
-  EuiFlexGrid,
   EuiFlexGroup,
   EuiFlexItem,
   EuiLink,
@@ -17,7 +16,7 @@ import {
   EuiTitle,
   useEuiTheme,
 } from '@elastic/eui';
-import { css } from '@emotion/react';
+import { layoutRowOrStackCss } from '@kbn/css-utils/public/layout_css';
 import { docLinks } from '../../../common/doc_links';
 
 interface BodyLink {
@@ -33,15 +32,8 @@ interface BodyLink {
 }
 
 const BodyLink: React.FC<BodyLink> = ({ title, description, link, category }: BodyLink) => {
-  const { euiTheme } = useEuiTheme();
-
   return (
-    <EuiFlexGroup
-      direction="column"
-      css={css({
-        minHeight: `${euiTheme.base * 12}px`,
-      })}
-    >
+    <EuiFlexGroup direction="column">
       {category && (
         <EuiFlexItem grow={false}>
           <EuiTitle size="xs">
@@ -97,6 +89,7 @@ const BodyLink: React.FC<BodyLink> = ({ title, description, link, category }: Bo
 };
 
 export const BodyLinks = () => {
+  const { euiTheme } = useEuiTheme();
   const BODY_LINKS: BodyLink[] = [
     {
       title: i18n.translate('xpack.searchHomepage.bodyLinks.askAnExpert.title', {
@@ -149,12 +142,10 @@ export const BodyLinks = () => {
   ];
 
   return (
-    <EuiFlexGrid columns={3} gutterSize="l">
+    <div css={layoutRowOrStackCss({ threshold: '70ch', gap: euiTheme.size.xl })}>
       {BODY_LINKS.map((bodyLink, index) => (
-        <EuiFlexItem key={`bodylink-${index}`}>
-          <BodyLink {...bodyLink} />
-        </EuiFlexItem>
+        <BodyLink key={`bodylink-${index}`} {...bodyLink} />
       ))}
-    </EuiFlexGrid>
+    </div>
   );
 };

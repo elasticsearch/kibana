@@ -12,7 +12,7 @@ import type { FC, MouseEvent } from 'react';
 import React from 'react';
 import { css } from '@emotion/react';
 import type { UseEuiTheme } from '@elastic/eui';
-import { EuiCard, EuiFlexItem, mathWithUnits } from '@elastic/eui';
+import { EuiCard, mathWithUnits } from '@elastic/eui';
 import { METRIC_TYPE } from '@kbn/analytics';
 import { KibanaPageTemplateSolutionNavAvatar } from '@kbn/kibana-react-plugin/public';
 import type { FeatureCatalogueSolution } from '../../..';
@@ -31,52 +31,48 @@ export const SolutionPanel: FC<Props> = ({ addBasePath, solution }) => {
   const { trackUiMetric } = getServices();
 
   return (
-    <EuiFlexItem css={styles} data-test-subj={`homeSolutionPanel homeSolutionPanel_${solution.id}`}>
-      <EuiCard
-        className={`homeSolutionPanel homeSolutionPanel--${solution.id}`}
-        description={solution.description}
-        href={addBasePath(solution.path)}
-        icon={
-          <KibanaPageTemplateSolutionNavAvatar
-            name={solution.title}
-            iconType={solution.icon}
-            size="xl"
-          />
-        }
-        image={addBasePath(getSolutionGraphicURL(snakeCase(solution.id)))}
-        onClick={(event: MouseEvent) => {
-          trackUiMetric(METRIC_TYPE.CLICK, `solution_panel_${solution.id}`);
-          createAppNavigationHandler(solution.path)(event);
-        }}
-        title={solution.title}
-        titleElement="h2"
-      />
-    </EuiFlexItem>
+    <EuiCard
+      css={styles}
+      data-test-subj={`homeSolutionPanel homeSolutionPanel_${solution.id}`}
+      className={`homeSolutionPanel homeSolutionPanel--${solution.id}`}
+      description={solution.description}
+      href={addBasePath(solution.path)}
+      icon={
+        <KibanaPageTemplateSolutionNavAvatar
+          name={solution.title}
+          iconType={solution.icon}
+          size="xl"
+        />
+      }
+      image={addBasePath(getSolutionGraphicURL(snakeCase(solution.id)))}
+      onClick={(event: MouseEvent) => {
+        trackUiMetric(METRIC_TYPE.CLICK, `solution_panel_${solution.id}`);
+        createAppNavigationHandler(solution.path)(event);
+      }}
+      title={solution.title}
+      titleElement="h2"
+    />
   );
 };
 
 const styles = ({ euiTheme }: UseEuiTheme) =>
   css({
-    [`@media (min-width: ${euiTheme.breakpoint.m}px)`]: {
-      maxInlineSize: `calc(33.33% - ${euiTheme.size.m} * 10)`,
+    img: {
+      backgroundColor: euiTheme.colors.primary,
+      maxBlockSize: mathWithUnits(euiTheme.size.m, (x) => x * 10),
+      objectFit: 'cover',
     },
-    '.homeSolutionPanel': {
-      img: {
-        backgroundColor: euiTheme.colors.primary,
-        maxBlockSize: mathWithUnits(euiTheme.size.m, (x) => x * 10),
-        objectFit: 'cover',
-      },
 
-      '&--enterpriseSearch img': {
-        backgroundColor: euiTheme.colors.warning,
-      },
+    // Leading `&` is required: these classes sit on the same element as the css-prop class.
+    '&.homeSolutionPanel--enterpriseSearch img': {
+      backgroundColor: euiTheme.colors.warning,
+    },
 
-      '&--observability img': {
-        backgroundColor: euiTheme.colors.accent,
-      },
+    '&.homeSolutionPanel--observability img': {
+      backgroundColor: euiTheme.colors.accent,
+    },
 
-      '&--securitySolution img': {
-        backgroundColor: euiTheme.colors.accentSecondary,
-      },
+    '&.homeSolutionPanel--securitySolution img': {
+      backgroundColor: euiTheme.colors.accentSecondary,
     },
   });

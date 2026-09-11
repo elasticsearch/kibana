@@ -21,9 +21,13 @@ import {
   useEuiTheme,
 } from '@elastic/eui';
 import { css } from '@emotion/react';
+import { layoutAutoGridCss, layoutRowOrStackCss } from '@kbn/css-utils/public/layout_css';
 import { docLinks } from '../../../common/doc_links';
 import { useAssetBasePath } from '../../hooks/use_asset_base_path';
 import { useKibana } from '../../hooks/use_kibana';
+
+/** Width a card needs to keep its icon beside its text, and the grid's ideal track width. */
+const CARD_MIN_WIDTH = '30rem';
 
 interface ResourceCardProps {
   title: string;
@@ -43,16 +47,29 @@ const ResourceCard = ({
   dataTestSubj,
 }: ResourceCardProps) => {
   const assetBasePath = useAssetBasePath();
-  const { euiTheme } = useEuiTheme();
+  const { euiTheme, highContrastMode } = useEuiTheme();
+
+  // `EuiSplitPanel` draws the high-contrast divider implied by `direction` and the
+  // `responsive` prop, but `layoutRowOrStackCss` is driving responsiveness.
+  // This is a trick to have the high-contrast divider on either layout.
+  const outerDividerCss = highContrastMode
+    ? css({ gap: euiTheme.border.width.thin, backgroundColor: euiTheme.border.color })
+    : undefined;
+  // `&&` doubles specificity to beat EUI's own `:not(:last-child)` divider rule.
+  const innerDividerCss = highContrastMode ? css({ '&&': { border: 'none' } }) : undefined;
 
   return (
     <EuiSplitPanel.Outer
       direction="row"
-      responsive={['xs', 's', 'm']}
+      responsive={false}
       data-test-subj={dataTestSubj}
-      css={css({ height: '100%' })}
+      css={[
+        layoutRowOrStackCss({ threshold: CARD_MIN_WIDTH }),
+        css({ height: '100%' }),
+        outerDividerCss,
+      ]}
     >
-      <EuiSplitPanel.Inner paddingSize="none" color="subdued">
+      <EuiSplitPanel.Inner paddingSize="none" color="subdued" css={innerDividerCss}>
         <EuiFlexGroup
           justifyContent="center"
           alignItems="center"
@@ -64,7 +81,7 @@ const ResourceCard = ({
           <EuiImage size={euiTheme.base * 5} src={icon(assetBasePath)} alt="" />
         </EuiFlexGroup>
       </EuiSplitPanel.Inner>
-      <EuiSplitPanel.Inner paddingSize="l">
+      <EuiSplitPanel.Inner paddingSize="l" color="plain" css={innerDividerCss}>
         <EuiFlexItem grow={5}>
           <EuiTitle size="xs">
             <h4>{title}</h4>
@@ -95,6 +112,7 @@ const ResourceCard = ({
 };
 
 export const CloudResources = () => {
+  const { euiTheme } = useEuiTheme();
   const {
     services: { cloud },
   } = useKibana();
@@ -189,20 +207,19 @@ export const CloudResources = () => {
         </EuiTitle>
       </EuiFlexItem>
       <EuiFlexItem>
-        <EuiFlexGroup gutterSize="l">
+        <div css={layoutAutoGridCss({ minItemWidth: CARD_MIN_WIDTH, gap: euiTheme.size.l })}>
           {cards.map((card, index) => (
-            <EuiFlexItem key={`resource-${index}`}>
-              <ResourceCard
-                title={card.title}
-                icon={card.icon}
-                description={card.description}
-                actionHref={card.actionHref}
-                actionText={card.actionText}
-                dataTestSubj={card.dataTestSubj}
-              />
-            </EuiFlexItem>
+            <ResourceCard
+              key={`resource-${index}`}
+              title={card.title}
+              icon={card.icon}
+              description={card.description}
+              actionHref={card.actionHref}
+              actionText={card.actionText}
+              dataTestSubj={card.dataTestSubj}
+            />
           ))}
-        </EuiFlexGroup>
+        </div>
       </EuiFlexItem>
     </EuiFlexGroup>
   );

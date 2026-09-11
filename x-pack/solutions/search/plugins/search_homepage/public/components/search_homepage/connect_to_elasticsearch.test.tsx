@@ -41,8 +41,6 @@ const mockUseSearchApiKey = useSearchApiKey as jest.Mock;
 const mockOpenWiredConnectionDetails = openWiredConnectionDetails as jest.Mock;
 
 describe('Connection details block', () => {
-  beforeAll(() => (window.innerWidth = 1280));
-  afterAll(() => (window.innerWidth = 1024));
   it('should render all elements correctly when all permissions are present', () => {
     const { getByTestId } = render(<ConnectToElasticsearch />, { wrapper: Wrapper });
 

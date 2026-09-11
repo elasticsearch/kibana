@@ -28,60 +28,46 @@ exports[`ManageData hide dev tools and stack management links if unavailable 1`]
     </EuiFlexItem>
   </EuiFlexGroup>
   <EuiSpacer />
-  <EuiFlexGroup>
-    <EuiFlexItem
-      css="unknown styles"
+  <div
+    css="unknown styles"
+  >
+    <Synopsis
+      description="Control who has access and what tasks they can perform."
+      iconType="securityApp"
+      id="security"
       key="security"
-    >
-      <Synopsis
-        description="Control who has access and what tasks they can perform."
-        iconType="securityApp"
-        id="security"
-        onClick={[Function]}
-        title="Protect your data"
-        url="path-to-security-roles"
-      />
-    </EuiFlexItem>
-    <EuiFlexItem
-      css="unknown styles"
+      onClick={[Function]}
+      title="Protect your data"
+      url="path-to-security-roles"
+    />
+    <Synopsis
+      description="Track the real-time health and performance of your deployment."
+      iconType="monitoringApp"
+      id="monitoring"
       key="monitoring"
-    >
-      <Synopsis
-        description="Track the real-time health and performance of your deployment."
-        iconType="monitoringApp"
-        id="monitoring"
-        onClick={[Function]}
-        title="Monitor the stack"
-        url="path-to-monitoring"
-      />
-    </EuiFlexItem>
-    <EuiFlexItem
-      css="unknown styles"
+      onClick={[Function]}
+      title="Monitor the stack"
+      url="path-to-monitoring"
+    />
+    <Synopsis
+      description="Save snapshots to a backup repository, and restore to recover index and cluster state."
+      iconType="storage"
+      id="snapshot_restore"
       key="snapshot_restore"
-    >
-      <Synopsis
-        description="Save snapshots to a backup repository, and restore to recover index and cluster state."
-        iconType="storage"
-        id="snapshot_restore"
-        onClick={[Function]}
-        title="Store & recover backups"
-        url="path-to-snapshot-restore"
-      />
-    </EuiFlexItem>
-    <EuiFlexItem
-      css="unknown styles"
+      onClick={[Function]}
+      title="Store & recover backups"
+      url="path-to-snapshot-restore"
+    />
+    <Synopsis
+      description="Define lifecycle policies to automatically perform operations as an index ages."
+      iconType="indexSettings"
+      id="index_lifecycle_management"
       key="index_lifecycle_management"
-    >
-      <Synopsis
-        description="Define lifecycle policies to automatically perform operations as an index ages."
-        iconType="indexSettings"
-        id="index_lifecycle_management"
-        onClick={[Function]}
-        title="Manage index lifecycles"
-        url="path-to-index-lifecycle-management"
-      />
-    </EuiFlexItem>
-  </EuiFlexGroup>
+      onClick={[Function]}
+      title="Manage index lifecycles"
+      url="path-to-index-lifecycle-management"
+    />
+  </div>
 </EuiPageTemplate.Section>
 `;
 
@@ -138,60 +124,46 @@ exports[`ManageData render 1`] = `
     </EuiFlexItem>
   </EuiFlexGroup>
   <EuiSpacer />
-  <EuiFlexGroup>
-    <EuiFlexItem
-      css="unknown styles"
+  <div
+    css="unknown styles"
+  >
+    <Synopsis
+      description="Control who has access and what tasks they can perform."
+      iconType="securityApp"
+      id="security"
       key="security"
-    >
-      <Synopsis
-        description="Control who has access and what tasks they can perform."
-        iconType="securityApp"
-        id="security"
-        onClick={[Function]}
-        title="Protect your data"
-        url="path-to-security-roles"
-      />
-    </EuiFlexItem>
-    <EuiFlexItem
-      css="unknown styles"
+      onClick={[Function]}
+      title="Protect your data"
+      url="path-to-security-roles"
+    />
+    <Synopsis
+      description="Track the real-time health and performance of your deployment."
+      iconType="monitoringApp"
+      id="monitoring"
       key="monitoring"
-    >
-      <Synopsis
-        description="Track the real-time health and performance of your deployment."
-        iconType="monitoringApp"
-        id="monitoring"
-        onClick={[Function]}
-        title="Monitor the stack"
-        url="path-to-monitoring"
-      />
-    </EuiFlexItem>
-    <EuiFlexItem
-      css="unknown styles"
+      onClick={[Function]}
+      title="Monitor the stack"
+      url="path-to-monitoring"
+    />
+    <Synopsis
+      description="Save snapshots to a backup repository, and restore to recover index and cluster state."
+      iconType="storage"
+      id="snapshot_restore"
       key="snapshot_restore"
-    >
-      <Synopsis
-        description="Save snapshots to a backup repository, and restore to recover index and cluster state."
-        iconType="storage"
-        id="snapshot_restore"
-        onClick={[Function]}
-        title="Store & recover backups"
-        url="path-to-snapshot-restore"
-      />
-    </EuiFlexItem>
-    <EuiFlexItem
-      css="unknown styles"
+      onClick={[Function]}
+      title="Store & recover backups"
+      url="path-to-snapshot-restore"
+    />
+    <Synopsis
+      description="Define lifecycle policies to automatically perform operations as an index ages."
+      iconType="indexSettings"
+      id="index_lifecycle_management"
       key="index_lifecycle_management"
-    >
-      <Synopsis
-        description="Define lifecycle policies to automatically perform operations as an index ages."
-        iconType="indexSettings"
-        id="index_lifecycle_management"
-        onClick={[Function]}
-        title="Manage index lifecycles"
-        url="path-to-index-lifecycle-management"
-      />
-    </EuiFlexItem>
-  </EuiFlexGroup>
+      onClick={[Function]}
+      title="Manage index lifecycles"
+      url="path-to-index-lifecycle-management"
+    />
+  </div>
 </EuiPageTemplate.Section>
 `;
 

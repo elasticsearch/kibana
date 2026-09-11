@@ -12,6 +12,7 @@
   ],
   "kbn_references": [
     "@kbn/core",
+    "@kbn/css-utils",
     "@kbn/react-kibana-context-render",
     "@kbn/kibana-react-plugin",
     "@kbn/i18n-react",
@@ -47,6 +48,7 @@
     "@kbn/agent-builder-browser",
     "@kbn/workflows-ui",
     "@kbn/scout-search",
+    "@kbn/announcement-banner",
   ],
   "exclude": [
     "target/**/*"

@@ -9,9 +9,15 @@
 
 import type { FC, MouseEvent } from 'react';
 import React from 'react';
-import { css } from '@emotion/react';
-import type { UseEuiTheme } from '@elastic/eui';
-import { EuiButtonEmpty, EuiFlexGroup, EuiSpacer, EuiTitle, EuiFlexItem } from '@elastic/eui';
+import {
+  EuiButtonEmpty,
+  EuiFlexGroup,
+  EuiSpacer,
+  EuiTitle,
+  EuiFlexItem,
+  useEuiTheme,
+} from '@elastic/eui';
+import { layoutAutoGridCss } from '@kbn/css-utils/public/layout_css';
 import { KibanaPageTemplate } from '@kbn/shared-ux-page-kibana-template';
 import { FormattedMessage } from '@kbn/i18n-react';
 import { METRIC_TYPE } from '@kbn/analytics';
@@ -32,6 +38,7 @@ interface Props {
 
 export const ManageData: FC<Props> = ({ addBasePath, application, features }) => {
   const { share, trackUiMetric } = getServices();
+  const { euiTheme } = useEuiTheme();
 
   const consoleHref = share.url.locators.get('CONSOLE_APP_LOCATOR')?.useUrl({});
   const managementHref = share.url.locators
@@ -104,32 +111,22 @@ export const ManageData: FC<Props> = ({ addBasePath, application, features }) =>
 
         <EuiSpacer />
 
-        <EuiFlexGroup>
+        <div css={layoutAutoGridCss({ minItemWidth: '15rem', gap: euiTheme.size.l })}>
           {features.map((feature) => (
-            <EuiFlexItem
-              css={({ euiTheme }: UseEuiTheme) =>
-                css({
-                  [`@media (min-width: ${euiTheme.breakpoint.l}px)`]: {
-                    maxWidth: `calc(33.33% - ${euiTheme.size.l})`,
-                  },
-                })
-              }
+            <Synopsis
+              description={feature.description}
+              iconType={feature.icon}
+              id={feature.id}
               key={feature.id}
-            >
-              <Synopsis
-                description={feature.description}
-                iconType={feature.icon}
-                id={feature.id}
-                onClick={(event: MouseEvent) => {
-                  trackUiMetric(METRIC_TYPE.CLICK, `manage_data_card_${feature.id}`);
-                  createAppNavigationHandler(feature.path)(event);
-                }}
-                title={feature.title}
-                url={addBasePath(feature.path)}
-              />
-            </EuiFlexItem>
+              onClick={(event: MouseEvent) => {
+                trackUiMetric(METRIC_TYPE.CLICK, `manage_data_card_${feature.id}`);
+                createAppNavigationHandler(feature.path)(event);
+              }}
+              title={feature.title}
+              url={addBasePath(feature.path)}
+            />
           ))}
-        </EuiFlexGroup>
+        </div>
       </KibanaPageTemplate.Section>
     );
   } else {

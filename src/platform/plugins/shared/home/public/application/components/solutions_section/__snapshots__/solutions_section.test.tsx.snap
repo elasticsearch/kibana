@@ -16,7 +16,9 @@ exports[`SolutionsSection renders a single solution 1`] = `
       />
     </h2>
   </EuiScreenReaderOnly>
-  <EuiFlexGroup>
+  <div
+    css="unknown styles"
+  >
     <SolutionPanel
       addBasePath={[Function]}
       key="kibana"
@@ -31,7 +33,7 @@ exports[`SolutionsSection renders a single solution 1`] = `
         }
       }
     />
-  </EuiFlexGroup>
+  </div>
 </EuiPageTemplate.Section>
 `;
 
@@ -51,7 +53,9 @@ exports[`SolutionsSection renders multiple solutions 1`] = `
       />
     </h2>
   </EuiScreenReaderOnly>
-  <EuiFlexGroup>
+  <div
+    css="unknown styles"
+  >
     <SolutionPanel
       addBasePath={[Function]}
       key="kibana"
@@ -108,7 +112,7 @@ exports[`SolutionsSection renders multiple solutions 1`] = `
         }
       }
     />
-  </EuiFlexGroup>
+  </div>
 </EuiPageTemplate.Section>
 `;
 

@@ -49,6 +49,7 @@ export const SearchHomepageBody = () => {
         </EuiFlexItem>
         <EuiFlexItem>
           <BodyLinks />
+          <EuiSpacer size="xl" />
         </EuiFlexItem>
       </EuiFlexGroup>
     </KibanaPageTemplate.Section>

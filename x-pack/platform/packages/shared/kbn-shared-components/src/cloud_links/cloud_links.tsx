@@ -83,7 +83,7 @@ export const CloudLinks = ({ cloud, CloudBaseOnly = false }: CloudLinksProps) =>
   }
 
   return (
-    <EuiFlexGroup gutterSize="m" alignItems="center" css={CloudLinksPillStyle}>
+    <EuiFlexGroup gutterSize="m" alignItems="center" responsive={false} css={CloudLinksPillStyle}>
       <EuiFlexItem grow={false}>
         <EuiLink
           href={cloud.baseUrl}

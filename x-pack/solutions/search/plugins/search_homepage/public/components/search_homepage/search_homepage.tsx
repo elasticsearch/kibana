@@ -6,7 +6,8 @@
  */
 
 import React, { useEffect, useMemo } from 'react';
-import { EuiFlexGroup, EuiFlexItem, EuiHorizontalRule, EuiShowFor, EuiTitle } from '@elastic/eui';
+import { EuiHorizontalRule, EuiTitle, useEuiTheme } from '@elastic/eui';
+import { layoutFillRowCss, layoutRowCss } from '@kbn/css-utils/public/layout_css';
 import { i18n } from '@kbn/i18n';
 import { KibanaPageTemplate } from '@kbn/shared-ux-page-kibana-template';
 import { KibanaVersionBadge } from '@kbn/search-shared-ui';
@@ -26,6 +27,7 @@ export const SearchHomepagePage = () => {
   } = useKibana();
 
   const { user } = useAuthenticatedUser();
+  const { euiTheme } = useEuiTheme();
 
   useEffect(() => {
     if (searchNavigation) {
@@ -51,72 +53,60 @@ export const SearchHomepagePage = () => {
       solutionNav={searchNavigation?.useClassicNavigation(history)}
     >
       <KibanaPageTemplate.Section restrictWidth={true} grow={false}>
-        <EuiFlexGroup justifyContent="spaceBetween" alignItems="center">
-          <EuiFlexItem>
-            <EuiFlexGroup
-              responsive={false}
-              alignItems="center"
-              gutterSize="s"
-              data-test-subj="searchHomepageHeaderLeftsideGroup"
-            >
-              <EuiFlexItem grow={false}>
-                <EuiTitle size="s">
-                  <h3>
-                    {user?.full_name
-                      ? i18n.translate('xpack.searchHomepage.welcome.title', {
-                          defaultMessage: 'Welcome, {username}',
-                          values: { username: user.full_name },
-                        })
-                      : i18n.translate('xpack.searchHomepage.welcome.title.default', {
-                          defaultMessage: 'Welcome',
-                        })}
-                  </h3>
-                </EuiTitle>
-              </EuiFlexItem>
-              <EuiFlexItem grow={false}>
-                {cloud?.isInTrial() ? (
-                  <TrialUsageBadge cloud={cloud} />
-                ) : !cloud?.isCloudEnabled ? (
-                  <LicenseBadge />
-                ) : null}
-              </EuiFlexItem>
-              <EuiShowFor sizes={['m', 'l', 'xl']}>
-                <EuiFlexItem grow={false}>
-                  <span css={verticalSeparatorStyle} />
-                </EuiFlexItem>
-                <EuiFlexItem grow={false}>
-                  <CloudLinks cloud={cloud} />
-                </EuiFlexItem>
-              </EuiShowFor>
-            </EuiFlexGroup>
-          </EuiFlexItem>
-          <EuiFlexItem grow={false}>
-            <ConnectToElasticsearch />
-          </EuiFlexItem>
-        </EuiFlexGroup>
+        <div css={layoutRowCss({ gap: euiTheme.size.m, justify: 'spaceBetween' })}>
+          <div
+            css={layoutRowCss({ gap: euiTheme.size.s, shrinkItems: false })}
+            data-test-subj="searchHomepageHeaderLeftsideGroup"
+          >
+            <EuiTitle size="s">
+              <h3>
+                {user?.full_name
+                  ? i18n.translate('xpack.searchHomepage.welcome.title', {
+                      defaultMessage: 'Welcome, {username}',
+                      values: { username: user.full_name },
+                    })
+                  : i18n.translate('xpack.searchHomepage.welcome.title.default', {
+                      defaultMessage: 'Welcome',
+                    })}
+              </h3>
+            </EuiTitle>
+            {cloud?.isInTrial() ? (
+              <TrialUsageBadge cloud={cloud} />
+            ) : !cloud?.isCloudEnabled ? (
+              <LicenseBadge />
+            ) : null}
+            {cloud?.isCloudEnabled && cloud?.baseUrl ? (
+              // Grouped so the separator wraps with the pill instead of being orphaned
+              // at the end of the previous line.
+              <div css={layoutRowCss({ gap: euiTheme.size.s, shrinkItems: false })}>
+                <span css={verticalSeparatorStyle} />
+                <CloudLinks cloud={cloud} />
+              </div>
+            ) : null}
+          </div>
+          <ConnectToElasticsearch />
+        </div>
 
         <EuiHorizontalRule margin="s" />
-        <EuiFlexGroup>
+        <div css={layoutFillRowCss({ gap: euiTheme.size.s })}>
           <BasicMetricBadges />
-          <EuiFlexItem grow={false}>
-            <KibanaVersionBadge
-              docLink={
-                cloud?.isServerlessEnabled
-                  ? docLinks.serverlessReleaseNotes
-                  : cloud?.isCloudEnabled
-                  ? docLinks.hostedCloudReleaseNotes
-                  : docLinks.releaseNotes
-              }
-              kibanaVersion={
-                !cloud?.isServerlessEnabled
-                  ? `v${kibanaVersion}`
-                  : i18n.translate('xpack.searchHomepage.versionLabel.changelog', {
-                      defaultMessage: 'Changelog',
-                    })
-              }
-            />
-          </EuiFlexItem>
-        </EuiFlexGroup>
+          <KibanaVersionBadge
+            docLink={
+              cloud?.isServerlessEnabled
+                ? docLinks.serverlessReleaseNotes
+                : cloud?.isCloudEnabled
+                ? docLinks.hostedCloudReleaseNotes
+                : docLinks.releaseNotes
+            }
+            kibanaVersion={
+              !cloud?.isServerlessEnabled
+                ? `v${kibanaVersion}`
+                : i18n.translate('xpack.searchHomepage.versionLabel.changelog', {
+                    defaultMessage: 'Changelog',
+                  })
+            }
+          />
+        </div>
       </KibanaPageTemplate.Section>
       <SearchHomepageBody />
       {embeddableConsole}

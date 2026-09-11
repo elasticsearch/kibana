@@ -6,10 +6,10 @@ exports[`AddData render 1`] = `
   bottomBorder={true}
   paddingSize="xl"
 >
-  <EuiFlexGroup
-    alignItems="flexEnd"
+  <div
+    css="unknown styles"
   >
-    <EuiFlexItem>
+    <div>
       <EuiTitle
         size="s"
       >
@@ -32,57 +32,44 @@ exports[`AddData render 1`] = `
         </p>
       </EuiText>
       <EuiSpacer />
-      <EuiFlexGroup
-        gutterSize="m"
+      <div
+        css="unknown styles"
       >
-        <EuiFlexItem
-          grow={false}
+        <EuiButton
+          data-test-subj="homeAddData"
+          fill={false}
+          href="/app/integrations/browse"
+          iconType="plusCircle"
+          onClick={[Function]}
         >
-          <EuiButton
-            data-test-subj="homeAddData"
-            fill={false}
-            fullWidth={true}
-            href="/app/integrations/browse"
-            iconType="plusCircle"
-            onClick={[Function]}
-          >
-            <MemoizedFormattedMessage
-              defaultMessage="Add integrations"
-              id="home.addData.addDataButtonLabel"
-            />
-          </EuiButton>
-        </EuiFlexItem>
-        <EuiFlexItem
-          grow={false}
+          <MemoizedFormattedMessage
+            defaultMessage="Add integrations"
+            id="home.addData.addDataButtonLabel"
+          />
+        </EuiButton>
+        <EuiButtonEmpty
+          data-test-subj="addSampleData"
+          href="#/tutorial_directory/sampleData"
+          iconType="documents"
         >
-          <EuiButtonEmpty
-            data-test-subj="addSampleData"
-            href="#/tutorial_directory/sampleData"
-            iconType="documents"
-          >
-            <MemoizedFormattedMessage
-              defaultMessage="Try sample data"
-              id="home.addData.sampleDataButtonLabel"
-            />
-          </EuiButtonEmpty>
-        </EuiFlexItem>
-        <EuiFlexItem
-          grow={false}
+          <MemoizedFormattedMessage
+            defaultMessage="Try sample data"
+            id="home.addData.sampleDataButtonLabel"
+          />
+        </EuiButtonEmpty>
+        <EuiButtonEmpty
+          data-test-subj="uploadFile"
+          href="#/tutorial_directory/fileDataViz"
+          iconType="download"
         >
-          <EuiButtonEmpty
-            data-test-subj="uploadFile"
-            href="#/tutorial_directory/fileDataViz"
-            iconType="download"
-          >
-            <MemoizedFormattedMessage
-              defaultMessage="Upload a file"
-              id="home.addData.uploadFileButtonLabel"
-            />
-          </EuiButtonEmpty>
-        </EuiFlexItem>
-      </EuiFlexGroup>
-    </EuiFlexItem>
-    <EuiFlexItem>
+          <MemoizedFormattedMessage
+            defaultMessage="Upload a file"
+            id="home.addData.uploadFileButtonLabel"
+          />
+        </EuiButtonEmpty>
+      </div>
+    </div>
+    <div>
       <MoveData
         addBasePath={
           [MockFunction] {
@@ -114,7 +101,7 @@ exports[`AddData render 1`] = `
           }
         }
       />
-    </EuiFlexItem>
-  </EuiFlexGroup>
+    </div>
+  </div>
 </EuiPageTemplate.Section>
 `;
