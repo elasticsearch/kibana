@@ -2764,11 +2764,11 @@ export const labels = {
       defaultMessage: 'Not set',
     }),
     aiIndicesTitle: i18n.translate('xpack.agentBuilder.agentOverview.aiIndicesTitle', {
-      defaultMessage: 'AI indices',
+      defaultMessage: 'AI Indices',
     }),
     aiIndicesTooltip: i18n.translate('xpack.agentBuilder.agentOverview.aiIndicesTooltip', {
       defaultMessage:
-        'The AI indices this agent retrieves from. Default indices apply to every agent and are always included.',
+        'The AI Indices this agent retrieves from. Default indices apply to every agent and are always included.',
     }),
     preExecutionWorkflowTitle: i18n.translate(
       'xpack.agentBuilder.overview.customizations.preExecutionWorkflowTitle',
@@ -2968,11 +2968,11 @@ export const labels = {
   },
   aiIndices: {
     sectionTitle: i18n.translate('xpack.agentBuilder.aiIndices.sectionTitle', {
-      defaultMessage: 'AI indices',
+      defaultMessage: 'AI Indices',
     }),
     sectionDescription: i18n.translate('xpack.agentBuilder.aiIndices.sectionDescription', {
       defaultMessage:
-        'Choose which AI indices this agent retrieves from. Default indices are always included and cannot be removed.',
+        'Choose which AI Indices this agent retrieves from. Default indices are always included and cannot be removed.',
     }),
     notAffectedByElasticCapabilities: i18n.translate(
       'xpack.agentBuilder.aiIndices.notAffectedByElasticCapabilities',
@@ -2997,23 +2997,28 @@ export const labels = {
     additionalIndicesPlaceholder: i18n.translate(
       'xpack.agentBuilder.aiIndices.additionalIndicesPlaceholder',
       {
-        defaultMessage: 'Select AI indices',
+        defaultMessage: 'Select AI Indices',
       }
     ),
     optionalLabel: i18n.translate('xpack.agentBuilder.aiIndices.optionalLabel', {
       defaultMessage: 'Optional',
     }),
+    unavailableIndicesHelpText: (ids: string) =>
+      i18n.translate('xpack.agentBuilder.aiIndices.unavailableIndicesHelpText', {
+        defaultMessage: 'Not available to you in this space: {ids}',
+        values: { ids },
+      }),
     loadErrorMessage: i18n.translate('xpack.agentBuilder.aiIndices.loadErrorMessage', {
-      defaultMessage: 'Failed to fetch AI indices',
+      defaultMessage: 'Failed to fetch AI Indices',
     }),
     loadInheritedErrorMessage: i18n.translate(
       'xpack.agentBuilder.aiIndices.loadInheritedErrorMessage',
       {
-        defaultMessage: 'Failed to fetch default AI indices',
+        defaultMessage: 'Failed to fetch default AI Indices',
       }
     ),
     warningsTitle: i18n.translate('xpack.agentBuilder.aiIndices.warningsTitle', {
-      defaultMessage: 'Some AI index details could not be loaded',
+      defaultMessage: 'Some AI Index details could not be loaded',
     }),
     warningMessage: ({ message, agentType }: { message: string; agentType?: string }) =>
       agentType
@@ -3023,7 +3028,7 @@ export const labels = {
           })
         : message,
     columnTitle: i18n.translate('xpack.agentBuilder.aiIndices.columnTitle', {
-      defaultMessage: 'AI indices',
+      defaultMessage: 'AI Indices',
     }),
   },
 };

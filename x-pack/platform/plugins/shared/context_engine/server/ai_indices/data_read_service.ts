@@ -5,23 +5,35 @@
  * 2.0.
  */
 
-import type { ElasticsearchClient } from '@kbn/core/server';
+import type { ElasticsearchClient, Logger } from '@kbn/core/server';
 import type { AuditLogger } from '@kbn/core-security-server';
 import type {
+  AiIndexHttpItem,
   DescribeAiIndexResponse,
   QueryAiIndicesRequest,
   QueryAiIndicesResponse,
 } from '../../common/http_api/ai_indices';
 import { AiIndexAuditAction, aiIndexAuditEvent } from '../audit/audit_events';
 import { describeAiIndex } from './describe';
+import { resolveAiIndexVisibility, type AiIndexVisibility } from './list_visible';
 import { queryAiIndices } from './query';
 import type { AiIndexService } from './service';
+
+/** `empty` is listed so a freshly registered index still appears. */
+const LISTED_VISIBILITIES: ReadonlySet<AiIndexVisibility> = new Set(['visible', 'empty']);
 
 /** Caller-scoped AI-index reads. One instance per request; shared by HTTP routes and agent tools. */
 export interface AiIndexDataReadServiceApi {
   query(request: QueryAiIndicesRequest): Promise<QueryAiIndicesResponse>;
   /** Throws `AiIndexNotFoundError` for an unknown id. */
   describe(id: string): Promise<DescribeAiIndexResponse>;
+  /**
+   * The AI Indices the caller can use in this space: those that are empty, or hold at least one
+   * document the caller can see here. Left out when the caller cannot read the backing index,
+   * when every document belongs to another space, or when the check itself failed. `ids` limits
+   * which registry entries are checked.
+   */
+  listVisible(ids?: string[]): Promise<AiIndexHttpItem[]>;
 }
 
 export class AiIndexDataReadService implements AiIndexDataReadServiceApi {
@@ -30,7 +42,8 @@ export class AiIndexDataReadService implements AiIndexDataReadServiceApi {
       esClient: ElasticsearchClient;
       spaceId: string;
       auditLogger: AuditLogger;
-      aiIndexService: Pick<AiIndexService, 'get'>;
+      aiIndexService: Pick<AiIndexService, 'get' | 'list'>;
+      logger: Logger;
     }
   ) {}
 
@@ -55,6 +68,23 @@ export class AiIndexDataReadService implements AiIndexDataReadServiceApi {
       return { response };
     } catch (error) {
       auditLogger.log(aiIndexAuditEvent({ action: AiIndexAuditAction.DESCRIBE, id, error }));
+      throw error;
+    }
+  }
+
+  async listVisible(ids?: string[]): Promise<AiIndexHttpItem[]> {
+    const { esClient, spaceId, auditLogger, aiIndexService, logger } = this.deps;
+    try {
+      const registry = await aiIndexService.list();
+      const requested = ids && new Set(ids);
+      const aiIndices = requested ? registry.filter(({ id }) => requested.has(id)) : registry;
+      const results = await resolveAiIndexVisibility({ esClient, aiIndices, spaceId, logger });
+      auditLogger.log(aiIndexAuditEvent({ action: AiIndexAuditAction.LIST }));
+      return results
+        .filter(({ visibility }) => LISTED_VISIBILITIES.has(visibility))
+        .map(({ aiIndex }) => aiIndex);
+    } catch (error) {
+      auditLogger.log(aiIndexAuditEvent({ action: AiIndexAuditAction.LIST, error }));
       throw error;
     }
   }

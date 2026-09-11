@@ -222,6 +222,7 @@ export class ContextEnginePlugin
         spaceId: resolveSpaceId(startDeps.spaces, request),
         auditLogger: coreStart.security.audit.asScoped(request),
         aiIndexService,
+        logger: this.logger,
       });
     const createAiIndexDataReadService = this.createAiIndexDataReadService;
 

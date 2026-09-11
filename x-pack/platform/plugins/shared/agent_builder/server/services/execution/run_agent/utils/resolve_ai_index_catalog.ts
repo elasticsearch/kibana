@@ -11,9 +11,18 @@ import type { AiIndexDetail, AiIndexResolver } from '@kbn/agent-builder-server';
 import { defaultAiIndices } from '../../../agents/default_ai_indices';
 import type { AiIndexCatalogEntry } from '../types';
 
+/** Used when no resolver is registered or it fails. */
+const fallbackEntry = (id: string): AiIndexCatalogEntry => {
+  if (!Object.hasOwn(defaultAiIndices, id)) {
+    return { id };
+  }
+  const { esqlTarget, description } = defaultAiIndices[id];
+  return { id, esqlTarget, description };
+};
+
 /**
- * Builds the prompt's AI index catalog. Defaults bypass the resolver, so they survive an
- * unreachable or unreadable Context Engine; a resolver failure degrades to bare ids.
+ * Builds the prompt's AI Index catalog. Defaults go through the resolver too, so the prompt agrees
+ * with what the caller can list; ids the resolver omits are rendered bare.
  */
 export const resolveAiIndexCatalog = async ({
   aiIndices,
@@ -27,32 +36,26 @@ export const resolveAiIndexCatalog = async ({
   logger?: Logger;
 }): Promise<AiIndexCatalogEntry[]> => {
   const ids = [...new Set(aiIndices)];
-  const nonDefaultIds = ids.filter((id) => !Object.hasOwn(defaultAiIndices, id));
-
-  let resolvedById = new Map<string, AiIndexDetail>();
-  if (resolver && nonDefaultIds.length > 0) {
-    try {
-      const details = await resolver({ ids: nonDefaultIds, request });
-      resolvedById = new Map(details.map((detail) => [detail.id, detail]));
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      logger?.warn(`Failed to resolve AI index details, rendering ids only: ${message}`);
-    }
+  if (!resolver || ids.length === 0) {
+    return ids.map(fallbackEntry);
   }
 
+  let details: AiIndexDetail[];
+  try {
+    details = await resolver({ ids, request });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    logger?.warn(
+      `Failed to resolve AI index details, falling back to static defaults and bare ids: ${message}`
+    );
+    return ids.map(fallbackEntry);
+  }
+
+  const resolvedById = new Map(details.map((detail) => [detail.id, detail]));
   return ids.map((id) => {
-    if (Object.hasOwn(defaultAiIndices, id)) {
-      const defaultEntry = defaultAiIndices[id];
-      return {
-        id,
-        esqlTarget: defaultEntry.esqlTarget,
-        description: defaultEntry.description,
-      };
-    }
     const resolved = resolvedById.get(id);
-    if (resolved) {
-      return { id, esqlTarget: resolved.esqlTarget, description: resolved.description };
-    }
-    return { id };
+    return resolved
+      ? { id, esqlTarget: resolved.esqlTarget, description: resolved.description }
+      : { id };
   });
 };

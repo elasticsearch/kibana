@@ -14,11 +14,11 @@ import { resolveAiIndexCatalog } from './resolve_ai_index_catalog';
 const request = {} as KibanaRequest;
 
 describe('resolveAiIndexCatalog', () => {
-  it('returns an empty catalog for an agent with no AI indices', async () => {
+  it('returns an empty catalog for an agent with no AI Indices', async () => {
     expect(await resolveAiIndexCatalog({ aiIndices: [], request })).toEqual([]);
   });
 
-  it('describes default AI indices from the static map', async () => {
+  it('describes default AI Indices from the static map when no resolver is registered', async () => {
     const catalog = await resolveAiIndexCatalog({
       aiIndices: [agentBuilderDefaultAiIndexId],
       request,
@@ -32,7 +32,7 @@ describe('resolveAiIndexCatalog', () => {
     });
   });
 
-  it('describes custom AI indices through the resolver', async () => {
+  it('describes custom AI Indices through the resolver', async () => {
     const resolver = jest
       .fn()
       .mockResolvedValue([
@@ -46,7 +46,27 @@ describe('resolveAiIndexCatalog', () => {
     ]);
   });
 
-  it('prefers the static map over the resolver for default ids', async () => {
+  it('resolves default ids through the resolver, so the prompt agrees with the list', async () => {
+    const resolver = jest.fn().mockResolvedValue([
+      {
+        id: agentBuilderDefaultAiIndexId,
+        esqlTarget: smlIndexName,
+        description: 'From registry',
+      },
+    ]);
+
+    const catalog = await resolveAiIndexCatalog({
+      aiIndices: [agentBuilderDefaultAiIndexId],
+      request,
+      resolver,
+    });
+
+    expect(catalog).toEqual([
+      { id: agentBuilderDefaultAiIndexId, esqlTarget: smlIndexName, description: 'From registry' },
+    ]);
+  });
+
+  it('renders a default the resolver omits bare, dropping it from the prompt', async () => {
     const resolver = jest.fn().mockResolvedValue([]);
 
     const catalog = await resolveAiIndexCatalog({
@@ -55,11 +75,10 @@ describe('resolveAiIndexCatalog', () => {
       resolver,
     });
 
-    expect(resolver).not.toHaveBeenCalled();
-    expect(catalog[0].esqlTarget).toBe(smlIndexName);
+    expect(catalog).toEqual([{ id: agentBuilderDefaultAiIndexId }]);
   });
 
-  it('calls the resolver once, with only the non-default ids and the request', async () => {
+  it('calls the resolver once, with every id and the request', async () => {
     const resolver = jest.fn().mockResolvedValue([]);
 
     await resolveAiIndexCatalog({
@@ -69,7 +88,17 @@ describe('resolveAiIndexCatalog', () => {
     });
 
     expect(resolver).toHaveBeenCalledTimes(1);
-    expect(resolver).toHaveBeenCalledWith({ ids: ['custom-a', 'custom-b'], request });
+    expect(resolver).toHaveBeenCalledWith({
+      ids: [agentBuilderDefaultAiIndexId, 'custom-a', 'custom-b'],
+      request,
+    });
+  });
+
+  it('does not call the resolver for an agent with no AI Indices', async () => {
+    const resolver = jest.fn();
+
+    expect(await resolveAiIndexCatalog({ aiIndices: [], request, resolver })).toEqual([]);
+    expect(resolver).not.toHaveBeenCalled();
   });
 
   it('degrades ids the resolver does not know to entries with no ES|QL target', async () => {
@@ -96,7 +125,7 @@ describe('resolveAiIndexCatalog', () => {
     ]);
   });
 
-  it('does not treat inherited object members as default AI indices', async () => {
+  it('does not treat inherited object members as default AI Indices', async () => {
     const resolver = jest.fn().mockResolvedValue([]);
 
     const catalog = await resolveAiIndexCatalog({
@@ -128,7 +157,7 @@ describe('resolveAiIndexCatalog', () => {
     ]);
   });
 
-  it('swallows resolver failures, degrading to entries with no ES|QL target', async () => {
+  it('falls back to the static default and bare ids when the resolver fails', async () => {
     const resolver = jest.fn().mockRejectedValue(new Error('boom'));
     const logger = { warn: jest.fn() } as unknown as Logger;
 

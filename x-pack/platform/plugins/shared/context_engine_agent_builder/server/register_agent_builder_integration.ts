@@ -33,12 +33,11 @@ export const registerContextEngineAgentBuilderIntegration = ({
   registerAttachmentTypes(agentBuilder);
 
   agentBuilder.agents.registerAiIndexResolver(async ({ ids, request }) => {
-    const [, startDeps] = await coreSetup.getStartServices();
+    const [coreStart, startDeps] = await coreSetup.getStartServices();
     const { contextEngine, security } = startDeps;
 
-    // list() reads through the internal user, bypassing CE's API-layer authz, so re-apply CE's
-    // read privilege for the requesting user. One space-aware check covers every id, matching
-    // CE's own list route: the registry has no per-index scoping.
+    // Registry reads use the internal user, so re-check CE's read privilege for the caller. One
+    // space-aware check covers every id, as in CE's list route.
     const checkPrivileges = security.authz.checkPrivilegesDynamicallyWithRequest(request);
     const { hasAllRequested } = await checkPrivileges({
       kibana: [security.authz.actions.api.get(apiPrivileges.readContextEngine)],
@@ -47,16 +46,18 @@ export const registerContextEngineAgentBuilderIntegration = ({
       return [];
     }
 
-    const aiIndexService = contextEngine.getAiIndexService();
-    const requestedIds = new Set(ids);
-    const aiIndices = await aiIndexService.list();
-    return aiIndices
-      .filter((aiIndex) => requestedIds.has(aiIndex.id))
-      .map((aiIndex) => ({
-        id: aiIndex.id,
-        esqlTarget: aiIndex.dest.value,
-        description: aiIndex.description,
-      }));
+    // Same visibility rule as the list route; only requested ids are probed.
+    const aiIndices = await contextEngine
+      .getAiIndexDataReadService({
+        esClient: coreStart.elasticsearch.client.asScoped(request).asCurrentUser,
+        request,
+      })
+      .listVisible(ids);
+    return aiIndices.map((aiIndex) => ({
+      id: aiIndex.id,
+      esqlTarget: aiIndex.dest.value,
+      description: aiIndex.description,
+    }));
   });
 
   registerAgentBuilderTools({

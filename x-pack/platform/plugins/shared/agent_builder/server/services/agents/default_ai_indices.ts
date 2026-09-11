@@ -14,11 +14,10 @@ export interface DefaultAiIndex {
 }
 
 /**
- * The AI indices every chat agent gets by default, keyed by Context Engine id.
+ * The AI Indices every chat agent gets by default, keyed by Context Engine id.
  *
- * Single source of truth: the chat agent type's base configuration is derived from this map's
- * keys, and the system prompt's AI-index catalog is rendered from its values. Adding or removing
- * a default here updates both together, so the configured list and the prompt can never drift.
+ * Chat agent base configuration derives from these keys. Prompt catalog resolves defaults through
+ * Context Engine like any other id; these values are only a fallback when no resolver is available.
  */
 export const defaultAiIndices: Record<string, DefaultAiIndex> = {
   [agentBuilderDefaultAiIndexId]: {
