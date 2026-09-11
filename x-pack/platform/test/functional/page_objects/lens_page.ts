@@ -162,7 +162,9 @@ export function LensPageProvider({ getService, getPageObjects }: FtrProviderCont
       await comboBox.openOptionsList(target);
       const names = Array.isArray(name) ? name : [name];
       for (const option of names) {
-        await comboBox.setElement(target, option);
+        // Lens repaints combobox options as it recomputes field/operation compatibility;
+        // settle the list first so the option click isn't dropped mid-render.
+        await comboBox.setElement(target, option, { waitForOptionsToSettle: true });
       }
     },
 

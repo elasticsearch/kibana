@@ -146,8 +146,9 @@ export class ComboBoxService extends FtrService {
   public async setElement(
     comboBoxElement: WebElementWrapper,
     value: string,
-    options = { clickWithMouse: false }
+    options: { clickWithMouse?: boolean; waitForOptionsToSettle?: boolean } = {}
   ): Promise<void> {
+    const { clickWithMouse = false, waitForOptionsToSettle = false } = options;
     const trimmedValue = value.toLowerCase().trim();
     this.log.debug(`comboBox.setElement, value: ${trimmedValue}`);
     const isOptionSelected = await this.isOptionSelected(comboBoxElement, trimmedValue);
@@ -161,8 +162,49 @@ export class ComboBoxService extends FtrService {
     await this.setFilterValue(comboBoxElement, value);
     await this.openOptionsList(comboBoxElement);
 
-    await this.clickOption(options.clickWithMouse, trimmedValue);
+    if (waitForOptionsToSettle) {
+      await this.waitForOptionsListSettled();
+    }
+
+    await this.clickOption(clickWithMouse, trimmedValue);
     await this.closeOptionsList(comboBoxElement);
+  }
+
+  /**
+   * Waits for the open options list to stop re-rendering so a following single
+   * click is not dropped mid-render (e.g. Lens recomputing field compatibility
+   * repaints the list, silently swallowing an in-flight option click). Settles
+   * when the visible option set is unchanged across two reads; best-effort, so a
+   * list that never settles just falls back to the prior click-immediately behavior.
+   */
+  private async waitForOptionsListSettled(): Promise<void> {
+    let previous: string | undefined;
+    try {
+      await this.retry.waitForWithTimeout(
+        'combobox options list to settle before selecting an option',
+        5000,
+        async () => {
+          const isOpen = await this.testSubjects.exists('~comboBoxOptionsList', { timeout: 500 });
+          if (!isOpen) {
+            return true;
+          }
+          const optionEls = await this.find.allByCssSelector(
+            '.euiComboBoxOption',
+            this.WAIT_FOR_EXISTS_TIME
+          );
+          const current = (await Promise.all(optionEls.map((el) => el.getVisibleText()))).join(
+            '\n'
+          );
+          const settled = current.length > 0 && current === previous;
+          previous = current;
+          return settled;
+        }
+      );
+    } catch {
+      this.log.debug(
+        'comboBox.setElement: options list did not settle before selecting; proceeding with click'
+      );
+    }
   }
 
   /**
