@@ -43,6 +43,9 @@ const renderTable = (props: Partial<React.ComponentProps<typeof PreviewTable>> =
     </I18nProvider>
   );
 
+// EuiDataGrid's render cost is largely fixed and can exceed the default 5s budget under parallel CI load.
+jest.setTimeout(30_000);
+
 describe('PreviewTable — leading control column a11y', () => {
   it('exposes an accessible name for the row-selection column header by default', async () => {
     renderTable();
