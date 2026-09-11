@@ -10,8 +10,12 @@ import { render, screen } from '@testing-library/react';
 import { EuiProvider } from '@elastic/eui';
 import { APP_HEADER_TEST_SUBJECTS } from '@kbn/app-header';
 import { MockAppHeaderProvider } from '@kbn/app-header/mocks';
-import { SnapshotPage } from '.';
-import { inventoryTitle } from '../../../translations';
+import { MetricsExplorerPage } from '.';
+import { metricsExplorerTitle } from '../../../translations';
+
+jest.mock('@kbn/core/public', () => ({
+  APP_WRAPPER_CLASS: 'kbnAppWrapper',
+}));
 
 type MockFetchStatus = 'loading' | 'success' | 'failure' | 'not_initiated' | 'pending';
 
@@ -22,6 +26,10 @@ const mockFetcherState: { hasData: boolean; status: MockFetchStatus } = {
 
 jest.mock('@kbn/observability-shared-plugin/public', () => ({
   useTrackPageview: jest.fn(),
+}));
+
+jest.mock('@kbn/ebt-tools', () => ({
+  usePerformanceContext: () => ({ onPageReady: jest.fn() }),
 }));
 
 jest.mock('../../../hooks/use_metrics_breadcrumbs', () => ({
@@ -86,28 +94,48 @@ jest.mock('../../../components/shared/templates/infra_page_template', () => ({
   },
 }));
 
-jest.mock('./components/snapshot_container', () => ({
-  SnapshotContainer: () => <div data-test-subj="inventorySnapshotContainer" />,
+jest.mock('../../../containers/metrics_explorer/with_metrics_explorer_options_url_state', () => ({
+  WithMetricsExplorerOptionsUrlState: () => null,
 }));
 
-jest.mock('./hooks/use_waffle_time', () => ({
-  WaffleTimeProvider: ({ children }: { children: React.ReactNode }) => children,
+jest.mock('../../../hooks/use_metrics_explorer_views', () => ({
+  useMetricsExplorerViews: () => ({ currentView: { id: '0' } }),
 }));
 
-jest.mock('./hooks/use_waffle_filters', () => ({
-  WaffleFiltersProvider: ({ children }: { children: React.ReactNode }) => children,
+jest.mock('./hooks/use_metrics_explorer_options', () => ({
+  MetricsExplorerOptionsContainer: ({ children }: { children: React.ReactNode }) => children,
 }));
 
-jest.mock('./hooks/use_waffle_options', () => ({
-  WaffleOptionsProvider: ({ children }: { children: React.ReactNode }) => children,
+jest.mock('./hooks/use_metric_explorer_state', () => ({
+  useMetricsExplorerState: () => ({
+    isLoading: false,
+    error: null,
+    data: undefined,
+    timeRange: { from: 'now-1h', to: 'now', interval: '>=10s' },
+    options: { aggregation: 'avg', metrics: [] },
+    chartOptions: {},
+    setChartOptions: jest.fn(),
+    handleAggregationChange: jest.fn(),
+    handleMetricsChange: jest.fn(),
+    handleFilterQuerySubmit: jest.fn(),
+    handleGroupByChange: jest.fn(),
+    handleTimeChange: jest.fn(),
+    handleLoadMore: jest.fn(),
+    onViewStateChange: jest.fn(),
+    refresh: jest.fn(),
+  }),
 }));
 
-jest.mock('./hooks/use_inventory_views', () => ({
-  InventoryViewsProvider: ({ children }: { children: React.ReactNode }) => children,
+jest.mock('./components/toolbar', () => ({
+  MetricsExplorerToolbar: () => <div data-test-subj="metricsExplorerToolbar" />,
 }));
 
-jest.mock('./providers/inventory_timerange_metadata_provider', () => ({
-  InventoryTimeRangeMetadataProvider: ({ children }: { children: React.ReactNode }) => children,
+jest.mock('./components/charts', () => ({
+  MetricsExplorerCharts: () => <div data-test-subj="metricsExplorerCharts" />,
+}));
+
+jest.mock('./components/metrics_in_discover_callout', () => ({
+  MetricsInDiscoverCallout: () => null,
 }));
 
 jest.mock('../header/use_metrics_app_header_menu', () => ({
@@ -117,45 +145,47 @@ jest.mock('../header/use_metrics_app_header_menu', () => ({
   }),
 }));
 
-const renderSnapshotPage = () =>
+const renderMetricsExplorerPage = () =>
   render(
     <EuiProvider>
       <MockAppHeaderProvider>
-        <SnapshotPage />
+        <MetricsExplorerPage />
       </MockAppHeaderProvider>
     </EuiProvider>
   );
 
-describe('SnapshotPage', () => {
+describe('MetricsExplorerPage', () => {
   beforeEach(() => {
     mockFetcherState.hasData = true;
     mockFetcherState.status = 'success';
     lastInfraPageTemplateProps = {};
   });
 
-  it('renders AppHeader with the inventory title and no back control when metrics exist', async () => {
-    renderSnapshotPage();
+  it('renders AppHeader with the explorer title and no back control when metrics exist', async () => {
+    renderMetricsExplorerPage();
 
     expect(await screen.findByTestId(APP_HEADER_TEST_SUBJECTS.title)).toHaveTextContent(
-      inventoryTitle
+      metricsExplorerTitle
     );
     expect(screen.queryByTestId(APP_HEADER_TEST_SUBJECTS.back)).not.toBeInTheDocument();
-    expect(screen.getByTestId('inventorySnapshotContainer')).toBeInTheDocument();
+    expect(screen.getByTestId('metricsExplorerToolbar')).toBeInTheDocument();
+    expect(screen.getByTestId('metricsExplorerCharts')).toBeInTheDocument();
     expect(screen.queryByTestId('kbnNoDataPage')).not.toBeInTheDocument();
     expect(lastInfraPageTemplateProps.hasDataOverride).toBe(true);
   });
 
-  it('keeps AppHeader and shows onboarding instead of the waffle when there is no metrics data', async () => {
+  it('keeps AppHeader and shows onboarding instead of toolbar and charts when there is no metrics data', async () => {
     mockFetcherState.hasData = false;
 
-    renderSnapshotPage();
+    renderMetricsExplorerPage();
 
     expect(await screen.findByTestId(APP_HEADER_TEST_SUBJECTS.title)).toHaveTextContent(
-      inventoryTitle
+      metricsExplorerTitle
     );
     expect(screen.queryByTestId(APP_HEADER_TEST_SUBJECTS.back)).not.toBeInTheDocument();
     expect(screen.getByTestId('kbnNoDataPage')).toBeInTheDocument();
-    expect(screen.queryByTestId('inventorySnapshotContainer')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('metricsExplorerToolbar')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('metricsExplorerCharts')).not.toBeInTheDocument();
     expect(lastInfraPageTemplateProps.hasDataOverride).toBe(false);
   });
 
@@ -163,27 +193,29 @@ describe('SnapshotPage', () => {
     mockFetcherState.hasData = false;
     mockFetcherState.status = 'loading';
 
-    renderSnapshotPage();
+    renderMetricsExplorerPage();
 
     expect(await screen.findByTestId(APP_HEADER_TEST_SUBJECTS.title)).toHaveTextContent(
-      inventoryTitle
+      metricsExplorerTitle
     );
     expect(screen.queryByTestId('kbnNoDataPage')).not.toBeInTheDocument();
-    expect(screen.getByTestId('inventorySnapshotContainer')).toBeInTheDocument();
+    expect(screen.getByTestId('metricsExplorerToolbar')).toBeInTheDocument();
+    expect(screen.getByTestId('metricsExplorerCharts')).toBeInTheDocument();
     expect(lastInfraPageTemplateProps.hasDataOverride).toBe(true);
   });
 
-  it('keeps the waffle mounted when the has-data check fails', async () => {
+  it('keeps toolbar and charts mounted when the has-data check fails', async () => {
     mockFetcherState.hasData = false;
     mockFetcherState.status = 'failure';
 
-    renderSnapshotPage();
+    renderMetricsExplorerPage();
 
     expect(await screen.findByTestId(APP_HEADER_TEST_SUBJECTS.title)).toHaveTextContent(
-      inventoryTitle
+      metricsExplorerTitle
     );
     expect(screen.queryByTestId('kbnNoDataPage')).not.toBeInTheDocument();
-    expect(screen.getByTestId('inventorySnapshotContainer')).toBeInTheDocument();
+    expect(screen.getByTestId('metricsExplorerToolbar')).toBeInTheDocument();
+    expect(screen.getByTestId('metricsExplorerCharts')).toBeInTheDocument();
     expect(lastInfraPageTemplateProps.hasDataOverride).toBe(true);
   });
 });

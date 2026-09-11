@@ -7,14 +7,17 @@
 
 import React from 'react';
 import { NoDataPage } from '@kbn/shared-ux-page-no-data';
-import { useKibanaContextForPlugin } from '../../../../hooks/use_kibana';
-import {
-  getNoDataConfig,
-  OnboardingFlow,
-} from '../../../../components/shared/templates/no_data_config';
+import { useKibanaContextForPlugin } from '../../../hooks/use_kibana';
+import { getNoDataConfig, OnboardingFlow } from './no_data_config';
 
-/** Renders the Inventory onboarding card as page body so AppHeader can stay mounted. */
-export const InventoryOnboardingPage = (): React.ReactElement | null => {
+interface InfraOnboardingPageProps {
+  onboardingFlow?: OnboardingFlow;
+}
+
+/** Renders the onboarding card as page body so AppHeader can stay mounted. */
+export const InfraOnboardingPage = ({
+  onboardingFlow = OnboardingFlow.Infra,
+}: InfraOnboardingPageProps = {}): React.ReactElement | null => {
   const {
     services: { share, docLinks },
   } = useKibanaContextForPlugin();
@@ -22,7 +25,7 @@ export const InventoryOnboardingPage = (): React.ReactElement | null => {
   const noDataConfig = getNoDataConfig({
     hasData: false,
     loading: false,
-    onboardingFlow: OnboardingFlow.Infra,
+    onboardingFlow,
     docsLink: docLinks.links.observability.guide,
     locators: share.url.locators,
   });
