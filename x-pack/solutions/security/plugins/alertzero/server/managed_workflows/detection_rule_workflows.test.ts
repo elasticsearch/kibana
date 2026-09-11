@@ -379,7 +379,7 @@ describe('detection rule workflows', () => {
           '{{ consts.reviewed_tag }}',
           '{{ consts.dismissed_tag }}',
         ]);
-        expect(applied.if).toContain('steps.review_tuning.output.response.approved == true');
+        expect(applied.if).toContain('steps.record_outcome.output.rule_patched == true');
         expect(applied.with?.tags_to_add).toEqual([
           '{{ consts.reviewed_tag }}',
           '{{ consts.applied_tag }}',
@@ -388,7 +388,15 @@ describe('detection rule workflows', () => {
         // the manual follow-up and retires the alerts; the auto-apply path keeps
         // its alerts untagged on failure so a later sweep can retry.
         expect(acknowledged.if).toContain('steps.review_tuning.output.response.approved == true');
-        expect(acknowledged.if).toContain('steps.record_apply_path.output.auto == false');
+        expect(acknowledged.if).toContain(
+          'steps.classify_proposal.output.can_apply_query == false'
+        );
+        expect(acknowledged.if).toContain(
+          'steps.classify_proposal.output.can_apply_exception == false'
+        );
+        expect(acknowledged.if).toContain(
+          'steps.classify_proposal.output.can_apply_risk_score == false'
+        );
         expect(acknowledged.with?.tags_to_add).toEqual([
           '{{ consts.reviewed_tag }}',
           '{{ consts.acknowledged_tag }}',
@@ -405,9 +413,59 @@ describe('detection rule workflows', () => {
 
         expect(applied.if).toContain('steps.record_outcome.output.rule_patched == true');
 
+        // record_outcome reads from record_apply_results to avoid Liquid parentheses.
         const outcome = reviewSteps.find(({ name }) => name === 'record_outcome')!;
         expect(String(outcome.with?.rule_patched)).toContain(
+          'steps.record_apply_results.output.query_applied == true'
+        );
+
+        const applyResults = reviewSteps.find(({ name }) => name === 'record_apply_results')!;
+        expect(String(applyResults.with?.query_applied)).toContain(
           'steps.apply_query_tuning.error == null'
+        );
+      });
+
+      it('applies exceptions via security.createRuleException gated on can_apply_exception', () => {
+        const apply = reviewSteps.find(({ name }) => name === 'apply_exception_tuning')!;
+        expect(apply.type).toBe('security.createRuleException');
+        expect(apply.if).toContain('steps.classify_proposal.output.can_apply_exception == true');
+        expect(apply.if).toContain('steps.review_tuning.output.response.approved == true');
+        expect(apply['on-failure']).toEqual({ continue: true });
+        expect(apply.with?.rule_id).toBe('{{ inputs.rule_uuid }}');
+        expect(apply.with?.entries).toBe(
+          '${{ steps.diagnose_rule.output.structured_output.exception_entries }}'
+        );
+
+        const applyResults = reviewSteps.find(({ name }) => name === 'record_apply_results')!;
+        expect(String(applyResults.with?.exception_applied)).toContain(
+          'steps.classify_proposal.output.can_apply_exception == true'
+        );
+        expect(String(applyResults.with?.exception_applied)).toContain(
+          'steps.apply_exception_tuning.error == null'
+        );
+      });
+
+      it('applies risk score changes via security.patchRule gated on can_apply_risk_score', () => {
+        const apply = reviewSteps.find(({ name }) => name === 'apply_risk_score_tuning')!;
+        expect(apply.type).toBe('security.patchRule');
+        expect(apply.if).toContain('steps.classify_proposal.output.can_apply_risk_score == true');
+        expect(apply.if).toContain('steps.review_tuning.output.response.approved == true');
+        expect(apply['on-failure']).toEqual({ continue: true });
+        const patch = apply.with?.patch as Record<string, string>;
+        expect(patch.id).toBe('{{ inputs.rule_uuid }}');
+        expect(patch.risk_score).toBe(
+          '${{ steps.diagnose_rule.output.structured_output.proposed_risk_score }}'
+        );
+        expect(patch.severity).toBe(
+          '{{ steps.diagnose_rule.output.structured_output.proposed_severity }}'
+        );
+
+        const applyResults = reviewSteps.find(({ name }) => name === 'record_apply_results')!;
+        expect(String(applyResults.with?.risk_score_applied)).toContain(
+          'steps.classify_proposal.output.can_apply_risk_score == true'
+        );
+        expect(String(applyResults.with?.risk_score_applied)).toContain(
+          'steps.apply_risk_score_tuning.error == null'
         );
       });
 
@@ -501,7 +559,13 @@ describe('detection rule workflows', () => {
         expect(String(support.with?.supported)).toContain(
           'steps.fetch_rule.output.alert_suppression == null'
         );
-        expect(condition).toContain('steps.record_auto_apply_support.output.supported == true');
+        // The supported check is encoded inside classify_proposal.can_apply_query,
+        // which is what decide_apply references.
+        const classify = reviewSteps.find(({ name }) => name === 'classify_proposal')!;
+        expect(String(classify.with?.can_apply_query)).toContain(
+          'steps.record_auto_apply_support.output.supported == true'
+        );
+        expect(condition).toContain('steps.classify_proposal.output.can_apply_query == true');
       });
 
       it('bounds direct review inputs', () => {
@@ -567,10 +631,10 @@ describe('detection rule workflows', () => {
         expect(message).not.toContain('time_window_hours');
       });
 
-      it('does not use classify_review or can_apply', () => {
+      it('does not use classify_review or record_apply_path', () => {
         for (const steps of [tuningSteps, reviewSteps]) {
           expect(steps.some(({ name }) => name === 'classify_review')).toBe(false);
-          expect(JSON.stringify(steps)).not.toContain('can_apply');
+          expect(steps.some(({ name }) => name === 'record_apply_path')).toBe(false);
         }
       });
 

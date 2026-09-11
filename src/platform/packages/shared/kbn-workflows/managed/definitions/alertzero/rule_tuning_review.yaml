@@ -137,40 +137,97 @@ steps:
         they would re-fetch alerts already in hand. Base the volume and entity
         breakdown on the retrieved alerts and say the counts cover only them.
 
-        This pipeline backtests and applies query changes directly, so prefer
-        change_type "query": narrow the KQL to exclude the confirmed benign
-        pattern while keeping detection coverage. Pick exception, suppression, or
-        threshold only when narrowing the query is genuinely unsafe for this rule,
-        since those stay manual analyst actions. This rule has type
-        "{{ steps.fetch_rule.output.type }}", so propose a query change only when
-        that type is "query".
+        After investigating, return one structured tuning proposal using the schema.
+        Choose exactly one change_type in this order of preference:
 
-        Write proposed_query in this rule's language,
-        "{{ steps.fetch_rule.output.language }}". In KQL a quoted value is a phrase
-        and a * inside quotes is a literal asterisk, so every substring match must
-        be unquoted: process.command_line: *create shadow* excludes nothing when
-        written as "*create shadow*". Unquoted values may contain spaces, but a
-        backslash escapes the character after it, so match on a distinctive
-        substring rather than a full path: *corp-agent-signed.msi*, not
-        *\deploy-share\packages\corp-agent-signed.msi*. Keep exact field values
-        (process.name, user.name) quoted; only wildcard matches go unquoted.
+        exception  — The rule logic is correct but fires on a known-good entity.
+          Use the entity breakdown to identify the tightest conditions.
+          Populate exception_entries; each entry is one field condition the step
+          will AND together. Supported operators and required fields:
+            is / is_not / matches / does_not_match → populate `value` (string, required)
+            is_one_of / is_not_one_of              → populate `values` (array, required)
+            exists / does_not_exist                → no value needed
+          Glob patterns for matches/does_not_match: * matches any sequence, ? matches one char.
+
+        query  — The query is too broad and FPs share a pattern not worth
+          excepting individually. Only valid for rule type "{{ steps.fetch_rule.output.type }}".
+          Populate proposed_query with the full narrowed query in this rule's language,
+          "{{ steps.fetch_rule.output.language }}". In KQL a quoted value is a phrase
+          and a * inside quotes is a literal asterisk, so every substring match must
+          be unquoted: process.command_line: *create shadow* excludes nothing when
+          written as "*create shadow*". Unquoted values may contain spaces, but a
+          backslash escapes the character after it, so match on a distinctive
+          substring rather than a full path: *corp-agent-signed.msi*, not
+          *\deploy-share\packages\corp-agent-signed.msi*. Keep exact field values
+          (process.name, user.name) quoted; only wildcard matches go unquoted.
+
+        risk_score  — The rule has real detection value but the alerts are
+          low-priority noise. Populate proposed_risk_score (0–100) and
+          proposed_severity (low / medium / high / critical).
+
+        manual  — None of the above is safe to apply automatically. Use summary
+          to describe: (a) the false-positive pattern you found, (b) which automated
+          paths you considered (exception / query / risk_score) and why each is unsafe
+          or inapplicable for this rule, and (c) a concrete recommendation for what the
+          analyst should do manually in the Detection Rules UI.
       schema:
         type: object
         properties:
           change_type:
             type: string
-            enum: [exception, suppression, query, threshold]
+            enum: [exception, query, risk_score, manual]
           summary:
             type: string
-          current_query:
-            type: string
+          exception_entries:
+            type: array
+            minItems: 1
+            items:
+              type: object
+              properties:
+                field:
+                  type: string
+                operator:
+                  type: string
+                  enum: [is, is_not, is_one_of, is_not_one_of, matches, does_not_match, exists, does_not_exist]
+                value:
+                  type: string
+                  minLength: 1
+                values:
+                  type: array
+                  items:
+                    type: string
+                  minItems: 1
+              required: [field, operator]
+              oneOf:
+                - properties:
+                    operator:
+                      enum: [is, is_not, matches, does_not_match]
+                  required: [value]
+                - properties:
+                    operator:
+                      enum: [is_one_of, is_not_one_of]
+                  required: [values]
+                - properties:
+                    operator:
+                      enum: [exists, does_not_exist]
           proposed_query:
             type: string
-          exception_condition:
+          proposed_risk_score:
+            type: integer
+            minimum: 0
+            maximum: 100
+          proposed_severity:
             type: string
-          rekey_required:
-            type: boolean
-        required: [change_type, summary, current_query, proposed_query, exception_condition, rekey_required]
+            enum: [low, medium, high, critical]
+        # proposed_risk_score and proposed_severity are always paired: the detection
+        # engine treats them as a unit and the apply step patches both together.
+        required: [change_type, summary]
+        if:
+          properties:
+            change_type:
+              const: risk_score
+        then:
+          required: [proposed_risk_score, proposed_severity]
 
   # These optional rule modes need fields that cannot be conditionally omitted from
   # a YAML object, so their query change is not previewed or auto-applied.
@@ -182,21 +239,29 @@ steps:
           and steps.fetch_rule.output.timestamp_override == null
           and steps.fetch_rule.output.alert_suppression == null }}
 
-  # Every recommendation goes through the approval gate. "auto" only says who
-  # makes the change once the analyst approves: on this path the workflow patches
-  # the rule query itself (apply_query_tuning), which is possible only for a query
-  # change on a plain query rule the preview can backtest. Anything else (exception,
-  # suppression, threshold, or a query change on a rule mode the preview cannot
-  # model) is left to the analyst to apply in the Rules UI, so approving it just
-  # acknowledges the follow-up.
-  - name: record_apply_path
+  # Decided once so the apply branches stay exact complements and the tagging steps
+  # can reference a single gate rather than duplicating the conditions.
+  # Gated on fetch_rule so a skipped diagnose_rule cannot carry a stale proposal.
+  - name: classify_proposal
     type: data.set
+    if: >-
+      ${{ steps.fetch_rule.error == null
+        and steps.fetch_rule.output.enabled == true }}
     with:
-      auto: >-
+      can_apply_query: >-
         ${{ steps.diagnose_rule.output.structured_output.change_type == 'query'
+          and steps.diagnose_rule.output.structured_output.proposed_query != null
           and steps.diagnose_rule.output.structured_output.proposed_query != ''
           and steps.fetch_rule.output.type == 'query'
           and steps.record_auto_apply_support.output.supported == true }}
+      can_apply_exception: >-
+        ${{ steps.diagnose_rule.output.structured_output.change_type == 'exception'
+          and steps.diagnose_rule.output.structured_output.exception_entries != null
+          and steps.diagnose_rule.output.structured_output.exception_entries.size > 0 }}
+      can_apply_risk_score: >-
+        ${{ steps.diagnose_rule.output.structured_output.change_type == 'risk_score'
+          and steps.diagnose_rule.output.structured_output.proposed_risk_score != null
+          and steps.diagnose_rule.output.structured_output.proposed_severity != null }}
 
   # One preview worker run backtests both queries. A single synchronous child per
   # wake-up cycle is safe; two consecutive child calls share one immediate-resume
@@ -205,7 +270,7 @@ steps:
   # events analysts judged; anchoring at now can miss those events.
   - name: run_previews
     type: workflow.execute
-    if: "${{ steps.record_apply_path.output.auto == true }}"
+    if: "${{ steps.classify_proposal.output.can_apply_query == true }}"
     with:
       workflow-id: system-security-rule-preview
       inputs:
@@ -283,7 +348,10 @@ steps:
   # and the next sweep proposes the rule again with a fresh diagnosis.
   - name: review_tuning
     type: waitForApproval
-    if: "${{ steps.diagnose_rule.output.structured_output.summary != null }}"
+    if: >-
+      ${{ steps.fetch_rule.error == null
+        and steps.fetch_rule.output.enabled == true
+        and steps.diagnose_rule.output.structured_output.summary != null }}
     timeout: "72h"
     with:
       approveLabel: Approve change
@@ -300,13 +368,26 @@ steps:
 
         {{ steps.diagnose_rule.output.structured_output.summary }}
 
-        {% if steps.diagnose_rule.output.structured_output.change_type == "query" and steps.record_auto_apply_support.output.supported %}
+        {% if steps.diagnose_rule.output.structured_output.change_type == "exception" %}
+        Proposed exception:
+        {% for entry in steps.diagnose_rule.output.structured_output.exception_entries %}
+        - {{ entry.field }} {{ entry.operator }}{% if entry.values %} {{ entry.values | join: ", " }}{% elsif entry.value %} {{ entry.value }}{% endif %}
+        {% endfor %}
+        {% if steps.classify_proposal.output.can_apply_exception %}
+        Approving adds the exception to the rule's own exception list. It can be removed in the Detection Rules UI.
+        {% else %}
+        The exception proposal is incomplete — apply it manually in the Detection Rules UI.
+        Approving marks these alerts acknowledged.
+        {% endif %}
+        {% endif %}
+        {% if steps.diagnose_rule.output.structured_output.change_type == "query" %}
         Current query:
-        {{ steps.diagnose_rule.output.structured_output.current_query }}
+        {{ steps.fetch_rule.output.query }}
 
         Proposed query:
         {{ steps.diagnose_rule.output.structured_output.proposed_query }}
 
+        {% if steps.classify_proposal.output.can_apply_query %}
         Backtest ({{ inputs.preview_invocation_count | default: consts.preview_invocation_count }} simulated executions of interval {{ steps.fetch_rule.output.interval }},
         lookback {{ steps.fetch_rule.output.from }}, ending at the newest false positive
         {{ inputs.last_fp_at }} — usually a much shorter span than the false positives cover):
@@ -322,21 +403,25 @@ steps:
         rule has not been edited since this diagnosis. Otherwise no rule or alert tags
         change, and a later sweep can retry with current data.
         {% else %}
-        {% if steps.diagnose_rule.output.structured_output.change_type == "query" %}
-        Proposed query:
-        {{ steps.diagnose_rule.output.structured_output.proposed_query }}
-
         This rule uses a data view, timestamp override, or alert suppression, so it
-        is not previewed or applied automatically.
+        is not previewed or applied automatically. Approving marks these alerts
+        acknowledged; apply the change manually in the Detection Rules UI.
         {% endif %}
-        {% if steps.diagnose_rule.output.structured_output.change_type == "exception" %}
-        Proposed exception:
-        {{ steps.diagnose_rule.output.structured_output.exception_condition }}
         {% endif %}
-        This {{ steps.diagnose_rule.output.structured_output.change_type }} change
-        is not applied automatically; apply it manually in the Detection Rules UI if
-        appropriate. Approving marks these alerts acknowledged, so sweeps revisit
-        the rule only once new false positives accumulate.
+        {% if steps.diagnose_rule.output.structured_output.change_type == "risk_score" %}
+        Proposed risk score: {{ steps.diagnose_rule.output.structured_output.proposed_risk_score }}
+        Proposed severity: {{ steps.diagnose_rule.output.structured_output.proposed_severity }}
+        {% if steps.classify_proposal.output.can_apply_risk_score %}
+        Approving patches the rule's risk score and severity. It can be changed back in the Detection Rules UI.
+        {% else %}
+        The proposal is incomplete (both risk_score and severity are required) — apply it manually in the Detection Rules UI.
+        Approving marks these alerts acknowledged.
+        {% endif %}
+        {% endif %}
+        {% if steps.diagnose_rule.output.structured_output.change_type == "manual" %}
+        No automated change can be applied safely for this rule.
+        Approving records the handoff — no rule changes are made automatically.
+        Apply the recommended change in the Detection Rules UI.
         {% endif %}
 
         {% if steps.diagnose_rule.output.conversation_id %}
@@ -349,9 +434,7 @@ steps:
     type: kibana.request
     if: >-
       ${{ steps.review_tuning.output.response.approved == true
-        and steps.diagnose_rule.output.structured_output.proposed_query != ''
-        and steps.fetch_rule.output.type == 'query'
-        and steps.record_auto_apply_support.output.supported == true }}
+        and steps.classify_proposal.output.can_apply_query == true }}
     with:
       method: GET
       path: "/s/{{ workflow.spaceId }}/api/detection_engine/rules?id={{ inputs.rule_uuid | url_encode }}"
@@ -367,9 +450,7 @@ steps:
     with:
       eligible: >-
         ${{ steps.review_tuning.output.response.approved == true
-          and steps.diagnose_rule.output.structured_output.proposed_query != ''
-          and steps.fetch_rule.output.type == 'query'
-          and steps.record_auto_apply_support.output.supported == true
+          and steps.classify_proposal.output.can_apply_query == true
           and steps.record_preview_outcome.output.current_succeeded == true
           and steps.record_preview_outcome.output.current_is_aborted == false
           and steps.record_preview_outcome.output.proposed_succeeded == true
@@ -385,14 +466,61 @@ steps:
         id: "{{ steps.refetch_rule.output.id }}"
         query: "{{ steps.diagnose_rule.output.structured_output.proposed_query }}"
 
-  # Mirrors apply_query_tuning's condition plus its error check, so the tag steps
-  # and the `applied` output cannot claim a change that never landed.
+  # Each approval creates its own item. A rule only returns here on new false
+  # positives, so a later proposal is a different pattern, not a duplicate.
+  - name: apply_exception_tuning
+    type: security.createRuleException
+    if: >-
+      ${{ steps.review_tuning.output.response.approved == true
+        and steps.classify_proposal.output.can_apply_exception == true }}
+    on-failure:
+      continue: true
+    with:
+      rule_id: "{{ inputs.rule_uuid }}"
+      name: "Tuning: {{ steps.fetch_rule.output.name }}"
+      description: "Added by the rule tuning workflow."
+      entries: "${{ steps.diagnose_rule.output.structured_output.exception_entries }}"
+
+  - name: apply_risk_score_tuning
+    type: security.patchRule
+    if: >-
+      ${{ steps.review_tuning.output.response.approved == true
+        and steps.classify_proposal.output.can_apply_risk_score == true }}
+    on-failure:
+      continue: true
+    with:
+      patch:
+        id: "{{ inputs.rule_uuid }}"
+        risk_score: "${{ steps.diagnose_rule.output.structured_output.proposed_risk_score }}"
+        severity: "{{ steps.diagnose_rule.output.structured_output.proposed_severity }}"
+
+  # Each error check is paired with the gate that ran its apply step; a skipped
+  # step leaves no execution record. An approved change whose apply failed stays
+  # untagged so a later sweep can retry.
+  - name: record_apply_results
+    type: data.set
+    with:
+      query_applied: >-
+        ${{ steps.decide_apply.output.eligible == true
+          and steps.apply_query_tuning.error == null }}
+      exception_applied: >-
+        ${{ steps.review_tuning.output.response.approved == true
+          and steps.classify_proposal.output.can_apply_exception == true
+          and steps.apply_exception_tuning.error == null }}
+      risk_score_applied: >-
+        ${{ steps.review_tuning.output.response.approved == true
+          and steps.classify_proposal.output.can_apply_risk_score == true
+          and steps.apply_risk_score_tuning.error == null }}
+
+  # Liquid cannot parenthesise conditions, so the OR-of-ANDs for rule_patched is
+  # split into a second step that reads the already-resolved individual flags.
   - name: record_outcome
     type: data.set
     with:
       rule_patched: >-
-        ${{ steps.decide_apply.output.eligible == true
-          and steps.apply_query_tuning.error == null }}
+        ${{ steps.record_apply_results.output.query_applied == true
+          or steps.record_apply_results.output.exception_applied == true
+          or steps.record_apply_results.output.risk_score_applied == true }}
 
   - name: mark_alerts_dismissed
     type: security.setAlertTags
@@ -407,10 +535,7 @@ steps:
 
   - name: mark_alerts_applied
     type: security.setAlertTags
-    if: >-
-      ${{ steps.review_tuning.output.response.approved == true
-        and steps.diagnose_rule.output.structured_output.change_type == 'query'
-        and steps.record_outcome.output.rule_patched == true }}
+    if: "${{ steps.record_outcome.output.rule_patched == true }}"
     with:
       alert_ids: "${{ inputs.alert_ids }}"
       tags_to_add:
@@ -426,7 +551,9 @@ steps:
     type: security.setAlertTags
     if: >-
       ${{ steps.review_tuning.output.response.approved == true
-        and steps.record_apply_path.output.auto == false }}
+        and steps.classify_proposal.output.can_apply_query == false
+        and steps.classify_proposal.output.can_apply_exception == false
+        and steps.classify_proposal.output.can_apply_risk_score == false }}
     with:
       alert_ids: "${{ inputs.alert_ids }}"
       tags_to_add:
@@ -439,4 +566,4 @@ steps:
     with:
       rule_uuid: "{{ inputs.rule_uuid }}"
       approved: "${{ steps.review_tuning.output.response.approved == true }}"
-      applied: "${{ steps.record_outcome.output.rule_patched }}"
+      applied: "${{ steps.record_outcome.output.rule_patched == true }}"

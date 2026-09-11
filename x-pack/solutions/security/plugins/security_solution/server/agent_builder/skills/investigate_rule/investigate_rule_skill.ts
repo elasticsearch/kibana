@@ -367,6 +367,10 @@ Recommended remediation, Confidence boundary). Within each section, **prose, bul
 tables are all fine** — use whatever reads best for the data. (Read-only: never apply or
 offer to apply a change.)
 
+When the caller asks for structured output, fill every field of the requested schema from
+the investigation above. Skip the five-section prose and the offer to apply changes — the
+calling workflow owns the actions and gates them with its own approval steps.
+
 ---
 
 ## Fallback
