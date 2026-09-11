@@ -3,7 +3,7 @@ name: create-connector
 description: Creates a new connector spec for Kibana. Use when asked to create (or add) a new connector, integration, or data source.
 allowed-tools: WebFetch, WebSearch, Read, Grep, Glob, Write, Edit, Bash, Skill
 context: fork
-argument-hint: [3rd-party-service-name]
+argument-hint: "[3rd-party-service-name]"
 ---
 
 # Create a Connector

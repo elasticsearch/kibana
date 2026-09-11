@@ -7,7 +7,7 @@ description: >
   development, testing, and debugging only, not cloud deployments or
   customer-facing demos.
 allowed-tools: Bash
-argument-hint: [quick|attacks|cases|clean|local flags]
+argument-hint: "[quick|attacks|cases|clean|local flags]"
 ---
 
 # Generate Security Data

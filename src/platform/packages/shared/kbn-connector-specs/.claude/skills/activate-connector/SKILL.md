@@ -2,7 +2,7 @@
 name: activate-connector
 description: Creates a connector instance in a running Kibana. Use when asked to activate, connect, enable, or instantiate a connector in Kibana.
 allowed-tools: Bash, Read, Glob, Grep
-argument-hint: [connector-type]
+argument-hint: "[connector-type]"
 ---
 
 # Activate a Connector in Kibana

@@ -2,7 +2,7 @@
 name: build-connector
 description: End-to-end orchestrator that creates a new connector from scratch, reviews the code, activates it in Kibana, tests it via an Agent Builder agent, iterates until quality is met, and delivers a polished result. Use when asked to build, develop, or implement a complete connector.
 allowed-tools: Bash, Read, Glob, Grep, Write, Edit, Skill
-argument-hint: [3rd-party-service-name]
+argument-hint: "[3rd-party-service-name]"
 ---
 
 # Build a Connector End-to-End

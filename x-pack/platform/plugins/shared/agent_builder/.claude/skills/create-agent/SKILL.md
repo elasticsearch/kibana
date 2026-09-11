@@ -2,7 +2,7 @@
 name: create-agent
 description: Creates an Agent Builder agent in a running Kibana instance, wired to data source tools. Use when asked to create, set up, or configure an AI agent in Kibana.
 allowed-tools: Bash, Read, Glob, Grep
-argument-hint: [agent-name]
+argument-hint: "[agent-name]"
 ---
 
 # Create an Agent Builder Agent in Kibana

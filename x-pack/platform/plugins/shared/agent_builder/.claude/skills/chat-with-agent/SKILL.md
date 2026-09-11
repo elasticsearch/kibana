@@ -2,7 +2,7 @@
 name: chat-with-agent
 description: Sends a message to an Agent Builder agent and displays the response including reasoning and tool calls. Use when asked to chat with, test, or talk to a Kibana agent.
 allowed-tools: Bash, Read, Glob, Grep
-argument-hint: [agent-id-or-name]
+argument-hint: "[agent-id-or-name]"
 ---
 
 # Chat with an Agent Builder Agent
