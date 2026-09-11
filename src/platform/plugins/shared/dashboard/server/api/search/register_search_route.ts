@@ -31,6 +31,7 @@ export function registerSearchRoute(
   const searchRoute = router.get({
     path: `${basePath}`,
     summary: `Search dashboards`,
+    operationId: 'search-dashboards',
     ...routeConfig,
     description:
       'Returns a paginated list of dashboards. Each result includes title, description, tags, and metadata, but not the full panel layout. Use `GET /api/dashboards/{id}` to retrieve the complete state.',

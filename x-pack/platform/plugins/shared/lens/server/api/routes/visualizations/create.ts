@@ -30,6 +30,7 @@ export const registerLensVisualizationsCreateAPIRoute: RegisterAPIRouteFn = (
     path: LENS_VIS_API_PATH,
     access: LENS_API_ACCESS,
     summary: 'Create visualization',
+    operationId: 'create-visualization',
     description: [
       'Creates a Lens visualization and saves it to the library.',
       '',

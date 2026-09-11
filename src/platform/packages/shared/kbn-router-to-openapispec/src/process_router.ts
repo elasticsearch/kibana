@@ -104,7 +104,11 @@ export const processRouter = async ({
           : undefined,
         responses: extractResponses(route, converter),
         parameters,
-        operationId: getOpId({ path: route.path, method: route.method }),
+        operationId: getOpId({
+          path: route.path,
+          method: route.method,
+          operationId: route.options.operationId,
+        }),
       };
 
       setXState(route.options.availability, operation, env);

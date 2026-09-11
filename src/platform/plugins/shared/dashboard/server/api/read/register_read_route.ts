@@ -29,6 +29,9 @@ export function registerReadRoute(
   const readRoute = router.get({
     path: `${basePath}/{id}`,
     summary: `Get a dashboard`,
+    // Only the public route carries a curated ID. The dashboard-app route is
+    // internal and keeps its derived one.
+    ...(isDashboardAppRequest ? {} : { operationId: 'get-dashboard' }),
     ...routeConfig,
     description: 'Returns the complete state of a dashboard by ID.',
   });

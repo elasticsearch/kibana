@@ -27,6 +27,7 @@ export const registerLensVisualizationsDeleteAPIRoute: RegisterAPIRouteFn = (
     path: `${LENS_VIS_API_PATH}/{id}`,
     access: LENS_API_ACCESS,
     summary: 'Delete visualization',
+    operationId: 'delete-visualization',
     description:
       'Permanently deletes a Lens visualization. If the visualization is referenced by a dashboard panel, the panel shows an error after deletion.',
     options: {

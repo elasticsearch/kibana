@@ -30,6 +30,7 @@ export function registerDeleteRoute(
   const deleteRoute = router.delete({
     path: `${basePath}/{id}`,
     summary: `Delete a dashboard`,
+    operationId: 'delete-dashboard',
     ...routeConfig,
     description: 'Permanently deletes a dashboard by ID.',
   });

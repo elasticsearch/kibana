@@ -120,7 +120,11 @@ export const processVersionedRouter = async ({
       const contentType = extractContentType(route.options.options?.body);
       // If any handler is deprecated we show deprecated: true in the spec
       const hasDeprecations = route.handlers.some(({ options }) => !!options.options?.deprecated);
-      const operationId = getOpId({ path: route.path, method: route.method });
+      const operationId = getOpId({
+        path: route.path,
+        method: route.method,
+        operationId: route.options.operationId,
+      });
       const operation: OpenAPIV3.OperationObject = {
         summary: route.options.summary ?? '',
         tags: route.options.options?.tags ? extractTags(route.options.options.tags) : [],

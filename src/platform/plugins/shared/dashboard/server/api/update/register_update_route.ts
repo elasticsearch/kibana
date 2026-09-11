@@ -34,6 +34,9 @@ export function registerUpdateRoute(
     path: `${basePath}/{id}`,
     ...routeConfig,
     summary: `Upsert a dashboard`,
+    // Only the public route carries a curated ID. The dashboard-app route is
+    // internal and keeps its derived one.
+    ...(isDashboardAppRequest ? {} : { operationId: 'upsert-dashboard' }),
   });
 
   // Do not call getDashboardStateSchema when registering route.

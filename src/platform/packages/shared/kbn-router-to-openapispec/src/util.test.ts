@@ -348,6 +348,39 @@ describe('createOpIdGenerator', () => {
   ])('$input.method $input.path -> $output', ({ input, output }) => {
     expect(getOpId(input)).toBe(output);
   });
+
+  describe('explicit operationId', () => {
+    test('is used verbatim instead of the generated value', () => {
+      expect(
+        getOpId({ method: 'put', path: '/api/dashboards/{id}', operationId: 'upsert-dashboard' })
+      ).toBe('upsert-dashboard');
+    });
+
+    test('does not reserve the generated name it replaces', () => {
+      getOpId({ method: 'put', path: '/api/dashboards/{id}', operationId: 'upsert-dashboard' });
+      expect(getOpId({ method: 'put', path: '/api/dashboards/{id}' })).toBe('put-dashboards-id');
+    });
+
+    test('throws when two routes declare the same ID', () => {
+      getOpId({ method: 'get', path: '/api/one', operationId: 'shared-id' });
+      expect(() => getOpId({ method: 'get', path: '/api/two', operationId: 'shared-id' })).toThrow(
+        /Duplicate operationId "shared-id" for route "GET \/api\/two"/
+      );
+    });
+
+    test('throws when it collides with an already generated ID', () => {
+      expect(getOpId({ method: 'get', path: '/api/test' })).toBe('get-test');
+      expect(() => getOpId({ method: 'get', path: '/api/other', operationId: 'get-test' })).toThrow(
+        /Duplicate operationId "get-test"/
+      );
+    });
+
+    test('still requires method and path', () => {
+      expect(() => getOpId({ method: '', path: '', operationId: 'x' })).toThrow(
+        /Must provide method and path/
+      );
+    });
+  });
 });
 
 describe('setXState', () => {
