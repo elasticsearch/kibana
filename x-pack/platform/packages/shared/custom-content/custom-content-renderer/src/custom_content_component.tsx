@@ -14,6 +14,7 @@ import type { ESQLControlVariable } from '@kbn/esql-types';
 import React, { useEffect, useMemo } from 'react';
 import { useCustomContentHtml } from './use_custom_content_html';
 import { CustomContentEmptyPrompt } from './custom_content_empty_prompt';
+import { CustomContentGeneratingPrompt } from './custom_content_generating_prompt';
 import type { CustomContentRendererServices } from './types';
 
 export interface CustomContentComponentProps {
@@ -31,6 +32,8 @@ export interface CustomContentComponentProps {
   previewHtml: string | null;
   /** Whether the host can hand an empty panel over to the agent. Drives the empty prompt's copy. */
   isAiAvailable?: boolean;
+  /** True while the agent is generating or updating this panel, to show a generating state. */
+  isGenerating?: boolean;
   onLoadingChange: (isLoading: boolean) => void;
   setApproximationApplied?: (approximationApplied: boolean | undefined) => void;
   onGenerateWithChat?: () => void;
@@ -69,6 +72,7 @@ export const CustomContentComponent = ({
   esqlVariables,
   previewHtml,
   isAiAvailable = false,
+  isGenerating = false,
   onLoadingChange,
   setApproximationApplied,
   onGenerateWithChat,
@@ -119,7 +123,7 @@ export const CustomContentComponent = ({
           {error}
         </KbnDangerCallout>
       )}
-      {!error && noContent && !isLoading && previewHtml == null && (
+      {!error && !isGenerating && noContent && !isLoading && previewHtml == null && (
         <CustomContentEmptyPrompt
           isAiAvailable={isAiAvailable}
           onGenerateWithChat={onGenerateWithChat}
@@ -138,6 +142,7 @@ export const CustomContentComponent = ({
           </div>
         )
       )}
+      {!error && isGenerating && <CustomContentGeneratingPrompt />}
       {isLoading && <EuiProgress size="xs" color="accent" position="absolute" />}
     </div>
   );

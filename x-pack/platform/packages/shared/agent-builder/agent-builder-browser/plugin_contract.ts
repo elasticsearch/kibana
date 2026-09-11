@@ -27,6 +27,11 @@ import type { ConversationTemplateServiceStartContract } from './templates';
  */
 export interface EmbeddableConversationProps {
   /**
+   * Called when the user submits a prompt, immediately before the conversation starts streaming.
+   */
+  onSubmit?: () => void;
+
+  /**
    * Force starting a new conversation, ignoring any stored conversation IDs.
    * When true, a fresh conversation is always created.
    * @default false

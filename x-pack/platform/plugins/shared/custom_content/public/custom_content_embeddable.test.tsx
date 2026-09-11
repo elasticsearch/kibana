@@ -29,7 +29,11 @@ const mockApiIsPresentationContainer = apiIsPresentationContainer as jest.Mocked
 >;
 
 let capturedComponentProps:
-  | { onGenerateWithChat?: () => void; onLoadingChange?: (isLoading: boolean) => void }
+  | {
+      isGenerating?: boolean;
+      onGenerateWithChat?: () => void;
+      onLoadingChange?: (isLoading: boolean) => void;
+    }
   | undefined;
 
 jest.mock('@kbn/custom-content-renderer', () => ({
@@ -38,6 +42,7 @@ jest.mock('@kbn/custom-content-renderer', () => ({
     savedTemplate: string | undefined;
     generationVersion: number;
     timeRange: { from: string; to: string } | undefined;
+    isGenerating?: boolean;
     onLoadingChange: (isLoading: boolean) => void;
     onGenerateWithChat?: () => void;
   }) => {
@@ -49,6 +54,7 @@ jest.mock('@kbn/custom-content-renderer', () => ({
         data-saved-template={props.savedTemplate ?? ''}
         data-generation-version={props.generationVersion}
         data-time-range={props.timeRange ? `${props.timeRange.from}/${props.timeRange.to}` : ''}
+        data-is-generating={String(Boolean(props.isGenerating))}
       />
     );
   },
@@ -679,6 +685,39 @@ describe('customContentEmbeddableFactory', () => {
   });
 
   describe('handleGenerateWithChat', () => {
+    it('shows a generating state while the panel chat round is running', async () => {
+      const openChat = jest.fn();
+      mockAgentBuilder = {
+        openChat,
+        events: {
+          ui: { activeConversation$: new BehaviorSubject(null) },
+          getChatEvents$: jest.fn(() => new Subject()),
+        },
+      };
+
+      const { embeddable } = await buildEmbeddable(baseState);
+      await act(async () => render(<embeddable.Component />));
+      await act(async () => capturedComponentProps?.onGenerateWithChat?.());
+
+      await act(async () => {
+        openChat.mock.calls[0][0].onSubmit();
+        await new Promise((resolve) => setTimeout(resolve, 0));
+      });
+      expect(screen.getByTestId('mockCustomContentComponent')).toHaveAttribute(
+        'data-is-generating',
+        'true'
+      );
+
+      await act(async () => {
+        openChat.mock.calls[0][0].onClose();
+        await new Promise((resolve) => setTimeout(resolve, 0));
+      });
+      expect(screen.getByTestId('mockCustomContentComponent')).toHaveAttribute(
+        'data-is-generating',
+        'false'
+      );
+    });
+
     it('clicking "Generate with chat" from the empty prompt on a new panel does not remove it', async () => {
       const removePanel = jest.fn();
       const openChat = jest.fn();

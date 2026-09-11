@@ -6,7 +6,7 @@
  */
 
 import React from 'react';
-import { render } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import { useCustomContentHtml } from './use_custom_content_html';
 import { CustomContentComponent } from './custom_content_component';
 import type { CustomContentRendererServices } from './types';
@@ -85,5 +85,12 @@ describe('CustomContentComponent', () => {
     );
 
     expect(container.querySelector('iframe')!.getAttribute('sandbox')).toBe('');
+  });
+
+  it('shows the generating prompt while the agent is working', () => {
+    render(<CustomContentComponent {...defaultProps} isGenerating />);
+
+    expect(screen.getByTestId('customContentGeneratingPrompt')).toBeInTheDocument();
+    expect(screen.getByText('Generating your panel')).toBeInTheDocument();
   });
 });

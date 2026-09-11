@@ -36,7 +36,7 @@ export const useConversationStream = () => {
   const conversationId = useConversationId();
   const agentId = useAgentId();
   const { conversation } = useConversation();
-  const { attachments, resetAttachments, browserApiTools, isEmbeddedContext } =
+  const { attachments, resetAttachments, browserApiTools, isEmbeddedContext, onSubmit } =
     useConversationContext();
   const { selectedConnector: connectorId } = useConnectorSelection();
   const { navigateToAgentBuilderUrl } = useNavigation();
@@ -86,6 +86,7 @@ export const useConversationStream = () => {
       if (!agentId) {
         throw new Error('agentId is required to send a message');
       }
+      onSubmit?.();
       mutateSendMessage({
         message,
         conversationId: targetConversationId,
@@ -107,6 +108,7 @@ export const useConversationStream = () => {
       conversation?.attachments,
       resetAttachments,
       browserApiTools,
+      onSubmit,
       isEmbeddedContext,
       resetToNewConversation,
     ]

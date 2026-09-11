@@ -18,6 +18,7 @@ interface ConversationContextValue {
   initialMessage?: string;
   autoSendInitialMessage?: boolean;
   greetingMessage?: string;
+  onSubmit?: () => void;
   resetInitialMessage?: () => void;
   attachments?: ConversationAttachment[];
   upsertAttachments?: (attachments: ConversationAttachment[]) => void;
