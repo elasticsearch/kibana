@@ -16,18 +16,15 @@ import type {
   OpaqueBuilderFields,
 } from '@kbn/alerting-v2-rule-builders';
 import { addFoldedVersion } from '../../lib/builder_types/folded_versions';
-import { ruleSavedObjectAttributesSchemaV4 } from '../schemas/rule_saved_object_attributes';
+import { currentRuleSavedObjectAttributesSchema } from '../schemas/rule_saved_object_attributes';
 
 // Forward-compatibility schema for all manifest-folded model versions.
-// Uses the current attributes schema (v4, which introduced the builder_fields
-// container) with unknowns ignored so rolled-back code can still read
-// documents written by newer versions.
+// Built from currentRuleSavedObjectAttributesSchema so that updating the alias
+// (when a new attributes schema version is added) automatically applies to every
+// fold line — no individual call-site updates are needed.
 //
-// When future steps add new attributes schema versions (e.g. for identity,
-// source, ownership fields) and the associated fold lines come after those
-// schema bumps, the fold lines in rule_model_versions.ts should reference the
-// latest schema. This constant captures v4 as the baseline for the POC.
-const forwardCompatibilitySchema = ruleSavedObjectAttributesSchemaV4.extends(
+// Ref: rule-data-migration.md "Rollback behavior"
+const forwardCompatibilitySchema = currentRuleSavedObjectAttributesSchema.extends(
   {},
   { unknowns: 'ignore' }
 );

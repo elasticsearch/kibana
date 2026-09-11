@@ -7,6 +7,7 @@
 
 import { z } from '@kbn/zod/v4';
 import { MAX_BUILDER_FIELDS_ARRAY_ITEMS } from '@kbn/alerting-v2-constants';
+import { MAX_BUILDER_FIELDS_KEYS } from '@kbn/alerting-v2-schemas';
 
 type JsonSchemaNode = Record<string, unknown>;
 
@@ -85,22 +86,56 @@ export function assertBoundedSchema(
 // ---------------------------------------------------------------------------
 
 /**
- * Walks the Zod schema tree and rejects any wrapper types that cause the
- * parsed value to differ from the raw input: ZodDefault (.default()),
- * ZodPipe (.transform() and .pipe()), and ZodCatch (.catch()). These are
- * invisible or partially invisible on the input side of the JSON-Schema
- * projection, so they are detected here in the Zod tree rather than (or in
- * addition to) the JSON-Schema walk.
+ * Walks the Zod schema tree and rejects any construct that causes the parsed
+ * value to differ from the raw input:
+ *
+ * - ZodDefault (.default()) and ZodCatch (.catch()) — rejected by kind
+ * - ZodPipe (.transform() and .pipe()) — rejected by kind
+ * - z.coerce.* — rejected via _def.coerce === true (the type name stays
+ *   "string"/"number"/etc., so the kind alone is not enough)
+ * - Value-rewriting string checks (.trim(), .toLowerCase(), .normalize(), etc.)
+ *   — rejected by inspecting _def.checks for entries whose _zod.def.check is
+ *   "overwrite" (the internal Zod v4 discriminant for all string overwrites)
+ *
+ * The walk fails closed: node kinds that are not explicitly whitelisted below
+ * are rejected rather than silently walked past. This is required because an
+ * unwalked wrapper (e.g. .readonly() or .lazy()) can hide banned constructs
+ * that would otherwise escape detection.
+ *
+ * Whitelisted node kinds:
+ *   - Recursive: object, array, optional, nullable, union, readonly
+ *   - Leaf (no inner schemas): string, number, boolean, null, enum, literal
  *
  * Ref: rule-validation.md "No defaults, no transforms"
  */
 function assertNoDefaultsOrTransforms(schema: z.ZodType, path: string, ctx: Ctx): void {
   // Access the internal Zod v4 definition. The _def property is the runtime
   // representation; its `type` discriminates the schema kind.
-  const def = (schema as unknown as { _def?: { type?: string } })._def;
+  const s = schema as unknown as {
+    _def?: {
+      type?: string;
+      coerce?: boolean;
+      checks?: Array<{ _zod?: { def?: { check?: string } } }>;
+      shape?: Record<string, z.ZodType>;
+      element?: z.ZodType;
+      innerType?: z.ZodType;
+      options?: z.ZodType[];
+    };
+  };
+  const def = s._def;
   if (!def) return;
 
   const typeName = def.type;
+
+  // Reject coercion regardless of the base type kind: z.coerce.string(),
+  // z.coerce.number(), etc. keep _def.type as "string"/"number"/etc. but set
+  // _def.coerce = true to signal that inputs are cast before parsing.
+  if (def.coerce === true) {
+    throw new Error(
+      `${prefix(ctx)} at ${path}: z.coerce.* is not allowed; ` +
+        `builder schemas must not coerce inputs (the stored value must be exactly what the caller sent)`
+    );
+  }
 
   if (typeName === 'default') {
     throw new Error(
@@ -121,33 +156,74 @@ function assertNoDefaultsOrTransforms(schema: z.ZodType, path: string, ctx: Ctx)
     );
   }
 
-  // Recurse into child schemas.
-  const s = schema as unknown as {
-    _def: {
-      type?: string;
-      shape?: Record<string, z.ZodType>;
-      element?: z.ZodType;
-      innerType?: z.ZodType;
-      options?: z.ZodType[];
-      in?: z.ZodType;
-    };
-  };
-
-  if (typeName === 'object' && s._def.shape) {
-    for (const [key, child] of Object.entries(s._def.shape)) {
-      assertNoDefaultsOrTransforms(child, `${path}.${key}`, ctx);
+  if (typeName === 'object') {
+    if (def.shape) {
+      for (const [key, child] of Object.entries(def.shape)) {
+        assertNoDefaultsOrTransforms(child, `${path}.${key}`, ctx);
+      }
     }
-  } else if (typeName === 'array' && s._def.element) {
-    assertNoDefaultsOrTransforms(s._def.element, `${path}[]`, ctx);
-  } else if ((typeName === 'optional' || typeName === 'nullable') && s._def.innerType) {
-    assertNoDefaultsOrTransforms(s._def.innerType, path, ctx);
-  } else if (typeName === 'union' && s._def.options) {
-    for (let i = 0; i < s._def.options.length; i++) {
-      assertNoDefaultsOrTransforms(s._def.options[i], `${path}|${i}`, ctx);
-    }
+    return;
   }
-  // Leaf types (string, number, boolean, enum, literal, null, integer) need
-  // no recursion — they carry no inner schemas.
+
+  if (typeName === 'array') {
+    if (def.element) {
+      assertNoDefaultsOrTransforms(def.element, `${path}[]`, ctx);
+    }
+    return;
+  }
+
+  if (typeName === 'optional' || typeName === 'nullable' || typeName === 'readonly') {
+    if (def.innerType) {
+      assertNoDefaultsOrTransforms(def.innerType, path, ctx);
+    }
+    return;
+  }
+
+  if (typeName === 'union') {
+    if (def.options) {
+      for (let i = 0; i < def.options.length; i++) {
+        assertNoDefaultsOrTransforms(def.options[i], `${path}|${i}`, ctx);
+      }
+    }
+    return;
+  }
+
+  if (typeName === 'string') {
+    // Reject value-rewriting string checks: .trim(), .toLowerCase(),
+    // .normalize(), etc. In Zod v4 these are stored as entries in _def.checks
+    // whose internal discriminant (_zod.def.check) is "overwrite".
+    if (Array.isArray(def.checks)) {
+      for (const check of def.checks) {
+        if (check?._zod?.def?.check === 'overwrite') {
+          throw new Error(
+            `${prefix(ctx)} at ${path}: value-rewriting string checks ` +
+              `(.trim(), .toLowerCase(), .normalize(), etc.) are not allowed; ` +
+              `builder schemas must not modify input values`
+          );
+        }
+      }
+    }
+    return;
+  }
+
+  // Explicit leaf types: no inner schemas, no checks that rewrite values.
+  if (
+    typeName === 'number' ||
+    typeName === 'boolean' ||
+    typeName === 'null' ||
+    typeName === 'enum' ||
+    typeName === 'literal'
+  ) {
+    return;
+  }
+
+  // Fail closed: an unknown node kind may hide a banned construct (e.g. a
+  // .lazy() wrapping a .transform()). Reject rather than silently walk past.
+  throw new Error(
+    `${prefix(ctx)} at ${path}: unsupported schema kind "${String(typeName)}"; ` +
+      `builder schemas may only use string, number, boolean, null, literal, enum, ` +
+      `object (.strict()), array, optional, nullable, union, and readonly`
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -344,7 +420,8 @@ function assertBoundedObject(
   // Check 3: top-level key count. The wire schema enforces this cap at
   // request time via MAX_BUILDER_FIELDS_KEYS; registration proves it
   // statically so violations surface at setup rather than at the first
-  // write. The constant is MAX_BUILDER_FIELDS_ARRAY_ITEMS (same value: 64).
+  // write. Using the same constant ensures that changing the wire cap also
+  // changes the registration cap atomically — the two cannot drift apart.
   //
   // Builder-schemas only, and applied at the root level (the path equals
   // rootPath) or at a union branch of the root (path = "${rootPath}|N..."
@@ -355,10 +432,10 @@ function assertBoundedObject(
   // Ref: rule-type-registration.md "Registration-time checks" item 3
   if (ctx.builderChecks && isAtRootLevel(path, ctx.rootPath)) {
     const keyCount = Object.keys(properties).length;
-    if (keyCount > MAX_BUILDER_FIELDS_ARRAY_ITEMS) {
+    if (keyCount > MAX_BUILDER_FIELDS_KEYS) {
       throw new Error(
         `${prefix(ctx)} at ${path}: top-level key count ${keyCount} exceeds ` +
-          `framework cap ${MAX_BUILDER_FIELDS_ARRAY_ITEMS}`
+          `framework cap ${MAX_BUILDER_FIELDS_KEYS}`
       );
     }
   }

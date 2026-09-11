@@ -460,7 +460,31 @@ describe('assertValidDefinition — check 7: managed-type completeness', () => {
     );
   });
 
-  it('rejects when the id has fewer than three segments', () => {
+  it('rejects when the id has exactly two segments matching solution and domain (missing <name>)', () => {
+    // 'security.detection' has the right solution and domain segments but no
+    // <name> segment, so only the segments.length < 3 clause rejects it.
+    // The first two segments match ownership, so neither the format check
+    // (check 2) nor the solution/domain mismatch clause fires — this test
+    // can only pass if the length clause is present.
+    //
+    // Ref: rule-ownership.md "Managed rule types"
+    //      rule-type-registration.md "Registration-time checks" item 7
+    const folded = new FoldedVersionsSet();
+    folded.record('security.detection', 1);
+
+    rejects(
+      {
+        type: 'security.detection',
+        ownership: { solution: 'security', domain: 'detection' },
+        compilation: 'execution_time',
+        manifest: validManagedManifest('security.detection'),
+      },
+      /managed-type completeness check/,
+      folded
+    );
+  });
+
+  it('rejects when the id has fewer than three segments (single segment)', () => {
     rejects(
       {
         type: 'security',
@@ -468,8 +492,8 @@ describe('assertValidDefinition — check 7: managed-type completeness', () => {
         compilation: 'execution_time',
         manifest: validManagedManifest('security'),
       },
-      // 'security' fails the id format check first (only one segment is valid, but
-      // managed requires at least <solution>.<domain>.<name>). Expect any error.
+      // 'security' has one segment: segments[1] is undefined, so both the
+      // length clause and the domain-mismatch clause fire simultaneously.
       /check/
     );
   });

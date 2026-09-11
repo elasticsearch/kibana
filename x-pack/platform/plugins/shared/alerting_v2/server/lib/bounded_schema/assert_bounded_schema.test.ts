@@ -271,7 +271,7 @@ describe('assertBoundedSchema rejection: disallowed constructs', () => {
 // ---------------------------------------------------------------------------
 
 describe('assertBoundedSchema check 3: top-level key count', () => {
-  // The cap is MAX_BUILDER_FIELDS_ARRAY_ITEMS = 64.
+  // The cap is MAX_BUILDER_FIELDS_KEYS = 64 (the same constant the wire schema uses).
 
   it('accepts an object with exactly 64 top-level keys', () => {
     const shape: Record<string, z.ZodType> = {};
@@ -469,6 +469,71 @@ describe('assertBoundedSchema check 3: no transforms', () => {
       })
       .strict();
     expect(() => assertBoundedSchema(schema, 'test.type', subject())).not.toThrow(/transform/);
+  });
+
+  // --- coerce rejection ---
+
+  it('rejects z.coerce.string() (coerce flag detected regardless of type name)', () => {
+    // z.coerce.string() keeps _def.type === "string" but sets _def.coerce = true.
+    // The walk must check the coerce flag, not only the type name.
+    const schema = z.object({ val: z.coerce.string().max(10) }).strict();
+    builderRejects(schema, /z\.coerce\.\* is not allowed/);
+  });
+
+  it('rejects z.coerce.number() (coerce flag detected regardless of type name)', () => {
+    const schema = z.object({ n: z.coerce.number() }).strict();
+    builderRejects(schema, /z\.coerce\.\* is not allowed/);
+  });
+
+  // --- value-rewriting string checks ---
+
+  it('rejects .trim() (overwrite check on a string)', () => {
+    // .trim() is stored internally as a ZodCheckOverwrite, which is the same
+    // mechanism as .toLowerCase() and .normalize(). All three must be rejected.
+    const schema = z.object({ val: z.string().max(10).trim() }).strict();
+    builderRejects(schema, /value-rewriting string checks/);
+  });
+
+  it('rejects .toLowerCase() (overwrite check on a string)', () => {
+    const schema = z.object({ val: z.string().max(10).toLowerCase() }).strict();
+    builderRejects(schema, /value-rewriting string checks/);
+  });
+
+  it('rejects .normalize() (overwrite check on a string)', () => {
+    const schema = z.object({ val: z.string().max(10).normalize() }).strict();
+    builderRejects(schema, /value-rewriting string checks/);
+  });
+
+  // --- readonly: recurse, not reject ---
+
+  it('accepts .readonly() wrapping a plain string (readonly is transparent)', () => {
+    // .readonly() does not change values; the walk must recurse into it.
+    const schema = z.object({ val: z.string().max(10).readonly() }).strict();
+    builderPasses(schema);
+  });
+
+  it('rejects a .transform() hidden behind .readonly()', () => {
+    // .readonly() wraps the type but does not hide its inner banned construct.
+    // The walk must recurse through readonly and find the pipe inside.
+    const schema = z
+      .object({
+        val: z
+          .string()
+          .max(10)
+          .transform((x) => x)
+          .readonly(),
+      })
+      .strict();
+    builderRejects(schema, /transform/);
+  });
+
+  // --- fail-closed: unknown node kinds ---
+
+  it('rejects z.lazy() (unknown kind rejected to fail closed)', () => {
+    // .lazy() defers schema creation and can hide banned constructs inside.
+    // The walk cannot inspect deferred schemas, so it fails closed.
+    const schema = z.object({ val: z.lazy(() => z.string().max(10)) }).strict();
+    builderRejects(schema, /unsupported schema kind "lazy"/);
   });
 });
 
