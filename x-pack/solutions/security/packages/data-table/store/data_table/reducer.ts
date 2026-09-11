@@ -44,6 +44,7 @@ import {
   setSelectedTableEvents,
   updateDataTableColumnOrder,
   updateDataTableColumnWidth,
+  updateTableAdditionalFilters,
   updateTableColumns,
   updateTableItemsPerPage,
   updateTablePerPageOptions,
@@ -252,30 +253,22 @@ export const dataTableReducer = reducerWithInitialState(initialDataTableState)
       },
     },
   }))
-  .case(updateShowBuildingBlockAlertsFilter, (state, { id, showBuildingBlockAlerts }) => ({
-    ...state,
-    tableById: {
-      ...state.tableById,
-      [id]: {
-        ...state.tableById[id],
-        additionalFilters: {
-          ...state.tableById[id].additionalFilters,
-          showBuildingBlockAlerts,
-        },
-      },
-    },
-  }))
-  .case(updateShowThreatIndicatorAlertsFilter, (state, { id, showOnlyThreatIndicatorAlerts }) => ({
-    ...state,
-    tableById: {
-      ...state.tableById,
-      [id]: {
-        ...state.tableById[id],
-        additionalFilters: {
-          ...state.tableById[id].additionalFilters,
-          showOnlyThreatIndicatorAlerts,
-        },
-      },
-    },
-  }))
+  .case(updateShowBuildingBlockAlertsFilter, (state, { id, showBuildingBlockAlerts }) => {
+    const tableById = updateTableAdditionalFilters({
+      id,
+      tableById: state.tableById,
+      additionalFilters: { showBuildingBlockAlerts },
+    });
+
+    return tableById === state.tableById ? state : { ...state, tableById };
+  })
+  .case(updateShowThreatIndicatorAlertsFilter, (state, { id, showOnlyThreatIndicatorAlerts }) => {
+    const tableById = updateTableAdditionalFilters({
+      id,
+      tableById: state.tableById,
+      additionalFilters: { showOnlyThreatIndicatorAlerts },
+    });
+
+    return tableById === state.tableById ? state : { ...state, tableById };
+  })
   .build();

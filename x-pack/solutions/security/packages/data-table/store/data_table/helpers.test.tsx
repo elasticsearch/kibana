@@ -10,6 +10,7 @@ import {
   setInitializeDataTableSettings,
   updateDataTableColumnOrder,
   updateDataTableColumnWidth,
+  updateTableAdditionalFilters,
 } from './helpers';
 import { mockGlobalState } from '../../mock/global_state';
 import type { SortColumnTable } from '../../common/types';
@@ -172,6 +173,75 @@ describe('updateDataTableColumnWidth', () => {
       ...defaultTableById,
       [TableId.test]: {
         ...defaultTableById[TableId.test],
+      },
+    });
+  });
+});
+
+describe('updateTableAdditionalFilters', () => {
+  const additionalFilters = {
+    showBuildingBlockAlerts: false,
+    showOnlyThreatIndicatorAlerts: false,
+  };
+
+  test('it is a noop when the table id is missing', () => {
+    const tableById = {};
+
+    expect(
+      updateTableAdditionalFilters({
+        id: 'does-not-exist',
+        tableById,
+        additionalFilters: { showBuildingBlockAlerts: true },
+      })
+    ).toBe(tableById);
+  });
+
+  test('it updates showBuildingBlockAlerts on an existing table', () => {
+    const tableById = {
+      [TableId.test]: {
+        ...defaultTableById[TableId.test],
+        additionalFilters,
+      },
+    };
+
+    expect(
+      updateTableAdditionalFilters({
+        id: TableId.test,
+        tableById,
+        additionalFilters: { showBuildingBlockAlerts: true },
+      })
+    ).toEqual({
+      [TableId.test]: {
+        ...tableById[TableId.test],
+        additionalFilters: {
+          ...additionalFilters,
+          showBuildingBlockAlerts: true,
+        },
+      },
+    });
+  });
+
+  test('it updates showOnlyThreatIndicatorAlerts on an existing table', () => {
+    const tableById = {
+      [TableId.test]: {
+        ...defaultTableById[TableId.test],
+        additionalFilters,
+      },
+    };
+
+    expect(
+      updateTableAdditionalFilters({
+        id: TableId.test,
+        tableById,
+        additionalFilters: { showOnlyThreatIndicatorAlerts: true },
+      })
+    ).toEqual({
+      [TableId.test]: {
+        ...tableById[TableId.test],
+        additionalFilters: {
+          ...additionalFilters,
+          showOnlyThreatIndicatorAlerts: true,
+        },
       },
     });
   });

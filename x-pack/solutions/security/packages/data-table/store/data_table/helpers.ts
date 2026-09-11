@@ -11,7 +11,7 @@ import { isEmpty } from 'lodash';
 import type { EuiDataGridColumn } from '@elastic/eui';
 import type { ColumnHeaderOptions, SortColumnTable } from '../../common/types';
 import type { DataTablePersistInput, TableById } from './types';
-import type { DataTableModelSettings } from './model';
+import type { DataTableModel, DataTableModelSettings } from './model';
 
 import { getDataTableManageDefaults, tableDefaults } from './defaults';
 import { DEFAULT_TABLE_COLUMN_MIN_WIDTH } from '../../components/data_table/constants';
@@ -431,6 +431,35 @@ export const setSelectedTableEvents = ({
       ...dataTable,
       selectedEventIds,
       isSelectAllChecked,
+    },
+  };
+};
+
+interface UpdateTableAdditionalFiltersParams {
+  id: string;
+  tableById: TableById;
+  additionalFilters: Partial<DataTableModel['additionalFilters']>;
+}
+
+/** Merges alert-page filter flags, or returns `tableById` unchanged when the table is missing. */
+export const updateTableAdditionalFilters = ({
+  id,
+  tableById,
+  additionalFilters,
+}: UpdateTableAdditionalFiltersParams): TableById => {
+  const dataTable = tableById[id];
+  if (dataTable == null) {
+    return tableById;
+  }
+
+  return {
+    ...tableById,
+    [id]: {
+      ...dataTable,
+      additionalFilters: {
+        ...dataTable.additionalFilters,
+        ...additionalFilters,
+      },
     },
   };
 };
