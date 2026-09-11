@@ -163,9 +163,16 @@ export const connectToQueryState = <S extends QueryState>(
       // cloneDeep is required because services are mutating passed objects
       // and state in state container is frozen
       if (syncConfig.time) {
-        const time = validateTimeRange(state.time) ? state.time : timefilter.getTimeDefaults();
+        const isTimeValid = validateTimeRange(state.time);
+        const time = isTimeValid ? state.time : timefilter.getTimeDefaults();
         if (!_.isEqual(time, timefilter.getTime())) {
           timefilter.setTime(_.cloneDeep(time!));
+        }
+        // an invalid time range (e.g. edited directly in the URL) must not be echoed back
+        // into the state container, otherwise consumers like the DateRangePicker would
+        // render the raw, unvalidated value instead of the normalized default
+        if (!isTimeValid) {
+          stateContainer.set({ ...state, time: _.cloneDeep(time) });
         }
       }
 
