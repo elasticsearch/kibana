@@ -21,20 +21,6 @@ export const ALERTS = i18n.translate(
   }
 );
 
-export const ATTACK_CHAIN = i18n.translate(
-  'xpack.securitySolution.detectionEngine.attacks.attackDetails.tabs.attackSummaryTab.attackChainLabel',
-  {
-    defaultMessage: 'Attack Chain',
-  }
-);
-
-export const DETAILS = i18n.translate(
-  'xpack.securitySolution.detectionEngine.attacks.attackDetails.tabs.attackSummaryTab.detailsLabel',
-  {
-    defaultMessage: 'Details',
-  }
-);
-
 export const SHOW_MATCHING_ALERTS_ONLY = i18n.translate(
   'xpack.securitySolution.detectionEngine.attacks.attackDetails.alertsFilteringMode.showMatchingAlertsOnlyLabel',
   {

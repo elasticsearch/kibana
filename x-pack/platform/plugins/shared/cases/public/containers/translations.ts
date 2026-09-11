@@ -48,7 +48,7 @@ export const SUCCESS_SEND_TO_EXTERNAL_SERVICE = (serviceName: string) =>
 export const SYNC_CASE = (caseTitle: string) =>
   i18n.translate('xpack.cases.containers.syncCase', {
     values: { caseTitle },
-    defaultMessage: 'Alerts in "{caseTitle}" have been synced',
+    defaultMessage: 'Detections in "{caseTitle}" have been synced',
   });
 
 export const EXTRACT_OBSERVABLES = (caseTitle: string) =>

@@ -65,7 +65,7 @@ describe('createStatusUserActionBuilder ', () => {
       </TestProviders>
     );
 
-    expect(screen.getByText('and synced 2 alerts with close reason')).toBeInTheDocument();
+    expect(screen.getByText('and synced 2 detections with close reason')).toBeInTheDocument();
     expect(screen.getByText('False Positive')).toBeInTheDocument();
     expect(screen.getByTestId('status-update-user-action-close-reason-badge')).toBeInTheDocument();
   });
@@ -86,7 +86,7 @@ describe('createStatusUserActionBuilder ', () => {
       </TestProviders>
     );
 
-    expect(screen.queryByText('and synced 1 alert with close reason')).not.toBeInTheDocument();
+    expect(screen.queryByText('and synced 1 detection with close reason')).not.toBeInTheDocument();
     expect(screen.queryByText('False Positive')).not.toBeInTheDocument();
     expect(
       screen.queryByTestId('status-update-user-action-close-reason-badge')
@@ -113,7 +113,7 @@ describe('createStatusUserActionBuilder ', () => {
       </TestProviders>
     );
 
-    expect(screen.getByText('and synced 1 alert with close reason')).toBeInTheDocument();
+    expect(screen.getByText('and synced 1 detection with close reason')).toBeInTheDocument();
     expect(screen.getByText('my custom reason')).toBeInTheDocument();
   });
 });

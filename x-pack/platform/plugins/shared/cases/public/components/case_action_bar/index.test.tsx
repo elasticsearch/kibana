@@ -104,13 +104,13 @@ describe('CaseActionBar', () => {
       wrapperProps: { owner: ['observability'], features: { metrics: [] } },
     });
 
-    expect(screen.queryByText('Sync alerts')).not.toBeInTheDocument();
+    expect(screen.queryByText('Sync Detections')).not.toBeInTheDocument();
   });
 
   it('should show the sync alerts toggle when alerting is enabled', () => {
     renderWithTestingProviders(<CaseActionBar {...defaultProps} />);
 
-    expect(screen.getByText('Sync alerts')).toBeInTheDocument();
+    expect(screen.getByText('Sync Detections')).toBeInTheDocument();
   });
 
   it('should not show the Case open text when the lifespan feature is enabled', () => {
@@ -146,7 +146,7 @@ describe('CaseActionBar', () => {
       wrapperProps: { permissions: noUpdateCasesPermissions() },
     });
 
-    expect(screen.queryByText('Sync alerts')).not.toBeInTheDocument();
+    expect(screen.queryByText('Sync Detections')).not.toBeInTheDocument();
   });
 
   it('should not show the delete item in the menu when the user does not have delete privileges', async () => {

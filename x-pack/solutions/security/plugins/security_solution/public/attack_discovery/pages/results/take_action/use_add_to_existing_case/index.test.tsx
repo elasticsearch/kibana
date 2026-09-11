@@ -6,6 +6,7 @@
  */
 
 import { renderHook, act } from '@testing-library/react';
+import { SECURITY_ATTACK_ATTACHMENT_TYPE } from '@kbn/cases-plugin/common';
 
 import { useAddToExistingCase } from '.';
 import { useKibana } from '../../../../../common/lib/kibana';
@@ -140,5 +141,51 @@ describe('useAddToExistingCase', () => {
         rule: { id: null, name: null },
       },
     });
+  });
+
+  it('posts the provided attachments verbatim, without a markdown user comment', () => {
+    mockCanUserCreateAndReadCases.mockReturnValue(true);
+    const mockOpenSelectCaseModal = jest.fn();
+    (useKibana as jest.Mock).mockReturnValue({
+      services: {
+        cases: {
+          hooks: {
+            useCasesAddToExistingCaseModal: jest.fn().mockReturnValue({
+              open: mockOpenSelectCaseModal,
+            }),
+          },
+        },
+      },
+    });
+    const providedAttachments = [
+      {
+        type: SECURITY_ATTACK_ATTACHMENT_TYPE,
+        attachmentId: 'attack-1',
+        metadata: { title: 'An attack', alertCount: 1, index: 'attack-index' },
+      },
+    ];
+
+    const { result } = renderHook(
+      () =>
+        useAddToExistingCase({
+          canUserCreateAndReadCases: mockCanUserCreateAndReadCases,
+          onClick: mockOnClick,
+        }),
+      {
+        wrapper: TestProviders,
+      }
+    );
+
+    act(() => {
+      result.current.onAddToExistingCase({
+        alertIds: mockAlertIds,
+        markdownComments: mockMarkdownComments,
+        replacements: mockReplacements,
+        attachments: providedAttachments,
+      });
+    });
+
+    const getAttachments = mockOpenSelectCaseModal.mock.calls[0][0].getAttachments;
+    expect(getAttachments()).toEqual(providedAttachments);
   });
 });

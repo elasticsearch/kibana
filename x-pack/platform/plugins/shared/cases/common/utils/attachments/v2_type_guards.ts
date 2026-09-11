@@ -17,6 +17,7 @@ import {
   SECURITY_ALERT_ATTACHMENT_TYPE,
   OBSERVABILITY_ALERT_ATTACHMENT_TYPE,
   STACK_ALERT_ATTACHMENT_TYPE,
+  SECURITY_ATTACK_ATTACHMENT_TYPE,
 } from '../../constants/attachments';
 
 const isReferenceAttachmentId = (value: unknown): value is string | string[] => {
@@ -91,3 +92,19 @@ export const isUnifiedAlertAttachment = (
   attachment: AttachmentRequestV2
 ): attachment is UnifiedReferenceAttachmentPayload =>
   isUnifiedReferenceAttachmentRequest(attachment) && UNIFIED_ALERT_TYPES.has(attachment.type);
+
+// ------ Detection -------
+/**
+ * Attachment types whose referenced documents carry `kibana.alert.workflow_status` and
+ * therefore participate in the case status sync. Deliberately kept separate from
+ * `UNIFIED_ALERT_TYPES`, which drives alert-specific counting and the alerts table where
+ * counting an attack as an alert would be wrong.
+ */
+export const UNIFIED_DETECTION_TYPES_ARRAY: string[] = [
+  ...UNIFIED_ALERT_TYPES_ARRAY,
+  SECURITY_ATTACK_ATTACHMENT_TYPE,
+];
+export const UNIFIED_DETECTION_TYPES = new Set<string>(UNIFIED_DETECTION_TYPES_ARRAY);
+
+export const isDetectionAttachmentType = (type: string): boolean =>
+  type === AttachmentType.alert || UNIFIED_DETECTION_TYPES.has(type);

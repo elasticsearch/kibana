@@ -69,6 +69,7 @@ export {
   LEGACY_INDICATOR_ATTACHMENT_TYPE,
   SECURITY_ENTITY_ATTACHMENT_TYPE,
   SECURITY_TIMELINE_ATTACHMENT_TYPE,
+  SECURITY_ATTACK_ATTACHMENT_TYPE,
   MANAGE_TEMPLATES_CAPABILITY,
   ML_ANOMALY_SWIMLANE_ATTACHMENT_TYPE,
   ML_ANOMALY_CHARTS_ATTACHMENT_TYPE,
@@ -94,6 +95,9 @@ export { getSavedObjectsTypes } from './utils/saved_object_types';
 export {
   isEventAttachmentType,
   isAlertAttachmentType,
+  isDetectionAttachmentType,
+  UNIFIED_DETECTION_TYPES,
+  UNIFIED_DETECTION_TYPES_ARRAY,
   isLegacyAttachmentRequest,
   isUnifiedEventAttachment,
   isUnifiedAlertAttachment,

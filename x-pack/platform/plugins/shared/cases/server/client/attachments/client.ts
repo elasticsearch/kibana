@@ -27,6 +27,7 @@ import type {
   GetArgs,
   UpdateArgs,
   BulkGetArgs,
+  BulkDeleteArgs,
   BulkDeleteFileArgs,
   AddFileArgs,
 } from './types';
@@ -35,7 +36,7 @@ import { deleteAll, deleteComment } from './delete';
 import { find, get, getAll, getAllDocumentsAttachedToCase } from './get';
 import { bulkGet } from './bulk_get';
 import { update } from './update';
-import { bulkDeleteFileAttachments } from './bulk_delete';
+import { bulkDeleteAttachments, bulkDeleteFileAttachments } from './bulk_delete';
 import { addFile } from './add_file';
 import { withUsageCounter } from '../usage_counters';
 
@@ -57,6 +58,10 @@ export interface AttachmentsSubClient {
    * Deletes a single attachment for a specific case.
    */
   delete(deleteArgs: DeleteArgs): Promise<void>;
+  /**
+   * Deletes multiple attachments of any type for a specific case.
+   */
+  bulkDelete(deleteArgs: BulkDeleteArgs): Promise<void>;
   bulkDeleteFileAttachments(deleteArgs: BulkDeleteFileArgs): Promise<void>;
   /**
    * Retrieves all comments matching the search criteria.
@@ -93,6 +98,7 @@ const usageCounterByMethod = {
   bulkGet: null,
   deleteAll: 'delete_all_attachments',
   delete: 'delete_attachment',
+  bulkDelete: 'bulk_delete_attachments',
   bulkDeleteFileAttachments: 'bulk_delete_file_attachments',
   find: null,
   getAllDocumentsAttachedToCase: null,
@@ -129,6 +135,11 @@ export const createAttachmentsSubClient = (
       usageCounterByMethod.deleteAll,
       clientArgs,
       (params: DeleteAllArgs) => deleteAll(params, clientArgs)
+    ),
+    bulkDelete: withUsageCounter(
+      usageCounterByMethod.bulkDelete,
+      clientArgs,
+      (params: BulkDeleteArgs) => bulkDeleteAttachments(params, clientArgs)
     ),
     bulkDeleteFileAttachments: withUsageCounter(
       usageCounterByMethod.bulkDeleteFileAttachments,

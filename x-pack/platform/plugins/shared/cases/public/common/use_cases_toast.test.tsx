@@ -207,7 +207,7 @@ describe('Use cases toast hook', () => {
           theCase: { ...mockCase, settings: { syncAlerts: true } },
           attachments: [alertComment as SupportedCaseAttachment],
         });
-        validateContent("Alert statuses were synced with the case's status.");
+        validateContent("Detection statuses were synced with the case's status.");
       });
 
       it('renders empty content when called with an alert attachment and sync off', () => {

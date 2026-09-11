@@ -45,7 +45,7 @@ export const STEP_SETTINGS_DESCRIPTION = i18n.translate(
   'xpack.cases.caseView.tour.settings.description',
   {
     defaultMessage:
-      'Turn case features like alert syncing and observable extraction on or off here.',
+      'Turn case features like detection syncing and observable extraction on or off here.',
   }
 );
 

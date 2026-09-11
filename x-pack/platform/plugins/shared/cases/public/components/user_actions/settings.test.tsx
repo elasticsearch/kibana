@@ -54,7 +54,7 @@ describe('createSettingsUserActionBuilder ', () => {
       expect(screen.getByTestId('settings-update-action-settings-update')).toBeTruthy();
       expect(
         screen.getByText(
-          `${syncAlertsLabel} sync alerts, ${extractObservablesLabel} extract observables`
+          `${syncAlertsLabel} sync detections, ${extractObservablesLabel} extract observables`
         )
       ).toBeTruthy();
     }
@@ -74,7 +74,7 @@ describe('createSettingsUserActionBuilder ', () => {
       const createdUserAction = builder.build();
       renderWithTestingProviders(<EuiCommentList comments={createdUserAction} />);
 
-      expect(screen.getByText(`${syncAlertsLabel} sync alerts`)).toBeTruthy();
+      expect(screen.getByText(`${syncAlertsLabel} sync detections`)).toBeTruthy();
     }
   );
 

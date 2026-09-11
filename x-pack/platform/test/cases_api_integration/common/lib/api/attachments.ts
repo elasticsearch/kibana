@@ -8,6 +8,7 @@
 import type SuperTest from 'supertest';
 import { CASES_INTERNAL_URL, CASES_URL } from '@kbn/cases-plugin/common/constants';
 import {
+  getCaseBulkDeleteAttachmentsUrl,
   getCaseFindAttachmentsUrl,
   getCasesDeleteFileAttachmentsUrl,
 } from '@kbn/cases-plugin/common/api';
@@ -292,6 +293,29 @@ export const updateComment = async ({
     .expect(expectedHttpCode);
 
   return res;
+};
+
+export const bulkDeleteAttachments = async ({
+  supertest,
+  caseId,
+  attachmentIds,
+  expectedHttpCode = 204,
+  auth = { user: superUser, space: null },
+}: {
+  supertest: SuperTest.Agent;
+  caseId: string;
+  attachmentIds: string[];
+  expectedHttpCode?: number;
+  auth?: { user: User; space: string | null };
+}): Promise<{} | Error> => {
+  const { body } = await supertest
+    .post(`${getSpaceUrlPrefix(auth.space)}${getCaseBulkDeleteAttachmentsUrl(caseId)}`)
+    .set('kbn-xsrf', 'true')
+    .auth(auth.user.username, auth.user.password)
+    .send({ ids: attachmentIds })
+    .expect(expectedHttpCode);
+
+  return body;
 };
 
 export const bulkDeleteFileAttachments = async ({

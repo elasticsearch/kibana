@@ -156,6 +156,7 @@ enabled:
   - x-pack/platform/test/cases_api_integration/security_and_spaces/config_trial_common.ts
   - x-pack/platform/test/cases_api_integration/security_and_spaces/config_trial_attachments.ts
   - x-pack/platform/test/cases_api_integration/security_and_spaces/config_trial_attachments_legacy.ts
+  - x-pack/platform/test/cases_api_integration/security_and_spaces/config_trial_attachments_no_attacks.ts
   - x-pack/platform/test/cases_api_integration/security_and_spaces/config_no_public_base_url.ts
   - x-pack/platform/test/cases_api_integration/spaces_only/config.ts
   - x-pack/platform/test/cases_api_integration/spaces_only/config_analytics_v2.ts

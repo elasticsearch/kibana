@@ -1,5 +1,5 @@
 {
-  "sha1": "a3ac9943c19c3e503672f1ff6d0ce5cf8ede0d93",
+  "sha1": "2d947e22650bab96784f1aacd2982617acf7624d",
   "testChannels": [
     "ci-on-commit"
   ],
@@ -11,8 +11,56 @@
       "tags": [],
       "location": {
         "file": "x-pack/solutions/security/plugins/security_solution/test/scout_security_attacks_alignment/ui/parallel_tests/global.setup.ts",
-        "line": 5,
-        "column": 1
+        "line": 11,
+        "column": 16
+      }
+    },
+    {
+      "id": "1f3b1f0fa751de1-ba98ceab5fcc8d7",
+      "title": "Attack case attachments attaches an attack to a new case and renders the preview card and Attacks section",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic",
+        "@cloud-stateful-classic",
+        "@local-serverless-security_complete",
+        "@cloud-serverless-security_complete"
+      ],
+      "location": {
+        "file": "x-pack/solutions/security/plugins/security_solution/test/scout_security_attacks_alignment/ui/parallel_tests/detections/attacks/attack_cases.spec.ts",
+        "line": 69,
+        "column": 14
+      }
+    },
+    {
+      "id": "1f3b1f0fa751de1-6bd307069305a26",
+      "title": "Attack case attachments removes the attack and the alerts it brought in from the Attacks section",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic",
+        "@cloud-stateful-classic",
+        "@local-serverless-security_complete",
+        "@cloud-serverless-security_complete"
+      ],
+      "location": {
+        "file": "x-pack/solutions/security/plugins/security_solution/test/scout_security_attacks_alignment/ui/parallel_tests/detections/attacks/attack_cases.spec.ts",
+        "line": 106,
+        "column": 14
+      }
+    },
+    {
+      "id": "1f3b1f0fa751de1-370e6ade9ad2661",
+      "title": "Attack case attachments opens the attack flyout from the attachment \"Show attack details\" action",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic",
+        "@cloud-stateful-classic",
+        "@local-serverless-security_complete",
+        "@cloud-serverless-security_complete"
+      ],
+      "location": {
+        "file": "x-pack/solutions/security/plugins/security_solution/test/scout_security_attacks_alignment/ui/parallel_tests/detections/attacks/attack_cases.spec.ts",
+        "line": 152,
+        "column": 14
       }
     },
     {
@@ -27,8 +75,8 @@
       ],
       "location": {
         "file": "x-pack/solutions/security/plugins/security_solution/test/scout_security_attacks_alignment/ui/parallel_tests/detections/attacks/attack_flyout.spec.ts",
-        "line": 42,
-        "column": 13
+        "line": 55,
+        "column": 14
       }
     },
     {
@@ -43,8 +91,8 @@
       ],
       "location": {
         "file": "x-pack/solutions/security/plugins/security_solution/test/scout_security_attacks_alignment/ui/parallel_tests/detections/attacks/attack_flyout.spec.ts",
-        "line": 51,
-        "column": 33
+        "line": 67,
+        "column": 14
       }
     },
     {
@@ -59,8 +107,8 @@
       ],
       "location": {
         "file": "x-pack/solutions/security/plugins/security_solution/test/scout_security_attacks_alignment/ui/parallel_tests/detections/attacks/attacks_execution_ui.spec.ts",
-        "line": 31,
-        "column": 15
+        "line": 39,
+        "column": 14
       }
     },
     {
@@ -75,8 +123,8 @@
       ],
       "location": {
         "file": "x-pack/solutions/security/plugins/security_solution/test/scout_security_attacks_alignment/ui/parallel_tests/detections/attacks/attacks_filters.spec.ts",
-        "line": 26,
-        "column": 25
+        "line": 33,
+        "column": 14
       }
     },
     {
@@ -91,8 +139,8 @@
       ],
       "location": {
         "file": "x-pack/solutions/security/plugins/security_solution/test/scout_security_attacks_alignment/ui/parallel_tests/detections/attacks/attacks_filters.spec.ts",
-        "line": 40,
-        "column": 20
+        "line": 56,
+        "column": 14
       }
     },
     {
@@ -107,8 +155,8 @@
       ],
       "location": {
         "file": "x-pack/solutions/security/plugins/security_solution/test/scout_security_attacks_alignment/ui/parallel_tests/detections/attacks/attacks_page_smoke.spec.ts",
-        "line": 30,
-        "column": 15
+        "line": 38,
+        "column": 14
       }
     },
     {
@@ -123,8 +171,8 @@
       ],
       "location": {
         "file": "x-pack/solutions/security/plugins/security_solution/test/scout_security_attacks_alignment/ui/parallel_tests/detections/attacks/attacks_schedule.spec.ts",
-        "line": 31,
-        "column": 15
+        "line": 39,
+        "column": 14
       }
     },
     {
@@ -139,8 +187,8 @@
       ],
       "location": {
         "file": "x-pack/solutions/security/plugins/security_solution/test/scout_security_attacks_alignment/ui/parallel_tests/detections/attacks/attacks_schedule.spec.ts",
-        "line": 36,
-        "column": 36
+        "line": 51,
+        "column": 14
       }
     },
     {
@@ -155,8 +203,8 @@
       ],
       "location": {
         "file": "x-pack/solutions/security/plugins/security_solution/test/scout_security_attacks_alignment/ui/parallel_tests/detections/attacks/navigation.spec.ts",
-        "line": 23,
-        "column": 15
+        "line": 27,
+        "column": 14
       }
     }
   ]

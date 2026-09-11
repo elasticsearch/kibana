@@ -50,7 +50,8 @@ export type AttacksActionTelemetrySource =
   | 'attacks_page_group_summary'
   | 'attacks_page_group_take_action'
   | 'attacks_page_flyout_header'
-  | 'attacks_page_flyout_take_action';
+  | 'attacks_page_flyout_take_action'
+  | 'case_attachment_table';
 
 export type AttacksUpdateScope = 'attack_only' | 'attack_and_related_alerts';
 

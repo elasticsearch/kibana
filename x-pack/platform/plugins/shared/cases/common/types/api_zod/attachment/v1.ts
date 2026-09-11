@@ -11,6 +11,7 @@ import {
   MAX_BULK_GET_ATTACHMENTS,
   MAX_COMMENTS_PER_PAGE,
   MAX_COMMENT_LENGTH,
+  MAX_BULK_DELETE_ATTACHMENTS,
   MAX_DELETE_FILES,
   MAX_FILENAME_LENGTH,
 } from '../../../constants';
@@ -46,6 +47,19 @@ export const BulkDeleteFileAttachmentsRequestSchema = z.object({
     codec: NonEmptyString,
     min: MIN_DELETE_IDS,
     max: MAX_DELETE_FILES,
+    fieldName: 'ids',
+  }),
+});
+
+/**
+ * Attachments bulk delete
+ */
+
+export const BulkDeleteAttachmentsRequestSchema = z.object({
+  ids: limitedArraySchema({
+    codec: NonEmptyString,
+    min: MIN_DELETE_IDS,
+    max: MAX_BULK_DELETE_ATTACHMENTS,
     fieldName: 'ids',
   }),
 });
@@ -145,6 +159,7 @@ export const BulkGetAttachmentsResponseSchema = z.object({
   ),
 });
 
+export type BulkDeleteAttachmentsRequest = z.infer<typeof BulkDeleteAttachmentsRequestSchema>;
 export type BulkDeleteFileAttachmentsRequest = z.infer<
   typeof BulkDeleteFileAttachmentsRequestSchema
 >;

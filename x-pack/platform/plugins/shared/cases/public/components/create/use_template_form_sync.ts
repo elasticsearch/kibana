@@ -23,8 +23,8 @@ import { useGetFieldDefinitions } from '../field_library/hooks/use_get_field_def
 import { useGetSupportedActionConnectors } from '../../containers/configure/use_get_supported_action_connectors';
 
 /**
- * Values a template applies by default and reverts to when it stops applying them. Sync alerts and
- * extract observables default to off for templates — a template only turns them on if it says so.
+ * Values a template applies by default and reverts to when it stops applying them. Sync detections
+ * and extract observables default to off for templates — a template only turns them on if it says so.
  */
 const DEFAULT_SYNC_ALERTS = false;
 const DEFAULT_EXTRACT_OBSERVABLES = false;

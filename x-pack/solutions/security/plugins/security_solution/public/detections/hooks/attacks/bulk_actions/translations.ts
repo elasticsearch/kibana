@@ -115,6 +115,25 @@ export const ADD_TO_EXISTING_CASE = i18n.translate(
   }
 );
 
+export const ATTACK_ALERTS_TRUNCATED = ({
+  alertCount,
+  attachedAlertCount,
+}: {
+  alertCount: number;
+  attachedAlertCount: number;
+}) =>
+  i18n.translate(
+    'xpack.securitySolution.detections.hooks.attacks.bulkActions.attackAlertsTruncatedWarningTitle',
+    {
+      defaultMessage:
+        'Added {attachedAlertCount} of the {alertCount} alerts in this attack. A case accepts at most {attachedAlertCount} alerts per request.',
+      values: {
+        alertCount,
+        attachedAlertCount,
+      },
+    }
+  );
+
 export const ATTACK_TAGS_CONTEXT_MENU_ITEM_TITLE = i18n.translate(
   'xpack.securitySolution.detections.hooks.attacks.bulkActions.alertTagsContextMenuItemTitle',
   {

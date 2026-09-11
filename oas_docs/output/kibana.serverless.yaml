@@ -20191,6 +20191,75 @@ paths:
       x-metaTags:
         - content: Kibana, Elastic Cloud Serverless
           name: product_name
+  /api/cases/{caseId}/comments/_bulk_delete:
+    post:
+      description: |
+        **Spaces method and path for this operation:**
+
+        <div><span class="operation-verb post">post</span>&nbsp;<span class="operation-path">/s/{space_id}/api/cases/{caseId}/comments/_bulk_delete</span></div>
+
+        Refer to [Spaces](https://www.elastic.co/docs/deploy-manage/manage-spaces) for more information.
+
+        Deletes the attachments identified by `ids` from a case. Any attachment type is accepted, including comments, alerts and files. A maximum of 100 attachments can be deleted per request. The request fails without deleting anything if any of the identifiers is not an attachment of the case.
+
+        You must have `all` privileges for the **Cases** feature in the **Management**, **Observability**, or **Security** section of the Kibana feature privileges, depending on the owner of the cases you're deleting.
+      operationId: bulkDeleteCaseCommentsDefaultSpace
+      parameters:
+        - $ref: '#/components/parameters/Cases_kbn_xsrf'
+        - $ref: '#/components/parameters/Cases_case_id'
+      requestBody:
+        content:
+          application/json:
+            examples:
+              bulkDeleteCaseCommentsRequest:
+                $ref: '#/components/examples/Cases_bulk_delete_case_comments_request'
+            schema:
+              $ref: '#/components/schemas/Cases_bulk_delete_case_comments_request'
+        required: true
+      responses:
+        '204':
+          description: Indicates a successful call.
+        '401':
+          content:
+            application/json:
+              examples:
+                response401:
+                  $ref: '#/components/examples/Cases_response_401'
+              schema:
+                $ref: '#/components/schemas/Cases_response_4xx'
+          description: Authorization information is missing or invalid.
+        '404':
+          content:
+            application/json:
+              examples:
+                response404:
+                  $ref: '#/components/examples/Cases_response_404'
+              schema:
+                $ref: '#/components/schemas/Cases_response_4xx'
+          description: One or more of the identifiers is not an attachment of the case.
+      summary: Delete multiple case comments or alerts
+      tags:
+        - cases
+      x-codeSamples:
+        - label: curl
+          lang: curl
+          source: |
+            curl \
+              --request POST 'https://localhost:5601/api/cases/9c235210-6834-11ea-a78c-6ffb38a34414/comments/_bulk_delete' \
+              --header "Authorization: $API_KEY" \
+              --header "Content-Type: application/json" \
+              --header "kbn-xsrf: true" \
+              --data '{"ids":["71ec1870-725b-11ea-a0b2-c51ea50a58e2"]}'
+        - label: Console
+          lang: console
+          source: |
+            POST kbn:/api/cases/9c235210-6834-11ea-a78c-6ffb38a34414/comments/_bulk_delete
+            {
+              "ids": ["71ec1870-725b-11ea-a0b2-c51ea50a58e2"]
+            }
+      x-metaTags:
+        - content: Kibana, Elastic Cloud Serverless
+          name: product_name
   /api/cases/{caseId}/comments/_find:
     get:
       description: |
@@ -83087,6 +83156,12 @@ components:
           profile_uid: u_mGBROF_q5bmFCATbLXAcCwKa0k8JvONAwSruelyKA5E_0
           username: elastic
         version: WzIzMzgsMV0=
+    Cases_bulk_delete_case_comments_request:
+      summary: Deletes multiple attachments from a case.
+      value:
+        ids:
+          - 71ec1870-725b-11ea-a0b2-c51ea50a58e2
+          - 8af6ac20-74f6-11ea-b83a-553aecdb28b6
     Cases_create_case_request:
       summary: Create a security case that uses a Jira connector.
       value:
@@ -87674,6 +87749,22 @@ components:
         - userComments
       title: Attachment totals
       type: object
+    Cases_bulk_delete_case_comments_request:
+      additionalProperties: false
+      title: Bulk delete case comments request
+      type: object
+      properties:
+        ids:
+          description: |
+            The identifiers of the attachments to delete. Every identifier must belong to an attachment of the case; if any of them does not, the request fails and nothing is deleted.
+          items:
+            example: 71ec1870-725b-11ea-a0b2-c51ea50a58e2
+            type: string
+          maxItems: 100
+          minItems: 1
+          type: array
+      required:
+        - ids
     Cases_case_categories:
       items:
         $ref: '#/components/schemas/Cases_case_category'

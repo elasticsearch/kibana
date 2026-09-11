@@ -19,6 +19,7 @@ import type { CaseRoute } from './types';
 import { getTagsRoute } from './cases/tags/get_tags';
 import { deleteAllCommentsRoute } from './comments/delete_all_comments';
 import { deleteCommentRoute } from './comments/delete_comment';
+import { bulkDeleteCommentsRoute } from './comments/bulk_delete_comments';
 import { findCommentsRoute } from './comments/find_comments';
 import { getCommentRoute } from './comments/get_comment';
 import { patchCommentRoute } from './comments/patch_comment';
@@ -55,6 +56,7 @@ export const getExternalRoutes = ({
     getTagsRoute,
     deleteCommentRoute,
     deleteAllCommentsRoute,
+    bulkDeleteCommentsRoute,
     findCommentsRoute,
     getCommentRoute,
     patchCommentRoute,

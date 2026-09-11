@@ -41,6 +41,7 @@ export type {
 } from './client/attachment_framework/types';
 export { AttachmentActionType, defineAttachment } from './client/attachment_framework/types';
 export { useCasesContext } from './components/cases_context/use_cases_context';
+export { useRefreshCaseViewPage } from './components/case_view/use_on_refresh_case_view_page';
 export { ShowTableButton } from './components/attachments/common/show_table_button';
 export type {
   CasesTimelineIntegration,

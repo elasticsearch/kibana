@@ -155,5 +155,6 @@ export const REMOVED_TEMPLATE_LABEL = i18n.translate(
 export const SYNCED_ALERTS_WITH_CLOSE_REASON = (count: number) =>
   i18n.translate('xpack.cases.caseView.userActions.status.syncedAlertsWithCloseReason', {
     values: { count },
-    defaultMessage: 'and synced {count, plural, =1 {# alert} other {# alerts}} with close reason',
+    defaultMessage:
+      'and synced {count, plural, =1 {# detection} other {# detections}} with close reason',
   });

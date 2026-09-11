@@ -151,11 +151,11 @@ export const CHANGED_CONNECTOR_FIELD = i18n.translate('xpack.cases.caseView.fiel
 });
 
 export const SYNC_ALERTS = i18n.translate('xpack.cases.caseView.syncAlertsLabel', {
-  defaultMessage: `Sync alerts`,
+  defaultMessage: `Sync Detections`,
 });
 
 export const SYNC_ALERTS_LC = i18n.translate('xpack.cases.caseView.syncAlertsLowercaseLabel', {
-  defaultMessage: `sync alerts`,
+  defaultMessage: `sync detections`,
 });
 
 export const EXTRACT_OBSERVABLES_LC = i18n.translate(

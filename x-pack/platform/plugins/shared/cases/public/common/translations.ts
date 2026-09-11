@@ -328,11 +328,11 @@ export const SYNC_ALERTS_SWITCH_LABEL_OFF = i18n.translate(
 );
 
 export const SYNC_ALERTS = i18n.translate('xpack.cases.settings.syncAlerts', {
-  defaultMessage: 'Sync alerts',
+  defaultMessage: 'Sync Detections',
 });
 
 export const SYNC_ALERTS_HELP = i18n.translate('xpack.cases.components.create.syncAlertHelpText', {
-  defaultMessage: 'Enabling this option will sync the alert statuses with the case status.',
+  defaultMessage: 'Enabling this option will sync the detection statuses with the case status.',
 });
 
 export const EXTRACT_OBSERVABLES_SWITCH_LABEL_ON = i18n.translate(
@@ -421,7 +421,7 @@ export const CASE_ALERT_SUCCESS_TOAST = (title: string, quantity: number = 1) =>
 export const CASE_ALERT_SUCCESS_SYNC_TEXT = i18n.translate(
   'xpack.cases.actions.caseAlertSuccessSyncText',
   {
-    defaultMessage: "Alert statuses were synced with the case's status.",
+    defaultMessage: "Detection statuses were synced with the case's status.",
   }
 );
 
@@ -436,7 +436,7 @@ export const CASE_ALERT_SUCCESS_SYNC_AND_EXTRACT_TEXT = i18n.translate(
   'xpack.cases.actions.caseAlertSuccessSyncAndExtractText',
   {
     defaultMessage:
-      "Alert statuses were synced with the case's status and observables were extracted and added to the case.",
+      "Detection statuses were synced with the case's status and observables were extracted and added to the case.",
   }
 );
 

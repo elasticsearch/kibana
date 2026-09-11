@@ -6,7 +6,7 @@
  */
 
 import React from 'react';
-import { render } from '@testing-library/react';
+import { fireEvent, render } from '@testing-library/react';
 import { TestProviders } from '../../../../common/mock';
 import { AttacksGroupTakeActionItems } from './attacks_group_take_action_items';
 import { getMockAttackDiscoveryAlerts } from '../../../../attack_discovery/pages/mock/mock_attack_discovery_alerts';
@@ -20,6 +20,8 @@ import { useAttackCaseContextMenuItems } from '../../../hooks/attacks/bulk_actio
 import { useAttackRunWorkflowContextMenuItems } from '../../../hooks/attacks/bulk_actions/context_menu_items/use_attack_run_workflow_context_menu_items';
 import { useIsInSecurityApp } from '../../../../common/hooks/is_in_security_app';
 import type { AttackDiscoveryAlert } from '@kbn/elastic-assistant-common';
+import type { AttackToAttach } from '../../../../cases/attachments/attack';
+import { buildAttackAttachments } from '../../../../cases/attachments/attack';
 
 jest.mock(
   '../../../hooks/attacks/bulk_actions/context_menu_items/use_attack_view_in_ai_assistant_context_menu_items'
@@ -284,6 +286,119 @@ describe('AttacksGroupTakeActionItems', () => {
       expect(await findByText('Explore in Attacks')).toBeInTheDocument();
       expect(queryByText('Investigate in Timeline')).not.toBeInTheDocument();
     });
+
+    describe('showNavigationAction', () => {
+      const renderWithNavigationAction = (showNavigationAction?: boolean) =>
+        render(
+          <TestProviders>
+            <AttacksGroupTakeActionItems
+              attack={mockAttack}
+              showNavigationAction={showNavigationAction}
+              telemetrySource="attacks_page_group_take_action"
+              isRemoteDocument={false}
+            />
+          </TestProviders>
+        );
+
+      beforeEach(() => {
+        mockUseAttackCaseContextMenuItems.mockReturnValue({
+          items: [
+            { name: 'Add to existing case', key: 'addToExistingCase' },
+            { name: 'Add to new case', key: 'addToNewCase' },
+          ],
+          panels: [],
+        });
+      });
+
+      it('renders the navigation item by default', async () => {
+        mockUseIsInSecurityApp.mockReturnValue(true);
+        const { findByText } = renderWithNavigationAction();
+
+        expect(await findByText('Investigate in Timeline')).toBeInTheDocument();
+      });
+
+      it('renders the other action items when the navigation item is shown', async () => {
+        mockUseIsInSecurityApp.mockReturnValue(true);
+        const { findByText } = renderWithNavigationAction(true);
+
+        expect(await findByText('Add to existing case')).toBeInTheDocument();
+        expect(await findByText('Add to new case')).toBeInTheDocument();
+        expect(await findByText('Mark as acknowledged')).toBeInTheDocument();
+        expect(await findByText('Assign alert')).toBeInTheDocument();
+        expect(await findByText('Apply alert tags')).toBeInTheDocument();
+        expect(await findByText('Run workflow')).toBeInTheDocument();
+        expect(await findByText('View in AI Assistant')).toBeInTheDocument();
+      });
+
+      it('omits `Investigate in Timeline` when false and inside the Security Solution app', () => {
+        mockUseIsInSecurityApp.mockReturnValue(true);
+        const { queryByText } = renderWithNavigationAction(false);
+
+        expect(queryByText('Investigate in Timeline')).not.toBeInTheDocument();
+      });
+
+      it('omits `Explore in Attacks` when false and outside the Security Solution app', () => {
+        mockUseIsInSecurityApp.mockReturnValue(false);
+        const { queryByText } = renderWithNavigationAction(false);
+
+        expect(queryByText('Explore in Attacks')).not.toBeInTheDocument();
+      });
+
+      it('keeps the other action items when the navigation item is omitted', async () => {
+        mockUseIsInSecurityApp.mockReturnValue(true);
+        const { findByText } = renderWithNavigationAction(false);
+
+        expect(await findByText('Add to existing case')).toBeInTheDocument();
+        expect(await findByText('Add to new case')).toBeInTheDocument();
+        expect(await findByText('Mark as acknowledged')).toBeInTheDocument();
+        expect(await findByText('Assign alert')).toBeInTheDocument();
+        expect(await findByText('Apply alert tags')).toBeInTheDocument();
+        expect(await findByText('Run workflow')).toBeInTheDocument();
+        expect(await findByText('View in AI Assistant')).toBeInTheDocument();
+      });
+
+      it('keeps the other action items sub-panels reachable when the navigation item is omitted', async () => {
+        mockUseIsInSecurityApp.mockReturnValue(true);
+        mockUseAttackTagsContextMenuItems.mockReturnValue({
+          items: [{ name: 'Apply alert tags', key: 'applyAlertTags', panel: 'attackTagsPanel' }],
+          panels: [
+            {
+              id: 'attackTagsPanel',
+              title: 'Apply alert tags',
+              content: <div>{'Tag selector'}</div>,
+            },
+          ],
+        });
+
+        const { findByText } = renderWithNavigationAction(false);
+        fireEvent.click(await findByText('Apply alert tags'));
+
+        expect(await findByText('Tag selector')).toBeInTheDocument();
+      });
+
+      it('keeps the navigation-only menu for a remote document', async () => {
+        mockUseIsInSecurityApp.mockReturnValue(true);
+        const { findByText, queryByText } = render(
+          <TestProviders>
+            <AttacksGroupTakeActionItems
+              attack={mockAttack}
+              showNavigationAction={false}
+              telemetrySource="attacks_page_group_take_action"
+              isRemoteDocument={true}
+            />
+          </TestProviders>
+        );
+
+        expect(await findByText('Investigate in Timeline')).toBeInTheDocument();
+        expect(queryByText('Add to existing case')).not.toBeInTheDocument();
+        expect(queryByText('Add to new case')).not.toBeInTheDocument();
+        expect(queryByText('Mark as acknowledged')).not.toBeInTheDocument();
+        expect(queryByText('Assign alert')).not.toBeInTheDocument();
+        expect(queryByText('Apply alert tags')).not.toBeInTheDocument();
+        expect(queryByText('Run workflow')).not.toBeInTheDocument();
+        expect(queryByText('View in AI Assistant')).not.toBeInTheDocument();
+      });
+    });
   });
 
   describe('run workflow', () => {
@@ -297,6 +412,62 @@ describe('AttacksGroupTakeActionItems', () => {
 
       const { queryByText } = renderAttack(mockAttack);
       expect(queryByText('Run workflow')).not.toBeInTheDocument();
+    });
+  });
+
+  describe('attack case attachment', () => {
+    it('passes the attack to attach to the cases hook', () => {
+      const attack = { ...mockAttack, index: '.alerts-security.attack.discovery.alerts-default' };
+      renderAttack(attack);
+
+      expect(mockUseAttackCaseContextMenuItems).toHaveBeenCalledWith(
+        expect.objectContaining({
+          attackToAttach: {
+            id: attack.id,
+            index: attack.index,
+            title: attack.title,
+            summaryMarkdown: attack.summaryMarkdown,
+            detailsMarkdown: attack.detailsMarkdown,
+            entitySummaryMarkdown: attack.entitySummaryMarkdown,
+            mitreAttackTactics: attack.mitreAttackTactics,
+            timestamp: attack.timestamp,
+            riskScore: attack.riskScore,
+            alertIds: attack.alertIds,
+            replacements: attack.replacements,
+          },
+        })
+      );
+    });
+
+    it('builds a de-anonymised narrative snapshot from what it passes', () => {
+      const attack = { ...mockAttack, index: '.alerts-security.attack.discovery.alerts-default' };
+      renderAttack(attack);
+
+      const { attackToAttach } = mockUseAttackCaseContextMenuItems.mock.calls[0][0];
+      const [attackAttachment] = buildAttackAttachments({
+        ...(attackToAttach as Omit<AttackToAttach, 'alertsIndex'>),
+        alertsIndex: '.alerts-security.alerts-default',
+      }).attachments;
+
+      expect(attackAttachment).toEqual(
+        expect.objectContaining({
+          metadata: expect.objectContaining({
+            detailsMarkdown: expect.stringContaining('SRVMAC08'),
+            entitySummaryMarkdown: expect.stringContaining('SRVMAC08'),
+            summaryMarkdown: expect.stringContaining('SRVMAC08'),
+            mitreAttackTactics: attack.mitreAttackTactics,
+            timestamp: attack.timestamp,
+          }),
+        })
+      );
+    });
+
+    it('omits the attack to attach when the source index is unknown', () => {
+      renderAttack({ ...mockAttack, index: undefined });
+
+      expect(mockUseAttackCaseContextMenuItems).toHaveBeenCalledWith(
+        expect.objectContaining({ attackToAttach: undefined })
+      );
     });
   });
 

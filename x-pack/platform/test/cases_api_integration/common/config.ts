@@ -23,7 +23,16 @@ interface CreateTestConfigOptions {
   publicBaseUrl?: boolean;
   indexRefreshInterval?: string | false;
   kbnServerArgs?: string[];
+  /**
+   * `xpack.securitySolution.enableExperimental` flags to boot Kibana with. Defaults to the
+   * flags the attachment suites need; override to assert flag-off behaviour.
+   */
+  experimentalFeatures?: string[];
 }
+
+// Registers the unified `security.entity` and `security.attack` attachment types so the
+// cases attachment tests exercise them (both are gated behind these experimental flags).
+const DEFAULT_EXPERIMENTAL_FEATURES = ['entityAttachmentsEnabled', 'attackAttachmentsEnabled'];
 
 const enabledActionTypes = [
   '.cases',
@@ -121,11 +130,9 @@ export function createTestConfig(name: string, options: CreateTestConfigOptions)
           '--xpack.ruleRegistry.write.enabled=true',
           '--xpack.ruleRegistry.write.cache.enabled=false',
           '--xpack.cases.analytics.index.enabled=true',
-          // Registers the unified `security.entity` attachment type so the cases
-          // attachment tests exercise it (gated behind this experimental flag).
-          `--xpack.securitySolution.enableExperimental=${JSON.stringify([
-            'entityAttachmentsEnabled',
-          ])}`,
+          `--xpack.securitySolution.enableExperimental=${JSON.stringify(
+            options.experimentalFeatures ?? DEFAULT_EXPERIMENTAL_FEATURES
+          )}`,
           ...(options.kbnServerArgs ?? []),
         ],
       },

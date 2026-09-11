@@ -292,13 +292,16 @@ const getAndValidateIndexedAttachmentInfo = (
 /**
  * Builds AlertInfo for the alerts in `comments`. Pass `strict: true` only when validating a new
  * write before it's persisted; reads of already-persisted attachments must stay lenient.
+ * `isSupportedType` widens which attachment types contribute; the status sync passes
+ * `isDetectionAttachmentType` so attached attacks are collected alongside alerts.
  */
 export const getAlertInfoFromComments = (
   comments: AttachmentRequestV2[] = [],
-  strict = false
+  strict = false,
+  isSupportedType: (type: string) => boolean = isAlertAttachmentType
 ): AlertInfo[] =>
   comments.reduce((acc: AlertInfo[], comment) => {
-    acc.push(...getAndValidateIndexedAttachmentInfo(comment, isAlertAttachmentType, strict));
+    acc.push(...getAndValidateIndexedAttachmentInfo(comment, isSupportedType, strict));
     return acc;
   }, []);
 
@@ -427,12 +430,18 @@ export function createAlertUpdateStatusRequest({
   comment,
   status,
   closingReason,
+  isSupportedType,
 }: {
   comment: AttachmentRequestV2;
   status: CaseStatuses;
   closingReason?: string;
+  isSupportedType?: (type: string) => boolean;
 }): UpdateAlertStatusRequest[] {
-  return getAlertInfoFromComments([comment]).map((alert) => ({ ...alert, status, closingReason }));
+  return getAlertInfoFromComments([comment], false, isSupportedType).map((alert) => ({
+    ...alert,
+    status,
+    closingReason,
+  }));
 }
 
 /**

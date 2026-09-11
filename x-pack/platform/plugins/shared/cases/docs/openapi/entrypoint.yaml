@@ -43,6 +43,8 @@ paths:
     $ref: 'paths/api@cases@{caseid}@alerts.yaml'
   '/api/cases/{caseId}/comments':
     $ref: 'paths/api@cases@{caseid}@comments.yaml'
+  '/api/cases/{caseId}/comments/_bulk_delete':
+    $ref: 'paths/api@cases@{caseid}@comments@_bulk_delete.yaml'
   '/api/cases/{caseId}/comments/_find':
     $ref: 'paths/api@cases@{caseid}@comments@_find.yaml'
   '/api/cases/{caseId}/comments/{commentId}':

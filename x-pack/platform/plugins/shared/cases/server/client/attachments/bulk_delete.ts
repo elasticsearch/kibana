@@ -9,20 +9,114 @@ import Boom from '@hapi/boom';
 
 import pMap from 'p-map';
 import { partition } from 'lodash';
-import type { Logger } from '@kbn/core/server';
+import type { Logger, SavedObject } from '@kbn/core/server';
 import type { File, FileJSON } from '@kbn/files-plugin/common';
 import type { FileServiceStart } from '@kbn/files-plugin/server';
 import { FileNotFoundError } from '@kbn/files-plugin/server/file_service/errors';
-import { BulkDeleteFileAttachmentsRequestRt } from '../../../common/types/api';
-import { decodeWithExcessOrThrow } from '../../common/runtime_types';
+import type { AttachmentAttributesV2 } from '../../../common/types/domain';
+import {
+  AttachmentRequestRtV2,
+  BulkDeleteAttachmentsRequestRt,
+  BulkDeleteFileAttachmentsRequestRt,
+} from '../../../common/types/api';
+import { decodeOrThrow, decodeWithExcessOrThrow } from '../../common/runtime_types';
 import { MAX_CONCURRENT_SEARCHES } from '../../../common/constants';
 import type { CasesClientArgs } from '../types';
 import { createCaseError } from '../../common/error';
 import { Operations } from '../../authorization';
-import type { BulkDeleteFileArgs } from './types';
+import type { BulkDeleteArgs, BulkDeleteFileArgs } from './types';
 import { CaseFileMetadataForDeletionRt } from '../../../common/files';
 import type { CasesClient } from '../client';
 import { createFileEntities, deleteFiles } from '../files';
+import { handleAlerts, updateCaseAttachmentStats } from './delete';
+import { partitionByCaseAssociation } from '../../common/partitioning';
+import type { AttachmentSavedObjectType } from '../../services/user_actions/types';
+
+/**
+ * Deletes multiple attachments of a case in a single call.
+ *
+ * Unlike {@link bulkDeleteFileAttachments} this is type agnostic: any attachment saved object
+ * attached to the case can be deleted. The request is rejected as a whole if any of the ids
+ * cannot be found on the case, so callers never end up with a partially applied deletion they
+ * did not ask for.
+ */
+export const bulkDeleteAttachments = async (
+  { caseId, attachmentIds }: BulkDeleteArgs,
+  clientArgs: CasesClientArgs
+): Promise<void> => {
+  const {
+    user,
+    services: { caseService, attachmentService, userActionService, alertsService },
+    logger,
+    authorization,
+  } = clientArgs;
+
+  try {
+    const request = decodeWithExcessOrThrow(BulkDeleteAttachmentsRequestRt)({ ids: attachmentIds });
+    const uniqueIds = [...new Set(request.ids)];
+
+    // Read in unified mode: unified-only types (e.g. `security.attack`) have no legacy
+    // representation, so a legacy read of one throws. Attachments still stored in the legacy
+    // saved object come back in their legacy shape, which every consumer below accepts.
+    const { saved_objects: soAttachments } = await attachmentService.getter.bulkGet(
+      uniqueIds,
+      'unified'
+    );
+
+    const missingIds = soAttachments
+      .filter((attachment) => attachment.error != null || attachment.attributes == null)
+      .map((attachment) => attachment.id);
+
+    const [attachmentsInCase, attachmentsNotInCase] = partitionByCaseAssociation(
+      caseId,
+      soAttachments.filter(
+        (attachment) => attachment.error == null && attachment.attributes != null
+      ) as Array<SavedObject<AttachmentAttributesV2>>
+    );
+
+    const invalidIds = [...missingIds, ...attachmentsNotInCase.map((attachment) => attachment.id)];
+
+    if (invalidIds.length > 0) {
+      throw Boom.notFound(`These attachments ${invalidIds.join(', ')} do not exist in ${caseId}.`);
+    }
+
+    await authorization.ensureAuthorized({
+      entities: attachmentsInCase.map((attachment) => ({
+        id: attachment.id,
+        owner: attachment.attributes.owner,
+      })),
+      operation: Operations.deleteComment,
+    });
+
+    await attachmentService.bulkDelete({ savedObjectIds: uniqueIds, refresh: true });
+
+    await updateCaseAttachmentStats({ caseService, attachmentService, caseId, user });
+
+    await userActionService.creator.bulkCreateAttachmentDeletion({
+      caseId,
+      attachments: attachmentsInCase.map((attachment) => ({
+        id: attachment.id,
+        owner: attachment.attributes.owner,
+        // strip the non request fields (created_at etc.) the same way the single delete does
+        attachment: decodeOrThrow(AttachmentRequestRtV2)(attachment.attributes),
+        savedObjectType: attachment.type as AttachmentSavedObjectType,
+      })),
+      user,
+    });
+
+    await handleAlerts({
+      alertsService,
+      attachments: attachmentsInCase.map((attachment) => attachment.attributes),
+      caseId,
+    });
+  } catch (error) {
+    throw createCaseError({
+      message: `Failed to bulk delete attachments for case: ${caseId}: ${error}`,
+      error,
+      logger,
+    });
+  }
+};
 
 export const bulkDeleteFileAttachments = async (
   { caseId, fileIds }: BulkDeleteFileArgs,

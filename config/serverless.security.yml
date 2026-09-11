@@ -254,7 +254,9 @@ xpack.alerting.rules.run.ruleTypeOverrides:
 # Experimental Security Solution features
 
 # These features are disabled in Serverless until fully tested
-xpack.securitySolution.enableExperimental: [riskScoreAssistantToolDisabled, disable:enableRiskScorePrivmonModifier, disable:kubernetesEnabled, trialCompanionEnabled]
+# TEMPORARY - DO NOT MERGE: attackAttachmentsEnabled is added here only so this PR's
+# serverless QA deployment exposes the feature for manual testing. Revert before merge.
+xpack.securitySolution.enableExperimental: [riskScoreAssistantToolDisabled, disable:enableRiskScorePrivmonModifier, disable:kubernetesEnabled, trialCompanionEnabled, attackAttachmentsEnabled]
 
 # AI Assistant config
 aiAssistantManagementSelection.preferredAIAssistantType: 'security'

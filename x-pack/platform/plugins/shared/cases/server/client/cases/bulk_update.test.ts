@@ -5,6 +5,8 @@
  * 2.0.
  */
 
+import type { SavedObjectsFindResult } from '@kbn/core/server';
+import type { AttachmentAttributes } from '../../../common/types/domain';
 import { CustomFieldTypes, CaseStatuses, CaseSeverity } from '../../../common/types/domain';
 import { stringify as yamlStringify } from 'yaml';
 import {
@@ -17,10 +19,15 @@ import {
   MAX_USER_ACTIONS_PER_CASE,
   MAX_ASSIGNEES_PER_CASE,
   MAX_CUSTOM_FIELDS_PER_CASE,
+  CASE_ATTACHMENT_SAVED_OBJECT,
 } from '../../../common/constants';
 import { SECURITY_SOLUTION_OWNER, OBSERVABILITY_OWNER } from '../../../common/constants/owners';
 import { usageCollectionPluginMock } from '@kbn/usage-collection-plugin/server/mocks';
 import type { CaseSavedObjectTransformed } from '../../common/types/case';
+import {
+  SECURITY_ATTACK_ATTACHMENT_TYPE,
+  SECURITY_ENTITY_ATTACHMENT_TYPE,
+} from '../../../common/constants/attachments';
 import { mockCaseComments, mockCases } from '../../mocks';
 import { createCasesClientMock, createCasesClientMockArgs } from '../mocks';
 import { Operations } from '../../authorization';
@@ -3169,6 +3176,174 @@ describe('update', () => {
 
         expect(result[0]).not.toHaveProperty('updateSummary');
       });
+    });
+  });
+
+  describe('Detection status sync', () => {
+    const clientArgs = createCasesClientMockArgs();
+
+    type FoundAttachment = SavedObjectsFindResult<AttachmentAttributes>;
+
+    const attachmentBase = {
+      created_at: '2019-11-25T22:32:30.608Z',
+      created_by: { full_name: 'elastic', email: 'testemail@elastic.co', username: 'elastic' },
+      owner: SECURITY_SOLUTION_OWNER,
+      pushed_at: null,
+      pushed_by: null,
+      updated_at: '2019-11-25T22:32:30.608Z',
+      updated_by: { full_name: 'elastic', email: 'testemail@elastic.co', username: 'elastic' },
+    };
+
+    const caseReference = [
+      { type: 'cases', name: 'associated-cases', id: mockCases[0].id },
+    ] as const;
+
+    const attackAttachment = {
+      type: CASE_ATTACHMENT_SAVED_OBJECT,
+      id: 'mock-attack-attachment-1',
+      attributes: {
+        ...attachmentBase,
+        type: SECURITY_ATTACK_ATTACHMENT_TYPE,
+        attachmentId: 'attack-doc-1',
+        metadata: {
+          title: 'Credential harvesting',
+          alertCount: 1,
+          index: 'alerts-security.attack.discovery.alerts',
+        },
+      },
+      references: [...caseReference],
+      score: 0,
+      updated_at: '2019-11-25T22:32:30.608Z',
+      version: 'WzYsMV0=',
+    } as unknown as FoundAttachment;
+
+    const entityAttachment = {
+      type: CASE_ATTACHMENT_SAVED_OBJECT,
+      id: 'mock-entity-attachment-1',
+      attributes: {
+        ...attachmentBase,
+        type: SECURITY_ENTITY_ATTACHMENT_TYPE,
+        attachmentId: 'host-1',
+        metadata: { entityType: 'host' },
+      },
+      references: [...caseReference],
+      score: 0,
+      updated_at: '2019-11-25T22:32:30.608Z',
+      version: 'WzYsMV0=',
+    } as unknown as FoundAttachment;
+
+    beforeEach(() => {
+      jest.clearAllMocks();
+      clientArgs.services.caseService.getCases.mockResolvedValue({ saved_objects: mockCases });
+      clientArgs.services.caseService.patchCases.mockResolvedValue({
+        saved_objects: [{ ...mockCases[0] }],
+      });
+      clientArgs.services.attachmentService.getter.getCaseAttatchmentStats.mockResolvedValue(
+        new Map()
+      );
+      clientArgs.services.alertsService.updateAlertsStatus.mockResolvedValue(1);
+    });
+
+    const mockAttachments = (savedObjects: FoundAttachment[]) => {
+      clientArgs.services.caseService.getAllCaseComments.mockResolvedValue({
+        saved_objects: savedObjects,
+        total: savedObjects.length,
+        per_page: 10,
+        page: 1,
+      });
+    };
+
+    const patchStatus = async (status: CaseStatuses, closeReason?: string) =>
+      bulkUpdate(
+        {
+          cases: [
+            {
+              id: mockCases[0].id,
+              version: mockCases[0].version ?? '',
+              status,
+              ...(closeReason != null ? { closeReason } : {}),
+            },
+          ],
+        },
+        clientArgs,
+        casesClientMock
+      );
+
+    it('closes the attack document alongside its attached alerts', async () => {
+      const alertAttachment = {
+        ...mockCaseComments[3],
+        score: 0,
+        references: [{ ...mockCaseComments[3].references[0], id: mockCases[0].id }],
+      } as unknown as FoundAttachment;
+
+      mockAttachments([attackAttachment, alertAttachment]);
+
+      await patchStatus(CaseStatuses.closed, 'false_positive');
+
+      expect(clientArgs.services.alertsService.updateAlertsStatus).toHaveBeenCalledWith([
+        {
+          id: 'attack-doc-1',
+          index: 'alerts-security.attack.discovery.alerts',
+          status: CaseStatuses.closed,
+          closingReason: 'false_positive',
+        },
+        {
+          id: 'test-id',
+          index: 'test-index',
+          status: CaseStatuses.closed,
+          closingReason: 'false_positive',
+        },
+      ]);
+    });
+
+    it('syncs an attack attached from the adhoc index', async () => {
+      mockAttachments([
+        {
+          ...attackAttachment,
+          attributes: {
+            ...attackAttachment.attributes,
+            metadata: {
+              title: 'Credential harvesting',
+              alertCount: 0,
+              index: '.adhoc.alerts-security.attack.discovery.alerts',
+            },
+          },
+        } as unknown as FoundAttachment,
+      ]);
+
+      await patchStatus(CaseStatuses['in-progress']);
+
+      expect(clientArgs.services.alertsService.updateAlertsStatus).toHaveBeenCalledWith([
+        {
+          id: 'attack-doc-1',
+          index: '.adhoc.alerts-security.attack.discovery.alerts',
+          status: CaseStatuses['in-progress'],
+          closingReason: undefined,
+        },
+      ]);
+    });
+
+    it('moves the attack document to in-progress with the case', async () => {
+      mockAttachments([attackAttachment]);
+
+      await patchStatus(CaseStatuses['in-progress']);
+
+      expect(clientArgs.services.alertsService.updateAlertsStatus).toHaveBeenCalledWith([
+        {
+          id: 'attack-doc-1',
+          index: 'alerts-security.attack.discovery.alerts',
+          status: CaseStatuses['in-progress'],
+          closingReason: undefined,
+        },
+      ]);
+    });
+
+    it('ignores attachment types that carry no workflow status', async () => {
+      mockAttachments([entityAttachment]);
+
+      await patchStatus(CaseStatuses.closed, 'false_positive');
+
+      expect(clientArgs.services.alertsService.updateAlertsStatus).not.toHaveBeenCalled();
     });
   });
 

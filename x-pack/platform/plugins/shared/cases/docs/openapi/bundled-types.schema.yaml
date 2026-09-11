@@ -1427,6 +1427,66 @@ paths:
               examples:
                 response401:
                   $ref: '#/components/examples/response_401'
+  /api/cases/{caseId}/comments/_bulk_delete:
+    post:
+      summary: Delete multiple case comments or alerts
+      operationId: bulkDeleteCaseCommentsDefaultSpace
+      description: |
+        Deletes the attachments identified by `ids` from a case. Any attachment type is accepted, including comments, alerts and files. A maximum of 100 attachments can be deleted per request. The request fails without deleting anything if any of the identifiers is not an attachment of the case.
+
+        You must have `all` privileges for the **Cases** feature in the **Management**, **Observability**, or **Security** section of the Kibana feature privileges, depending on the owner of the cases you're deleting.
+      tags:
+        - cases
+      parameters:
+        - $ref: '#/components/parameters/kbn_xsrf'
+        - $ref: '#/components/parameters/case_id'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/bulk_delete_case_comments_request'
+            examples:
+              bulkDeleteCaseCommentsRequest:
+                $ref: '#/components/examples/bulk_delete_case_comments_request'
+      responses:
+        '204':
+          description: Indicates a successful call.
+        '401':
+          description: Authorization information is missing or invalid.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/response_4xx'
+              examples:
+                response401:
+                  $ref: '#/components/examples/response_401'
+        '404':
+          description: One or more of the identifiers is not an attachment of the case.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/response_4xx'
+              examples:
+                response404:
+                  $ref: '#/components/examples/response_404'
+      x-codeSamples:
+        - label: curl
+          lang: curl
+          source: |
+            curl \
+              --request POST 'https://localhost:5601/api/cases/9c235210-6834-11ea-a78c-6ffb38a34414/comments/_bulk_delete' \
+              --header "Authorization: $API_KEY" \
+              --header "Content-Type: application/json" \
+              --header "kbn-xsrf: true" \
+              --data '{"ids":["71ec1870-725b-11ea-a0b2-c51ea50a58e2"]}'
+        - label: Console
+          lang: console
+          source: |
+            POST kbn:/api/cases/9c235210-6834-11ea-a78c-6ffb38a34414/comments/_bulk_delete
+            {
+              "ids": ["71ec1870-725b-11ea-a0b2-c51ea50a58e2"]
+            }
   /api/cases/{caseId}/comments/_find:
     get:
       summary: Find case comments
@@ -4095,6 +4155,22 @@ components:
         mapping:
           alert: '#/components/schemas/update_alert_comment_request_properties'
           user: '#/components/schemas/update_user_comment_request_properties'
+    bulk_delete_case_comments_request:
+      title: Bulk delete case comments request
+      type: object
+      required:
+        - ids
+      properties:
+        ids:
+          description: |
+            The identifiers of the attachments to delete. Every identifier must belong to an attachment of the case; if any of them does not, the request fails and nothing is deleted.
+          type: array
+          items:
+            type: string
+            example: 71ec1870-725b-11ea-a0b2-c51ea50a58e2
+          minItems: 1
+          maxItems: 100
+      additionalProperties: false
     find_comments_response:
       title: Find case comments response
       type: object
@@ -5330,6 +5406,12 @@ components:
           type: .none
           fields: null
         external_service: null
+    bulk_delete_case_comments_request:
+      summary: Deletes multiple attachments from a case.
+      value:
+        ids:
+          - 71ec1870-725b-11ea-a0b2-c51ea50a58e2
+          - 8af6ac20-74f6-11ea-b83a-553aecdb28b6
     find_case_comments_response:
       summary: Paginated list of user comments for a case
       value:

@@ -30,6 +30,7 @@ import { useAttackViewInAiAssistantContextMenuItems } from '../../../hooks/attac
 import type { AttacksActionTelemetrySource } from '../../../../common/lib/telemetry/events/attacks/types';
 import { useAttackRunWorkflowContextMenuItems } from '../../../hooks/attacks/bulk_actions/context_menu_items/use_attack_run_workflow_context_menu_items';
 import { useIsInSecurityApp } from '../../../../common/hooks/is_in_security_app';
+import type { AttackToAttach } from '../../../../cases/attachments/attack';
 
 interface AttacksGroupTakeActionItemsProps {
   attack: AttackDiscoveryAlert;
@@ -39,6 +40,11 @@ interface AttacksGroupTakeActionItemsProps {
   onActionSuccess?: () => void;
   /** Whether to include the AI assistant action in the menu (default true) */
   showAiAssistantAction?: boolean;
+  /**
+   * Whether to include the investigate in timeline / explore in attacks navigation action in the
+   * menu (default true). Set to false where the surface already offers it as its own control.
+   */
+  showNavigationAction?: boolean;
   /** Telemetry source for action events (e.g. flyout vs table) */
   telemetrySource: AttacksActionTelemetrySource;
   /**
@@ -58,6 +64,7 @@ export function AttacksGroupTakeActionItems({
   closePopover,
   onActionSuccess,
   showAiAssistantAction = true,
+  showNavigationAction = true,
   telemetrySource,
   isRemoteDocument,
 }: AttacksGroupTakeActionItemsProps) {
@@ -157,11 +164,51 @@ export function AttacksGroupTakeActionItems({
     [attack, baseAttackProps]
   );
 
+  // Only attachable as a `security.attack` when we know which index the attack document came
+  // from — the attachment metadata requires it for the duplicate check and for status sync — so
+  // without it the menu falls back to the markdown-comment payload.
+  const attackToAttach = useMemo<Omit<AttackToAttach, 'alertsIndex'> | undefined>(
+    () =>
+      attack.index != null
+        ? {
+            id: attack.id,
+            index: attack.index,
+            title: attack.title,
+            // The narrative the activity card renders from. Still anonymised here; the payload
+            // builder de-anonymises and truncates it.
+            summaryMarkdown: attack.summaryMarkdown,
+            detailsMarkdown: attack.detailsMarkdown,
+            entitySummaryMarkdown: attack.entitySummaryMarkdown,
+            mitreAttackTactics: attack.mitreAttackTactics,
+            timestamp: attack.timestamp,
+            riskScore: attack.riskScore,
+            // Raw (possibly anonymised) ids plus the replacements that reverse them; the payload
+            // builder de-anonymises and dedupes.
+            alertIds: attack.alertIds,
+            replacements: attack.replacements,
+          }
+        : undefined,
+    [
+      attack.alertIds,
+      attack.detailsMarkdown,
+      attack.entitySummaryMarkdown,
+      attack.id,
+      attack.index,
+      attack.mitreAttackTactics,
+      attack.replacements,
+      attack.riskScore,
+      attack.summaryMarkdown,
+      attack.timestamp,
+      attack.title,
+    ]
+  );
+
   const { items: casesItems } = useAttackCaseContextMenuItems({
     closePopover,
     title: attack.title,
     attacksWithCase,
     telemetrySource,
+    attackToAttach,
   });
   const { items: viewInAiAssistantItems } = useAttackViewInAiAssistantContextMenuItems({
     attack,
@@ -226,7 +273,7 @@ export function AttacksGroupTakeActionItems({
             ...runWorkflowItems,
             ...(showAiAssistantAction ? viewInAiAssistantItems : []),
             ...datasetItems,
-            ...navigationItems,
+            ...(showNavigationAction ? navigationItems : []),
           ],
     }),
     [
@@ -238,6 +285,7 @@ export function AttacksGroupTakeActionItems({
       navigationItems,
       casesItems,
       showAiAssistantAction,
+      showNavigationAction,
       viewInAiAssistantItems,
       datasetItems,
     ]

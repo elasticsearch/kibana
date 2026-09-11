@@ -279,7 +279,7 @@ export const MORE_FILTERS_LABEL = i18n.translate('xpack.cases.tableFilters.moreF
 export const CLOSE_CASE_MODAL_TITLE = i18n.translate(
   'xpack.cases.allCasesView.closeCaseModal.title',
   {
-    defaultMessage: 'Select alert close reason',
+    defaultMessage: 'Select detection close reason',
   }
 );
 
@@ -307,14 +307,14 @@ export const CLOSE_CASE_MODAL_CLOSE_BUTTON = i18n.translate(
 export const CLOSE_CASE_MODAL_REASON_SEARCH_PLACEHOLDER = i18n.translate(
   'xpack.cases.allCasesView.closeCaseModal.reasonSearchPlaceholder',
   {
-    defaultMessage: 'Reason for closing attached alerts',
+    defaultMessage: 'Reason for closing attached detections',
   }
 );
 
 export const CLOSE_CASE_MODAL_DISCLAIMER = i18n.translate(
   'xpack.cases.allCasesView.closeCaseModal.disclaimer',
   {
-    defaultMessage: 'Alerts already closed will not be updated',
+    defaultMessage: 'Detections already closed will not be updated',
   }
 );
 

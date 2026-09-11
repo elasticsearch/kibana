@@ -1,0 +1,16 @@
+title: Bulk delete case comments request
+type: object
+required:
+  - ids
+properties:
+  ids:
+    description: >
+      The identifiers of the attachments to delete. Every identifier must belong to an attachment
+      of the case; if any of them does not, the request fails and nothing is deleted.
+    type: array
+    items:
+      type: string
+      example: 71ec1870-725b-11ea-a0b2-c51ea50a58e2
+    minItems: 1
+    maxItems: 100
+additionalProperties: false

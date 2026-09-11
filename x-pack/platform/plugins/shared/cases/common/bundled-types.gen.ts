@@ -2025,6 +2025,25 @@ export const UpdateCaseCommentRequest = lazySchema(() =>
 );
 export type UpdateCaseCommentRequest = z.infer<typeof UpdateCaseCommentRequest>;
 
+export const BulkDeleteCaseCommentsRequest = lazySchema(() =>
+  z
+    .object({
+      /**
+      * The identifiers of the attachments to delete. Every identifier must belong to an attachment of the case; if any of them does not, the request fails and nothing is deleted.
+
+      */
+      ids: z
+        .array(z.string())
+        .min(1)
+        .max(100)
+        .describe(
+          'The identifiers of the attachments to delete. Every identifier must belong to an attachment of the case; if any of them does not, the request fails and nothing is deleted.\n'
+        ),
+    })
+    .strict()
+);
+export type BulkDeleteCaseCommentsRequest = z.infer<typeof BulkDeleteCaseCommentsRequest>;
+
 export const FindCommentsResponse = lazySchema(() =>
   z.object({
     /**

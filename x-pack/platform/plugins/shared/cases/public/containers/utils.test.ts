@@ -67,7 +67,7 @@ describe('utils', () => {
       );
 
       expect(toast).toEqual({
-        title: 'Alerts in "My case" have been synced',
+        title: 'Detections in "My case" have been synced',
         className: 'eui-textBreakWord',
       });
     });

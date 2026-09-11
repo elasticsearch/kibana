@@ -12,6 +12,7 @@ export default ({ loadTestFile }: FtrProviderContext): void => {
     /**
      * Public routes
      */
+    loadTestFile(require.resolve('./comments/bulk_delete_comments'));
     loadTestFile(require.resolve('./comments/find_comments'));
     loadTestFile(require.resolve('./comments/get_comment'));
     loadTestFile(require.resolve('./comments/patch_comment'));

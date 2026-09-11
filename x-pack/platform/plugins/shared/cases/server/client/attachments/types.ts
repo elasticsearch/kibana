@@ -64,6 +64,20 @@ export interface BulkDeleteFileArgs {
 }
 
 /**
+ * Parameters for deleting multiple attachments of a case.
+ */
+export interface BulkDeleteArgs {
+  /**
+   * The id of the case
+   */
+  caseId: string;
+  /**
+   * The saved object ids of the attachments to delete
+   */
+  attachmentIds: string[];
+}
+
+/**
  * Parameters for deleting a single attachment of a case.
  */
 export interface DeleteArgs {

@@ -44,8 +44,8 @@ import { Operations } from '../../authorization';
 import { createCaseError, isSOError } from '../../common/error';
 import { createAlertUpdateStatusRequest, flattenCaseSavedObject } from '../../common/utils';
 import {
-  isAlertAttachmentType,
-  UNIFIED_ALERT_TYPES_ARRAY,
+  isDetectionAttachmentType,
+  UNIFIED_DETECTION_TYPES_ARRAY,
 } from '../../../common/utils/attachments';
 import { getCaseToUpdate, buildFilter, combineFilters, NodeBuilderOperators } from '../utils';
 import {
@@ -213,7 +213,9 @@ function getID(
 }
 
 /**
- * Gets all the alert comments (generated or user alerts) for the requested cases.
+ * Gets all the detection comments (legacy alerts, unified alerts and attacks) for the
+ * requested cases. Attacks are included because their documents carry the same
+ * `kibana.alert.workflow_status` field the status sync writes.
  */
 async function getAlertComments({
   casesToSync,
@@ -233,7 +235,7 @@ async function getAlertComments({
     [
       legacyAlertFilter,
       buildFilter({
-        filters: UNIFIED_ALERT_TYPES_ARRAY,
+        filters: UNIFIED_DETECTION_TYPES_ARRAY,
         field: 'type',
         operator: 'or',
         type: CASE_ATTACHMENT_SAVED_OBJECT,
@@ -312,7 +314,7 @@ async function updateAlerts({
 
   const alertsToUpdateByCaseId = totalAlerts.saved_objects.reduce(
     (acc: Map<string, UpdateAlertStatusRequest[]>, alertComment) => {
-      if (isAlertAttachmentType(alertComment.attributes.type)) {
+      if (isDetectionAttachmentType(alertComment.attributes.type)) {
         const caseId = getID(alertComment, CASE_SAVED_OBJECT);
         if (caseId == null) {
           return acc;
@@ -328,6 +330,7 @@ async function updateAlerts({
           comment: alertComment.attributes,
           status: statusAndReason[0],
           closingReason: statusAndReason[1],
+          isSupportedType: isDetectionAttachmentType,
         });
 
         acc.set(caseId, [...existingAlerts, ...alertsToUpdate]);

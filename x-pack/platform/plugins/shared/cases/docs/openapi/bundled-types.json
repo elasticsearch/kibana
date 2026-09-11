@@ -2198,6 +2198,81 @@
         }
       }
     },
+    "/api/cases/{caseId}/comments/_bulk_delete": {
+      "post": {
+        "summary": "Delete multiple case comments or alerts",
+        "operationId": "bulkDeleteCaseCommentsDefaultSpace",
+        "description": "Deletes the attachments identified by `ids` from a case. Any attachment type is accepted, including comments, alerts and files. A maximum of 100 attachments can be deleted per request. The request fails without deleting anything if any of the identifiers is not an attachment of the case.\n\nYou must have `all` privileges for the **Cases** feature in the **Management**, **Observability**, or **Security** section of the Kibana feature privileges, depending on the owner of the cases you're deleting.\n",
+        "tags": [
+          "cases"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/kbn_xsrf"
+          },
+          {
+            "$ref": "#/components/parameters/case_id"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/bulk_delete_case_comments_request"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Indicates a successful call."
+          },
+          "401": {
+            "description": "Authorization information is missing or invalid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/response_4xx"
+                },
+                "examples": {
+                  "response401": {
+                    "$ref": "#/components/examples/response_401"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "One or more of the identifiers is not an attachment of the case.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/response_4xx"
+                },
+                "examples": {
+                  "response404": {
+                    "$ref": "#/components/examples/response_404"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x-codeSamples": [
+          {
+            "label": "curl",
+            "lang": "curl",
+            "source": "curl \\\n  --request POST 'https://localhost:5601/api/cases/9c235210-6834-11ea-a78c-6ffb38a34414/comments/_bulk_delete' \\\n  --header \"Authorization: $API_KEY\" \\\n  --header \"Content-Type: application/json\" \\\n  --header \"kbn-xsrf: true\" \\\n  --data '{\"ids\":[\"71ec1870-725b-11ea-a0b2-c51ea50a58e2\"]}'\n"
+          },
+          {
+            "label": "Console",
+            "lang": "console",
+            "source": "POST kbn:/api/cases/9c235210-6834-11ea-a78c-6ffb38a34414/comments/_bulk_delete\n{\n  \"ids\": [\"71ec1870-725b-11ea-a0b2-c51ea50a58e2\"]\n}\n"
+          }
+        ]
+      }
+    },
     "/api/cases/{caseId}/comments/_find": {
       "get": {
         "summary": "Find case comments",
@@ -5209,7 +5284,7 @@
       },
       "template_write_request": {
         "title": "Template write request",
-        "description": "The body for creating or fully replacing a case template. Server-managed attributes (author, usage statistics, field summaries, version flags) are computed and cannot be set.\n\nResource limits (enforced on write; a violation returns `400`): an owner may have at most 200 templates per space, and a definition may declare at most 200 fields. Version history is intentionally uncapped. A single stored extended-field value may not exceed 30000 UTF-8 bytes.\n",
+        "description": "The body for creating or fully replacing a case template. Server-managed attributes (author, usage statistics, field summaries, version flags) are computed and cannot be set.\n\nResource limits (enforced on write; a violation returns `400`): an owner may have at most 200 templates per space, and a definition may declare at most 200 fields. Version history is intentionally uncapped. A single stored extended-field value may not exceed 30000 UTF-8 bytes. The YAML `definition` string itself may not exceed 30000 characters (enforced on create, update, and `dry_run`).\n",
         "type": "object",
         "required": [
           "owner",
@@ -5227,6 +5302,7 @@
           },
           "definition": {
             "type": "string",
+            "maxLength": 30000,
             "description": "The template definition as a YAML string: case defaults (name, severity, category, tags, assignees, connector, settings) and a `fields` array of inline field definitions or `$ref` entries pointing into the owner's field library. Stored field values appear on cases under `extended_fields` keys shaped `<field_name>_as_<storage_type>`.\n",
             "example": "name: Security incident\nseverity: high\ntags: [security]\nfields:\n  - name: priority\n    label: Priority\n    type: keyword\n    control: SELECT_BASIC\n    metadata:\n      options: [low, medium, high]\n      default: medium\n  - $ref: risk_score\n"
           },
@@ -5823,6 +5899,26 @@
             "user": "#/components/schemas/update_user_comment_request_properties"
           }
         }
+      },
+      "bulk_delete_case_comments_request": {
+        "title": "Bulk delete case comments request",
+        "type": "object",
+        "required": [
+          "ids"
+        ],
+        "properties": {
+          "ids": {
+            "description": "The identifiers of the attachments to delete. Every identifier must belong to an attachment of the case; if any of them does not, the request fails and nothing is deleted.\n",
+            "type": "array",
+            "items": {
+              "type": "string",
+              "example": "71ec1870-725b-11ea-a0b2-c51ea50a58e2"
+            },
+            "minItems": 1,
+            "maxItems": 100
+          }
+        },
+        "additionalProperties": false
       },
       "find_comments_response": {
         "title": "Find case comments response",

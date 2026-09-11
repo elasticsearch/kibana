@@ -327,6 +327,19 @@ export class Plugin implements IPlugin<PluginSetup, PluginStart, SetupPlugins, S
         this.logger.error('Failed to register entity attachment type', e);
       });
 
+    // Always register the attack attachment renderer so that attachments created
+    // while the feature flag was enabled continue to display correctly after the
+    // flag is disabled. The flag gates server-side writes; client-side rendering
+    // must be unconditional to avoid "Attachment type is not registered" errors.
+    // Lazily imported to keep the attack attachment module out of the page-load bundle.
+    import('./cases/attachments/attack')
+      .then(({ getAttackAttachment }) => {
+        cases.attachmentFramework.registerAttachment(getAttackAttachment());
+      })
+      .catch((e) => {
+        this.logger.error('Failed to register attack attachment type', e);
+      });
+
     this.registerDiscoverSharedFeatures(core, plugins);
 
     return this.contract.getSetupContract();

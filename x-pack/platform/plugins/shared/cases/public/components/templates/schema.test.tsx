@@ -86,7 +86,7 @@ describe('Template schema', () => {
           },
           "syncAlerts": Object {
             "defaultValue": true,
-            "helpText": "Enabling this option will sync the alert statuses with the case status.",
+            "helpText": "Enabling this option will sync the detection statuses with the case status.",
             "labelAppend": <EuiText
               color="subdued"
               data-test-subj="form-optional-field-label"

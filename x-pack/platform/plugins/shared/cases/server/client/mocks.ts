@@ -129,6 +129,7 @@ const createAttachmentsSubClientMock = (): AttachmentsSubClientMock => {
     bulkCreate: jest.fn(),
     delete: jest.fn(),
     deleteAll: jest.fn(),
+    bulkDelete: jest.fn(),
     bulkDeleteFileAttachments: jest.fn(),
     find: jest.fn(),
     getAll: jest.fn(),
