@@ -67,6 +67,15 @@ describe('anomaly charts embeddable transforms', () => {
       ).toThrow();
     });
 
+    it('accepts an open-ended custom min (score >= N)', () => {
+      const state = anomalyChartsEmbeddableStateSchema.parse({
+        job_ids: ['job-1'],
+        severity_threshold: [{ min: 30 }],
+      });
+
+      expect(state.severity_threshold).toEqual([{ min: 30 }]);
+    });
+
     it('rejects more severity_threshold ranges than the supported severity buckets', () => {
       expect(() =>
         anomalyChartsEmbeddableStateSchema.parse({

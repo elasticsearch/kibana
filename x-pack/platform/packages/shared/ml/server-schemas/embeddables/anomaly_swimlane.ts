@@ -10,7 +10,6 @@ import {
   serializedTimeRangeSchema,
   serializedTitlesSchema,
 } from '@kbn/presentation-publishing-schemas';
-
 const baseProps = {
   ...serializedTitlesSchema.shape,
   ...serializedTimeRangeSchema.shape,
@@ -21,6 +20,10 @@ const baseProps = {
   per_page: z.number().min(1).optional().meta({
     description:
       'Number of rows to display per page in a view-by swim lane. Ignored for overall swim lanes.',
+  }),
+  severity_threshold: z.number().min(0).max(100).optional().meta({
+    description:
+      'Minimum anomaly score (0–100) to show in the swim lane. Anomalies with scores at or above this value are displayed.',
   }),
 };
 

@@ -17,3 +17,4 @@ export { createOpenInExplorerAction } from './open_in_anomaly_explorer_action';
 export { createOpenInSingleMetricViewerAction } from './open_in_single_metric_viewer_action';
 export { createVisToADJobAction } from './open_vis_in_ml_action';
 export { createAddAnomalyChartsPanelAction } from './create_anomaly_chart';
+export { AnomalySwimlaneSeverityBadge } from './anomaly_swimlane_severity_badge';

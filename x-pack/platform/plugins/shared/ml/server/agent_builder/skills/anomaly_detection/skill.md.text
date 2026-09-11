@@ -8,6 +8,7 @@ Single skill covering all anomaly detection work. Use the **Mode Selector** belo
 - Source-data ES|QL only: `platform.core.execute_esql` (current user) for RCA evidence / ingest latency against datafeed indices
 - ES|QL query templates are in the referenced content files (`esql-read-queries`, `esql-metadata-queries`, `esql-score-queries`)
 - ML API write/state operations: `ml.ad_get_job_info`, `ml.ad_create_job`, `ml.ad_manage_job_state`, `ml.ad_update_job_config`
+- Inline chart rendering (Platinum+): `ml.create_ml_charts` — renders anomaly swim lane, anomaly charts, or single metric viewer directly in the conversation
 - **Run `ml.ad_get_job_info` with `operation=validate_permissions` first** when tools return empty/misleading results — missing privileges are the most common cause of false negatives.
 
 ### Calling `ml.query_anomalies`
@@ -321,7 +322,112 @@ ml.ad_update_job_config
 
 **When:** "set up a job", "create an ML detector", "monitor X over time", "detect rare/unusual/anomalous values".
 
-### 4-step workflow
+### Creation protocol (new jobs from scratch)
+
+Follow these 5 phases in order. Never skip or reorder phases. This protocol is for users who do not have ML expertise — translate every decision into business language; never expose ML terms like `bucket_span`, `by_field_name`, or `query_delay`.
+
+---
+
+#### Phase 1 — Data exploration
+
+Before asking the user anything, run automated reconnaissance on their indices.
+
+1. **Module recognition** — `ml.ad_create_job` (`operation=recognize_modules`) on the user's index pattern. If a matching module exists, note it as a starting point.
+2. **Source data sampling** — `ml.ad_create_job` (`operation=preview_datafeed_config`) with a `match_all` datafeed against the target index to sample field names and types. Supplement with `platform.core.execute_esql` for cardinality and time range coverage:
+   - Available timestamp and numeric fields
+   - Estimated record count and earliest/latest timestamp
+   - Cardinality of candidate split fields (note any field with >10k unique values — high-cardinality fields need special handling for memory)
+   - Null/missing rates for candidate metric fields
+3. **First-pass config** — from the exploration results and the recipes in `job-creation-recipes`, assemble a draft job + datafeed config. This is a working hypothesis, not a final spec.
+
+If a pre-built module matches, prefer it as the starting point and note this to the user in plain terms.
+
+---
+
+#### Phase 2 — Business clarification
+
+Ask only business-domain questions. **Never** mention `bucket_span`, `by_field_name`, `query_delay`, `model_memory_limit`, or any other ML term. Translate answers into ML config silently.
+
+Ask these questions (adapt wording and skip any already answered by context):
+
+| Question | What it informs |
+| --- | --- |
+| "What are you trying to detect?" (e.g. unusual traffic spikes, unexpected user behaviour, service latency) | Detector function + split field |
+| "What would a bad day look like — can you give an example?" | Validates detector direction (`high_*` vs `low_*` vs `rare`) |
+| "Are there any regular patterns you'd expect — daily peaks, weekly cycles, end-of-month batch jobs?" | `bucket_span` alignment, seasonal modelling |
+| "How quickly do you need to find out when something goes wrong — minutes, hours, or end of day?" | Detection latency (maps to `query_delay` + `bucket_span`) |
+| "How often does new data arrive in your index — continuously, or in batches?" | `query_delay` default calibration |
+| "Are there planned events that would look unusual but aren't a real problem — deployments, maintenance windows, holidays?" | Calendar events to suppress false positives |
+| "If you had to choose: is it worse to miss a real problem, or to get too many false alerts?" | Sensitivity calibration |
+
+Revise the first-pass config from Phase 1 based on answers. Return to this phase if the user is unhappy with batch results (Phase 5).
+
+**Never ask the user about job architecture.** Decisions like "one job per metric vs. one combined job", "split by service vs. split by host", or "partition vs. population model" are technical choices — make them yourself based on the data exploration and the user's stated goal. Present the decision in results, not as a question.
+
+---
+
+#### Phase 3 — Validate spec and confirm batch run
+
+1. **Validate** — `ml.ad_create_job` (`operation=validate_full`). Fix errors and re-validate (max 3 attempts). Add `"groups": ["ml-agent-scratch"]` to the batch job config before validation so the job is tagged as a scratch job and can be cleaned up later.
+2. **Estimate memory** — `ml.ad_create_job` (`operation=estimate_memory`). Report in plain terms (e.g. "this job will use about 50 MB").
+3. **Pre-run summary** — before showing any config, state in plain language:
+   - Time range to be analysed (e.g. "the last 90 days of data")
+   - Approximate record count
+   - Expected run duration (rough estimate based on volume)
+4. **Show full API bodies** — present complete job + datafeed JSON for transparency.
+5. **Recommend batch first** — ask: *"Should I run this on your historical data first so you can review the results before going live?"* Default is yes. Running batch analysis lets the user validate the configuration risk-free.
+6. **Calendar events** — if the user named any expected events in Phase 2, create them via `ml.ad_update_job_config` (`create_calendar_event`) before starting the datafeed.
+7. **Wait for approval** before proceeding.
+
+---
+
+#### Phase 4 — Run batch analysis and show results
+
+> **Todo discipline:** keep steps 1–3, 4, and 5 as **separate todos**. Never bundle "show results" and "show dashboard" into a single todo — completing the summary does not complete the dashboard.
+
+1. `ml.ad_create_job` (`create_job`) → `ml.ad_create_job` (`create_datafeed`) → `ml.ad_manage_job_state` (`open_job`)
+2. `ml.ad_manage_job_state` (`start_datafeed`) with historical `start` / `end` range covering available data
+3. `ml.ad_manage_job_state` (`await_batch_completion`) — poll until datafeed stops
+4. **Summarise results in plain language** (own todo — complete only after this text is written):
+   - Total anomalies, highest score, time of peak anomaly, top contributing entity (if applicable)
+   - Example: *"3 anomalies were found. The most significant spike was on Aug 15 at 14:00 (score 87), driven by host: web-03."*
+   - **No-anomaly path** — if zero anomalies were found, explain clearly: *"The model didn't find any unusual patterns in this period — that could mean the data is very consistent, or the detector may need adjustment."* Offer: widen the time range, try a different field or detector, or adjust sensitivity. **Stop here — do not proceed to step 5.**
+5. **Generate inline dashboard** (own todo, only when anomalies exist) — generate via `platform.dashboard.generate_dashboard` with all three panels for every job that just ran. **Always set `time_range` on each panel to the batch analysis window** (e.g. `{"from": "2024-01-01T00:00:00Z", "to": "2024-01-03T23:59:59Z"}`); without it the dashboard defaults to "last 15 minutes" which will show no data for historical jobs:
+   - `ml_anomaly_swimlane` — overall score heatmap (`y: 0`, `h: 10`, `w: 24`)
+   - `ml_anomaly_charts` — multi-series actual vs model bounds (`y: 10`, `h: 15`, `w: 24`)
+   - `ml_single_metric_viewer` — top entity/detector drill-down (`y: 25`, `h: 18`, `w: 24`)
+   - **Immediately after the dashboard renders — without waiting for user input — ask the Phase 5 approval question.** The dashboard and the approval question are one continuous response.
+
+---
+
+#### Phase 5 — Approval and go-live
+
+**Entry:** triggered automatically at the end of Phase 4 step 5 (or immediately after rendering the dashboard if the user requested it manually). Do not wait for the user to prompt this. Ask: *"Do these results look right to you?"*
+
+**If yes:**
+1. Create a new job set with the same configuration but without a historical `end` — running from now onwards. Use a distinct `job_id` (append `-realtime` or similar).
+2. **Update the dashboard** — regenerate the inline dashboard (from Phase 4) replacing the batch job IDs with the new realtime job IDs. Keep the same three-panel layout but omit `time_range` on each panel so they track the live time range.
+3. **Offer batch job cleanup** — the batch/historical jobs created during this session are now superseded. Ask the user to confirm before deleting them, naming each job ID explicitly. This is a destructive action — do not delete without explicit approval. If approved, `ml.ad_manage_job_state` (`stop_datafeed`) → `ml.ad_manage_job_state` (`close_job`) → `ml.ad_manage_job_state` (`delete_job`) for each batch job. Batch jobs are tagged `ml-agent-scratch` (set in Phase 3) so no special flags are needed for deletion.
+4. **Offer alerting** — ask: *"Would you like to set up alerting rules so you're notified when anomaly scores exceed a threshold on the new jobs?"*
+
+   **If yes**, present two options and ask which they want:
+
+   - **Anomaly detection alert** — checks job results for anomalies matching defined conditions (score threshold, result type) and fires when found. Rule type: `xpack.ml.anomaly_detection_alert`.
+   - **Anomaly detection jobs health** — monitors operational status (datafeed stopped, memory limit errors) and fires on issues. Rule type: `xpack.ml.anomaly_detection_jobs_health`.
+
+   Once the user chooses, load the rule management skill via `filestore.read` (path: `skills/platform/alerting/rule-management/SKILL.md`) and delegate rule creation to it. Pass the following context:
+   - The realtime job ID(s) created in step 1 above
+   - The chosen rule type (`xpack.ml.anomaly_detection_alert` or `xpack.ml.anomaly_detection_jobs_health`)
+   - For anomaly detection alert: default severity threshold of 75 (ask user if they want to adjust), result type `bucket`
+5. Set expectation: *"The model will keep learning your data's normal patterns over the coming weeks and will become more accurate over time."*
+
+**If no:**
+- Ask what looked wrong (too many false alerts, wrong entities, missing events, wrong time scale).
+- Return to **Phase 2** with that feedback and iterate.
+
+---
+
+### API call sequence (reference)
 
 ```text
 PUT  _ml/anomaly_detectors/<job_id>          # 1. Define job        (ml.ad_create_job operation=create_job)
@@ -331,50 +437,47 @@ POST _ml/datafeeds/datafeed-<job_id>/_start  # 3b. Start datafeed   (ml.ad_manag
 GET  _ml/anomaly_detectors/<job_id>/results  # 4. Read results      (ml.query_anomalies ad_query_anomaly_records)
 ```
 
-### Process
+### Smart defaults
 
-1. **Build configs.** Parse the user request into job + datafeed JSON with no null fields.
-2. **Apply smart defaults:**
+| Field            | Default                                 | Override when                                     |
+| ---------------- | --------------------------------------- | ------------------------------------------------- |
+| `bucket_span`    | `"15m"`                                 | User wants hourly/daily detection granularity     |
+| `time_field`     | `"@timestamp"`                          | User names a different timestamp field            |
+| `index`          | `"logs-*"`                              | User specifies an index or pattern                |
+| `datafeed_query` | `{"match_all": {}}`                     | User mentions filters, processes, or time windows |
+| `influencers`    | by/over/partition fields from detectors | User adds extra influencer fields                 |
+| `job_id`         | Generated from user description         | User provides an explicit ID                      |
+| `query_delay`    | `"60s"`                                 | P95 ingest latency is higher                      |
 
-   | Field            | Default                                 | Override when                                     |
-   | ---------------- | --------------------------------------- | ------------------------------------------------- |
-   | `bucket_span`    | `"15m"`                                 | User specifies a different span                   |
-   | `time_field`     | `"@timestamp"`                          | User names a different timestamp field            |
-   | `index`          | `"logs-*"`                              | User specifies an index or pattern                |
-   | `datafeed_query` | `{"match_all": {}}`                     | User mentions filters, processes, or time windows |
-   | `influencers`    | by/over/partition fields from detectors | User adds extra influencer fields                 |
-   | `job_id`         | Generated from user description         | User provides an explicit ID                      |
-   | `query_delay`    | `"60s"`                                 | P95 ingest latency is higher                      |
+### Detector function selection
 
-3. **Choose detector function** from user intent:
-   - "high CPU" / "unusually large" → `high_mean` or `high_sum`
-   - "rare logins" / "unusual values" → `rare` (variants below)
-   - "too many requests" / "spike in count" → `high_count`
+- "high CPU" / "unusually large" → `high_mean` or `high_sum`
+- "rare logins" / "unusual values" → `rare` (variants below)
+- "too many requests" / "spike in count" → `high_count`
 
-   `rare` variants:
-   - Infrequent globally → `rare by_field_name: X`
-   - Infrequent vs peers → `rare by_field_name: X over_field_name: Y`
-   - Infrequent per segment → `rare by_field_name: X partition_field_name: Y`
-   - Infrequent per segment vs peers → `rare by_field_name: X over_field_name: Y partition_field_name: Z`
-
-4. **Validate.** `ml.ad_create_job` (`operation=validate_spec`) to check the job spec. If errors, fix and re-validate (max 3 attempts).
-
-5. **Present and confirm.** Show the **complete** job + datafeed bodies formatted as the exact API calls. Ask for approval **once**. If feedback, incorporate and re-present (up to 3 rounds).
-
-6. **Deploy.** After confirmation: `ml.ad_create_job` (`create_job`) → `ml.ad_create_job` (`create_datafeed`) → `ml.ad_manage_job_state` (`open_job`) → `ml.ad_manage_job_state` (`start_datafeed`). Report final `job_id` and `datafeed_id`.
-
-For **batch analysis on historical data**, pass `start` and `end` to `ml.ad_manage_job_state` (`start_datafeed`).
+`rare` variants:
+- Infrequent globally → `rare by_field_name: X`
+- Infrequent vs peers → `rare by_field_name: X over_field_name: Y`
+- Infrequent per segment → `rare by_field_name: X partition_field_name: Y`
+- Infrequent per segment vs peers → `rare by_field_name: X over_field_name: Y partition_field_name: Z`
 
 > Worked examples (rare-username, DNS exfil, large-downloads) with full JSON bodies and datafeed filters: see `job-creation-recipes` referenced content.
 
 ### Rules
 
-1. **Create job before datafeed.** Datafeed references job by ID.
-2. **Open job before starting datafeed.** Start on a closed job is rejected.
-3. **`query_delay` = P95 ingest latency + buffer** (60s–120s safe default).
-4. **Forecasts require non-population jobs** — `over_field_name` jobs cannot be forecasted; warn before attempting.
-5. **`by_field_name` vs `over_field_name`:** `by` compares entity to its own history; `over` compares to peer group in the same bucket. `partition_field_name` = fully independent sub-model with its own normalization.
-6. **`bucket_span` matches detection granularity** — 15m for high-frequency, 1h for operational metrics, 1d for daily patterns.
+1. **Explore data before asking questions.** Phase 1 reconnaissance shapes what's possible; don't ask about fields before knowing what exists.
+2. **Never use ML jargon with users.** Translate `bucket_span` → detection frequency, `query_delay` → data latency, `by_field_name` → "split by entity". Users decide the business goal; you decide the config.
+3. **Never ask the user about job structure.** "One job per metric or one combined job?", "partition vs. population?", "split by service or by host?" are architecture decisions — make them based on Phase 1 data and the user's stated goal. State the choice and the reason; don't make it a question.
+4. **Always run batch before realtime.** Historical analysis lets the user validate the configuration before committing to a live job.
+5. **Never delete batch jobs without explicit user confirmation.** Name every job ID in the confirmation prompt. Batch jobs must carry the `ml-agent-scratch` group (set in Phase 3) — only scratch jobs may be deleted; never pass `allow_non_scratch: true`.
+6. **Plain-language summary before dashboard.** Raw charts without context confuse non-ML users; state the key finding in one sentence first.
+7. **Handle the no-anomaly path explicitly.** Zero results is not the same as success — explain it and offer adjustments.
+8. **Create job before datafeed.** Datafeed references job by ID.
+9. **Open job before starting datafeed.** Start on a closed job is rejected.
+10. **`query_delay` = P95 ingest latency + buffer** (60s–120s safe default).
+11. **Forecasts require non-population jobs** — `over_field_name` jobs cannot be forecasted; warn before attempting.
+12. **`by_field_name` vs `over_field_name`:** `by` compares entity to its own history; `over` compares to peer group in the same bucket. `partition_field_name` = fully independent sub-model with its own normalization.
+13. **High-cardinality split fields (>10k values) require memory estimate before creating.** Warn the user if cardinality is extreme.
 
 ---
 
@@ -397,7 +500,7 @@ For **batch analysis on historical data**, pass `start` and `end` to `ml.ad_mana
 
 **Memory limit:** "Job status shows `hard_limit` and results look wrong." → Troubleshoot → `ad_ts_model_memory_health` via `ml.query_anomalies` → `ml.ad_create_job` (`estimate_memory`) → `ml.ad_update_job_config` (`update_memory_limit`) — lifecycle: stop datafeed → close → update → open → start.
 
-**New job:** "Detect unusual error rates per host on nginx access logs." → Manage → `high_count` detector with `by_field_name: "host.keyword"` → validate → present → deploy.
+**New job:** "Detect unusual error rates per host on nginx access logs." → Manage → Phase 1: sample `logs-nginx*` fields and cardinality → Phase 2: confirm what "unusual" means and whether any planned events exist → Phase 3: propose `high_count` by `host.keyword`, validate, show spec, recommend batch run → Phase 4: run historical batch, summarise findings ("5 anomalies found, peak on Aug 12"), show swim lane + anomaly charts + single metric viewer → Phase 5: if user approves, create realtime job and offer alerting.
 
 **Calendar events:** "Create calendar `seasonal_sales_events` for Sept 1–16 'back to school' and Nov 27 2026 'black friday' on jobs A and B." → Troubleshoot → `ml.ad_get_job_info` (`get_calendar_events`) → `ml.ad_update_job_config` (`create_calendar_event` with `job_ids: [A, B]` + full `calendar_events` — once, not per job).
 
@@ -413,3 +516,162 @@ For **batch analysis on historical data**, pass `start` and `end` to `ml.ad_mana
 6. **Fix memory before `query_delay`.** `hard_limit` invalidates downstream diagnostics.
 7. **Stop datafeed → close job → update config → open job → start datafeed** for any config change to memory or query delay.
 8. **Confirm RCAs with `ad_rca_source_evidence`.** Raw source documents are ground truth.
+
+---
+
+## Visualize — Inline Charts
+
+**License**: Platinum or higher. The `ml.create_ml_charts` tool returns an error on non-Platinum licenses — surface it clearly to the user.
+**Tool**: `ml.create_ml_charts`
+**Job IDs**: always from prior `ml.ad_get_job_info` results or explicit user input. Never invent.
+
+Use `ml.create_ml_charts` to render ML charts directly in the conversation. After the tool succeeds, emit:
+
+```
+<render_attachment id="{attachment_id}" version="{version}" />
+```
+
+The `attachment_id` and `version` are returned in the tool result. Always render the chart immediately after creation unless the user asks only for the config.
+
+### When to use inline charts vs dashboard
+
+| Situation | Inline chart | Dashboard |
+| --- | --- | --- |
+| Investigation in progress, showing results inline | ✓ | — |
+| User explicitly asks for a dashboard | — | ✓ |
+| User asks to "show" / "visualise" / "chart" anomalies | ✓ | — |
+| User wants to save or share results | — | ✓ |
+
+Charts created inline can also be forwarded to `platform.dashboard.generate_dashboard` — the `config` field in the tool result is the panel config payload (with `source: "config"` and the appropriate `type`).
+
+### `ml.create_ml_charts` — chart_type values
+
+Same decision logic as Dashboard Panels (see below) applies for which chart type and how to derive `swimlane_type`, `view_by`, `selected_entities`, etc.
+
+| `chart_type` | When to use |
+| --- | --- |
+| `anomaly_swimlane` | Overview — which entity was anomalous and when |
+| `anomaly_charts` | Compare actual vs model bounds across several entities |
+| `single_metric_viewer` | Drill down on one entity + detector |
+
+---
+
+## Visualize — Dashboard Panels
+
+**License**: Platinum or higher. Decline clearly if not available.
+**Tool**: `platform.dashboard.generate_dashboard` with `source: "config"`. Never use `source: "request"` — no resolver exists for ML panels.
+**Job IDs**: always from prior `ml.ad_get_job_info` results or explicit user input. Never invent.
+
+### When to add charts
+
+| Situation | Chart |
+| --- | --- |
+| Investigation complete — entities and time ranges identified | Swim lane (`viewBy` on primary influencer field) |
+| After swim lane — comparing actual metric values across several top entities | Anomaly charts (multi-series view with model bounds + anomaly markers) |
+| After swim lane — narrowing to one entity + detector | Single metric viewer for that entity |
+| User asks to "show"/"visualise" anomalies with no investigation context | Swim lane (`overall`) first; then offer `viewBy` breakdown |
+| Explain mode — discussing model bounds or score deviation | Single metric viewer (actual vs model bounds is the visual score explanation) |
+| Forecast was run in Explain mode | Single metric viewer with `forecast_id` |
+| Manage mode — batch analysis complete and anomalies found | All three panels: swim lane (`overall`) → anomaly charts → single metric viewer for top entity |
+
+Charts do **not** belong as unprompted additions in Troubleshoot mode (job health, memory, datafeed issues) or when explaining score methodology alone.
+
+### Swim lane type — decision logic
+
+Derive `swimlane_type` and `view_by` from the job's `analysis_config` (available from `ml.ad_get_job_info`) and from anomaly record field values already returned by prior RCA tools.
+
+Priority order for `view_by` field selection: `partition_field_name` → `by_field_name` → `over_field_name`.
+
+1. **One influencer/partition field in the job config** → use `viewBy` with that field automatically. No need to ask.
+2. **Multiple fields** → use the field that appeared in the highest-scoring anomaly records from the current investigation (check `partition_field_value` / `by_field_value` on top records). If genuinely ambiguous, ask once: *"The job has both `host.name` and `service.name` — which should the swim lane split by, or would you prefer an overall view?"*
+3. **No influencer/partition fields** in the job config, or **multiple jobs selected** → use `overall`.
+
+### `ml_anomaly_swimlane`
+
+Heatmap — each row is one `view_by` field value, each column is a time bucket, colour intensity = anomaly score. Answers *"which entity was anomalous, and when?"*
+
+```json
+{
+  "source": "config",
+  "type": "ml_anomaly_swimlane",
+  "grid": { "x": 0, "y": 0, "w": 24, "h": 10 },
+  "config": {
+    "title": "Anomalies of my-job by host.name with severity >= 50",
+    "job_ids": ["my-job"],
+    "swimlane_type": "viewBy",
+    "view_by": "host.name",
+    "severity_threshold": 50
+  }
+}
+```
+
+| Field | Notes |
+| --- | --- |
+| `title` | Optional. Descriptive panel title. Use the pattern `"Anomalies of <job-id> by <view_by>"` for viewBy, or `"Overall anomalies of <job-id>"` for overall. Append `" with severity >= <N>"` when a threshold is set. |
+| `job_ids` | Required. One or more existing job or group IDs. |
+| `swimlane_type` | Required. `"overall"` or `"viewBy"`. |
+| `view_by` | Required when `swimlane_type` is `"viewBy"`. Use the exact field name from the job config (e.g. `"host.name"`). |
+| `severity_threshold` | Optional. Minimum anomaly score (0–100). Only anomalies with a score at or above this value are shown. Omit to show all anomalies. Typical values: `25` (minor and above), `50` (major and above), `75` (critical only). |
+| `time_range` | Set to the analysis window (`{"from": "...", "to": "..."}`) for historical/batch jobs — omitting it defaults the panel to "last 15 minutes" which shows no data. Omit only for realtime jobs that should track the current time range. |
+
+### `ml_anomaly_charts`
+
+Multi-series time series — one chart per anomalous entity/series — showing actual metric values alongside model bounds and anomaly markers. Useful for comparing how several top entities deviate from their respective baselines in a single view. Sits between the swim lane (score overview) and the single metric viewer (one-entity drill-down).
+
+```json
+{
+  "source": "config",
+  "type": "ml_anomaly_charts",
+  "grid": { "x": 0, "y": 10, "w": 24, "h": 15 },
+  "config": {
+    "title": "Anomaly charts of my-job with severity > 50",
+    "job_ids": ["my-job"],
+    "severity_threshold": 50
+  }
+}
+```
+
+| Field | Notes |
+| --- | --- |
+| `title` | Optional. Descriptive panel title. Use the pattern `"Anomaly charts of <job-id>"`, appending `" with severity > <N>"` when a threshold is set. |
+| `job_ids` | Required. One or more existing job or group IDs. |
+| `severity_threshold` | Optional. Minimum anomaly score (0–100) to surface. Default 25; raise to 50 or 75 to focus on high-severity series. |
+| `time_range` | Set to the analysis window (`{"from": "...", "to": "..."}`) for historical/batch jobs — omitting it defaults the panel to "last 15 minutes" which shows no data. Omit only for realtime jobs that should track the current time range. |
+
+### `ml_single_metric_viewer`
+
+Continuous time series for one detector in one job — actual metric values with upper/lower model confidence bounds overlaid, anomaly markers as scatter points, optional forecast band. Answers *"how does this entity's behaviour deviate from the model?"*
+
+Populate `selected_entities` directly from anomaly record fields (`partition_field_value`, `by_field_value`, `over_field_value`) already available from prior RCA results — no need to ask the user.
+
+```json
+{
+  "source": "config",
+  "type": "ml_single_metric_viewer",
+  "grid": { "x": 0, "y": 10, "w": 24, "h": 18 },
+  "config": {
+    "title": "Single metric view for my-job",
+    "job_ids": ["my-job"],
+    "selected_detector_index": 0,
+    "selected_entities": { "host.name": "web-01" }
+  }
+}
+```
+
+| Field | Notes |
+| --- | --- |
+| `title` | Optional. Descriptive panel title. Use the pattern `"Single metric view for <job-id>"`, appending `" — <entity-value>"` when an entity is selected. |
+| `job_ids` | Required. Exactly **one** job ID. |
+| `selected_detector_index` | Zero-based detector index. Use the `detector_index` from the anomaly record. Defaults to 0. |
+| `selected_entities` | Key-value map of partition/by/over field → value (e.g. `{"host.name": "web-01"}`). Populate from RCA results. Omit for population-level jobs with no entity fields. |
+| `function_description` | `"min"`, `"max"`, or `"mean"` — only for metric detectors. |
+| `forecast_id` | Include when a forecast was previously generated for this job. |
+| `time_range` | Set to the analysis window (`{"from": "...", "to": "..."}`) for historical/batch jobs — omitting it defaults the panel to "last 15 minutes" which shows no data. Omit only for realtime jobs that should track the current time range. |
+
+### Layout
+
+Stack in order of increasing specificity: swim lane (overview) → anomaly charts (multi-series detail) → single metric viewer (one-entity drill-down).
+
+- Swim lane: `w: 24`, `h: 10`, `y: 0`.
+- Anomaly charts: `w: 24`, `h: 15`, `y: 10` (when shown alongside swim lane).
+- Single metric viewer: `w: 24`, `h: 18`, `y: 10` (or `y: 25` when anomaly charts are also present).

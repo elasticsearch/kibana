@@ -37,6 +37,7 @@ import { JobSelectorControl } from '../../alerting/job_selector';
 import { VIEW_BY_JOB_LABEL } from '../../application/explorer/explorer_constants';
 import { getDefaultSwimlanePanelTitle } from './anomaly_swimlane_embeddable';
 import { getJobSelectionErrors } from '../utils';
+import { SeverityControl } from '../../application/components/severity_control';
 
 export interface AnomalySwimlaneInitializerProps {
   initialInput?: Partial<AnomalySwimLaneEmbeddableState>;
@@ -81,6 +82,10 @@ export const AnomalySwimlaneInitializer: FC<AnomalySwimlaneInitializerProps> = (
   );
   const [viewBySwimlaneFieldName, setViewBySwimlaneFieldName] = useState(
     initialInput?.swimlane_type === SWIMLANE_TYPE.VIEW_BY ? initialInput.view_by : undefined
+  );
+
+  const [severityThreshold, setSeverityThreshold] = useState<number | undefined>(
+    initialInput?.severity_threshold
   );
 
   useEffect(
@@ -132,11 +137,13 @@ export const AnomalySwimlaneInitializer: FC<AnomalySwimlaneInitializerProps> = (
           job_ids: jobIds,
           swimlane_type: SWIMLANE_TYPE.VIEW_BY,
           view_by: viewBySwimlaneFieldName,
+          severity_threshold: severityThreshold,
         }
       : {
           ...titleField,
           job_ids: jobIds,
           swimlane_type: SWIMLANE_TYPE.OVERALL,
+          severity_threshold: severityThreshold,
         };
 
   const newJobUrl = useMlLink({ page: ML_PAGES.ANOMALY_DETECTION_CREATE_JOB });
@@ -214,6 +221,18 @@ export const AnomalySwimlaneInitializer: FC<AnomalySwimlaneInitializerProps> = (
                   idSelected={swimlaneType}
                   onChange={(id) => setSwimlaneType(id as SwimlaneType)}
                 />
+              </EuiFormRow>
+
+              <EuiFormRow
+                label={
+                  <FormattedMessage
+                    id="xpack.ml.swimlaneEmbeddable.setupModal.severityThresholdLabel"
+                    defaultMessage="Severity threshold"
+                  />
+                }
+                fullWidth
+              >
+                <SeverityControl value={severityThreshold} onChange={setSeverityThreshold} />
               </EuiFormRow>
             </>
           ) : null}

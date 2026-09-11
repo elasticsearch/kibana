@@ -6,13 +6,17 @@
  */
 
 import { defineSkillType } from '@kbn/agent-builder-server/skills/type_definition';
-import {
-  AD_GET_JOB_INFO_TOOL_ID,
-  AD_CREATE_JOB_TOOL_ID,
-  AD_MANAGE_JOB_STATE_TOOL_ID,
-  AD_UPDATE_JOB_CONFIG_TOOL_ID,
-  QUERY_ANOMALIES_TOOL_ID,
-} from '../../tools/tool_ids';
+import type { ResolveMlCapabilities } from '@kbn/ml-common-types/capabilities';
+import type { MlLicense } from '../../../../common/license';
+import type { MlFeatures } from '../../../../common/constants/app';
+import type { MlAuthorizationService } from '../../../lib/capabilities/check_capabilities';
+import type { BuildMlClientFn, BuildDataRecognizerFn } from '../../ml_client_factory';
+import { createAdGetJobInfoTool } from '../../tools/ad_get_job_info';
+import { createAdCreateJobTool } from '../../tools/ad_create_job';
+import { createAdManageJobStateTool } from '../../tools/ad_manage_job_state';
+import { createAdUpdateJobConfigTool } from '../../tools/ad_update_job_config';
+import { createQueryAnomaliesTool } from '../../tools/query_anomalies';
+import { createMlChartsTool } from '../../tools/create_ml_charts';
 import skillContent from './skill.md.text';
 import description from './description.text';
 import esqlReadQueries from './references/esql_read_queries.md.text';
@@ -21,7 +25,14 @@ import esqlScoreQueries from './references/esql_score_queries.md.text';
 import jobCreationRecipes from './references/job_creation_recipes.md.text';
 import scoreReference from './references/score_reference.md.text';
 
-export const createAnomalyDetectionSkill = () =>
+export const createAnomalyDetectionSkill = (
+  resolveMlCapabilities: ResolveMlCapabilities,
+  authorization?: MlAuthorizationService,
+  mlLicense?: MlLicense,
+  enabledFeatures?: MlFeatures,
+  buildMlClient?: BuildMlClientFn,
+  buildDataRecognizer?: BuildDataRecognizerFn
+) =>
   defineSkillType({
     id: 'ml.anomaly-detection',
     name: 'anomaly-detection',
@@ -37,12 +48,40 @@ export const createAnomalyDetectionSkill = () =>
       { name: 'score-reference', relativePath: './references', content: scoreReference },
     ],
     getRegistryTools: () => [
-      QUERY_ANOMALIES_TOOL_ID,
       // Source-data ES|QL (RCA evidence, ingest latency) still needs the current-user tool.
       'platform.core.execute_esql',
-      AD_GET_JOB_INFO_TOOL_ID,
-      AD_CREATE_JOB_TOOL_ID,
-      AD_MANAGE_JOB_STATE_TOOL_ID,
-      AD_UPDATE_JOB_CONFIG_TOOL_ID,
+    ],
+    getInlineTools: () => [
+      createAdGetJobInfoTool(resolveMlCapabilities, authorization, mlLicense, enabledFeatures),
+      createAdCreateJobTool(
+        resolveMlCapabilities,
+        authorization,
+        mlLicense,
+        enabledFeatures,
+        buildMlClient,
+        buildDataRecognizer
+      ),
+      createAdManageJobStateTool(
+        resolveMlCapabilities,
+        authorization,
+        mlLicense,
+        enabledFeatures,
+        buildMlClient
+      ),
+      createAdUpdateJobConfigTool(
+        resolveMlCapabilities,
+        authorization,
+        mlLicense,
+        enabledFeatures,
+        buildMlClient
+      ),
+      createQueryAnomaliesTool(resolveMlCapabilities, authorization, mlLicense, enabledFeatures),
+      createMlChartsTool(
+        resolveMlCapabilities,
+        authorization,
+        mlLicense,
+        enabledFeatures,
+        buildMlClient
+      ),
     ],
   });

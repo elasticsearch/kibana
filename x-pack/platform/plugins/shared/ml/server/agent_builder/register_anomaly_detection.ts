@@ -6,12 +6,19 @@
  */
 
 import type { AgentBuilderPluginSetup } from '@kbn/agent-builder-server';
+import type { AttachmentTypeDefinition } from '@kbn/agent-builder-server/attachments';
 import type { ResolveMlCapabilities } from '@kbn/ml-common-types/capabilities';
 import type { MlLicense } from '../../common/license';
 import type { MlFeatures } from '../../common/constants/app';
 import type { MlAuthorizationService } from '../lib/capabilities/check_capabilities';
-import { registerAnomalyDetectionTools } from './tools';
+import type { MlClientFactoryDeps } from './ml_client_factory';
+import { createMlClientFactory, createDataRecognizerFactory } from './ml_client_factory';
 import { createAnomalyDetectionSkill } from './skills/anomaly_detection';
+import {
+  createAnomalySwimLaneAttachmentType,
+  createAnomalyChartsAttachmentType,
+  createSingleMetricViewerAttachmentType,
+} from './attachment_types';
 
 export const registerAnomalyDetectionAgentBuilder = ({
   agentBuilder,
@@ -19,19 +26,36 @@ export const registerAnomalyDetectionAgentBuilder = ({
   authorization,
   mlLicense,
   enabledFeatures,
+  mlClientFactoryDeps,
 }: {
   agentBuilder: AgentBuilderPluginSetup;
   resolveMlCapabilities: ResolveMlCapabilities;
   authorization?: MlAuthorizationService;
   mlLicense?: MlLicense;
   enabledFeatures?: MlFeatures;
+  mlClientFactoryDeps: MlClientFactoryDeps;
 }): void => {
-  registerAnomalyDetectionTools(
-    agentBuilder,
-    resolveMlCapabilities,
-    authorization,
-    mlLicense,
-    enabledFeatures
+  const buildMlClient = createMlClientFactory(mlClientFactoryDeps);
+  const buildDataRecognizer = createDataRecognizerFactory(mlClientFactoryDeps);
+
+  agentBuilder.attachments.registerType(
+    createAnomalySwimLaneAttachmentType() as AttachmentTypeDefinition
   );
-  agentBuilder.skills.register(createAnomalyDetectionSkill());
+  agentBuilder.attachments.registerType(
+    createAnomalyChartsAttachmentType() as AttachmentTypeDefinition
+  );
+  agentBuilder.attachments.registerType(
+    createSingleMetricViewerAttachmentType() as AttachmentTypeDefinition
+  );
+
+  agentBuilder.skills.register(
+    createAnomalyDetectionSkill(
+      resolveMlCapabilities,
+      authorization,
+      mlLicense,
+      enabledFeatures,
+      buildMlClient,
+      buildDataRecognizer
+    )
+  );
 };

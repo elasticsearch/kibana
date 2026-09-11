@@ -5,11 +5,6 @@
  * 2.0.
  */
 
-export {
-  AD_GET_JOB_INFO_TOOL_ID,
-  AD_CREATE_JOB_TOOL_ID,
-  AD_MANAGE_JOB_STATE_TOOL_ID,
-  AD_UPDATE_JOB_CONFIG_TOOL_ID,
-  QUERY_ANOMALIES_TOOL_ID,
-  CREATE_ML_CHARTS_TOOL_ID,
-} from './tool_ids';
+export const ANOMALY_SWIMLANE_ATTACHMENT_TYPE = 'ml.anomaly_swimlane' as const;
+export const ANOMALY_CHARTS_ATTACHMENT_TYPE = 'ml.anomaly_charts' as const;
+export const SINGLE_METRIC_VIEWER_ATTACHMENT_TYPE = 'ml.single_metric_viewer' as const;

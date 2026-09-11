@@ -34,9 +34,9 @@ import { ExplorerAnomaliesContainer } from '../../application/explorer/explorer_
 import { useAnomalyChartsData } from './use_anomaly_charts_data';
 import { useDateFormatTz, loadAnomaliesTableData } from '../../application/explorer/explorer_utils';
 import { useMlJobService } from '../../application/services/job_service';
-import { useThresholdToSeverity } from '../../application/explorer/hooks/use_threshold_to_severity';
 import { resolveSeverityFormat } from '../../../common/util/severity_threshold';
 import { useDefaultSeverity } from '../../application/components/controls/select_severity/select_severity';
+import type { SeverityOption } from '../../application/explorer/hooks/use_severity_options';
 
 const RESIZE_THROTTLE_TIME_MS = 500;
 
@@ -75,20 +75,19 @@ const AnomalyChartsContainer: FC<AnomalyChartsContainerProps> = ({
   });
 
   const [chartWidth, setChartWidth] = useState<number>(0);
-  const thresholdsToSeverity = useThresholdToSeverity();
-
   // Define a default threshold to use when severityThreshold is undefined (embeddable creation)
   const { val: defaultThreshold } = useDefaultSeverity();
 
-  // Initialize severity state from props or default
-  const [severity, setSeverity] = useState(
-    thresholdsToSeverity(
-      severityThreshold !== undefined ? resolveSeverityFormat(severityThreshold) : defaultThreshold
-    )
+  // Keep the resolved thresholds as the source of truth so a custom open-ended
+  // floor (e.g. `{ min: 30 }`) is used for fetching instead of being remapped
+  // onto canonical severity-band checkboxes.
+  const [severityThresholds, setSeverityThresholds] = useState<SeverityThreshold[]>(() =>
+    severityThreshold !== undefined ? resolveSeverityFormat(severityThreshold) : defaultThreshold
   );
 
-  // Extract thresholds from severity objects for API updates and data fetching
-  const severityThresholds = useMemo(() => severity.map((s) => s.threshold), [severity]);
+  const handleSetSeverity = useCallback((options: SeverityOption[]) => {
+    setSeverityThresholds(options.map((s) => s.threshold));
+  }, []);
 
   const [selectedEntities, setSelectedEntities] = useState<MlEntityField[] | undefined>();
   const [
@@ -282,7 +281,7 @@ const AnomalyChartsContainer: FC<AnomalyChartsContainerProps> = ({
               showCharts={true}
               chartsData={chartsData}
               severity={severityThresholds}
-              setSeverity={setSeverity}
+              setSeverity={handleSetSeverity}
               mlLocator={mlLocator}
               tableData={tableData}
               timeBuckets={timeBuckets}

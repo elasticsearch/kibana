@@ -266,8 +266,9 @@ export function jobsHealthServiceProvider(
       }
 
       // Cap pagination to bound ML API load on pathological annotation ranges.
+      // Signal the caller to fire the alert conservatively rather than suppress it.
       logger.warn(
-        `Delayed data percentage check for job ${annotation.job_id} exceeded the ${MAX_DELAYED_DATA_BUCKET_PAGES}-page bucket limit; skipping alert for this annotation.`
+        `Delayed data percentage check for job ${annotation.job_id} exceeded the ${MAX_DELAYED_DATA_BUCKET_PAGES}-page bucket limit; alert will fire conservatively.`
       );
       return null;
     };
@@ -278,7 +279,8 @@ export function jobsHealthServiceProvider(
           const eventCountSum = await sumEventCountForAnnotation(annotation);
 
           if (eventCountSum === null) {
-            return { exceedsThreshold: false };
+            // Pagination cap was hit — fire conservatively rather than suppress the alert.
+            return { exceedsThreshold: true };
           }
 
           // Missed docs are not included in analyzed bucket counts.

@@ -57,6 +57,7 @@ import type { MlCapabilities } from '@kbn/ml-common-types/capabilities';
 import type { FileUploadPluginStart } from '@kbn/file-upload-plugin/public';
 import type { KqlPluginStart } from '@kbn/kql/public';
 import type { CPSPluginSetup, CPSPluginStart } from '@kbn/cps/public/types';
+import type { AgentBuilderPluginStart } from '@kbn/agent-builder-browser';
 import { ProjectRoutingAccess } from '@kbn/cps-utils/types';
 import type { MlSharedServices } from './application/services/get_shared_ml_services';
 import { getMlSharedServices } from './application/services/get_shared_ml_services';
@@ -87,6 +88,7 @@ import { registerEmbeddables } from './embeddables';
 import { registerMlUiActions } from './ui_actions';
 
 export interface MlStartDependencies {
+  agentBuilder?: AgentBuilderPluginStart;
   cases?: CasesPublicStart;
   charts: ChartsPluginStart;
   contentManagement: ContentManagementPublicStart;
@@ -322,6 +324,18 @@ export class MlPlugin implements Plugin<MlPluginSetup, MlPluginStart> {
                     pluginStart,
                     pluginsSetup.usageCollection
                   );
+                }
+
+                if (pluginStart.agentBuilder) {
+                  const { registerAgentBuilderAttachments } = await import(
+                    './agent_builder/register_agent_builder_attachments'
+                  );
+                  registerAgentBuilderAttachments(pluginStart.agentBuilder, {
+                    application: coreStart.application,
+                    unifiedSearch: pluginStart.unifiedSearch,
+                    embeddable: pluginStart.embeddable,
+                    locator: this.locator,
+                  });
                 }
 
                 pluginStart.cps?.cpsManager?.registerAppAccess('ml', (location: string) =>

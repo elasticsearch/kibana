@@ -631,7 +631,7 @@ describe('JobsHealthService', () => {
     expect(executionResult[0].isHealthy).toBe(true);
   });
 
-  test('percentage mode: skips alert when bucket page limit is reached', async () => {
+  test('percentage mode: fires alert conservatively when bucket page limit is reached', async () => {
     mlClient.getBuckets.mockImplementation(async () =>
       createMultiBucketResponse('test_job_01', DELAYED_DATA_BUCKETS_PAGE_SIZE, 1)
     );
@@ -647,7 +647,7 @@ describe('JobsHealthService', () => {
       expect.stringContaining(`${MAX_DELAYED_DATA_BUCKET_PAGES}-page bucket limit`)
     );
     expect(executionResult).toHaveLength(1);
-    expect(executionResult[0].isHealthy).toBe(true);
+    expect(executionResult[0].isHealthy).toBe(false);
   });
 
   test('percentage mode: skips alert when getBuckets fails', async () => {

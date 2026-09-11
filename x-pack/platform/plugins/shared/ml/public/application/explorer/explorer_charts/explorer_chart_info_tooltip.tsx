@@ -5,15 +5,15 @@
  * 2.0.
  */
 
-import PropTypes from 'prop-types';
-import React from 'react';
-
-import { CHART_TYPE } from '../explorer_constants';
-
+import React, { type FC } from 'react';
+import { EuiSpacer } from '@elastic/eui';
 import { i18n } from '@kbn/i18n';
+import type { MlEntityField } from '@kbn/ml-anomaly-utils';
+
+import { CHART_TYPE, type ChartType } from '../explorer_constants';
 import { useExplorerChartTooltipStyles } from './explorer_chart_tooltip_styles';
 
-const CHART_DESCRIPTION = {
+const CHART_DESCRIPTION: Partial<Record<ChartType, string>> = {
   [CHART_TYPE.EVENT_DISTRIBUTION]: i18n.translate(
     'xpack.ml.explorer.charts.infoTooltip.chartEventDistributionDescription',
     {
@@ -33,9 +33,16 @@ const CHART_DESCRIPTION = {
   ),
 };
 
-import { EuiSpacer } from '@elastic/eui';
+interface TooltipItem {
+  title: string;
+  description: string | number | undefined;
+}
 
-function TooltipDefinitionList({ toolTipData }) {
+interface TooltipDefinitionListProps {
+  toolTipData: TooltipItem[];
+}
+
+const TooltipDefinitionList: FC<TooltipDefinitionListProps> = ({ toolTipData }) => {
   const {
     title: titleStyle,
     description: descriptionStyle,
@@ -52,9 +59,17 @@ function TooltipDefinitionList({ toolTipData }) {
       ))}
     </dl>
   );
+};
+
+export interface ExplorerChartInfoTooltipProps {
+  jobId: string;
+  aggregationInterval?: string;
+  chartFunction?: string;
+  chartType?: ChartType;
+  entityFields?: Array<Pick<MlEntityField, 'fieldName' | 'fieldValue'>>;
 }
 
-export const ExplorerChartInfoTooltip = ({
+export const ExplorerChartInfoTooltip: FC<ExplorerChartInfoTooltipProps> = ({
   jobId,
   aggregationInterval,
   chartFunction,
@@ -63,9 +78,9 @@ export const ExplorerChartInfoTooltip = ({
 }) => {
   const { tooltip, chartDescription: chartDescriptionStyle } = useExplorerChartTooltipStyles();
 
-  const chartDescription = CHART_DESCRIPTION[chartType];
+  const chartDescription = chartType !== undefined ? CHART_DESCRIPTION[chartType] : undefined;
 
-  const toolTipData = [
+  const toolTipData: TooltipItem[] = [
     {
       title: i18n.translate('xpack.ml.explorer.charts.infoTooltip.jobIdTitle', {
         defaultMessage: 'job ID',
@@ -104,10 +119,4 @@ export const ExplorerChartInfoTooltip = ({
       )}
     </div>
   );
-};
-ExplorerChartInfoTooltip.propTypes = {
-  jobId: PropTypes.string.isRequired,
-  aggregationInterval: PropTypes.string,
-  chartFunction: PropTypes.string,
-  entityFields: PropTypes.array,
 };

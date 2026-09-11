@@ -34,8 +34,10 @@ interface UseVisPreviewUnifiedSearchResult {
  */
 export const useVisPreviewUnifiedSearch = ({
   timeRange,
+  dataTestSubj = 'agentBuilderVisualizeLensTimeRangePicker',
 }: {
   timeRange: TimeRange | undefined;
+  dataTestSubj?: string;
 }): UseVisPreviewUnifiedSearchResult => {
   const initialBounds = useMemo(() => getInitialTimeRange(timeRange), [timeRange]);
 
@@ -83,9 +85,9 @@ export const useVisPreviewUnifiedSearch = ({
       dateRangeFrom: committedTimeRange.from,
       dateRangeTo: committedTimeRange.to,
       onQuerySubmit,
-      dataTestSubj: 'agentBuilderVisualizeLensTimeRangePicker',
+      dataTestSubj,
     }),
-    [committedTimeRange.from, committedTimeRange.to, onQuerySubmit]
+    [committedTimeRange.from, committedTimeRange.to, dataTestSubj, onQuerySubmit]
   );
 
   return useMemo(
