@@ -185,6 +185,39 @@ document-level security mirroring Kibana object privileges, so callers only see
 knowledge indicators for dashboards, rules or connectors they could open. Custom
 AI Indices get the space filter alone; they are queried like any other index.
 
+## Agent Builder tools
+
+The `contextEngineAgentBuilder` plugin adds three read-only tools under
+`platform.context_engine.*`. Each one runs the same code as the matching route
+above, as the same user, so a tool and its route always return the same thing:
+
+| Tool                | Route                    | Result                                                                            |
+| ------------------- | ------------------------ | --------------------------------------------------------------------------------- |
+| `list_ai_indices`   | `GET …/ai_index`         | `{ id, esql_target, description, managed, assigned_to_agent? }` per listed entry  |
+| `describe_ai_index` | `GET …/{id}/_describe`   | `{ response }`, the text block describing the index                               |
+| `query_ai_indices`  | `POST …/ai_index/_query` | `{ columns, values }`                                                             |
+
+`assigned_to_agent` only appears when an agent calls the tool during a chat. It
+says whether that agent is set up with the index. Over MCP there is no agent, so
+the field is missing.
+
+`query_ai_indices` has no `time_range` or `filter` parameters. Time constraints
+go in the ES|QL itself or in `params`. Its rows come back as a plain `other`
+result, not `esql_results`. This is deliberate. In chat, an `esql_results`
+result gets a "See in Discover" link that opens the raw query in Discover, and
+when the agent asks for a chart the UI runs the raw query again in Lens. Both
+run the query as written, without the space filter and row limit the server
+adds, so they could show documents from other spaces.
+
+To see the tools, a caller needs Agent Builder's `read` privilege; that is the
+only check the MCP server does. To use them, the caller also needs Context
+Engine's `read` privilege. Every tool checks this itself and returns an error
+result when it is missing.
+
+The space always comes from the request; it cannot be passed as a parameter. In
+Agent Builder chat, it is the agent's space. Over MCP, it is the space in the
+URL the MCP server is served from (`/s/{spaceId}/api/agent_builder/mcp`).
+
 ## Feedback analysis configuration
 
 Signal *generation* is global — one background task, one advanced setting.

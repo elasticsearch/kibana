@@ -90,6 +90,15 @@ describe('registerContextEngineAgentBuilderIntegration', () => {
     };
   };
 
+  it('registers the tools with a Context Engine start accessor', async () => {
+    const { getAiIndexDataReadService } = setup({ aiIndices: [] });
+    const { registerAgentBuilderTools } = jest.requireMock('./agent_builder/tools');
+
+    const [{ getContextEngineStart }] = registerAgentBuilderTools.mock.calls.at(-1);
+
+    await expect(getContextEngineStart()).resolves.toEqual({ getAiIndexDataReadService });
+  });
+
   it('reads visible AI Indices as the requesting user through the data read service', async () => {
     const { resolver, getAiIndexDataReadService, asScoped, asCurrentUser } = setup({
       aiIndices: [],

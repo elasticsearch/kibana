@@ -16,6 +16,7 @@ plugins:
     - contentManagementExamples
     - content_management
     - context_engine
+    - context_engine_agent_builder
     - cross_cluster_replication
     - custom_branding
     - custom_content
