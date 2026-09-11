@@ -5,7 +5,10 @@
  * 2.0.
  */
 
-import { RuleExecutionCancellationError } from './cancellation_error';
+import {
+  RuleExecutionCancellationError,
+  isRuleExecutionCancellationError,
+} from './cancellation_error';
 import { CancellationScope } from './cancellation_scope';
 
 export interface ExecutionContext {
@@ -25,7 +28,12 @@ export class AbortSignalExecutionContext implements ExecutionContext {
 
     const reason = this.signal.reason;
 
-    if (reason instanceof Error) {
+    // A bare `abort()` sets `reason` to a DOMException (name: 'AbortError'),
+    // which is an Error but not a recognized cancellation - normalize it (and
+    // any other non-cancellation reason) into our own error type here, at the
+    // single boundary where "aborted" becomes "thrown", so every consumer of
+    // `isRuleExecutionCancellationError` sees a consistent cancellation shape.
+    if (isRuleExecutionCancellationError(reason)) {
       throw reason;
     }
 

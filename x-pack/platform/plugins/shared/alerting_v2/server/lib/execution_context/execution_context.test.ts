@@ -17,13 +17,19 @@ describe('AbortSignalExecutionContext', () => {
       expect(() => context.throwIfAborted()).not.toThrow();
     });
 
-    it('throws the abort reason when it is an Error', () => {
+    it('wraps a non-cancellation Error reason in RuleExecutionCancellationError, preserving it as cause', () => {
       const controller = new AbortController();
       const reason = new Error('custom abort reason');
       controller.abort(reason);
       const context = new AbortSignalExecutionContext(controller.signal);
 
-      expect(() => context.throwIfAborted()).toThrow(reason);
+      try {
+        context.throwIfAborted();
+        fail('Expected throwIfAborted to throw');
+      } catch (error) {
+        expect(error).toBeInstanceOf(RuleExecutionCancellationError);
+        expect((error as RuleExecutionCancellationError).cause).toBe(reason);
+      }
     });
 
     it('throws RuleExecutionCancellationError when abort reason is not an Error', () => {
@@ -53,8 +59,16 @@ describe('AbortSignalExecutionContext', () => {
       controller.abort();
       const context = new AbortSignalExecutionContext(controller.signal);
 
-      // Default abort reason is an Error so it gets thrown directly
-      expect(() => context.throwIfAborted()).toThrow();
+      expect(() => context.throwIfAborted()).toThrow(RuleExecutionCancellationError);
+    });
+
+    it('rethrows an already-recognized cancellation reason unchanged', () => {
+      const controller = new AbortController();
+      const reason = new RuleExecutionCancellationError('already a cancellation');
+      controller.abort(reason);
+      const context = new AbortSignalExecutionContext(controller.signal);
+
+      expect(() => context.throwIfAborted()).toThrow(reason);
     });
   });
 
