@@ -5,5 +5,8 @@
  * 2.0.
  */
 
-export type { SlmPolicy } from './elasticsearch';
-export { registerEsHelpers } from './elasticsearch';
+import { createPlaywrightConfig } from '@kbn/scout';
+
+export default createPlaywrightConfig({
+  testDir: './tests',
+});

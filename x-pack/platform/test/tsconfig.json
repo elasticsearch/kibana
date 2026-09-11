@@ -59,7 +59,6 @@
     "@kbn/ml-agg-utils",
     "@kbn/share-plugin",
     "@kbn/tooling-log",
-    "@kbn/snapshot-restore-plugin",
     "@kbn/monitoring-plugin",
     "@kbn/core-saved-objects-base-server-internal",
     "@kbn/utils",

@@ -1,0 +1,482 @@
+{
+  "sha1": "d600851c3085f9e4e2e3ee711d0804b69f52502a",
+  "testChannels": [
+    "ci-on-commit"
+  ],
+  "tests": [
+    {
+      "id": "abc13cce98558b3-9d5e469b87e80c8",
+      "title": "Snapshot and Restore - SLM policies create: should create a SLM policy",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic",
+        "@cloud-stateful-classic"
+      ],
+      "location": {
+        "file": "x-pack/platform/plugins/private/snapshot_restore/test/scout/api/tests/policies.spec.ts",
+        "line": 71,
+        "column": 21
+      }
+    },
+    {
+      "id": "abc13cce98558b3-bd476ed1a139419",
+      "title": "Snapshot and Restore - SLM policies create: should create a policy with only required fields",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic",
+        "@cloud-stateful-classic"
+      ],
+      "location": {
+        "file": "x-pack/platform/plugins/private/snapshot_restore/test/scout/api/tests/policies.spec.ts",
+        "line": 122,
+        "column": 18
+      }
+    },
+    {
+      "id": "abc13cce98558b3-4c51f834729c9b8",
+      "title": "Snapshot and Restore - SLM policies update: should allow an existing policy to be updated",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic",
+        "@cloud-stateful-classic"
+      ],
+      "location": {
+        "file": "x-pack/platform/plugins/private/snapshot_restore/test/scout/api/tests/policies.spec.ts",
+        "line": 151,
+        "column": 25
+      }
+    },
+    {
+      "id": "abc13cce98558b3-ccdd8a5e10af9f1",
+      "title": "Snapshot and Restore - SLM policies update: should allow optional fields to be removed",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic",
+        "@cloud-stateful-classic"
+      ],
+      "location": {
+        "file": "x-pack/platform/plugins/private/snapshot_restore/test/scout/api/tests/policies.spec.ts",
+        "line": 211,
+        "column": 11
+      }
+    },
+    {
+      "id": "abc13cce98558b3-09e50983fe305d9",
+      "title": "Snapshot and Restore - SLM policies show info: should get slm status",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic",
+        "@cloud-stateful-classic"
+      ],
+      "location": {
+        "file": "x-pack/platform/plugins/private/snapshot_restore/test/scout/api/tests/policies.spec.ts",
+        "line": 239,
+        "column": 57
+      }
+    },
+    {
+      "id": "8da73adaf7e6648-744c2bbd07707dd",
+      "title": "Snapshot and Restore - repositories returns a list of default repository types",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic",
+        "@cloud-stateful-classic"
+      ],
+      "location": {
+        "file": "x-pack/platform/plugins/private/snapshot_restore/test/scout/api/tests/repositories.spec.ts",
+        "line": 18,
+        "column": 11
+      }
+    },
+    {
+      "id": "662fd671facf76a-7f6f1739084257f",
+      "title": "Snapshot and Restore - snapshots pagination: returns pageSize number of snapshots",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic"
+      ],
+      "location": {
+        "file": "x-pack/platform/plugins/private/snapshot_restore/test/scout/api/tests/snapshots.spec.ts",
+        "line": 131,
+        "column": 44
+      }
+    },
+    {
+      "id": "662fd671facf76a-32fea8fbf2f7089",
+      "title": "Snapshot and Restore - snapshots pagination: returns next page of snapshots",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic"
+      ],
+      "location": {
+        "file": "x-pack/platform/plugins/private/snapshot_restore/test/scout/api/tests/snapshots.spec.ts",
+        "line": 142,
+        "column": 3
+      }
+    },
+    {
+      "id": "662fd671facf76a-3176b000ab2b87e",
+      "title": "Snapshot and Restore - snapshots sorting: sorts by snapshot name (asc)",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic"
+      ],
+      "location": {
+        "file": "x-pack/platform/plugins/private/snapshot_restore/test/scout/api/tests/snapshots.spec.ts",
+        "line": 151,
+        "column": 23
+      }
+    },
+    {
+      "id": "662fd671facf76a-5e2a8624a528b4a",
+      "title": "Snapshot and Restore - snapshots sorting: sorts by snapshot name (desc)",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic"
+      ],
+      "location": {
+        "file": "x-pack/platform/plugins/private/snapshot_restore/test/scout/api/tests/snapshots.spec.ts",
+        "line": 159,
+        "column": 54
+      }
+    },
+    {
+      "id": "662fd671facf76a-29773dff78d57c3",
+      "title": "Snapshot and Restore - snapshots sorting: sorts by repository name (asc)",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic"
+      ],
+      "location": {
+        "file": "x-pack/platform/plugins/private/snapshot_restore/test/scout/api/tests/snapshots.spec.ts",
+        "line": 169,
+        "column": 11
+      }
+    },
+    {
+      "id": "662fd671facf76a-ddcc4569acdf82f",
+      "title": "Snapshot and Restore - snapshots sorting: sorts by repository name (desc)",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic"
+      ],
+      "location": {
+        "file": "x-pack/platform/plugins/private/snapshot_restore/test/scout/api/tests/snapshots.spec.ts",
+        "line": 173,
+        "column": 7
+      }
+    },
+    {
+      "id": "662fd671facf76a-7954c6667ed1496",
+      "title": "Snapshot and Restore - snapshots sorting: sorts by startTimeInMillis (asc)",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic"
+      ],
+      "location": {
+        "file": "x-pack/platform/plugins/private/snapshot_restore/test/scout/api/tests/snapshots.spec.ts",
+        "line": 182,
+        "column": 11
+      }
+    },
+    {
+      "id": "662fd671facf76a-17e4652699cbe37",
+      "title": "Snapshot and Restore - snapshots sorting: sorts by startTimeInMillis (desc)",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic"
+      ],
+      "location": {
+        "file": "x-pack/platform/plugins/private/snapshot_restore/test/scout/api/tests/snapshots.spec.ts",
+        "line": 186,
+        "column": 7
+      }
+    },
+    {
+      "id": "662fd671facf76a-d03ac3322537164",
+      "title": "Snapshot and Restore - snapshots sorting: allows sorting by indices (asc)",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic"
+      ],
+      "location": {
+        "file": "x-pack/platform/plugins/private/snapshot_restore/test/scout/api/tests/snapshots.spec.ts",
+        "line": 199,
+        "column": 5
+      }
+    },
+    {
+      "id": "662fd671facf76a-6846beead1f83f9",
+      "title": "Snapshot and Restore - snapshots sorting: allows sorting by indices (desc)",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic"
+      ],
+      "location": {
+        "file": "x-pack/platform/plugins/private/snapshot_restore/test/scout/api/tests/snapshots.spec.ts",
+        "line": 204,
+        "column": 11
+      }
+    },
+    {
+      "id": "662fd671facf76a-1eeb76a97befe63",
+      "title": "Snapshot and Restore - snapshots sorting: allows sorting by durationInMillis (asc)",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic"
+      ],
+      "location": {
+        "file": "x-pack/platform/plugins/private/snapshot_restore/test/scout/api/tests/snapshots.spec.ts",
+        "line": 199,
+        "column": 5
+      }
+    },
+    {
+      "id": "662fd671facf76a-e10d1b14b817bbb",
+      "title": "Snapshot and Restore - snapshots sorting: allows sorting by durationInMillis (desc)",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic"
+      ],
+      "location": {
+        "file": "x-pack/platform/plugins/private/snapshot_restore/test/scout/api/tests/snapshots.spec.ts",
+        "line": 204,
+        "column": 11
+      }
+    },
+    {
+      "id": "662fd671facf76a-c00b9012322c0e7",
+      "title": "Snapshot and Restore - snapshots sorting: allows sorting by shards.total (asc)",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic"
+      ],
+      "location": {
+        "file": "x-pack/platform/plugins/private/snapshot_restore/test/scout/api/tests/snapshots.spec.ts",
+        "line": 199,
+        "column": 5
+      }
+    },
+    {
+      "id": "662fd671facf76a-804daafe975b7b3",
+      "title": "Snapshot and Restore - snapshots sorting: allows sorting by shards.total (desc)",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic"
+      ],
+      "location": {
+        "file": "x-pack/platform/plugins/private/snapshot_restore/test/scout/api/tests/snapshots.spec.ts",
+        "line": 204,
+        "column": 11
+      }
+    },
+    {
+      "id": "662fd671facf76a-c872ae9e2077e9e",
+      "title": "Snapshot and Restore - snapshots sorting: allows sorting by shards.failed (asc)",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic"
+      ],
+      "location": {
+        "file": "x-pack/platform/plugins/private/snapshot_restore/test/scout/api/tests/snapshots.spec.ts",
+        "line": 199,
+        "column": 5
+      }
+    },
+    {
+      "id": "662fd671facf76a-cd3893a699206ee",
+      "title": "Snapshot and Restore - snapshots sorting: allows sorting by shards.failed (desc)",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic"
+      ],
+      "location": {
+        "file": "x-pack/platform/plugins/private/snapshot_restore/test/scout/api/tests/snapshots.spec.ts",
+        "line": 204,
+        "column": 11
+      }
+    },
+    {
+      "id": "662fd671facf76a-46e29f16d705d28",
+      "title": "Snapshot and Restore - snapshots search snapshot name: exact match",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic"
+      ],
+      "location": {
+        "file": "x-pack/platform/plugins/private/snapshot_restore/test/scout/api/tests/snapshots.spec.ts",
+        "line": 210,
+        "column": 5
+      }
+    },
+    {
+      "id": "662fd671facf76a-7c66127f4ba791b",
+      "title": "Snapshot and Restore - snapshots search snapshot name: partial match",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic"
+      ],
+      "location": {
+        "file": "x-pack/platform/plugins/private/snapshot_restore/test/scout/api/tests/snapshots.spec.ts",
+        "line": 218,
+        "column": 12
+      }
+    },
+    {
+      "id": "662fd671facf76a-aaef8d8c35fe5a1",
+      "title": "Snapshot and Restore - snapshots search snapshot name: excluding search with exact match",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic"
+      ],
+      "location": {
+        "file": "x-pack/platform/plugins/private/snapshot_restore/test/scout/api/tests/snapshots.spec.ts",
+        "line": 228,
+        "column": 5
+      }
+    },
+    {
+      "id": "662fd671facf76a-079f6611fb47c3d",
+      "title": "Snapshot and Restore - snapshots search snapshot name: excluding search with partial match",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic"
+      ],
+      "location": {
+        "file": "x-pack/platform/plugins/private/snapshot_restore/test/scout/api/tests/snapshots.spec.ts",
+        "line": 235,
+        "column": 7
+      }
+    },
+    {
+      "id": "662fd671facf76a-28a6ea9c736a859",
+      "title": "Snapshot and Restore - snapshots search repository name: non-existent repository returns empty array",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic"
+      ],
+      "location": {
+        "file": "x-pack/platform/plugins/private/snapshot_restore/test/scout/api/tests/snapshots.spec.ts",
+        "line": 243,
+        "column": 73
+      }
+    },
+    {
+      "id": "662fd671facf76a-c1a5d44a62749ee",
+      "title": "Snapshot and Restore - snapshots search repository name: exact match",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic"
+      ],
+      "location": {
+        "file": "x-pack/platform/plugins/private/snapshot_restore/test/scout/api/tests/snapshots.spec.ts",
+        "line": 250,
+        "column": 7
+      }
+    },
+    {
+      "id": "662fd671facf76a-12ef37ca57302b8",
+      "title": "Snapshot and Restore - snapshots search repository name: partial match",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic"
+      ],
+      "location": {
+        "file": "x-pack/platform/plugins/private/snapshot_restore/test/scout/api/tests/snapshots.spec.ts",
+        "line": 260,
+        "column": 20
+      }
+    },
+    {
+      "id": "662fd671facf76a-225dfb71b8cb468",
+      "title": "Snapshot and Restore - snapshots search repository name: excluding search with exact match",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic"
+      ],
+      "location": {
+        "file": "x-pack/platform/plugins/private/snapshot_restore/test/scout/api/tests/snapshots.spec.ts",
+        "line": 273,
+        "column": 13
+      }
+    },
+    {
+      "id": "662fd671facf76a-fa66182c33e0572",
+      "title": "Snapshot and Restore - snapshots search repository name: excluding search with partial match",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic"
+      ],
+      "location": {
+        "file": "x-pack/platform/plugins/private/snapshot_restore/test/scout/api/tests/snapshots.spec.ts",
+        "line": 286,
+        "column": 97
+      }
+    },
+    {
+      "id": "662fd671facf76a-81cafaf30e32cce",
+      "title": "Snapshot and Restore - snapshots search policy name: non-existent policy returns empty array",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic"
+      ],
+      "location": {
+        "file": "x-pack/platform/plugins/private/snapshot_restore/test/scout/api/tests/snapshots.spec.ts",
+        "line": 295,
+        "column": 12
+      }
+    },
+    {
+      "id": "662fd671facf76a-7fc80bd8f50b4ab",
+      "title": "Snapshot and Restore - snapshots search policy name: exact match",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic"
+      ],
+      "location": {
+        "file": "x-pack/platform/plugins/private/snapshot_restore/test/scout/api/tests/snapshots.spec.ts",
+        "line": 306,
+        "column": 13
+      }
+    },
+    {
+      "id": "662fd671facf76a-0662dff32c97d4c",
+      "title": "Snapshot and Restore - snapshots search policy name: partial match",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic"
+      ],
+      "location": {
+        "file": "x-pack/platform/plugins/private/snapshot_restore/test/scout/api/tests/snapshots.spec.ts",
+        "line": 316,
+        "column": 59
+      }
+    },
+    {
+      "id": "662fd671facf76a-0ebc6d7dfcb0b9c",
+      "title": "Snapshot and Restore - snapshots search policy name: excluding search with exact match",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic"
+      ],
+      "location": {
+        "file": "x-pack/platform/plugins/private/snapshot_restore/test/scout/api/tests/snapshots.spec.ts",
+        "line": 332,
+        "column": 11
+      }
+    },
+    {
+      "id": "662fd671facf76a-14267e62af6fec2",
+      "title": "Snapshot and Restore - snapshots search policy name: excluding search with partial match",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic"
+      ],
+      "location": {
+        "file": "x-pack/platform/plugins/private/snapshot_restore/test/scout/api/tests/snapshots.spec.ts",
+        "line": 348,
+        "column": 11
+      }
+    }
+  ]
+}
