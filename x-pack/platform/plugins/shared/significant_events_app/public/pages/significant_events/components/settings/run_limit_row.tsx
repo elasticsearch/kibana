@@ -68,7 +68,7 @@ export const RunLimitRow = ({
       data-test-subj={`significantEventsRunLimitRow-${group}`}
     >
       <EuiFlexItem>
-        <EuiTitle size="xs">
+        <EuiTitle size="xxs">
           <h4>{RUN_QUOTA_GROUP_LABELS[group]}</h4>
         </EuiTitle>
         <EuiText size="s">

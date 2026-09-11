@@ -6,7 +6,7 @@
  */
 
 import React from 'react';
-import { EuiButton, EuiPanel, EuiSpacer, EuiText } from '@elastic/eui';
+import { EuiButton, EuiSpacer, EuiSplitPanel, EuiText, EuiTitle } from '@elastic/eui';
 import { i18n } from '@kbn/i18n';
 import { useCleanupStaleEvents } from '../../../../hooks/use_cleanup_stale_events';
 
@@ -14,17 +14,17 @@ export function StaleEventCleanupSection({ canManage }: { canManage: boolean }) 
   const { cleanupStaleEvents, isCleaningUp } = useCleanupStaleEvents();
 
   return (
-    <EuiPanel hasBorder={true} hasShadow={false} paddingSize="none" grow={false}>
-      <EuiPanel hasShadow={false} color="subdued">
-        <EuiText size="s">
+    <EuiSplitPanel.Outer hasBorder hasShadow={false} css={{ flexShrink: 0 }}>
+      <EuiSplitPanel.Inner color="subdued">
+        <EuiTitle size="xs">
           <h3>
             {i18n.translate('xpack.significantEventsApp.settings.staleEventCleanup.title', {
               defaultMessage: 'Stale event cleanup',
             })}
           </h3>
-        </EuiText>
-      </EuiPanel>
-      <EuiPanel hasShadow={false} hasBorder={false}>
+        </EuiTitle>
+      </EuiSplitPanel.Inner>
+      <EuiSplitPanel.Inner>
         <EuiText size="s">
           <p>
             {i18n.translate('xpack.significantEventsApp.settings.staleEventCleanup.description', {
@@ -45,7 +45,7 @@ export function StaleEventCleanupSection({ canManage }: { canManage: boolean }) 
             defaultMessage: 'Clean up stale events',
           })}
         </EuiButton>
-      </EuiPanel>
-    </EuiPanel>
+      </EuiSplitPanel.Inner>
+    </EuiSplitPanel.Outer>
   );
 }

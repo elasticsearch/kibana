@@ -7,7 +7,14 @@
 
 import React, { useMemo, useState } from 'react';
 import useObservable from 'react-use/lib/useObservable';
-import { EuiAccordion, EuiLoadingSpinner, EuiPanel, EuiSpacer, EuiTitle } from '@elastic/eui';
+import {
+  EuiAccordion,
+  EuiLoadingSpinner,
+  EuiPanel,
+  EuiSpacer,
+  EuiTitle,
+  useEuiTheme,
+} from '@elastic/eui';
 import { i18n } from '@kbn/i18n';
 import { GEN_AI_SETTINGS_TOKEN_USAGE_TRACKING } from '@kbn/management-settings-ids';
 import { useKibana } from '../../../../hooks/use_kibana';
@@ -25,6 +32,7 @@ import {
 const INSTALL_TOKEN_USAGE_DASHBOARD_URL = '/internal/gen_ai_settings/install_token_usage_dashboard';
 
 export const CostEstimate = () => {
+  const { euiTheme } = useEuiTheme();
   const quotas = useRunQuotas();
   const [isEnablingTracking, setIsEnablingTracking] = useState(false);
   const { core } = useKibana();
@@ -207,7 +215,12 @@ export const CostEstimate = () => {
         grow={false}
         data-test-subj="significantEventsCostSection"
       >
-        <EuiPanel hasShadow={false} color="subdued" paddingSize="none">
+        <EuiPanel
+          hasShadow={false}
+          color="subdued"
+          paddingSize="none"
+          css={{ paddingInline: euiTheme.size.m }}
+        >
           <EuiAccordion
             id="significantEventsCostAccordion"
             initialIsOpen={false}
@@ -217,7 +230,7 @@ export const CostEstimate = () => {
               'data-test-subj': 'significantEventsCostAccordionButton',
             }}
             buttonContent={
-              <EuiTitle size="s">
+              <EuiTitle size="xs">
                 <h3>
                   {i18n.translate('xpack.significantEventsApp.settings.costEstimate.sectionTitle', {
                     defaultMessage: 'Approximate inference cost across all spaces',

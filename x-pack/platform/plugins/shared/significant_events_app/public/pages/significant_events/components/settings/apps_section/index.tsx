@@ -16,9 +16,10 @@ import {
   EuiFlexItem,
   EuiIcon,
   EuiLoadingSpinner,
-  EuiPanel,
   EuiSpacer,
+  EuiSplitPanel,
   EuiText,
+  EuiTitle,
   useGeneratedHtmlId,
 } from '@elastic/eui';
 import { i18n } from '@kbn/i18n';
@@ -53,17 +54,17 @@ export function AppsSection({ canEdit }: AppsSectionProps) {
   return (
     <>
       <EuiSpacer />
-      <EuiPanel hasBorder={true} hasShadow={false} paddingSize="none" grow={false}>
-        <EuiPanel hasShadow={false} color="subdued">
-          <EuiText size="s">
+      <EuiSplitPanel.Outer hasBorder hasShadow={false} css={{ flexShrink: 0 }}>
+        <EuiSplitPanel.Inner color="subdued">
+          <EuiTitle size="xs">
             <h3>
               {i18n.translate('xpack.significantEventsApp.settings.apps.sectionTitle', {
                 defaultMessage: 'Apps',
               })}
             </h3>
-          </EuiText>
-        </EuiPanel>
-        <EuiPanel hasShadow={false} hasBorder={false}>
+          </EuiTitle>
+        </EuiSplitPanel.Inner>
+        <EuiSplitPanel.Inner>
           <EuiFlexGroup gutterSize="l" wrap>
             <EuiFlexItem grow={false} css={{ minWidth: 320, maxWidth: 600 }}>
               <EuiCard
@@ -95,8 +96,8 @@ export function AppsSection({ canEdit }: AppsSectionProps) {
               />
             </EuiFlexItem>
           </EuiFlexGroup>
-        </EuiPanel>
-      </EuiPanel>
+        </EuiSplitPanel.Inner>
+      </EuiSplitPanel.Outer>
     </>
   );
 }

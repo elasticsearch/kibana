@@ -15,8 +15,8 @@ import {
   EuiFlexItem,
   EuiHorizontalRule,
   EuiLoadingSpinner,
-  EuiPanel,
   EuiSpacer,
+  EuiSplitPanel,
   EuiSwitch,
   EuiText,
   EuiTitle,
@@ -198,11 +198,11 @@ export const RunLimitsSection = () => {
 
   return (
     <>
-      <EuiPanel hasBorder hasShadow={false} paddingSize="none" grow={false}>
-        <EuiPanel hasShadow={false} color="subdued">
+      <EuiSplitPanel.Outer hasBorder hasShadow={false} css={{ flexShrink: 0 }}>
+        <EuiSplitPanel.Inner color="subdued">
           <EuiFlexGroup alignItems="center" justifyContent="spaceBetween">
             <EuiFlexItem>
-              <EuiTitle size="s">
+              <EuiTitle size="xs">
                 <h3>
                   {i18n.translate('xpack.significantEventsApp.settings.runLimits.sectionTitle', {
                     defaultMessage: 'Daily run limits',
@@ -227,8 +227,8 @@ export const RunLimitsSection = () => {
               </EuiFlexItem>
             )}
           </EuiFlexGroup>
-        </EuiPanel>
-        <EuiPanel hasShadow={false}>
+        </EuiSplitPanel.Inner>
+        <EuiSplitPanel.Inner hasBorder={false}>
           <EuiText size="s">
             <p>
               {i18n.translate('xpack.significantEventsApp.settings.runLimits.sectionDescription', {
@@ -427,8 +427,8 @@ export const RunLimitsSection = () => {
               )}
             </>
           )}
-        </EuiPanel>
-      </EuiPanel>
+        </EuiSplitPanel.Inner>
+      </EuiSplitPanel.Outer>
 
       {showConfirmation && draftState && response && (
         <EuiConfirmModal
