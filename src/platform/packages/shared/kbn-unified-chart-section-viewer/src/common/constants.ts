@@ -82,6 +82,22 @@ export const FEATURE_FLAG_DEFAULTS: Record<FeatureFlag, boolean> = {
   [FEATURE_FLAGS.IS_EXEMPLARS_ENABLED]: false,
 };
 
+// Exemplars are written to a parallel `exemplars-*` data stream whose mappings are
+// composed from `metrics-otel@mappings`, so an OTel metrics stream and its exemplars
+// stream differ only by this prefix.
+export const METRICS_INDEX_PREFIX = 'metrics-';
+export const EXEMPLARS_INDEX_PREFIX = 'exemplars-';
+// The `exemplars-otel@template` index pattern is `exemplars-*.otel-*`, so only datasets
+// carrying this marker have a backing template. Deriving an exemplars index for any other
+// dataset produces a name that does not exist, and ES|QL answers that with an HTTP 400
+// rather than an empty result.
+export const EXEMPLARS_OTEL_DATASET_MARKER = '.otel';
+// ES|QL applies an implicit `LIMIT 1000` when no limit is given, returning an arbitrary
+// (and therefore unstable across refreshes) subset. An explicit limit keeps the cap
+// deliberate and, paired with `SORT @timestamp DESC`, stable.
+// TODO(observability-dev#6073): placeholder pending the product decision on sampling.
+export const EXEMPLARS_MAX_ROWS = 500;
+
 // Metrics grid sort options
 export const METRICS_SORT_BY = {
   alphabetically: 'alphabetically',

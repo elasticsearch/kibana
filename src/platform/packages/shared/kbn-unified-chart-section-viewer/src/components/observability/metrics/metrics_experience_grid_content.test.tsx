@@ -112,6 +112,7 @@ describe('MetricsExperienceGridContent', () => {
       },
       histogramCss: { name: '', styles: '' },
       isTabSelected: true,
+      exemplarsAvailability: { availableMetrics: new Set<string>(), hasProbeFailed: false },
     };
 
     useMetricsExperienceStateMock.mockReturnValue({

@@ -21,6 +21,7 @@ import { isSuppressedFetchError } from '../utils/is_suppressed_fetch_error';
 
 /** APM label identifying which chart-section call site produced an error. */
 export type ChartSectionErrorSource =
+  | 'useFetchExemplars'
   | 'useFetchMetricsData'
   | 'useLensProps'
   | 'useMetricSourceKind';

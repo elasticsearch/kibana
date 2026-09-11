@@ -15,4 +15,5 @@ export enum MetricsExecutionContextAction {
 /** Name values for metrics execution context page labels. */
 export enum MetricsExecutionContextName {
   METRICS_INFO = 'metrics_info',
+  EXEMPLARS = 'exemplars',
 }

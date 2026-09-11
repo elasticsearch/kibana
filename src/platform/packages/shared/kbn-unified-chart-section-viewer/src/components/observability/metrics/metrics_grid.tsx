@@ -44,6 +44,8 @@ import {
 import { useChartLayers } from '../../chart/hooks/use_chart_layers';
 import { useMetricsExperienceState } from './context/metrics_experience_state_provider';
 import { getEsqlQuery } from './utils/get_esql_query';
+import type { ExemplarsAvailabilityResult } from './hooks/use_exemplars_availability';
+import { useFetchExemplars } from './hooks/use_fetch_exemplars';
 
 const EMPTY_APPLICABLE_DIMENSIONS: Dimension[] = [];
 
@@ -91,6 +93,7 @@ export type MetricsGridProps = Pick<
   whereStatements?: string[];
   getUserMessages?: (metricItem: ParsedMetricItem) => EmbeddableComponentProps['userMessages'];
   getDescription?: (metricItem: ParsedMetricItem) => EmbeddableComponentProps['description'];
+  exemplarsAvailability: ExemplarsAvailabilityResult;
   /**
    * Whether the owning Discover tab is the currently active one.
    *
@@ -123,6 +126,7 @@ export const MetricsGrid = ({
   getUserMessages,
   getDescription,
   isTabSelected,
+  exemplarsAvailability,
 }: MetricsGridProps) => {
   const gridRef = useRef<HTMLDivElement>(null);
   const { euiTheme } = useEuiTheme();
@@ -268,6 +272,7 @@ export const MetricsGrid = ({
                   profileId={profileId}
                   gridSettings={gridSettings}
                   onMetricExplored={onMetricExplored}
+                  exemplarsAvailability={exemplarsAvailability}
                 />
               </EuiFlexItem>
             );
@@ -310,6 +315,7 @@ interface ChartItemProps
   profileId: string;
   gridSettings: MetricsGridSettings;
   onMetricExplored?: (metricUniqueKey: string) => void;
+  exemplarsAvailability: ExemplarsAvailabilityResult;
 }
 
 const ChartItem = React.memo(
@@ -339,6 +345,7 @@ const ChartItem = React.memo(
     profileId,
     gridSettings,
     onMetricExplored,
+    exemplarsAvailability,
   }: ChartItemProps) => {
     const { euiTheme } = useEuiTheme();
     const colorPalette = useMemo(
@@ -365,6 +372,19 @@ const ChartItem = React.memo(
       dimensions,
       metricItem.dimensionFields
     );
+
+    const exemplarRawResponse = useFetchExemplars({
+      fetchParams,
+      services,
+      metricItem,
+      availableMetrics: exemplarsAvailability.availableMetrics,
+      whereStatements,
+      originalSource: userSource,
+      profileId,
+    });
+    // TODO(kibana#289722): pass exemplarRawResponse to useChartLayers as a LensPointsLayer
+    // once that PR adds LensPointsLayer support to the config builder.
+    void exemplarRawResponse;
 
     const esqlQuery = useMemo(() => {
       const fieldType = firstNonNullable(metricItem.fieldTypes);

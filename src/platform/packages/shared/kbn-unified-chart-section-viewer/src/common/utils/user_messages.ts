@@ -25,3 +25,19 @@ export const LEGACY_HISTOGRAM_USER_MESSAGES: UserMessage[] = [
     displayLocations: [{ id: 'embeddableBadge' }],
   },
 ];
+
+export const EXEMPLARS_PROBE_FAILED_USER_MESSAGES: UserMessage[] = [
+  {
+    uniqueId: 'metrics-experience-exemplars-probe-failed',
+    severity: 'warning',
+    shortMessage: i18n.translate('metricsExperience.userMessage.exemplarsProbe.short', {
+      defaultMessage: 'Exemplars unavailable',
+    }),
+    longMessage: i18n.translate('metricsExperience.userMessage.exemplarsProbe.long', {
+      defaultMessage:
+        'Could not determine which metrics have exemplar data. Exemplar overlays will not be shown.',
+    }),
+    fixableInEditor: false,
+    displayLocations: [{ id: 'embeddableBadge' }],
+  },
+];
