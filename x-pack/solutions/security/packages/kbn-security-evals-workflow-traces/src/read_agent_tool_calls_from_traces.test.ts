@@ -32,8 +32,8 @@ describe('readAgentToolCallsFromTraces', () => {
   it('joins on gen_ai.conversation.id and filters to TOOL spans', async () => {
     const client = mockClient([
       {
-        columns: [{ name: 'tool_id' }, { name: 'attributes.gen_ai.tool.call.failed' }],
-        values: [['platform.core.search', false]],
+        columns: [{ name: 'tool_id' }, { name: 'event.outcome' }],
+        values: [['platform.core.search', 'success']],
       },
     ]);
 
@@ -55,10 +55,10 @@ describe('readAgentToolCallsFromTraces', () => {
   it('queries every conversation id for multi-agent workflows', async () => {
     const client = mockClient([
       {
-        columns: [{ name: 'tool_id' }, { name: 'attributes.gen_ai.tool.call.failed' }],
+        columns: [{ name: 'tool_id' }, { name: 'event.outcome' }],
         values: [
-          ['platform.core.search', false],
-          ['platform.core.esql', false],
+          ['platform.core.search', 'success'],
+          ['platform.core.esql', 'success'],
         ],
       },
     ]);
@@ -81,10 +81,10 @@ describe('readAgentToolCallsFromTraces', () => {
   it('returns ordered tool ids and optional failures', async () => {
     const client = mockClient([
       {
-        columns: [{ name: 'tool_id' }, { name: 'attributes.gen_ai.tool.call.failed' }],
+        columns: [{ name: 'tool_id' }, { name: 'event.outcome' }],
         values: [
-          ['platform.core.search', false],
-          ['platform.core.esql', true],
+          ['platform.core.search', 'success'],
+          ['platform.core.esql', 'failure'],
         ],
       },
     ]);
@@ -216,11 +216,14 @@ describe('readAgentToolCallsFromTraces', () => {
     expect(query).toContain('| KEEP @timestamp, tool_id');
   });
 
-  it('asks for the failure column only when failures are requested', async () => {
+  it('reads failures from the ECS-baseline event.outcome column (#288266)', async () => {
     const client = mockClient([
       {
-        columns: [{ name: 'tool_id' }, { name: 'attributes.gen_ai.tool.call.failed' }],
-        values: [['platform.core.esql', true]],
+        columns: [{ name: 'tool_id' }, { name: 'event.outcome' }],
+        values: [
+          ['platform.core.esql', 'failure'],
+          ['security.create_detection_rule', 'success'],
+        ],
       },
     ]);
 
@@ -233,7 +236,30 @@ describe('readAgentToolCallsFromTraces', () => {
 
     const query = (client.transport.request.mock.calls[0][0] as { body: { query: string } }).body
       .query;
-    expect(query).toContain('attributes.gen_ai.tool.call.failed');
+    // The unmapped gen_ai column must never appear in the query: on Scout trace
+    // mappings it is a hard verification_exception (#288266).
+    expect(query).not.toContain('attributes.gen_ai.tool.call.failed');
+    expect(query).toContain('event.outcome');
     expect(result.failedToolCallIds).toEqual(['platform.core.esql']);
+    expect(result.toolCallIds).toEqual(['platform.core.esql', 'security.create_detection_rule']);
+  });
+
+  it('does not classify the ECS unknown outcome as a failed tool call', async () => {
+    const client = mockClient([
+      {
+        columns: [{ name: 'tool_id' }, { name: 'event.outcome' }],
+        values: [['platform.core.esql', 'unknown']],
+      },
+    ]);
+
+    const result = await readAgentToolCallsFromTraces({
+      traceEsClient: client,
+      conversationIds: 'conv-1',
+      log: silentLog,
+      includeFailures: true,
+    });
+
+    expect(result.toolCallIds).toEqual(['platform.core.esql']);
+    expect(result.failedToolCallIds).toEqual([]);
   });
 });

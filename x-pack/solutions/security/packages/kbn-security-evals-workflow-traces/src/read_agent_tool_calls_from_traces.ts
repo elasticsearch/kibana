@@ -62,7 +62,7 @@ FROM ${indexPattern}
 | EVAL tool_id = COALESCE(attributes.gen_ai.tool.name, name)
 | WHERE tool_id IS NOT NULL
   ${excludeClause}
-| KEEP @timestamp, tool_id${includeFailures ? ', attributes.gen_ai.tool.call.failed' : ''}
+| KEEP @timestamp, tool_id${includeFailures ? ', event.outcome' : ''}
 | LIMIT ${TOOL_SPAN_LIMIT}
 `.trim();
 };
@@ -99,17 +99,22 @@ const parseToolIds = (response: EsqlResponse): string[] => {
     .filter((value): value is string => typeof value === 'string' && value.length > 0);
 };
 
+/**
+ * Failures are read from `event.outcome`, which is part of the ECS baseline every
+ * trace mapping carries. The original `attributes.gen_ai.tool.call.failed` column
+ * only exists on stacks whose inference SDK exports it — on Scout mappings the
+ * reference is a hard `verification_exception` (see #288266), which pRetry then
+ * multiplied into six failing queries per evaluation.
+ */
 const parseFailedToolIds = (response: EsqlResponse): string[] => {
   const toolCol = response.columns.findIndex((column) => column.name === 'tool_id');
-  const failedCol = response.columns.findIndex(
-    (column) => column.name === 'attributes.gen_ai.tool.call.failed'
-  );
-  if (toolCol === -1 || failedCol === -1) {
+  const outcomeCol = response.columns.findIndex((column) => column.name === 'event.outcome');
+  if (toolCol === -1 || outcomeCol === -1) {
     return [];
   }
 
   return response.values
-    .filter((row) => row[failedCol] === true)
+    .filter((row) => row[outcomeCol] === 'failure')
     .map((row) => row[toolCol])
     .filter((value): value is string => typeof value === 'string' && value.length > 0);
 };
@@ -145,7 +150,7 @@ export interface ReadAgentToolCallsFromTracesParams {
   indexPattern?: string;
   /** Tool names to drop from the ordered sequence (default: filestore.read). */
   excludeToolIds?: string[];
-  /** When true, also return tools whose `gen_ai.tool.call.failed` flag is set. */
+  /** When true, also return tools whose ECS `event.outcome` is `failure`. */
   includeFailures?: boolean;
 }
 
