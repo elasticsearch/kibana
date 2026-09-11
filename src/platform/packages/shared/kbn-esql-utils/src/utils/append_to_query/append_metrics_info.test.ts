@@ -32,34 +32,21 @@ describe('buildMetricsInfoQuery', () => {
     expect(buildMetricsInfoQuery(userQuery, ['environment', 'station.name'])).toBe(userQuery);
   });
 
-  it('does not add dimension filter when dimensionFieldNames is empty', () => {
+  it('does not add a document-level dimension prefilter', () => {
     expect(buildMetricsInfoQuery('TS INDEX', [])).toBe(`TS INDEX\n | METRICS_INFO`);
-  });
-
-  it('adds pre-METRICS_INFO IS NOT NULL filter when multiple dimension names', () => {
+    expect(buildMetricsInfoQuery('TS INDEX', ['environment'])).toBe(`TS INDEX\n | METRICS_INFO`);
     expect(buildMetricsInfoQuery('TS INDEX', ['environment', 'station.name'])).toBe(
-      `TS INDEX\n| WHERE TO_STRING(\`environment\`) IS NOT NULL AND TO_STRING(\`station.name\`) IS NOT NULL | METRICS_INFO`
+      `TS INDEX\n | METRICS_INFO`
     );
-  });
-
-  it('adds pre-METRICS_INFO IS NOT NULL filter for a single dimension', () => {
-    expect(buildMetricsInfoQuery('TS INDEX', ['environment'])).toBe(
-      `TS INDEX\n| WHERE TO_STRING(\`environment\`) IS NOT NULL | METRICS_INFO`
-    );
-  });
-
-  it('escapes dimension identifiers in the pre-METRICS_INFO IS NOT NULL filter', () => {
     expect(buildMetricsInfoQuery('TS INDEX', ['weird"name', 'back\\slash'])).toBe(
-      `TS INDEX\n| WHERE TO_STRING(\`weird"name\`) IS NOT NULL AND TO_STRING(\`back\\slash\`) IS NOT NULL | METRICS_INFO`
+      `TS INDEX\n | METRICS_INFO`
     );
   });
 
-  it('combines with existing WHERE via AND when multiple dimensions', () => {
+  it('keeps an existing user WHERE and does not add TO_STRING IS NOT NULL', () => {
     expect(
       buildMetricsInfoQuery('TS INDEX | WHERE region == eu', ['environment', 'station.name'])
-    ).toBe(
-      'TS INDEX | WHERE region == eu\n| WHERE TO_STRING(`environment`) IS NOT NULL AND TO_STRING(`station.name`) IS NOT NULL | METRICS_INFO'
-    );
+    ).toBe('TS INDEX | WHERE region == eu\n | METRICS_INFO');
   });
 
   it('appends a caller-supplied postFilter after METRICS_INFO', () => {
@@ -68,16 +55,14 @@ describe('buildMetricsInfoQuery', () => {
     ).toBe(`TS INDEX\n | METRICS_INFO | WHERE MV_CONTAINS(dimension_fields, "environment")`);
   });
 
-  it('applies both the pre-METRICS_INFO dimension filter and the postFilter', () => {
+  it('applies the postFilter without a pre-METRICS_INFO dimension filter', () => {
     expect(
       buildMetricsInfoQuery(
         'TS INDEX',
         ['environment'],
         'MV_CONTAINS(dimension_fields, "environment")'
       )
-    ).toBe(
-      `TS INDEX\n| WHERE TO_STRING(\`environment\`) IS NOT NULL | METRICS_INFO | WHERE MV_CONTAINS(dimension_fields, "environment")`
-    );
+    ).toBe(`TS INDEX\n | METRICS_INFO | WHERE MV_CONTAINS(dimension_fields, "environment")`);
   });
 
   it('ignores an empty postFilter', () => {
@@ -121,8 +106,6 @@ describe('buildMetricsInfoQuery', () => {
         'TS metrics-* | SORT timestamp DESC | LIMIT 100 | WHERE timestamp > now-1h',
         ['environment', 'station.name']
       )
-    ).toBe(
-      `TS metrics-* | WHERE timestamp > now - 1h\n| WHERE TO_STRING(\`environment\`) IS NOT NULL AND TO_STRING(\`station.name\`) IS NOT NULL | METRICS_INFO | LIMIT 100`
-    );
+    ).toBe(`TS metrics-* | WHERE timestamp > now - 1h\n | METRICS_INFO | LIMIT 100`);
   });
 });

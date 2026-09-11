@@ -49,11 +49,10 @@ export function useFetchMetricsData({
   const reportError = useReportChartSectionError();
   const esql = getEsqlQuery(fetchParams.query);
 
-  // Pre-fetch defense against dimensions the active stream does not map.
-  // Pushing a field name that is not in the dataView into the
-  // `WHERE TO_STRING(field) IS NOT NULL` clause breaks the query and surfaces
-  // "Unable to load visualization". The post-fetch state wipe (against
-  // `allDimensions`) lives in `MetricsExperienceGrid` via `useDimensionsWipe`.
+  // Skip dimensions the active data view does not map so MV_CONTAINS is only
+  // applied for fields the current stream can resolve. The post-fetch state
+  // wipe (against `allDimensions`) lives in `MetricsExperienceGrid` via
+  // `useDimensionsWipe`.
   const appliedDimensions = useMemo(() => {
     if (!selectedDimensionNames?.length || !fetchParams.dataView) {
       return selectedDimensionNames;
