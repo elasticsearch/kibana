@@ -38,7 +38,9 @@ import {
   ThreatMatchRulePatchFields,
   ThresholdRulePatchFields,
 } from '../../../../../../../common/api/detection_engine/model/rule_schema';
-import type { PatchRuleRequestBody } from '../../../../../../../common/api/detection_engine/rule_management';
+import type { UnresolvedRulePatchProps } from '../../../../../../../common/api/detection_engine/rule_management';
+import { validateThresholdBase } from '../../../../../../../common/utils/request_validation/threshold';
+import { validateThreatMapping } from '../../../../../../../common/utils/request_validation/indicator_match';
 import {
   normalizeMachineLearningJobIds,
   normalizeThresholdObject,
@@ -50,7 +52,7 @@ import { calculateRuleSource } from './rule_source/calculate_rule_source';
 interface ApplyRulePatchProps {
   prebuiltRuleAssetClient: IPrebuiltRuleAssetsClient;
   existingRule: RuleResponse;
-  rulePatch: PatchRuleRequestBody;
+  rulePatch: UnresolvedRulePatchProps;
 }
 
 // eslint-disable-next-line complexity
@@ -265,8 +267,14 @@ const patchNewTermsParams = (
   };
 };
 
+const assertNoValidationErrors = (errors: string[]): void => {
+  if (errors.length) {
+    throw new BadRequestError(errors.join(', '));
+  }
+};
+
 export const patchTypeSpecificParams = (
-  params: PatchRuleRequestBody,
+  params: UnresolvedRulePatchProps,
   existingRule: RuleResponse
 ): TypeSpecificResponse => {
   // Here we do the validation of patch params by rule type to ensure that the fields that are
@@ -294,7 +302,13 @@ export const patchTypeSpecificParams = (
       if (!result.success) {
         throw new BadRequestError(stringifyZodError(result.error));
       }
-      return patchThreatMatchParams(result.data, existingRule);
+      const patchedParams = patchThreatMatchParams(result.data, existingRule);
+      if (result.data.threat_mapping) {
+        assertNoValidationErrors(
+          validateThreatMapping({ threat_mapping: patchedParams.threat_mapping })
+        );
+      }
+      return patchedParams;
     }
     case 'query': {
       const result = QueryRulePatchFields.safeParse(params);
@@ -315,7 +329,13 @@ export const patchTypeSpecificParams = (
       if (!result.success) {
         throw new BadRequestError(stringifyZodError(result.error));
       }
-      return patchThresholdParams(result.data, existingRule);
+      const patchedParams = patchThresholdParams(result.data, existingRule);
+      if (result.data.threshold) {
+        assertNoValidationErrors(
+          validateThresholdBase({ type: 'threshold', threshold: patchedParams.threshold })
+        );
+      }
+      return patchedParams;
     }
     case 'machine_learning': {
       const result = MachineLearningRulePatchFields.safeParse(params);

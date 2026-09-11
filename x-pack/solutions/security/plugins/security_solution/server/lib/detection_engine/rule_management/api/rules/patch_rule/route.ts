@@ -18,7 +18,7 @@ import {
 import { validateRuleResponseActions } from '../../../../../../endpoint/services';
 import type { PatchRuleResponse } from '../../../../../../../common/api/detection_engine/rule_management';
 import {
-  PatchRuleRequestBody,
+  UnresolvedRulePatchProps,
   validatePatchRuleRequestBody,
 } from '../../../../../../../common/api/detection_engine/rule_management';
 import { DETECTION_ENGINE_RULES_URL } from '../../../../../../../common/constants';
@@ -55,10 +55,11 @@ export const patchRuleRoute = (router: SecuritySolutionPluginRouter) => {
         version: '2023-10-31',
         validate: {
           request: {
-            // Use non-exact validation because everything is optional in patch - since everything is optional,
-            // io-ts can't find the right schema from the type specific union and the exact check breaks.
-            // We do type specific validation after fetching the existing rule so we know the rule type.
-            body: buildRouteValidationWithZod(PatchRuleRequestBody),
+            // Only the type-independent props are validated here: `type` is optional in patch
+            // bodies, so the type-specific union cannot be resolved until the existing rule is
+            // fetched. Type-specific fields are preserved and validated further down the stack,
+            // once the rule type is known.
+            body: buildRouteValidationWithZod(UnresolvedRulePatchProps),
           },
         },
       },

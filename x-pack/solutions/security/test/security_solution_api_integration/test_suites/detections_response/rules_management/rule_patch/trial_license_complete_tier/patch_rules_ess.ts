@@ -134,7 +134,7 @@ export default ({ getService }: FtrProviderContext) => {
             .expect(400);
 
           expect(body.message).to.eql(
-            '[request body]: investigation_fields: Invalid input: expected object, received array, investigation_fields: Invalid input: expected object, received array, investigation_fields: Invalid input: expected object, received array, investigation_fields: Invalid input: expected object, received array, investigation_fields: Invalid input: expected object, received array, and 3 more'
+            '[request body]: investigation_fields: Invalid input: expected object, received array'
           );
         });
 

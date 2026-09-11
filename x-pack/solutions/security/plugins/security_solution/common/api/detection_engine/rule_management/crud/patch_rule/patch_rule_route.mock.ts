@@ -5,7 +5,6 @@
  * 2.0.
  */
 
-import type { ThresholdRulePatchProps } from '../../../model';
 import type { PatchRuleRequestBody } from './patch_rule_route.gen';
 
 export const getPatchRulesSchemaMock = (): PatchRuleRequestBody => ({
@@ -17,19 +16,4 @@ export const getPatchRulesSchemaMock = (): PatchRuleRequestBody => ({
   risk_score: 55,
   language: 'kuery',
   rule_id: 'rule-1',
-});
-
-export const getPatchThresholdRulesSchemaMock = (): ThresholdRulePatchProps => ({
-  description: 'some description',
-  name: 'Query with a rule id',
-  query: 'user.name: root or user.name: admin',
-  severity: 'high',
-  type: 'threshold',
-  risk_score: 55,
-  language: 'kuery',
-  rule_id: 'rule-1',
-  threshold: {
-    field: 'host.name',
-    value: 10,
-  },
 });

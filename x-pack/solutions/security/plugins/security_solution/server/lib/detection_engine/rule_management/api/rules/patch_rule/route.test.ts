@@ -207,16 +207,18 @@ describe('Patch rule route', () => {
       expect(result.ok).toHaveBeenCalled();
     });
 
-    test('rejects unknown rule type', async () => {
+    test('preserves type-specific fields when "type" is omitted', async () => {
+      const threshold = { field: ['host.name'], value: 200 };
       const request = requestMock.create({
         method: 'patch',
         path: DETECTION_ENGINE_RULES_URL,
-        body: { ...getPatchRulesSchemaMock(), type: 'unknown_type' },
+        body: { rule_id: 'rule-1', threshold },
       });
-      const result = server.validate(request);
+      const response = await server.inject(request, requestContextMock.convertContext(context));
 
-      expect(result.badRequest).toHaveBeenCalledWith(
-        'type: Invalid input: expected "eql", language: Invalid input: expected "eql", type: Invalid input: expected "query", type: Invalid input: expected "saved_query", type: Invalid input: expected "threshold", and 5 more'
+      expect(response.status).toEqual(200);
+      expect(clients.detectionRulesClient.patchRule).toHaveBeenCalledWith(
+        expect.objectContaining({ rulePatch: expect.objectContaining({ threshold }) })
       );
     });
 

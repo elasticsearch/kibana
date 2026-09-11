@@ -88,21 +88,20 @@ export default ({ getService }: FtrProviderContext) => {
         expect(patchedRule).toMatchObject(expectedRule);
       });
 
-      describe('@skipInServerless ', function () {
-        /* Wrapped in `describe` block, because `this.tags` only works in `describe` blocks */
-        this.tags('skipFIPS');
-        it('should return a "403 forbidden" using a rule_id of type "machine learning"', async () => {
-          await createRule(supertest, log, getSimpleRule('rule-1'));
+      // PATCH cannot change a rule's type. The body is validated against the schema of the
+      // existing rule's type, so a `type` that contradicts it is rejected as a bad request.
+      // This is license independent, unlike the 403 this case used to return when the ML license
+      // gate was fed the type from the request body rather than the rule being patched.
+      it('should return a "400 bad request" when patching a rule to a different type', async () => {
+        await createRule(supertest, log, getSimpleRule('rule-1'));
 
-          // patch a simple rule's type to machine learning
-          const { body } = await detectionsApi
-            .patchRule({ body: { rule_id: 'rule-1', type: 'machine_learning' } })
-            .expect(403);
+        const { body } = await detectionsApi
+          .patchRule({ body: { rule_id: 'rule-1', type: 'machine_learning' } })
+          .expect(400);
 
-          expect(body).toEqual({
-            message: 'Your license does not support machine learning. Please upgrade your license.',
-            status_code: 403,
-          });
+        expect(body).toEqual({
+          message: 'type: Invalid input: expected "query"',
+          status_code: 400,
         });
       });
 
@@ -243,7 +242,7 @@ export default ({ getService }: FtrProviderContext) => {
             .expect(400);
 
           expect(body.message).toEqual(
-            '[request body]: max_signals: Too small: expected number to be >=1, max_signals: Too small: expected number to be >=1, max_signals: Too small: expected number to be >=1, max_signals: Too small: expected number to be >=1, max_signals: Too small: expected number to be >=1, and 3 more'
+            '[request body]: max_signals: Too small: expected number to be >=1'
           );
         });
       });

@@ -52,6 +52,7 @@ import {
   getSomeActionsWithFrequencies,
   updateUsername,
   getCustomQueryRuleParams,
+  getThresholdRuleParams,
 } from '../../../utils';
 
 export default ({ getService }: FtrProviderContext) => {
@@ -111,6 +112,54 @@ export default ({ getService }: FtrProviderContext) => {
 
         const bodyToCompare = removeServerGeneratedProperties(body);
         expect(bodyToCompare).to.eql(outputRule);
+      });
+
+      it("should patch a threshold rule's threshold when `type` is included in the body", async () => {
+        await createRule(supertest, log, getThresholdRuleParams({ rule_id: 'rule-1' }));
+
+        const { body } = await supertest
+          .patch(DETECTION_ENGINE_RULES_URL)
+          .set('kbn-xsrf', 'true')
+          .set('elastic-api-version', '2023-10-31')
+          .send({
+            rule_id: 'rule-1',
+            type: 'threshold',
+            threshold: { field: ['host.name'], value: 200 },
+          })
+          .expect(200);
+
+        expect(body.threshold).to.eql({ field: ['host.name'], value: 200 });
+      });
+
+      it("should patch a threshold rule's threshold when `type` is omitted from the body", async () => {
+        await createRule(supertest, log, getThresholdRuleParams({ rule_id: 'rule-1' }));
+
+        const { body } = await supertest
+          .patch(DETECTION_ENGINE_RULES_URL)
+          .set('kbn-xsrf', 'true')
+          .set('elastic-api-version', '2023-10-31')
+          .send({
+            rule_id: 'rule-1',
+            threshold: { field: ['host.name'], value: 200 },
+          })
+          .expect(200);
+
+        expect(body.threshold).to.eql({ field: ['host.name'], value: 200 });
+      });
+
+      // A `type` that contradicts the existing rule's type must be rejected, not silently
+      // validated against the wrong schema.
+      it('should reject with a 400 when `type` does not match the existing rule', async () => {
+        await createRule(supertest, log, getThresholdRuleParams({ rule_id: 'rule-1' }));
+
+        const { body } = await supertest
+          .patch(DETECTION_ENGINE_RULES_URL)
+          .set('kbn-xsrf', 'true')
+          .set('elastic-api-version', '2023-10-31')
+          .send({ rule_id: 'rule-1', type: 'query' })
+          .expect(400);
+
+        expect(body.message).to.contain('type');
       });
 
       it('should patch a single rule property of name using a rule_id of type "machine learning"', async () => {

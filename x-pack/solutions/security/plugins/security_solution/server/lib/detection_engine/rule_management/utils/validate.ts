@@ -9,9 +9,9 @@ import type { PartialRule } from '@kbn/alerting-plugin/server';
 import { isEqual } from 'lodash';
 import { stringifyZodError } from '@kbn/zod-helpers/v4';
 import {
-  type RulePatchProps,
   RuleResponse,
   type RuleUpdateProps,
+  type UnresolvedRulePatchProps,
 } from '../../../../../common/api/detection_engine';
 import { hasValidRuleType, type RuleParams } from '../../rule_schema';
 import { type BulkError, createBulkErrorObject } from '../../routes/utils';
@@ -57,7 +57,7 @@ export const validateNonCustomizableUpdateFields = (
 };
 
 export const validateNonCustomizablePatchFields = (
-  rulePatch: RulePatchProps,
+  rulePatch: UnresolvedRulePatchProps,
   existingRule: RuleResponse
 ) => {
   // We don't allow non-customizable fields to be changed for prebuilt rules

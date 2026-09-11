@@ -162,6 +162,81 @@ describe('applyRulePatch', () => {
     );
   });
 
+  test('should accept a threat match patch with a valid threat_mapping', async () => {
+    const threatMapping = [
+      {
+        entries: [
+          {
+            field: 'user.name',
+            value: 'threat.indicator.user.name',
+            type: 'mapping',
+            negate: false,
+          },
+        ],
+      },
+    ];
+    const existingRule = getThreatMatchingSchemaMock();
+    const patchedRule = await applyRulePatch({
+      rulePatch: { threat_mapping: threatMapping },
+      existingRule,
+      prebuiltRuleAssetClient,
+    });
+    expect(patchedRule).toEqual(expect.objectContaining({ threat_mapping: threatMapping }));
+  });
+
+  test('should reject a threat_mapping that is not an array', async () => {
+    const rulePatch = { threat_mapping: 'nonsense' };
+    const existingRule = getThreatMatchingSchemaMock();
+    await expect(
+      applyRulePatch({
+        rulePatch,
+        existingRule,
+        prebuiltRuleAssetClient,
+      })
+    ).rejects.toThrowError('threat_mapping: Invalid input: expected array, received string');
+  });
+
+  test('should reject a threat match patch whose only mapping entry is negated', async () => {
+    const rulePatch = {
+      threat_mapping: [
+        { entries: [{ field: 'user.name', value: 'user.name', type: 'mapping', negate: true }] },
+      ],
+    };
+    const existingRule = getThreatMatchingSchemaMock();
+    await expect(
+      applyRulePatch({
+        rulePatch,
+        existingRule,
+        prebuiltRuleAssetClient,
+      })
+    ).rejects.toThrowError(
+      'Negate mappings cannot be used as a single entry in the AND condition. Please use at least one matching mapping entry.'
+    );
+  });
+
+  test('should reject a threat match patch with identical negated and matching entries', async () => {
+    const rulePatch = {
+      threat_mapping: [
+        {
+          entries: [
+            { field: 'user.name', value: 'user.name', type: 'mapping', negate: false },
+            { field: 'user.name', value: 'user.name', type: 'mapping', negate: true },
+          ],
+        },
+      ],
+    };
+    const existingRule = getThreatMatchingSchemaMock();
+    await expect(
+      applyRulePatch({
+        rulePatch,
+        existingRule,
+        prebuiltRuleAssetClient,
+      })
+    ).rejects.toThrowError(
+      'Negate and matching mappings cannot have identical fields and values in the same AND condition.'
+    );
+  });
+
   test('should accept query params when existing rule type is query', async () => {
     const rulePatch = {
       index: ['new-test-index'],
@@ -272,6 +347,49 @@ describe('applyRulePatch', () => {
         prebuiltRuleAssetClient,
       })
     ).rejects.toThrow('threshold.value: Invalid input: expected number, received string');
+  });
+
+  // `type` is omitted here, as it is optional on PATCH: the cardinality check must still run.
+  test('should reject a threshold patch with cardinality on an aggregated field', async () => {
+    const rulePatch = {
+      threshold: {
+        field: ['host.name'],
+        value: 107,
+        cardinality: [{ field: 'host.name', value: 2 }],
+      },
+    };
+    const existingRule = getRulesThresholdSchemaMock();
+    await expect(
+      applyRulePatch({
+        rulePatch,
+        existingRule,
+        prebuiltRuleAssetClient,
+      })
+    ).rejects.toThrowError('Cardinality of a field that is being aggregated on is always 1');
+  });
+
+  test('should reject a `type` that contradicts the existing rule type', async () => {
+    const rulePatch = { type: 'machine_learning', anomaly_threshold: 5 };
+    const existingRule = getRulesSchemaMock();
+    await expect(
+      applyRulePatch({
+        rulePatch,
+        existingRule,
+        prebuiltRuleAssetClient,
+      })
+    ).rejects.toThrowError('type: Invalid input: expected "query"');
+  });
+
+  test('should reject an unknown `type`', async () => {
+    const rulePatch = { type: 'unknown_type' };
+    const existingRule = getRulesSchemaMock();
+    await expect(
+      applyRulePatch({
+        rulePatch,
+        existingRule,
+        prebuiltRuleAssetClient,
+      })
+    ).rejects.toThrowError('type: Invalid input: expected "query"');
   });
 
   test('should accept ES|QL alerts suppression params', async () => {

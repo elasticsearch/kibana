@@ -10,7 +10,6 @@ import type { SecurityRuleChangeTracking } from '../../../../../../common/detect
 import type {
   RuleCreateProps,
   RuleUpdateProps,
-  RulePatchProps,
   RuleObjectId,
   RuleResponse,
   RuleToImport,
@@ -19,6 +18,7 @@ import type {
 import type {
   RuleChangesHistoryResponse,
   RestoreRuleFromHistoryResponse,
+  UnresolvedRulePatchProps,
 } from '../../../../../../common/api/detection_engine/rule_management';
 import type { IRuleSourceImporter } from '../import/rule_source_importer';
 import type { RuleImportErrorObject } from '../import/errors';
@@ -63,7 +63,11 @@ export interface UpdateRuleArgs {
 }
 
 export interface PatchRuleArgs {
-  rulePatch: RulePatchProps;
+  /**
+   * Type-specific fields of the patch are validated against the existing rule's type in
+   * `patchTypeSpecificParams`, so only the type-independent props are typed here.
+   */
+  rulePatch: UnresolvedRulePatchProps;
   changeTracking?: SecurityRuleChangeTracking;
 }
 

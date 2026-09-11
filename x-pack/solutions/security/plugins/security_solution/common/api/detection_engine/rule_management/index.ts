@@ -11,6 +11,7 @@ export * from './coverage_overview/coverage_overview_route';
 export * from './crud/create_rule/create_rule_route.gen';
 export * from './crud/create_rule/request_schema_validation';
 export * from './crud/delete_rule/delete_rule_route.gen';
+export * from './crud/patch_rule/unresolved_rule_patch_props';
 export * from './crud/patch_rule/patch_rule_route.gen';
 export * from './crud/patch_rule/request_schema_validation';
 export * from './crud/read_rule/read_rule_route.gen';
