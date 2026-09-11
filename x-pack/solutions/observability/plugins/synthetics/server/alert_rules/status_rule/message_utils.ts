@@ -40,7 +40,8 @@ export const getMonitorAlertDocument = (
   locationIds: string[],
   useLatestChecks: boolean,
   threshold: number,
-  grouping?: Record<string, unknown>
+  grouping?: Record<string, unknown>,
+  evaluationValue?: number
 ) => ({
   [MONITOR_ID]: monitorSummary.monitorId,
   [MONITOR_TYPE]: monitorSummary.monitorType,
@@ -61,7 +62,9 @@ export const getMonitorAlertDocument = (
   configId: monitorSummary.configId,
   'kibana.alert.evaluation.threshold': threshold,
   'kibana.alert.evaluation.value':
-    (useLatestChecks ? monitorSummary.checks?.downWithinXChecks : monitorSummary.checks?.down) ?? 1,
+    evaluationValue ??
+    (useLatestChecks ? monitorSummary.checks?.downWithinXChecks : monitorSummary.checks?.down) ??
+    1,
   'monitor.tags': monitorSummary.monitorTags ?? [],
   'monitor.failed_step_info': monitorSummary.failedStepInfo,
   ...(grouping ? { [ALERT_GROUPING]: grouping } : {}),
@@ -113,7 +116,7 @@ export const getMonitorSummary = ({
   params,
   failedStepInfo = '',
 }: MonitorSummaryData): MonitorSummaryStatusRule => {
-  const { downThreshold } = getConditionType(params?.condition);
+  const { downThreshold, pendingThreshold } = getConditionType(params?.condition);
   const monitorName = monitorInfo?.monitor?.name ?? monitorInfo?.monitor?.id;
   const locationName = monitorInfo?.observer?.geo?.name ?? UNNAMED_LOCATION;
   const formattedLocationName = Array.isArray(locationName)
@@ -176,6 +179,7 @@ export const getMonitorSummary = ({
     }),
     checks,
     downThreshold,
+    pendingThreshold,
     timestamp,
     monitorTags: monitorInfo.tags,
     failedStepInfo,
@@ -205,6 +209,8 @@ export const getUngroupedReasonMessage = ({
       let downCount = 1;
       if ('checks' in c) {
         downCount = useLatestChecks ? c.checks?.downWithinXChecks : c.checks?.down;
+      } else if ('pendingCount' in c) {
+        downCount = c.pendingCount ?? 1;
       }
       return i18n.translate(
         'xpack.synthetics.alertRules.monitorStatus.reasonMessage.locationDetails',

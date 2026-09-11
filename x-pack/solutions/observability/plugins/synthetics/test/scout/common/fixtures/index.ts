@@ -49,6 +49,8 @@ export {
   INTERNAL_API_VERSION,
   SYNTHETICS_API_URLS,
   SYNTHETICS_MONITOR_SO_TYPES,
+  SYNTHETICS_ALERTS_INDEX,
   LOCAL_PUBLIC_LOCATION,
   mergeSyntheticsApiHeaders,
 } from './constants';
+export type { SyntheticsAlertDoc } from './constants';

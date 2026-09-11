@@ -94,6 +94,7 @@ export default function ({ getService }: DeploymentAgnosticFtrProviderContext) {
           },
           groupBy: 'locationId',
           downThreshold: 5,
+          pendingThreshold: 1,
         },
         monitorIds: [monitor.id],
       };

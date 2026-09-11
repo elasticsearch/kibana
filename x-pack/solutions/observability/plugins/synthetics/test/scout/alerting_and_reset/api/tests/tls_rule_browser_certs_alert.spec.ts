@@ -11,16 +11,15 @@ import {
   apiTest,
   LOCAL_PUBLIC_LOCATION,
   mergeSyntheticsApiHeaders,
+  SYNTHETICS_ALERTS_INDEX,
   SYNTHETICS_MONITOR_SO_TYPES,
+  type SyntheticsAlertDoc,
   type SyntheticsApiServicesFixture,
 } from '../../../common/fixtures';
 import { addMonitor } from '../../../common/fixtures/monitors';
 
 const TLS_RULE_TAG = 'scout-tls-rule-browser-alert';
 const BROWSER_NETWORK_DATA_STREAM = 'synthetics-browser.network-default';
-
-// Alerts-as-data index backing the synthetics uptime rules (TLS + status).
-const ALERTS_INDEX = '.alerts-observability.uptime.alerts-default*';
 
 const TLS_RULE_TYPE_ID = 'xpack.synthetics.alerts.tls';
 // The TLS rule registers under the `uptime` producer (see registerSyntheticsTLSCheckRule).
@@ -34,11 +33,6 @@ const CERT_ISSUER = 'Browser Test CA';
 // stable, fingerprint-free alert id from the subject common name + issuer
 // (see getTLSCertAlertId in server/alert_rules/tls_rule/message_utils.ts).
 const EXPECTED_ALERT_ID = `browser-cert:${CERT_COMMON_NAME}:${CERT_ISSUER}`;
-
-interface AlertDoc {
-  'kibana.alert.status'?: string;
-  'kibana.alert.instance.id'?: string;
-}
 
 /**
  * End-to-end coverage for the browser-certificate path of the Synthetics TLS
@@ -110,9 +104,9 @@ apiTest.describe(
       });
     };
 
-    const getAlert = async (esClient: EsClient): Promise<AlertDoc | undefined> => {
-      const res = await esClient.search<AlertDoc>({
-        index: ALERTS_INDEX,
+    const getAlert = async (esClient: EsClient): Promise<SyntheticsAlertDoc | undefined> => {
+      const res = await esClient.search<SyntheticsAlertDoc>({
+        index: SYNTHETICS_ALERTS_INDEX,
         ignore_unavailable: true,
         size: 1,
         query: {
@@ -136,10 +130,10 @@ apiTest.describe(
       apiServices: SyntheticsApiServicesFixture,
       status: 'active' | 'recovered',
       timeoutMs = 60_000
-    ): Promise<AlertDoc> => {
+    ): Promise<SyntheticsAlertDoc> => {
       await apiServices.alerting.rules.runSoon(ruleId);
       const deadline = Date.now() + timeoutMs;
-      let last: AlertDoc | undefined;
+      let last: SyntheticsAlertDoc | undefined;
       while (Date.now() < deadline) {
         last = await getAlert(esClient);
         if (last?.['kibana.alert.status'] === status) {

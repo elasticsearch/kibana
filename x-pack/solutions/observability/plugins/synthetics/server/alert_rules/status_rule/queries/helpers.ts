@@ -148,6 +148,34 @@ export const getPendingConfigs = ({
   return pendingConfigs;
 };
 
+export const applyPendingCounts = (
+  pendingConfigs: AlertPendingStatusConfigs,
+  prevPendingConfigs: AlertPendingStatusConfigs = {}
+): AlertPendingStatusConfigs => {
+  const next: AlertPendingStatusConfigs = {};
+  for (const [key, config] of Object.entries(pendingConfigs)) {
+    const prev = prevPendingConfigs[key];
+    // Persisted state from before pendingCount existed is treated as 1 prior evaluation.
+    const prevCount = prev ? prev.pendingCount ?? 1 : 0;
+    next[key] = {
+      ...config,
+      pendingCount: prevCount + 1,
+    };
+  }
+  return next;
+};
+
+export const filterPendingConfigsByThreshold = (
+  pendingConfigs: AlertPendingStatusConfigs,
+  pendingThreshold: number
+): AlertPendingStatusConfigs => {
+  return Object.fromEntries(
+    Object.entries(pendingConfigs).filter(
+      ([, config]) => (config.pendingCount ?? 1) >= pendingThreshold
+    )
+  );
+};
+
 export const getConfigStats = ({
   monitorQueryIds,
   upConfigs,
@@ -192,22 +220,42 @@ export const getConfigStats = ({
   return Object.fromEntries(configsByMonitor.entries());
 };
 
+// Floor for the staleness buffer. Preserves historical behavior for 1-minute monitors:
+// schedule (1m) + buffer (1m) = 2m allowed gap before a ping is considered stale.
+const MINIMUM_STALENESS_BUFFER_FLOOR_MS = 60 * 1000;
+
+// Fraction of the monitor's own schedule used as the staleness buffer when the schedule
+// is large enough that the 60s floor is insufficient. e.g. a 10m monitor gets a 5m buffer
+// (total 15m allowed gap) which absorbs typical ingest/scheduling jitter without
+// significantly delaying genuine pending detection.
+const SCHEDULE_PROPORTIONAL_BUFFER_RATIO = 0.5;
+
+const getDefaultStalenessBufferMs = (scheduleInMs: number) =>
+  Math.max(
+    MINIMUM_STALENESS_BUFFER_FLOOR_MS,
+    Math.round(scheduleInMs * SCHEDULE_PROPORTIONAL_BUFFER_RATIO)
+  );
+
+/**
+ * `stalenessBufferMs` is the buffer portion added to `scheduleInMs`, not a total timeout.
+ * Defaults to max(60s, 50% of schedule).
+ */
 export const calculateIsValidPing = ({
   previousRunEndTimeISO,
   scheduleInMs,
   previousRunDurationUs = 0,
-  minimumTotalBufferMs = 60 * 1000, // 60 seconds
+  stalenessBufferMs,
 }: {
   previousRunEndTimeISO: string;
   scheduleInMs: number;
   previousRunDurationUs?: number;
-  minimumTotalBufferMs?: number;
+  stalenessBufferMs?: number;
 }) => {
+  const bufferMs = stalenessBufferMs ?? getDefaultStalenessBufferMs(scheduleInMs);
   const msSincePreviousRunEnd = new Date().getTime() - new Date(previousRunEndTimeISO).getTime();
-  const stalenessThresholdMs =
-    scheduleInMs + Math.max(minimumTotalBufferMs, previousRunDurationUs / 1000);
+  const stalenessThresholdMs = scheduleInMs + Math.max(bufferMs, previousRunDurationUs / 1000);
 
-  // Example: if a monitor has a schedule of 5m the last valid ping can be at (5+1)m
-  // If it's greater than that it means the monitor is pending
+  // Example: a 1m monitor's last valid ping can be at (1+1)m; a 10m monitor's at (10+5)m.
+  // If the gap exceeds the threshold the monitor is considered pending.
   return msSincePreviousRunEnd < stalenessThresholdMs;
 };

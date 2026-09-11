@@ -67,7 +67,9 @@ export const updateState = (
       lastTriggeredAt: triggerVal,
       lastCheckedAt: now,
       lastResolvedAt: undefined,
-      meta: {},
+      // Keep caller meta on the first run; `pendingCount` lives here and must
+      // survive so consecutive pending evaluations can cross pendingThreshold.
+      meta: meta ?? {},
     };
   }
   const {

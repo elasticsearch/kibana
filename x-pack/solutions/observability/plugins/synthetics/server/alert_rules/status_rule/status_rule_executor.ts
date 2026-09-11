@@ -39,6 +39,7 @@ import {
   getUngroupedReasonMessage,
   formatStepInformation,
 } from './message_utils';
+import { applyPendingCounts, filterPendingConfigsByThreshold } from './queries/helpers';
 import { queryMonitorStatusAlert } from './queries/query_monitor_status_alert';
 import { getStepInformation, type StepInformation } from './queries/get_step_information';
 import { parseArrayFilters, parseLocationFilter } from '../../routes/common';
@@ -221,7 +222,8 @@ export class StatusRuleExecutor {
       logger: this.logger,
     });
 
-    const { downConfigs, upConfigs, pendingConfigs, configStats } = currentStatus;
+    const { downConfigs, upConfigs, configStats } = currentStatus;
+    const pendingConfigs = applyPendingCounts(currentStatus.pendingConfigs, prevPendingConfigs);
 
     this.debug(
       `Found ${Object.keys(downConfigs).length} down configs, ${
@@ -255,6 +257,7 @@ export class StatusRuleExecutor {
 
     return {
       ...currentStatus,
+      pendingConfigs,
       staleDownConfigs,
       stalePendingConfigs,
       maxPeriod,
@@ -366,16 +369,28 @@ export class StatusRuleExecutor {
   }: {
     pendingConfigs: AlertPendingStatusConfigs;
   }) => {
-    if (this.params.condition?.alertOnNoData) {
-      if (this.params.condition?.groupBy && this.params.condition.groupBy !== 'locationId') {
-        await this.schedulePendingAlertPerConfigId({
-          pendingConfigs,
-        });
-      } else {
-        await this.schedulePendingAlertPerConfigIdPerLocation({
-          pendingConfigs,
-        });
-      }
+    if (!this.params.condition?.alertOnNoData) {
+      return;
+    }
+
+    const { pendingThreshold } = getConditionType(this.params.condition);
+    const configsMeetingThreshold = filterPendingConfigsByThreshold(
+      pendingConfigs,
+      pendingThreshold
+    );
+
+    if (isEmpty(configsMeetingThreshold)) {
+      return;
+    }
+
+    if (this.params.condition?.groupBy && this.params.condition.groupBy !== 'locationId') {
+      await this.schedulePendingAlertPerConfigId({
+        pendingConfigs: configsMeetingThreshold,
+      });
+    } else {
+      await this.schedulePendingAlertPerConfigIdPerLocation({
+        pendingConfigs: configsMeetingThreshold,
+      });
     }
   };
 
@@ -630,9 +645,13 @@ export class StatusRuleExecutor {
       grouping,
     };
 
+    const { pendingThreshold } = getConditionType(this.params.condition);
+
     // downThreshold and checks are only available for down alerts
     if ('downThreshold' in params) {
       context.downThreshold = params.downThreshold;
+    } else {
+      context.pendingThreshold = pendingThreshold;
     }
 
     if ('statusConfig' in params && 'checks' in params.statusConfig) {
@@ -699,13 +718,20 @@ export class StatusRuleExecutor {
       failedStepNumber,
     };
 
+    const evaluationThreshold = 'downThreshold' in params ? params.downThreshold : pendingThreshold;
+    let evaluationValue: number | undefined;
+    if (!('downThreshold' in params)) {
+      evaluationValue = params.statusConfig.pendingCount ?? 1;
+    }
+
     const alertDocument = getMonitorAlertDocument(
       updatedMonitorSummary,
       locationNames,
       locationIds,
       useLatestChecks,
-      'downThreshold' in params ? params.downThreshold : 1,
-      grouping
+      evaluationThreshold,
+      grouping,
+      evaluationValue
     );
 
     // Update context with step info if available

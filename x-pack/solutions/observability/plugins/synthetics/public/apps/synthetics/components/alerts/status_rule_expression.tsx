@@ -7,8 +7,10 @@
 
 import {
   EuiExpression,
+  EuiFieldNumber,
   EuiFlexItem,
   EuiFlexGroup,
+  EuiPopoverTitle,
   EuiSpacer,
   EuiSwitch,
   EuiTitle,
@@ -23,6 +25,14 @@ import { WindowValueExpression } from './common/condition_window_value';
 import { DEFAULT_CONDITION, ForTheLastExpression } from './common/for_the_last_expression';
 import type { StatusRuleParamsProps } from './status_rule_ui';
 import { LocationsValueExpression } from './common/condition_locations_value';
+import { PopoverExpression } from './common/popover_expression';
+import {
+  DEFAULT_PENDING_THRESHOLD,
+  MIN_PENDING_THRESHOLD,
+  MAX_PENDING_THRESHOLD,
+  DEFAULT_DOWN_THRESHOLD,
+  DEFAULT_LOCATIONS_THRESHOLD,
+} from '../../../../../common/rules/status_rule';
 
 interface Props {
   ruleParams: StatusRuleParamsProps['ruleParams'];
@@ -31,9 +41,11 @@ interface Props {
 
 export const StatusRuleExpression: React.FC<Props> = ({ ruleParams, setRuleParams }) => {
   const condition = ruleParams.condition ?? DEFAULT_CONDITION;
-  const downThreshold = condition?.downThreshold ?? DEFAULT_CONDITION.downThreshold;
+  const downThreshold = condition.downThreshold ?? DEFAULT_DOWN_THRESHOLD;
+  const pendingThreshold = condition.pendingThreshold ?? DEFAULT_PENDING_THRESHOLD;
+  const isAlertOnNoData = ruleParams.condition?.alertOnNoData !== undefined;
 
-  const locationsThreshold = condition?.locationsThreshold ?? DEFAULT_CONDITION.locationsThreshold;
+  const locationsThreshold = condition.locationsThreshold ?? DEFAULT_LOCATIONS_THRESHOLD;
 
   const onThresholdChange = useCallback(
     (value: number) => {
@@ -63,9 +75,10 @@ export const StatusRuleExpression: React.FC<Props> = ({ ruleParams, setRuleParam
         newCondition = {
           ...newCondition,
           alertOnNoData: true,
+          pendingThreshold: newCondition.pendingThreshold ?? DEFAULT_PENDING_THRESHOLD,
         };
       } else if ('alertOnNoData' in newCondition) {
-        const { alertOnNoData, ...rest } = newCondition;
+        const { alertOnNoData: _alertOnNoData, ...rest } = newCondition;
         newCondition = rest;
       } else {
         throw new Error(
@@ -75,6 +88,17 @@ export const StatusRuleExpression: React.FC<Props> = ({ ruleParams, setRuleParam
       setRuleParams('condition', newCondition);
     },
     [ruleParams?.condition, setRuleParams]
+  );
+
+  const onPendingThresholdChange = useCallback(
+    (value: number) => {
+      const prevCondition = ruleParams.condition ?? DEFAULT_CONDITION;
+      setRuleParams('condition', {
+        ...prevCondition,
+        pendingThreshold: value,
+      });
+    },
+    [ruleParams.condition, setRuleParams]
   );
 
   const onFirstUpRecoveryStrategyChange = useCallback(
@@ -162,14 +186,24 @@ export const StatusRuleExpression: React.FC<Props> = ({ ruleParams, setRuleParam
         locationsThreshold={locationsThreshold}
       />
       <EuiSpacer size="m" />
-      <EuiFlexItem grow={false}>
-        <EuiSwitch
-          compressed
-          label={ALERT_ON_NO_DATA_SWITCH_LABEL}
-          checked={ruleParams.condition?.alertOnNoData !== undefined}
-          onChange={(e) => onAlertOnNoDataChange(e.target.checked)}
-        />
-      </EuiFlexItem>
+      <EuiFlexGroup gutterSize="s" alignItems="center">
+        <EuiFlexItem grow={false}>
+          <EuiSwitch
+            compressed
+            label={ALERT_ON_NO_DATA_SWITCH_LABEL}
+            checked={isAlertOnNoData}
+            onChange={(e) => onAlertOnNoDataChange(e.target.checked)}
+            data-test-subj="syntheticsStatusRuleAlertOnNoData"
+          />
+        </EuiFlexItem>
+        <EuiFlexItem grow={false}>
+          <PendingThresholdExpression
+            value={pendingThreshold}
+            disabled={!isAlertOnNoData}
+            onChange={onPendingThresholdChange}
+          />
+        </EuiFlexItem>
+      </EuiFlexGroup>
       <EuiSpacer size="m" />
       <EuiFlexGroup gutterSize="s">
         <EuiFlexItem grow={false}>
@@ -220,6 +254,51 @@ const ALERT_ON_NO_DATA_SWITCH_LABEL = i18n.translate(
     defaultMessage: "Alert me if there's no data",
   }
 );
+
+const PendingThresholdExpression = ({
+  value,
+  disabled,
+  onChange,
+}: {
+  value: number;
+  disabled: boolean;
+  onChange: (value: number) => void;
+}) => {
+  return (
+    <PopoverExpression
+      disabled={disabled}
+      title={i18n.translate('xpack.synthetics.statusRule.pendingThreshold.forDescription', {
+        defaultMessage: 'for',
+      })}
+      value={i18n.translate('xpack.synthetics.rules.status.pendingThresholdValueLabel', {
+        defaultMessage:
+          '{threshold} {threshold, plural, one {consecutive evaluation} other {consecutive evaluations}}',
+        values: { threshold: value },
+      })}
+    >
+      <EuiPopoverTitle>
+        {i18n.translate('xpack.synthetics.statusRule.pendingThreshold.popoverTitleLabel', {
+          defaultMessage: 'Consecutive evaluations',
+        })}
+      </EuiPopoverTitle>
+      <EuiFieldNumber
+        data-test-subj="syntheticsStatusRulePendingThreshold"
+        min={MIN_PENDING_THRESHOLD}
+        max={MAX_PENDING_THRESHOLD}
+        compressed
+        value={value}
+        onChange={(evt) => {
+          const next = Number(evt.target.value);
+          onChange(
+            Number.isFinite(next)
+              ? Math.min(MAX_PENDING_THRESHOLD, Math.max(MIN_PENDING_THRESHOLD, next))
+              : MIN_PENDING_THRESHOLD
+          );
+        }}
+      />
+    </PopoverExpression>
+  );
+};
 
 const FIRST_UP_RECOVERY_STRATEGY_SWITCH_LABEL = i18n.translate(
   'xpack.synthetics.statusRule.euiSwitch.firstUpRecoveryStrategy',

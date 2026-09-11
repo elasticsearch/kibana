@@ -63,6 +63,7 @@ export interface MonitorSummaryStatusRule {
   monitorUrlLabel: string;
   monitorTags?: string[];
   downThreshold: number;
+  pendingThreshold?: number;
   checks?: {
     downWithinXChecks: number;
     down: number;

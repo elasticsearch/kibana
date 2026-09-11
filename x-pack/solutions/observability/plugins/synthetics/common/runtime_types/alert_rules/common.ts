@@ -93,6 +93,7 @@ export interface AlertPendingStatusMetaData {
   monitorInfo: MissingPingMonitorInfo;
   timestamp?: string;
   latestPing?: t.TypeOf<typeof OverviewPingCodec>;
+  pendingCount?: number;
 }
 
 export interface AlertOverviewStatus {

@@ -81,6 +81,7 @@ describe('message_utils', () => {
         timestamp,
         checkedAt: moment(timestamp).tz(tz).format(dateFormat),
         downThreshold: 3,
+        pendingThreshold: 2,
         reason:
           'Monitor "Test Monitor" from Test Location is down. Alert when 3 checks are down within the last 10 minutes from at least 2 locations.',
         locationNames: locationName,
@@ -135,6 +136,7 @@ describe('message_utils', () => {
         locationName,
         status: 'pending',
         downThreshold: 1,
+        pendingThreshold: 2,
         locationNames: locationName,
         monitorUrlLabel: 'URL',
         reason: 'Monitor "Test Monitor" from Test Location is pending.',
@@ -242,6 +244,36 @@ describe('message_utils', () => {
       expect(message).toContain(`2 times from ${locationName}`);
       expect(message).toContain(`1 time from ${secondLocationName}`);
     });
+
+    it('uses pendingCount in the ungrouped pending reason', () => {
+      const message = getUngroupedReasonMessage({
+        statusConfigs: [
+          {
+            status: 'pending',
+            configId: monitorId,
+            monitorQueryId: monitorId,
+            locationId,
+            pendingCount: 2,
+            monitorInfo: {
+              monitor: { name: monitorName, id: monitorId, type: 'http' },
+              observer: { geo: { name: locationName } },
+              tags: [],
+            },
+          },
+        ],
+        monitorName,
+        reason: 'pending',
+        params: {
+          condition: {
+            alertOnNoData: true,
+            pendingThreshold: 2,
+            window: { numberOfChecks: 5 },
+          },
+        },
+      });
+
+      expect(message).toBe(`Monitor "${monitorName}" is pending 2 times from ${locationName}.`);
+    });
   });
 
   describe('getMonitorAlertDocument', () => {
@@ -289,6 +321,35 @@ describe('message_utils', () => {
         'kibana.alert.evaluation.value': 2,
         'monitor.tags': monitorTags,
       });
+    });
+
+    it('uses pendingCount as evaluation.value when provided', () => {
+      const monitorSummary = {
+        monitorId,
+        monitorName,
+        monitorType: 'http',
+        monitorUrl,
+        configId: monitorId,
+        locationId,
+        locationName,
+        hostName: monitorAgentName,
+        status: 'pending',
+        reason: 'Monitor is pending',
+        monitorTags,
+      } as any;
+
+      const result = getMonitorAlertDocument(
+        monitorSummary,
+        [locationName],
+        [monitorSummary.locationId],
+        false,
+        2,
+        undefined,
+        2
+      );
+
+      expect(result['kibana.alert.evaluation.threshold']).toBe(2);
+      expect(result['kibana.alert.evaluation.value']).toBe(2);
     });
   });
 

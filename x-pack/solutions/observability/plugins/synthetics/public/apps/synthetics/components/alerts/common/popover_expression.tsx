@@ -16,24 +16,25 @@ interface Props {
   value: ReactNode;
   children?: ReactNode;
   color?: EuiExpressionProps['color'];
+  disabled?: boolean;
 }
 
 export function PopoverExpression(props: Props) {
-  const { title, value, children, color } = props;
+  const { title, value, children, color, disabled } = props;
   const [popoverOpen, setPopoverOpen] = useState(false);
 
   return (
     <EuiPopover
-      isOpen={popoverOpen}
+      isOpen={!disabled && popoverOpen}
       anchorPosition="downLeft"
       closePopover={() => setPopoverOpen(false)}
       button={
         <EuiExpression
           description={title}
           value={value}
-          isActive={popoverOpen}
-          color={color}
-          onClick={() => setPopoverOpen((state) => !state)}
+          isActive={!disabled && popoverOpen}
+          color={disabled ? 'subdued' : color}
+          {...(disabled ? {} : { onClick: () => setPopoverOpen((state) => !state) })}
         />
       }
       repositionOnScroll

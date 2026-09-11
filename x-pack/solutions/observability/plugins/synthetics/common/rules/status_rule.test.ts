@@ -35,4 +35,29 @@ describe('Status Rule', () => {
     expect(useTimeWindow).toBe(true);
     expect(useLatestChecks).toBe(false);
   });
+
+  it('defaults pendingThreshold to 2 when omitted', () => {
+    expect(getConditionType({} as any).pendingThreshold).toBe(2);
+    expect(
+      getConditionType({
+        window: { numberOfChecks: 5 },
+        alertOnNoData: true,
+      }).pendingThreshold
+    ).toBe(2);
+  });
+
+  it('surfaces a configured pendingThreshold', () => {
+    expect(
+      getConditionType({
+        window: { numberOfChecks: 5 },
+        pendingThreshold: 1,
+      }).pendingThreshold
+    ).toBe(1);
+    expect(
+      getConditionType({
+        alertOnNoData: true,
+        pendingThreshold: 1,
+      } as any).pendingThreshold
+    ).toBe(1);
+  });
 });
