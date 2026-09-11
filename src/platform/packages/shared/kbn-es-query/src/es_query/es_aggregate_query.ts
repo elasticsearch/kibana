@@ -23,6 +23,13 @@ export function isOfAggregateQueryType(
   return Boolean(query && 'esql' in query);
 }
 
+// Checks if an ES|QL query is missing or only whitespace
+export function isEmptyEsqlQuery(
+  query?: AggregateQuery | Query | { [key: string]: any }
+): query is AggregateQuery {
+  return isOfAggregateQueryType(query) && query.esql.trim() === '';
+}
+
 // returns the language of the aggregate Query, sql, esql etc
 export function getAggregateQueryMode(query: AggregateQuery): Language {
   return Object.keys(query)[0] as Language;

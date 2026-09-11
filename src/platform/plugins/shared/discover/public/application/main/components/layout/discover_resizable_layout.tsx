@@ -26,10 +26,12 @@ export const SIDEBAR_WIDTH_KEY = 'discover:sidebarWidth';
 
 export const InternalDiscoverResizableLayout = ({
   sidebarToggleState$,
+  isSidebarHidden,
   sidebarPanel,
   mainPanel,
 }: {
   sidebarToggleState$: BehaviorSubject<SidebarToggleState>;
+  isSidebarHidden?: boolean;
   sidebarPanel: ReactNode;
   mainPanel: ReactNode;
 }) => {
@@ -69,8 +71,11 @@ export const InternalDiscoverResizableLayout = ({
   const isSidebarCollapsed = sidebarToggleState?.isCollapsed ?? false;
 
   const isMobile = useIsWithinBreakpoints(['xs', 's']);
-  const layoutMode =
-    isMobile || isSidebarCollapsed ? ResizableLayoutMode.Static : ResizableLayoutMode.Resizable;
+  const layoutMode = isSidebarHidden
+    ? ResizableLayoutMode.Single
+    : isMobile || isSidebarCollapsed
+    ? ResizableLayoutMode.Static
+    : ResizableLayoutMode.Resizable;
   const layoutDirection = isMobile
     ? ResizableLayoutDirection.Vertical
     : ResizableLayoutDirection.Horizontal;

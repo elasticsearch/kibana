@@ -7,7 +7,7 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
-import React, { useState } from 'react';
+import React, { Fragment, useState } from 'react';
 import { i18n } from '@kbn/i18n';
 import {
   useEuiTheme,
@@ -23,72 +23,15 @@ import {
   euiYScroll,
 } from '@elastic/eui';
 import { css } from '@emotion/react';
-import { isMac } from '@kbn/shared-ux-utility';
+import { esqlKeyboardShortcuts } from './esql_keyboard_shortcuts';
 
-const COMMAND_KEY = isMac ? '⌘' : 'CTRL';
-
-const listItems = [
-  {
-    title: (
-      <>
-        <kbd>{COMMAND_KEY}</kbd> <kbd>Enter</kbd>
-      </>
-    ),
-    description: i18n.translate('esqlEditor.query.runKeyboardShortcutsLabel', {
-      defaultMessage: 'Run query',
-    }),
-  },
-  {
-    title: (
-      <>
-        <kbd>⇧</kbd> <kbd>Enter</kbd>
-      </>
-    ),
-    description: i18n.translate('esqlEditor.query.newLineKeyboardShortcutsLabel', {
-      defaultMessage: 'New line',
-    }),
-  },
-  {
-    title: (
-      <>
-        <kbd>{COMMAND_KEY}</kbd> <kbd>/</kbd>
-      </>
-    ),
-    description: i18n.translate('esqlEditor.query.commentKeyboardShortcutsLabel', {
-      defaultMessage: 'Comment/uncomment line',
-    }),
-  },
-  {
-    title: (
-      <>
-        <kbd>{COMMAND_KEY}</kbd> <kbd>K</kbd>
-      </>
-    ),
-    description: i18n.translate('esqlEditor.query.openVisorKeyboardShortcutsLabel', {
-      defaultMessage: 'Open quick search',
-    }),
-  },
-  {
-    title: (
-      <>
-        <kbd>{COMMAND_KEY}</kbd> <kbd>I</kbd>
-      </>
-    ),
-    description: i18n.translate('esqlEditor.query.prettifyKeyboardShortcutsLabel', {
-      defaultMessage: 'Prettify query',
-    }),
-  },
-  {
-    title: (
-      <>
-        <kbd>{COMMAND_KEY}</kbd> <kbd>J</kbd>
-      </>
-    ),
-    description: i18n.translate('esqlEditor.query.generateFromCommentKeyboardShortcutsLabel', {
-      defaultMessage: 'Generate ES|QL from comment',
-    }),
-  },
-];
+const renderShortcutKeys = (keys: readonly string[]) =>
+  keys.map((key, index) => (
+    <Fragment key={`${key}-${index}`}>
+      {index > 0 ? ' ' : null}
+      <kbd>{key}</kbd>
+    </Fragment>
+  ));
 
 export function KeyboardShortcuts() {
   const euiThemeContext = useEuiTheme();
@@ -146,7 +89,10 @@ export function KeyboardShortcuts() {
             columnWidths={['auto', 'auto']}
             align="center"
             compressed
-            listItems={listItems}
+            listItems={esqlKeyboardShortcuts.map(({ keys, label: shortcutLabel }) => ({
+              title: renderShortcutKeys(keys),
+              description: shortcutLabel,
+            }))}
           />
         </EuiText>
       </EuiPopover>

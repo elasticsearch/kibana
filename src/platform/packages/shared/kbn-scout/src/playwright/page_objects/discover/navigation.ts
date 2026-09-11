@@ -127,8 +127,7 @@ export abstract class NavigationMixin extends DiscoverAppBase {
   async writeAndSubmitEsqlQuery(query: string) {
     await this.selectTextBaseLang();
     await this.codeEditor.setCodeEditorValue(query);
-    await this.submitQuery();
-    await this.waitUntilSearchingHasFinished();
+    await this.submitQueryAndWait();
   }
 
   async writeAndSubmitKqlQuery(query: string) {
@@ -141,18 +140,35 @@ export abstract class NavigationMixin extends DiscoverAppBase {
     }
 
     await this.queryBar.setQuery(query);
-    await this.submitQuery();
-    await this.waitUntilSearchingHasFinished();
+    await this.submitQueryAndWait();
   }
 
   /**
    * Submits the current query (classic search bar or ES|QL editor) by clicking
    * the query submit button. Does not wait for results — pair with
-   * `waitUntilSearchingHasFinished()` or `waitUntilTabIsLoaded()` as appropriate.
+   * `submitQueryAndWait()` or `waitUntilTabIsLoaded()` as appropriate.
    */
   async submitQuery() {
     await this.hideTabPreview();
     await this.page.testSubj.click('querySubmitButton');
+  }
+
+  /**
+   * Submits the current query and waits until the tab has finished loading.
+   */
+  async submitQueryAndWait() {
+    await this.submitQuery();
+    await this.waitUntilTabIsLoaded();
+  }
+
+  /**
+   * Opens a new Discover tab and runs the current query so the tab is initialized.
+   * New tabs skip the initial fetch; use `unifiedTabs.createNewTab()` when the test
+   * needs the uninitialized empty state.
+   */
+  async createNewTabAndSearch() {
+    await this.unifiedTabs.createNewTab();
+    await this.submitQueryAndWait();
   }
 
   async getQuerySubmitButtonLabel(): Promise<string | null> {
@@ -160,8 +176,7 @@ export abstract class NavigationMixin extends DiscoverAppBase {
   }
 
   async waitForDataGridRowWithRefresh(rowLocator: Locator, timeout = 30_000) {
-    await this.submitQuery();
-    await this.waitUntilSearchingHasFinished();
+    await this.submitQueryAndWait();
     await rowLocator.waitFor({ state: 'visible', timeout });
   }
 
@@ -211,9 +226,12 @@ export abstract class NavigationMixin extends DiscoverAppBase {
     return this.page.testSubj.locator('esqlInlineDocumentationFlyout');
   }
 
+  getEsqlHistoryPanel(): Locator {
+    return this.page.testSubj.locator('ESQLEditor-history-container');
+  }
+
   async isEsqlHistoryPanelOpen(): Promise<boolean> {
-    return this.page.testSubj
-      .locator('ESQLEditor-history-container')
+    return this.getEsqlHistoryPanel()
       .waitFor({ state: 'visible', timeout: 1_000 })
       .then(() => true)
       .catch(() => false);
@@ -222,9 +240,7 @@ export abstract class NavigationMixin extends DiscoverAppBase {
   async toggleEsqlHistoryPanel() {
     const wasOpen = await this.isEsqlHistoryPanelOpen();
     await this.page.testSubj.locator('ESQLEditor-toggle-query-history-icon').click();
-    await this.page.testSubj
-      .locator('ESQLEditor-history-container')
-      .waitFor({ state: wasOpen ? 'hidden' : 'visible' });
+    await this.getEsqlHistoryPanel().waitFor({ state: wasOpen ? 'hidden' : 'visible' });
   }
 
   async getEsqlEditorHeight(): Promise<number> {

@@ -144,6 +144,16 @@ describe('ESQLEditor', () => {
     expect(queryByTestId('ESQLEditor-toggle-query-history-icon')).not.toBeInTheDocument();
   });
 
+  it('should support controlling query history visibility', () => {
+    const { getByTestId, queryByTestId, rerender } = renderWithI18n(
+      renderESQLEditorComponent({ ...props, isHistoryOpen: true })
+    );
+    expect(getByTestId('ESQLEditor-history-container')).toBeInTheDocument();
+
+    rerender(renderESQLEditorComponent({ ...props, isHistoryOpen: false }));
+    expect(queryByTestId('ESQLEditor-history-container')).not.toBeInTheDocument();
+  });
+
   it('should render the correct buttons for the expanded code editor mode', async () => {
     const { queryByTestId } = renderWithI18n(renderESQLEditorComponent({ ...props }));
     const toggleWordWrapButton = queryByTestId('ESQLEditor-toggleWordWrap');

@@ -33,8 +33,7 @@ spaceTest.describe(
 
       expect(await discover.isSidebarPanelOpen()).toBe(true);
 
-      await unifiedTabs.createNewTab();
-      await discover.waitUntilTabIsLoaded();
+      await discover.createNewTabAndSearch();
       expect(await discover.isSidebarPanelOpen()).toBe(true);
 
       await discover.closeSidebar();
@@ -53,8 +52,7 @@ spaceTest.describe(
       const { discover, unifiedTabs } = pageObjects;
       const initialWidth = await discover.getSidebarWidth();
 
-      await unifiedTabs.createNewTab();
-      await discover.waitUntilTabIsLoaded();
+      await discover.createNewTabAndSearch();
       expect(await discover.getSidebarWidth()).toBe(initialWidth);
 
       await discover.resizeSidebarBy(100);
@@ -76,14 +74,12 @@ spaceTest.describe(
 
       await unifiedFieldList.expectAvailableFieldCount(initialCount);
 
-      await unifiedTabs.createNewTab();
-      await discover.waitUntilTabIsLoaded();
+      await discover.createNewTabAndSearch();
       await unifiedFieldList.expectAvailableFieldCount(initialCount);
       await unifiedFieldList.searchField('i');
       await unifiedFieldList.expectAvailableFieldCount(29);
 
-      await unifiedTabs.createNewTab();
-      await discover.waitUntilTabIsLoaded();
+      await discover.createNewTabAndSearch();
       await unifiedFieldList.expectAvailableFieldCount(initialCount);
       await unifiedFieldList.searchField('e');
       await unifiedFieldList.expectAvailableFieldCount(43);

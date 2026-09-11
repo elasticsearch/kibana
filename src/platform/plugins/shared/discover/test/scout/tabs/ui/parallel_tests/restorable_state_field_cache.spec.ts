@@ -46,8 +46,7 @@ spaceTest.describe(
           await network.countMatchingRequests(
             { endpoint: FIELDS_FOR_WILDCARD_ENDPOINT },
             async () => {
-              await unifiedTabs.createNewTab();
-              await discover.waitUntilTabIsLoaded();
+              await discover.createNewTabAndSearch();
               await unifiedFieldList.expectAvailableFieldCount(49);
             }
           )
@@ -79,8 +78,7 @@ spaceTest.describe(
           await network.countMatchingRequests(
             { endpoint: FIELDS_FOR_WILDCARD_ENDPOINT },
             async () => {
-              await unifiedTabs.createNewTab();
-              await discover.waitUntilTabIsLoaded();
+              await discover.createNewTabAndSearch();
               await unifiedFieldList.expectAvailableFieldCount(49);
             }
           )
@@ -104,8 +102,7 @@ spaceTest.describe(
           await network.countMatchingRequests(
             { endpoint: FIELDS_FOR_WILDCARD_ENDPOINT },
             async () => {
-              await unifiedTabs.createNewTab();
-              await discover.waitUntilTabIsLoaded();
+              await discover.createNewTabAndSearch();
               await unifiedFieldList.expectAvailableFieldCount(49);
             }
           )

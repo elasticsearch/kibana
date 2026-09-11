@@ -106,6 +106,7 @@ describe('Starred and History queries components', () => {
       const columns = getTableColumns(50, false, []);
       expect(columns).toEqual([
         {
+          align: 'center',
           css: {
             height: '100%',
           },
@@ -114,7 +115,7 @@ describe('Starred and History queries components', () => {
           name: 'Status',
           render: expect.anything(),
           sortable: false,
-          width: '40px',
+          width: '80px',
         },
         {
           'data-test-subj': 'queryString',
@@ -144,6 +145,7 @@ describe('Starred and History queries components', () => {
       const columns = getTableColumns(50, false, [], true);
       expect(columns).toEqual([
         {
+          align: 'center',
           css: {
             height: '100%',
           },
@@ -152,7 +154,7 @@ describe('Starred and History queries components', () => {
           name: 'Status',
           render: expect.anything(),
           sortable: false,
-          width: '40px',
+          width: '80px',
         },
         {
           'data-test-subj': 'queryString',
@@ -183,6 +185,7 @@ describe('Starred and History queries components', () => {
     const columns = getTableColumns(50, true, []);
     expect(columns).toEqual([
       {
+        align: 'center',
         css: {
           height: '100%',
         },

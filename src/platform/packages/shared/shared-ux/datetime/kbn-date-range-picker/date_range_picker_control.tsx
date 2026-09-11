@@ -70,6 +70,7 @@ export function DateRangePickerControl() {
     onInputChange,
     width,
     disabled,
+    disabledTooltip,
     readOnly,
     isLoading,
     settings,
@@ -298,7 +299,9 @@ export function DateRangePickerControl() {
         ) : (
           <EuiToolTip
             content={
-              !disabled && displayFullFormattedText !== displayText
+              disabled && disabledTooltip
+                ? disabledTooltip
+                : !disabled && displayFullFormattedText !== displayText
                 ? displayFullFormattedText
                 : undefined
             }

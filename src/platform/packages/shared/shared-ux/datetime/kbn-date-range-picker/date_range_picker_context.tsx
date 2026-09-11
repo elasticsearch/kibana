@@ -123,6 +123,8 @@ interface DateRangePickerInternalContextValue extends DateRangePickerContextValu
   width: NonNullable<DateRangePickerProps['width']>;
   /** Whether the picker is disabled. */
   disabled: boolean;
+  /** Tooltip shown on the control and time window buttons while disabled. */
+  disabledTooltip?: React.ReactNode;
   /** Whether the picker shows its value but can't be edited. */
   readOnly: boolean;
   /** Whether a loading spinner is shown inside the form control. */
@@ -176,6 +178,7 @@ export function DateRangePickerProvider({
   locale,
   isInvalid = false,
   disabled = false,
+  disabledTooltip,
   readOnly = false,
   isLoading = false,
   compressed = true,
@@ -366,6 +369,7 @@ export function DateRangePickerProvider({
       onInputChange,
       width,
       disabled,
+      disabledTooltip,
       readOnly,
       isLoading,
       calendarOptions,
@@ -401,6 +405,7 @@ export function DateRangePickerProvider({
       onInputChange,
       width,
       disabled,
+      disabledTooltip,
       readOnly,
       isLoading,
       calendarOptions,

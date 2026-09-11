@@ -212,7 +212,9 @@ export class UnifiedTabs {
 
   /**
    * Clicks the "New tab" button and waits for the newly created tab to become
-   * the active one.
+   * the active one. Discover new tabs stay uninitialized (no auto-fetch); use
+   * `discover.createNewTabAndSearch()` when the test needs results, the sidebar,
+   * histogram, or DocViewer or perform a search manually after createNewTab().
    */
   async createNewTab() {
     await this.clickNewTabButton();

@@ -164,6 +164,36 @@ describe('buildStateSubscribe', () => {
     expect(dataState.refetch$.next).not.toHaveBeenCalled();
   });
 
+  it('should not fetch when switching to ES|QL while uninitialized', async () => {
+    dataState.data$.main$.next({ fetchStatus: FetchStatus.UNINITIALIZED });
+
+    await getSubscribeFn()(
+      getNextState({
+        appState: {
+          dataSource: { type: DataSourceType.Esql },
+          query: { esql: 'FROM logs' },
+        },
+      })
+    );
+
+    expect(dataState.refetch$.next).not.toHaveBeenCalled();
+  });
+
+  it('should fetch when switching to ES|QL after data has been loaded', async () => {
+    dataState.data$.main$.next({ fetchStatus: FetchStatus.COMPLETE });
+
+    await getSubscribeFn()(
+      getNextState({
+        appState: {
+          dataSource: { type: DataSourceType.Esql },
+          query: { esql: 'FROM logs' },
+        },
+      })
+    );
+
+    expect(dataState.refetch$.next).toHaveBeenCalled();
+  });
+
   it('should not execute setState function if initialFetchStatus is UNINITIALIZED', async () => {
     const stateSubscribeFn = getSubscribeFn();
     dataState.getInitialFetchStatus = jest.fn(() => FetchStatus.UNINITIALIZED);

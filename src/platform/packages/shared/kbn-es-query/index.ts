@@ -59,6 +59,7 @@ export {
   fromCombinedFilter,
   isOfQueryType,
   isOfAggregateQueryType,
+  isEmptyEsqlQuery,
   getAggregateQueryMode,
   getLanguageDisplayName,
 } from './src/es_query';

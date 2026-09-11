@@ -7,16 +7,19 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
-import React from 'react';
+import React, { forwardRef } from 'react';
 import { withSuspense } from '@kbn/shared-ux-utility';
-import type { ESQLEditorProps } from '@kbn/esql-editor';
+import type { ESQLEditorProps, RestorableStateProviderApi } from '@kbn/esql-editor';
 import { KibanaContextProvider } from '@kbn/kibana-react-plugin/public';
 
 const ESQLEditorLazy = React.lazy(() => import('@kbn/esql-editor'));
 const ESQLEditor = withSuspense(ESQLEditorLazy);
 
 function createEditor() {
-  return (props: ESQLEditorProps) => {
+  return forwardRef<RestorableStateProviderApi, ESQLEditorProps>(function ESQLLangEditor(
+    props,
+    ref
+  ) {
     return (
       <KibanaContextProvider
         services={{
@@ -24,10 +27,10 @@ function createEditor() {
           uiSettings: { get: () => {} },
         }}
       >
-        <ESQLEditor {...props} />
+        <ESQLEditor ref={ref} {...props} />
       </KibanaContextProvider>
     );
-  };
+  });
 }
 
 export const ESQLLangEditor = createEditor();

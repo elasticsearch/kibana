@@ -205,6 +205,11 @@ const internalStateSliceDef = createSlice({
         tab.forceFetchOnSelect = action.payload.forceFetchOnSelect;
       }),
 
+    setSkipInitialFetch: (state, action: TabAction<Pick<TabState, 'skipInitialFetch'>>) =>
+      withTab(state, action.payload, (tab) => {
+        tab.skipInitialFetch = action.payload.skipInitialFetch;
+      }),
+
     setIsDataViewLoading: (state, action: TabAction<Pick<TabState, 'isDataViewLoading'>>) =>
       withTab(state, action.payload, (tab) => {
         tab.isDataViewLoading = action.payload.isDataViewLoading;

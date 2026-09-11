@@ -52,8 +52,7 @@ spaceTest.describe(
         });
 
         await spaceTest.step('tab 1: search fields and pin geo.srcdest', async () => {
-          await unifiedTabs.createNewTab();
-          await discover.waitUntilTabIsLoaded();
+          await discover.createNewTabAndSearch();
           await openTableDocViewer(pageObjects);
           await docViewer.findFieldByNameOrValue('.sr');
           await expect(docViewer.getFieldNames()).toHaveCount(2);
@@ -102,8 +101,7 @@ spaceTest.describe(
         await spaceTest.step(
           'tab 1: filter number fields and enable selected-only mode',
           async () => {
-            await unifiedTabs.createNewTab();
-            await discover.waitUntilTabIsLoaded();
+            await discover.createNewTabAndSearch();
             await openTableDocViewer(pageObjects);
             await docViewer.openFieldTypeFilter();
             await page.testSubj.locator('typeFilter-number').click();

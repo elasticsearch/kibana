@@ -18,17 +18,21 @@ import { FetchStatus } from '../../../types';
 import { buildDataTableRecord } from '@kbn/discover-utils';
 import { getDiscoverInternalStateMock } from '../../../../__mocks__/discover_state.mock';
 import { act } from 'react-dom/test-utils';
-import { createDataViewDataSource } from '../../../../../common/data_sources';
+import { createDataViewDataSource, createEsqlDataSource } from '../../../../../common/data_sources';
 import { internalStateActions } from '../../state_management/redux';
 import { DiscoverToolkitTestProvider } from '../../../../__mocks__/test_provider';
 import { createContextAwarenessMocks } from '../../../../context_awareness/__mocks__';
 import { render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { ENABLE_ESQL } from '@kbn/esql-utils';
+import { METRIC_TYPE } from '@kbn/analytics';
 import * as savedSearchUrlConflictCallout from '../../../../components/saved_search_url_conflict_callout/saved_search_url_conflict_callout';
 
 const setup = async ({
   dataView,
   hideSidebar,
   hideTable = false,
+  isEsqlEnabled = false,
   dataMainMsg = {
     fetchStatus: FetchStatus.COMPLETE,
     foundDocuments: true,
@@ -37,12 +41,22 @@ const setup = async ({
   dataView: DataView;
   hideSidebar?: boolean;
   hideTable?: boolean;
+  isEsqlEnabled?: boolean;
   dataMainMsg?: DataMainMsg;
 }) => {
   const { profilesManagerMock } = createContextAwarenessMocks({ shouldRegisterProviders: false });
   const services = createDiscoverServicesMock();
+  const getUiSettingsMock = jest.mocked(services.uiSettings.get);
+  const originalGetImplementation = getUiSettingsMock.getMockImplementation();
 
   services.profilesManager = profilesManagerMock;
+  getUiSettingsMock.mockImplementation((key, defaultOverride) => {
+    if (key === ENABLE_ESQL) {
+      return isEsqlEnabled;
+    }
+
+    return originalGetImplementation?.(key, defaultOverride);
+  });
 
   const toolkit = getDiscoverInternalStateMock({
     services,
@@ -102,6 +116,8 @@ const setup = async ({
 
   // wait for lazy modules
   await act(() => new Promise((resolve) => setTimeout(resolve, 0)));
+
+  return { services, toolkit };
 };
 
 describe('Discover component', () => {
@@ -144,6 +160,33 @@ describe('Discover component', () => {
     expect(screen.queryByTestId('dscShowHistogramButton')).not.toBeInTheDocument();
     expect(screen.queryByTestId('dscHideTableButton')).toBeInTheDocument();
     expect(screen.queryByTestId('dscShowTableButton')).not.toBeInTheDocument();
+  }, 10000);
+
+  test('uninitialized classic mode offers switching to ES|QL', async () => {
+    const user = userEvent.setup();
+    const { services, toolkit } = await setup({
+      dataView: dataViewWithTimefieldMock,
+      dataMainMsg: {
+        fetchStatus: FetchStatus.UNINITIALIZED,
+        foundDocuments: false,
+      },
+      isEsqlEnabled: true,
+    });
+
+    expect(screen.getByTestId('refreshDataButton')).toBeVisible();
+    expect(screen.getByText('or')).toBeVisible();
+
+    await user.click(screen.getByTestId('queryInEsqlButton'));
+
+    expect(services.trackUiMetric).toHaveBeenCalledWith(
+      METRIC_TYPE.CLICK,
+      'esql:uninitialized_query_in_esql_clicked'
+    );
+    expect(services.trackUiMetric).not.toHaveBeenCalledWith(
+      METRIC_TYPE.CLICK,
+      'esql:try_btn_clicked'
+    );
+    expect(toolkit.getCurrentTab().appState.dataSource).toEqual(createEsqlDataSource());
   }, 10000);
 
   describe('sidebar', () => {

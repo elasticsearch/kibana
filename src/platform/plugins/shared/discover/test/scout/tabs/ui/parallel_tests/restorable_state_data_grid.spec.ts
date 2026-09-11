@@ -39,8 +39,7 @@ spaceTest.describe(
       expect(await dataGrid.getNumberOfSelectedRowsOnCurrentPage()).toBe(2);
       expect(await dataGrid.isSelectedRowsMenuVisible()).toBe(true);
 
-      await unifiedTabs.createNewTab();
-      await discover.waitUntilTabIsLoaded();
+      await discover.createNewTabAndSearch();
       expect(await dataGrid.getNumberOfSelectedRowsOnCurrentPage()).toBe(0);
       expect(await dataGrid.isSelectedRowsMenuVisible()).toBe(false);
 
@@ -72,8 +71,7 @@ spaceTest.describe(
         await expect(dataGrid.getInTableSearchMatchesCounter()).toHaveText(updatedActiveMatch);
         expect(await dataGrid.getCurrentPageNumber()).toBe('3');
 
-        await unifiedTabs.createNewTab();
-        await discover.waitUntilTabIsLoaded();
+        await discover.createNewTabAndSearch();
         await dataGrid.openGridDisplaySettings();
         await dataGrid.setDensityValue('Normal');
         await dataGrid.setRowHeight('Custom');
@@ -121,8 +119,7 @@ spaceTest.describe(
       await dataGrid.selectComparisonDiffMode('words');
       expect(await dataGrid.getComparisonDiffMode()).toBe('By word');
 
-      await unifiedTabs.createNewTab();
-      await discover.waitUntilTabIsLoaded();
+      await discover.createNewTabAndSearch();
       expect(await dataGrid.isComparisonModeActive()).toBe(false);
       await dataGrid.selectRow(1);
       await dataGrid.selectRow(2);

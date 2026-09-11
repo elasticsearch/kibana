@@ -60,8 +60,7 @@ spaceTest.describe('Discover tabs - tab duplication', { tag: '@local-stateful-cl
     });
 
     await spaceTest.step('a new tab starts with default app and global state', async () => {
-      await unifiedTabs.createNewTab();
-      await discover.waitUntilTabIsLoaded();
+      await discover.createNewTabAndSearch();
       await datePicker.setAbsoluteRange(testData.DEFAULT_TIME_RANGE_DISPLAY);
       await discover.waitUntilTabIsLoaded();
 

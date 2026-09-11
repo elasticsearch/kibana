@@ -445,6 +445,9 @@ describe('InternalStateStore', () => {
     expect(tabsState.allIds).toHaveLength(3);
     expect(tabsState.byId[items[0].id].uiState).toMatchInlineSnapshot(`
       Object {
+        "esqlEditor": Object {
+          "isHistoryOpen": true,
+        },
         "fieldList": Object {
           "nameFilter": "field0",
         },
@@ -453,6 +456,9 @@ describe('InternalStateStore', () => {
     `);
     expect(tabsState.byId[items[1].id].uiState).toMatchInlineSnapshot(`
       Object {
+        "esqlEditor": Object {
+          "isHistoryOpen": true,
+        },
         "fieldList": Object {
           "nameFilter": "field1",
         },
@@ -472,6 +478,9 @@ describe('InternalStateStore', () => {
     `);
     expect(tabsState.byId[items[2].id].uiState).toMatchInlineSnapshot(`
       Object {
+        "esqlEditor": Object {
+          "isHistoryOpen": true,
+        },
         "fieldList": Object {
           "nameFilter": "field2",
         },

@@ -40,8 +40,7 @@ spaceTest.describe('Discover tabs - navigation', { tag: '@local-stateful-classic
       expect(await discover.getHitCountInt()).toBe(14_004);
       expect(await discover.getCurrentQueryName()).toBe(SAVED_SEARCH_TITLE);
 
-      await unifiedTabs.createNewTab();
-      await discover.waitUntilTabIsLoaded();
+      await discover.createNewTabAndSearch();
       await unifiedTabs.editTabLabel(1, SECOND_TAB_LABEL);
       await filterBar.addFilter({ field: 'extension', operator: 'is', value: 'jpg' });
       // Close the filter tooltip; it can overlap the tabs and block clicks.
@@ -53,8 +52,7 @@ spaceTest.describe('Discover tabs - navigation', { tag: '@local-stateful-classic
 
       // Re-select the active tab to ensure tooltips do not block further clicks.
       await unifiedTabs.selectTab(1);
-      await unifiedTabs.createNewTab();
-      await discover.waitUntilTabIsLoaded();
+      await discover.createNewTabAndSearch();
       await unifiedTabs.editTabLabel(2, THIRD_TAB_LABEL);
       await filterBar.addFilter({ field: 'extension', operator: 'is', value: 'png' });
       // Close the filter tooltip; it can overlap the tabs and block clicks.
@@ -94,8 +92,7 @@ spaceTest.describe('Discover tabs - navigation', { tag: '@local-stateful-classic
     async ({ page, pageObjects }) => {
       const { contextPage, discover, docViewer, filterBar, unifiedTabs } = pageObjects;
 
-      await unifiedTabs.createNewTab();
-      await discover.waitUntilTabIsLoaded();
+      await discover.createNewTabAndSearch();
       await unifiedTabs.editTabLabel(1, SECOND_TAB_LABEL);
       await filterBar.addFilter({ field: 'extension', operator: 'is', value: 'jpg' });
       await discover.waitUntilTabIsLoaded();
@@ -133,7 +130,6 @@ spaceTest.describe('Discover tabs - navigation', { tag: '@local-stateful-classic
       expect(await unifiedTabs.getTabLabels()).toStrictEqual(['kql']);
 
       await unifiedTabs.createNewTab();
-      await discover.waitUntilTabIsLoaded();
       await discover.writeAndSubmitEsqlQuery(queryEsql);
       await unifiedTabs.editTabLabel(1, 'esql');
       await discover.waitUntilTabIsLoaded();

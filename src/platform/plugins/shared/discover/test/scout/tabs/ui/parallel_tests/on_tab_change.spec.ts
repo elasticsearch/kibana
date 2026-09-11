@@ -107,8 +107,7 @@ spaceTest.describe('Discover tabs - on tab change', { tag: '@local-stateful-clas
       });
 
       await spaceTest.step('tab 1: open DocViewer and keep the default Table tab', async () => {
-        await unifiedTabs.createNewTab();
-        await discover.waitUntilTabIsLoaded();
+        await discover.createNewTabAndSearch();
 
         await expect(docViewer.getFlyout()).toBeHidden();
         await docViewer.openAndWaitForFlyout({ rowIndex: 1 });
@@ -147,8 +146,7 @@ spaceTest.describe('Discover tabs - on tab change', { tag: '@local-stateful-clas
     await spaceTest.step('open a Lens edit flyout in an ES|QL tab', async () => {
       await discover.selectTextBaseLang();
       await discover.waitUntilTabIsLoaded();
-      await unifiedTabs.createNewTab();
-      await discover.waitUntilTabIsLoaded();
+      await discover.createNewTabAndSearch();
 
       await discover.openLensEditFlyout();
       await expect(discover.getLensEditFlyout()).toBeVisible();

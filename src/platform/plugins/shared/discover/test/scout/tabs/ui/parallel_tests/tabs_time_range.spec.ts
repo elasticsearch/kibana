@@ -60,14 +60,12 @@ const createTabsWithStoredTimeDifference = async (pageObjects: PageObjects) => {
   await expectCurrentTimeConfiguration(pageObjects, INITIAL_TIME_CONFIGURATION);
 
   await spaceTest.step('tab 1: create a tab with the initial time configuration', async () => {
-    await unifiedTabs.createNewTab();
-    await discover.waitUntilTabIsLoaded();
+    await discover.createNewTabAndSearch();
     await expectCurrentTimeConfiguration(pageObjects, INITIAL_TIME_CONFIGURATION);
   });
 
   await spaceTest.step('tab 2: create a tab with an updated time configuration', async () => {
-    await unifiedTabs.createNewTab();
-    await discover.waitUntilTabIsLoaded();
+    await discover.createNewTabAndSearch();
     await expectCurrentTimeConfiguration(pageObjects, INITIAL_TIME_CONFIGURATION);
     await configureUpdatedTime(pageObjects);
     await expectCurrentTimeConfiguration(pageObjects, UPDATED_TIME_CONFIGURATION);

@@ -261,6 +261,18 @@ export class DiscoverPageObject extends FtrService {
     });
   }
 
+  /**
+   * Opens a new Discover tab and runs the current query so the tab is initialized.
+   * New tabs skip the initial fetch; use `unifiedTabs.createNewTab()` when the test
+   * needs the uninitialized empty state.
+   */
+  public async createNewTabAndSearch() {
+    const unifiedTabs = this.ctx.getPageObject('unifiedTabs');
+    await unifiedTabs.createNewTab();
+    await this.queryBar.clickQuerySubmitButton();
+    await this.waitUntilTabIsLoaded();
+  }
+
   public async getColumnHeaders() {
     return await this.dataGrid.getHeaderFields();
   }

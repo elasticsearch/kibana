@@ -8,7 +8,7 @@
  */
 
 import type { DataView, DataViewSpec } from '@kbn/data-views-plugin/common';
-import { isOfAggregateQueryType } from '@kbn/es-query';
+import { isEmptyEsqlQuery, isOfAggregateQueryType } from '@kbn/es-query';
 import { cloneDeep, isEqual, isObject, pick } from 'lodash';
 import type { GlobalQueryStateFromUrl } from '@kbn/data-plugin/public';
 import type { ControlPanelsState } from '@kbn/control-group-renderer';
@@ -181,7 +181,7 @@ export const initializeSingleTab = createInternalStateAsyncThunk(
 
     let dataView: DataView;
 
-    if (isOfAggregateQueryType(initialQuery)) {
+    if (isOfAggregateQueryType(initialQuery) && !isEmptyEsqlQuery(initialQuery)) {
       // Regardless of what was requested, we always use ad hoc data views for ES|QL
       dataView = await getEsqlDataView(
         initialQuery,
@@ -336,10 +336,20 @@ export const initializeSingleTab = createInternalStateAsyncThunk(
     // tab to fetch when selected
     if (isCurrentTabActive()) {
       dispatch(initializeAndSync({ tabId }));
-      dispatch(fetchData({ tabId, initial: true }));
+
+      // Skip the initial fetch for fresh "+" tabs and empty ES|QL queries.
+      // skipInitialFetch is in-memory only, so empty ES|QL is what keeps a
+      // restored uninitialized tab from executing after refresh.
+      if (!tabState.skipInitialFetch && !isEmptyEsqlQuery(initialAppState.query)) {
+        dispatch(fetchData({ tabId, initial: true }));
+      }
     } else {
       dispatch(
-        internalStateSlice.actions.setForceFetchOnSelect({ tabId, forceFetchOnSelect: true })
+        internalStateSlice.actions.setForceFetchOnSelect({
+          tabId,
+          forceFetchOnSelect:
+            !tabState.skipInitialFetch && !isEmptyEsqlQuery(initialAppState.query),
+        })
       );
     }
 

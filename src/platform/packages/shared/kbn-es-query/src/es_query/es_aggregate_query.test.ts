@@ -7,7 +7,12 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
-import { isOfQueryType, isOfAggregateQueryType, getAggregateQueryMode } from './es_aggregate_query';
+import {
+  isOfQueryType,
+  isOfAggregateQueryType,
+  isEmptyEsqlQuery,
+  getAggregateQueryMode,
+} from './es_aggregate_query';
 
 describe('esql query helpers', () => {
   describe('isOfQueryType', () => {
@@ -36,6 +41,22 @@ describe('esql query helpers', () => {
     it('should return true for an Aggregate type query', () => {
       const flag = isOfAggregateQueryType({ esql: 'FROM foo' });
       expect(flag).toBe(true);
+    });
+  });
+
+  describe('isEmptyEsqlQuery', () => {
+    it('should return true for an empty or whitespace ES|QL query', () => {
+      expect(isEmptyEsqlQuery({ esql: '' })).toBe(true);
+      expect(isEmptyEsqlQuery({ esql: '   ' })).toBe(true);
+    });
+
+    it('should return false for a non-empty ES|QL query', () => {
+      expect(isEmptyEsqlQuery({ esql: 'FROM foo' })).toBe(false);
+    });
+
+    it('should return false for classic queries and undefined', () => {
+      expect(isEmptyEsqlQuery({ query: '', language: 'kuery' })).toBe(false);
+      expect(isEmptyEsqlQuery(undefined)).toBe(false);
     });
   });
 

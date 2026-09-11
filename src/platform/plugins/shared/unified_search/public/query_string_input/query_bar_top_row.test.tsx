@@ -235,6 +235,57 @@ describe('QueryBarTopRowTopRow', () => {
     });
   });
 
+  it('disables submit, date picker, time window arrows, and fast mode when the ES|QL query is empty', async () => {
+    render(
+      wrapQueryBarTopRowInContext({
+        query: { esql: '' },
+        screenTitle: 'ES|QL Screen',
+        isDirty: false,
+        indexPatterns: [stubIndexPattern],
+        timeHistory: mockTimeHistory,
+        dateRangeFrom: 'now-15m',
+        dateRangeTo: 'now',
+        esqlApproximation: {
+          isApproximate: false,
+          onChange: jest.fn(),
+        },
+      })
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId('querySubmitButton')).toBeDisabled();
+      expect(screen.getByTestId('dateRangePickerControlButton')).toBeDisabled();
+      expect(screen.getByTestId('dateRangePickerPreviousButton')).toBeDisabled();
+      expect(screen.getByTestId('dateRangePickerNextButton')).toBeDisabled();
+      expect(screen.getByTestId('esqlApproximationToggleButton')).toBeDisabled();
+    });
+  });
+
+  it('enables date picker, time window arrows, and fast mode when the ES|QL query has content', async () => {
+    render(
+      wrapQueryBarTopRowInContext({
+        query: esqlQuery,
+        screenTitle: 'ES|QL Screen',
+        isDirty: false,
+        indexPatterns: [stubIndexPattern],
+        timeHistory: mockTimeHistory,
+        dateRangeFrom: 'now-15m',
+        dateRangeTo: 'now',
+        esqlApproximation: {
+          isApproximate: false,
+          onChange: jest.fn(),
+        },
+      })
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId('querySubmitButton')).toBeEnabled();
+      expect(screen.getByTestId('dateRangePickerControlButton')).toBeEnabled();
+      expect(screen.getByTestId('dateRangePickerPreviousButton')).toBeEnabled();
+      expect(screen.getByTestId('dateRangePickerNextButton')).toBeEnabled();
+    });
+  });
+
   describe('when background search is enabled', () => {
     describe('when it is NOT loading', () => {
       const data = dataPluginMock.createStartContract();
@@ -836,6 +887,31 @@ describe('QueryBarTopRowTopRow', () => {
         expect(
           container.querySelector('input[placeholder*="search"], textarea')
         ).not.toBeInTheDocument();
+      });
+    });
+
+    it('Should disable the date picker when the ES|QL query is empty', async () => {
+      render(
+        wrapWithPicker({
+          query: { esql: '' },
+          isDirty: false,
+          screenTitle: 'ES|QL Screen',
+          timeHistory: mockTimeHistory,
+          indexPatterns: [stubIndexPattern],
+          showDatePicker: true,
+          dateRangeFrom: 'now-15m',
+          dateRangeTo: 'now',
+        })
+      );
+
+      await waitFor(() => {
+        if (useNewPicker) {
+          expect(screen.getByTestId('dateRangePickerControlButton')).toBeDisabled();
+          expect(screen.getByTestId('dateRangePickerPreviousButton')).toBeDisabled();
+          expect(screen.getByTestId('dateRangePickerNextButton')).toBeDisabled();
+        } else {
+          expect(screen.getByTestId(pickerButtonTestSubj)).toBeDisabled();
+        }
       });
     });
 

@@ -62,8 +62,7 @@ spaceTest.describe(
       const hideNullValuesSwitch = page.testSubj.locator('unifiedDocViewerHideNullValuesSwitch');
       await expect(hideNullValuesSwitch).toHaveAttribute('aria-checked', 'false');
 
-      await unifiedTabs.createNewTab();
-      await discover.waitUntilTabIsLoaded();
+      await discover.createNewTabAndSearch();
       await openTableDocViewer(pageObjects, 0);
       await expect(hideNullValuesSwitch).toHaveAttribute('aria-checked', 'false');
       await hideNullValuesSwitch.click();
@@ -83,8 +82,7 @@ spaceTest.describe(
         await openSourceDocViewer(pageObjects, 0);
         const originalJsonContent = await docViewer.getJsonCodeEditorValue();
 
-        await unifiedTabs.createNewTab();
-        await discover.waitUntilTabIsLoaded();
+        await discover.createNewTabAndSearch();
         await openSourceDocViewer(pageObjects, 1);
         const tab2JsonContent = await docViewer.getJsonCodeEditorValue();
         expect(tab2JsonContent).not.toStrictEqual(originalJsonContent);
@@ -116,8 +114,7 @@ spaceTest.describe(
       const tab1ScrollTop = await discover.codeEditor.getScrollTop();
       expect(tab1ScrollTop).toBeGreaterThanOrEqual(scrollAmount);
 
-      await unifiedTabs.createNewTab();
-      await discover.waitUntilTabIsLoaded();
+      await discover.createNewTabAndSearch();
       await openSourceDocViewer(pageObjects, 0);
       expect(await discover.codeEditor.getScrollTop()).toBe(0);
 

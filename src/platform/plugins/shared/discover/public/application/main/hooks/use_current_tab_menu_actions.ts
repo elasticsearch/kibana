@@ -23,9 +23,13 @@ import {
 
 interface UseCurrentTabMenuActionsParams {
   currentDataView: DataView | undefined;
+  switchToEsqlMetric?: string;
 }
 
-export const useCurrentTabMenuActions = ({ currentDataView }: UseCurrentTabMenuActionsParams) => {
+export const useCurrentTabMenuActions = ({
+  currentDataView,
+  switchToEsqlMetric = 'esql:try_btn_clicked',
+}: UseCurrentTabMenuActionsParams) => {
   const services = useDiscoverServices();
   const dispatch = useInternalStateDispatch();
   const currentTab = useCurrentTabSelector((tab) => tab);
@@ -47,7 +51,7 @@ export const useCurrentTabMenuActions = ({ currentDataView }: UseCurrentTabMenuA
     }
 
     if (isDataViewMode) {
-      services.trackUiMetric?.(METRIC_TYPE.CLICK, 'esql:try_btn_clicked');
+      services.trackUiMetric?.(METRIC_TYPE.CLICK, switchToEsqlMetric);
       dispatch(transitionFromDataViewToESQL({ dataView: currentDataView }));
       return;
     }
@@ -60,6 +64,7 @@ export const useCurrentTabMenuActions = ({ currentDataView }: UseCurrentTabMenuA
     isDataViewMode,
     isEsqlEnabled,
     services,
+    switchToEsqlMetric,
     transitionFromDataViewToESQL,
     transitionFromESQLToDataView,
   ]);

@@ -54,6 +54,12 @@ export const buildStateSubscribe =
     const prevState = getCurrentTab().previousAppState;
     const isEsqlMode = isDataSourceType(nextState.dataSource, DataSourceType.Esql);
     const queryChanged = !isEqual(nextState.query, prevState.query);
+    const queryLanguageChanged =
+      isEsqlMode !== isDataSourceType(prevState.dataSource, DataSourceType.Esql);
+    // Capture before reset() so a later ES|QL transition does not look uninitialized
+    // just because skipInitialFetch still forces getInitialFetchStatus() back to UNINITIALIZED.
+    const isUninitialized =
+      dataState.data$.main$.getValue().fetchStatus === FetchStatus.UNINITIALIZED;
 
     if (isEsqlMode && prevState.viewMode !== nextState.viewMode && !queryChanged) {
       addLog('[appstate] subscribe $fetch ignored for es|ql', { prevState, nextState });
@@ -136,6 +142,14 @@ export const buildStateSubscribe =
 
     if (dataSourceChanged && dataState.getInitialFetchStatus() === FetchStatus.UNINITIALIZED) {
       // stop execution if given data view has changed, and it's not configured to initially start a search in Discover
+      return;
+    }
+
+    if (queryLanguageChanged && isUninitialized) {
+      addLog('[appstate] subscribe fetch skipped for query language switch while uninitialized', {
+        prevState,
+        nextState,
+      });
       return;
     }
 

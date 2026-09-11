@@ -58,7 +58,7 @@ const BUTTON_ID_NEXT = 'next';
  * Provides step forward/backward and zoom out/in actions.
  */
 export function TimeWindowButtons({ config }: { config: TimeWindowButtonsConfig }) {
-  const { timeRange, applyRange, compressed, disabled, readOnly, settings } =
+  const { timeRange, applyRange, compressed, disabled, disabledTooltip, readOnly, settings } =
     useDateRangePickerContext();
   const isDisabled = disabled || readOnly;
   const timePrecision = settings.timePrecision ?? 's';
@@ -102,6 +102,8 @@ export function TimeWindowButtons({ config }: { config: TimeWindowButtonsConfig 
     [stepBackward, expandWindow, shrinkWindow, stepForward]
   );
 
+  const disabledReason = isDisabled ? disabledTooltip : undefined;
+
   const options = useMemo<EuiButtonGroupOptionProps[]>(() => {
     const items: EuiButtonGroupOptionProps[] = [];
 
@@ -112,9 +114,11 @@ export function TimeWindowButtons({ config }: { config: TimeWindowButtonsConfig 
         title: '',
         iconType: 'chevronSingleLeft',
         isDisabled: isDisabled || isInvalid || isWindowDurationZero,
-        toolTipContent: isInvalid
-          ? translations.cannotShiftInvalid
-          : translations.previousTooltip(durationText),
+        toolTipContent:
+          disabledReason ??
+          (isInvalid
+            ? translations.cannotShiftInvalid
+            : translations.previousTooltip(durationText)),
         'data-test-subj': 'dateRangePickerPreviousButton',
       });
     }
@@ -126,7 +130,9 @@ export function TimeWindowButtons({ config }: { config: TimeWindowButtonsConfig 
         title: '',
         iconType: 'magnifyMinus',
         isDisabled: isDisabled || isInvalid,
-        toolTipContent: isInvalid ? translations.cannotZoomOutInvalid : translations.zoomOutTooltip,
+        toolTipContent:
+          disabledReason ??
+          (isInvalid ? translations.cannotZoomOutInvalid : translations.zoomOutTooltip),
         'data-test-subj': 'dateRangePickerZoomOutButton',
       });
     }
@@ -138,11 +144,13 @@ export function TimeWindowButtons({ config }: { config: TimeWindowButtonsConfig 
         title: '',
         iconType: 'magnifyPlus',
         isDisabled: isDisabled || isInvalid || isWindowDurationZero,
-        toolTipContent: isInvalid
-          ? translations.cannotZoomInInvalid
-          : isWindowDurationZero
-          ? translations.cannotZoomInFurther
-          : translations.zoomInTooltip,
+        toolTipContent:
+          disabledReason ??
+          (isInvalid
+            ? translations.cannotZoomInInvalid
+            : isWindowDurationZero
+            ? translations.cannotZoomInFurther
+            : translations.zoomInTooltip),
         'data-test-subj': 'dateRangePickerZoomInButton',
       });
     }
@@ -154,9 +162,9 @@ export function TimeWindowButtons({ config }: { config: TimeWindowButtonsConfig 
         title: '',
         iconType: 'chevronSingleRight',
         isDisabled: isDisabled || isInvalid || isWindowDurationZero,
-        toolTipContent: isInvalid
-          ? translations.cannotShiftInvalid
-          : translations.nextTooltip(durationText),
+        toolTipContent:
+          disabledReason ??
+          (isInvalid ? translations.cannotShiftInvalid : translations.nextTooltip(durationText)),
         'data-test-subj': 'dateRangePickerNextButton',
       });
     }
@@ -170,6 +178,7 @@ export function TimeWindowButtons({ config }: { config: TimeWindowButtonsConfig 
     isInvalid,
     isWindowDurationZero,
     durationText,
+    disabledReason,
   ]);
 
   if (options.length === 0) {

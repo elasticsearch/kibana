@@ -266,8 +266,7 @@ export default function ({ getService, getPageObjects }: FtrProviderContext) {
           await changeRowHeight('Auto');
           await expectRowHeight('Auto');
 
-          await unifiedTabs.createNewTab();
-          await discover.waitUntilTabIsLoaded();
+          await discover.createNewTabAndSearch();
           await expectRowHeight('Custom', 5);
 
           await unifiedTabs.selectTab(0);
@@ -326,8 +325,7 @@ export default function ({ getService, getPageObjects }: FtrProviderContext) {
           });
           await changeTimestampColor('accent');
 
-          await unifiedTabs.createNewTab();
-          await discover.waitUntilTabIsLoaded();
+          await discover.createNewTabAndSearch();
           await unifiedTabs.closeTab(0);
           await waitForRecentlyClosedProfileStateInStorage('warning');
 
