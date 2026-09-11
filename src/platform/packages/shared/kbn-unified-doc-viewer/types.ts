@@ -11,6 +11,7 @@ export type { ElasticRequestState } from '.';
 export type {
   DocViewFilterFn,
   DocViewRenderProps,
+  DocViewRestorableStateProps,
   DocView,
   DocViewerComponent,
   DocViewActions,

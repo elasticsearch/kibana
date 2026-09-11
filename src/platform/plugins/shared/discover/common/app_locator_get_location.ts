@@ -113,6 +113,7 @@ export const parseAppLocatorParams = (
     esqlApproximation,
     profileState,
     expandedDoc,
+    docViewerState,
   } = params;
 
   const appState: Partial<DiscoverAppState> = {};
@@ -147,6 +148,7 @@ export const parseAppLocatorParams = (
       ...(expandedDoc.routing !== undefined ? { routing: expandedDoc.routing } : {}),
     };
   }
+  if (docViewerState) appState.docViewerState = docViewerState;
 
   const state: MainHistoryLocationState = {};
 

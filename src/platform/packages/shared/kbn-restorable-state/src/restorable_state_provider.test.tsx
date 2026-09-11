@@ -304,4 +304,42 @@ describe('createRestorableStateProvider', () => {
     expect(renderCounts.childRenders).toBe(2);
     expect(renderCounts.commits).toBe(1);
   });
+
+  it('useRestorableStateValue reflects updates made by another consumer', async () => {
+    const { withRestorableState, useRestorableState, useRestorableStateValue } =
+      createRestorableStateProvider<RestorableState>();
+
+    const Child = () => {
+      const [, setCount] = useRestorableState('count', 0);
+      return (
+        <button
+          data-test-subj="value-child-button"
+          onClick={() => setCount((prev) => (prev ?? 0) + 1)}
+        >
+          increment
+        </button>
+      );
+    };
+
+    const Parent = () => {
+      const count = useRestorableStateValue('count');
+      return (
+        <>
+          <div data-test-subj="value-observer">count: {count ?? 'unset'}</div>
+          <Child />
+        </>
+      );
+    };
+
+    const WrappedParent = withRestorableState(Parent);
+    render(<WrappedParent />);
+
+    expect(screen.getByTestId('value-observer')).toHaveTextContent('count: unset');
+
+    await userEvent.click(screen.getByTestId('value-child-button'));
+    expect(screen.getByTestId('value-observer')).toHaveTextContent('count: 1');
+
+    await userEvent.click(screen.getByTestId('value-child-button'));
+    expect(screen.getByTestId('value-observer')).toHaveTextContent('count: 2');
+  });
 });

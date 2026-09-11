@@ -281,6 +281,28 @@ export const createRestorableStateProvider = <TState extends object>() => {
     return valueRef;
   };
 
+  /**
+   * Allows to react to changes of a specific key of the state.
+   *
+   * As difference from `useRestorableState`, this re-renders whenever any consumer updates that key,
+   * so a parent can react to a child's state changes.
+   */
+  const useRestorableStateValue = <TKey extends keyof TState>(key: TKey): Partial<TState>[TKey] => {
+    const { initialState$ } = useContext(context);
+    const [value, setValue] = useState<Partial<TState>[TKey]>(
+      () => initialState$.getValue()?.[key]
+    );
+
+    useEffect(() => {
+      const subscription = initialState$.subscribe((state) => {
+        setValue(state?.[key]);
+      });
+      return () => subscription.unsubscribe();
+    }, [initialState$, key]);
+
+    return value;
+  };
+
   const useRestorableLocalStorage = <TKey extends keyof TState>(
     key: TKey,
     localStorageKey: string,
@@ -310,7 +332,13 @@ export const createRestorableStateProvider = <TState extends object>() => {
     return [value, setValue] as const;
   };
 
-  return { withRestorableState, useRestorableState, useRestorableRef, useRestorableLocalStorage };
+  return {
+    withRestorableState,
+    useRestorableState,
+    useRestorableStateValue,
+    useRestorableRef,
+    useRestorableLocalStorage,
+  };
 };
 
 const useStableFunction = <T extends (...args: Parameters<T>) => ReturnType<T>>(fn: T) => {

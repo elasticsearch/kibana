@@ -16,6 +16,7 @@ import type { DiscoverGridSettings } from '@kbn/saved-search-plugin/common';
 import type { DataViewSpec } from '@kbn/data-views-plugin/common';
 import type { ControlPanelsState } from '@kbn/control-group-renderer';
 import type { ESQLControlVariable } from '@kbn/esql-types';
+import type { DocViewerShareableState } from '@kbn/unified-doc-viewer';
 import type { ProfileStateMap } from './context_awareness';
 import type { VIEW_MODE, NEW_TAB_ID } from './constants';
 import type { ExpandedDocRef } from '../public';
@@ -161,6 +162,11 @@ export type DiscoverAppLocatorParams = AsSerializableRecord<{
    * The document to expand in the doc viewer flyout on load.
    */
   expandedDoc?: ExpandedDocRef;
+  /**
+   * The URL-shareable doc viewer state (selected tab + per-tab shareable slices) restored alongside
+   * `expandedDoc` when the flyout reopens from a shared link.
+   */
+  docViewerState?: DocViewerShareableState;
 }>;
 
 export type DiscoverAppLocator = LocatorPublic<DiscoverAppLocatorParams>;

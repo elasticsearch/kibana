@@ -32,6 +32,7 @@ export interface DiscoverGridFlyoutProps
     | 'initialDocViewerState'
     | 'onInitialDocViewerStateChange'
     | 'onUpdateSelectedTabId'
+    | 'onShareableStateChange'
     | 'requestState'
     | 'requestStateMeta'
     | 'notice'
@@ -83,6 +84,7 @@ export function DiscoverGridFlyout({
   initialDocViewerState,
   onInitialDocViewerStateChange,
   onUpdateSelectedTabId,
+  onShareableStateChange,
   hideFilteringOnComputedColumns,
   requestState,
   requestStateMeta,
@@ -156,6 +158,7 @@ export function DiscoverGridFlyout({
       initialDocViewerState={initialDocViewerState}
       onInitialDocViewerStateChange={onInitialDocViewerStateChange}
       onUpdateSelectedTabId={onUpdateSelectedTabId}
+      onShareableStateChange={onShareableStateChange}
       hideFilteringOnComputedColumns={hideFilteringOnComputedColumns}
     />
   );

@@ -25,7 +25,10 @@ import { DataSourceCategory } from '../../../profiles';
 import { extractIndexPatternFrom } from '../../extract_index_pattern_from';
 import { ChartWithCustomButtons, CustomDocViewerFooter, CustomDocViewerHeader } from './components';
 import { CustomDocView } from './components/custom_doc_view';
-import { RestorableStateDocView } from './components/restorable_state_doc_view';
+import {
+  RestorableStateDocView,
+  restorableStateDocViewShareableStateSchema,
+} from './components/restorable_state_doc_view';
 import {
   EXAMPLE_PROFILE_STATE_DEFAULTS,
   EXAMPLE_PROFILE_STATE_DEF,
@@ -182,6 +185,7 @@ export const createExampleDataSourceProfileProvider = (): DataSourceProfileProvi
               id: 'doc_view_restorable_state_example',
               title: 'Restorable State Example',
               order: 1,
+              shareableStateSchema: restorableStateDocViewShareableStateSchema,
               render: (props) => <RestorableStateDocView {...props} />,
             });
 

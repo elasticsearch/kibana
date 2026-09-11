@@ -18,6 +18,7 @@ import { dataViewMock, esHitsMockWithSort } from '@kbn/discover-utils/src/__mock
 import { analyticsServiceMock } from '@kbn/core-analytics-browser-mocks';
 import { KibanaErrorBoundaryProvider } from '@kbn/shared-ux-error-boundary';
 import userEvent from '@testing-library/user-event';
+import { z } from '@kbn/zod';
 
 const analytics = analyticsServiceMock.createAnalyticsServiceStart();
 const records = esHitsMockWithSort.map((hit) => buildDataTableRecord(hit, dataViewMock));
@@ -331,6 +332,42 @@ describe('<DocViewer />', () => {
       docViewerTabsState: {
         test1: initialState,
       },
+    });
+  });
+
+  test('should emit the projected shareable state when a tab with a schema writes its slice', () => {
+    const onShareableStateChange = jest.fn();
+    const tabState = { selectedSubTab: 'details', scrollTop: 42 };
+    const renderFn = jest.fn(({ onInitialStateChange }) => (
+      <InitialStateReportingTab
+        content="Tab 1 Content"
+        onInitialStateChange={onInitialStateChange}
+        state={tabState}
+      />
+    ));
+
+    const registry = new DocViewsRegistry();
+    registry.add({
+      id: 'test1',
+      order: 10,
+      title: 'Tab 1',
+      shareableStateSchema: z.object({ selectedSubTab: z.string().max(50) }),
+      render: renderFn,
+    });
+
+    render(
+      <WrappedDocViewer
+        docViews={registry.getAll()}
+        hit={records[0]}
+        dataView={dataViewMock}
+        onShareableStateChange={onShareableStateChange}
+      />
+    );
+
+    // Only the schema-allowed field is shared; `scrollTop` is stripped.
+    expect(onShareableStateChange).toHaveBeenLastCalledWith({
+      selectedTabId: 'test1',
+      tabsState: { test1: { selectedSubTab: 'details' } },
     });
   });
 

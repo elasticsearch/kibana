@@ -25,5 +25,7 @@
     "@kbn/restorable-state",
     "@kbn/scout",
     "@kbn/core",
+    "@kbn/utility-types",
+    "@kbn/zod",
   ]
 }

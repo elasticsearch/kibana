@@ -10,5 +10,5 @@
 import { createRestorableStateProvider } from '@kbn/restorable-state';
 import type { DocViewerRestorableState } from '../../types';
 
-export const { withRestorableState, useRestorableState } =
+export const { withRestorableState, useRestorableState, useRestorableStateValue } =
   createRestorableStateProvider<DocViewerRestorableState>();

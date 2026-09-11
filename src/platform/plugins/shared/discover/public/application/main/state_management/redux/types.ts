@@ -34,7 +34,7 @@ import type { RenderDocumentViewMeta } from '@kbn/unified-data-table';
 import type { UnifiedMetricsGridRestorableState } from '@kbn/unified-chart-section-viewer';
 import type { UnifiedSearchDraft } from '@kbn/unified-search-plugin/public';
 import type { TabItem } from '@kbn/unified-tabs';
-import type { DocViewerRestorableState } from '@kbn/unified-doc-viewer';
+import type { DocViewerRestorableState, DocViewerShareableState } from '@kbn/unified-doc-viewer';
 import type { SerializedError } from '@reduxjs/toolkit';
 import type { OptionsListESQLControlState } from '@kbn/controls-schemas';
 import type { DataCascadeRestorableState } from '@kbn/shared-ux-document-data-cascade';
@@ -151,6 +151,11 @@ export interface DiscoverAppState {
    * The expanded document reference
    */
   expandedDoc?: ExpandedDocRef;
+  /**
+   * The URL-shareable doc viewer state (selected tab + per-tab shareable slices) restored alongside
+   * the expanded document from a shared link.
+   */
+  docViewerState?: DocViewerShareableState;
 }
 
 export interface CascadedDocumentsState {
