@@ -37,8 +37,7 @@ target
 .windsurf
 *.iml
 *.log
-types.eslint.config.js
-types.eslint.config.cjs
+.oxlintrc.with_types.json
 __tmp__
 .bug-fixer-session/
 .playwright-mcp/

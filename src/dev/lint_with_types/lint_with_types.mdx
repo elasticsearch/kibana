@@ -1,0 +1,32 @@
+---
+id: kibDevDocsOpsLintWithTypes
+slug: /kibana-dev-docs/ops/lint-with-types
+title: "Linting (with types)"
+description: Running type-aware lint rules which consume the TypeScript type checker
+tags: ['kibana', 'dev', 'contributor', 'operations', 'lint', 'oxlint', 'ts']
+---
+
+By default a linter works on a single file, parses that file to an abstract-syntax-tree (AST), and then writes validations against the syntax in that one file. This prevents us from using rules which validate code based on the types of a specific variable, or anything along those lines. Linting *with types* loads each TypeScript project into a type checker and uses the resulting type information to inform specific validations.
+
+The rules currently enabled are:
+
+- `typescript/consistent-type-exports` [[docs](https://typescript-eslint.io/rules/consistent-type-exports/)] on every file
+- `typescript/no-floating-promises` [[docs](https://typescript-eslint.io/rules/no-floating-promises/)] on server-side and functional/Scout test code (see `src/dev/lint_with_types/rules.ts` for the exact scope)
+
+## Usage
+
+```
+node scripts/lint_with_types --help
+```
+
+## How it works
+
+Type-aware rules are run by [oxlint](https://oxc.rs/docs/guide/usage/linter.html) in `--type-aware` mode, which delegates to [tsgolint](https://github.com/oxc-project/tsgolint), a Go port of the type-aware `typescript-eslint` rules running on `typescript-go`. It builds a TypeScript program for every `tsconfig.json` in the repo and lints all projects in parallel in a single process.
+
+The `no-floating-promises` scope is expressed as globs relative to each TypeScript project directory. `node scripts/lint_with_types` expands those globs against every project in `TS_PROJECTS` into a repo-root oxlint config (`.oxlintrc.with_types.json`, deleted after the run) so that a file is checked exactly when the project owning it selects it.
+
+Full-repo runs build every TypeScript program concurrently and need tens of GB of memory, which is why CI runs this step on a large agent. Locally, prefer scoping to one project with `--project path/to/tsconfig.json`, which runs in about a second.
+
+## How do I customize the rules for my plugin?
+
+We don't support that yet and are trying to come up with a way that supports some amount of customizability without support for 200+ unique configurations based on which directory you're in and thousands of `// oxlint-disable-next-line`s all over the repo because rules are incorrectly managed.

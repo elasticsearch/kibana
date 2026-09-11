@@ -7,6 +7,4 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
-export { pickFilesToLint } from './pick_files_to_lint';
-export { lintFiles } from './lint_files';
-export { eslintBinPath } from './eslint_bin_path';
+export { runLintWithTypes } from './run_lint_with_types';
