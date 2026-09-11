@@ -384,4 +384,15 @@ describe('getMonitorSchedule', () => {
     const existingSchedule = { number: '15', unit: ScheduleUnit.MINUTES };
     expect(getMonitorSchedule(existingSchedule)).toEqual(existingSchedule);
   });
+
+  it('should coerce a numeric object number to a string', () => {
+    expect(getMonitorSchedule({ number: 3, unit: ScheduleUnit.MINUTES } as any)).toEqual({
+      number: '3',
+      unit: ScheduleUnit.MINUTES,
+    });
+    expect(getMonitorSchedule({ number: 10, unit: ScheduleUnit.SECONDS } as any)).toEqual({
+      number: '10',
+      unit: ScheduleUnit.SECONDS,
+    });
+  });
 });

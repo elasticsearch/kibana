@@ -275,6 +275,31 @@ paths:
                     "inline_script": "step('Go to https://google.com.co', () => page.goto('https://www.google.com'))",
                     "locations": ["united_kingdom"]
                   }
+              postSyntheticMonitorsRequestExample5:
+                summary: HTTP monitor with a 10-second schedule
+                description: Create an HTTP monitor that runs every 10 seconds.
+                value: |-
+                  {
+                    "type": "http",
+                    "name": "Website Availability",
+                    "url": "https://example.com",
+                    "locations": ["united_kingdom"],
+                    "schedule": "10s"
+                  }
+              postSyntheticMonitorsRequestExample6:
+                summary: HTTP monitor with an object schedule
+                description: Create an HTTP monitor using the saved-object schedule form.
+                value: |-
+                  {
+                    "type": "http",
+                    "name": "Website Availability",
+                    "url": "https://example.com",
+                    "locations": ["united_kingdom"],
+                    "schedule": {
+                      "number": "10",
+                      "unit": "s"
+                    }
+                  }
       responses:
         '200':
           description: >
@@ -1302,6 +1327,47 @@ paths:
           description: Monitor not found.
 components:
   schemas:
+    monitorSchedule:
+      title: Monitor schedule
+      type: object
+      additionalProperties: false
+      required:
+        - number
+        - unit
+      properties:
+        number:
+          type: string
+          description: >
+            Interval magnitude as a string (for example, `"10"`).
+            Numeric values are coerced to a string at runtime.
+        unit:
+          type: string
+          enum:
+            - m
+            - s
+          description: >
+            Interval unit. `m` is minutes; `s` is seconds.
+            When `unit` is `m`, `number` must be one of `1`, `2`, `3`, `5`, `10`, `15`, `20`, `30`, `60`, `120`, or `240`.
+            When `unit` is `s`, `number` must be `10` or `30`.
+    monitorScheduleRequest:
+      title: Monitor schedule request
+      description: >
+        How often the monitor runs.
+        Minutes may be sent as a number (or numeric string).
+        Sub-minute intervals are the strings `10s` and `30s`.
+        The saved-object form `{ number, unit }` is also accepted.
+        GET responses always return the object form.
+        The default is `3` minutes for HTTP, TCP, and ICMP monitors and `10` minutes for browser monitors.
+      oneOf:
+        - type: number
+          enum: [1, 2, 3, 5, 10, 15, 20, 30, 60, 120, 240]
+          description: The monitor's schedule in minutes.
+        - type: string
+          enum:
+            - "10s"
+            - "30s"
+          description: Sub-minute intervals.
+        - $ref: "#/components/schemas/monitorSchedule"
     commonMonitorFields:
       title: Common monitor fields
       type: object
@@ -1367,12 +1433,7 @@ components:
             If the result of the retest is also "down", an error will be created and if configured, an alert sent. The monitor will then resume running according to the defined schedule.
             Using `retest_on_failure` can reduce noise related to transient problems.
         schedule:
-          type: number
-          description: >
-            The monitor's schedule in minutes.
-            Supported values are `1`, `3`, `5`, `10`, `15`, `30`, `60`, `120`, and `240`.
-            The default value is `3` minutes for HTTP, TCP, and ICMP monitors.
-            The default value is `10` minutes for Browser monitors.
+          $ref: "#/components/schemas/monitorScheduleRequest"
         service.name:
           type: string
           description: The APM service name.

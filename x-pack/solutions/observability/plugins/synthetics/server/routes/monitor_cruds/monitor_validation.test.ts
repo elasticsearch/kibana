@@ -251,6 +251,44 @@ describe('validateMonitor', () => {
       });
     });
 
+    it(`when schedule unit is seconds but the interval is not allowed`, () => {
+      const result = validateMonitor(
+        {
+          ...testICMPFields,
+          schedule: {
+            number: '5',
+            unit: ScheduleUnit.SECONDS,
+          },
+        } as unknown as MonitorFields,
+        'default'
+      );
+      expect(result).toMatchObject({
+        valid: false,
+        reason: 'Monitor schedule is invalid',
+        details:
+          'Invalid schedule 5s supplied to monitor configuration. Supported schedule values in seconds are 10s, 30s',
+      });
+    });
+
+    it(`when schedule unit is seconds and the interval is 20s`, () => {
+      const result = validateMonitor(
+        {
+          ...testICMPFields,
+          schedule: {
+            number: '20',
+            unit: ScheduleUnit.SECONDS,
+          },
+        } as unknown as MonitorFields,
+        'default'
+      );
+      expect(result).toMatchObject({
+        valid: false,
+        reason: 'Monitor schedule is invalid',
+        details:
+          'Invalid schedule 20s supplied to monitor configuration. Supported schedule values in seconds are 10s, 30s',
+      });
+    });
+
     it(`when timeout is not valid`, () => {
       const result = validateMonitor(
         {
@@ -307,6 +345,44 @@ describe('validateMonitor', () => {
   });
 
   describe('should validate', () => {
+    it('when schedule is an allowed seconds interval', () => {
+      for (const number of ['10', '30']) {
+        const testMonitor = {
+          ...testICMPFields,
+          schedule: {
+            number,
+            unit: ScheduleUnit.SECONDS,
+          },
+        } as MonitorFields;
+        const result = validateMonitor(testMonitor, 'default');
+        expect(result).toMatchObject({
+          valid: true,
+          reason: '',
+          details: '',
+          payload: testMonitor,
+        });
+      }
+    });
+
+    it('when schedule is 2 or 20 minutes', () => {
+      for (const number of ['2', '20']) {
+        const testMonitor = {
+          ...testICMPFields,
+          schedule: {
+            number,
+            unit: ScheduleUnit.MINUTES,
+          },
+        } as MonitorFields;
+        const result = validateMonitor(testMonitor, 'default');
+        expect(result).toMatchObject({
+          valid: true,
+          reason: '',
+          details: '',
+          payload: testMonitor,
+        });
+      }
+    });
+
     it('when browser timeout is less than 30 seconds with only public locations', () => {
       const testMonitor = {
         ...testBrowserFields,

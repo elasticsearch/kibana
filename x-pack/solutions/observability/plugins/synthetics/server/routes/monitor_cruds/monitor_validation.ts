@@ -30,12 +30,14 @@ import {
   MonitorTypeCodec,
   MonitorTypeEnum,
   ProjectMonitorCodec,
+  ScheduleUnit,
   type SyntheticsPrivateLocations,
   TCPFieldsCodec,
 } from '../../../common/runtime_types';
 
 import {
   ALLOWED_SCHEDULES_IN_MINUTES,
+  ALLOWED_SCHEDULES_IN_SECONDS,
   DEFAULT_FIELDS,
   HEARTBEAT_BROWSER_MONITOR_TIMEOUT_OVERHEAD_SECONDS,
 } from '../../../common/constants/monitor_defaults';
@@ -129,11 +131,12 @@ export function validateMonitor(monitorFields: MonitorFields, spaceId: string): 
     }
   }
 
-  if (!ALLOWED_SCHEDULES_IN_MINUTES.includes(monitorFields[ConfigKey.SCHEDULE].number)) {
+  const schedule = monitorFields[ConfigKey.SCHEDULE];
+  if (!isAllowedMonitorSchedule(schedule)) {
     return {
       valid: false,
       reason: INVALID_SCHEDULE_ERROR,
-      details: INVALID_SCHEDULE_DETAILS(monitorFields[ConfigKey.SCHEDULE].number),
+      details: getInvalidScheduleDetails(schedule),
       payload: monitorFields,
     };
   }
@@ -520,6 +523,57 @@ const INVALID_SCHEDULE_DETAILS = (schedule: string) =>
       allowedSchedulesInMinutes: ALLOWED_SCHEDULES_IN_MINUTES.join(', '),
     },
   });
+
+const INVALID_SCHEDULE_SECONDS_DETAILS = (schedule: string) =>
+  i18n.translate('xpack.synthetics.server.monitors.invalidScheduleSecondsErrorMessage', {
+    defaultMessage:
+      'Invalid schedule {schedule} supplied to monitor configuration. Supported schedule values in seconds are {allowedSchedulesInSeconds}',
+    values: {
+      schedule,
+      allowedSchedulesInSeconds: ALLOWED_SCHEDULES_IN_SECONDS.join(', '),
+    },
+  });
+
+const INVALID_SCHEDULE_UNIT_DETAILS = (unit: string) =>
+  i18n.translate('xpack.synthetics.server.monitors.invalidScheduleUnitErrorMessage', {
+    defaultMessage:
+      'Invalid schedule unit {unit} supplied to monitor configuration. Supported units are m and s.',
+    values: {
+      unit,
+    },
+  });
+
+const scheduleNumberAsString = (schedule: MonitorFields['schedule']): string => {
+  const numberValue = schedule.number as unknown;
+  return typeof numberValue === 'number' ? `${numberValue}` : String(numberValue ?? '');
+};
+
+const isAllowedMonitorSchedule = (schedule: MonitorFields['schedule']): boolean => {
+  const number = scheduleNumberAsString(schedule);
+  const { unit } = schedule;
+  if (!number || !unit) {
+    return false;
+  }
+  if (unit === ScheduleUnit.MINUTES) {
+    return ALLOWED_SCHEDULES_IN_MINUTES.includes(number);
+  }
+  if (unit === ScheduleUnit.SECONDS) {
+    return ALLOWED_SCHEDULES_IN_SECONDS.includes(`${number}s`);
+  }
+  return false;
+};
+
+const getInvalidScheduleDetails = (schedule: MonitorFields['schedule']): string => {
+  const number = scheduleNumberAsString(schedule);
+  const { unit } = schedule;
+  if (unit === ScheduleUnit.MINUTES) {
+    return INVALID_SCHEDULE_DETAILS(number);
+  }
+  if (unit === ScheduleUnit.SECONDS) {
+    return INVALID_SCHEDULE_SECONDS_DETAILS(`${number}s`);
+  }
+  return INVALID_SCHEDULE_UNIT_DETAILS(String(unit ?? ''));
+};
 
 const INVALID_SCHEMA_ERROR = (type: string) =>
   i18n.translate('xpack.synthetics.server.monitors.invalidSchemaError', {

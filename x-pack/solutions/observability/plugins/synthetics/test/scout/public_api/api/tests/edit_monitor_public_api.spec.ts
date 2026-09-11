@@ -166,5 +166,21 @@ apiTest.describe(
         })
       );
     });
+
+    apiTest('can set schedule to 2 minutes', async ({ apiClient }) => {
+      const res = await editMonitor(apiClient, editorHeaders, monitorId, { schedule: 2 });
+      expect((res.body as { schedule: unknown }).schedule).toStrictEqual({
+        number: '2',
+        unit: 'm',
+      });
+    });
+
+    apiTest('can set schedule to 20 minutes', async ({ apiClient }) => {
+      const res = await editMonitor(apiClient, editorHeaders, monitorId, { schedule: 20 });
+      expect((res.body as { schedule: unknown }).schedule).toStrictEqual({
+        number: '20',
+        unit: 'm',
+      });
+    });
   }
 );

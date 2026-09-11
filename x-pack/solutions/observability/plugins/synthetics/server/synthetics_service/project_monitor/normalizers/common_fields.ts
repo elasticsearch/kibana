@@ -204,7 +204,11 @@ export const getMonitorSchedule = (
       unit: ScheduleUnit.MINUTES,
     };
   }
-  return schedule;
+  const numberValue = schedule.number as unknown;
+  return {
+    ...schedule,
+    number: typeof numberValue === 'number' ? `${numberValue}` : schedule.number,
+  };
 };
 
 export const LocationsMap: Record<string, string> = {

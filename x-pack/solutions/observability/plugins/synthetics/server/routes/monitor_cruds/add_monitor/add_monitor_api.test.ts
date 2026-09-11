@@ -162,7 +162,7 @@ describe('AddNewMonitorsPublicAPI', () => {
       } as any,
       {} as any
     );
-    expect(result.schedule).toEqual({ number: 3, unit: 'm' });
+    expect(result.schedule).toEqual({ number: '3', unit: 'm' });
   });
 
   describe('normalizeMonitor defaults', () => {

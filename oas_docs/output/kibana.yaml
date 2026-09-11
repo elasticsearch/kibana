@@ -81456,6 +81456,31 @@ paths:
                     "inline_script": "step('Go to https://google.com.co', () => page.goto('https://www.google.com'))",
                     "locations": ["united_kingdom"]
                   }
+              postSyntheticMonitorsRequestExample5:
+                description: Create an HTTP monitor that runs every 10 seconds.
+                summary: HTTP monitor with a 10-second schedule
+                value: |-
+                  {
+                    "type": "http",
+                    "name": "Website Availability",
+                    "url": "https://example.com",
+                    "locations": ["united_kingdom"],
+                    "schedule": "10s"
+                  }
+              postSyntheticMonitorsRequestExample6:
+                description: Create an HTTP monitor using the saved-object schedule form.
+                summary: HTTP monitor with an object schedule
+                value: |-
+                  {
+                    "type": "http",
+                    "name": "Website Availability",
+                    "url": "https://example.com",
+                    "locations": ["united_kingdom"],
+                    "schedule": {
+                      "number": "10",
+                      "unit": "s"
+                    }
+                  }
             schema:
               description: |
                 The request body should contain the attributes of the monitor you want to create. The required and default fields differ depending on the monitor type.
@@ -151853,9 +151878,7 @@ components:
             Turn retesting for when a monitor fails on or off. By default, monitors are automatically retested if the monitor goes from "up" to "down". If the result of the retest is also "down", an error will be created and if configured, an alert sent. The monitor will then resume running according to the defined schedule. Using `retest_on_failure` can reduce noise related to transient problems.
           type: boolean
         schedule:
-          description: |
-            The monitor's schedule in minutes. Supported values are `1`, `3`, `5`, `10`, `15`, `30`, `60`, `120`, and `240`. The default value is `3` minutes for HTTP, TCP, and ICMP monitors. The default value is `10` minutes for Browser monitors.
-          type: number
+          $ref: '#/components/schemas/Synthetics_monitorScheduleRequest'
         service.name:
           description: The APM service name.
           type: string
@@ -152051,6 +152074,50 @@ components:
             - host
             - type
       title: ICMP monitor fields
+    Synthetics_monitorSchedule:
+      additionalProperties: false
+      properties:
+        number:
+          description: |
+            Interval magnitude as a string (for example, `"10"`). Numeric values are coerced to a string at runtime.
+          type: string
+        unit:
+          description: |
+            Interval unit. `m` is minutes; `s` is seconds. When `unit` is `m`, `number` must be one of `1`, `2`, `3`, `5`, `10`, `15`, `20`, `30`, `60`, `120`, or `240`. When `unit` is `s`, `number` must be `10` or `30`.
+          enum:
+            - m
+            - s
+          type: string
+      required:
+        - number
+        - unit
+      title: Monitor schedule
+      type: object
+    Synthetics_monitorScheduleRequest:
+      description: |
+        How often the monitor runs. Minutes may be sent as a number (or numeric string). Sub-minute intervals are the strings `10s` and `30s`. The saved-object form `{ number, unit }` is also accepted. GET responses always return the object form. The default is `3` minutes for HTTP, TCP, and ICMP monitors and `10` minutes for browser monitors.
+      oneOf:
+        - description: The monitor's schedule in minutes.
+          enum:
+            - 1
+            - 2
+            - 3
+            - 5
+            - 10
+            - 15
+            - 20
+            - 30
+            - 60
+            - 120
+            - 240
+          type: number
+        - description: Sub-minute intervals.
+          enum:
+            - 10s
+            - 30s
+          type: string
+        - $ref: '#/components/schemas/Synthetics_monitorSchedule'
+      title: Monitor schedule request
     Synthetics_monitorWarning:
       title: Monitor warning
       type: object
