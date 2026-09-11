@@ -1,0 +1,30 @@
+{
+  "name": "@kbn/vega-sandbox",
+  "version": "1.0.0",
+  "private": true,
+  "license": "Elastic License 2.0 OR AGPL-3.0-only OR SSPL-1.0",
+  "scripts": {
+    "build": "node ${REPO_ROOT:-`git rev-parse --show-toplevel`}/scripts/build_package.js $PWD --task-name target_vega_sandbox"
+  },
+  "buildSourcePaths": {
+    "include": [
+      "src/**/*",
+      "index.ts",
+      "server.ts"
+    ],
+    "exclude": [
+      "**/*.config.js",
+      "**/*.mock.*",
+      "**/*.test.*",
+      "**/*.stories.*",
+      "**/__jest_/**",
+      "**/__snapshots__/**",
+      "**/integration_tests/**",
+      "**/mocks/**",
+      "**/scripts/**",
+      "**/storybook/**",
+      "**/test_fixtures/**",
+      "**/test_helpers/**"
+    ]
+  }
+}

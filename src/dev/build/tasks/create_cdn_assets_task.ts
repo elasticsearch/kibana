@@ -112,6 +112,10 @@ export const CreateCdnAssets: Task = {
       resolve(buildSource, 'node_modules/@kbn/monaco/target_workers'),
       resolve(bundles, 'kbn-monaco')
     );
+    await copyAll(
+      resolve(buildSource, 'node_modules/@kbn/vega-sandbox/target_vega_sandbox'),
+      resolve(bundles, 'kbn-vega-sandbox')
+    );
 
     // src/core/packages/apps/server-internal/src/core_app.ts
     await copyAll(

@@ -1346,6 +1346,8 @@
     "@kbn/ux-plugin": "workspace:*",
     "@kbn/v8-profiler-examples-plugin": "workspace:*",
     "@kbn/vectordb-onboarding": "workspace:*",
+    "@kbn/vega-sandbox": "workspace:*",
+    "@kbn/vega-sandbox-example-plugin": "workspace:*",
     "@kbn/vis-default-editor-plugin": "workspace:*",
     "@kbn/vis-type-gauge-plugin": "workspace:*",
     "@kbn/vis-type-heatmap-plugin": "workspace:*",

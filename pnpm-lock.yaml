@@ -3758,6 +3758,12 @@ importers:
       '@kbn/vectordb-onboarding':
         specifier: workspace:*
         version: link:x-pack/solutions/vectordb/packages/kbn-vectordb-onboarding
+      '@kbn/vega-sandbox':
+        specifier: workspace:*
+        version: link:src/platform/packages/private/kbn-vega-sandbox
+      '@kbn/vega-sandbox-example-plugin':
+        specifier: workspace:*
+        version: link:examples/vega_sandbox_example
       '@kbn/vis-default-editor-plugin':
         specifier: workspace:*
         version: link:src/platform/plugins/private/vis_default_editor
@@ -6673,6 +6679,8 @@ importers:
 
   examples/v8_profiler_examples: {}
 
+  examples/vega_sandbox_example: {}
+
   examples/workflows_extensions_example: {}
 
   packages/kbn-api-contracts: {}
@@ -7482,6 +7490,8 @@ importers:
   src/platform/packages/private/kbn-ui-shared-deps-src: {}
 
   src/platform/packages/private/kbn-validate-oas: {}
+
+  src/platform/packages/private/kbn-vega-sandbox: {}
 
   src/platform/packages/private/kbn-workflow-graph-screenshot-cli: {}
 

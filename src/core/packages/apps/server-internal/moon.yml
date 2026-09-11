@@ -37,6 +37,7 @@ dependsOn:
   - '@kbn/core-lifecycle-server-mocks'
   - '@kbn/core-ui-settings-server'
   - '@kbn/monaco'
+  - '@kbn/vega-sandbox'
   - '@kbn/core-http-server-internal'
   - '@kbn/core-http-router-server-internal'
   - '@kbn/core-saved-objects-server-internal'

@@ -23,3 +23,7 @@ jest.doMock('@kbn/ui-shared-deps-npm', () => ({
 jest.doMock('@kbn/monaco/server', () => ({
   bundleDir: 'kbnMonacoBundleDir',
 }));
+
+jest.doMock('@kbn/vega-sandbox/server', () => ({
+  bundleDir: 'kbnVegaSandboxBundleDir',
+}));

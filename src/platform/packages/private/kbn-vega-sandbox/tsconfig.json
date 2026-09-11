@@ -1,0 +1,23 @@
+{
+  "extends": "@kbn/tsconfig-base/tsconfig.json",
+  "compilerOptions": {
+    "outDir": "target/types",
+    "types": [
+      "jest",
+      "node",
+      "@kbn/ambient-ui-types"
+    ]
+  },
+  "include": [
+    "**/*.ts",
+    "**/*.js"
+  ],
+  "exclude": [
+    "**/*.config.js",
+    "target/**/*",
+    "target_vega_sandbox/**/*"
+  ],
+  "kbn_references": [
+    "@kbn/repo-info"
+  ]
+}

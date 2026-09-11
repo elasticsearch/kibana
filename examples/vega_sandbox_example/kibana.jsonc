@@ -1,0 +1,18 @@
+{
+  "type": "plugin",
+  "id": "@kbn/vega-sandbox-example-plugin",
+  "owner": [
+    "@elastic/kibana-visualizations"
+  ],
+  "description": "Developer example that hosts @kbn/vega-sandbox in an opaque iframe.",
+  "group": "platform",
+  "visibility": "private",
+  "plugin": {
+    "id": "vegaSandboxExample",
+    "server": true,
+    "browser": true,
+    "requiredPlugins": [
+      "developerExamples"
+    ]
+  }
+}

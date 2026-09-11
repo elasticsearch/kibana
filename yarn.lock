@@ -9904,6 +9904,14 @@
   version "0.0.0"
   uid ""
 
+"@kbn/vega-sandbox-example-plugin@link:examples/vega_sandbox_example":
+  version "0.0.0"
+  uid ""
+
+"@kbn/vega-sandbox@link:src/platform/packages/private/kbn-vega-sandbox":
+  version "0.0.0"
+  uid ""
+
 "@kbn/vis-default-editor-plugin@link:src/platform/plugins/private/vis_default_editor":
   version "0.0.0"
   uid ""

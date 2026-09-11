@@ -47,6 +47,7 @@ examples/unified_tabs_examples @elastic/kibana-data-discovery
 examples/user_activity_example @elastic/kibana-core
 examples/user_profile_examples @elastic/kibana-security
 examples/v8_profiler_examples @elastic/response-ops
+examples/vega_sandbox_example @elastic/kibana-visualizations
 examples/workflows_extensions_example @elastic/workflows-eng
 packages/kbn-api-contracts @elastic/kibana-core
 packages/kbn-babel-preset @elastic/kibana-operations
@@ -452,6 +453,7 @@ src/platform/packages/private/kbn-transpose-utils @elastic/kibana-visualizations
 src/platform/packages/private/kbn-ui-shared-deps-npm @elastic/kibana-operations
 src/platform/packages/private/kbn-ui-shared-deps-src @elastic/kibana-operations
 src/platform/packages/private/kbn-validate-oas @elastic/kibana-core
+src/platform/packages/private/kbn-vega-sandbox @elastic/kibana-visualizations
 src/platform/packages/private/kbn-workflow-graph-screenshot-cli @elastic/workflows-eng
 src/platform/packages/private/kbn-workflow-step-schema-cli @elastic/workflows-eng
 src/platform/packages/private/kbn-workflow-yaml-validate-cli @elastic/workflows-eng

@@ -1,0 +1,36 @@
+tags:
+  - is-webpack-built
+tasks:
+  build-webpack:
+    command: pnpm
+    args:
+      - build
+    deps:
+      - '^:build-webpack'
+    # Bundled node_modules versions feed the hash; see src/dev/shared_deps_fingerprint
+    checks:
+      - check: fingerprint
+        script: 'cd "${MOON_WORKSPACE_ROOT:-$(git rev-parse --show-toplevel)}" && node scripts/shared_deps_fingerprint.js --moon-project src/platform/packages/private/kbn-vega-sandbox --webpack-config src/platform/packages/private/kbn-vega-sandbox/webpack.config.js'
+        hash: stdout
+    inputs:
+      - '@group(src)'
+      - package.json
+      - webpack.config.js
+    outputs:
+      - /target/build/src/platform/packages/private/kbn-vega-sandbox
+  watch-webpack:
+    type: run
+    options:
+      persistent: true
+    command: pnpm
+    args:
+      - build
+      - '--watch'
+    deps:
+      - '^:build-webpack'
+    inputs:
+      - '@group(src)'
+      - package.json
+      - webpack.config.js
+    outputs:
+      - /target/build/src/platform/packages/private/kbn-vega-sandbox
