@@ -31,7 +31,7 @@ export const fillUpNewRule = (name = 'Test', description = 'Test') => {
   loadPage('app/security/rules/management');
   cy.getByTestSubj('create-new-rule').click();
   cy.getByTestSubj('stepDefineRule').within(() => {
-    cy.getByTestSubj('queryInput').first().type('_id:*{enter}');
+    cy.getByTestSubj('queryInput').first().should('be.enabled').type('_id:*{enter}');
   });
   cy.getByTestSubj('define-continue').click();
   cy.getByTestSubj('detectionEngineStepAboutRuleName').within(() => {
