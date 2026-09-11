@@ -19,6 +19,9 @@ import { RELATED_INTEGRATION } from '../../../constants';
 
 jest.mock('../../../../common/lib/kibana');
 
+// The async EuiPopover/EuiSelectable mount can exceed the default 5s budget under parallel CI load.
+jest.setTimeout(20_000);
+
 const integrations: EuiSelectableOption[] = [
   {
     'data-test-subj': 'first',
