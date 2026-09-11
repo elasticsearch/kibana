@@ -11,7 +11,6 @@ import { RELATED_ALERT_ENTITY_SOURCE_INCLUDES } from './utils/entity_utils';
 
 describe('findRelatedAlerts', () => {
   const esClient = {
-    get: jest.fn(),
     search: jest.fn(),
   } as unknown as ElasticsearchClient;
 
@@ -19,10 +18,16 @@ describe('findRelatedAlerts', () => {
     jest.clearAllMocks();
   });
 
-  it('returns empty result when no source entities are present', async () => {
-    (esClient.get as jest.Mock).mockResolvedValue({
-      _source: { 'kibana.alert.rule.name': 'Rule' },
+  const mockSourceAlert = (source?: Record<string, unknown>) => {
+    (esClient.search as jest.Mock).mockResolvedValueOnce({
+      hits: {
+        hits: source ? [{ _source: source }] : [],
+      },
     });
+  };
+
+  it('returns empty result when no source entities are present', async () => {
+    mockSourceAlert({ 'kibana.alert.rule.name': 'Rule' });
 
     const result = await findRelatedAlerts(esClient, {
       alertId: 'alert-1',
@@ -39,10 +44,7 @@ describe('findRelatedAlerts', () => {
   });
 
   it('returns alert_not_found when alert is missing and no entity shortcuts are provided', async () => {
-    (esClient.get as jest.Mock).mockRejectedValue({
-      meta: { statusCode: 404 },
-      body: { error: { type: 'document_missing_exception' } },
-    });
+    mockSourceAlert();
 
     const result = await findRelatedAlerts(esClient, {
       alertId: 'missing-alert',
@@ -55,11 +57,11 @@ describe('findRelatedAlerts', () => {
       expect(result.reason).toBe('alert_not_found');
       expect(result.message).toContain('missing-alert');
     }
-    expect(esClient.search).not.toHaveBeenCalled();
+    expect(esClient.search).toHaveBeenCalledTimes(1);
   });
 
-  it('returns search_failed when Elasticsearch returns a non-404 error', async () => {
-    (esClient.get as jest.Mock).mockRejectedValue({
+  it('returns search_failed when loading the source alert fails', async () => {
+    (esClient.search as jest.Mock).mockRejectedValueOnce({
       meta: { statusCode: 403 },
       message: 'security_exception',
     });
@@ -75,16 +77,12 @@ describe('findRelatedAlerts', () => {
       expect(result.reason).toBe('search_failed');
       expect(result.message).toContain('Failed to find related alerts');
     }
-    expect(esClient.search).not.toHaveBeenCalled();
+    expect(esClient.search).toHaveBeenCalledTimes(1);
   });
 
   it('extracts entities from nested ECS fields on the source alert', async () => {
-    (esClient.get as jest.Mock).mockResolvedValue({
-      _source: {
-        host: { name: 'host-from-alert' },
-      },
-    });
-    (esClient.search as jest.Mock).mockResolvedValue({
+    mockSourceAlert({ host: { name: 'host-from-alert' } });
+    (esClient.search as jest.Mock).mockResolvedValueOnce({
       hits: {
         total: { value: 0, relation: 'eq' },
         hits: [],
@@ -97,10 +95,12 @@ describe('findRelatedAlerts', () => {
       timeWindowHours: 24,
     });
 
-    expect(esClient.get).toHaveBeenCalledWith({
+    expect(esClient.search).toHaveBeenNthCalledWith(1, {
       index: '.alerts-security.alerts-default',
-      id: 'alert-1',
-      _source_includes: [...RELATED_ALERT_ENTITY_SOURCE_INCLUDES],
+      size: 1,
+      query: { ids: { values: ['alert-1'] } },
+      _source: [...RELATED_ALERT_ENTITY_SOURCE_INCLUDES],
+      ignore_unavailable: true,
     });
     expect(result.ok).toBe(true);
     if (result.ok) {
@@ -108,14 +108,39 @@ describe('findRelatedAlerts', () => {
     }
   });
 
-  it('merges partial entity shortcut params with alert source entities', async () => {
-    (esClient.get as jest.Mock).mockResolvedValue({
-      _source: {
-        'host.name': 'host-from-alert',
-        'user.name': 'user-from-alert',
-      },
+  it('continues with provided entities when loading the source alert fails', async () => {
+    (esClient.search as jest.Mock)
+      .mockRejectedValueOnce({
+        meta: { statusCode: 400 },
+        message: 'source alert lookup failed',
+      })
+      .mockResolvedValueOnce({
+        hits: {
+          total: { value: 0, relation: 'eq' },
+          hits: [],
+        },
+      });
+
+    const result = await findRelatedAlerts(esClient, {
+      alertId: 'alert-1',
+      alertsIndex: '.alerts-security.alerts-default',
+      timeWindowHours: 24,
+      hostNames: ['host-from-model'],
     });
-    (esClient.search as jest.Mock).mockResolvedValue({
+
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.sourceEntities.hostNames).toEqual(['host-from-model']);
+    }
+    expect(esClient.search).toHaveBeenCalledTimes(2);
+  });
+
+  it('merges partial entity shortcut params with alert source entities', async () => {
+    mockSourceAlert({
+      'host.name': 'host-from-alert',
+      'user.name': 'user-from-alert',
+    });
+    (esClient.search as jest.Mock).mockResolvedValueOnce({
       hits: {
         total: { value: 0, relation: 'eq' },
         hits: [],
@@ -137,13 +162,11 @@ describe('findRelatedAlerts', () => {
   });
 
   it('builds a bool query that excludes the source alert and matches entity terms', async () => {
-    (esClient.get as jest.Mock).mockResolvedValue({
-      _source: {
-        'host.name': 'host-a',
-        'source.ip': '10.0.0.1',
-      },
+    mockSourceAlert({
+      'host.name': 'host-a',
+      'source.ip': '10.0.0.1',
     });
-    (esClient.search as jest.Mock).mockResolvedValue({
+    (esClient.search as jest.Mock).mockResolvedValueOnce({
       hits: {
         total: { value: 0, relation: 'eq' },
         hits: [],
@@ -156,7 +179,8 @@ describe('findRelatedAlerts', () => {
       timeWindowHours: 48,
     });
 
-    expect(esClient.search).toHaveBeenCalledWith(
+    expect(esClient.search).toHaveBeenNthCalledWith(
+      2,
       expect.objectContaining({
         index: '.alerts-security.alerts-default',
         query: {
@@ -175,10 +199,8 @@ describe('findRelatedAlerts', () => {
   });
 
   it('uses token-budgeted defaults, emits truncation metadata, and includes a truncation hint in the message', async () => {
-    (esClient.get as jest.Mock).mockResolvedValue({
-      _source: { 'host.name': 'host-a' },
-    });
-    (esClient.search as jest.Mock).mockResolvedValue({
+    mockSourceAlert({ 'host.name': 'host-a' });
+    (esClient.search as jest.Mock).mockResolvedValueOnce({
       hits: {
         total: { value: 99, relation: 'eq' },
         hits: [
@@ -198,7 +220,8 @@ describe('findRelatedAlerts', () => {
       hostNames: ['host-a'],
     });
 
-    expect(esClient.search).toHaveBeenCalledWith(
+    expect(esClient.search).toHaveBeenNthCalledWith(
+      2,
       expect.objectContaining({
         size: 25,
         _source: expect.arrayContaining(['@timestamp', 'message', 'host.name']),

@@ -13,7 +13,7 @@ import {
   trimEntityValues,
   type SourceEntities,
 } from './utils/entity_utils';
-import { getErrorMessage, isElasticsearchNotFoundError } from './utils/es_errors';
+import { getErrorMessage } from './utils/es_errors';
 
 export type { SourceEntities } from './utils/entity_utils';
 
@@ -88,10 +88,19 @@ export const findRelatedAlerts = async (
     let sourceEntities: SourceEntities;
 
     if (hasProvidedEntities) {
-      const alertEntities = await getAlertSourceEntities(esClient, alertsIndex, alertId, logger);
+      let alertEntities: SourceEntities | null = null;
+      try {
+        alertEntities = await getAlertSourceEntities(esClient, alertsIndex, alertId);
+      } catch (error) {
+        logger?.warn(
+          `Failed to load source alert ${alertId} from index ${alertsIndex}; proceeding with provided entity values: ${getErrorMessage(
+            error
+          )}`
+        );
+      }
       sourceEntities = mergeSourceEntities(alertEntities, providedEntities);
     } else {
-      const alertEntities = await getAlertSourceEntities(esClient, alertsIndex, alertId, logger);
+      const alertEntities = await getAlertSourceEntities(esClient, alertsIndex, alertId);
       if (!alertEntities) {
         return {
           ok: false,
@@ -242,30 +251,20 @@ const unionEntityValues = (...valueLists: Array<string[] | undefined>): string[]
 const getAlertSourceEntities = async (
   esClient: ElasticsearchClient,
   alertsIndex: string,
-  alertId: string,
-  logger?: Logger
+  alertId: string
 ): Promise<SourceEntities | null> => {
-  try {
-    const alertResult = await esClient.get({
-      index: alertsIndex,
-      id: alertId,
-      _source_includes: [...RELATED_ALERT_ENTITY_SOURCE_INCLUDES],
-    });
+  const searchResult = await esClient.search<Record<string, unknown>>({
+    index: alertsIndex,
+    size: 1,
+    query: { ids: { values: [alertId] } },
+    _source: [...RELATED_ALERT_ENTITY_SOURCE_INCLUDES],
+    ignore_unavailable: true,
+  });
 
-    const alertSource = alertResult._source as Record<string, unknown> | undefined;
-    if (!alertSource) {
-      return null;
-    }
-
-    return extractSourceEntitiesFromAlert(alertSource);
-  } catch (error) {
-    if (isElasticsearchNotFoundError(error)) {
-      return null;
-    }
-
-    logger?.error(
-      `Failed to load source alert ${alertId} from index ${alertsIndex}: ${getErrorMessage(error)}`
-    );
-    throw error;
+  const alertSource = searchResult.hits.hits[0]?._source;
+  if (!alertSource) {
+    return null;
   }
+
+  return extractSourceEntitiesFromAlert(alertSource);
 };
