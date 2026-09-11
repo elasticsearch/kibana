@@ -6,12 +6,13 @@
  */
 
 import type { RoleApiCredentials } from '@kbn/scout-oblt';
+import { tags } from '@kbn/scout-oblt';
 import { expect } from '@kbn/scout-oblt/api';
 import { apiTest, testData } from '../../fixtures';
 import { stripInspect } from '../../fixtures/helpers/expect_fixture_eql';
 import { makeChecksWithStatus, getChecksDateRange } from '../../fixtures/helpers/make_checks';
 
-apiTest.describe('snapshot count', { tag: '@local-stateful-classic' }, () => {
+apiTest.describe('snapshot count', { tag: tags.stateful.classic }, () => {
   let adminCredentials: RoleApiCredentials;
 
   apiTest.beforeAll(async ({ requestAuth, esArchiver, esClient }) => {

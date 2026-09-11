@@ -8,6 +8,7 @@
 import { v4 as uuidv4 } from 'uuid';
 import { expect } from '@kbn/scout-oblt/api';
 import type { ApiClientFixture } from '@kbn/scout-oblt';
+import { tags } from '@kbn/scout-oblt';
 import {
   apiTest,
   mergeSyntheticsApiHeaders,
@@ -40,7 +41,7 @@ interface ListedMonitor {
  */
 apiTest.describe(
   'ListMonitorsAPI useLogicalAndFor parameter',
-  { tag: ['@local-stateful-classic', '@local-serverless-observability_complete'] },
+  { tag: [...tags.stateful.classic, ...tags.serverless.observability.complete] },
   () => {
     let editorHeaders: Record<string, string>;
     let firstLocation: ScoutPrivateLocation;

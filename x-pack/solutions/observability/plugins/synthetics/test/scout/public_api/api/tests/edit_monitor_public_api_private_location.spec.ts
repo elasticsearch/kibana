@@ -8,6 +8,7 @@
 import { v4 as uuidv4 } from 'uuid';
 import { omit } from 'lodash';
 import { expect } from '@kbn/scout-oblt/api';
+import { tags } from '@kbn/scout-oblt';
 import { DEFAULT_FIELDS } from '../../../../../common/constants/monitor_defaults';
 import { LOCATION_REQUIRED_ERROR } from '../../../../../server/routes/monitor_cruds/monitor_validation';
 import type { ScoutPrivateLocation } from '../../../common/services/synthetics_private_location_api_service';
@@ -35,7 +36,7 @@ import {
 apiTest.describe(
   'EditMonitorsPublicAPI - Private Location',
   {
-    tag: ['@local-stateful-classic', '@local-serverless-observability_complete'],
+    tag: [...tags.stateful.classic, ...tags.serverless.observability.complete],
   },
   () => {
     const defaultFields = DEFAULT_FIELDS.http;

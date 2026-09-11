@@ -8,7 +8,7 @@
 import { COMPARATORS } from '@kbn/alerting-comparators';
 import { OBSERVABILITY_THRESHOLD_RULE_TYPE_ID } from '@kbn/rule-data-utils';
 import type { ApiClientFixture } from '@kbn/scout-oblt';
-import { apiTest } from '@kbn/scout-oblt';
+import { apiTest, tags } from '@kbn/scout-oblt';
 import { expect } from '@kbn/scout-oblt/api';
 import { Aggregators } from '../../../../common/custom_threshold_rule/types';
 import { ALERTS_API_URLS } from '../../../../common/constants';
@@ -110,7 +110,7 @@ apiTest.describe(
   'Observability related dashboards',
   // Local-only (no `@cloud-*`): the source FTR was `skipCloud` + `skipMKI`, and
   // the data-forge ingest + alert-firing wait is too heavy/slow for Cloud/MKI.
-  { tag: ['@local-stateful-classic', '@local-serverless-observability_complete'] },
+  { tag: [...tags.local.stateful.classic, ...tags.local.serverless.observability.complete] },
   () => {
     let headers: Record<string, string>;
     let ruleId: string;

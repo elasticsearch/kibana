@@ -7,6 +7,7 @@
 
 import { v4 as uuidv4 } from 'uuid';
 import { expect } from '@kbn/scout-oblt/api';
+import { tags } from '@kbn/scout-oblt';
 import { formatKibanaNamespace } from '../../../../../common/formatters';
 import {
   apiTest,
@@ -44,7 +45,7 @@ interface ServiceLocation {
  *
  * `@local-stateful-classic` only: the FTR original was tagged `skipCloud`.
  */
-apiTest.describe('PrivateLocationAddMonitor', { tag: ['@local-stateful-classic'] }, () => {
+apiTest.describe('PrivateLocationAddMonitor', { tag: tags.local.stateful.classic }, () => {
   let editorHeaders: Record<string, string>;
   let privateLocation: ScoutPrivateLocation;
   let spaceId: string;

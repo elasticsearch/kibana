@@ -9,6 +9,7 @@ import crypto from 'crypto';
 import moment from 'moment';
 import { v4 as uuidv4 } from 'uuid';
 import { expect } from '@kbn/scout-oblt/ui';
+import { tags } from '@kbn/scout-oblt';
 import { test, testData } from '../fixtures';
 
 const { DYNAMIC_SETTINGS_DEFAULTS } = testData;
@@ -86,7 +87,7 @@ const UPTIME_ROLE = {
 };
 
 // Failing: See https://github.com/elastic/kibana/issues/270114
-test.describe.skip('Uptime certificates', { tag: ['@local-stateful-classic'] }, () => {
+test.describe.skip('Uptime certificates', { tag: tags.stateful.classic }, () => {
   test.setTimeout(180_000);
 
   test.beforeAll(async ({ esArchiver, kbnClient }) => {

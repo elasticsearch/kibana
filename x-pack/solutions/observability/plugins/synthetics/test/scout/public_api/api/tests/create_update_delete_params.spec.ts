@@ -9,6 +9,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { pick } from 'lodash';
 import { expect } from '@kbn/scout-oblt/api';
 import type { KbnClient, KibanaRole } from '@kbn/scout-oblt';
+import { tags } from '@kbn/scout-oblt';
 import { apiTest, mergeSyntheticsApiHeaders } from '../../../common/fixtures';
 import {
   bulkDeleteParams,
@@ -115,7 +116,7 @@ interface ParamBody {
  */
 apiTest.describe(
   'AddEditParams',
-  { tag: ['@local-stateful-classic', '@local-serverless-observability_complete'] },
+  { tag: [...tags.local.stateful.classic, ...tags.local.serverless.observability.complete] },
   () => {
     let adminHeaders: Record<string, string>;
     let editorHeaders: Record<string, string>;

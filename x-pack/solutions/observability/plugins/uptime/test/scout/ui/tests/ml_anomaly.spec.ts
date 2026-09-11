@@ -6,9 +6,10 @@
  */
 
 import { expect } from '@kbn/scout-oblt/ui';
+import { tags } from '@kbn/scout-oblt';
 import { test, testData } from '../fixtures';
 
-test.describe('Uptime ML anomaly', { tag: ['@local-stateful-classic'] }, () => {
+test.describe('Uptime ML anomaly', { tag: tags.stateful.classic }, () => {
   const dateStart = '2019-09-10T12:40:08.078Z';
   const dateEnd = '2019-09-11T19:40:08.078Z';
   const monitorId = '0000-intermittent';

@@ -10,6 +10,7 @@ import { v4 as uuidv4 } from 'uuid';
 import type { PackagePolicy } from '@kbn/fleet-plugin/common';
 import { expect } from '@kbn/scout-oblt/api';
 import type { ApiClientFixture } from '@kbn/scout-oblt';
+import { tags } from '@kbn/scout-oblt';
 import type { ScoutPrivateLocation } from '../../../common/services/synthetics_private_location_api_service';
 import {
   apiTest,
@@ -41,7 +42,7 @@ const TEST_TIMEOUT = 5 * 60 * 1000;
 
 apiTest.describe(
   'AutoUpgradePolicies',
-  { tag: ['@local-stateful-classic', '@local-serverless-observability_complete'] },
+  { tag: [...tags.stateful.classic, ...tags.serverless.observability.complete] },
   () => {
     const LOWER_VERSION = '1.1.1';
 

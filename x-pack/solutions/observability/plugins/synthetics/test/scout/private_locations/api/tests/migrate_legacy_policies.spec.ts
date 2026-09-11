@@ -9,6 +9,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { ALL_SPACES_ID } from '@kbn/spaces-plugin/common/constants';
 import { expect } from '@kbn/scout-oblt/api';
 import type { ApiClientFixture, KbnClient } from '@kbn/scout-oblt';
+import { tags } from '@kbn/scout-oblt';
 import type { ScoutPrivateLocation } from '../../../common/services/synthetics_private_location_api_service';
 import {
   apiTest,
@@ -72,7 +73,7 @@ const expectPolicyIds = (
  */
 apiTest.describe(
   'MigrateLegacyPolicies',
-  { tag: ['@local-stateful-classic', '@local-serverless-observability_complete'] },
+  { tag: [...tags.stateful.classic, ...tags.serverless.observability.complete] },
   () => {
     let editorHeaders: Record<string, string>;
     let adminHeaders: Record<string, string>;

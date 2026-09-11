@@ -6,6 +6,7 @@
  */
 
 import type { ApiClientFixture } from '@kbn/scout-oblt';
+import { tags } from '@kbn/scout-oblt';
 import { expect } from '@kbn/scout-oblt/api';
 import {
   apiTest,
@@ -37,7 +38,7 @@ interface TLSRuleInspectBody {
 apiTest.describe(
   'tlsRuleBrowserCerts',
   {
-    tag: ['@local-stateful-classic', '@local-serverless-observability_complete'],
+    tag: [...tags.stateful.classic, ...tags.serverless.observability.complete],
   },
   () => {
     let editorHeaders: Record<string, string>;

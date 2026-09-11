@@ -6,10 +6,11 @@
  */
 
 import type { RoleApiCredentials } from '@kbn/scout-oblt';
+import { tags } from '@kbn/scout-oblt';
 import { expect } from '@kbn/scout-oblt/api';
 import { apiTest, testData } from '../../fixtures';
 
-apiTest.describe('get_all_pings', { tag: '@local-stateful-classic' }, () => {
+apiTest.describe('get_all_pings', { tag: tags.stateful.classic }, () => {
   let adminCredentials: RoleApiCredentials;
 
   apiTest.beforeAll(async ({ requestAuth, esArchiver }) => {

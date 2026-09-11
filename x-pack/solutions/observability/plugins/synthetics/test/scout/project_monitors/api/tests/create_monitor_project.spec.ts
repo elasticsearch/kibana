@@ -17,6 +17,7 @@
 import { v4 as uuidv4 } from 'uuid';
 import { expect } from '@kbn/scout-oblt/api';
 import type { ApiClientFixture, KbnClient } from '@kbn/scout-oblt';
+import { tags } from '@kbn/scout-oblt';
 import {
   legacySyntheticsMonitorTypeSingle,
   syntheticsMonitorSavedObjectType,
@@ -48,7 +49,7 @@ const MONITOR_SO_TYPES = [
 
 apiTest.describe(
   'CreateProjectMonitors',
-  { tag: ['@local-stateful-classic', '@local-serverless-observability_complete'] },
+  { tag: [...tags.stateful.classic, ...tags.serverless.observability.complete] },
   () => {
     let editorHeaders: Record<string, string>;
     let privateLocations: ScoutPrivateLocation[] = [];

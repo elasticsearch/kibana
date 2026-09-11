@@ -6,10 +6,11 @@
  */
 
 import type { RoleApiCredentials } from '@kbn/scout-oblt';
+import { tags } from '@kbn/scout-oblt';
 import { expect } from '@kbn/scout-oblt/api';
 import { apiTest, testData } from '../../fixtures';
 
-apiTest.describe('pingList query', { tag: '@local-stateful-classic' }, () => {
+apiTest.describe('pingList query', { tag: tags.stateful.classic }, () => {
   let adminCredentials: RoleApiCredentials;
 
   const from = '2019-01-28T17:40:08.078Z';

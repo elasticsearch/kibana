@@ -6,6 +6,7 @@
  */
 
 import type { KbnClient } from '@kbn/scout-oblt';
+import { tags } from '@kbn/scout-oblt';
 import { expect } from '@kbn/scout-oblt/ui';
 import { test, testData } from '../fixtures';
 
@@ -21,7 +22,7 @@ const resetUptimeSettings = async (kbnClient: KbnClient) => {
     .catch(() => {});
 };
 
-test.describe('Uptime settings page', { tag: ['@local-stateful-classic'] }, () => {
+test.describe('Uptime settings page', { tag: tags.stateful.classic }, () => {
   test.beforeEach(async ({ browserAuth, pageObjects, kbnClient }) => {
     await browserAuth.loginAsPrivilegedUser();
     await resetUptimeSettings(kbnClient);

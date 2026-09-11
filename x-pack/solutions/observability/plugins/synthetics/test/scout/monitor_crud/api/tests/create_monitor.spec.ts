@@ -7,6 +7,7 @@
 
 import { v4 as uuidv4 } from 'uuid';
 import { expect } from '@kbn/scout-oblt/api';
+import { tags } from '@kbn/scout-oblt';
 import { formatKibanaNamespace } from '../../../../../common/formatters';
 import {
   apiTest,
@@ -31,7 +32,7 @@ import { httpMonitorFixture } from '../../../common/fixtures/data/http_monitor';
 apiTest.describe(
   'AddNewMonitorsUI',
   {
-    tag: ['@local-stateful-classic', '@local-serverless-observability_complete'],
+    tag: [...tags.local.stateful.classic, ...tags.local.serverless.observability.complete],
   },
   () => {
     let editorHeaders: Record<string, string>;

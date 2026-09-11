@@ -7,6 +7,7 @@
 
 import { v4 as uuidv4 } from 'uuid';
 import { expect } from '@kbn/scout-oblt/api';
+import { tags } from '@kbn/scout-oblt';
 import {
   apiTest,
   LOCAL_PUBLIC_LOCATION,
@@ -28,7 +29,7 @@ import { httpMonitorFixture } from '../../../common/fixtures/data/http_monitor';
 apiTest.describe(
   'RunTestManually',
   {
-    tag: ['@local-stateful-classic', '@local-serverless-observability_complete'],
+    tag: [...tags.stateful.classic, ...tags.serverless.observability.complete],
   },
   () => {
     let editorHeaders: Record<string, string>;

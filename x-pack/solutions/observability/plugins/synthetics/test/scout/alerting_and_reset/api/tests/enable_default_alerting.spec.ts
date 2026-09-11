@@ -8,6 +8,7 @@
 import { omit } from 'lodash';
 import { expect } from '@kbn/scout-oblt/api';
 import type { ApiClientFixture } from '@kbn/scout-oblt';
+import { tags } from '@kbn/scout-oblt';
 import { DYNAMIC_SETTINGS_DEFAULTS } from '../../../../../common/constants/settings_defaults';
 import type { ScoutPrivateLocation } from '../../../common/services/synthetics_private_location_api_service';
 import { apiTest, mergeSyntheticsApiHeaders, SYNTHETICS_API_URLS } from '../../../common/fixtures';
@@ -49,7 +50,7 @@ const OMIT_RULE_FIELDS = [
  */
 apiTest.describe(
   'EnableDefaultAlerting',
-  { tag: ['@local-stateful-classic', '@local-serverless-observability_complete'] },
+  { tag: [...tags.stateful.classic, ...tags.serverless.observability.complete] },
   () => {
     let editorHeaders: Record<string, string>;
     let privateLocation: ScoutPrivateLocation;

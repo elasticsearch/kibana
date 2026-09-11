@@ -6,6 +6,7 @@
  */
 
 import type { KbnClient } from '@kbn/scout-oblt';
+import { tags } from '@kbn/scout-oblt';
 import { expect } from '@kbn/scout-oblt/api';
 import { apiTest, KIBANA_HEADERS, SYNTHETICS_API_URLS } from '../../../common/fixtures';
 
@@ -68,7 +69,7 @@ apiTest.describe(
   'Synthetics multi-space settings',
   // Only stateful: the endpoints are gated by `!isServerless && isCCSEnabled`,
   // so they return 404 on serverless regardless of the flag.
-  { tag: ['@local-stateful-classic'] },
+  { tag: tags.stateful.classic },
   () => {
     let editorHeaders: Record<string, string>;
 

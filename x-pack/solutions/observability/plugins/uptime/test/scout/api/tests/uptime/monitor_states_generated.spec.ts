@@ -6,12 +6,13 @@
  */
 
 import type { RoleApiCredentials } from '@kbn/scout-oblt';
+import { tags } from '@kbn/scout-oblt';
 import { expect } from '@kbn/scout-oblt/api';
 import type { MonitorSummary } from '../../fixtures/helpers/runtime_types';
 import { apiTest, testData } from '../../fixtures';
 import { makeChecksWithStatus } from '../../fixtures/helpers/make_checks';
 
-apiTest.describe('monitor state scoping', { tag: '@local-stateful-classic' }, () => {
+apiTest.describe('monitor state scoping', { tag: tags.stateful.classic }, () => {
   let adminCredentials: RoleApiCredentials;
 
   const numIps = 4;

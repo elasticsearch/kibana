@@ -7,6 +7,7 @@
 
 import { v4 as uuidv4 } from 'uuid';
 import { expect } from '@kbn/scout-oblt/api';
+import { tags } from '@kbn/scout-oblt';
 import { DEFAULT_FIELDS } from '../../../../../common/constants/monitor_defaults';
 import {
   apiTest,
@@ -33,7 +34,7 @@ import {
 apiTest.describe(
   'EditMonitorsPublicAPI - Public location',
   {
-    tag: ['@local-stateful-classic', '@local-serverless-observability_complete'],
+    tag: [...tags.stateful.classic, ...tags.serverless.observability.complete],
   },
   () => {
     const defaultFields = DEFAULT_FIELDS.http;

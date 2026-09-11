@@ -6,13 +6,14 @@
  */
 
 import { expect } from '@kbn/scout-oblt/ui';
+import { tags } from '@kbn/scout-oblt';
 import { test } from '../fixtures';
 import { makeChecksWithStatus } from '../fixtures/helpers/make_checks';
 
 const NO_LOCATION_MONITOR_ID = 'location-testing-id';
 const LESS_AVAIL_MONITOR_ID = 'less-availability-monitor';
 
-test.describe('Observer location', { tag: '@local-stateful-classic' }, () => {
+test.describe('Observer location', { tag: tags.stateful.classic }, () => {
   test.beforeAll(async ({ esClient }) => {
     const mogrifyNoLocation = (d: any) => {
       if (d.observer?.geo?.location) {

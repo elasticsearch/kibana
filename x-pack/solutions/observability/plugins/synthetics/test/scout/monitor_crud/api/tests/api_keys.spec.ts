@@ -6,6 +6,7 @@
  */
 
 import { expect } from '@kbn/scout-oblt/api';
+import { tags } from '@kbn/scout-oblt';
 import { apiTest, KIBANA_HEADERS } from '../../../common/fixtures';
 
 /**
@@ -39,7 +40,7 @@ const SYNTHETICS_SERVICE_ES_PRIVILEGES = {
   run_as: [],
 } as const;
 
-apiTest.describe('ApiKeys', { tag: ['@local-stateful-classic'] }, () => {
+apiTest.describe('ApiKeys', { tag: tags.stateful.classic }, () => {
   let adminHeaders: Record<string, string>;
 
   apiTest.beforeAll(async ({ samlAuth }) => {

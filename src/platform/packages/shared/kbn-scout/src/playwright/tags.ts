@@ -88,6 +88,33 @@ export const tags = {
   },
 
   /**
+   * Location-restricted tags for suites that must not run on real Cloud/MKI
+   * (e.g. the original FTR suite was tagged `skipCloud` or `skipMKI`).
+   * Mirrors the `stateful`/`serverless` shape but filtered to `local` only.
+   */
+  local: {
+    stateful: {
+      classic: getPlaywrightTagsFor('stateful', 'classic', 'local'),
+    },
+    serverless: {
+      search: getPlaywrightTagsFor('serverless', 'search', 'local'),
+      observability: {
+        complete: getPlaywrightTagsFor('serverless', 'observability_complete', 'local'),
+        logs_essentials: getPlaywrightTagsFor(
+          'serverless',
+          'observability_logs_essentials',
+          'local'
+        ),
+      },
+      security: {
+        complete: getPlaywrightTagsFor('serverless', 'security_complete', 'local'),
+        essentials: getPlaywrightTagsFor('serverless', 'security_essentials', 'local'),
+        ease: getPlaywrightTagsFor('serverless', 'security_ease', 'local'),
+      },
+    },
+  },
+
+  /**
    * Deployment-agnostic tag set; composed of tags for:
    * - local stateful (self-managed) & Elastic Cloud hosted (ECH) - all types
    * - local serverless (mock-serverless) & Elastic Cloud projects (MKI) - only types that have a **stateful counterpart**

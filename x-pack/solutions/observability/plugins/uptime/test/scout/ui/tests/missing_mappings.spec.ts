@@ -6,11 +6,12 @@
  */
 
 import { expect } from '@kbn/scout-oblt/ui';
+import { tags } from '@kbn/scout-oblt';
 import { test, testData } from '../fixtures';
 
 const { DYNAMIC_SETTINGS_DEFAULTS } = testData;
 
-test.describe('Uptime missing mappings', { tag: ['@local-stateful-classic'] }, () => {
+test.describe('Uptime missing mappings', { tag: tags.stateful.classic }, () => {
   const testIndex = 'heartbeat-missing-mappings-test';
 
   test.beforeAll(async ({ esClient }) => {

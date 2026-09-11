@@ -8,6 +8,7 @@
 import { v4 as uuidv4 } from 'uuid';
 import { expect } from '@kbn/scout-oblt/api';
 import type { ApiClientFixture, KibanaRole } from '@kbn/scout-oblt';
+import { tags } from '@kbn/scout-oblt';
 import {
   syntheticsAppPublicRestApiRoutes,
   syntheticsAppRestApiRoutes,
@@ -99,7 +100,7 @@ const request = (
   }
 };
 
-apiTest.describe('SyntheticsAPISecurity', { tag: ['@local-stateful-classic'] }, () => {
+apiTest.describe('SyntheticsAPISecurity', { tag: tags.stateful.classic }, () => {
   let spaceId: string;
   let noAccessHeaders: Record<string, string>;
   let readHeaders: Record<string, string>;

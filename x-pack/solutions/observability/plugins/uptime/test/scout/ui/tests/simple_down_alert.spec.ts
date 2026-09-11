@@ -6,6 +6,7 @@
  */
 
 import type { KbnClient } from '@kbn/scout-oblt';
+import { tags } from '@kbn/scout-oblt';
 import { expect } from '@kbn/scout-oblt/ui';
 import { test, testData } from '../fixtures';
 
@@ -44,7 +45,7 @@ const findSimpleStatusRule = async (kbnClient: KbnClient): Promise<FoundRule | u
   return data.data.find((rule) => rule.params?.search?.includes(MONITOR_ID));
 };
 
-test.describe('SimpleDownAlert', { tag: '@local-stateful-classic' }, () => {
+test.describe('SimpleDownAlert', { tag: tags.stateful.classic }, () => {
   let connectorId: string;
 
   test.beforeAll(async ({ kbnClient }) => {

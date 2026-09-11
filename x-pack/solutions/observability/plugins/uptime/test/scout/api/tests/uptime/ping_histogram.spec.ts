@@ -6,11 +6,12 @@
  */
 
 import type { RoleApiCredentials } from '@kbn/scout-oblt';
+import { tags } from '@kbn/scout-oblt';
 import { expect } from '@kbn/scout-oblt/api';
 import { apiTest, testData } from '../../fixtures';
 import { expectFixtureEql } from '../../fixtures/helpers/expect_fixture_eql';
 
-apiTest.describe('pingHistogram', { tag: '@local-stateful-classic' }, () => {
+apiTest.describe('pingHistogram', { tag: tags.stateful.classic }, () => {
   let adminCredentials: RoleApiCredentials;
 
   const dateStart = '2019-09-11T03:31:04.380Z';

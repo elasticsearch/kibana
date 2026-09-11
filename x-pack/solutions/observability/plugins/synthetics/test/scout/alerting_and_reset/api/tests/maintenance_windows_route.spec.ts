@@ -7,6 +7,7 @@
 
 import { v4 as uuidv4 } from 'uuid';
 import type { ApiClientFixture, KbnClient, KibanaRole } from '@kbn/scout-oblt';
+import { tags } from '@kbn/scout-oblt';
 import { expect } from '@kbn/scout-oblt/api';
 import { apiTest, mergeSyntheticsApiHeaders } from '../../../common/fixtures';
 import { addMonitor } from '../../../common/fixtures/monitors';
@@ -84,7 +85,7 @@ const getMaintenanceWindows = async (
 
 apiTest.describe(
   'MaintenanceWindowsRoute',
-  { tag: ['@local-stateful-classic', '@local-serverless-observability_complete'] },
+  { tag: [...tags.stateful.classic, ...tags.serverless.observability.complete] },
   () => {
     let readHeaders: Record<string, string>;
     let adminHeaders: Record<string, string>;

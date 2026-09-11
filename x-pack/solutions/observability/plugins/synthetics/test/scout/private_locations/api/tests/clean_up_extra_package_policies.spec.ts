@@ -7,6 +7,7 @@
 
 import { v4 as uuidv4 } from 'uuid';
 import { expect } from '@kbn/scout-oblt/api';
+import { tags } from '@kbn/scout-oblt';
 import {
   apiTest,
   mergeSyntheticsApiHeaders,
@@ -34,7 +35,7 @@ import { httpMonitorFixture } from '../../../common/fixtures/data/http_monitor';
  */
 apiTest.describe(
   'CleanUpExtraPackagePolicies',
-  { tag: ['@local-stateful-classic', '@local-serverless-observability_complete'] },
+  { tag: [...tags.stateful.classic, ...tags.serverless.observability.complete] },
   () => {
     let editorHeaders: Record<string, string>;
     let adminHeaders: Record<string, string>;
