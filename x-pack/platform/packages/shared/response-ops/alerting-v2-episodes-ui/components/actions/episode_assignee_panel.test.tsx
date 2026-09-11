@@ -91,7 +91,6 @@ describe('EpisodeAssigneePanel', () => {
     mockSuggest.mockResolvedValue([mockJoana, mockAnt]);
     const { onApply } = renderPanel();
 
-    await userEvent.type(screen.getByPlaceholderText('Search users'), 'joana');
     await userEvent.click(await findUserOption(mockJoana.user.email!));
     // Selecting a different user before applying must not fan out extra writes.
     await userEvent.click(await findUserOption(mockAnt.user.email!));
