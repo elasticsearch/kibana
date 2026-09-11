@@ -13,7 +13,7 @@ const modelVersions = EngineDescriptorType.modelVersions as Record<
   SavedObjectsFullModelVersion
 >;
 
-/** Minimal valid v8-era descriptor. v9 accepts it unchanged via the nullable+default field. */
+/** Minimal valid v8-era descriptor. nonPriorityLogExtractionState is absent; v9 defaults it to null. */
 const BASE_DESCRIPTOR = {
   type: 'user',
   status: 'started',

@@ -133,8 +133,8 @@ export class LogsExtractionClient {
     this.extractionMode = extractionMode ?? 'single';
   }
 
-  /** Cursor patch for this client's extraction mode. The non-priority process keeps its own cursor
-   * so the two processes cannot clobber each other's resume point. */
+  /** Returns the SO update patch for this extraction mode. Each mode writes to its own cursor field
+   * so the two processes do not overwrite each other's position. */
   private cursorPatch(state: EngineLogExtractionState): Partial<EngineDescriptor> {
     return this.extractionMode === 'nonPriority'
       ? { nonPriorityLogExtractionState: state }

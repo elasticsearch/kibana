@@ -385,8 +385,8 @@ const engineDescriptorSchemaV9 = engineDescriptorSchemaV8.extends({
   nonPriorityLogExtractionState: schema.nullable(logExtractionRuntimeStateSchemaV7),
 });
 
-// Adds the non-priority process cursor. Nullable with a null default, so descriptors written by
-// version 8 need no backfill. Not queried, so no mappings addition.
+// Adds the non-priority process cursor. schema.nullable defaults absent keys to null, so no
+// backfill is needed for version 8 descriptors. Not queried, so no mappings addition.
 const version9: SavedObjectsFullModelVersion = {
   changes: [],
   schemas: {
