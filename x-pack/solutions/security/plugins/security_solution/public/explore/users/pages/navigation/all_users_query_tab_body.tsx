@@ -7,7 +7,6 @@
 
 import { getOr, noop } from 'lodash/fp';
 import React, { useEffect, useMemo, useState } from 'react';
-import { FF_ENABLE_ENTITY_STORE_V2 } from '@kbn/entity-store/public';
 
 import type { UsersComponentsQueryProps } from './types';
 
@@ -20,8 +19,8 @@ import { generateTablePaginationOptions } from '../../../components/paginated_ta
 import { useDeepEqualSelector } from '../../../../common/hooks/use_selector';
 import { usersSelectors } from '../../store';
 import { useQueryToggle } from '../../../../common/containers/query_toggle';
-import { useUiSetting } from '../../../../common/lib/kibana';
 import { useAllEntityStoreUsers } from '../../containers/users/use_all_entity_store_users';
+import { useExploreEntityStoreV2Enabled } from '../../../hooks/use_explore_entity_store_v2_enabled';
 
 const UsersTableManage = manageQuery(UsersTable);
 
@@ -37,7 +36,7 @@ export const AllUsersQueryTabBody = ({
   type,
   deleteQuery,
 }: UsersComponentsQueryProps) => {
-  const entityStoreV2Enabled = useUiSetting<boolean>(FF_ENABLE_ENTITY_STORE_V2) === true;
+  const entityStoreV2Enabled = useExploreEntityStoreV2Enabled();
   const { toggleStatus } = useQueryToggle(QUERY_ID);
   const [querySkip, setQuerySkip] = useState(skip || !toggleStatus);
   useEffect(() => {

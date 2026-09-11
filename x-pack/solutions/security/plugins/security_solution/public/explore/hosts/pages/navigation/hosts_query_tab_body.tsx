@@ -7,13 +7,12 @@
 
 import { getOr } from 'lodash/fp';
 import React, { useEffect, useState } from 'react';
-import { FF_ENABLE_ENTITY_STORE_V2 } from '@kbn/entity-store/public';
 import { useAllEntityStoreHosts, useAllHost, ID } from '../../containers/hosts';
 import type { HostsComponentsQueryProps } from './types';
-import { useUiSetting } from '../../../../common/lib/kibana';
 import { HostsTable } from '../../components/hosts_table';
 import { manageQuery } from '../../../../common/components/page/manage_query';
 import { useQueryToggle } from '../../../../common/containers/query_toggle';
+import { useExploreEntityStoreV2Enabled } from '../../../hooks/use_explore_entity_store_v2_enabled';
 
 const HostsTableManage = manageQuery(HostsTable);
 
@@ -27,7 +26,7 @@ export const HostsQueryTabBody = ({
   startDate,
   type,
 }: HostsComponentsQueryProps) => {
-  const entityStoreV2Enabled = useUiSetting<boolean>(FF_ENABLE_ENTITY_STORE_V2) === true;
+  const entityStoreV2Enabled = useExploreEntityStoreV2Enabled();
   const { toggleStatus } = useQueryToggle(ID);
   const [querySkip, setQuerySkip] = useState(skip || !toggleStatus);
   useEffect(() => {

@@ -7,22 +7,20 @@
 
 import React, { useMemo } from 'react';
 import { useEuiTheme } from '@elastic/eui';
-import { useUiSetting } from '@kbn/kibana-react-plugin/public';
-
-import { FF_ENABLE_ENTITY_STORE_V2 } from '@kbn/entity-store/public';
 
 import type { StatItems } from '../../../../components/stat_items';
 import { useSpaceId } from '../../../../../common/hooks/use_space_id';
 import { KpiBaseComponent } from '../../../../components/kpi';
 import { buildKpiTotalUsersMetricLensAttributes } from '../../../../../common/components/visualization_actions/lens_attributes/users/kpi_total_users_metric';
 import { getKpiTotalUsersAreaLensAttributes } from '../../../../../common/components/visualization_actions/lens_attributes/users/kpi_total_users_area';
+import { useExploreEntityStoreV2Enabled } from '../../../../hooks/use_explore_entity_store_v2_enabled';
 import * as i18n from './translations';
 import type { UsersKpiProps } from '../types';
 
 export const useGetUsersStatItems: () => Readonly<StatItems[]> = () => {
   const { euiTheme } = useEuiTheme();
   const spaceId = useSpaceId();
-  const entityStoreV2Enabled = useUiSetting<boolean>(FF_ENABLE_ENTITY_STORE_V2) === true;
+  const entityStoreV2Enabled = useExploreEntityStoreV2Enabled();
 
   return useMemo(
     () => [

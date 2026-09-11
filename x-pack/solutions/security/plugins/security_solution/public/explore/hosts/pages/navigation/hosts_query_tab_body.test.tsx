@@ -12,15 +12,19 @@ import { useAllEntityStoreHosts, useAllHost } from '../../containers/hosts';
 import { useQueryToggle } from '../../../../common/containers/query_toggle';
 import { HostsQueryTabBody } from './hosts_query_tab_body';
 import { HostsType } from '../../store/model';
+import { useExploreEntityStoreV2Enabled } from '../../../hooks/use_explore_entity_store_v2_enabled';
 
 jest.mock('../../containers/hosts');
 jest.mock('../../../../common/containers/query_toggle');
-jest.mock('../../../../common/lib/kibana');
+jest.mock('../../../hooks/use_explore_entity_store_v2_enabled', () => ({
+  useExploreEntityStoreV2Enabled: jest.fn(() => false),
+}));
 
 describe('Hosts query tab body', () => {
   const mockUseAllHost = useAllHost as jest.Mock;
   const mockUseAllEntityStoreHosts = useAllEntityStoreHosts as jest.Mock;
   const mockUseQueryToggle = useQueryToggle as jest.Mock;
+  const mockUseExploreEntityStoreV2Enabled = useExploreEntityStoreV2Enabled as jest.Mock;
   const defaultProps = {
     indexNames: [],
     setQuery: jest.fn(),
@@ -47,6 +51,7 @@ describe('Hosts query tab body', () => {
     };
     mockUseAllHost.mockReturnValue([false, emptyHostsArgs]);
     mockUseAllEntityStoreHosts.mockReturnValue([false, emptyHostsArgs]);
+    mockUseExploreEntityStoreV2Enabled.mockReturnValue(false);
   });
   it('toggleStatus=true, do not skip', () => {
     render(
@@ -64,5 +69,16 @@ describe('Hosts query tab body', () => {
       </TestProviders>
     );
     expect(mockUseAllHost.mock.calls[0][0].skip).toEqual(true);
+  });
+
+  it('skips legacy hosts query when entity store v2 is available', () => {
+    mockUseExploreEntityStoreV2Enabled.mockReturnValue(true);
+    render(
+      <TestProviders>
+        <HostsQueryTabBody {...defaultProps} />
+      </TestProviders>
+    );
+    expect(mockUseAllHost.mock.calls[0][0].skip).toEqual(true);
+    expect(mockUseAllEntityStoreHosts.mock.calls[0][0].skip).toEqual(false);
   });
 });

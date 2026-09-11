@@ -12,6 +12,9 @@ import { TotalUsersKpi } from '.';
 import { KpiBaseComponent } from '../../../../components/kpi';
 
 jest.mock('../../../../components/kpi');
+jest.mock('../../../../hooks/use_explore_entity_store_v2_enabled', () => ({
+  useExploreEntityStoreV2Enabled: jest.fn(() => false),
+}));
 
 describe('Users KPI', () => {
   const from = new Date('2023-12-30').toISOString();

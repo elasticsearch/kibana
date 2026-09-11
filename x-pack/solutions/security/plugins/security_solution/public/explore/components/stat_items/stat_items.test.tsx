@@ -13,6 +13,9 @@ import { TestProviders } from '../../../common/mock/test_providers';
 import { useToggleStatus } from './use_toggle_status';
 
 jest.mock('../../../common/components/visualization_actions/visualization_embeddable');
+jest.mock('../../hooks/use_explore_entity_store_v2_enabled', () => ({
+  useExploreEntityStoreV2Enabled: jest.fn(() => false),
+}));
 jest.mock('./use_toggle_status', () => ({
   useToggleStatus: jest.fn().mockReturnValue({ isToggleExpanded: true, onToggle: jest.fn() }),
 }));

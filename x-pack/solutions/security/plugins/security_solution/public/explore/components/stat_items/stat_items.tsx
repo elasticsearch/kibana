@@ -6,9 +6,7 @@
  */
 
 import { EuiFlexGroup, EuiHorizontalRule, EuiPanel } from '@elastic/eui';
-import { useUiSetting } from '@kbn/kibana-react-plugin/public';
 import React, { useMemo } from 'react';
-import { FF_ENABLE_ENTITY_STORE_V2 } from '@kbn/entity-store/public';
 import { StatItemHeader } from './stat_item_header';
 import { useToggleStatus } from './use_toggle_status';
 import type { StatItemsProps } from './types';
@@ -17,6 +15,7 @@ import { MetricEmbeddable } from './metric_embeddable';
 import { VisualizationEmbeddable } from '../../../common/components/visualization_actions/visualization_embeddable';
 import { useSpaceId } from '../../../common/hooks/use_space_id';
 import { PageScope } from '../../../data_view_manager/constants';
+import { useExploreEntityStoreV2Enabled } from '../../hooks/use_explore_entity_store_v2_enabled';
 
 export const StatItemsComponent = React.memo<StatItemsProps>(({ statItems, from, id, to }) => {
   const timerange = useMemo(
@@ -38,7 +37,7 @@ export const StatItemsComponent = React.memo<StatItemsProps>(({ statItems, from,
 
   const { isToggleExpanded, onToggle } = useToggleStatus({ id });
   const spaceId = useSpaceId();
-  const entityStoreV2Enabled = useUiSetting<boolean>(FF_ENABLE_ENTITY_STORE_V2) === true;
+  const entityStoreV2Enabled = useExploreEntityStoreV2Enabled();
 
   const kpiLensExtraOptions = useMemo(
     () => (entityStoreV2Enabled ? { entityStoreV2Enabled: true, spaceId } : undefined),
