@@ -1532,7 +1532,7 @@
     "jsdom": "20.0.1",
     "json-schema-to-ts": "3.1.1",
     "jsondiffpatch": "0.7.6",
-    "jsonwebtoken": "9.0.2",
+    "jsonwebtoken": "9.0.3",
     "jsts": "1.6.2",
     "jszip": "3.10.1",
     "just-bash": "3.0.1",
