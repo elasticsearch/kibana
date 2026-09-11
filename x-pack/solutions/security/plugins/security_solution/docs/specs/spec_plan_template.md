@@ -1,12 +1,52 @@
-# Test plan: my awesome feature <!-- omit from toc -->
+# Feature spec & test plan: my awesome feature <!-- omit from toc -->
+
+<!--
+=============================================================================
+HOW TO USE THIS TEMPLATE (delete this whole block once the spec is filled in)
+=============================================================================
+
+Think of this document as a SPEC first and a TEST PLAN second — the test plan
+(the scenarios) is a core component of the spec, not the whole thing.
+
+Written before the code, it is the source of truth for the feature:
+- It captures the assumptions, requirements, and expected behavior of the feature.
+- The scenarios below define what "done" and "correct" mean, and double as the
+  plan we validate the feature against.
+- It is a foundational artifact: reviewers use it to confirm the work matches
+  intent, and it can be used to guide implementation — including feeding AI
+  agents/skills that build the code and the tests.
+
+When to write one:
+- Any new feature.
+- Rewrites / significant reworks of an existing feature.
+
+Write it early — the earlier the better. Use it to understand scope and surface
+missing requirements before the implementation starts. Lifecycle:
+  1. Ticket assigned.
+  2. Author writes this spec/test plan and opens a PR for it.
+  3. Spec PR is reviewed and merged — this aligns everyone on scope and catches
+     missing requirements early.
+  4. Implementation PR is opened; the reviewer confirms the work aligns with
+     this spec.
+  5. Both the author and the reviewer pull down the implementation PR and do
+     exploratory testing before it merges.
+
+Call out anything that can't be covered by automated testing (see the
+"Manual and out-of-scope testing" section) so it isn't silently missed.
+Testing that typically lives outside these scenarios: performance testing and
+exploratory testing.
+
+Helpful agent skills: exploratory testing, test plan writing, and manual testing
+for bug fixes.
+-->
 
 <!-- Convey the plan's current status, e.g. are you expecting to finalize it in your PR, or later. -->
 **Status**: `in progress`. <!-- `in progress` | `done` -->
 
 ## Summary <!-- omit from toc -->
 
-<!-- Elaborate on what are we testing here, explain what the Awesome Feature is about. -->
-This is a test plan for ...
+<!-- Elaborate on what the Awesome Feature is about and what this spec covers. -->
+This is the spec and test plan for ...
 
 ## Table of contents <!-- omit from toc -->
 
@@ -28,6 +68,7 @@ https://marketplace.visualstudio.com/items?itemName=yzhang.markdown-all-in-one
     - [**Scenario: Title of scenario 1.2**](#scenario-title-of-scenario-12)
   - [Section 2](#section-2)
     - [**Scenario: Title of scenario 2.1**](#scenario-title-of-scenario-21)
+- [Manual and out-of-scope testing](#manual-and-out-of-scope-testing)
 
 ## Useful information
 
@@ -51,17 +92,27 @@ https://marketplace.visualstudio.com/items?itemName=yzhang.markdown-all-in-one
 
 ## Requirements
 
+<!--
+  This is the "spec" part of the document. Capture what the feature is and how it
+  should behave clearly enough that someone (a person or an AI agent) could build
+  and validate it from this section alone. Be explicit about the assumptions and
+  requirements the scenarios below rely on.
+-->
+
 ### Assumptions
 
 <!--
-  Mention any assumptions for the scenarios that are not explicitly stated in their steps.
+  State the assumptions the feature and its scenarios are built on, even if they
+  are not explicitly restated in each step. Being explicit here makes the scope
+  reviewable and gives implementers the context they need to build it correctly.
   For example, you could describe:
   - license assumptions: all scenarios are executed under the Basic license, unless indicated otherwise
   - RBAC assumptions: user has the required privileges to normally access the feature
   - data setup: user has certain saved objects, source events, alerts, etc in the system
+  - environment: deployment type (self-managed / serverless / ESS), scale, versions
 -->
 
-Assumptions about test environments and scenarios outlined in this test plan.
+Assumptions the feature and the scenarios in this document are built on.
 
 - Assumption 1.
 - Assumption 2.
@@ -153,3 +204,19 @@ Given ...
 When ...
 Then ...
 ```
+
+## Manual and out-of-scope testing
+
+<!--
+  Call out anything the scenarios above can't (or won't) cover with automated
+  tests, so it isn't silently missed. Expectation: both the PR author and the
+  reviewer pull down the implementation PR and do exploratory testing before it
+  merges. Typical entries:
+  - behavior that can only be validated manually / through exploratory testing
+  - performance testing
+  - anything explicitly out of scope for this spec (with a short reason)
+-->
+
+- Cannot be automated: ... (how it will be verified manually).
+- Performance testing: ...
+- Out of scope: ... (reason).
