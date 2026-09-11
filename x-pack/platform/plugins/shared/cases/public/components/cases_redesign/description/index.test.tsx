@@ -6,7 +6,7 @@
  */
 
 import React from 'react';
-import { screen, waitFor } from '@testing-library/react';
+import { fireEvent, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 import { basicCase } from '../../../containers/mock';
@@ -44,17 +44,11 @@ describe('Description', () => {
   it('hides and shows the description correctly when collapse button clicked', async () => {
     renderWithTestingProviders(<Description {...defaultProps} onUpdateField={onUpdateField} />);
 
-    await userEvent.click(await screen.findByTestId('description-collapse-icon'));
+    fireEvent.click(screen.getByTestId('description-collapse-icon'));
+    expect(screen.getByTestId('description-preview')).toHaveTextContent('Security banana Issue');
 
-    await waitFor(() => {
-      expect(screen.getByTestId('description-preview')).toHaveTextContent('Security banana Issue');
-    });
-
-    await userEvent.click(await screen.findByTestId('description-collapse-icon'));
-
-    await waitFor(() => {
-      expect(screen.queryByTestId('description-preview')).not.toBeInTheDocument();
-    });
+    fireEvent.click(screen.getByTestId('description-collapse-icon'));
+    expect(screen.queryByTestId('description-preview')).not.toBeInTheDocument();
 
     expect(await screen.findByText('Security banana Issue')).toBeInTheDocument();
   });
