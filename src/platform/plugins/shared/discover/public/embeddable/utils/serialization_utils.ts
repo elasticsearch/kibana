@@ -62,7 +62,7 @@ export const deserializeState = async ({
     // ignore the time range from the tab - only global time range + panel time range matter
     // Panel overrides replace the resolved tab's values wholesale, so an override can drop entries
     // (e.g. a removed grid column or sort field). jsonModeSettings is the exception: it partial-
-    // merges with the source, so overriding only one of hide_nulls/wrap_lines keeps the other.
+    // merges with the source, so overriding only one JSON display option keeps the others.
     const runtimeSavedSearchState = isSelectedTabDeleted
       ? {}
       : {

@@ -251,11 +251,6 @@ export function SearchEmbeddableGridComponent({
     [discoverServices.uiSettings, savedSearchQuery]
   );
 
-  const isDataTableJsonViewEnabled = useMemo(
-    () => discoverServices.discoverFeatureFlags.getDataTableJsonViewEnabled(),
-    [discoverServices.discoverFeatureFlags]
-  );
-
   return (
     <DiscoverGridEmbeddableMemoized
       {...onStateEditedProps}
@@ -294,16 +289,10 @@ export function SearchEmbeddableGridComponent({
       services={discoverServices}
       showTimeCol={showTimeCol}
       dataGridDensityState={savedSearch.density}
-      documentsDisplayModeState={
-        isDataTableJsonViewEnabled ? savedSearch.documentsDisplayMode : undefined
-      }
-      onUpdateDocumentsDisplayMode={
-        isDataTableJsonViewEnabled ? onStateEditedProps.onUpdateDocumentsDisplayMode : undefined
-      }
-      jsonModeSettingsState={isDataTableJsonViewEnabled ? savedSearch.jsonModeSettings : undefined}
-      onUpdateJsonModeSettings={
-        isDataTableJsonViewEnabled ? onStateEditedProps.onUpdateJsonModeSettings : undefined
-      }
+      documentsDisplayModeState={savedSearch.documentsDisplayMode}
+      onUpdateDocumentsDisplayMode={onStateEditedProps.onUpdateDocumentsDisplayMode}
+      jsonModeSettingsState={savedSearch.jsonModeSettings}
+      onUpdateJsonModeSettings={onStateEditedProps.onUpdateJsonModeSettings}
       enableDocumentViewer={enableDocumentViewer}
       inlineEditing={inlineEditing}
       expandedDoc={expandedDoc}

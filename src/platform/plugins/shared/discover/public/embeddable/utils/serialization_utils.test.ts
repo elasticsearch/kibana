@@ -304,7 +304,7 @@ describe('Serialization utils', () => {
         title: 'test panel title',
         ref_id: 'savedSearch',
         selected_tab_id: undefined,
-        overrides: { json_mode_settings: { wrap_lines: false } },
+        overrides: { wrap_lines: false },
       };
 
       const deserializedState = await deserializeState({

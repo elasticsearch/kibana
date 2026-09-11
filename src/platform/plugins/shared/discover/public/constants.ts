@@ -13,10 +13,4 @@ export const SEARCH_SESSION_ID_QUERY_PARAM = 'searchSessionId';
 
 export const CASCADE_LAYOUT_ENABLED_FEATURE_FLAG_KEY = 'discover.cascadeLayoutEnabled';
 
-/**
- * When enabled, Discover data table display a JSON representation of the document
- * instead of the Summary column.
- */
-export const DATA_TABLE_JSON_VIEW_FEATURE_FLAG_KEY = 'discover.dataTableJsonView';
-
 export { IS_ESQL_DEFAULT_FEATURE_FLAG_KEY } from '@kbn/discover-utils';

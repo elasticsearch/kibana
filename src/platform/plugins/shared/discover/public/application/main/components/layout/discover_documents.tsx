@@ -118,7 +118,7 @@ function DiscoverDocumentsComponent({
   const persistedDiscoverSession = useInternalStateSelector(
     (state) => state.persistedDiscoverSession
   );
-  const { dataViews, capabilities, uiSettings, uiActions, discoverFeatureFlags } = services;
+  const { dataViews, capabilities, uiSettings, uiActions } = services;
   const requestParams = useCurrentTabSelector((state) => state.dataRequestParams);
   const [
     dataSource,
@@ -518,11 +518,6 @@ function DiscoverDocumentsComponent({
     renderViewModeToggle,
   ]);
 
-  const isDataTableJsonViewEnabled = useMemo(
-    () => discoverFeatureFlags.getDataTableJsonViewEnabled(),
-    [discoverFeatureFlags]
-  );
-
   if (isDataViewLoading || (isEmptyDataResult && isDataLoading)) {
     return (
       // class is used in tests
@@ -607,16 +602,10 @@ function DiscoverDocumentsComponent({
             initialState={dataGridUiState}
             onInitialStateChange={onInitialStateChange}
             onFullScreenChange={setIsDataGridFullScreen}
-            documentsDisplayModeState={
-              isDataTableJsonViewEnabled ? documentsDisplayMode : undefined
-            }
-            onUpdateDocumentsDisplayMode={
-              isDataTableJsonViewEnabled ? onUpdateDocumentsDisplayMode : undefined
-            }
-            jsonModeSettingsState={isDataTableJsonViewEnabled ? jsonModeSettings : undefined}
-            onUpdateJsonModeSettings={
-              isDataTableJsonViewEnabled ? onUpdateJsonModeSettings : undefined
-            }
+            documentsDisplayModeState={documentsDisplayMode}
+            onUpdateDocumentsDisplayMode={onUpdateDocumentsDisplayMode}
+            jsonModeSettingsState={jsonModeSettings}
+            onUpdateJsonModeSettings={onUpdateJsonModeSettings}
           />
         </CellActionsProvider>
       </div>

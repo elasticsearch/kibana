@@ -260,13 +260,3 @@ actions:
     description: "Pin operationId for DELETE /api/dashboards/{id}"
     update:
       operationId: delete-dashboard
-
-  # Hide Discover JSON document view fields (feature-flagged).
-  # Same pattern as connectors.overlays.yaml: JSONPath + remove: true.
-  # These properties are inlined on tabs and overrides, not a single $ref.
-  - target: "$.components.schemas['Kibana_HTTP_APIs_kbn-dashboard-panel-type-discover_session']..properties.documents_display_mode"
-    description: Remove documents_display_mode — behind a feature flag
-    remove: true
-  - target: "$.components.schemas['Kibana_HTTP_APIs_kbn-dashboard-panel-type-discover_session']..properties.json_mode_settings"
-    description: Remove json_mode_settings — behind a feature flag
-    remove: true

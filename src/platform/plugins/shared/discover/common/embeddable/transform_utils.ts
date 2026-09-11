@@ -286,7 +286,7 @@ export function toDiscoverSessionPanelOverrides(
     ...(headerRowHeight && { header_row_height: fromStoredRowHeight(headerRowHeight) }),
     ...(density && { density }),
     ...(documentsDisplayMode && { documents_display_mode: documentsDisplayMode }),
-    ...(jsonModeSettings && { json_mode_settings: fromStoredJsonModeSettings(jsonModeSettings) }),
+    ...fromStoredJsonModeSettings(jsonModeSettings),
   };
 }
 
@@ -303,8 +303,8 @@ export function fromDiscoverSessionPanelOverrides(
     header_row_height: headerRowHeight,
     density,
     documents_display_mode: documentsDisplayMode,
-    json_mode_settings: jsonModeSettings,
   } = apiState;
+  const jsonModeSettings = toStoredJsonModeSettings(apiState);
   return {
     ...(sort && { sort: toStoredSort(sort) }),
     ...(columnOrder && { columns: columnOrder }),
@@ -314,30 +314,38 @@ export function fromDiscoverSessionPanelOverrides(
     ...(headerRowHeight && { headerRowHeight: toStoredHeight(headerRowHeight) }),
     ...(density && { density }),
     ...(documentsDisplayMode && { documentsDisplayMode }),
-    ...(jsonModeSettings && { jsonModeSettings: toStoredJsonModeSettings(jsonModeSettings) }),
+    ...(jsonModeSettings && { jsonModeSettings }),
     ...(Object.keys(columnSettings ?? {}).length && { grid: toStoredGrid(columnSettings) }),
   };
 }
 
 const fromStoredJsonModeSettings = (
-  jsonModeSettings: JsonModeSettings
-): NonNullable<DiscoverSessionPanelOverrides['json_mode_settings']> => ({
-  ...(jsonModeSettings.hideNulls !== undefined && { hide_nulls: jsonModeSettings.hideNulls }),
-  ...(jsonModeSettings.wrapLines !== undefined && { wrap_lines: jsonModeSettings.wrapLines }),
-  ...(jsonModeSettings.defaultRenderedNodes !== undefined && {
-    default_rendered_nodes: jsonModeSettings.defaultRenderedNodes,
-  }),
-});
+  jsonModeSettings?: JsonModeSettings
+): Pick<DiscoverSessionPanelOverrides, 'hide_nulls' | 'wrap_lines' | 'default_rendered_nodes'> => {
+  if (!jsonModeSettings) {
+    return {};
+  }
+  return {
+    ...(jsonModeSettings.hideNulls !== undefined && { hide_nulls: jsonModeSettings.hideNulls }),
+    ...(jsonModeSettings.wrapLines !== undefined && { wrap_lines: jsonModeSettings.wrapLines }),
+    ...(jsonModeSettings.defaultRenderedNodes !== undefined && {
+      default_rendered_nodes: jsonModeSettings.defaultRenderedNodes,
+    }),
+  };
+};
 
 const toStoredJsonModeSettings = (
-  jsonModeSettings: NonNullable<DiscoverSessionPanelOverrides['json_mode_settings']>
-): JsonModeSettings => ({
-  ...(jsonModeSettings.hide_nulls !== undefined && { hideNulls: jsonModeSettings.hide_nulls }),
-  ...(jsonModeSettings.wrap_lines !== undefined && { wrapLines: jsonModeSettings.wrap_lines }),
-  ...(jsonModeSettings.default_rendered_nodes !== undefined && {
-    defaultRenderedNodes: jsonModeSettings.default_rendered_nodes,
-  }),
-});
+  apiState: DiscoverSessionPanelOverrides
+): JsonModeSettings | undefined => {
+  const jsonModeSettings: JsonModeSettings = {
+    ...(apiState.hide_nulls !== undefined && { hideNulls: apiState.hide_nulls }),
+    ...(apiState.wrap_lines !== undefined && { wrapLines: apiState.wrap_lines }),
+    ...(apiState.default_rendered_nodes !== undefined && {
+      defaultRenderedNodes: apiState.default_rendered_nodes,
+    }),
+  };
+  return Object.keys(jsonModeSettings).length > 0 ? jsonModeSettings : undefined;
+};
 
 export function fromStoredGrid(
   grid: DiscoverSessionTabAttributes['grid']
