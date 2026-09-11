@@ -13,6 +13,7 @@ import {
   DEFAULT_THRESHOLD_FORM_VALUES,
   generateId,
   getAvailableMetricLabels,
+  getSeverityValidationError,
   reconcileAlertConditionMetrics,
 } from './threshold/form_types';
 import { getInvalidExpressionReferences } from './threshold/validate_metric_references';
@@ -42,6 +43,11 @@ const isThresholdFormValid = (values: ThresholdFormValues): boolean => {
     (c) => c.metric.trim() && c.threshold.length > 0
   );
   if (!hasValidCondition) return false;
+
+  // Severity only applies to a single alert condition, whose comparator it inherits.
+  if (getSeverityValidationError(values.severity, values.alertConditions[0].comparator) !== null) {
+    return false;
+  }
 
   if (values.recovery) {
     const hasValidRecovery = values.recovery.conditions.some(

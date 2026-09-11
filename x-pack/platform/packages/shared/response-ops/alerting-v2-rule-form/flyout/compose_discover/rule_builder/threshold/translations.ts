@@ -6,7 +6,7 @@
  */
 
 import { i18n } from '@kbn/i18n';
-import { Aggregation, Comparator } from './form_types';
+import { Aggregation, Comparator, type SeverityValidationError } from './form_types';
 
 export const AGGREGATION_OPTIONS = [
   {
@@ -98,6 +98,73 @@ export const CONDITION_OPERATOR_OPTIONS = [
     }),
   },
 ];
+
+export const SEVERITY_LEVEL_OPTIONS = [
+  {
+    value: 'info',
+    text: i18n.translate('xpack.alertingV2.ruleBuilder.severity.level.info', {
+      defaultMessage: 'Info',
+    }),
+  },
+  {
+    value: 'low',
+    text: i18n.translate('xpack.alertingV2.ruleBuilder.severity.level.low', {
+      defaultMessage: 'Low',
+    }),
+  },
+  {
+    value: 'medium',
+    text: i18n.translate('xpack.alertingV2.ruleBuilder.severity.level.medium', {
+      defaultMessage: 'Medium',
+    }),
+  },
+  {
+    value: 'high',
+    text: i18n.translate('xpack.alertingV2.ruleBuilder.severity.level.high', {
+      defaultMessage: 'High',
+    }),
+  },
+  {
+    value: 'critical',
+    text: i18n.translate('xpack.alertingV2.ruleBuilder.severity.level.critical', {
+      defaultMessage: 'Critical',
+    }),
+  },
+];
+
+export const SEVERITY_MODE_OPTIONS = [
+  {
+    id: 'single',
+    label: i18n.translate('xpack.alertingV2.ruleBuilder.severity.mode.single', {
+      defaultMessage: 'Single',
+    }),
+  },
+  {
+    id: 'multi',
+    label: i18n.translate('xpack.alertingV2.ruleBuilder.severity.mode.multi', {
+      defaultMessage: 'Multiple',
+    }),
+  },
+];
+
+export const SEVERITY_VALIDATION_ERRORS: Record<SeverityValidationError, string> = {
+  invalid_threshold: i18n.translate(
+    'xpack.alertingV2.ruleBuilder.severity.error.invalidThreshold',
+    {
+      defaultMessage: 'Each severity level needs a valid numeric threshold.',
+    }
+  ),
+  duplicate_level: i18n.translate('xpack.alertingV2.ruleBuilder.severity.error.duplicateLevel', {
+    defaultMessage: 'Each severity level can only be used once.',
+  }),
+  duplicate_threshold: i18n.translate(
+    'xpack.alertingV2.ruleBuilder.severity.error.duplicateThreshold',
+    { defaultMessage: 'Severity thresholds must be unique.' }
+  ),
+  threshold_order: i18n.translate('xpack.alertingV2.ruleBuilder.severity.error.thresholdOrder', {
+    defaultMessage: 'More severe levels must have more severe thresholds.',
+  }),
+};
 
 export const THRESHOLD_STEP_TITLE = i18n.translate(
   'xpack.alertingV2.ruleBuilder.threshold.stepTitle',

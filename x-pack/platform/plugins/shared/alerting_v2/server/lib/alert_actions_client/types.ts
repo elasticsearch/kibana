@@ -5,9 +5,9 @@
  * 2.0.
  */
 
+import type { AlertEventSeverity } from '@kbn/alerting-v2-schemas';
 import type {
   AlertEpisodeStatus,
-  AlertEventSeverity,
   AlertEventStatus,
 } from '../../resources/datastreams/alert_events';
 

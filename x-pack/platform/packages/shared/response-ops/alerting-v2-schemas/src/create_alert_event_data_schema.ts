@@ -14,8 +14,7 @@ import {
   MAX_FINGERPRINT_FIELDS,
   MAX_FINGERPRINT_LENGTH,
 } from './constants';
-
-export const alertEventSeveritySchema = z.enum(['info', 'low', 'medium', 'high', 'critical']);
+import { alertEventSeveritySchema } from './severity';
 
 /**
  * Same four lifecycle states as {@link ALERT_EPISODE_STATUS} / alert_events.ts.

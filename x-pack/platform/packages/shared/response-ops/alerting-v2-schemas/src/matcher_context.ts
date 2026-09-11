@@ -5,9 +5,8 @@
  * 2.0.
  */
 
-import type { z } from '@kbn/zod/v4';
 import type { AlertEpisodeStatus } from './alert_action_schema';
-import type { alertEventSeveritySchema } from './create_alert_event_data_schema';
+import type { AlertEventSeverity } from './severity';
 
 export interface MatcherContextRule {
   id: string;
@@ -20,7 +19,7 @@ export interface MatcherContext {
   group_hash: string;
   episode_id: string;
   episode_status: AlertEpisodeStatus;
-  severity?: z.infer<typeof alertEventSeveritySchema>;
+  severity?: AlertEventSeverity;
   rule?: MatcherContextRule;
   data?: Record<string, unknown>;
 }

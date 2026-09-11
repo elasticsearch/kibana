@@ -14,6 +14,7 @@ import {
   AGGREGATIONS_REQUIRING_FIELD,
   type StatDefinition,
   type AlertCondition,
+  type SeverityConfig,
   type ThresholdFormValues,
 } from './form_types';
 
@@ -114,6 +115,38 @@ const buildConditionExpr = (condition: AlertCondition): ESQLSingleAstItem => {
   ]);
 };
 
+/**
+ * Build the right-hand side of `EVAL severity = <rhs>`. Single mode emits a
+ * constant `"<level>"`; multi mode emits a `CASE(...)` evaluated from most to
+ * least severe (the least-severe level being the fallback). The WHERE clause is
+ * driven by the alert condition itself — the lowest severity level threshold is
+ * kept in sync with the condition threshold in the form (see ADR), so no query
+ * rewrite is needed here. Returns `null` when multi mode cannot be represented
+ * (range comparator or no levels).
+ */
+const buildSeverityEvalRhs = (
+  severity: SeverityConfig,
+  condition: AlertCondition
+): string | null => {
+  if (severity.mode === 'single') {
+    return `"${severity.singleLevelSeverity}"`;
+  }
+
+  const operator = COMPARATOR_OP[condition.comparator];
+  if (!operator || severity.levels.length === 0) return null;
+
+  const column = escapeField(condition.metric);
+  const [lowest, ...moreSevere] = severity.levels;
+  const branches = moreSevere
+    .slice()
+    .reverse()
+    .map((level) => `${column} ${operator} ${level.threshold}, "${level.severity}"`);
+
+  return branches.length > 0
+    ? `CASE(${branches.join(', ')}, "${lowest.severity}")`
+    : `"${lowest.severity}"`;
+};
+
 const isStatValid = (stat: StatDefinition): boolean => {
   if (!stat.label) return false;
   if (AGGREGATIONS_REQUIRING_FIELD.includes(stat.aggregation) && !stat.field) return false;
@@ -174,8 +207,16 @@ export const buildThresholdEsql = (values: ThresholdFormValues): string => {
     }
   }
 
-  // WHERE (alert conditions)
+  // WHERE (alert conditions). Severity only applies to a single condition; the
+  // lowest severity level threshold is synced to the condition in the form, so
+  // the WHERE is always built straight from the alert conditions.
   const validConditions = values.alertConditions.filter((c) => c.metric && c.threshold.length > 0);
+  const singleCondition = validConditions.length === 1 ? validConditions[0] : undefined;
+  const severityEvalRhs =
+    values.severity && singleCondition
+      ? buildSeverityEvalRhs(values.severity, singleCondition)
+      : null;
+
   if (validConditions.length > 0) {
     const conditionExprs = validConditions.map(buildConditionExpr);
     const joiner = values.conditionOperator === 'OR' ? 'or' : 'and';
@@ -183,6 +224,21 @@ export const buildThresholdEsql = (values: ThresholdFormValues): string => {
       Builder.expression.func.binary(joiner, [left, right])
     );
     commands.push(Builder.command({ name: 'where', args: [combined] }));
+  }
+
+  // EVAL severity (after the breach WHERE, so it enriches breached rows).
+  if (severityEvalRhs) {
+    const exprAst = parseFragment(severityEvalRhs);
+    if (exprAst) {
+      commands.push(
+        Builder.command({
+          name: 'eval',
+          args: [
+            Builder.expression.func.binary('=', [Builder.expression.column('severity'), exprAst]),
+          ],
+        })
+      );
+    }
   }
 
   const root = Builder.expression.query(commands);

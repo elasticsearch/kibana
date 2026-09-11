@@ -71,4 +71,34 @@ describe('threshold builder validate', () => {
 
     expect(validate!(STATE, values)).toBe(false);
   });
+
+  it('is valid with a well-formed multi-severity config', () => {
+    const values = makeValues({
+      severity: {
+        mode: 'multi',
+        singleLevelSeverity: 'high',
+        levels: [
+          { id: 'l1', severity: 'low', threshold: 100 },
+          { id: 'l2', severity: 'high', threshold: 200 },
+        ],
+      },
+    });
+
+    expect(validate!(STATE, values)).toBe(true);
+  });
+
+  it('is invalid when multi-severity thresholds are out of order', () => {
+    const values = makeValues({
+      severity: {
+        mode: 'multi',
+        singleLevelSeverity: 'high',
+        levels: [
+          { id: 'l1', severity: 'low', threshold: 200 },
+          { id: 'l2', severity: 'high', threshold: 100 },
+        ],
+      },
+    });
+
+    expect(validate!(STATE, values)).toBe(false);
+  });
 });

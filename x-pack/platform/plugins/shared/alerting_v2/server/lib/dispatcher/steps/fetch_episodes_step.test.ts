@@ -14,7 +14,7 @@ import {
   createStepLogger,
 } from '../fixtures/test_utils';
 import { EPISODE_QUERY_LIMIT } from '../queries';
-import type { AlertEventSeverity } from '../../../resources/datastreams/alert_events';
+import type { AlertEventSeverity } from '@kbn/alerting-v2-schemas';
 
 const logger = createStepLogger();
 

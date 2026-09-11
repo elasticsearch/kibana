@@ -897,6 +897,122 @@ describe('recovery round-trip', () => {
   });
 });
 
+describe('severity round-trip', () => {
+  const cpuStat = { id: 's1', label: 'cpu_avg', aggregation: Aggregation.AVG, field: 'system.cpu' };
+  const cpuCondition = { id: 'c1', metric: 'cpu_avg', comparator: Comparator.GT, threshold: [0.8] };
+
+  const stripLevelIds = (severity: NonNullable<ThresholdFormValues['severity']>) => ({
+    ...severity,
+    levels: severity.levels.map(({ id, ...rest }) => rest),
+  });
+
+  it('round-trips single severity through build and parse', () => {
+    const original = makeValues({
+      stats: [cpuStat],
+      alertConditions: [cpuCondition],
+      severity: { mode: 'single', singleLevelSeverity: 'high', levels: [] },
+    });
+
+    const query = buildThresholdEsql(original);
+    const parsed = parseThresholdEsql(query);
+
+    expect(parsed).not.toBeNull();
+    expect(parsed!.severity).toEqual({ mode: 'single', singleLevelSeverity: 'high', levels: [] });
+  });
+
+  it('round-trips multi severity through build and parse (ascending >)', () => {
+    const original = makeValues({
+      stats: [cpuStat],
+      alertConditions: [cpuCondition],
+      severity: {
+        mode: 'multi',
+        singleLevelSeverity: 'high',
+        levels: [
+          { id: 'l1', severity: 'low', threshold: 0.8 },
+          { id: 'l2', severity: 'medium', threshold: 0.9 },
+          { id: 'l3', severity: 'high', threshold: 0.95 },
+        ],
+      },
+    });
+
+    const query = buildThresholdEsql(original);
+    const parsed = parseThresholdEsql(query);
+
+    expect(parsed).not.toBeNull();
+    expect(stripLevelIds(parsed!.severity!)).toEqual({
+      mode: 'multi',
+      singleLevelSeverity: 'high',
+      levels: [
+        { severity: 'low', threshold: 0.8 },
+        { severity: 'medium', threshold: 0.9 },
+        { severity: 'high', threshold: 0.95 },
+      ],
+    });
+    expect(parsed!.alertConditions[0].threshold).toEqual([0.8]);
+  });
+
+  it('round-trips multi severity through build and parse (descending <)', () => {
+    const original = makeValues({
+      stats: [{ id: 's1', label: 'mem_free', aggregation: Aggregation.AVG, field: 'mem' }],
+      alertConditions: [
+        { id: 'c1', metric: 'mem_free', comparator: Comparator.LT, threshold: [500] },
+      ],
+      severity: {
+        mode: 'multi',
+        singleLevelSeverity: 'high',
+        levels: [
+          { id: 'l1', severity: 'low', threshold: 500 },
+          { id: 'l2', severity: 'medium', threshold: 300 },
+          { id: 'l3', severity: 'high', threshold: 100 },
+        ],
+      },
+    });
+
+    const query = buildThresholdEsql(original);
+    const parsed = parseThresholdEsql(query);
+
+    expect(parsed).not.toBeNull();
+    expect(stripLevelIds(parsed!.severity!).levels).toEqual([
+      { severity: 'low', threshold: 500 },
+      { severity: 'medium', threshold: 300 },
+      { severity: 'high', threshold: 100 },
+    ]);
+  });
+
+  it('has no severity when the query has no severity EVAL', () => {
+    const query = buildThresholdEsql(
+      makeValues({ stats: [cpuStat], alertConditions: [cpuCondition] })
+    );
+    const parsed = parseThresholdEsql(query);
+
+    expect(parsed).not.toBeNull();
+    expect(parsed!.severity).toBeUndefined();
+  });
+
+  it('does not treat a user evaluation named severity-like as severity', () => {
+    // A regular EVAL before the WHERE stays an evaluation, not severity config.
+    const original = makeValues({
+      evaluations: [{ id: 'e1', label: 'error_rate', expression: 'count / 2' }],
+      alertConditions: [
+        { id: 'c1', metric: 'error_rate', comparator: Comparator.GT, threshold: [5] },
+      ],
+      severity: { mode: 'single', singleLevelSeverity: 'critical', levels: [] },
+    });
+
+    const query = buildThresholdEsql(original);
+    const parsed = parseThresholdEsql(query);
+
+    expect(parsed).not.toBeNull();
+    expect(parsed!.evaluations).toHaveLength(1);
+    expect(parsed!.evaluations[0].label).toBe('error_rate');
+    expect(parsed!.severity).toEqual({
+      mode: 'single',
+      singleLevelSeverity: 'critical',
+      levels: [],
+    });
+  });
+});
+
 describe('parseDiscoverQueryForBuilder', () => {
   describe('returns null for unparseable queries', () => {
     it('returns null for empty string', () => {
