@@ -241,7 +241,7 @@ existing payload:
    [data source profile context](./profiles/data_source_profile.ts). A tab with no registered transform has no saved
    `tabTypeState`.
 6. Update the [Discover session API schema](/src/platform/plugins/shared/discover/server/api/schema.ts) and
-   [tab type state transform](/src/platform/plugins/shared/discover/server/api/transforms/transform_tab_type_state.ts).
+   [tab type state conversion](/src/platform/plugins/shared/discover/common/session/tab_type_state.ts).
    Map every saved field in both directions and test the Saved Object to API to Saved Object round trip.
 
 #### End-to-end example

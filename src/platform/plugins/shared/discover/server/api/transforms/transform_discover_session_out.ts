@@ -21,7 +21,7 @@ import { isDiscoverSessionEsqlTab } from '../../../common/embeddable';
 import { fromStoredTab } from '../../../common/embeddable/transform_utils';
 import type { DiscoverSessionApiData, DiscoverSessionWarning } from '../schema';
 import { transformControlPanelsOut } from './transform_control_panels';
-import { transformTabTypeStateOut } from './transform_tab_type_state';
+import { toApiTabTypeState } from '../../../common/session/tab_type_state';
 import { toApiVisContext } from '../../../common/session/vis_context';
 
 export const transformDiscoverSessionOut = (
@@ -79,7 +79,7 @@ export const transformDiscoverSessionOut = (
           }),
       };
 
-      return transformTabTypeStateOut(sessionTab, tab.attributes.tabTypeState);
+      return toApiTabTypeState(sessionTab, tab.attributes.tabTypeState);
     }),
   };
 

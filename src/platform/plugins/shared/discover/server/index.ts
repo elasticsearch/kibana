@@ -59,10 +59,12 @@ export type {
   DiscoverSessionApiMetricsTab,
   DiscoverSessionApiResponse,
   DiscoverSessionApiTab,
+  DiscoverSessionApiTabTypeState,
   DiscoverSessionApiData,
   DiscoverSessionApiDataInput,
   DiscoverSessionSanitizeResponse,
   DiscoverSessionWarning,
+  DiscoverSessionGetResponse,
 } from './api/schema';
 export type { DiscoverSessionSanitizeRequest } from './api/session_sanitize';
 

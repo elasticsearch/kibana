@@ -49,6 +49,7 @@ import type { InitialTabState } from '../../../../../plugin_imports/initial_tab_
 import { fetchData } from './tab_state';
 import { fromSavedObjectTabToTabState } from '../tab_mapping_utils';
 import { initializeAndSync, stopSyncing } from './tab_sync';
+import { assignSessionDataViewIds } from '../../utils/assign_session_data_view_ids';
 
 export const setTabs: InternalStateThunkActionCreator<
   [Parameters<typeof internalStateSlice.actions.setTabs>[0]]
@@ -398,19 +399,24 @@ export const initializeTabs = createInternalStateAsyncThunk(
         })
       : undefined;
 
+    const initialTabState = services.getScopedHistory<InitialTabState>()?.location.state;
     const initialTabsState = tabsStorageManager.loadLocally({
       userId,
       spaceId,
       persistedDiscoverSession,
       shouldClearAllTabs,
       defaultTabState: byValueEmbeddableTabState ?? DEFAULT_TAB_STATE,
+      // Assign IDs before mapping saved tabs, using the incoming link and same-session local tabs.
+      prepareSession: (session, localTabs, selectedTabId) =>
+        assignSessionDataViewIds(session, localTabs, {
+          tabId: selectedTabId ?? session.tabs[0]?.id,
+          dataViewSpec: initialTabState?.dataViewSpec,
+        }),
     });
 
     // Hand the location state over to the tab initialization before updating the URL below, which
     // discards it, so initial state such as ad hoc data view specs is passed on
-    services.initialTabStateService.capture(
-      services.getScopedHistory<InitialTabState>()?.location.state
-    );
+    services.initialTabStateService.capture(initialTabState);
 
     // Replace instead of push the tab ID to the URL on initialization in order to
     // avoid capturing a browser history entry with a potentially empty _tab state
@@ -418,14 +424,13 @@ export const initializeTabs = createInternalStateAsyncThunk(
       replace: true,
     });
 
-    dispatch(
-      setTabs({
-        ...initialTabsState,
-        updatedDiscoverSession: persistedDiscoverSession,
-      })
-    );
+    dispatch(setTabs(initialTabsState));
 
-    return { userId, spaceId, persistedDiscoverSession };
+    return {
+      userId,
+      spaceId,
+      persistedDiscoverSession: initialTabsState.updatedDiscoverSession,
+    };
   }
 );
 

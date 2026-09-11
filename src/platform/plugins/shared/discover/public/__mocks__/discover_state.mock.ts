@@ -45,7 +45,7 @@ import { createCustomizationService } from '../customizations/customization_serv
 import { createTabsStorageManager } from '../application/main/state_management/tabs_storage_manager';
 import type { DiscoverSession, DiscoverSessionTab } from '@kbn/saved-search-plugin/common';
 import { DiscoverSearchSessionManager } from '../application/main/state_management/discover_search_session';
-import type { DataView, DataViewListItem } from '@kbn/data-views-plugin/common';
+import type { DataView, DataViewListItem, DataViewSpec } from '@kbn/data-views-plugin/common';
 import { createSearchSourceMock } from '@kbn/data-plugin/public/mocks';
 import { isObject, omit } from 'lodash';
 import { getCurrentUrlState } from '../application/main/state_management/utils/cleanup_url_state';
@@ -59,6 +59,7 @@ import type { ProfileStateMap } from '../../common/context_awareness';
 interface CreateInternalStateStoreMockOptions {
   runtimeStateManager?: RuntimeStateManager;
   stateStorageContainer?: IKbnUrlStateStorage;
+  tabsStorageEnabled?: boolean;
   customizationContext?: DiscoverCustomizationContext;
   services?: DiscoverServices;
 }
@@ -80,6 +81,7 @@ export interface DiscoverStateMockParams {
 function createInternalStateStoreMock({
   runtimeStateManager,
   stateStorageContainer,
+  tabsStorageEnabled = false,
   customizationContext = mockCustomizationContext,
   services = createDiscoverServicesMock(),
 }: CreateInternalStateStoreMockOptions = {}) {
@@ -96,6 +98,7 @@ function createInternalStateStoreMock({
     urlStateStorage: stateStorageContainer,
     storage: services.storage,
     profileStateRegistry: services.profileStateRegistry,
+    enabled: tabsStorageEnabled,
   });
   const searchSessionManager = new DiscoverSearchSessionManager({
     history: services.history,
@@ -257,10 +260,12 @@ export function getDiscoverInternalStateMock({
         tabId,
         skipWaitForDataFetching,
         profileState,
+        dataViewSpec,
       }: {
         tabId: string;
         skipWaitForDataFetching?: boolean;
         profileState?: ProfileStateMap;
+        dataViewSpec?: DataViewSpec;
       }) => {
         await toolkit.switchToTab({ tabId });
 
@@ -298,7 +303,7 @@ export function getDiscoverInternalStateMock({
             initializeSingleTabParams: {
               customizationService,
               dataStateContainer,
-              dataViewSpec: undefined,
+              dataViewSpec,
               esqlControls: undefined,
               defaultUrlState: undefined,
               profileState,

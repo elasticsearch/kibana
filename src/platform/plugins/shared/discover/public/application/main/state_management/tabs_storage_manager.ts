@@ -92,7 +92,15 @@ export interface TabsStorageManager {
     persistedDiscoverSession?: DiscoverSession;
     shouldClearAllTabs?: boolean;
     defaultTabState: Omit<TabState, keyof TabItem>;
-  }) => TabsInternalStatePayload;
+    /** Prepares the returned session before mapping its tabs, using local tabs from the same session. */
+    prepareSession?: (
+      session: DiscoverSession,
+      localTabs: TabState[],
+      selectedTabId: string | undefined
+    ) => DiscoverSession;
+  }) => TabsInternalStatePayload & {
+    updatedDiscoverSession: DiscoverSession | undefined;
+  };
   getNRecentlyClosedTabs: (params: {
     previousOpenTabs: TabState[];
     previousRecentlyClosedTabs: RecentlyClosedTabState[];
@@ -417,6 +425,7 @@ export const createTabsStorageManager = ({
     persistedDiscoverSession,
     shouldClearAllTabs,
     defaultTabState,
+    prepareSession,
   }) => {
     const tabsStateFromURL = getTabsStateFromURL();
     const selectedTabId = enabled
@@ -440,13 +449,23 @@ export const createTabsStorageManager = ({
     sessionInfo.userId = userId;
     sessionInfo.spaceId = spaceId;
 
-    const persistedTabs = persistedDiscoverSession?.tabs.map((tab) =>
-      fromSavedObjectTabToTabState({ tab, profileStateRegistry })
-    );
     const previousOpenTabs = storedTabsState.openTabs.map((tab) =>
       toTabState(tab, defaultTabState)
     );
     let openTabs = shouldClearAllTabs ? [] : previousOpenTabs;
+
+    // Prepare before mapping tabs so inline views can reuse matching local IDs. Return the same
+    // prepared session below so restored tabs and the unsaved-changes baseline use consistent IDs.
+    if (persistedDiscoverSession && prepareSession) {
+      const localTabs =
+        persistedDiscoverSession.id === storedTabsState.discoverSessionId ? openTabs : [];
+      persistedDiscoverSession = prepareSession(persistedDiscoverSession, localTabs, selectedTabId);
+    }
+
+    const persistedTabs = persistedDiscoverSession?.tabs.map((tab) =>
+      fromSavedObjectTabToTabState({ tab, profileStateRegistry })
+    );
+
     if (persistedDiscoverSession?.id !== storedTabsState.discoverSessionId) {
       // if the discover session has changed, use the tabs from the session
       openTabs = persistedTabs ?? [];
@@ -466,6 +485,7 @@ export const createTabsStorageManager = ({
         return {
           allTabs: openTabs,
           selectedTabId,
+          updatedDiscoverSession: persistedDiscoverSession,
           recentlyClosedTabs: getNRecentlyClosedTabs({
             previousOpenTabs,
             previousRecentlyClosedTabs: closedTabs,
@@ -493,6 +513,7 @@ export const createTabsStorageManager = ({
         return {
           allTabs: allTabsWithNewTab,
           selectedTabId: newTab.id,
+          updatedDiscoverSession: persistedDiscoverSession,
           recentlyClosedTabs: getNRecentlyClosedTabs({
             previousOpenTabs,
             previousRecentlyClosedTabs: closedTabs,
@@ -513,6 +534,7 @@ export const createTabsStorageManager = ({
           return {
             allTabs: restoredTabs,
             selectedTabId,
+            updatedDiscoverSession: persistedDiscoverSession,
             recentlyClosedTabs: getNRecentlyClosedTabs({
               previousOpenTabs,
               previousRecentlyClosedTabs: closedTabs,
@@ -544,6 +566,7 @@ export const createTabsStorageManager = ({
     return {
       allTabs,
       selectedTabId: selectedTab.id,
+      updatedDiscoverSession: persistedDiscoverSession,
       recentlyClosedTabs: getNRecentlyClosedTabs({
         previousOpenTabs,
         previousRecentlyClosedTabs: closedTabs,

@@ -7,6 +7,5 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
-export { transformDiscoverSessionOut } from './transform_discover_session_out';
-export { transformDiscoverSessionIn } from './transform_discover_session_in';
-export { transformControlPanelsOut, transformControlPanelsIn } from './transform_control_panels';
+export { createDiscoverSessionClient, type DiscoverSessionClient } from './api_client';
+export { createSessionService, type SessionService } from './session_service';

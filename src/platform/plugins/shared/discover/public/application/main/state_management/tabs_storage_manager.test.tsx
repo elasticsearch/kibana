@@ -990,16 +990,17 @@ describe('TabsStorageManager', () => {
       tabId: mockTab2.id,
     });
 
+    const persistedDiscoverSession = {
+      id: matchingSessionId,
+      title: 'title',
+      description: 'description',
+      managed: false,
+      tabs: [],
+    };
     const loadedProps = tabsStorageManager.loadLocally({
       userId: mockUserId,
       spaceId: mockSpaceId,
-      persistedDiscoverSession: {
-        id: matchingSessionId,
-        title: 'title',
-        description: 'description',
-        managed: false,
-        tabs: [],
-      },
+      persistedDiscoverSession,
       defaultTabState: DEFAULT_TAB_STATE,
     });
 
@@ -1007,6 +1008,7 @@ describe('TabsStorageManager', () => {
       allTabs: [toRestoredTab(mockTab1), toRestoredTab(mockTab2)],
       selectedTabId: mockTab2.id,
       recentlyClosedTabs: [toRestoredTab(mockRecentlyClosedTab)],
+      updatedDiscoverSession: persistedDiscoverSession,
     });
   });
 

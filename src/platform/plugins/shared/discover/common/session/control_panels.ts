@@ -8,6 +8,7 @@
  */
 
 import { isObject } from 'lodash';
+import { ESQL_CONTROL } from '@kbn/controls-constants';
 import { convertCamelCasedKeysToSnakeCase } from '@kbn/presentation-publishing';
 import type { DiscoverSessionApiTab } from '../../server';
 
@@ -35,6 +36,26 @@ export const serializeEsqlControls = (controls: DiscoverSessionApiTab['control_p
   );
 
   return JSON.stringify(controlGroup);
+};
+
+/** Converts a controlGroupJson string to an ordered API control array, or undefined when empty. */
+export const deserializeEsqlControls = (controlGroupJson: string | undefined) => {
+  if (!controlGroupJson) {
+    return undefined;
+  }
+
+  const controls = parseControlGroupJsonEntries(controlGroupJson).map(([id, value]) => {
+    const control = convertControlGroupEntryToApi(id, value);
+
+    // Older Discover sessions used this name for ES|QL controls.
+    if (control.type === 'esqlControl') {
+      control.type = ESQL_CONTROL;
+    }
+
+    return control;
+  });
+
+  return controls.length > 0 ? controls : undefined;
 };
 
 /** Converts a possibly malformed controlGroupJson entry to an API object; the server validates its schema. */
@@ -67,3 +88,16 @@ export const getControlOrder = (control: unknown) =>
 /** Checks whether a value is a non-array object. */
 export const isRecord = (value: unknown): value is Record<string, unknown> =>
   isObject(value) && !Array.isArray(value);
+
+/** Reads controlGroupJson and sorts its entries without dropping malformed controls. */
+const parseControlGroupJsonEntries = (controlGroupJson: string) => {
+  const parsed: unknown = JSON.parse(controlGroupJson);
+
+  if (!isRecord(parsed)) {
+    throw new Error('controlGroupJson must be a JSON object');
+  }
+
+  return Object.entries(parsed).sort(
+    ([, first], [, second]) => getControlOrder(first) - getControlOrder(second)
+  );
+};

@@ -168,6 +168,8 @@ dependsOn:
   - '@kbn/core-security-server'
   - '@kbn/core-http-server'
   - '@kbn/ui-callout'
+  - '@kbn/core-http-browser'
+  - '@kbn/core-http-browser-mocks'
 tags:
   - plugin
   - prod

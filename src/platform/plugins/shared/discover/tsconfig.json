@@ -162,7 +162,9 @@
     "@kbn/use-observable",
     "@kbn/core-security-server",
     "@kbn/core-http-server",
-    "@kbn/ui-callout"
+    "@kbn/ui-callout",
+    "@kbn/core-http-browser",
+    "@kbn/core-http-browser-mocks"
   ],
   "exclude": ["target/**/*"]
 }

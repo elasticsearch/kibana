@@ -9,20 +9,21 @@
 
 import { DiscoverTabType } from '@kbn/discover-utils';
 import type { DiscoverSessionTabAttributes } from '@kbn/saved-search-plugin/server';
-import { isDiscoverSessionEsqlTab } from '../../../common/embeddable';
+import { isDiscoverSessionEsqlTab } from '../embeddable';
 import type {
   DiscoverSessionApiClassicTab,
   DiscoverSessionApiEsqlTab,
   DiscoverSessionApiTab,
   DiscoverSessionApiTabTypeState,
-} from '../schema';
+} from '../../server';
 
 type StoredTabTypeState = DiscoverSessionTabAttributes['tabTypeState'];
 type TabWithoutTypeState =
   | Omit<DiscoverSessionApiClassicTab, 'type'>
   | Omit<DiscoverSessionApiEsqlTab, 'type'>;
 
-export const transformTabTypeStateIn = (
+/** Converts API tab settings to saved state; default tabs have no type-specific state. */
+export const fromApiTabTypeState = (
   apiTabTypeState: DiscoverSessionApiTabTypeState
 ): StoredTabTypeState => {
   switch (apiTabTypeState.type) {
@@ -41,7 +42,8 @@ export const transformTabTypeStateIn = (
   }
 };
 
-export const transformTabTypeStateOut = (
+/** Adds saved tab settings to the API tab, rejecting Metrics settings on a non-ES|QL tab. */
+export const toApiTabTypeState = (
   apiTab: TabWithoutTypeState,
   tabTypeState: StoredTabTypeState
 ): DiscoverSessionApiTab => {
