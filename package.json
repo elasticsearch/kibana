@@ -295,6 +295,7 @@
     "@kbn/as-code-filters-constants": "workspace:*",
     "@kbn/as-code-filters-schema": "workspace:*",
     "@kbn/as-code-filters-transforms": "workspace:*",
+    "@kbn/as-code-import-flyout-component": "workspace:*",
     "@kbn/as-code-shared-schemas": "workspace:*",
     "@kbn/as-code-shared-telemetry": "workspace:*",
     "@kbn/as-code-shared-transforms": "workspace:*",

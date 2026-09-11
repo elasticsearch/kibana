@@ -1,0 +1,10 @@
+{
+  "type": "shared-browser",
+  "id": "@kbn/as-code-import-flyout-component",
+  "owner": [
+    "@elastic/kibana-dashboards",
+    "@elastic/kibana-discover"
+  ],
+  "group": "platform",
+  "visibility": "shared"
+}

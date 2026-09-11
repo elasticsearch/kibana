@@ -605,6 +605,9 @@ importers:
       '@kbn/as-code-filters-transforms':
         specifier: workspace:*
         version: link:src/platform/packages/shared/as-code/filters-transforms
+      '@kbn/as-code-import-flyout-component':
+        specifier: workspace:*
+        version: link:src/platform/packages/shared/as-code/import-flyout-component
       '@kbn/as-code-shared-schemas':
         specifier: workspace:*
         version: link:src/platform/packages/shared/as-code/shared-schemas
@@ -7506,6 +7509,8 @@ importers:
   src/platform/packages/shared/as-code/filters-schema: {}
 
   src/platform/packages/shared/as-code/filters-transforms: {}
+
+  src/platform/packages/shared/as-code/import-flyout-component: {}
 
   src/platform/packages/shared/as-code/shared-schemas: {}
 

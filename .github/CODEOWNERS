@@ -464,6 +464,7 @@ src/platform/packages/shared/as-code/export-flyout-component @elastic/kibana-pre
 src/platform/packages/shared/as-code/filters-constants @elastic/kibana-presentation
 src/platform/packages/shared/as-code/filters-schema @elastic/kibana-presentation
 src/platform/packages/shared/as-code/filters-transforms @elastic/kibana-presentation
+src/platform/packages/shared/as-code/import-flyout-component @elastic/kibana-dashboards @elastic/kibana-discover
 src/platform/packages/shared/as-code/shared-schemas @elastic/kibana-presentation
 src/platform/packages/shared/as-code/shared-telemetry @elastic/kibana-presentation
 src/platform/packages/shared/as-code/shared-transforms @elastic/kibana-presentation

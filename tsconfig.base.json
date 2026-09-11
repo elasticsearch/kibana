@@ -227,6 +227,8 @@
       "@kbn/as-code-filters-schema/*": ["./src/platform/packages/shared/as-code/filters-schema/*"],
       "@kbn/as-code-filters-transforms": ["./src/platform/packages/shared/as-code/filters-transforms"],
       "@kbn/as-code-filters-transforms/*": ["./src/platform/packages/shared/as-code/filters-transforms/*"],
+      "@kbn/as-code-import-flyout-component": ["./src/platform/packages/shared/as-code/import-flyout-component"],
+      "@kbn/as-code-import-flyout-component/*": ["./src/platform/packages/shared/as-code/import-flyout-component/*"],
       "@kbn/as-code-shared-schemas": ["./src/platform/packages/shared/as-code/shared-schemas"],
       "@kbn/as-code-shared-schemas/*": ["./src/platform/packages/shared/as-code/shared-schemas/*"],
       "@kbn/as-code-shared-telemetry": ["./src/platform/packages/shared/as-code/shared-telemetry"],

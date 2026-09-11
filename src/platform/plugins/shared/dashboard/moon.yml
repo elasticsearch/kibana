@@ -114,6 +114,7 @@ dependsOn:
   - '@kbn/as-code-filters-schema'
   - '@kbn/as-code-filters-transforms'
   - '@kbn/as-code-export-flyout-component'
+  - '@kbn/as-code-import-flyout-component'
   - '@kbn/scout'
   - '@kbn/core-chrome-app-menu-components'
   - '@kbn/core-chrome-app-menu'

@@ -653,6 +653,7 @@ packages:
   - 'src/platform/packages/shared/as-code/filters-constants'
   - 'src/platform/packages/shared/as-code/filters-schema'
   - 'src/platform/packages/shared/as-code/filters-transforms'
+  - 'src/platform/packages/shared/as-code/import-flyout-component'
   - 'src/platform/packages/shared/as-code/shared-schemas'
   - 'src/platform/packages/shared/as-code/shared-telemetry'
   - 'src/platform/packages/shared/as-code/shared-transforms'

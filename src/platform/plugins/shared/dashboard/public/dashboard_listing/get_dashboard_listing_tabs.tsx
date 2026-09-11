@@ -37,7 +37,9 @@ import type {
 type GetDashboardListingTabsParams = Pick<
   DashboardListingProps,
   'goToDashboard' | 'getDashboardUrl' | 'useSessionStorageIntegration' | 'initialFilter' | 'getTabs'
->;
+> & {
+  refreshListBouncer?: boolean;
+};
 
 type TabContentProps = Omit<GetDashboardListingTabsParams, 'getTabs'> & {
   parentProps: TableListTabParentProps<DashboardSavedObjectUserContent>;
@@ -55,6 +57,7 @@ const DashboardsTabContent = ({
   getDashboardUrl,
   useSessionStorageIntegration,
   initialFilter,
+  refreshListBouncer,
   parentProps,
 }: TabContentProps) => {
   const {
@@ -94,6 +97,7 @@ const DashboardsTabContent = ({
         {...tableListViewTableProps}
         onFetchSuccess={parentProps.onFetchSuccess}
         setPageDataTestSubject={parentProps.setPageDataTestSubject}
+        refreshListBouncer={refreshListBouncer}
       />
     </TableListViewKibanaProvider>
   );
@@ -105,12 +109,14 @@ export const getDashboardListingTabs = ({
   useSessionStorageIntegration,
   initialFilter,
   getTabs,
+  refreshListBouncer,
 }: GetDashboardListingTabsParams): DashboardListingTab[] => {
   const commonProps = {
     goToDashboard,
     getDashboardUrl,
     useSessionStorageIntegration,
     initialFilter,
+    refreshListBouncer,
   };
 
   const dashboardsTab: DashboardListingTab = {
