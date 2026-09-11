@@ -2,6 +2,8 @@ steps:
   - command: .buildkite/scripts/steps/functional/security_serverless_entity_analytics.sh
     label: 'Serverless Entity Analytics - Security Cypress Tests'
     branches: main
+    env:
+      SLACK_NOTIFICATIONS_JOB_CHANNEL: '#security-entity-analytics-alerts'
     agents:
       image: family/kibana-ubuntu-2404
       imageProject: elastic-images-prod
@@ -21,6 +23,8 @@ steps:
   - command: .buildkite/scripts/steps/functional/security_serverless_explore.sh
     label: 'Serverless Explore - Security Solution Cypress Tests'
     branches: main
+    env:
+      SLACK_NOTIFICATIONS_JOB_CHANNEL: '#security-threat-hunting'
     agents:
       image: family/kibana-ubuntu-2404
       imageProject: elastic-images-prod
@@ -41,6 +45,8 @@ steps:
   - command: .buildkite/scripts/steps/functional/security_serverless_investigations.sh
     label: 'Serverless Investigations - Security Solution Cypress Tests'
     branches: main
+    env:
+      SLACK_NOTIFICATIONS_JOB_CHANNEL: '#security-threat-hunting'
     agents:
       image: family/kibana-ubuntu-2404
       imageProject: elastic-images-prod
@@ -61,6 +67,8 @@ steps:
   - command: .buildkite/scripts/steps/functional/security_serverless_rule_management.sh
     label: 'Serverless Rule Management - Security Solution Cypress Tests'
     branches: main
+    env:
+      SLACK_NOTIFICATIONS_JOB_CHANNEL: '#security-detection-rule-management'
     agents:
       image: family/kibana-ubuntu-2404
       imageProject: elastic-images-prod
@@ -81,6 +89,8 @@ steps:
   - command: .buildkite/scripts/steps/functional/security_serverless_rule_management_prebuilt_rules_customization.sh
     label: 'Serverless Rule Management - Prebuilt Rules Customization - Security Solution Cypress Tests'
     branches: main
+    env:
+      SLACK_NOTIFICATIONS_JOB_CHANNEL: '#security-detection-rule-management'
     agents:
       image: family/kibana-ubuntu-2404
       imageProject: elastic-images-prod
@@ -100,6 +110,8 @@ steps:
   - command: .buildkite/scripts/steps/functional/security_serverless_rule_management_prebuilt_rules_installation.sh
     label: 'Serverless Rule Management - Prebuilt Rules Installation - Security Solution Cypress Tests'
     branches: main
+    env:
+      SLACK_NOTIFICATIONS_JOB_CHANNEL: '#security-detection-rule-management'
     agents:
       image: family/kibana-ubuntu-2404
       imageProject: elastic-images-prod
@@ -119,6 +131,8 @@ steps:
   - command: .buildkite/scripts/steps/functional/security_serverless_rule_management_prebuilt_rules_management.sh
     label: 'Serverless Rule Management - Prebuilt Rules Management - Security Solution Cypress Tests'
     branches: main
+    env:
+      SLACK_NOTIFICATIONS_JOB_CHANNEL: '#security-detection-rule-management'
     agents:
       image: family/kibana-ubuntu-2404
       imageProject: elastic-images-prod
@@ -138,6 +152,8 @@ steps:
   - command: .buildkite/scripts/steps/functional/security_serverless_rule_management_prebuilt_rules_upgrade.sh
     label: 'Serverless Rule Management - Prebuilt Rules Upgrade - Security Solution Cypress Tests'
     branches: main
+    env:
+      SLACK_NOTIFICATIONS_JOB_CHANNEL: '#security-detection-rule-management'
     agents:
       image: family/kibana-ubuntu-2404
       imageProject: elastic-images-prod
@@ -156,6 +172,8 @@ steps:
 
   - command: .buildkite/scripts/steps/functional/security_solution_rule_management.sh
     label: 'Rule Management - Security Solution Cypress Tests'
+    env:
+      SLACK_NOTIFICATIONS_JOB_CHANNEL: '#security-detection-rule-management'
     agents:
       image: family/kibana-ubuntu-2404
       imageProject: elastic-images-prod
@@ -174,6 +192,8 @@ steps:
 
   - command: .buildkite/scripts/steps/functional/security_solution_rule_management_prebuilt_rules_customization.sh
     label: 'Rule Management - Prebuilt Rules Customization - Security Solution Cypress Tests'
+    env:
+      SLACK_NOTIFICATIONS_JOB_CHANNEL: '#security-detection-rule-management'
     agents:
       image: family/kibana-ubuntu-2404
       imageProject: elastic-images-prod
@@ -192,6 +212,8 @@ steps:
 
   - command: .buildkite/scripts/steps/functional/security_solution_rule_management_prebuilt_rules_installation.sh
     label: 'Rule Management - Prebuilt Rules Installation - Security Solution Cypress Tests'
+    env:
+      SLACK_NOTIFICATIONS_JOB_CHANNEL: '#security-detection-rule-management'
     agents:
       image: family/kibana-ubuntu-2404
       imageProject: elastic-images-prod
@@ -210,6 +232,8 @@ steps:
 
   - command: .buildkite/scripts/steps/functional/security_solution_rule_management_prebuilt_rules_management.sh
     label: 'Rule Management - Prebuilt Rules Management - Security Solution Cypress Tests'
+    env:
+      SLACK_NOTIFICATIONS_JOB_CHANNEL: '#security-detection-rule-management'
     agents:
       image: family/kibana-ubuntu-2404
       imageProject: elastic-images-prod
@@ -228,6 +252,8 @@ steps:
 
   - command: .buildkite/scripts/steps/functional/security_solution_rule_management_prebuilt_rules_upgrade.sh
     label: 'Rule Management - Prebuilt Rules Upgrade - Security Solution Cypress Tests'
+    env:
+      SLACK_NOTIFICATIONS_JOB_CHANNEL: '#security-detection-rule-management'
     agents:
       image: family/kibana-ubuntu-2404
       imageProject: elastic-images-prod
@@ -247,6 +273,8 @@ steps:
   - command: .buildkite/scripts/steps/functional/security_serverless_detection_engine.sh
     label: 'Serverless Detection Engine - Security Solution Cypress Tests'
     branches: main
+    env:
+      SLACK_NOTIFICATIONS_JOB_CHANNEL: '#security-detection-engineering-team'
     agents:
       image: family/kibana-ubuntu-2404
       imageProject: elastic-images-prod
@@ -266,6 +294,8 @@ steps:
   - command: .buildkite/scripts/steps/functional/security_serverless_detection_engine_exceptions.sh
     label: 'Serverless Detection Engine - Exceptions - Security Solution Cypress Tests'
     branches: main
+    env:
+      SLACK_NOTIFICATIONS_JOB_CHANNEL: '#security-detection-engineering-team'
     agents:
       image: family/kibana-ubuntu-2404
       imageProject: elastic-images-prod
@@ -284,6 +314,8 @@ steps:
 
   - command: .buildkite/scripts/steps/functional/security_solution_detection_engine.sh
     label: 'Detection Engine - Security Solution Cypress Tests'
+    env:
+      SLACK_NOTIFICATIONS_JOB_CHANNEL: '#security-detection-engineering-team'
     agents:
       image: family/kibana-ubuntu-2404
       imageProject: elastic-images-prod
@@ -302,6 +334,8 @@ steps:
 
   - command: .buildkite/scripts/steps/functional/security_solution_detection_engine_exceptions.sh
     label: 'Detection Engine - Exceptions - Security Solution Cypress Tests'
+    env:
+      SLACK_NOTIFICATIONS_JOB_CHANNEL: '#security-detection-engineering-team'
     agents:
       image: family/kibana-ubuntu-2404
       imageProject: elastic-images-prod
@@ -321,6 +355,8 @@ steps:
   - command: .buildkite/scripts/steps/functional/security_serverless_ai_assistant.sh
     label: 'Serverless AI Assistant - Security Solution Cypress Tests'
     branches: main
+    env:
+      SLACK_NOTIFICATIONS_JOB_CHANNEL: '#security-threat-hunting'
     agents:
       image: family/kibana-ubuntu-2404
       imageProject: elastic-images-prod
@@ -339,6 +375,8 @@ steps:
 
   - command: .buildkite/scripts/steps/functional/security_solution_ai_assistant.sh
     label: 'AI Assistant - Security Solution Cypress Tests'
+    env:
+      SLACK_NOTIFICATIONS_JOB_CHANNEL: '#security-threat-hunting'
     agents:
       image: family/kibana-ubuntu-2404
       imageProject: elastic-images-prod
@@ -358,6 +396,8 @@ steps:
 
   - command: .buildkite/scripts/steps/functional/security_solution_entity_analytics.sh
     label: 'Entity Analytics - Security Solution Cypress Tests'
+    env:
+      SLACK_NOTIFICATIONS_JOB_CHANNEL: '#security-entity-analytics-alerts'
     agents:
       image: family/kibana-ubuntu-2404
       imageProject: elastic-images-prod
@@ -376,6 +416,8 @@ steps:
 
   - command: .buildkite/scripts/steps/functional/security_solution_explore.sh
     label: 'Explore - Security Solution Cypress Tests'
+    env:
+      SLACK_NOTIFICATIONS_JOB_CHANNEL: '#security-threat-hunting'
     agents:
       image: family/kibana-ubuntu-2404
       imageProject: elastic-images-prod
@@ -395,6 +437,8 @@ steps:
 
   - command: .buildkite/scripts/steps/functional/security_solution_investigations.sh
     label: 'Investigations - Security Solution Cypress Tests'
+    env:
+      SLACK_NOTIFICATIONS_JOB_CHANNEL: '#security-threat-hunting'
     agents:
       image: family/kibana-ubuntu-2404
       imageProject: elastic-images-prod
@@ -414,6 +458,8 @@ steps:
 
   - command: .buildkite/scripts/steps/functional/osquery_cypress.sh
     label: 'Osquery Cypress Tests'
+    env:
+      SLACK_NOTIFICATIONS_JOB_CHANNEL: '#security-defend-workflows'
     agents:
       image: family/kibana-ubuntu-2404
       imageProject: elastic-images-prod
@@ -434,6 +480,8 @@ steps:
   - command: .buildkite/scripts/steps/functional/security_serverless_osquery.sh
     label: 'Osquery Cypress Tests on Serverless'
     branches: main
+    env:
+      SLACK_NOTIFICATIONS_JOB_CHANNEL: '#security-defend-workflows'
     agents:
       image: family/kibana-ubuntu-2404
       imageProject: elastic-images-prod
@@ -453,6 +501,8 @@ steps:
 
   - command: .buildkite/scripts/steps/functional/defend_workflows.sh
     label: 'Defend Workflows Cypress Tests'
+    env:
+      SLACK_NOTIFICATIONS_JOB_CHANNEL: '#security-defend-workflows'
     agents:
       image: family/kibana-ubuntu-2404
       imageProject: elastic-images-prod
@@ -474,6 +524,8 @@ steps:
   - command: .buildkite/scripts/steps/functional/defend_workflows_serverless.sh
     label: 'Defend Workflows Cypress Tests on Serverless'
     branches: main
+    env:
+      SLACK_NOTIFICATIONS_JOB_CHANNEL: '#security-defend-workflows'
     agents:
       image: family/kibana-ubuntu-2404
       imageProject: elastic-images-prod

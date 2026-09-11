@@ -20,7 +20,7 @@ spec:
     spec:
       env:
         SLACK_NOTIFICATIONS_CHANNEL: '#sdh-security-team'
-        KIBANA_SLACK_NOTIFICATIONS_ENABLED: 'false' # temporary: reducing noise in #sdh-security-team
+        KIBANA_SLACK_NOTIFICATIONS_ENABLED: 'false'
         SLACK_NOTIFICATIONS_SKIP_FOR_RETRIES: 'true'
         REPORT_FAILED_TESTS_TO_GITHUB: 'true'
         SCOUT_REPORTER_ENABLED: 'true'
