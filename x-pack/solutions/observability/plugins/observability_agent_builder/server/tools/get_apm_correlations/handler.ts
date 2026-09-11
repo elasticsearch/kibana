@@ -408,7 +408,6 @@ export async function getToolHandler({
     | { metric: 'failure_rate' };
 
   if (metric === 'latency' || metric === 'infra_metrics') {
-    const percentileKey = `${percentileThreshold}`;
     const percentileResp = await esClient.asCurrentUser.search({
       index: indices,
       size: 0,
@@ -418,7 +417,7 @@ export async function getToolHandler({
           percentiles: {
             field: TRANSACTION_DURATION,
             percents: [percentileThreshold],
-            keyed: true,
+            keyed: false,
           },
         },
       },
@@ -426,10 +425,10 @@ export async function getToolHandler({
 
     const durationPercentiles = (
       percentileResp.aggregations?.duration_percentile as
-        | { values?: Record<string, number | null> }
+        | { values?: Array<{ key: number; value: number | null }> }
         | undefined
     )?.values;
-    const durationThresholdUs = durationPercentiles?.[percentileKey];
+    const durationThresholdUs = durationPercentiles?.[0]?.value;
 
     if (durationThresholdUs == null || !Number.isFinite(durationThresholdUs)) {
       throw new Error(
