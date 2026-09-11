@@ -8,6 +8,10 @@ This package is the home for evals capabilities that are experimental or too spe
 
 - **Custom CLI commands** under the `ext` namespace, run via `node scripts/evals ext <command>`.
 
+## Features
+
+- **Red-team framework** — adversarial testing for AI assistants (attack modules, delivery strategies, LLM judges, guardrails). Run via `node scripts/evals ext red-team`. See [`src/red_team/README.md`](src/red_team/README.md).
+
 ## Architecture
 
 This package depends on `@kbn/evals`, never the other way around:

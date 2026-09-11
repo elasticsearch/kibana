@@ -22,6 +22,9 @@ dependsOn:
   - '@kbn/dev-cli-runner'
   - '@kbn/dev-cli-errors'
   - '@kbn/tooling-log'
+  - '@kbn/inference-common'
+  - '@kbn/inference-prompt-utils'
+  - '@kbn/zod'
 tags:
   - test-helper
   - package

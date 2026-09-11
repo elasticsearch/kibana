@@ -65,6 +65,8 @@ export {
   type EvalSuiteMetadata,
 } from './src/cli/suites';
 
+export { promptForSuite, isTTY } from './src/cli/prompts';
+
 export { evaluate } from './src/evaluate';
 export { createAgentBuilderClient } from './src/utils/agent_builder_client';
 export type {
