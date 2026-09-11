@@ -5,4 +5,8 @@
  * 2.0.
  */
 
-export const API_BASE_PATH = '/api/remote_clusters';
+import { createPlaywrightConfig } from '@kbn/scout';
+
+export default createPlaywrightConfig({
+  testDir: './tests',
+});

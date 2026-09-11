@@ -5,13 +5,7 @@
  * 2.0.
  */
 
-import type { KibanaRole } from '@kbn/scout';
-
-// Remote Clusters UI needs ES cluster `manage` (read/write remote settings) + Kibana management.
-export const REMOTE_CLUSTERS_ADMIN_ROLE: KibanaRole = {
-  elasticsearch: { cluster: ['manage'] },
-  kibana: [{ base: ['all'], feature: {}, spaces: ['*'] }],
-};
+export { REMOTE_CLUSTERS_ADMIN_ROLE } from '../../common/fixtures/constants';
 
 // EuiFlyout renders in a portal outside `.kbnAppWrapper`, so both selectors are
 // required to catch a11y violations inside the detail/request flyouts.
