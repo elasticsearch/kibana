@@ -86,23 +86,6 @@ steps:
         - exit_status: '-1'
           limit: 3
 
-  - command: .buildkite/scripts/steps/lint_with_oxlint.sh
-    label: 'Linting (with oxlint)'
-    agents:
-      machineType: n4-standard-4
-      diskType: hyperdisk-balanced
-      preemptible: true
-      spotZones: us-central1-a,us-central1-b,us-central1-c,us-central1-f,us-east1-b,us-east1-c,us-east1-d,us-west1-a,us-west1-b,us-west1-c
-      diskSizeGb: 130
-    key: linting_with_oxlint
-    timeout_in_minutes: 60
-    env:
-      CHECK_GATE: 'true'
-    retry:
-      automatic:
-        - exit_status: '-1'
-          limit: 3
-
   - command: .buildkite/scripts/steps/typecheck/check_types.sh
     label: 'Check Types'
     agents:

@@ -1888,7 +1888,18 @@ module.exports = {
         'require-atomic-updates': 'error',
         'symbol-description': 'error',
         'vars-on-top': 'error',
-        '@typescript-eslint/explicit-member-accessibility': 'error',
+        // Options previously inherited from @kbn/eslint-config; the rule now lives in oxlint.
+        '@typescript-eslint/explicit-member-accessibility': [
+          'error',
+          {
+            accessibility: 'off',
+            overrides: {
+              accessors: 'explicit',
+              constructors: 'no-public',
+              parameterProperties: 'explicit',
+            },
+          },
+        ],
         '@typescript-eslint/no-this-alias': 'error',
         '@typescript-eslint/no-explicit-any': 'error',
         '@typescript-eslint/no-useless-constructor': 'error',
@@ -2387,6 +2398,9 @@ module.exports = {
         'prefer-arrow-callback': 'error',
         'no-unused-vars': 'off',
         'react/prop-types': 'off',
+        // `plugin:react/recommended` re-enables this; options previously inherited from
+        // @kbn/eslint-config, where the rule now lives in oxlint.
+        'react/no-unknown-property': ['error', { ignore: ['css'] }],
         '@typescript-eslint/explicit-module-boundary-types': 'off',
         '@typescript-eslint/no-empty-object-type': 'off',
         '@typescript-eslint/no-unsafe-function-type': 'off',

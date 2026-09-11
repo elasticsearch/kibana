@@ -7,25 +7,18 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
-import Path from 'path';
-
 import { run } from '@kbn/dev-cli-runner';
 import { createFailError } from '@kbn/dev-cli-errors';
 import {
-  buildValidationCliArgs,
-  describeValidationNoTargetsScope,
-  formatReproductionCommand,
   readValidationRunFlags,
   resolveValidationBaseContext,
   type ValidationBaseContext,
   VALIDATION_RUN_HELP,
   VALIDATION_RUN_STRING_FLAGS,
 } from '@kbn/dev-validation-runner';
-import { getRepoFiles } from '@kbn/get-repo-files';
-import { REPO_ROOT } from '@kbn/repo-info';
 import type { ToolingLog } from '@kbn/tooling-log';
 
-import { File } from '../file';
+import { resolveLintTargets } from '../lint_targets';
 import { LINT_LABEL } from './constants';
 import { lintFiles } from './lint_files';
 import { pickFilesToLint } from './pick_files_to_lint';
@@ -35,13 +28,6 @@ export interface ExecuteEslintValidationOptions {
   log: ToolingLog;
   fix?: boolean;
 }
-
-const isFullEslintRun = (baseContext: ValidationBaseContext) => {
-  return (
-    baseContext.mode === 'contract' &&
-    (baseContext.runContext.kind === 'full' || baseContext.contract.testMode === 'all')
-  );
-};
 
 export interface EslintValidationResult {
   fileCount: number;
@@ -59,64 +45,18 @@ export const executeEslintValidation = async ({
   log,
   fix = false,
 }: ExecuteEslintValidationOptions): Promise<EslintValidationResult | null> => {
-  if (baseContext.mode === 'direct_target') {
-    throw createFailError(
-      'scripts/eslint only supports validation-contract execution. Remove explicit file paths and use --profile/--scope instead.'
-    );
-  }
-
-  const resolvedBase =
-    baseContext.runContext.kind === 'affected' ? baseContext.runContext.resolvedBase : undefined;
-  const shouldRunFullRepo = isFullEslintRun(baseContext);
-  const cliArgs = buildValidationCliArgs({
-    contract: baseContext.contract,
-    resolvedBase,
-    forceFullProfile: shouldRunFullRepo,
-  });
-  log.info(`Running \`${formatReproductionCommand('eslint', cliArgs.logArgs)}\``);
-
-  if (baseContext.runContext.kind === 'skip') {
-    log.info(
-      `No changed files found ${describeValidationNoTargetsScope(baseContext)}; skipping eslint.`
-    );
-    return null;
-  }
-
-  let changedFiles: string[];
-  if (shouldRunFullRepo) {
-    changedFiles = (await getRepoFiles()).map((file) => file.repoRel);
-  } else if (baseContext.runContext.kind === 'affected') {
-    changedFiles = baseContext.runContext.changedFiles;
-  } else {
-    changedFiles = [];
-  }
-
-  if (changedFiles.length === 0) {
-    log.info(
-      `No changed files found ${describeValidationNoTargetsScope(baseContext)}; skipping eslint.`
-    );
-    return null;
-  }
-
-  const filesToLint = await pickFilesToLint(
+  const targets = await resolveLintTargets({
+    baseContext,
     log,
-    changedFiles.map((pathValue) => new File(Path.resolve(REPO_ROOT, pathValue)))
-  );
+    runner: 'eslint',
+    pickFilesToLint,
+  });
 
-  if (filesToLint.length === 0) {
-    log.info(
-      `No JS/TS files selected for eslint ${describeValidationNoTargetsScope(
-        baseContext
-      )}; skipping eslint.`
-    );
+  if (!targets) {
     return null;
   }
 
-  log.info(
-    `Selected ${filesToLint.length} lintable file(s) from ${changedFiles.length} candidate file(s).`
-  );
-
-  const result = await lintFiles(log, filesToLint, { fix });
+  const result = await lintFiles(log, targets.files, { fix });
   return {
     fileCount: result.lintedFileCount,
     fixedFiles: result.fixedFiles,

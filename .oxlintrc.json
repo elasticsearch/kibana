@@ -1,6 +1,11 @@
 {
   "$schema": "./node_modules/oxlint/configuration_schema.json",
 
+  // Every rule enabled here (and in ./.oxlint/*.jsonc) is intentionally absent from
+  // `@kbn/eslint-config` so each rule runs in exactly one linter. When enabling a rule here,
+  // delete it from packages/kbn-eslint-config/*.js; when removing one, add it back there.
+  // A rule whose ESLint options are stricter than oxlint's implementation must stay in ESLint.
+
   "extends": [
     "./.oxlint/javascript.jsonc",
     "./.oxlint/typescript.jsonc",
@@ -45,12 +50,7 @@
     "react/prefer-es6-class": ["error", "always"]
   },
 
-  "ignorePatterns": [
-    "**/.storybook/**",
-    "**/cypress/**",
-    "**/ftr_e2e/**",
-    "**/e2e/**",
-    "**/integration_tests/**",
-    "**/json_schemas/**"
-  ]
+  // Mirror tsc's `skipLibCheck: true`: oxlint's parser reports TypeScript grammar errors (e.g.
+  // TS1016) that ESLint's parser does not, and declaration files are never type-checked either.
+  "ignorePatterns": ["**/*.d.ts"]
 }

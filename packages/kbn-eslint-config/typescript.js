@@ -49,21 +49,9 @@ module.exports = {
           // https://github.com/typescript-eslint/typescript-eslint/blob/master/packages/eslint-plugin/ROADMAP.md
           //
           // Old recommended tslint rules
-          '@typescript-eslint/adjacent-overload-signatures': 'error',
           '@typescript-eslint/array-type': 'off',
           // ##
           // Replacing old @typescript-eslint/ban-types
-          '@typescript-eslint/no-restricted-types': [
-            'error',
-            {
-              types: {
-                SFC: 'Use FC or FunctionComponent instead.',
-                'React.SFC': 'Use React.FC instead.',
-                StatelessComponent: 'Use FunctionComponent instead.',
-                'React.StatelessComponent': 'Use React.FunctionComponent instead.',
-              },
-            },
-          ],
           '@typescript-eslint/no-unsafe-function-type': 'off',
           '@typescript-eslint/no-wrapper-object-types': 'off',
           '@typescript-eslint/no-empty-object-type': 'off',
@@ -158,18 +146,6 @@ module.exports = {
               modifiers: ['requiresQuotes'],
             },
           ],
-          '@typescript-eslint/explicit-member-accessibility': [
-            'error',
-            {
-              accessibility: 'off',
-              overrides: {
-                accessors: 'explicit',
-                constructors: 'no-public',
-                parameterProperties: 'explicit',
-              },
-            },
-          ],
-          '@typescript-eslint/prefer-function-type': 'error',
           '@typescript-eslint/consistent-type-definitions': ['error', 'interface'],
           '@typescript-eslint/member-ordering': [
             'error',
@@ -177,11 +153,6 @@ module.exports = {
               default: ['public-static-field', 'static-field', 'instance-field'],
             },
           ],
-          '@typescript-eslint/consistent-type-assertions': 'error',
-          '@typescript-eslint/no-empty-interface': 'error',
-          '@typescript-eslint/no-extra-non-null-assertion': 'error',
-          '@typescript-eslint/no-misused-new': 'error',
-          '@typescript-eslint/no-namespace': 'error',
           '@typescript-eslint/no-shadow': 'error',
           // rely on typescript
           'no-undef': 'off',
@@ -195,11 +166,8 @@ module.exports = {
             },
           ],
           '@typescript-eslint/no-var-requires': 'error',
-          '@typescript-eslint/unified-signatures': 'error',
-          'constructor-super': 'error',
           'dot-notation': 'error',
           eqeqeq: ['error', 'always', { null: 'ignore' }],
-          'guard-for-in': 'error',
           'import/order': [
             'error',
             {
@@ -208,22 +176,13 @@ module.exports = {
           ],
           'max-classes-per-file': ['error', 1],
           'no-bitwise': 'error',
-          'no-caller': 'error',
-          'no-cond-assign': 'error',
           'no-console': 'error',
-          'no-debugger': 'error',
-          'no-empty': 'error',
-          'no-extend-native': 'error',
-          'no-eval': 'error',
-          'no-new-wrappers': 'error',
-          'no-script-url': 'error',
           'no-throw-literal': 'error',
           'no-undef-init': 'error',
           'no-unsafe-finally': 'error',
           'no-unsanitized/property': 'error',
           'no-unused-expressions': 'off',
           '@typescript-eslint/no-unused-expressions': ["error", { "allowTaggedTemplates": true }],
-          'no-unused-labels': 'error',
           'no-var': 'error',
           'object-shorthand': 'error',
           'one-var': ['error', 'never'],
@@ -237,8 +196,6 @@ module.exports = {
               exceptions: ['/'],
             },
           ],
-          'use-isnan': 'error',
-
           // Old tslint yml override or defined rules
           'ban/ban': [
             2,
@@ -250,7 +207,9 @@ module.exports = {
           ],
           'import/no-default-export': 'error',
 
-          '@eslint-community/eslint-comments/no-unused-disable': 'error',
+          // `no-unused-disable` is intentionally not enabled: oxlint (`node scripts/lint`) honors
+          // `eslint-disable` directives for the rules it owns, which ESLint would report as unused
+          // and strip on autofix.
           '@eslint-community/eslint-comments/no-unused-enable': 'error',
           'no-restricted-syntax': [
             'error',

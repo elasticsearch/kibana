@@ -32,7 +32,8 @@
 
     // "react-hooks/exhaustive-deps": "error",
     // "react-hooks/rules-of-hooks": "error",
-    "react/jsx-no-duplicate-props": ["error"],
+    // oxlint has no `ignoreCase` option and ESLint enforces `{ ignoreCase: true }`; keep it in ESLint.
+    // "react/jsx-no-duplicate-props": ["error", { "ignoreCase": true }],
     "react/jsx-no-undef": "error",
     "react/jsx-pascal-case": "error",
     // "react/jsx-uses-react": "error",

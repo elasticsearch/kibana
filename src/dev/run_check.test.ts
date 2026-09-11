@@ -35,6 +35,10 @@ jest.mock('./eslint/run_eslint_contract', () => ({
   executeEslintValidation: jest.fn(),
 }));
 
+jest.mock('./oxlint/run_oxlint_contract', () => ({
+  executeOxlintValidation: jest.fn(),
+}));
+
 jest.mock('@kbn/dev-proc-runner', () => ({
   ProcRunner: jest.fn().mockImplementation(() => ({
     teardown: jest.fn(),
@@ -84,6 +88,8 @@ const mockExecuteTypeCheckValidation = jest.requireMock('./type_check_validation
   .executeTypeCheckValidation as jest.Mock;
 const mockExecuteEslintValidation = jest.requireMock('./eslint/run_eslint_contract')
   .executeEslintValidation as jest.Mock;
+const mockExecuteOxlintValidation = jest.requireMock('./oxlint/run_oxlint_contract')
+  .executeOxlintValidation as jest.Mock;
 const mockExistsSync = jest.requireMock('fs').existsSync as jest.Mock;
 const mockReaddirSync = jest.requireMock('fs').readdirSync as jest.Mock;
 const mockExeca = mockExecaFn;
@@ -160,6 +166,11 @@ describe('run_check', () => {
       failedFiles: [],
       warningCount: 0,
     });
+    mockExecuteOxlintValidation.mockResolvedValue({
+      fileCount: 3,
+      failedFiles: [],
+      warningCount: 0,
+    });
     mockExecuteTypeCheckValidation.mockResolvedValue({ projectCount: 2 });
     mockExeca.mockResolvedValue({
       exitCode: 0,
@@ -194,6 +205,7 @@ describe('run_check', () => {
     const output = stdoutSpy.mock.calls.map(([text]: [string]) => text).join('');
     expect(output).toContain('check  scope=local');
     expect(output).toContain('lint  ✓ 3 files');
+    expect(output).toContain('oxlint✓ 3 files');
     expect(output).toContain('jest  ✓ 1 config ran, 5 tests');
     expect(output).toContain('tsc   ✓ 2 projects');
   });
@@ -259,6 +271,22 @@ describe('run_check', () => {
     expect(output).toContain('node scripts/eslint src/foo.ts');
     expect(output).toContain('jest  ✓ 1 config ran, 5 tests');
     expect(output).toContain('tsc   ✗ failed');
+  });
+
+  it('reports oxlint failures with a reproduction command', async () => {
+    mockExecuteOxlintValidation.mockResolvedValue({
+      fileCount: 3,
+      failedFiles: ['src/foo.ts'],
+      warningCount: 0,
+    });
+
+    await handler(createArgs());
+
+    expect(process.exitCode).toBe(1);
+    const output = stdoutSpy.mock.calls.map(([text]: [string]) => text).join('');
+    expect(output).toContain('oxlint✗ failed');
+    expect(output).toContain('node scripts/lint src/foo.ts');
+    expect(output).toContain('lint  ✓ 3 files');
   });
 
   it('shows fixed file count when eslint auto-fixes', async () => {

@@ -9,7 +9,6 @@ steps:
     depends_on:
       - linting
       - linting_with_types
-      - linting_with_oxlint
       - check
       - checks
       - quick_checks
