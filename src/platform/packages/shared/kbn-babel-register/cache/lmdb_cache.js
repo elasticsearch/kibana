@@ -13,6 +13,8 @@ const Crypto = require('crypto');
 const chalk = require('chalk');
 const LmdbStore = require('lmdb');
 
+const { utf8StringKeyEncoder } = require('./lmdb_key_encoder');
+
 const GLOBAL_ATIME = new Date().setHours(0, 0, 0, 0);
 const MINUTE = 1000 * 60;
 const HOUR = MINUTE * 60;
@@ -46,10 +48,18 @@ class LmdbCache {
   constructor(config) {
     this.#log = config.log;
     this.#prefix = config.prefix;
-    this.#db = LmdbStore.open(Path.resolve(config.dir, 'v5'), {
+    // LMDB's default ordered-binary key decoder uses eval, which Kibana disallows.
+    // Ideally ordered-binary will provide a CSP-safe decoder and this custom encoder can be removed.
+    /**
+     * `keyEncoder` is supported by lmdb but missing from its DatabaseOptions type.
+     * @type {import('lmdb').RootDatabaseOptions & { keyEncoder: typeof utf8StringKeyEncoder }}
+     */
+    const databaseOptions = {
       name: 'db',
       encoding: 'json',
-    });
+      keyEncoder: utf8StringKeyEncoder,
+    };
+    this.#db = LmdbStore.open(Path.resolve(config.dir, 'v6'), databaseOptions);
 
     const lastClean = this.#db.get('@last clean');
     if (!lastClean || lastClean[0] < GLOBAL_ATIME - 7 * DAY) {

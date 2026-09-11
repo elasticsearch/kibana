@@ -72,3 +72,14 @@ it('returns undefined until values are set', async () => {
     "
   `);
 });
+
+it('supports UTF-8 cache keys', async () => {
+  const cache = makeCache({
+    dir: DIR,
+    prefix: 'prefix',
+  });
+  const key = 'prefix:日本語:🚀';
+
+  await cache.update(key, { code: 'var utf8 = true' });
+  expect(cache.getCode(key)).toBe('var utf8 = true');
+});
