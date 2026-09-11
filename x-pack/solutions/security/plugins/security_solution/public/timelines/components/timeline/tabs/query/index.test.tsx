@@ -879,7 +879,7 @@ describe.skip('query tab with unified timeline', () => {
         });
 
         // column exists in the table
-        expect(screen.getByTestId(`dataGridHeaderCell-${field.name}`)).toBeVisible();
+        expect(await screen.findByTestId(`dataGridHeaderCell-${field.name}`)).toBeVisible();
 
         fireEvent.click(screen.getAllByTestId(`fieldToggle-${field.name}`)[0]);
 
