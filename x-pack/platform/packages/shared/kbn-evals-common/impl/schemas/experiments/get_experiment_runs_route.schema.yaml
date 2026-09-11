@@ -1,0 +1,131 @@
+openapi: 3.0.0
+info:
+  title: Get Evaluation Experiment Runs API endpoint
+  version: '1'
+paths:
+  /internal/evals/experiments/{experimentId}/runs:
+    get:
+      x-codegen-enabled: true
+      x-labels: [ess, serverless]
+      operationId: GetEvaluationExperimentRuns
+      description: >-
+        Get an experiment's task runs at example x repetition granularity,
+        with the full example input and task output (nothing is silently
+        truncated) and every evaluator's result grouped under its run. The
+        `task.trace_id` and per-evaluator `trace_id` values are references
+        resolvable through the traces endpoints.
+      summary: Get evaluation experiment runs
+      tags:
+        - Evals API
+      parameters:
+        - name: experimentId
+          in: path
+          required: true
+          schema:
+            type: string
+            maxLength: 1024
+        - name: suite_id
+          in: query
+          required: false
+          schema:
+            type: string
+            maxLength: 256
+          description: Filter by suite ID
+        - name: model_id
+          in: query
+          required: false
+          schema:
+            type: string
+            maxLength: 256
+          description: Filter by task model ID
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: per_page
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+          description: >-
+            Runs per page. Bounded because each run carries its full task
+            output and example input.
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  experiment_id:
+                    type: string
+                    maxLength: 1024
+                  runs:
+                    type: array
+                    maxItems: 100
+                    items:
+                      $ref: '#/components/schemas/ExperimentRun'
+                  total:
+                    type: integer
+                    description: >-
+                      Total distinct runs the experiment produced, capped at
+                      10000 (the same ceiling the score retrieval endpoints
+                      apply to score documents).
+                  page:
+                    type: integer
+                  per_page:
+                    type: integer
+                required:
+                  - experiment_id
+                  - runs
+                  - total
+                  - page
+                  - per_page
+        '404':
+          description: Experiment not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: number
+                  error:
+                    type: string
+                    maxLength: 256
+                  message:
+                    type: string
+                    maxLength: 1024
+components:
+  schemas:
+    ExperimentRun:
+      type: object
+      description: >-
+        One task execution: an example run once at a given repetition, with
+        every evaluator's result on that output. The example (with its full
+        input) and the task (with its full output, model, repetition index,
+        and trace reference) are shared by the run; each evaluator entry
+        carries that evaluator's score, label, explanation, metadata, and
+        trace reference. A model is never attributed to a `code` evaluator,
+        which invokes none.
+      properties:
+        example:
+          $ref: '../common_attributes.schema.yaml#/components/schemas/ExampleInfo'
+        task:
+          $ref: '../common_attributes.schema.yaml#/components/schemas/TaskInfo'
+        evaluators:
+          type: array
+          maxItems: 1000
+          items:
+            $ref: '../common_attributes.schema.yaml#/components/schemas/EvaluatorInfo'
+      required:
+        - example
+        - task
+        - evaluators

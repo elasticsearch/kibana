@@ -12,22 +12,13 @@ import {
   TRACES_INDEX_PATTERN,
   GetTraceRequestParams,
 } from '@kbn/evals-common';
+import type { TraceSpan } from '@kbn/evals-common';
 import { buildRouteValidationWithZod } from '@kbn/zod-helpers/v4';
 import { EVALS_API_PRIVILEGES } from '../../../common';
 import type { RouteDependencies } from '../register_routes';
 import { handleMaximumResponseSizeExceededError } from '../utils/handle_response_size_error';
-
-interface TraceSpanSource {
-  span_id?: string;
-  parent_span_id?: string;
-  trace_id?: string;
-  name?: string;
-  kind?: string;
-  status?: { code?: string };
-  '@timestamp'?: string;
-  duration?: number;
-  attributes?: Record<string, unknown>;
-}
+import { MAX_SPANS_PER_TRACE_SEARCH, computeTraceDurationMs, shapeTraceSpan } from './trace_spans';
+import type { TraceSpanSource } from './trace_spans';
 
 export const registerGetTraceRoute = ({ router, logger }: RouteDependencies) => {
   router.versioned
@@ -60,48 +51,20 @@ export const registerGetTraceRoute = ({ router, logger }: RouteDependencies) => 
               term: { trace_id: traceId },
             },
             sort: [{ '@timestamp': { order: 'asc' } }],
-            size: 10000,
+            size: MAX_SPANS_PER_TRACE_SEARCH,
           });
 
           const hits = searchResponse.hits?.hits ?? [];
           const spans = hits
-            .map((hit) => {
-              const source = hit._source;
-              if (!source) return null;
-
-              const startTime = source['@timestamp'] ?? '';
-              const durationNs = source.duration ?? 0;
-              const durationMs = durationNs / 1_000_000;
-
-              return {
-                span_id: source.span_id ?? hit._id,
-                trace_id: source.trace_id ?? traceId,
-                parent_span_id: source.parent_span_id,
-                name: source.name ?? 'unknown',
-                kind: source.kind,
-                status: source.status?.code,
-                start_time: startTime,
-                duration_ms: durationMs,
-                attributes: source.attributes ?? {},
-              };
-            })
-            .filter((span): span is NonNullable<typeof span> => span !== null);
-
-          let totalDurationMs = 0;
-          if (spans.length > 0) {
-            const earliestStart = Math.min(...spans.map((s) => new Date(s.start_time).getTime()));
-            const latestEnd = Math.max(
-              ...spans.map((s) => new Date(s.start_time).getTime() + s.duration_ms)
-            );
-            totalDurationMs = latestEnd - earliestStart;
-          }
+            .map((hit) => shapeTraceSpan(hit, traceId))
+            .filter((span): span is TraceSpan => span !== null);
 
           return response.ok({
             body: {
               trace_id: traceId,
               spans,
               total_spans: spans.length,
-              duration_ms: totalDurationMs,
+              duration_ms: computeTraceDurationMs(spans),
             },
           });
         } catch (error) {

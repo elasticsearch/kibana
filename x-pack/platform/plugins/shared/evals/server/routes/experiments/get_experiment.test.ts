@@ -416,6 +416,83 @@ describe('GET /internal/evals/experiments/{experimentId}', () => {
     expect(response.payload.task_model.id).toBe('gpt-4');
   });
 
+  it('reports every evaluator, the host, and the score time span alongside the stats', async () => {
+    const { handler, context, evaluationScoreService } = setup();
+
+    evaluationScoreService.search.mockResolvedValueOnce({
+      hits: {
+        hits: [
+          {
+            _source: {
+              task: { model: { id: 'gpt-4', family: 'gpt-4', provider: 'openai' } },
+              metadata: { total_repetitions: 1, hostname: 'worker-01' },
+            },
+          },
+        ],
+      },
+    } as any);
+
+    evaluationScoreService.search.mockResolvedValueOnce({
+      aggregations: {
+        by_dataset: { buckets: [] },
+        evaluator_models: { buckets: [] },
+        first_score: { value_as_string: '2026-08-01T00:00:00.000Z' },
+        last_score: { value_as_string: '2026-08-01T00:10:00.000Z' },
+        evaluators: {
+          buckets: [
+            {
+              key: 'correctness',
+              doc_count: 6,
+              version: { buckets: [{ key: '2' }] },
+              kind: { buckets: [{ key: 'llm' }] },
+              model_id: {
+                buckets: [
+                  {
+                    key: 'claude-3',
+                    family: { buckets: [{ key: 'Claude' }] },
+                    provider: { buckets: [{ key: 'Anthropic' }] },
+                  },
+                ],
+              },
+            },
+            {
+              key: 'latency',
+              doc_count: 6,
+              version: { buckets: [] },
+              kind: { buckets: [{ key: 'code' }] },
+              // A stray model (e.g. from legacy documents) must not be attributed.
+              model_id: { buckets: [{ key: 'claude-3' }] },
+            },
+          ],
+        },
+      },
+    } as any);
+
+    const response = await handler(context, makeRequest(), kibanaResponseFactory);
+
+    expect(response.status).toBe(200);
+    const { aggs } = evaluationScoreService.search.mock.calls[1][0];
+    expect(aggs.first_score).toEqual({ min: { field: '@timestamp' } });
+    expect(aggs.last_score).toEqual({ max: { field: '@timestamp' } });
+    expect(response.payload).toEqual(
+      expect.objectContaining({
+        hostname: 'worker-01',
+        first_score_at: '2026-08-01T00:00:00.000Z',
+        last_score_at: '2026-08-01T00:10:00.000Z',
+        evaluators: [
+          {
+            name: 'correctness',
+            version: '2',
+            kind: 'llm',
+            model: { id: 'claude-3', family: 'Claude', provider: 'Anthropic' },
+            score_count: 6,
+          },
+          { name: 'latency', kind: 'code', score_count: 6 },
+        ],
+      })
+    );
+  });
+
   it('returns 500 when ES throws', async () => {
     const { handler, context, evaluationScoreService, logger } = setup();
     evaluationScoreService.search.mockRejectedValueOnce(new Error('ES error'));

@@ -11,6 +11,10 @@ export const EVALS_EXPERIMENTS_URL = `${EVALS_INTERNAL_URL}/experiments` as cons
 export const EVALS_EXPERIMENT_URL = `${EVALS_INTERNAL_URL}/experiments/{experimentId}` as const;
 export const EVALS_EXPERIMENT_SCORES_URL =
   `${EVALS_INTERNAL_URL}/experiments/{experimentId}/scores` as const;
+export const EVALS_EXPERIMENT_RUNS_URL =
+  `${EVALS_INTERNAL_URL}/experiments/{experimentId}/runs` as const;
+export const EVALS_EXPERIMENT_TRACES_URL =
+  `${EVALS_INTERNAL_URL}/experiments/{experimentId}/traces` as const;
 export const EVALS_SCORES_URL = `${EVALS_INTERNAL_URL}/scores` as const;
 export const EVALS_EXPERIMENTS_COMPARE_URL = `${EVALS_INTERNAL_URL}/experiments/compare` as const;
 export const EVALS_EXPERIMENTS_RUN_URL = `${EVALS_INTERNAL_URL}/experiments/_run` as const;

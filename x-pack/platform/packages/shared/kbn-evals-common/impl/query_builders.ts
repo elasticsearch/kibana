@@ -7,6 +7,7 @@
 
 import type { QueryDslQueryContainer } from '@elastic/elasticsearch/lib/api/types';
 import { DEFAULT_SPACE_ID } from './spaces';
+import { MAX_SCORES_PER_QUERY } from '../constants';
 
 // ---------------------------------------------------------------------------
 // Shared types
@@ -15,6 +16,7 @@ import { DEFAULT_SPACE_ID } from './spaces';
 interface ExperimentFilterOptions {
   suiteId?: string;
   modelId?: string;
+  evaluatorName?: string;
   filterField?: 'experiment_id' | 'metadata.execution_id';
   spaceId?: string;
 }
@@ -125,6 +127,9 @@ export const buildExperimentFilterQuery = (
   if (options?.modelId) {
     must.push({ term: { 'task.model.id': options.modelId } });
   }
+  if (options?.evaluatorName) {
+    must.push({ term: { 'evaluator.name': options.evaluatorName } });
+  }
   if (options?.spaceId) {
     must.push(buildSpaceFilter(options.spaceId));
   }
@@ -221,6 +226,76 @@ export const parseEvaluatorModelsAggregation = (
   );
 
 // ---------------------------------------------------------------------------
+// Per-experiment evaluator inventory
+// ---------------------------------------------------------------------------
+
+/** Cap on the distinct evaluators reported for one experiment; matches the API schema's maxItems. */
+const MAX_EXPERIMENT_EVALUATORS = 1000;
+
+export interface ExperimentEvaluatorSummary {
+  name: string;
+  version?: string;
+  kind?: 'llm' | 'code';
+  /** Model this evaluator judged with; never reported for code evaluators. */
+  model?: EvaluatorJudgeModel;
+  /** Score documents this evaluator produced. */
+  score_count: number;
+}
+
+/**
+ * Every evaluator that scored an experiment, with the version and kind it ran as and, for
+ * evaluators that invoked a judge, that judge's model (family and provider nested under the id,
+ * as in {@link buildEvaluatorModelsAggregation}).
+ */
+export const buildExperimentEvaluatorsAggregation = () => ({
+  terms: { field: 'evaluator.name', size: MAX_EXPERIMENT_EVALUATORS },
+  aggs: {
+    version: { terms: { field: 'evaluator.version', size: 1 } },
+    kind: { terms: { field: 'evaluator.kind', size: 1 } },
+    model_id: {
+      terms: { field: 'evaluator.model.id', size: 1 },
+      aggs: {
+        family: { terms: { field: 'evaluator.model.family', size: 1 } },
+        provider: { terms: { field: 'evaluator.model.provider', size: 1 } },
+      },
+    },
+  },
+});
+
+interface ExperimentEvaluatorsAggregation {
+  buckets?: Array<{
+    key: string;
+    doc_count?: number;
+    version?: TermsBucket;
+    kind?: TermsBucket;
+    model_id?: EvaluatorModelsAggregation;
+  }>;
+}
+
+/**
+ * Reads {@link buildExperimentEvaluatorsAggregation}, registered as `evaluators`. A model is
+ * never attributed to a `code` evaluator, even when legacy documents carry one.
+ */
+export const parseExperimentEvaluatorsAggregation = (
+  aggregations: Record<string, unknown> | undefined
+): ExperimentEvaluatorSummary[] =>
+  (
+    (aggregations as { evaluators?: ExperimentEvaluatorsAggregation } | undefined)?.evaluators
+      ?.buckets ?? []
+  ).map((bucket) => {
+    const version = firstBucket(bucket.version);
+    const kind = firstBucket(bucket.kind) as ExperimentEvaluatorSummary['kind'];
+    const [model] = kind === 'code' ? [] : toEvaluatorModels(bucket.model_id);
+    return {
+      name: bucket.key,
+      ...(version && { version }),
+      ...(kind && { kind }),
+      ...(model && { model }),
+      score_count: bucket.doc_count ?? 0,
+    };
+  });
+
+// ---------------------------------------------------------------------------
 // Per-experiment stats aggregation
 // ---------------------------------------------------------------------------
 
@@ -240,6 +315,7 @@ export const buildStatsAggregation = () => ({
         aggs: {
           score_stats: { extended_stats: { field: 'evaluator.score' } },
           score_median: { percentiles: { field: 'evaluator.score', percents: [50] } },
+          evaluator_kind: { terms: { field: 'evaluator.kind', size: 1 } },
           // Family and provider are nested under the id so they stay correlated with their own
           // model. Sibling terms aggs would pair one judge's id with another's family when a
           // bucket spans several judges, describing a model that never existed.
@@ -256,6 +332,114 @@ export const buildStatsAggregation = () => ({
   },
 });
 
+// ---------------------------------------------------------------------------
+// Experiment runs (example x repetition) pagination
+// ---------------------------------------------------------------------------
+
+export interface ExperimentRunKey {
+  dataset_id: string;
+  dataset_name: string;
+  example_id: string;
+  example_index: number;
+  repetition_index: number;
+  /** Score documents in this run: one per evaluator that scored it. */
+  score_count: number;
+}
+
+export interface ExperimentRunsPage {
+  /** Distinct runs matching the query, exact up to {@link MAX_SCORES_PER_QUERY}. */
+  total: number;
+  /** The requested page window, in dataset name / example index / repetition order. */
+  runs: ExperimentRunKey[];
+}
+
+/**
+ * Returns a composite aggregation enumerating an experiment's runs (one
+ * bucket per example x repetition) in their natural presentation order:
+ * dataset name, example index, repetition. Dataset and example ids sit
+ * between as tie-breakers, so the order stays deterministic when two
+ * datasets share a name, and each bucket carries the ids the run's score
+ * documents are fetched by.
+ */
+export const buildExperimentRunsAggregation = () => ({
+  runs: {
+    composite: {
+      size: MAX_SCORES_PER_QUERY,
+      sources: [
+        { dataset_name: { terms: { field: 'example.dataset.name' } } },
+        { dataset_id: { terms: { field: 'example.dataset.id' } } },
+        { example_index: { terms: { field: 'example.index' } } },
+        { example_id: { terms: { field: 'example.id' } } },
+        { repetition_index: { terms: { field: 'task.repetition_index' } } },
+      ],
+    },
+  },
+});
+
+interface ExperimentRunsAggregations {
+  runs?: {
+    buckets?: Array<{
+      key: {
+        dataset_name?: string;
+        dataset_id?: string;
+        example_index?: number;
+        example_id?: string;
+        repetition_index?: number;
+      };
+      doc_count?: number;
+    }>;
+  };
+}
+
+/**
+ * Parses {@link buildExperimentRunsAggregation} into the run keys of the
+ * requested page and the exact total. The composite enumerates every run in
+ * one response (bounded by {@link MAX_SCORES_PER_QUERY}), so the page is a
+ * slice and the total is the bucket count.
+ */
+export const parseExperimentRunsAggregation = (
+  aggregations: Record<string, unknown> | undefined,
+  { page, perPage }: { page: number; perPage: number }
+): ExperimentRunsPage => {
+  const buckets = (aggregations as ExperimentRunsAggregations | undefined)?.runs?.buckets ?? [];
+  const offset = (page - 1) * perPage;
+
+  const runs = buckets.slice(offset, offset + perPage).map((bucket) => ({
+    dataset_id: bucket.key.dataset_id ?? '',
+    dataset_name: bucket.key.dataset_name ?? '',
+    example_id: bucket.key.example_id ?? '',
+    example_index: bucket.key.example_index ?? 0,
+    repetition_index: bucket.key.repetition_index ?? 0,
+    score_count: bucket.doc_count ?? 0,
+  }));
+
+  return { total: buckets.length, runs };
+};
+
+/**
+ * Builds the query fetching the score documents of the given runs: the
+ * experiment filter the runs were enumerated under, narrowed to documents
+ * matching one of the runs' (dataset, example, repetition) keys.
+ */
+export const buildExperimentRunsFetchQuery = (
+  experimentQuery: Record<string, unknown>,
+  runs: ExperimentRunKey[]
+): Record<string, unknown> => ({
+  bool: {
+    must: [experimentQuery],
+    should: runs.map((run) => ({
+      bool: {
+        filter: [
+          { term: { 'example.dataset.id': run.dataset_id } },
+          { term: { 'example.id': run.example_id } },
+          { term: { 'task.repetition_index': run.repetition_index } },
+        ],
+      },
+    })),
+    minimum_should_match: 1,
+  },
+});
+
 /**
  * Standard sort order for retrieving individual score documents,
  * grouped by dataset, example, evaluator, then repetition.
@@ -268,6 +452,93 @@ export const SCORES_SORT_ORDER: SortField[] = [
   { 'evaluator.name': { order: 'asc' } },
   { 'task.repetition_index': { order: 'asc' } },
 ];
+
+// ---------------------------------------------------------------------------
+// Experiment traces (resolved through score documents) pagination
+// ---------------------------------------------------------------------------
+
+export type ExperimentTraceRole = 'task' | 'evaluator';
+
+export interface ExperimentTraceReference {
+  trace_id: string;
+  role: ExperimentTraceRole;
+  /** Name of the evaluator whose invocation the trace covers; evaluator traces only. */
+  evaluator_name?: string;
+}
+
+export interface ExperimentTracesPage {
+  /** Distinct traces matching the query, exact up to {@link MAX_SCORES_PER_QUERY} per role. */
+  total: number;
+  /** The requested page window: task traces first, then evaluator traces by evaluator name. */
+  traces: ExperimentTraceReference[];
+}
+
+/**
+ * Returns composite aggregations enumerating the distinct trace ids an
+ * experiment's score documents reference, per role. A run's task trace id is
+ * repeated on every one of its score documents (one per evaluator), so the
+ * composite bucket doubles as deduplication; documents without a trace id
+ * (tracing disabled) are skipped entirely. Evaluator traces sort by evaluator
+ * name first, keeping one evaluator's traces contiguous across pages. Each
+ * role is bounded by {@link MAX_SCORES_PER_QUERY}: an experiment cannot
+ * reference more task traces than runs, nor more evaluator traces than score
+ * documents.
+ */
+export const buildExperimentTracesAggregation = (role?: ExperimentTraceRole) => ({
+  ...(role !== 'evaluator' && {
+    task_traces: {
+      composite: {
+        size: MAX_SCORES_PER_QUERY,
+        sources: [{ trace_id: { terms: { field: 'task.trace_id' } } }],
+      },
+    },
+  }),
+  ...(role !== 'task' && {
+    evaluator_traces: {
+      composite: {
+        size: MAX_SCORES_PER_QUERY,
+        sources: [
+          { evaluator_name: { terms: { field: 'evaluator.name' } } },
+          { trace_id: { terms: { field: 'evaluator.trace_id' } } },
+        ],
+      },
+    },
+  }),
+});
+
+interface ExperimentTracesAggregations {
+  task_traces?: { buckets?: Array<{ key: { trace_id?: string } }> };
+  evaluator_traces?: { buckets?: Array<{ key: { evaluator_name?: string; trace_id?: string } }> };
+}
+
+/**
+ * Parses {@link buildExperimentTracesAggregation} into the trace references
+ * of the requested page and the exact total. Each composite enumerates every
+ * trace of its role in one response (bounded by {@link MAX_SCORES_PER_QUERY}),
+ * so the page is a slice over the concatenation: task traces, then evaluator
+ * traces.
+ */
+export const parseExperimentTracesAggregation = (
+  aggregations: Record<string, unknown> | undefined,
+  { page, perPage }: { page: number; perPage: number }
+): ExperimentTracesPage => {
+  const aggs = aggregations as ExperimentTracesAggregations | undefined;
+
+  const references: ExperimentTraceReference[] = [
+    ...(aggs?.task_traces?.buckets ?? []).map((bucket) => ({
+      trace_id: bucket.key.trace_id ?? '',
+      role: 'task' as const,
+    })),
+    ...(aggs?.evaluator_traces?.buckets ?? []).map((bucket) => ({
+      trace_id: bucket.key.trace_id ?? '',
+      role: 'evaluator' as const,
+      ...(bucket.key.evaluator_name && { evaluator_name: bucket.key.evaluator_name }),
+    })),
+  ];
+
+  const offset = (page - 1) * perPage;
+  return { total: references.length, traces: references.slice(offset, offset + perPage) };
+};
 
 // ---------------------------------------------------------------------------
 // Experiments listing query, aggregation, and response parser
@@ -461,6 +732,7 @@ interface StatsAggregations {
             count?: number;
           };
           score_median?: { values?: Record<string, number | null> };
+          evaluator_kind?: TermsBucket;
           evaluator_model_id?: {
             buckets?: Array<{ key: string; family?: TermsBucket; provider?: TermsBucket }>;
           };
@@ -506,7 +778,11 @@ export const parseStatsAggregationResponse = (
     return evaluatorBuckets.map((evaluatorBucket) => {
       const scoreStats = evaluatorBucket.score_stats;
       const median = evaluatorBucket.score_median?.values?.['50.0'];
-      const modelBucket = evaluatorBucket.evaluator_model_id?.buckets?.[0];
+      // A code evaluator invokes no model, so a stray one on legacy documents is not reported.
+      const isCodeEvaluator = firstBucket(evaluatorBucket.evaluator_kind) === 'code';
+      const modelBucket = isCodeEvaluator
+        ? undefined
+        : evaluatorBucket.evaluator_model_id?.buckets?.[0];
       const modelId = modelBucket?.key;
       const modelFamily = firstBucket(modelBucket?.family);
       const modelProvider = firstBucket(modelBucket?.provider);

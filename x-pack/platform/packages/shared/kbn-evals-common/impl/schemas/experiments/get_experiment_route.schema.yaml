@@ -92,6 +92,26 @@ paths:
                     nullable: true
                   ci:
                     $ref: '../common_attributes.schema.yaml#/components/schemas/BuildkiteMetadata'
+                  hostname:
+                    type: string
+                    maxLength: 256
+                    description: Host the experiment ran on, when recorded.
+                  first_score_at:
+                    type: string
+                    maxLength: 64
+                    description: Timestamp of the experiment's earliest score document.
+                  last_score_at:
+                    type: string
+                    maxLength: 64
+                    description: Timestamp of the experiment's latest score document.
+                  evaluators:
+                    type: array
+                    maxItems: 1000
+                    items:
+                      $ref: '#/components/schemas/ExperimentEvaluatorSummary'
+                    description: >-
+                      Every evaluator that scored the experiment, with the version and kind it
+                      ran as and, for evaluators that invoked a judge, that judge's model.
                   stats:
                     type: array
                     items:
@@ -114,3 +134,35 @@ paths:
                   message:
                     type: string
                     maxLength: 1024
+components:
+  schemas:
+    ExperimentEvaluatorSummary:
+      type: object
+      description: An evaluator as the experiment's score documents recorded it.
+      properties:
+        name:
+          type: string
+          maxLength: 256
+        version:
+          type: string
+          maxLength: 64
+          description: Absent on experiments recorded before evaluator versions were persisted.
+        kind:
+          type: string
+          enum:
+            - llm
+            - code
+          description: >-
+            Whether the evaluator invoked a model. Absent on experiments recorded
+            before per-evaluator attribution was introduced.
+        model:
+          $ref: '../common_attributes.schema.yaml#/components/schemas/Model'
+          description: >-
+            Model this evaluator judged with. Never present for code evaluators,
+            which invoke no model.
+        score_count:
+          type: integer
+          description: How many score documents this evaluator produced.
+      required:
+        - name
+        - score_count

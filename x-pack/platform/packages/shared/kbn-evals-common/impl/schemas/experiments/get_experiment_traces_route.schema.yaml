@@ -1,0 +1,163 @@
+openapi: 3.0.0
+info:
+  title: Get Evaluation Experiment Traces API endpoint
+  version: '1'
+paths:
+  /internal/evals/experiments/{experimentId}/traces:
+    get:
+      x-codegen-enabled: true
+      x-labels: [ess, serverless]
+      operationId: GetEvaluationExperimentTraces
+      description: >-
+        Batch-retrieve an experiment's traces without one call per trace. The
+        trace ids are resolved through the experiment's score documents (never
+        by searching traces-* on experiment attributes), then the page's spans
+        are fetched from traces-* with one msearch item per trace, so one
+        trace's span volume cannot starve the others. A trace whose spans
+        have already aged out of traces-* is still returned as a reference
+        with empty spans, so callers can distinguish an expired trace from a
+        run that was never traced (which has no reference at all).
+      summary: Get evaluation experiment traces
+      tags:
+        - Evals API
+      parameters:
+        - name: experimentId
+          in: path
+          required: true
+          schema:
+            type: string
+            maxLength: 1024
+        - name: role
+          in: query
+          required: false
+          schema:
+            type: string
+            enum:
+              - task
+              - evaluator
+          description: >-
+            Return only task traces or only evaluator traces. When omitted,
+            traces of both roles are returned, task traces first.
+        - name: evaluator
+          in: query
+          required: false
+          schema:
+            type: string
+            maxLength: 256
+          description: >-
+            Restrict evaluator traces to this evaluator name. Only valid
+            together with role=evaluator.
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: per_page
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 50
+            default: 10
+          description: >-
+            Traces per page. Bounded tighter than the runs endpoint because
+            each trace carries all of its spans.
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  experiment_id:
+                    type: string
+                    maxLength: 1024
+                  traces:
+                    type: array
+                    maxItems: 50
+                    items:
+                      $ref: '#/components/schemas/ExperimentTrace'
+                  total:
+                    type: integer
+                    description: >-
+                      Total distinct traces the experiment's score documents
+                      reference, capped at 10000 per role (the same ceiling
+                      the score retrieval endpoints apply to score documents).
+                  page:
+                    type: integer
+                  per_page:
+                    type: integer
+                required:
+                  - experiment_id
+                  - traces
+                  - total
+                  - page
+                  - per_page
+        '400':
+          description: The evaluator filter was given without role=evaluator
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: number
+                  error:
+                    type: string
+                    maxLength: 256
+                  message:
+                    type: string
+                    maxLength: 1024
+        '404':
+          description: Experiment not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: number
+                  error:
+                    type: string
+                    maxLength: 256
+                  message:
+                    type: string
+                    maxLength: 1024
+components:
+  schemas:
+    ExperimentTrace:
+      type: object
+      description: >-
+        One resolved trace: its reference (trace id, role, and the evaluator
+        name for evaluator traces) plus the spans fetched from traces-*.
+        Spans are empty when the trace has aged out of traces-*.
+      properties:
+        trace_id:
+          type: string
+          maxLength: 256
+        role:
+          type: string
+          enum:
+            - task
+            - evaluator
+        evaluator_name:
+          type: string
+          maxLength: 256
+        spans:
+          type: array
+          items:
+            $ref: '../common_attributes.schema.yaml#/components/schemas/TraceSpan'
+        total_spans:
+          type: integer
+        duration_ms:
+          type: number
+      required:
+        - trace_id
+        - role
+        - spans
+        - total_spans
+        - duration_ms
