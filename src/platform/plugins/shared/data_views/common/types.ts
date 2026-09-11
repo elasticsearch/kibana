@@ -13,7 +13,7 @@ import type { SavedObject } from '@kbn/core/server';
 import type { ErrorToastOptions, ToastInputFields } from '@kbn/core-notifications-browser';
 import type { DataViewFieldBase } from '@kbn/es-query';
 import type { SerializedFieldFormat } from '@kbn/field-formats-plugin/common';
-import type { RUNTIME_FIELD_TYPES } from './constants';
+import type { RUNTIME_FIELD_TYPES } from '@kbn/as-code-data-views-schema';
 
 export type { QueryDslQueryContainer };
 export type { SavedObject };

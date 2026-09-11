@@ -15,7 +15,7 @@ import type { RenderResult } from '@testing-library/react';
 import { act, fireEvent, getByLabelText, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
-import type { DashboardState } from '../../../common';
+import type { DashboardState } from '@kbn/as-code-dashboard-schema';
 import {
   DashboardContext,
   useDashboardApi as mockUseDashboardApi,

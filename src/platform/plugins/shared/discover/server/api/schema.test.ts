@@ -12,18 +12,19 @@ import {
   AS_CODE_ESQL_DATA_SOURCE_TYPE,
 } from '@kbn/as-code-data-views-schema';
 import { OPTIONS_LIST_CONTROL } from '@kbn/controls-constants';
-import { DiscoverTabType, UnifiedHistogramSuggestionType } from '@kbn/discover-utils';
 import {
+  DiscoverTabType,
   MAX_METRICS_TAB_DIMENSIONS,
   MAX_METRICS_TAB_STATE_STRING_LENGTH,
-} from '@kbn/saved-search-plugin/common';
+  UnifiedHistogramSuggestionType,
+} from '@kbn/discover-session-constants';
 import {
-  discoverSessionApiResponseSchema,
   discoverSessionApiDataSchema,
   type DiscoverSessionApiClassicTab,
   type DiscoverSessionApiEsqlTab,
   type DiscoverSessionApiMetricsTab,
-} from './schema';
+} from '@kbn/as-code-discover-schema';
+import { discoverSessionApiResponseSchema } from './schema';
 
 // Keep these values independent from the schema constants so contract changes require an explicit
 // test update.

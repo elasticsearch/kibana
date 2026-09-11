@@ -83,5 +83,6 @@ export const regionMapConfigSchema = z
   });
 
 export type RegionMapConfig = z.output<typeof regionMapConfigSchema>;
+export type RegionMapConfigInput = z.input<typeof regionMapConfigSchema>;
 export type RegionMapConfigNoESQL = z.output<typeof regionMapConfigSchemaNoESQL>;
 export type RegionMapConfigESQL = z.output<typeof regionMapConfigSchemaESQL>;

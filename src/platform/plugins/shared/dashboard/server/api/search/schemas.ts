@@ -15,7 +15,7 @@ import {
   getAsCodeTagsSchema,
   PAGINATION_MAX_SIZE,
 } from '@kbn/as-code-shared-schemas';
-import { accessControlSchema } from '../dashboard_state_schemas';
+import { accessControlSchema } from '@kbn/as-code-dashboard-schema';
 
 export const searchResponseBodySchema = z
   .object({

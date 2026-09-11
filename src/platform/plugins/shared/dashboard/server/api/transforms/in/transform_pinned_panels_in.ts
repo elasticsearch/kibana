@@ -13,7 +13,8 @@ import type { Writable } from 'utility-types';
 
 import type { Reference } from '@kbn/content-management-utils';
 import type { LegacyStoredPinnedControlState } from '@kbn/controls-schemas';
-import { type DashboardState, prefixReferencesFromPanel } from '../../../../common';
+import type { DashboardState } from '@kbn/as-code-dashboard-schema';
+import { prefixReferencesFromPanel } from '../../../../common';
 import { embeddableService } from '../../../kibana_services';
 import type { DashboardSavedObjectAttributes } from '../../../dashboard_saved_object/schema';
 import { TransformPanelInError, TransformPanelsInError } from './transform_panels_in_error';

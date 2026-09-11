@@ -12,7 +12,7 @@ import { uniqBy } from 'lodash';
 import type { SavedObjectReference } from '@kbn/core-saved-objects-api-server';
 import type { RequestTiming } from '@kbn/core-http-server';
 import { toStoredTags } from '@kbn/as-code-shared-transforms';
-import type { DashboardState } from '../../types';
+import type { DashboardState } from '@kbn/as-code-dashboard-schema';
 import type { DashboardSavedObjectAttributes } from '../../../dashboard_saved_object';
 import { transformPanelsIn } from './transform_panels_in';
 import { transformPinnedPanelsIn } from './transform_pinned_panels_in';

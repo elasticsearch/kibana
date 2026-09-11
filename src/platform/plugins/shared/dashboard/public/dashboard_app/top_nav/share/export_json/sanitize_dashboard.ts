@@ -7,8 +7,9 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
+import type { DashboardState } from '@kbn/as-code-dashboard-schema';
 import { DASHBOARD_INTERNAL_API_PATH } from '../../../../../common/constants';
-import type { DashboardSanitizeResponseBody, DashboardState } from '../../../../../server';
+import type { DashboardSanitizeResponseBody } from '../../../../../server';
 import { coreServices } from '../../../../services/kibana_services';
 
 export async function sanitizeDashboard(dashboardState: DashboardState) {

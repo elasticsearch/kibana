@@ -14,7 +14,7 @@ import { isObject } from 'lodash';
 export const DEFAULT_ROWS_PER_PAGE = 100;
 export const ROWS_PER_PAGE_OPTIONS = [10, 25, 50, DEFAULT_ROWS_PER_PAGE, 250, 500];
 
-export { VIEW_MODE } from '@kbn/discover-utils';
+export { VIEW_MODE } from '@kbn/discover-session-constants';
 
 export const getDefaultRowsPerPage = (uiSettings: IUiSettingsClient): number => {
   return parseInt(uiSettings.get(SAMPLE_ROWS_PER_PAGE_SETTING), 10) || DEFAULT_ROWS_PER_PAGE;

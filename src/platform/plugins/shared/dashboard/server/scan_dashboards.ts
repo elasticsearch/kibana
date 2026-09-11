@@ -9,10 +9,10 @@
 
 import type { SavedObjectsClientContract } from '@kbn/core/server';
 import type { Reference } from '@kbn/content-management-utils';
+import type { DashboardState } from '@kbn/as-code-dashboard-schema';
 import type { DashboardSavedObjectAttributes } from './dashboard_saved_object';
 import { DASHBOARD_SAVED_OBJECT_TYPE } from '../common/constants';
 import { transformDashboardOut } from './api/transforms';
-import type { DashboardState } from './api';
 import type { getDashboardStateSchema } from './api/dashboard_state_schemas';
 
 /**

@@ -45,7 +45,9 @@ type LooseUnion<T> = {
 };
 
 export type ControlsGroupState = z.output<ReturnType<typeof getControlsGroupSchema>>;
+export type ControlsGroupStateInput = z.input<ReturnType<typeof getControlsGroupSchema>>;
 export type PinnedControlState = ControlsGroupState[number];
+export type PinnedControlInput = NonNullable<ControlsGroupStateInput>[number];
 export type PinnedControlLayoutState = z.output<typeof pinnedControlSchema> & {
   order: number;
   type: string;

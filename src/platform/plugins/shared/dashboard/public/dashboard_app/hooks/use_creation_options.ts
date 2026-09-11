@@ -14,7 +14,7 @@ import type { ViewMode } from '@kbn/presentation-publishing';
 import type { History } from 'history';
 import { useCallback } from 'react';
 
-import type { DashboardState } from '../../../common/types';
+import type { DashboardState } from '@kbn/as-code-dashboard-schema';
 import { DASHBOARD_APP_ID } from '../../../common/page_bundle_constants';
 import type { DashboardCreationOptions } from '../..';
 import { screenshotModeService } from '../../services/kibana_services';

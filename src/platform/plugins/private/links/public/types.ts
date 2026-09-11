@@ -23,7 +23,7 @@ import type { HasSerializedChildState, PresentationContainer } from '@kbn/presen
 import type { LocatorPublic } from '@kbn/share-plugin/common';
 import type { DASHBOARD_API_TYPE } from '@kbn/dashboard-plugin/public';
 import type { DashboardLocatorParams } from '@kbn/dashboard-plugin/common';
-import type { DashboardState } from '@kbn/dashboard-plugin/server';
+import type { DashboardState } from '@kbn/as-code-dashboard-schema';
 
 import type {
   LINKS_EMBEDDABLE_TYPE,

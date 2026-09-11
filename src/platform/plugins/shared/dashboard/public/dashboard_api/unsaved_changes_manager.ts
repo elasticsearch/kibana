@@ -16,7 +16,7 @@ import type {
   ViewMode,
 } from '@kbn/presentation-publishing';
 
-import type { DashboardState } from '../../common';
+import type { DashboardState } from '@kbn/as-code-dashboard-schema';
 import { getDashboardBackupService } from '../services/dashboard_api_services';
 import { type DashboardBackupState } from '../services/dashboard_backup_service';
 import type { initializeApproximationManager } from './approximation_manager';

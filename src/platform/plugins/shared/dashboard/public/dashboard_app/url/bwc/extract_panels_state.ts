@@ -10,7 +10,7 @@
 import semverSatisfies from 'semver/functions/satisfies';
 import type { Reference } from '@kbn/content-management-utils';
 import { SAVED_OBJECT_REF_NAME } from '@kbn/presentation-publishing';
-import type { DashboardState } from '../../../../common';
+import type { DashboardState } from '@kbn/as-code-dashboard-schema';
 import { prefixReferencesFromPanel } from '../../../../common';
 import { coreServices } from '../../../services/kibana_services';
 import { getPanelTooOldErrorString } from '../../_dashboard_app_strings';

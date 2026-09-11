@@ -5,5 +5,5 @@
   },
   "include": ["**/*.ts"],
   "exclude": ["target/**/*"],
-  "kbn_references": ["@kbn/zod", "@kbn/data-views-plugin", "@kbn/zod-helpers"]
+  "kbn_references": ["@kbn/zod", "@kbn/zod-helpers"]
 }

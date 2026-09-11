@@ -13,7 +13,7 @@ import { set } from '@kbn/safer-lodash-set';
 import type { SpacesApi } from '@kbn/spaces-plugin/public';
 import { isEqual } from 'lodash';
 import { firstValueFrom } from 'rxjs';
-import type { DashboardState } from '../../common';
+import type { DashboardState } from '@kbn/as-code-dashboard-schema';
 
 export const DASHBOARD_PANELS_UNSAVED_ID = 'unsavedDashboard';
 const DASHBOARD_VIEWMODE_LOCAL_KEY = 'dashboardViewMode';

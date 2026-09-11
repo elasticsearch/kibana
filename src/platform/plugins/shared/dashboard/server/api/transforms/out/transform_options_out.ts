@@ -9,7 +9,7 @@
 
 import type { Writable } from '@kbn/utility-types';
 
-import type { DashboardState } from '../../types';
+import type { DashboardState } from '@kbn/as-code-dashboard-schema';
 
 const savedObjectToAPIOptionsKeys = {
   hidePanelTitles: 'hide_panel_titles',

@@ -5,7 +5,7 @@
  * 2.0.
  */
 
-import type { DashboardState } from '@kbn/dashboard-plugin/server';
+import type { DashboardState } from '@kbn/as-code-dashboard-schema';
 import { LENS_EMBEDDABLE_TYPE } from '@kbn/lens-common';
 import { LensConfigBuilder, type LensAttributes } from '@kbn/lens-embeddable-utils';
 import type { DashboardAttachmentData } from '../types';

@@ -9,10 +9,7 @@
 
 import type { z } from '@kbn/zod';
 import { expectPrettyError } from '@kbn/zod-helpers/v4';
-import {
-  PRIMITIVE_RUNTIME_FIELD_TYPES,
-  RUNTIME_FIELD_COMPOSITE_TYPE,
-} from '@kbn/data-views-plugin/common';
+import { PRIMITIVE_RUNTIME_FIELD_TYPES, RUNTIME_FIELD_COMPOSITE_TYPE } from './common';
 import type {
   compositeRuntimeFieldSchema,
   primitiveRuntimeFieldSchema,

@@ -577,6 +577,7 @@ export const metricConfigSchema = z.union([metricConfigSchemaNoESQL, metricConfi
 });
 
 export type MetricConfig = z.output<typeof metricConfigSchema>;
+export type MetricConfigInput = z.input<typeof metricConfigSchema>;
 export type MetricConfigNoESQL = z.output<typeof metricConfigSchemaNoESQL>;
 export type MetricConfigESQL = z.output<typeof metricConfigSchemaESQL>;
 

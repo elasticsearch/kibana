@@ -8,7 +8,7 @@
  */
 
 import type { EuiDataGridStyle } from '@elastic/eui';
-export { DataGridDensity } from '@kbn/discover-utils';
+export { DataGridDensity } from '@kbn/discover-session-constants';
 
 export const DEFAULT_CONTROL_COLUMN_WIDTH = 24;
 

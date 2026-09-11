@@ -13,17 +13,16 @@ import {
 } from '@kbn/as-code-data-views-schema';
 import { ESQL_CONTROL } from '@kbn/controls-constants';
 import { injectReferences, parseSearchSourceJSON } from '@kbn/data-plugin/common';
-import { DiscoverTabType, UnifiedHistogramSuggestionType } from '@kbn/discover-utils';
+import { DiscoverTabType, UnifiedHistogramSuggestionType } from '@kbn/discover-session-constants';
 import { FILTERS, FilterStateStore } from '@kbn/es-query';
 import { type DiscoverSessionTabTypeState, VIEW_MODE } from '@kbn/saved-search-plugin/common';
 import { fromStoredTab } from '../../../common/embeddable/transform_utils';
-import type {
-  DiscoverSessionApiClassicTab,
-  DiscoverSessionApiData,
-  DiscoverSessionApiDataInput,
-  DiscoverSessionApiEsqlTab,
-} from '../schema';
-import { discoverSessionApiDataSchema } from '../schema';
+import {
+  discoverSessionApiDataSchema,
+  type DiscoverSessionApiClassicTab,
+  type DiscoverSessionApiEsqlTab,
+} from '@kbn/as-code-discover-schema';
+import type { DiscoverSessionApiData, DiscoverSessionApiDataInput } from '../schema';
 import { transformDiscoverSessionIn } from './transform_discover_session_in';
 import { transformDiscoverSessionOut } from './transform_discover_session_out';
 import {

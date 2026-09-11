@@ -9,7 +9,8 @@
 
 import { isHttpFetchError } from '@kbn/core-http-browser';
 import { SavedObjectNotFound } from '@kbn/kibana-utils-plugin/public';
-import { type SavedSearchCrudTypes, SavedSearchType } from '../../common/content_management';
+import { SavedSearchType } from '@kbn/discover-session-constants';
+import type { SavedSearchCrudTypes } from '../../common/content_management';
 import type { GetSavedSearchDependencies } from '../../common/service/get_saved_searches';
 import type { SavedSearchesServiceDeps } from './saved_searches_service';
 import { SAVED_SEARCH_TYPE } from './constants';

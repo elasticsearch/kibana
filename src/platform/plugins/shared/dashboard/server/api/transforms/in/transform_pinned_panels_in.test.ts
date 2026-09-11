@@ -8,7 +8,7 @@
  */
 
 import { CONTROL_WIDTH_SMALL } from '@kbn/controls-constants';
-import type { DashboardState } from '../../types';
+import type { DashboardState } from '@kbn/as-code-dashboard-schema';
 import { transformPinnedPanelsIn } from './transform_pinned_panels_in';
 
 jest.mock('uuid', () => ({

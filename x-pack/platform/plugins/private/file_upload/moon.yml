@@ -18,6 +18,7 @@ project:
   sourceRoot: x-pack/platform/plugins/private/file_upload
 dependsOn:
   - '@kbn/core'
+  - '@kbn/as-code-data-views-schema'
   - '@kbn/data-plugin'
   - '@kbn/usage-collection-plugin'
   - '@kbn/security-plugin'

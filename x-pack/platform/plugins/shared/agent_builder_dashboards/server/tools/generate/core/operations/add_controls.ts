@@ -15,7 +15,7 @@ import {
   RANGE_SLIDER_CONTROL,
   TIME_SLIDER_CONTROL,
 } from '@kbn/controls-constants';
-import type { DashboardPinnedPanel } from '@kbn/dashboard-plugin/server';
+import type { DashboardPinnedPanel } from '@kbn/as-code-dashboard-schema';
 import { formatEsqlIdentifier } from '@kbn/esql-utils';
 import { z } from '@kbn/zod/v4';
 import { DASHBOARD_OPERATION_FAILURE_TYPES } from '../failure_types';

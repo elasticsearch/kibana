@@ -9,7 +9,7 @@
 
 import { z } from '@kbn/zod';
 import { stripUnmappedKeys } from './scope_tooling';
-import type { DashboardState } from './types';
+import type { DashboardState } from '@kbn/as-code-dashboard-schema';
 
 const mockGetTransforms = jest.fn();
 

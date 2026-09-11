@@ -12,7 +12,15 @@ export {
   AS_CODE_DATA_VIEW_SPEC_TYPE,
 } from './src/data_views/constants';
 export { AS_CODE_ESQL_DATA_SOURCE_TYPE } from './src/constants';
-export { RUNTIME_FIELD_COMPOSITE_TYPE } from './src/runtime_fields/common';
+export {
+  RUNTIME_FIELD_COMPOSITE_TYPE,
+  PRIMITIVE_RUNTIME_FIELD_TYPES,
+  RUNTIME_FIELD_TYPES,
+} from './src/runtime_fields/common';
+export type {
+  RuntimeFieldCompositeType,
+  PrimitiveRuntimeFieldTypes,
+} from './src/runtime_fields/common';
 export {
   dataViewReferenceSchema,
   dataViewSchema,

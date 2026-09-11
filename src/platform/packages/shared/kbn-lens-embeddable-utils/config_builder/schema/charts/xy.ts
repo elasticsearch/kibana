@@ -931,6 +931,7 @@ export const xyConfigSchema = z.union([xyConfigSchemaNoESQL, xyConfigSchemaESQL]
 export type XYConfigNoESQL = z.output<typeof xyConfigSchemaNoESQL>;
 export type XYConfigESQL = z.output<typeof xyConfigSchemaESQL>;
 export type XYConfig = z.output<typeof xyConfigSchema>;
+export type XYConfigInput = z.input<typeof xyConfigSchema>;
 export type DataLayerTypeESQL = z.output<typeof xyDataLayerSchemaESQL>;
 export type DataLayerTypeNoESQL = z.output<typeof xyDataLayerSchemaNoESQL>;
 export type DataLayerType = DataLayerTypeNoESQL | DataLayerTypeESQL;

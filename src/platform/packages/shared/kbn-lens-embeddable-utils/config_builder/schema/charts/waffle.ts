@@ -172,5 +172,6 @@ export const waffleConfigSchema = z.union([waffleConfigSchemaNoESQL, waffleConfi
 });
 
 export type WaffleConfig = z.output<typeof waffleConfigSchema>;
+export type WaffleConfigInput = z.input<typeof waffleConfigSchema>;
 export type WaffleConfigNoESQL = z.output<typeof waffleConfigSchemaNoESQL>;
 export type WaffleConfigESQL = z.output<typeof waffleConfigSchemaESQL>;

@@ -9,7 +9,7 @@
 
 import { isEmpty, filter } from 'lodash';
 
-import type { DashboardState } from '@kbn/dashboard-plugin/server';
+import type { DashboardState } from '@kbn/as-code-dashboard-schema';
 import { PAGINATION_DEFAULT_PER_PAGE } from '@kbn/as-code-shared-schemas';
 import type { DashboardItem } from '../../types';
 import { dashboardServices } from '../../services/kibana_services';

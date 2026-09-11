@@ -20,7 +20,7 @@ import {
 
 import { startTrackingHistory } from '@kbn/rxjs-history';
 
-import type { DashboardState } from '../../common';
+import type { DashboardState } from '@kbn/as-code-dashboard-schema';
 import type { initializeTrackOverlay } from './track_overlay';
 
 export function initializeHistoryManager({

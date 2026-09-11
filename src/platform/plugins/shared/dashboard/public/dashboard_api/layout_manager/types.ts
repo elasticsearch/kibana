@@ -13,7 +13,7 @@ import type {
   PinnedControlLayoutState as PinnedPanelLayoutState,
 } from '@kbn/controls-schemas';
 import type { DefaultEmbeddableApi } from '@kbn/embeddable-plugin/public';
-import type { DashboardPanel, DashboardSection } from '../../../server';
+import type { DashboardPanel, DashboardSection } from '@kbn/as-code-dashboard-schema';
 
 export interface DashboardChildren {
   [uuid: string]: DefaultEmbeddableApi;

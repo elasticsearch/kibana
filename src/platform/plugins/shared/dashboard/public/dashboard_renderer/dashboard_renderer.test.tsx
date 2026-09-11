@@ -16,7 +16,7 @@ import { coreServices, dataService } from '../services/kibana_services';
 import { getDashboardRecentlyAccessedService } from '../services/dashboard_recently_accessed_service';
 import { DashboardRenderer } from './dashboard_renderer';
 import { loadDashboardApi } from '../dashboard_api/load_dashboard_api';
-import type { DashboardPinnedPanelsState } from '../../common';
+import type { DashboardPinnedPanelsState } from '@kbn/as-code-dashboard-schema';
 
 jest.mock('../dashboard_api/load_dashboard_api');
 

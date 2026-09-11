@@ -14,13 +14,13 @@ import { reportPerformanceMetricEvent } from '@kbn/ebt-tools';
 import { openLazyModal } from '@kbn/presentation-util';
 import { i18n } from '@kbn/i18n';
 import type { SavedObjectAccessControl } from '@kbn/core-saved-objects-common';
+import type { DashboardState } from '@kbn/as-code-dashboard-schema';
 import type { DashboardSaveOptions } from './types';
 import {
   coreServices,
   cpsService,
   savedObjectsTaggingService,
 } from '../../services/kibana_services';
-import type { DashboardState } from '../../../common';
 import { SAVED_OBJECT_POST_TIME } from '../../utils/telemetry_constants';
 import { DashboardSaveModal } from './save_modal';
 import { generateDashboardNotSavedToast, saveDashboard } from './save_dashboard';

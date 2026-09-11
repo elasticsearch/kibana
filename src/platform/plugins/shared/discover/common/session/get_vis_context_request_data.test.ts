@@ -7,8 +7,8 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
-import { UnifiedHistogramSuggestionType } from '@kbn/discover-utils';
-import type { DiscoverSessionApiEsqlTab } from '../../server';
+import { UnifiedHistogramSuggestionType } from '@kbn/discover-session-constants';
+import type { DiscoverSessionApiEsqlTab } from '@kbn/as-code-discover-schema';
 import { getVisContextRequestData } from './get_vis_context_request_data';
 
 describe('getVisContextRequestData', () => {

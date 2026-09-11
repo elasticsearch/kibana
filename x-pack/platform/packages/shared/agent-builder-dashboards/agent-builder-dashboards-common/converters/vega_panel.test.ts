@@ -5,7 +5,7 @@
  * 2.0.
  */
 
-import type { DashboardState } from '@kbn/dashboard-plugin/server';
+import type { DashboardState } from '@kbn/as-code-dashboard-schema';
 import { VISUALIZE_EMBEDDABLE_TYPE } from '@kbn/visualizations-common';
 import { buildVegaSavedVis, VEGA_VIS_TYPE } from '@kbn/agent-builder-visualizations-common';
 import type { DashboardAttachmentData } from '../types';

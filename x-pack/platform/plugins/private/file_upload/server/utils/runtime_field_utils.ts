@@ -6,7 +6,7 @@
  */
 
 import type { estypes } from '@elastic/elasticsearch';
-import { RUNTIME_FIELD_TYPES } from '@kbn/data-plugin/common';
+import { RUNTIME_FIELD_TYPES } from '@kbn/as-code-data-views-schema';
 import { isPopulatedObject } from '@kbn/ml-is-populated-object';
 
 type RuntimeType = (typeof RUNTIME_FIELD_TYPES)[number];

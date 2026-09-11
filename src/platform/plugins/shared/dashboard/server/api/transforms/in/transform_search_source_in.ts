@@ -10,7 +10,7 @@
 import { toStoredFilters } from '@kbn/as-code-filters-transforms';
 import { extractReferences } from '@kbn/data-plugin/common';
 import { toStoredQuery } from '@kbn/as-code-shared-transforms';
-import type { DashboardState } from '../../types';
+import type { DashboardState } from '@kbn/as-code-dashboard-schema';
 import { logger } from '../../../kibana_services';
 
 export function transformSearchSourceIn(

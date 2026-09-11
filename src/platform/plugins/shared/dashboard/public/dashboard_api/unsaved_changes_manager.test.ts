@@ -13,14 +13,14 @@ import { initializeUnsavedChangesManager } from './unsaved_changes_manager';
 import { DEFAULT_DASHBOARD_STATE } from '../../common/default_dashboard_state';
 import type { initializeLayoutManager } from './layout_manager';
 import type { DashboardChildren } from './layout_manager/types';
-import type { DashboardState } from '../../common';
+import type { DashboardState } from '@kbn/as-code-dashboard-schema';
 import { isDashboardSection } from '../../common';
 import type { DashboardSettings } from './settings_manager';
 import { initializeSettingsManager } from './settings_manager';
 import type { initializeUnifiedSearchManager } from './unified_search_manager';
 import type { initializeProjectRoutingManager } from './project_routing_manager';
 import type { initializeApproximationManager } from './approximation_manager';
-import type { DashboardPanel } from '../../server';
+import type { DashboardPanel } from '@kbn/as-code-dashboard-schema';
 import type { DashboardSaveEvent } from './types';
 import { getSampleDashboardState } from '../mocks';
 

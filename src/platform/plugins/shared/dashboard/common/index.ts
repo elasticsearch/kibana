@@ -7,13 +7,7 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
-export type {
-  DashboardCapabilities,
-  DashboardLocatorParams,
-  DashboardState,
-  DashboardPinnedPanelsState,
-  DashboardPinnedPanel,
-} from './types';
+export type { DashboardCapabilities, DashboardLocatorParams } from './types';
 
 export { DASHBOARD_API_PATH } from './constants';
 

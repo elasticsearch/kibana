@@ -17,7 +17,10 @@ import {
 import { transformType } from '@kbn/embeddable-plugin/server';
 import { pinnedControlSchema } from '@kbn/controls-schemas/src/controls_group_schema';
 
-import type { DashboardPinnedPanel, DashboardPinnedPanelsState } from '../../../../common';
+import type {
+  DashboardPinnedPanel,
+  DashboardPinnedPanelsState,
+} from '@kbn/as-code-dashboard-schema';
 import type { DashboardSavedObjectAttributes } from '../../../dashboard_saved_object';
 import { embeddableService } from '../../../kibana_services';
 import type { Warnings } from '../../types';

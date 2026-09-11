@@ -572,7 +572,6 @@ export type {
 } from '@kbn/data-views-plugin/common';
 export type { DataViewsContract, DataViewListItem } from '@kbn/data-views-plugin/common';
 export {
-  RUNTIME_FIELD_TYPES,
   DEFAULT_ASSETS_TO_IGNORE,
   META_FIELDS,
   DATA_VIEW_SAVED_OBJECT_TYPE,

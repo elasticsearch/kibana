@@ -94,7 +94,7 @@ spaceTest.describe(
             time_range: {
               from: testData.LOGSTASH_IN_RANGE_DATES.from,
               to: testData.LOGSTASH_IN_RANGE_DATES.to,
-              mode: 'absolute' as const,
+              mode: 'absolute',
             },
             panels: [buildEsqlLensPanel(), buildClassicLensPanel()],
             filters: [

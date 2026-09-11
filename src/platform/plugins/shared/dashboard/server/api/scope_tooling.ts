@@ -7,10 +7,14 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
+import type {
+  DashboardPanel,
+  DashboardState,
+  DashboardPinnedPanel,
+} from '@kbn/as-code-dashboard-schema';
 import { isDashboardSection } from '../../common';
 import { embeddableService } from '../kibana_services';
 import type { Warnings } from './types';
-import type { DashboardPanel, DashboardState, DashboardPinnedPanel } from './types';
 
 export function stripUnmappedKeys(dashboardState: Partial<DashboardState>) {
   const warnings: Warnings = [];

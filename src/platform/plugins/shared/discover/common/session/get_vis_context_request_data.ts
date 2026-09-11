@@ -13,7 +13,7 @@ import {
 } from '@kbn/as-code-data-views-schema';
 import { ESQL_TYPE } from '@kbn/data-view-utils';
 import { get, isUndefined, omitBy } from 'lodash';
-import type { DiscoverSessionApiTab } from '../../server';
+import type { DiscoverSessionApiTab } from '@kbn/as-code-discover-schema';
 
 /** Rebuilds the chart fingerprint from its ES|QL attributes, falling back to available tab fields. */
 export const getVisContextRequestData = (tab: DiscoverSessionApiTab) => {

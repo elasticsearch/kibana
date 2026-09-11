@@ -8,7 +8,7 @@
  */
 
 import type { SerializableRecord } from '@kbn/utility-types';
-import type { DiscoverTabType } from '@kbn/discover-utils';
+import type { DiscoverTabType } from '@kbn/discover-session-constants';
 import type { DiscoverSessionTabTypeState } from '@kbn/saved-search-plugin/common';
 import { isEqual } from 'lodash';
 

@@ -9,7 +9,7 @@
 
 import type { SavedObjectSaveOpts } from '@kbn/saved-objects-plugin/public';
 import type { SavedObjectAccessControl } from '@kbn/core-saved-objects-common';
-import type { DashboardState } from '../../../common';
+import type { DashboardState } from '@kbn/as-code-dashboard-schema';
 
 export interface DashboardSaveOptions {
   newTitle: string;

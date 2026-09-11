@@ -8,9 +8,9 @@
  */
 
 import { omit } from 'lodash';
-import { type DashboardState } from '../../../common';
+import type { DashboardSection } from '@kbn/as-code-dashboard-schema';
+import type { DashboardState } from '@kbn/as-code-dashboard-schema';
 import type { DashboardChildState, DashboardLayout } from './types';
-import type { DashboardSection } from '../../../server';
 
 export function serializeLayout(
   layout: DashboardLayout,

@@ -12,7 +12,7 @@ import type { Reference } from '@kbn/content-management-utils';
 import { transformType } from '@kbn/embeddable-plugin/public';
 import { flow } from 'lodash';
 import { transformTimeRangeOut, transformTitlesOut } from '@kbn/presentation-publishing';
-import type { DashboardState, DashboardPanel } from '../../../server';
+import type { DashboardState, DashboardPanel } from '@kbn/as-code-dashboard-schema';
 import { getReferencesForPanelId, isDashboardSection } from '../../../common';
 import { embeddableService } from '../../services/kibana_services';
 

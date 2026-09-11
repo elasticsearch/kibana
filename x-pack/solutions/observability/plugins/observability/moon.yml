@@ -125,6 +125,7 @@ dependsOn:
   - '@kbn/fields-metadata-plugin'
   - '@kbn/controls-plugin'
   - '@kbn/core-http-browser'
+  - '@kbn/as-code-dashboard-schema'
   - '@kbn/dashboard-plugin'
   - '@kbn/deeplinks-analytics'
   - '@kbn/object-utils'

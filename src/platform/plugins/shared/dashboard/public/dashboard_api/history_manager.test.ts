@@ -10,7 +10,7 @@
 import { BehaviorSubject, combineLatest, firstValueFrom, map, Subject } from 'rxjs';
 import { initializeHistoryManager } from './history_manager';
 import { getSampleDashboardState } from '../mocks';
-import type { DashboardState } from '../../common';
+import type { DashboardState } from '@kbn/as-code-dashboard-schema';
 import { waitFor } from '@testing-library/react';
 
 const makeSetup = async () => {

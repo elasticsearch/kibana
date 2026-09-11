@@ -7,12 +7,8 @@
 import { isEmpty, omit } from 'lodash';
 import type { Logger } from '@kbn/core/server';
 import { isDashboardPanel } from '@kbn/dashboard-plugin/common';
-import type {
-  DashboardState,
-  DashboardPanel,
-  ScanDashboardsResult,
-  DashboardReadResponseBody,
-} from '@kbn/dashboard-plugin/server';
+import type { ScanDashboardsResult, DashboardReadResponseBody } from '@kbn/dashboard-plugin/server';
+import type { DashboardState, DashboardPanel } from '@kbn/as-code-dashboard-schema';
 import { LENS_EMBEDDABLE_TYPE } from '@kbn/lens-common';
 import type {
   FieldBasedIndexPatternColumn,

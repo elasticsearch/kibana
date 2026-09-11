@@ -9,10 +9,8 @@
 
 import type { Type } from '@kbn/config-schema';
 import { schema } from '@kbn/config-schema';
-import {
-  MAX_DATA_VIEW_FIELD_DESCRIPTION_LENGTH,
-  PRIMITIVE_RUNTIME_FIELD_TYPES,
-} from '../common/constants';
+import { PRIMITIVE_RUNTIME_FIELD_TYPES } from '@kbn/as-code-data-views-schema';
+import { MAX_DATA_VIEW_FIELD_DESCRIPTION_LENGTH } from '../common/constants';
 import type { RuntimeType } from '../common';
 
 export const serializedFieldFormatSchema = schema.object(

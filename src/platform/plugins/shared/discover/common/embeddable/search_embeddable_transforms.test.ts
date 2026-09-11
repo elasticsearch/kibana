@@ -24,7 +24,7 @@ import type {
 import { SavedSearchType } from '@kbn/saved-search-plugin/common';
 import { SAVED_SEARCH_SAVED_OBJECT_REF_NAME } from './constants';
 import { VIEW_MODE } from '@kbn/saved-search-plugin/common';
-import { DataGridDensity } from '@kbn/discover-utils';
+import { DataGridDensity } from '@kbn/discover-session-constants';
 
 const mockDrilldownTransforms = {
   transformIn: jest.fn().mockImplementation((state: DiscoverSessionEmbeddableState) => ({

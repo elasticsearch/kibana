@@ -9,7 +9,7 @@
 
 import { getSampleDashboardState } from '../../mocks';
 import { saveDashboard } from './save_dashboard';
-import type { DashboardState } from '../../../server';
+import type { DashboardState } from '@kbn/as-code-dashboard-schema';
 
 const mockCreate = jest.fn();
 const mockUpdate = jest.fn();

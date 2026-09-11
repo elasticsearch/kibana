@@ -81,7 +81,7 @@ async function createDashboardWithLensPanel(
       time_range: {
         from: LOGSTASH_ABSOLUTE_RANGE.from,
         to: LOGSTASH_ABSOLUTE_RANGE.to,
-        mode: 'absolute' as const,
+        mode: 'absolute',
       },
       panels: [buildLensLineTimeseriesPanel(esql)],
     },

@@ -7,6 +7,7 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
+import type { DiscoverSessionApiInput } from '@kbn/as-code-discover-schema';
 import type { KbnClient, ScoutLogger } from '../../../../../../common';
 import { measurePerformanceAsync } from '../../../../../../common';
 import { DISCOVER_SESSION_API_PATH, DISCOVER_SESSION_API_VERSION } from './constants';
@@ -23,7 +24,7 @@ export interface DiscoverApiService {
    * @param body - Discover session create request body
    * @param spaceId - Optional space id to create the session in
    */
-  create: (body: unknown, spaceId?: string) => Promise<string>;
+  create: (body: DiscoverSessionApiInput, spaceId?: string) => Promise<string>;
 }
 
 /**

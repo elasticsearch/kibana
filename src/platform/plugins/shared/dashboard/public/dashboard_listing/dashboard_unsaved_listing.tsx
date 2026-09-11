@@ -23,7 +23,7 @@ import type { ViewMode } from '@kbn/presentation-publishing';
 import { css } from '@emotion/react';
 import { useMemoCss } from '@kbn/css-utils/public/use_memo_css';
 import { KbnInfoCallout } from '@kbn/ui-callout';
-import type { DashboardState } from '../../server';
+import type { DashboardState } from '@kbn/as-code-dashboard-schema';
 import { DASHBOARD_PANELS_UNSAVED_ID } from '../services/dashboard_backup_service';
 import { dashboardUnsavedListingStrings, getNewDashboardTitle } from './_dashboard_listing_strings';
 import { confirmDiscardUnsavedChanges } from './confirm_overlays';

@@ -9,8 +9,8 @@
 
 import { SOContentStorage } from '@kbn/content-management-utils';
 import type { Logger } from '@kbn/logging';
+import { SavedSearchType } from '@kbn/discover-session-constants';
 import type { SavedSearchCrudTypes } from '../../common/content_management';
-import { SavedSearchType } from '../../common/content_management';
 import { cmServicesDefinition } from './schema/cm_services';
 
 export class SavedSearchStorage extends SOContentStorage<SavedSearchCrudTypes> {

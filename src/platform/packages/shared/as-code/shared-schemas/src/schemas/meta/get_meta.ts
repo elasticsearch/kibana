@@ -7,7 +7,7 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
-import type { SavedObject } from '@kbn/core/server';
+import type { SavedObject } from '@kbn/core-saved-objects-common';
 import type { AsCodeMeta } from './schema';
 
 export function getMeta(

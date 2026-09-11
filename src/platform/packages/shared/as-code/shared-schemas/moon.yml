@@ -17,7 +17,7 @@ project:
   owner: '@elastic/kibana-presentation'
   sourceRoot: src/platform/packages/shared/as-code/shared-schemas
 dependsOn:
-  - '@kbn/core'
+  - '@kbn/core-saved-objects-common'
   - '@kbn/zod'
 tags:
   - shared-common

@@ -9,7 +9,7 @@
 
 import type { DashboardSavedObjectAttributes } from '../../dashboard_saved_object';
 import type { getDashboardStateSchema } from '../dashboard_state_schemas';
-import type { DashboardState } from '../types';
+import type { DashboardState } from '@kbn/as-code-dashboard-schema';
 
 jest.mock('../transforms', () => ({
   transformDashboardIn: jest.fn(),

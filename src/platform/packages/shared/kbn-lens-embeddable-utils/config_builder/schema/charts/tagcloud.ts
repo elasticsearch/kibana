@@ -127,5 +127,6 @@ export const tagcloudConfigSchema = z
   });
 
 export type TagcloudConfig = z.output<typeof tagcloudConfigSchema>;
+export type TagcloudConfigInput = z.input<typeof tagcloudConfigSchema>;
 export type TagcloudConfigNoESQL = z.output<typeof tagcloudConfigSchemaNoESQL>;
 export type TagcloudConfigESQL = z.output<typeof tagcloudConfigSchemaESQL>;

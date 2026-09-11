@@ -9,7 +9,7 @@
 
 import { BehaviorSubject, Subject, take } from 'rxjs';
 import { getSampleDashboardState } from '../mocks';
-import type { DashboardState } from '../../common';
+import type { DashboardState } from '@kbn/as-code-dashboard-schema';
 import { initializeUnifiedSearchManager } from './unified_search_manager';
 
 describe('initializeUnifiedSearchManager', () => {

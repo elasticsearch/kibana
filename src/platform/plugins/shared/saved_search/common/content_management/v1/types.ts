@@ -13,7 +13,7 @@ import type {
   SavedObjectSearchOptions,
   SavedObjectUpdateOptions,
 } from '@kbn/content-management-utils';
-import type { SavedSearchContentType } from '../../constants';
+import type { SavedSearchContentType } from '@kbn/discover-session-constants';
 import type { DiscoverSessionAttributes } from '../../../server';
 
 interface SavedSearchCreateOptions {

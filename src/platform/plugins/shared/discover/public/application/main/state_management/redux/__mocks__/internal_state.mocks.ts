@@ -8,7 +8,7 @@
  */
 
 import type { DataView } from '@kbn/data-views-plugin/common';
-import type { DiscoverTabType } from '@kbn/discover-utils';
+import type { DiscoverTabType } from '@kbn/discover-session-constants';
 import type { DiscoverServices } from '../../../../../build_services';
 import { DEFAULT_TAB_STATE } from '../constants';
 import type { DiscoverAppState, RecentlyClosedTabState, TabState } from '../types';

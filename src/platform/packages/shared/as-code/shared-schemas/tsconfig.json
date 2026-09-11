@@ -10,7 +10,7 @@
     "target/**/*"
   ],
   "kbn_references": [
-    "@kbn/core",
+    "@kbn/core-saved-objects-common",
     "@kbn/zod",
   ]
 }

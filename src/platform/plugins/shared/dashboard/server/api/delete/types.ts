@@ -7,7 +7,7 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
-import type { DashboardState } from '../types';
+import type { DashboardState } from '@kbn/as-code-dashboard-schema';
 
 export interface DashboardDeleteResponseBody {
   id: string;

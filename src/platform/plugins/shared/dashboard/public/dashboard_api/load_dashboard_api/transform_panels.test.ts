@@ -9,7 +9,7 @@
 
 import type { Reference } from '@kbn/content-management-utils';
 import { transformPanels } from './transform_panels';
-import type { DashboardPanel, DashboardSection } from '../../../server';
+import type { DashboardPanel, DashboardSection } from '@kbn/as-code-dashboard-schema';
 
 describe('transformPanels', () => {
   const mockTransformOut = jest.fn();

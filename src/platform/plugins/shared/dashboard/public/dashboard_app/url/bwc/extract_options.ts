@@ -8,7 +8,7 @@
  */
 
 import type { Writable } from '@kbn/utility-types';
-import type { DashboardOptions } from '../../../../server';
+import type { DashboardOptions } from '@kbn/as-code-dashboard-schema';
 
 export function extractOptions(state: {
   [key: string]: unknown;

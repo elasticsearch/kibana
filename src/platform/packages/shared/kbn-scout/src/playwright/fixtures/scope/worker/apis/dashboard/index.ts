@@ -7,13 +7,14 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
+import type { DashboardApiDataInput } from '@kbn/as-code-dashboard-schema';
 import type { KbnClient, ScoutLogger } from '../../../../../../common';
 import { measurePerformanceAsync } from '../../../../../../common';
-import type { CreatedDashboardPanel } from './types';
 import { DASHBOARD_API_PATH, DASHBOARD_API_VERSION } from './constants';
+import type { CreatedDashboardPanel } from './types';
 
-export type { CreatedDashboardPanel } from './types';
 export { DASHBOARD_API_PATH, DASHBOARD_API_VERSION } from './constants';
+export type { CreatedDashboardPanel } from './types';
 
 /**
  * Dashboards API Service
@@ -25,14 +26,17 @@ export interface DashboardApiService {
    * @param body - Dashboard create request body
    * @param spaceId - Optional space id to create the dashboard in
    */
-  create: (body: unknown, spaceId?: string) => Promise<string>;
+  create: (body: DashboardApiDataInput, spaceId?: string) => Promise<string>;
 
   /**
    * Create a dashboard and fetch the auto-generated panel id of its first panel.
    * @param body - Dashboard create request body
    * @param spaceId - Optional space id to create the dashboard in
    */
-  createWithPanelId: (body: unknown, spaceId?: string) => Promise<CreatedDashboardPanel>;
+  createWithPanelId: (
+    body: DashboardApiDataInput,
+    spaceId?: string
+  ) => Promise<CreatedDashboardPanel>;
 }
 
 /**

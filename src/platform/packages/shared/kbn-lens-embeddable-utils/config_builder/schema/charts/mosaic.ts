@@ -207,5 +207,6 @@ export const mosaicConfigSchema = z.union([mosaicConfigSchemaNoESQL, mosaicConfi
 });
 
 export type MosaicConfig = z.output<typeof mosaicConfigSchema>;
+export type MosaicConfigInput = z.input<typeof mosaicConfigSchema>;
 export type MosaicConfigNoESQL = z.output<typeof mosaicConfigSchemaNoESQL>;
 export type MosaicConfigESQL = z.output<typeof mosaicConfigSchemaESQL>;

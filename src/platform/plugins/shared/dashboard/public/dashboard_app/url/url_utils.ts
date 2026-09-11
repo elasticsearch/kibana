@@ -11,7 +11,7 @@ import { replaceUrlHashQuery } from '@kbn/kibana-utils-plugin/common';
 import type { IKbnUrlStateStorage } from '@kbn/kibana-utils-plugin/public';
 import type { History } from 'history';
 import { skip } from 'rxjs';
-import type { DashboardState } from '../../../common/types';
+import type { DashboardState } from '@kbn/as-code-dashboard-schema';
 import type { DashboardApi } from '../../dashboard_api/types';
 import { DASHBOARD_STATE_STORAGE_KEY, createDashboardEditUrl } from '../../utils/urls';
 import { extractDashboardState } from './bwc/extract_dashboard_state';

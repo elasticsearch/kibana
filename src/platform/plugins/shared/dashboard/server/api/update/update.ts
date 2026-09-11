@@ -14,6 +14,7 @@ import type { SavedObjectsUpdateResponse } from '@kbn/core-saved-objects-api-ser
 import type { SavedObjectAccessControl } from '@kbn/core-saved-objects-common';
 import type { RequestHandlerContext } from '@kbn/core/server';
 import { SavedObjectsErrorHelpers } from '@kbn/core/server';
+import type { DashboardState } from '@kbn/as-code-dashboard-schema';
 import { DASHBOARD_SAVED_OBJECT_TYPE } from '../../../common/constants';
 import type { DashboardSavedObjectAttributes } from '../../dashboard_saved_object';
 import type { DashboardCreateResponseBody } from '../create';
@@ -21,7 +22,7 @@ import { create } from '../create';
 import type { getDashboardStateSchema } from '../dashboard_state_schemas';
 import { getDashboardCRUResponseBody } from '../get_cru_response_body';
 import { transformDashboardIn } from '../transforms';
-import type { DashboardState, Operation } from '../types';
+import type { Operation } from '../types';
 import type { DashboardUpdateResponseBody } from './types';
 
 /**

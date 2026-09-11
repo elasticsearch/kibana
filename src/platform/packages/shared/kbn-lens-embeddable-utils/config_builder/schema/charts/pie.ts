@@ -219,5 +219,6 @@ export const pieConfigSchema = z.union([pieConfigSchemaNoESQL, pieConfigSchemaES
 });
 
 export type PieConfig = z.output<typeof pieConfigSchema>;
+export type PieConfigInput = z.input<typeof pieConfigSchema>;
 export type PieConfigNoESQL = z.output<typeof pieConfigSchemaNoESQL>;
 export type PieConfigESQL = z.output<typeof pieConfigSchemaESQL>;

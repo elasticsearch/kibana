@@ -28,6 +28,7 @@ dependsOn:
   - '@kbn/custom-content-server'
   - '@kbn/agent-builder-server'
   - '@kbn/controls-constants'
+  - '@kbn/as-code-dashboard-schema'
   - '@kbn/dashboard-plugin'
   - '@kbn/agent-builder-dashboards-common'
   - '@kbn/zod'

@@ -13,8 +13,8 @@ import { diffComparators } from '@kbn/presentation-publishing';
 import type { Subscription } from 'rxjs';
 import { BehaviorSubject, combineLatestWith, debounceTime, map, skip, startWith } from 'rxjs';
 import { ProjectRoutingAccess } from '@kbn/cps-utils';
+import type { DashboardState } from '@kbn/as-code-dashboard-schema';
 import { cpsService } from '../services/kibana_services';
-import type { DashboardState } from '../../common';
 
 export const COMPARE_DEBOUNCE = 100;
 

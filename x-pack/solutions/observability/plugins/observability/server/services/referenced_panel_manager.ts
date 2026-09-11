@@ -5,7 +5,7 @@
  * 2.0.
  */
 
-import type { DashboardPanel } from '@kbn/dashboard-plugin/server';
+import type { DashboardPanel } from '@kbn/as-code-dashboard-schema';
 import type { Logger, SavedObjectsClientContract } from '@kbn/core/server';
 import { isSavedObjectErrorResult } from '@kbn/core/server';
 import type { Reference } from '@kbn/content-management-utils';

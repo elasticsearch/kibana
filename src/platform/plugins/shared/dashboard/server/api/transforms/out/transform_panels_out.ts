@@ -14,9 +14,14 @@ import { LENS_EMBEDDABLE_TYPE } from '@kbn/lens-common';
 import { transformTimeRangeOut, transformTitlesOut } from '@kbn/presentation-publishing';
 import { ZodError } from '@kbn/zod';
 import { stringifyZodError } from '@kbn/zod-helpers/v4';
+import type {
+  DashboardPanel,
+  DashboardSection,
+  DashboardState,
+} from '@kbn/as-code-dashboard-schema';
 import type { SavedDashboardPanel, SavedDashboardSection } from '../../../dashboard_saved_object';
 import { embeddableService, logger } from '../../../kibana_services';
-import type { DashboardPanel, DashboardSection, DashboardState, Warnings } from '../../types';
+import type { Warnings } from '../../types';
 import { getPanelReferences } from './get_panel_references';
 import { panelBwc } from './panel_bwc';
 

@@ -17,9 +17,8 @@ import {
   esqlTabSchema,
   panelOverridesSchema,
   tabSchema,
-  type DiscoverSessionClassicTab,
-  type DiscoverSessionEsqlTab,
-} from './schema';
+} from '@kbn/as-code-discover-schema';
+import type { DiscoverSessionClassicTab, DiscoverSessionEsqlTab } from './schema';
 
 const classicTabInput = {
   data_source: {

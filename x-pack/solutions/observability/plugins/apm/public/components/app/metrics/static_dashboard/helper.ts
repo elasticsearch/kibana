@@ -7,7 +7,7 @@
 
 import Mustache from 'mustache';
 import type { DataView } from '@kbn/data-views-plugin/common';
-import type { DashboardState } from '@kbn/dashboard-plugin/common';
+import type { DashboardState } from '@kbn/as-code-dashboard-schema';
 import type { APMIndices } from '@kbn/apm-sources-access-plugin/public';
 import type { FormBasedPrivateState, TextBasedPrivateState } from '@kbn/lens-common';
 import type { DashboardFileName } from './dashboards/dashboard_catalog';

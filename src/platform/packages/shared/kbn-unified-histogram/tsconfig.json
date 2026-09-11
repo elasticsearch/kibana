@@ -43,5 +43,6 @@
     "@kbn/react-hooks",
     "@kbn/ebt-click",
     "@kbn/i18n-react",
+    "@kbn/discover-session-constants",
   ]
 }

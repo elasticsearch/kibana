@@ -8,7 +8,7 @@
  */
 
 import { expectPrettyError } from '@kbn/zod-helpers/v4';
-import { RUNTIME_FIELD_COMPOSITE_TYPE } from '@kbn/data-views-plugin/common';
+import { RUNTIME_FIELD_COMPOSITE_TYPE } from '../runtime_fields/common';
 import { savedDataViewSpecSchema } from './schema_saved_data_view';
 
 describe('savedDataViewSpecSchema', () => {

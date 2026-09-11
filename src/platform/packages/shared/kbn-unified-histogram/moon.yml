@@ -54,6 +54,7 @@ dependsOn:
   - '@kbn/react-hooks'
   - '@kbn/ebt-click'
   - '@kbn/i18n-react'
+  - '@kbn/discover-session-constants'
 tags:
   - shared-browser
   - package

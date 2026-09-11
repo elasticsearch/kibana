@@ -18,7 +18,6 @@ project:
   sourceRoot: src/platform/packages/shared/as-code/data-views-schema
 dependsOn:
   - '@kbn/zod'
-  - '@kbn/data-views-plugin'
   - '@kbn/zod-helpers'
 tags:
   - shared-common

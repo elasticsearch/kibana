@@ -7,9 +7,9 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
-import { RUNTIME_FIELD_COMPOSITE_TYPE } from '@kbn/data-views-plugin/common';
 import { AS_CODE_DATA_VIEW_SPEC_TYPE } from './constants';
 import { dataViewSpecSchema } from './schema_embedded_data_view';
+import { RUNTIME_FIELD_COMPOSITE_TYPE } from '../runtime_fields/common';
 
 describe('dataViewSpecSchema field_settings', () => {
   it('accepts indexed field overrides', () => {

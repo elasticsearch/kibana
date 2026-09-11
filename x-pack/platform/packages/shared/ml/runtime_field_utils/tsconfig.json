@@ -16,8 +16,8 @@
     "target/**/*"
   ],
   "kbn_references": [
+    "@kbn/as-code-data-views-schema",
     "@kbn/data-views-plugin",
-    "@kbn/data-plugin",
     "@kbn/ml-is-populated-object",
   ]
 }

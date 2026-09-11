@@ -10,7 +10,7 @@
 import { DEFAULT_AUTO_APPLY_SELECTIONS, DEFAULT_DATA_CONTROL_STATE } from '@kbn/controls-constants';
 import { convertCamelCasedKeysToSnakeCase } from '@kbn/presentation-publishing';
 import { get } from 'lodash';
-import type { DashboardState } from '../../../../common';
+import type { DashboardState } from '@kbn/as-code-dashboard-schema';
 
 export function extractPinnedPanelsState(state: { [key: string]: unknown }): {
   pinned_panels?: DashboardState['pinned_panels'];

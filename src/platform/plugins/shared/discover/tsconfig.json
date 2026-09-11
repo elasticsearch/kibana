@@ -130,8 +130,8 @@
     "@kbn/as-code-data-views-schema",
     "@kbn/as-code-data-views-transforms",
     "@kbn/as-code-export-flyout-component",
-    "@kbn/as-code-filters-schema",
     "@kbn/as-code-filters-transforms",
+    "@kbn/as-code-discover-schema",
     "@kbn/as-code-shared-schemas",
     "@kbn/as-code-shared-telemetry",
     "@kbn/as-code-shared-transforms",
@@ -149,8 +149,6 @@
     "@kbn/presentation-util-plugin",
     "@kbn/core-saved-objects-common",
     "@kbn/as-code-filters-constants",
-    "@kbn/data-service-server",
-    "@kbn/es-query-server",
     "@kbn/core-analytics-browser-mocks",
     "@kbn/core-http-server-mocks",
     "@kbn/reporting-public",
@@ -162,7 +160,8 @@
     "@kbn/use-observable",
     "@kbn/core-security-server",
     "@kbn/core-http-server",
-    "@kbn/ui-callout"
+    "@kbn/ui-callout",
+    "@kbn/discover-session-constants"
   ],
   "exclude": ["target/**/*"]
 }

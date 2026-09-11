@@ -18,7 +18,8 @@ import { i18n } from '@kbn/i18n';
 import type { ExportShareParameters } from '@kbn/share-plugin/public';
 import { downloadFileAs, useShareTypeContext } from '@kbn/share-plugin/public';
 
-import { DASHBOARD_API_PATH, type DashboardState } from '../../../../../common';
+import type { DashboardState } from '@kbn/as-code-dashboard-schema';
+import { DASHBOARD_API_PATH } from '../../../../../common';
 import { type DashboardSanitizeResponseBody } from '../../../../../server';
 import { coreServices, shareService } from '../../../../services/kibana_services';
 import { sanitizeDashboard } from './sanitize_dashboard';

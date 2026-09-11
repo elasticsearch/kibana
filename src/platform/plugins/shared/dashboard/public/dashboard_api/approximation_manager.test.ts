@@ -9,7 +9,7 @@
 
 import { BehaviorSubject } from 'rxjs';
 import { getSampleDashboardState } from '../mocks';
-import type { DashboardState } from '../../common';
+import type { DashboardState } from '@kbn/as-code-dashboard-schema';
 import { initializeApproximationManager } from './approximation_manager';
 
 describe('approximationManager', () => {

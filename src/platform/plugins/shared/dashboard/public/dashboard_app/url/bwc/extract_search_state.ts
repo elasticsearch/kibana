@@ -11,7 +11,7 @@ import type { AsCodeFilter } from '@kbn/as-code-filters-schema';
 import { fromStoredFilter, isAsCodeFilter } from '@kbn/as-code-filters-transforms';
 import { toAsCodeQuery } from '@kbn/as-code-shared-transforms';
 import { isQuery } from '@kbn/data-plugin/public';
-import type { DashboardState } from '../../../../common';
+import type { DashboardState } from '@kbn/as-code-dashboard-schema';
 import { migrateLegacyQuery } from '../../../../common';
 
 type DashboardSearchState = Pick<

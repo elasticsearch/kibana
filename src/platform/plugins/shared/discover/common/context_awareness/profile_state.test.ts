@@ -8,7 +8,8 @@
  */
 
 import { TEST_PROFILE_STATE_DEF } from '../../public/context_awareness/__mocks__/profile_state';
-import { DiscoverTabType, METRICS_GRID_SETTINGS_DEFAULTS } from '@kbn/discover-utils';
+import { DiscoverTabType } from '@kbn/discover-session-constants';
+import { METRICS_GRID_SETTINGS_DEFAULTS } from '@kbn/discover-utils';
 import {
   createProfileSavedStateTransform,
   type ProfileStateDefinition,

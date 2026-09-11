@@ -30,6 +30,8 @@
     "@kbn/axe-config",
     "@kbn/peggy",
     "@kbn/test-docker-servers",
+    "@kbn/as-code-discover-schema",
+    "@kbn/as-code-dashboard-schema",
     "@kbn/app-header",
     "@kbn/utils",
   ]

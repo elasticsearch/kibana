@@ -9,7 +9,8 @@
 
 import { toStoredTags } from '@kbn/as-code-shared-transforms';
 import type { DiscoverSessionAttributes } from '@kbn/saved-search-plugin/server';
-import { discoverSessionApiDataSchema, type DiscoverSessionSanitizeResponse } from './schema';
+import { discoverSessionApiDataSchema } from '@kbn/as-code-discover-schema';
+import type { DiscoverSessionSanitizeResponse } from './schema';
 import { transformDiscoverSessionOut } from './transforms';
 
 export interface DiscoverSessionSanitizeRequest {

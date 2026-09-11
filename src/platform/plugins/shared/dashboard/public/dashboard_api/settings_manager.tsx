@@ -11,7 +11,7 @@ import type { StateComparators, WithAllKeys } from '@kbn/presentation-publishing
 import { diffComparators, initializeStateManager } from '@kbn/presentation-publishing';
 import { BehaviorSubject } from 'rxjs';
 import { combineLatestWith, debounceTime, map, startWith } from 'rxjs';
-import type { DashboardState, DashboardOptions } from '../../server';
+import type { DashboardState, DashboardOptions } from '@kbn/as-code-dashboard-schema';
 import { DEFAULT_DASHBOARD_OPTIONS } from '../../common/constants';
 import { coreServices, screenshotModeService } from '../services/kibana_services';
 

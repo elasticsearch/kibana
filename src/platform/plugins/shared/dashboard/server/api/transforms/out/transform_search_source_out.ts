@@ -16,11 +16,12 @@ import type { SavedObjectReference } from '@kbn/core/server';
 import { injectReferences, parseSearchSourceJSON } from '@kbn/data-plugin/common';
 import type { Filter } from '@kbn/es-query';
 
+import type { DashboardState } from '@kbn/as-code-dashboard-schema';
 import { migrateLegacyQuery } from '../../../../common';
 import type { DashboardSavedObjectAttributes } from '../../../dashboard_saved_object';
 import { logger } from '../../../kibana_services';
 import type { getDashboardStateSchema } from '../../dashboard_state_schemas';
-import type { DashboardState, Warnings } from '../../types';
+import type { Warnings } from '../../types';
 
 export function transformSearchSourceOut(
   kibanaSavedObjectMeta: DashboardSavedObjectAttributes['kibanaSavedObjectMeta'] = {},

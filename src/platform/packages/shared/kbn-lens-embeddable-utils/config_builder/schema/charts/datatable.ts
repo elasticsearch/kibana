@@ -459,5 +459,6 @@ export const datatableConfigSchema = z
   });
 
 export type DatatableConfig = z.output<typeof datatableConfigSchema>;
+export type DatatableConfigInput = z.input<typeof datatableConfigSchema>;
 export type DatatableConfigNoESQL = z.output<typeof datatableConfigSchemaNoESQL>;
 export type DatatableConfigESQL = z.output<typeof datatableConfigSchemaESQL>;

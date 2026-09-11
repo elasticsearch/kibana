@@ -14,7 +14,7 @@
 import type { DeepPartial } from '@kbn/utility-types';
 
 import { ControlValuesSource } from '@kbn/controls-constants';
-import type { DashboardState } from './types';
+import type { DashboardState } from '@kbn/as-code-dashboard-schema';
 import type { DashboardCreateResponseBody } from './create';
 import type { DashboardReadResponseBody } from './read';
 import type { DashboardSearchResponseBody } from './search';

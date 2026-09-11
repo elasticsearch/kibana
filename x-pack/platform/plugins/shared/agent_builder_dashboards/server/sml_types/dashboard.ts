@@ -11,12 +11,12 @@ import {
   DASHBOARD_ATTACHMENT_TYPE,
   dashboardStateToAttachmentData,
 } from '@kbn/agent-builder-dashboards-common';
+import type { DashboardPluginStart } from '@kbn/dashboard-plugin/server';
 import type {
   DashboardPanel,
-  DashboardPluginStart,
   DashboardSection,
   DashboardState,
-} from '@kbn/dashboard-plugin/server';
+} from '@kbn/as-code-dashboard-schema';
 import { DASHBOARD_KI_TYPE } from '@kbn/agent-builder-elastic-ai-index-ki-types';
 
 interface CreateDashboardSmlTypeOptions {

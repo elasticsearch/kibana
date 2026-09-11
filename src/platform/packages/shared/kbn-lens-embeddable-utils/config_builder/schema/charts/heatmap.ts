@@ -184,5 +184,6 @@ export const heatmapConfigSchema = z
   });
 
 export type HeatmapConfig = z.output<typeof heatmapConfigSchema>;
+export type HeatmapConfigInput = z.input<typeof heatmapConfigSchema>;
 export type HeatmapConfigNoESQL = z.output<typeof heatmapConfigSchemaNoESQL>;
 export type HeatmapConfigESQL = z.output<typeof heatmapConfigSchemaESQL>;

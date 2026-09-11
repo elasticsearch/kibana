@@ -7,11 +7,8 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
-import type {
-  DashboardSearchRequestParams,
-  DashboardSearchResponseBody,
-  DashboardState,
-} from '../../server';
+import type { DashboardState } from '@kbn/as-code-dashboard-schema';
+import type { DashboardSearchRequestParams, DashboardSearchResponseBody } from '../../server';
 
 /**
  * Types for Finding Dashboards

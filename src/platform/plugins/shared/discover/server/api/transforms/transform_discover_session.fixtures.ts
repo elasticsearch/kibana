@@ -11,7 +11,7 @@ import {
   DataGridDensity,
   DiscoverTabType,
   UnifiedHistogramSuggestionType,
-} from '@kbn/discover-utils';
+} from '@kbn/discover-session-constants';
 import { VIEW_MODE } from '@kbn/saved-search-plugin/common';
 import type { DiscoverSessionAttributes } from '@kbn/saved-search-plugin/server';
 import type { DiscoverSessionApiData } from '../schema';

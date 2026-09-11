@@ -8,12 +8,11 @@
  */
 
 import { z } from '@kbn/zod';
-import type {
-  PrimitiveRuntimeFieldTypes,
-  RuntimeFieldCompositeType,
-} from '@kbn/data-views-plugin/common';
 
-export const PRIMITIVE_RUNTIME_FIELD_TYPES: PrimitiveRuntimeFieldTypes = [
+export const RUNTIME_FIELD_COMPOSITE_TYPE = 'composite' as const;
+export type RuntimeFieldCompositeType = typeof RUNTIME_FIELD_COMPOSITE_TYPE;
+
+export const PRIMITIVE_RUNTIME_FIELD_TYPES = [
   'keyword',
   'long',
   'double',
@@ -21,9 +20,13 @@ export const PRIMITIVE_RUNTIME_FIELD_TYPES: PrimitiveRuntimeFieldTypes = [
   'ip',
   'boolean',
   'geo_point',
-];
+] as const;
+export type PrimitiveRuntimeFieldTypes = typeof PRIMITIVE_RUNTIME_FIELD_TYPES;
 
-export const RUNTIME_FIELD_COMPOSITE_TYPE: RuntimeFieldCompositeType = 'composite';
+export const RUNTIME_FIELD_TYPES = [
+  ...PRIMITIVE_RUNTIME_FIELD_TYPES,
+  RUNTIME_FIELD_COMPOSITE_TYPE,
+] as const;
 
 export const MAX_NAME_LENGTH = 1000;
 

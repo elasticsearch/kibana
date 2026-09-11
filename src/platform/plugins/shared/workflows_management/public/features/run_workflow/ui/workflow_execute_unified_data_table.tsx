@@ -17,7 +17,7 @@ import { css } from '@emotion/react';
 import React, { memo } from 'react';
 import { CellActionsProvider } from '@kbn/cell-actions';
 import type { DataView } from '@kbn/data-views-plugin/public';
-import { DataGridDensity } from '@kbn/discover-utils';
+import { DataGridDensity } from '@kbn/discover-session-constants';
 import type { DataTableRecord } from '@kbn/discover-utils/types';
 import type { UiActionsStart } from '@kbn/ui-actions-plugin/public';
 import {

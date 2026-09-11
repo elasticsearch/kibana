@@ -222,5 +222,6 @@ export const treemapConfigSchema = z
   });
 
 export type TreemapConfig = z.output<typeof treemapConfigSchema>;
+export type TreemapConfigInput = z.input<typeof treemapConfigSchema>;
 export type TreemapConfigNoESQL = z.output<typeof treemapConfigSchemaNoESQL>;
 export type TreemapConfigESQL = z.output<typeof treemapConfigSchemaESQL>;

@@ -10,7 +10,7 @@
 import type { AggregateQuery, Query } from '@kbn/es-query';
 import { isOfAggregateQueryType } from '@kbn/es-query';
 import { Parser } from '@elastic/esql';
-import { DiscoverTabType } from '@kbn/discover-utils';
+import { DiscoverTabType } from '@kbn/discover-session-constants';
 import { METRICS_EXPERIENCE_PRODUCT_FEATURE_ID } from '../../../../../common/constants';
 import { METRICS_STATE_DEF } from '../../../../../common/context_awareness';
 import type { DataSourceProfileProvider } from '../../../profiles';

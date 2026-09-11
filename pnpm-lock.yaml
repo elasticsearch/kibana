@@ -587,12 +587,18 @@ importers:
       '@kbn/application-usage-test-plugin':
         specifier: workspace:*
         version: link:x-pack/platform/test/usage_collection/plugins/application_usage_test
+      '@kbn/as-code-dashboard-schema':
+        specifier: workspace:*
+        version: link:src/platform/packages/shared/as-code/dashboard-schema
       '@kbn/as-code-data-views-schema':
         specifier: workspace:*
         version: link:src/platform/packages/shared/as-code/data-views-schema
       '@kbn/as-code-data-views-transforms':
         specifier: workspace:*
         version: link:src/platform/packages/shared/as-code/data-views-transforms
+      '@kbn/as-code-discover-schema':
+        specifier: workspace:*
+        version: link:src/platform/packages/shared/as-code/discover-schema
       '@kbn/as-code-export-flyout-component':
         specifier: workspace:*
         version: link:src/platform/packages/shared/as-code/export-flyout-component
@@ -1736,6 +1742,9 @@ importers:
       '@kbn/discover-plugin':
         specifier: workspace:*
         version: link:src/platform/plugins/shared/discover
+      '@kbn/discover-session-constants':
+        specifier: workspace:*
+        version: link:src/platform/packages/private/kbn-discover-session-constants
       '@kbn/discover-shared-plugin':
         specifier: workspace:*
         version: link:src/platform/plugins/shared/discover_shared
@@ -7367,6 +7376,8 @@ importers:
 
   src/platform/packages/private/kbn-data-streams: {}
 
+  src/platform/packages/private/kbn-discover-session-constants: {}
+
   src/platform/packages/private/kbn-dot-text: {}
 
   src/platform/packages/private/kbn-dot-text-loader: {}
@@ -7495,9 +7506,13 @@ importers:
 
   src/platform/packages/private/shared-ux/storybook/config: {}
 
+  src/platform/packages/shared/as-code/dashboard-schema: {}
+
   src/platform/packages/shared/as-code/data-views-schema: {}
 
   src/platform/packages/shared/as-code/data-views-transforms: {}
+
+  src/platform/packages/shared/as-code/discover-schema: {}
 
   src/platform/packages/shared/as-code/export-flyout-component: {}
 

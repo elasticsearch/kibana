@@ -12,13 +12,17 @@ import { v4 as uuidv4 } from 'uuid';
 import { z } from '@kbn/zod';
 import type { SavedObjectReference } from '@kbn/core/server';
 import { LENS_EMBEDDABLE_TYPE } from '@kbn/lens-common';
+import type {
+  DashboardState,
+  DashboardPanel,
+  DashboardSection,
+} from '@kbn/as-code-dashboard-schema';
 import { isDashboardSection, prefixReferencesFromPanel } from '../../../../common';
 import type {
   DashboardSavedObjectAttributes,
   SavedDashboardPanel,
   SavedDashboardSection,
 } from '../../../dashboard_saved_object';
-import type { DashboardState, DashboardPanel, DashboardSection } from '../../types';
 import { embeddableService } from '../../../kibana_services';
 import { TransformPanelsInError, TransformPanelInError } from './transform_panels_in_error';
 

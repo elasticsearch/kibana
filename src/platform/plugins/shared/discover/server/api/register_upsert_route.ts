@@ -13,8 +13,9 @@ import type { VersionedRouter } from '@kbn/core-http-server';
 import type { CoreSetup, Logger, RequestHandlerContext } from '@kbn/core/server';
 import type { UsageCounter } from '@kbn/usage-collection-plugin/server';
 import { z } from '@kbn/zod';
+import { discoverSessionApiDataSchema } from '@kbn/as-code-discover-schema';
 import { getRouteConfig } from './get_route_config';
-import { discoverSessionApiDataSchema, discoverSessionApiResponseSchema } from './schema';
+import { discoverSessionApiResponseSchema } from './schema';
 import { upsertDiscoverSession } from './session_upsert';
 import { trackDiscoverSessionAction } from './user_activity';
 

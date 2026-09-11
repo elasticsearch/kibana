@@ -11,7 +11,7 @@ import { renderHook } from '@testing-library/react';
 import { waitFor } from '@testing-library/react';
 import { BehaviorSubject } from 'rxjs';
 
-import type { DashboardState } from '../../../../common/types';
+import type { DashboardState } from '@kbn/as-code-dashboard-schema';
 import { dashboardContextWrapper } from '../../../mocks';
 import { useShareOptions } from './use_share_options';
 import type { TimeRange } from '@kbn/es-query';

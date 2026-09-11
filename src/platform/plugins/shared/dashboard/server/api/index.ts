@@ -14,15 +14,6 @@ export type { DashboardSanitizeResponseBody } from './sanitize';
 export type { DashboardReadResponseBody } from './read';
 export type { DashboardSearchRequestParams, DashboardSearchResponseBody } from './search';
 export type { DashboardUpdateResponseBody } from './update';
-export type {
-  DashboardState,
-  DashboardPanel,
-  DashboardPinnedPanelsState,
-  DashboardPinnedPanel,
-  DashboardSection,
-  DashboardOptions,
-  GridData,
-} from './types';
 
 export { create } from './create/create';
 export { read } from './read/read';

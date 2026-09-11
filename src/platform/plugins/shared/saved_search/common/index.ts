@@ -21,7 +21,7 @@ export type {
   DiscoverSessionTabTypeState,
 } from './types';
 
-export { VIEW_MODE } from '@kbn/discover-utils';
+export { VIEW_MODE } from '@kbn/discover-session-constants';
 
 export {
   SavedSearchType,
@@ -34,7 +34,7 @@ export {
   MAX_DISCOVER_SESSION_TABS,
   MAX_METRICS_TAB_DIMENSIONS,
   MAX_METRICS_TAB_STATE_STRING_LENGTH,
-} from './constants';
+} from '@kbn/discover-session-constants';
 
 export {
   fromDiscoverSessionAttributesToSavedSearch,

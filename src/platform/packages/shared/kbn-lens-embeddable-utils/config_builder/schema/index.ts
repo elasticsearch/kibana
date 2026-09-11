@@ -10,23 +10,47 @@
 import { z } from '@kbn/zod';
 import type { ZodType } from '@kbn/zod';
 
-import type { MetricConfig, MetricConfigESQL, MetricConfigNoESQL } from './charts/metric';
+import type {
+  MetricConfig,
+  MetricConfigInput,
+  MetricConfigESQL,
+  MetricConfigNoESQL,
+} from './charts/metric';
 import {
   metricConfigSchema,
   metricConfigSchemaESQL,
   metricConfigSchemaNoESQL,
 } from './charts/metric';
-import type { LegacyMetricConfig, LegacyMetricConfigNoESQL } from './charts/legacy_metric';
+import type {
+  LegacyMetricConfig,
+  LegacyMetricConfigInput,
+  LegacyMetricConfigNoESQL,
+} from './charts/legacy_metric';
 import { legacyMetricConfigSchema, legacyMetricConfigSchemaNoESQL } from './charts/legacy_metric';
-import type { GaugeConfig, GaugeConfigESQL, GaugeConfigNoESQL } from './charts/gauge';
+import type {
+  GaugeConfig,
+  GaugeConfigInput,
+  GaugeConfigESQL,
+  GaugeConfigNoESQL,
+} from './charts/gauge';
 import { gaugeConfigSchema, gaugeConfigSchemaESQL, gaugeConfigSchemaNoESQL } from './charts/gauge';
-import type { HeatmapConfig, HeatmapConfigESQL, HeatmapConfigNoESQL } from './charts/heatmap';
+import type {
+  HeatmapConfig,
+  HeatmapConfigInput,
+  HeatmapConfigESQL,
+  HeatmapConfigNoESQL,
+} from './charts/heatmap';
 import {
   heatmapConfigSchema,
   heatmapConfigSchemaESQL,
   heatmapConfigSchemaNoESQL,
 } from './charts/heatmap';
-import type { TagcloudConfig, TagcloudConfigESQL, TagcloudConfigNoESQL } from './charts/tagcloud';
+import type {
+  TagcloudConfig,
+  TagcloudConfigInput,
+  TagcloudConfigESQL,
+  TagcloudConfigNoESQL,
+} from './charts/tagcloud';
 import {
   tagcloudConfigSchema,
   tagcloudConfigSchemaESQL,
@@ -34,6 +58,7 @@ import {
 } from './charts/tagcloud';
 import type {
   XYConfig,
+  XYConfigInput,
   XYConfigESQL,
   XYConfigNoESQL,
   XYLegendOutsideHorizontal,
@@ -45,6 +70,7 @@ import type {
 import { xyConfigSchema, xyConfigSchemaESQL, xyConfigSchemaNoESQL } from './charts/xy';
 import type {
   RegionMapConfig,
+  RegionMapConfigInput,
   RegionMapConfigESQL,
   RegionMapConfigNoESQL,
 } from './charts/region_map';
@@ -55,6 +81,7 @@ import {
 } from './charts/region_map';
 import type {
   DatatableConfig,
+  DatatableConfigInput,
   DatatableConfigESQL,
   DatatableConfigNoESQL,
 } from './charts/datatable';
@@ -68,25 +95,40 @@ import type {
   LensApiStaticValueOperation,
 } from './metric_ops';
 import type { LensApiBucketOperations } from './bucket_ops';
-import type { MosaicConfig, MosaicConfigESQL, MosaicConfigNoESQL } from './charts/mosaic';
+import type {
+  MosaicConfig,
+  MosaicConfigInput,
+  MosaicConfigESQL,
+  MosaicConfigNoESQL,
+} from './charts/mosaic';
 import {
   mosaicConfigSchema,
   mosaicConfigSchemaESQL,
   mosaicConfigSchemaNoESQL,
 } from './charts/mosaic';
-import type { TreemapConfig, TreemapConfigESQL, TreemapConfigNoESQL } from './charts/treemap';
+import type {
+  TreemapConfig,
+  TreemapConfigInput,
+  TreemapConfigESQL,
+  TreemapConfigNoESQL,
+} from './charts/treemap';
 import {
   treemapConfigSchema,
   treemapConfigSchemaESQL,
   treemapConfigSchemaNoESQL,
 } from './charts/treemap';
-import type { WaffleConfig, WaffleConfigESQL, WaffleConfigNoESQL } from './charts/waffle';
+import type {
+  WaffleConfig,
+  WaffleConfigInput,
+  WaffleConfigESQL,
+  WaffleConfigNoESQL,
+} from './charts/waffle';
 import {
   waffleConfigSchema,
   waffleConfigSchemaESQL,
   waffleConfigSchemaNoESQL,
 } from './charts/waffle';
-import type { PieConfig, PieConfigESQL, PieConfigNoESQL } from './charts/pie';
+import type { PieConfig, PieConfigInput, PieConfigESQL, PieConfigNoESQL } from './charts/pie';
 import { pieConfigSchema, pieConfigSchemaESQL, pieConfigSchemaNoESQL } from './charts/pie';
 
 /*
@@ -147,6 +189,23 @@ export type LensApiConfig =
   | MosaicConfig
   | TreemapConfig
   | WaffleConfig;
+
+/**
+ * Lens API configs (input shape — fields with defaults are optional)
+ */
+export type LensApiConfigInput =
+  | MetricConfigInput
+  | LegacyMetricConfigInput
+  | GaugeConfigInput
+  | XYConfigInput
+  | HeatmapConfigInput
+  | TagcloudConfigInput
+  | RegionMapConfigInput
+  | DatatableConfigInput
+  | PieConfigInput
+  | MosaicConfigInput
+  | TreemapConfigInput
+  | WaffleConfigInput;
 
 /**
  * Schema for Lens API configs (DSL)
@@ -311,6 +370,19 @@ export type {
   TreemapConfig,
   WaffleConfig,
   MosaicConfig,
+  // Input types (before parsing — fields with defaults are optional)
+  MetricConfigInput,
+  LegacyMetricConfigInput,
+  GaugeConfigInput,
+  TagcloudConfigInput,
+  XYConfigInput,
+  RegionMapConfigInput,
+  HeatmapConfigInput,
+  DatatableConfigInput,
+  PieConfigInput,
+  TreemapConfigInput,
+  WaffleConfigInput,
+  MosaicConfigInput,
   // ESQL schemas
   MetricConfigESQL,
   GaugeConfigESQL,

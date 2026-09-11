@@ -20,7 +20,7 @@ import type {
 import type { SortOrder } from '@kbn/saved-search-plugin/public';
 import type { DiscoverSessionTab } from '@kbn/saved-search-plugin/common';
 import { VIEW_MODE } from '@kbn/saved-search-plugin/common';
-import { DataGridDensity } from '@kbn/discover-utils';
+import { DataGridDensity } from '@kbn/discover-session-constants';
 import { createDiscoverSessionMock } from '@kbn/saved-search-plugin/common/mocks';
 import type {
   SearchEmbeddableByReferenceState,

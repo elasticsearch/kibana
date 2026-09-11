@@ -197,5 +197,6 @@ export const gaugeConfigSchema = z.union([gaugeConfigSchemaNoESQL, gaugeConfigSc
 });
 
 export type GaugeConfig = z.output<typeof gaugeConfigSchema>;
+export type GaugeConfigInput = z.input<typeof gaugeConfigSchema>;
 export type GaugeConfigNoESQL = z.output<typeof gaugeConfigSchemaNoESQL>;
 export type GaugeConfigESQL = z.output<typeof gaugeConfigSchemaESQL>;

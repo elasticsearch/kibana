@@ -47,5 +47,6 @@
     "@kbn/css-utils",
     "@kbn/code-editor-mock",
     "@kbn/ui-callout",
+    "@kbn/discover-session-constants",
   ]
 }

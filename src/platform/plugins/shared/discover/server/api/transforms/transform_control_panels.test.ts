@@ -8,8 +8,8 @@
  */
 
 import { ESQL_CONTROL } from '@kbn/controls-constants';
+import { MAX_DISCOVER_SESSION_CONTROL_PANELS } from '@kbn/discover-session-constants';
 import type { DiscoverSessionControlPanels } from '../schema';
-import { MAX_DISCOVER_SESSION_CONTROL_PANELS } from '../schema';
 import { transformControlPanelsIn, transformControlPanelsOut } from './transform_control_panels';
 
 describe('control panel transforms', () => {

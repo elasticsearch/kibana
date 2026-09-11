@@ -17,8 +17,8 @@ project:
   owner: '@elastic/search-ml-ux'
   sourceRoot: x-pack/platform/packages/shared/ml/runtime_field_utils
 dependsOn:
+  - '@kbn/as-code-data-views-schema'
   - '@kbn/data-views-plugin'
-  - '@kbn/data-plugin'
   - '@kbn/ml-is-populated-object'
 tags:
   - shared-common

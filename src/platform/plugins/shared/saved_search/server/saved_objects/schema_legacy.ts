@@ -9,7 +9,7 @@
 
 import { schema } from '@kbn/config-schema';
 import type { SavedObjectsModelVersionMap } from '@kbn/core-saved-objects-server';
-import { DataGridDensity } from '@kbn/discover-utils';
+import { DataGridDensity } from '@kbn/discover-session-constants';
 import { extractTabsBackfillFnV6 } from '../../common/service/extract_tabs';
 import {
   MIN_SAVED_SEARCH_SAMPLE_SIZE,

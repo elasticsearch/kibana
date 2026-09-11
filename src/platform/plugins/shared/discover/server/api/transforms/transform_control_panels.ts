@@ -11,12 +11,15 @@ import { ZodError } from '@kbn/zod';
 import { transformType } from '@kbn/embeddable-plugin/server';
 import { stringifyZodError } from '@kbn/zod-helpers/v4';
 import {
+  discoverSessionControlPanelSchema,
+  discoverSessionControlPanelsSchema,
+} from '@kbn/as-code-discover-schema';
+import {
   getControlOrder,
   isRecord,
   convertControlGroupEntryToApi,
 } from '../../../common/session/control_panels';
 import type { DiscoverSessionControlPanels, DiscoverSessionWarning } from '../schema';
-import { discoverSessionControlPanelSchema, discoverSessionControlPanelsSchema } from '../schema';
 
 export { serializeEsqlControls as transformControlPanelsIn } from '../../../common/session/control_panels';
 

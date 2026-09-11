@@ -7,7 +7,7 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
-import type { DashboardSection, DashboardPanel } from '../server';
+import type { DashboardSection, DashboardPanel } from '@kbn/as-code-dashboard-schema';
 
 /**
  * Type guard that checks if a widget is a {@link DashboardPanel}.

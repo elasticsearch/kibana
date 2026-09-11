@@ -10,7 +10,7 @@
 import React from 'react';
 
 import { EuiPanel, EuiSpacer, EuiText, EuiTitle } from '@elastic/eui';
-import type { DashboardState } from '@kbn/dashboard-plugin/common';
+import type { DashboardState } from '@kbn/as-code-dashboard-schema';
 import { DashboardRenderer } from '@kbn/dashboard-plugin/public';
 
 import panels from './static_by_value_example_panels.json';

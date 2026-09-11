@@ -18,11 +18,12 @@ import { i18n } from '@kbn/i18n';
 import moment from 'moment';
 import { useBatchedPublishingSubjects } from '@kbn/presentation-publishing';
 import type { LocatorPublic } from '@kbn/share-plugin/common';
+import type { DashboardState } from '@kbn/as-code-dashboard-schema';
 import { useDashboardApi } from '../../../dashboard_api/use_dashboard_api';
 import { getDashboardCapabilities } from '../../../utils/get_dashboard_capabilities';
 import { DASHBOARD_STATE_STORAGE_KEY } from '../../../utils/urls';
 import { shareService } from '../../../services/kibana_services';
-import type { DashboardLocatorParams, DashboardState } from '../../../../common';
+import type { DashboardLocatorParams } from '../../../../common';
 import { useDashboardInternalApi } from '../../../dashboard_api/use_dashboard_internal_api';
 import { logger } from '../../../services/logger';
 

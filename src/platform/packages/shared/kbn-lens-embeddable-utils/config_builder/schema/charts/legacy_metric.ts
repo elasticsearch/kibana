@@ -130,5 +130,6 @@ export const legacyMetricConfigSchema = legacyMetricConfigSchemaNoESQL.meta({
 });
 
 export type LegacyMetricConfig = z.output<typeof legacyMetricConfigSchema>;
+export type LegacyMetricConfigInput = z.input<typeof legacyMetricConfigSchema>;
 export type LegacyMetricConfigNoESQL = z.output<typeof legacyMetricConfigSchemaNoESQL>;
 export type LegacyMetricConfigESQL = z.output<typeof esqlLegacyMetricConfig>;

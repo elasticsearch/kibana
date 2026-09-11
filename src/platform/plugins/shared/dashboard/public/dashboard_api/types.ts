@@ -54,8 +54,8 @@ import type { startTrackingHistory } from '@kbn/rxjs-history';
 import type { LocatorPublic } from '@kbn/share-plugin/common';
 import type { BehaviorSubject, Observable, Subject } from 'rxjs';
 
+import type { DashboardState, GridData } from '@kbn/as-code-dashboard-schema';
 import type { DashboardLocatorParams } from '../../common';
-import type { DashboardState, GridData } from '../../server';
 import type { DashboardRedirect } from '../dashboard_app/types';
 import type { ReadBodyWithResolve } from '../dashboard_client/dashboard_client';
 import type { DashboardLayout } from './layout_manager/types';

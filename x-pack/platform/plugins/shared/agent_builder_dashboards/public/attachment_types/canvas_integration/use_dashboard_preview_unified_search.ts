@@ -20,7 +20,7 @@ import {
   type PublishesEsqlUsage,
 } from '@kbn/presentation-publishing';
 import { isEqual } from 'lodash';
-import type { DashboardState } from '@kbn/dashboard-plugin/server';
+import type { DashboardState } from '@kbn/as-code-dashboard-schema';
 import { DEFAULT_TIME_RANGE } from '@kbn/agent-builder-dashboards-common';
 
 interface UseDashboardPreviewUnifiedSearchParams {
