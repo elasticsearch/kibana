@@ -7,7 +7,9 @@
 
 import { startInvestigationRoute } from './start_investigation';
 
-const { handler } = startInvestigationRoute['POST /internal/nightshift/investigations'];
+const { handler, params } = startInvestigationRoute['POST /internal/nightshift/investigations'];
+
+const schema = params.shape.body;
 
 const alert = {
   'kibana.alert.uuid': 'alert-1',
@@ -54,6 +56,49 @@ it('keeps a caller-provided concurrency key', async () => {
     params: { body: { subject: { type: 'alert', id: 'alert-1' }, concurrency_key: 'key-1' } },
   } as never);
   expect(start).toHaveBeenCalledWith(expect.objectContaining({ concurrency_key: 'key-1' }));
+});
+
+it('forwards a caller-provided message as the investigation prompt', async () => {
+  await handler({
+    request: {},
+    getInvestigationsClient,
+    getAlertsClient,
+    params: {
+      body: {
+        subject: { type: 'significant_event', id: 'event-1' },
+        message: 'Why did checkout p99 spike?',
+      },
+    },
+  } as never);
+  expect(start).toHaveBeenCalledWith(
+    expect.objectContaining({ message: 'Why did checkout p99 spike?' })
+  );
+});
+
+it('starts a manual investigation from the question alone', async () => {
+  const body = schema.parse({
+    subject: { type: 'manual' },
+    message: 'Why did checkout p99 spike?',
+  });
+
+  await handler({
+    request: {},
+    getInvestigationsClient,
+    getAlertsClient,
+    params: { body },
+  } as never);
+
+  expect(start).toHaveBeenCalledWith(
+    expect.objectContaining({
+      subject: { type: 'manual', id: 'manual' },
+      message: 'Why did checkout p99 spike?',
+      trigger_type: 'manual',
+    })
+  );
+});
+
+it('rejects a manual investigation without a question', () => {
+  expect(schema.safeParse({ subject: { type: 'manual' } }).success).toBe(false);
 });
 
 it('returns service unavailable when alert lookup is not wired', async () => {

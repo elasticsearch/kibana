@@ -9,7 +9,7 @@ import { serverUnavailable } from '@hapi/boom';
 import { z } from '@kbn/zod/v4';
 import { MAX_TEXT_LENGTH } from '@kbn/significant-events-schema';
 import { freeFormContextSchema } from '../../common';
-import { MAX_KEYWORD_LENGTH } from '../../common';
+import { DEFAULT_MANUAL_INVESTIGATION_SUBJECT_ID, MAX_KEYWORD_LENGTH } from '../../common';
 import { fetchAlertSnapshot } from '../lib/alert_snapshot';
 import { createNightshiftInvestigationsServerRoute } from './create_server_route';
 import { rethrowInvestigationClientError } from './rethrow_investigation_client_error';
@@ -17,6 +17,10 @@ import { rethrowInvestigationClientError } from './rethrow_investigation_client_
 const subjectIdAndSummary = {
   id: z.string().min(1).max(MAX_KEYWORD_LENGTH),
   summary: z.string().max(MAX_TEXT_LENGTH).optional(),
+};
+
+const startInvestigationMessage = {
+  message: z.string().min(1).max(MAX_TEXT_LENGTH).optional(),
 };
 
 export const startInvestigationRoute = createNightshiftInvestigationsServerRoute({
@@ -50,6 +54,7 @@ export const startInvestigationRoute = createNightshiftInvestigationsServerRoute
           ...subjectIdAndSummary,
         }),
         concurrency_key: z.string().max(MAX_KEYWORD_LENGTH).optional(),
+        ...startInvestigationMessage,
       }),
       z.object({
         subject: z.object({
@@ -58,6 +63,23 @@ export const startInvestigationRoute = createNightshiftInvestigationsServerRoute
         }),
         concurrency_key: z.string().max(MAX_KEYWORD_LENGTH).optional(),
         context: freeFormContextSchema.optional(),
+        ...startInvestigationMessage,
+      }),
+      // A manual investigation is defined by its question, so `message` is required and the
+      // subject id is optional: there is no entity to point at, only the prompt.
+      z.object({
+        subject: z.object({
+          type: z.literal('manual'),
+          id: z
+            .string()
+            .min(1)
+            .max(MAX_KEYWORD_LENGTH)
+            .default(DEFAULT_MANUAL_INVESTIGATION_SUBJECT_ID),
+          summary: z.string().max(MAX_TEXT_LENGTH).optional(),
+        }),
+        concurrency_key: z.string().max(MAX_KEYWORD_LENGTH).optional(),
+        context: freeFormContextSchema.optional(),
+        message: z.string().min(1).max(MAX_TEXT_LENGTH),
       }),
     ]),
   }),
@@ -79,9 +101,11 @@ export const startInvestigationRoute = createNightshiftInvestigationsServerRoute
             concurrency_key: body.concurrency_key ?? snapshot.id,
             context: { alerts: [snapshot] },
             trigger_type: 'manual',
+            message: body.message,
           });
         }
         case 'significant_event':
+        case 'manual':
           return await client.start({
             ...body,
             trigger_type: 'manual',

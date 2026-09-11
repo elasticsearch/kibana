@@ -1,0 +1,260 @@
+version: '1'
+name: Deductive Investigation
+description: >
+  General-purpose investigation. Ensures the investigator agent exists, persists
+  the run, calls the agent with the caller's prompt, then writes the result back.
+enabled: true
+settings:
+  timeout: '60m'
+  concurrency:
+    key: 'deductive-investigation-{{ inputs.concurrency_key | default: execution.id }}'
+    strategy: cancel-in-progress
+    max: 1
+tags:
+  - observability
+  - investigation
+  - nightshift
+
+triggers:
+  - type: manual
+    inputs:
+      properties:
+        message:
+          type: string
+          description: The prompt to investigate.
+        stream_names:
+          type: array
+          items:
+            type: string
+          description: Optional logical stream names to scope observability queries.
+        context:
+          type: object
+          additionalProperties: true
+          description: Optional structured context from the start API.
+        concurrency_key:
+          type: string
+          description: Optional key for concurrency deduplication. Defaults to the workflow execution ID.
+      required:
+        - message
+      additionalProperties: false
+
+steps:
+  - name: ensure_investigation_agent
+    type: nightshift.ensureInvestigationAgent
+    with:
+      agent_id: significant-events.deductive-investigation
+
+  - name: persist_investigation_started
+    type: kibana.request
+    with:
+      method: POST
+      path: '/s/{{ workflow.spaceId }}/internal/nightshift/investigations/{{ execution.id }}/_ensure'
+      headers:
+        x-elastic-internal-origin: 'kibana'
+    on-failure:
+      retry:
+        max-attempts: 3
+        delay: 5s
+        strategy: exponential
+
+  - name: emit_investigation_started
+    type: kibana.request
+    with:
+      method: POST
+      path: '/s/{{ workflow.spaceId }}/internal/nightshift/investigations/{{ execution.id }}/lifecycle_events'
+      headers:
+        x-elastic-internal-origin: 'kibana'
+      body:
+        status: 'running'
+    on-failure:
+      continue: true
+
+  - name: investigate
+    type: ai.agent
+    agent-id: significant-events.deductive-investigation
+    connector-id-by-feature: 'significant_events_investigation'
+    plugin-id: 'significant_events_investigation'
+    aggregate-by: 'significant_events'
+    create-conversation: true
+    public-conversation: true
+    timeout: 1800s
+    with:
+      metadata:
+        workflow_execution_id: '{{ execution.id }}'
+      message: |
+        {{ inputs.message }}
+
+        {% if inputs.stream_names and inputs.stream_names.size > 0 %}
+        Related streams:
+        {% for stream in inputs.stream_names %}- {{ stream }}
+        {% endfor %}
+        {% endif %}
+      schema:
+        type: object
+        properties:
+          summary:
+            type: string
+            maxLength: 10000
+          hypotheses:
+            type: array
+            maxItems: 50
+            items:
+              type: object
+              properties:
+                candidate:
+                  type: string
+                  maxLength: 10000
+                confidence:
+                  type: number
+                  minimum: 0
+                  maximum: 1
+                status:
+                  type: string
+                  enum: [investigating, dismissed, confirmed]
+                reason:
+                  type: string
+                  maxLength: 10000
+                evidence:
+                  type: array
+                  maxItems: 3
+                  items:
+                    type: object
+                    properties:
+                      description:
+                        type: string
+                        maxLength: 10000
+                      esql_query:
+                        type: string
+                        maxLength: 10000
+                      time_range:
+                        type: object
+                        properties:
+                          from:
+                            type: string
+                            maxLength: 64
+                          to:
+                            type: string
+                            maxLength: 64
+                        required:
+                          - from
+                          - to
+                    required:
+                      - description
+              required:
+                - candidate
+                - confidence
+                - status
+          conclusion:
+            type: string
+            maxLength: 10000
+          severity:
+            type: string
+            enum: ['80-critical', '60-high', '40-medium', '20-low']
+          recommendations:
+            type: array
+            description: >
+              Concrete, actionable steps to resolve or mitigate the issue — prefer specific commands,
+              config changes, or code over general advice like "investigate further" or "monitor the
+              situation". Score how strongly the findings support that each action will help, sort
+              by confidence descending, and return only the 3 strongest items.
+            maxItems: 3
+            items:
+              type: object
+              properties:
+                title:
+                  type: string
+                  maxLength: 512
+                  description: The action itself, stated concretely (e.g. "Revert the pool-size config change").
+                confidence:
+                  type: number
+                  minimum: 0
+                  maximum: 1
+                  description: How strongly the findings support that this action will resolve or mitigate the confirmed problem.
+                description:
+                  type: string
+                  maxLength: 10000
+                  description: Why this step helps, or detail needed to carry it out, when the title alone isn't enough.
+                code:
+                  type: string
+                  maxLength: 10000
+                  description: >
+                    A command, config snippet, or code change backing this step, when one applies.
+                    Raw source, not a fenced markdown block.
+              required:
+                - title
+                - confidence
+        required:
+          - summary
+          - hypotheses
+    on-failure:
+      continue: true
+
+  - name: persist_investigation_completed
+    type: kibana.request
+    if: '${{ steps.investigate.error == null }}'
+    with:
+      method: PATCH
+      path: '/s/{{ workflow.spaceId }}/internal/nightshift/investigations/{{ execution.id }}'
+      headers:
+        x-elastic-internal-origin: 'kibana'
+      body:
+        status: "completed"
+        summary: "${{ steps.investigate.output.structured_output.summary }}"
+        conclusion: "${{ steps.investigate.output.structured_output.conclusion }}"
+        severity: "${{ steps.investigate.output.structured_output.severity }}"
+        hypotheses: ${{ steps.investigate.output.structured_output.hypotheses }}
+        recommendations: ${{ steps.investigate.output.structured_output.recommendations }}
+        conversation_id: "${{ steps.investigate.output.conversation_id }}"
+    on-failure:
+      retry:
+        max-attempts: 3
+        delay: 5s
+        strategy: exponential
+
+  - name: persist_investigation_failed
+    type: kibana.request
+    if: '${{ steps.investigate.error != null }}'
+    with:
+      method: PATCH
+      path: '/s/{{ workflow.spaceId }}/internal/nightshift/investigations/{{ execution.id }}'
+      headers:
+        x-elastic-internal-origin: 'kibana'
+      body:
+        status: "failed"
+        error: "${{ steps.investigate.error.message | default: 'Investigation failed' }}"
+        conversation_id: "${{ steps.investigate.output.conversation_id }}"
+    on-failure:
+      retry:
+        max-attempts: 3
+        delay: 5s
+        strategy: exponential
+
+  - name: emit_investigation_completed
+    type: kibana.request
+    if: '${{ steps.investigate.error == null }}'
+    with:
+      method: POST
+      path: '/s/{{ workflow.spaceId }}/internal/nightshift/investigations/{{ execution.id }}/lifecycle_events'
+      headers:
+        x-elastic-internal-origin: 'kibana'
+      body:
+        status: 'completed'
+    on-failure:
+      continue: true
+
+  - name: emit_investigation_failed
+    type: kibana.request
+    if: '${{ steps.investigate.error != null }}'
+    with:
+      method: POST
+      path: '/s/{{ workflow.spaceId }}/internal/nightshift/investigations/{{ execution.id }}/lifecycle_events'
+      headers:
+        x-elastic-internal-origin: 'kibana'
+      body:
+        status: 'failed'
+    on-failure:
+      continue: true
+
+  - name: fail_investigation
+    type: workflow.fail
+    if: '${{ steps.investigate.error != null }}'

@@ -38,7 +38,7 @@ export const listInvestigationsRoute = createNightshiftInvestigationsServerRoute
       subject_types: z
         .union([
           z.enum(INVESTIGATION_SUBJECT_TYPES),
-          z.array(z.enum(INVESTIGATION_SUBJECT_TYPES)).max(2),
+          z.array(z.enum(INVESTIGATION_SUBJECT_TYPES)).max(INVESTIGATION_SUBJECT_TYPES.length),
         ])
         .transform((v) => (Array.isArray(v) ? v : [v]))
         .optional(),

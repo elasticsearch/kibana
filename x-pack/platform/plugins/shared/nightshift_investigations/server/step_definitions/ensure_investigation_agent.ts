@@ -11,7 +11,15 @@ import { StepCategory } from '@kbn/workflows';
 import { createServerStepDefinition } from '@kbn/workflows-extensions/server';
 import type { AgentBuilderPluginStart } from '@kbn/agent-builder-server';
 import { SIGNIFICANT_EVENTS_INVESTIGATION_AGENT_ID } from '../agents/investigation';
+import { NIGHTSHIFT_DEDUCTIVE_INVESTIGATION_AGENT_ID } from '../agents/deductive_investigation';
 import { installInvestigationAgent } from '../lib/install_investigation_agent';
+import { installDeductiveInvestigationAgent } from '../lib/install_deductive_investigation_agent';
+
+/** Which agent a workflow wants installed. Defaults to the significant-events investigator. */
+const AGENT_INSTALLERS = {
+  [SIGNIFICANT_EVENTS_INVESTIGATION_AGENT_ID]: installInvestigationAgent,
+  [NIGHTSHIFT_DEDUCTIVE_INVESTIGATION_AGENT_ID]: installDeductiveInvestigationAgent,
+} as const;
 
 /**
  * `agents.ensure` guarantees the agent document exists, not that it is searchable, and the
@@ -30,10 +38,21 @@ export const ensureInvestigationAgentStepDefinition = (
     label: 'Ensure Nightshift Investigation Agent',
     category: StepCategory.Ai,
     description:
-      'Installs the investigation agent in the space this workflow runs in, so any caller can start an investigation without installing it first. Idempotent: an existing agent is left untouched.',
-    inputSchema: z.object({}),
+      'Installs an investigation agent in the space this workflow runs in, so any caller can start an investigation without installing it first. Idempotent: an existing agent is left untouched.',
+    inputSchema: z.object({
+      agent_id: z
+        .enum([
+          SIGNIFICANT_EVENTS_INVESTIGATION_AGENT_ID,
+          NIGHTSHIFT_DEDUCTIVE_INVESTIGATION_AGENT_ID,
+        ])
+        .optional()
+        .describe(
+          `Which investigation agent to install. Defaults to ${SIGNIFICANT_EVENTS_INVESTIGATION_AGENT_ID}.`
+        ),
+    }),
     outputSchema: z.object({
       space_id: z.string().describe('The space the investigation agent was ensured in'),
+      agent_id: z.string().describe('The agent that was ensured'),
     }),
     handler: async (context) => {
       const agentBuilder = getAgentBuilder();
@@ -42,8 +61,11 @@ export const ensureInvestigationAgentStepDefinition = (
       }
 
       const { spaceId } = context.contextManager.getContext().workflow;
+      // Defaulted here rather than on the schema: a step that omits `with` altogether never
+      // reaches zod, so a schema-level default would leave `agent_id` undefined at runtime.
+      const agentId = context.input.agent_id ?? SIGNIFICANT_EVENTS_INVESTIGATION_AGENT_ID;
 
-      await installInvestigationAgent({ agentBuilder, spaceId });
+      await AGENT_INSTALLERS[agentId]({ agentBuilder, spaceId });
 
       // Polls in the space the agent was just written to: the fake request carries no space, so
       // `callKibanaApi` prefixes the path from `workflow.spaceId` instead. Reading through
@@ -56,10 +78,10 @@ export const ensureInvestigationAgentStepDefinition = (
         }
         await context.contextManager.callKibanaApi({
           method: 'GET',
-          path: `/api/agent_builder/agents/${SIGNIFICANT_EVENTS_INVESTIGATION_AGENT_ID}`,
+          path: `/api/agent_builder/agents/${agentId}`,
         });
       }, VISIBILITY_RETRY_OPTIONS);
 
-      return { output: { space_id: spaceId } };
+      return { output: { space_id: spaceId, agent_id: agentId } };
     },
   });

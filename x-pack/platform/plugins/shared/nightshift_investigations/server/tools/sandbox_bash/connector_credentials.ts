@@ -155,10 +155,13 @@ export const createConnectorCredentialResolver =
       `Injecting credentials for connector ${connectorId} into a single sandbox command`
     );
 
+    // Config comes from the in-memory connector, not from `get()`: the actions client omits
+    // config for preconfigured connectors unless they opt in with `exposeConfig`, which would
+    // also publish it over the HTTP API. Authorization above already gated this read.
     return buildConnectorEnv({
       connectorId,
       actionTypeId: connector.actionTypeId,
-      config: connector.config ?? {},
+      config: inMemoryConnector.config ?? connector.config ?? {},
       secrets: inMemoryConnector.secrets ?? {},
     });
   };

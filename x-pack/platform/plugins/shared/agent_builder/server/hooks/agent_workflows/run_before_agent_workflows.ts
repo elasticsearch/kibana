@@ -91,7 +91,10 @@ export async function runBeforeAgentWorkflows({
   for (const workflowId of workflowIds) {
     const result = await executeWorkflow({
       workflowId,
-      workflowParams: { prompt: currentNextInput.message ?? '' },
+      workflowParams: {
+        prompt: currentNextInput.message ?? '',
+        ...(context.conversationId ? { conversation_id: context.conversationId } : {}),
+      },
       request: context.request,
       spaceId,
       workflowApi,

@@ -89,6 +89,9 @@ export interface StartInvestigationResponse {
 /** Bound for investigation ids, concurrency keys, and other keyword-sized strings. */
 export const MAX_KEYWORD_LENGTH = 500;
 
+/** Subject id a manual investigation persists under when the caller supplies none. */
+export const DEFAULT_MANUAL_INVESTIGATION_SUBJECT_ID = 'manual';
+
 export const INVESTIGATION_STATUSES = [
   'pending',
   'running',
@@ -206,6 +209,21 @@ export type SeverityCounts = Record<Severity, number>;
 export interface SeverityCountsResponse {
   severity_counts: SeverityCounts;
 }
+
+export {
+  CORTEX_AI_INDEX_ID,
+  CORTEX_AI_INDEX_DEST,
+  CORTEX_ENTITY_TYPES,
+  CORTEX_PAGE_STATUSES,
+  CORTEX_ENTITY_TYPE_BUCKETS,
+  type CortexEntityType,
+  type CortexPageStatus,
+  type CortexPageSummary,
+  type CortexPage,
+  type CortexStats,
+  type ListCortexPagesResponse,
+  type GetCortexPageResponse,
+} from './cortex';
 
 export {
   INVESTIGATION_STARTED_TRIGGER_ID,

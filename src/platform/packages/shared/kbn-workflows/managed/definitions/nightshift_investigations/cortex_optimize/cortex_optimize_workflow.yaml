@@ -1,0 +1,49 @@
+version: '1'
+name: Cortex Optimize
+description: >
+  Post-round workflow that proposes Cortex wiki edits from the completed
+  investigation round. Durable facts are upserted, corroborated, or archived
+  in the Context Engine AI index.
+enabled: true
+tags:
+  - observability
+  - nightshift
+  - investigation
+  - cortex
+
+triggers:
+  - type: manual
+    inputs:
+      properties:
+        prompt:
+          type: string
+          description: The user message that started this round.
+        response:
+          type: string
+          description: The assistant's final response for this round.
+        conversation_id:
+          type: string
+          description: Conversation id for the completed round, when present.
+        round_id:
+          type: string
+          description: Id of the completed conversation round.
+        agent_id:
+          type: string
+          description: Agent id that produced the round.
+        tool_calls:
+          type: array
+          description: Tool calls from the completed round. Unused by this workflow.
+          items:
+            type: object
+            additionalProperties: true
+      additionalProperties: false
+
+steps:
+  - name: optimize_cortex
+    type: nightshift.cortexOptimize
+    with:
+      prompt: '{{ inputs.prompt }}'
+      response: '{{ inputs.response }}'
+      agent_id: '{{ inputs.agent_id }}'
+    on-failure:
+      continue: true

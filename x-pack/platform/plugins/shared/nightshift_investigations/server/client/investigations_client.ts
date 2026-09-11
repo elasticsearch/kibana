@@ -7,12 +7,16 @@
 
 import type { KibanaRequest, Logger } from '@kbn/core/server';
 import { DEFAULT_SPACE_ID } from '@kbn/core-spaces-common';
-import { SIGNIFICANT_EVENTS_INVESTIGATION_WORKFLOW_ID } from '@kbn/workflows/managed';
+import {
+  DEDUCTIVE_INVESTIGATION_WORKFLOW_ID,
+  SIGNIFICANT_EVENTS_INVESTIGATION_WORKFLOW_ID,
+} from '@kbn/workflows/managed';
 import type { WorkflowsServerPluginSetup } from '@kbn/workflows-management-plugin/server';
 import type { SpacesPluginStart } from '@kbn/spaces-plugin/server';
 import type { AgentBuilderPluginStart } from '@kbn/agent-builder-server';
 import { investigationStateSchema } from '@kbn/significant-events-schema';
 import { installInvestigationAgent } from '../lib/install_investigation_agent';
+import { installDeductiveInvestigationAgent } from '../lib/install_deductive_investigation_agent';
 import type {
   AlertInvestigationContext,
   GetInvestigationResponse,
@@ -80,6 +84,32 @@ const isSubjectType = (value: unknown): value is InvestigationSubjectType =>
 const isTriggerType = (value: unknown): value is InvestigationTriggerType =>
   typeof value === 'string' && INVESTIGATION_TRIGGER_TYPES.some((type) => type === value);
 
+const INVESTIGATION_WORKFLOW_IDS = new Set([
+  SIGNIFICANT_EVENTS_INVESTIGATION_WORKFLOW_ID,
+  DEDUCTIVE_INVESTIGATION_WORKFLOW_ID,
+]);
+
+/**
+ * A manual investigation has no stored entity to write results back to, so it runs the lean
+ * deductive workflow; every other subject runs the significant-events workflow, which attaches
+ * its findings to the event or alert it was started from.
+ */
+const workflowIdForSubject = (subject: InvestigationSubject): string =>
+  subject.type === 'manual'
+    ? DEDUCTIVE_INVESTIGATION_WORKFLOW_ID
+    : SIGNIFICANT_EVENTS_INVESTIGATION_WORKFLOW_ID;
+
+/** Each workflow calls its own agent, so the pre-install has to follow the same split. */
+const installAgentForSubject = (subject: InvestigationSubject) =>
+  subject.type === 'manual' ? installDeductiveInvestigationAgent : installInvestigationAgent;
+
+const isInvestigationWorkflowExecution = (execution: {
+  workflowId?: string | null;
+  originManagedWorkflowId?: string | null;
+}): boolean =>
+  INVESTIGATION_WORKFLOW_IDS.has(execution.workflowId ?? '') ||
+  INVESTIGATION_WORKFLOW_IDS.has(execution.originManagedWorkflowId ?? '');
+
 interface ExecutionInvestigationMetadata {
   subject?: InvestigationSubject;
   triggerType: InvestigationTriggerType;
@@ -95,6 +125,7 @@ interface ExecutionInvestigationMetadata {
 const SUBJECT_ID_FIELDS = {
   significant_event: ['event_id', 'significant_event_id'],
   alert: ['alert_id'],
+  manual: ['manual_id'],
 } as const satisfies Record<InvestigationSubjectType, readonly string[]>;
 
 const toSubject = ({
@@ -342,16 +373,14 @@ export class NightshiftInvestigationsClient {
     // below executes the *stored* workflow definition, which predates that step until the managed
     // install has upgraded it — and that install is fire-and-forget. Deliberately without the
     // step's visibility retry: the workflow owns that, and this request path should not pay for it.
-    await installInvestigationAgent({ agentBuilder: this.agentBuilder, spaceId });
+    await installAgentForSubject(subject)({ agentBuilder: this.agentBuilder, spaceId });
 
-    const workflow = await this.workflowsManagement.management.getWorkflow(
-      SIGNIFICANT_EVENTS_INVESTIGATION_WORKFLOW_ID,
-      spaceId
-    );
+    const workflowId = workflowIdForSubject(subject);
+    const workflow = await this.workflowsManagement.management.getWorkflow(workflowId, spaceId);
 
     if (!workflow?.definition) {
       this.logger.error(
-        `Investigation workflow "${SIGNIFICANT_EVENTS_INVESTIGATION_WORKFLOW_ID}" is not installed in space "${spaceId}"`
+        `Investigation workflow "${workflowId}" is not installed in space "${spaceId}"`
       );
       throw new InvestigationUnavailableError('Investigations are not configured in this space');
     }
@@ -460,10 +489,7 @@ export class NightshiftInvestigationsClient {
       { includeOutput: false }
     );
 
-    const belongsToInvestigationWorkflow =
-      execution?.workflowId === SIGNIFICANT_EVENTS_INVESTIGATION_WORKFLOW_ID ||
-      execution?.originManagedWorkflowId === SIGNIFICANT_EVENTS_INVESTIGATION_WORKFLOW_ID;
-    if (!execution || !belongsToInvestigationWorkflow) {
+    if (!execution || !isInvestigationWorkflowExecution(execution)) {
       throw new InvestigationNotFoundError(investigationId);
     }
 

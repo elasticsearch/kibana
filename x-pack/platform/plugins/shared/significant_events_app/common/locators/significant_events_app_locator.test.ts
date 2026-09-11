@@ -26,6 +26,12 @@ describe('SignificantEventsAppLocatorDefinition', () => {
     expect(path).toBe('/settings');
   });
 
+  it('builds a path for the cortex tab', async () => {
+    const { path } = await locator.getLocation({ tab: 'cortex' });
+
+    expect(path).toBe('/cortex');
+  });
+
   it('serializes scalar query params', async () => {
     const { path } = await locator.getLocation({
       tab: 'significant_events',

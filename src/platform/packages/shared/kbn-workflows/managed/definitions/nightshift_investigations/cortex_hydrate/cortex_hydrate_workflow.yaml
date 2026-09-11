@@ -1,0 +1,35 @@
+version: '1'
+name: Cortex Hydrate
+description: >
+  Pre-execution workflow that materializes the Nightshift Cortex wiki into the
+  investigator sandbox before each agent round. Pages are written under
+  /workspace/cortex so the agent can read them with nightshift_sandbox_view_file.
+enabled: true
+tags:
+  - observability
+  - nightshift
+  - investigation
+  - cortex
+
+triggers:
+  - type: manual
+    inputs:
+      properties:
+        prompt:
+          type: string
+          description: The user message for this round, forwarded by the agent's beforeAgent hook.
+        conversation_id:
+          type: string
+          description: Conversation id that namespaces the sandbox. Absent for standalone runs.
+      additionalProperties: false
+
+steps:
+  - name: hydrate_cortex
+    type: nightshift.cortexHydrate
+    # `${{ }}` must render a boolean. A bare conversation id becomes a KQL string
+    # and evaluateCondition treats it as a field query, which skips the step.
+    if: '${{ inputs.conversation_id != null }}'
+    with:
+      conversation_id: '{{ inputs.conversation_id }}'
+    on-failure:
+      continue: true

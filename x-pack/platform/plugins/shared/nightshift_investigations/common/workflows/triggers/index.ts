@@ -9,7 +9,11 @@ import { i18n } from '@kbn/i18n';
 import { z } from '@kbn/zod/v4';
 import type { CommonTriggerDefinition } from '@kbn/workflows-extensions/common';
 
-export const INVESTIGATION_SUBJECT_TYPES = ['significant_event', 'alert'] as const;
+/**
+ * `manual` is the subject for an investigation that is not about a stored entity: the caller's
+ * question is the whole subject, so there is no significant event or alert to bind the run to.
+ */
+export const INVESTIGATION_SUBJECT_TYPES = ['significant_event', 'alert', 'manual'] as const;
 export type InvestigationSubjectType = (typeof INVESTIGATION_SUBJECT_TYPES)[number];
 
 export const INVESTIGATION_TRIGGER_TYPES = ['automatic', 'manual'] as const;
@@ -100,7 +104,7 @@ export const investigationStartedTriggerCommonDefinition: CommonTriggerDefinitio
       'xpack.nightshiftInvestigations.workflowTriggers.investigationStarted.documentation.details',
       {
         defaultMessage:
-          'Emitted when an investigation begins for any subject (significant event or alert). Filter with KQL on event.* (e.g. event.subject.type).',
+          'Emitted when an investigation begins for any subject (significant event, alert or manual). Filter with KQL on event.* (e.g. event.subject.type).',
       }
     ),
     examples: [

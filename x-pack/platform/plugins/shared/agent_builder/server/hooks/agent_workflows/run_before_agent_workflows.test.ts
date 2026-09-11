@@ -34,10 +34,11 @@ describe('runBeforeAgentWorkflows', () => {
   const request = httpServerMock.createKibanaRequest();
   const logger = loggingSystemMock.createLogger();
 
-  const createContext = () => ({
+  const createContext = (overrides: { conversationId?: string } = {}) => ({
     request,
     nextInput: { message: 'hello', attachments: [] },
     agentId: 'agent-1',
+    ...overrides,
   });
 
   const createDeps = () => {
@@ -261,6 +262,38 @@ describe('runBeforeAgentWorkflows', () => {
     expect(executeWorkflowMock).toHaveBeenNthCalledWith(
       3,
       expect.objectContaining({ workflowId: 'wf-3' })
+    );
+  });
+
+  it('forwards conversation_id to beforeAgent workflows', async () => {
+    const context = createContext({ conversationId: 'conv-42' });
+    const { workflowApi, getInternalServices } = createDeps();
+    executeWorkflowMock.mockResolvedValue({
+      success: true,
+      execution: {
+        execution_id: 'exec-params',
+        status: ExecutionStatus.COMPLETED,
+        workflow_id: 'wf-1',
+        started_at: '2026-01-01T00:00:00.000Z',
+        output: {},
+      },
+    });
+
+    await runBeforeAgentWorkflows({
+      context,
+      workflowApi,
+      getInternalServices,
+      logger,
+    });
+
+    expect(executeWorkflowMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        workflowId: 'wf-1',
+        workflowParams: {
+          prompt: 'hello',
+          conversation_id: 'conv-42',
+        },
+      })
     );
   });
 });

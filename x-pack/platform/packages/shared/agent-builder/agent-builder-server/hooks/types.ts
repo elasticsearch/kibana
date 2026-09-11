@@ -23,6 +23,8 @@ interface AgentHookContextBase {
 
 export interface BeforeAgentHookContext extends AgentHookContextBase {
   nextInput: ProcessedRoundInput;
+  /** Id of the conversation this round belongs to. Absent for standalone (sub-agent) runs. */
+  conversationId?: string;
 }
 
 interface ToolCallHookContextBase extends AgentHookContextBase {

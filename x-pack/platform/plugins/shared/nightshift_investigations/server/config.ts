@@ -30,12 +30,24 @@ const sandboxConfigSchema = schema.object({
   s3_access_key_id: schema.maybe(schema.string()),
   s3_secret_access_key: schema.maybe(schema.string()),
   s3_region: schema.string({ defaultValue: 'us-east-1' }),
+  // Id of the preconfigured connector holding the Elasticsearch URL and API key the
+  // sandbox queries telemetry with. It is added to the investigator's connector
+  // allow-list; credentials are injected per command, only when the agent asks for it.
+  telemetry_connector_id: schema.maybe(schema.string()),
+});
+
+const cortexConfigSchema = schema.object({
+  // Governs Cortex end to end: the hydrate/optimize hooks on the deductive agent, the
+  // Cortex HTTP routes, and the Cortex tab in the significant events app, which reads
+  // this flag through the routes below.
+  enabled: schema.boolean({ defaultValue: false }),
 });
 
 const configSchema = schema.object({
   // Reserved: Core skips loading this plugin entirely when false.
   enabled: schema.boolean({ defaultValue: false }),
   sandbox: schema.maybe(sandboxConfigSchema),
+  cortex: cortexConfigSchema,
 });
 
 export type NightshiftInvestigationsConfig = TypeOf<typeof configSchema>;
