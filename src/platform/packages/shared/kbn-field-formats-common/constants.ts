@@ -22,3 +22,8 @@ export const NULL_LABEL = i18n.translate('fieldFormats.nullLabel', {
 export const NAN_LABEL = 'NaN';
 
 export const MISSING_TOKEN = '__missing__';
+
+export function getMissingValueLabel(val: unknown): string | undefined {
+  if (val === '') return EMPTY_LABEL;
+  if (val == null || val === MISSING_TOKEN) return NULL_LABEL;
+}

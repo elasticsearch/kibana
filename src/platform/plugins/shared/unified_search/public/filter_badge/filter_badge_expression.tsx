@@ -36,7 +36,7 @@ const FilterBadgeContent = ({ filter, dataViews, filterLabelStatus }: FilterBadg
 
   const fieldLabel = getFieldDisplayValueFromFilter(filter, dataViews);
 
-  if (!valueLabel || !filter) {
+  if (valueLabel == null || !filter) {
     return <FilterBadgeInvalidPlaceholder />;
   }
 
