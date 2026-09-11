@@ -33,13 +33,9 @@ export function AddToCaseButton({
   } = useKibana();
 
   const selectCaseModal = services.cases?.hooks.useCasesAddToExistingCaseModal({
-    onSuccess: ({ updatedAt }) => {
-      // If the case is newly created the updatedAt will be null
-      // onSuccess doesn't provide a way to know if the case was created or updated
-      // onCreateCaseClicked callback is NOT triggered
-      const isNewCaseCreated = !updatedAt;
+    onSuccess: (_theCase, isNewCase) => {
       telemetryClient.reportAlertAddedToCase(
-        isNewCaseCreated,
+        isNewCase,
         'alertDetails.addToCaseBtn',
         rule?.ruleTypeId || 'unknown'
       );

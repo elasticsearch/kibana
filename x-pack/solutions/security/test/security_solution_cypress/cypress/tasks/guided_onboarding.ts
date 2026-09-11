@@ -5,7 +5,11 @@
  * 2.0.
  */
 
-import { ATTACH_TO_NEW_CASE_BUTTON, TAKE_ACTION_BTN } from '../screens/alerts';
+import {
+  ATTACH_ALERT_TO_CASE_BUTTON,
+  CREATE_NEW_CASE_FROM_MODAL_BUTTON,
+  TAKE_ACTION_BTN,
+} from '../screens/alerts';
 import { createCase } from './create_new_case';
 import {
   ALERTS_STEP_GUIDE_BUTTON,
@@ -30,7 +34,8 @@ export const finishTour = () => {
 
 export const addToCase = () => {
   cy.get(TAKE_ACTION_BTN).click();
-  cy.get(ATTACH_TO_NEW_CASE_BUTTON).click();
+  cy.get(ATTACH_ALERT_TO_CASE_BUTTON).click();
+  cy.get(CREATE_NEW_CASE_FROM_MODAL_BUTTON).click();
 };
 
 export const goToStep = (step: number) => {

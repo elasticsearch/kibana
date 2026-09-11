@@ -19,11 +19,7 @@ export const useCaseActions = ({
   onAddToCase?: (opts: { isNewCase: boolean }) => void;
 }) => {
   const selectCaseModal = cases?.hooks.useCasesAddToExistingCaseModal({
-    onSuccess: () => onAddToCase?.({ isNewCase: false }),
-  });
-
-  const createCaseFlyout = cases?.hooks.useCasesAddToNewCaseFlyout({
-    onSuccess: () => onAddToCase?.({ isNewCase: true }),
+    onSuccess: (_, isNewCase) => onAddToCase?.({ isNewCase }),
   });
 
   const getCaseAttachments = useCallback(() => {
@@ -44,16 +40,11 @@ export const useCaseActions = ({
     }));
   }, [alerts, cases?.helpers]);
 
-  const handleAddToNewCaseClick = useCallback(() => {
-    createCaseFlyout?.open({ attachments: getCaseAttachments() });
-  }, [createCaseFlyout, getCaseAttachments]);
-
-  const handleAddToExistingCaseClick = useCallback(() => {
+  const handleAddToCaseClick = useCallback(() => {
     selectCaseModal?.open({ getAttachments: () => getCaseAttachments() });
   }, [selectCaseModal, getCaseAttachments]);
 
   return {
-    handleAddToExistingCaseClick,
-    handleAddToNewCaseClick,
+    handleAddToCaseClick,
   };
 };

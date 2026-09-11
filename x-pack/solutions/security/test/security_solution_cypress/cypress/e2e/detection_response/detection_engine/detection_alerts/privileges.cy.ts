@@ -6,7 +6,11 @@
  */
 
 import { getCustomQueryRuleParams } from '../../../../objects/rule';
-import { ADD_EXCEPTION_BTN, ATTACH_TO_NEW_CASE_BUTTON } from '../../../../screens/alerts';
+import {
+  ADD_EXCEPTION_BTN,
+  ATTACH_ALERT_TO_CASE_BUTTON,
+  CREATE_NEW_CASE_FROM_MODAL_BUTTON,
+} from '../../../../screens/alerts';
 import {
   addAlertTagToNAlerts,
   closeAlerts,
@@ -97,7 +101,8 @@ describe('Alerts page - privileges', { tags: ['@ess'] }, () => {
     it(`should be able to add to case`, () => {
       expandFirstAlertActions();
 
-      cy.get(ATTACH_TO_NEW_CASE_BUTTON).click();
+      cy.get(ATTACH_ALERT_TO_CASE_BUTTON).click();
+      cy.get(CREATE_NEW_CASE_FROM_MODAL_BUTTON).click();
 
       cy.get('[data-test-subj="create-case-submit"]').should('be.enabled');
     });

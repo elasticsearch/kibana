@@ -7,6 +7,7 @@
 
 import { AlertsTable } from './components/alerts_table';
 export { AlertsTable } from './components/alerts_table';
+export { ADD_TO_CASE } from './translations';
 // Lazy load helper
 // eslint-disable-next-line import/no-default-export
 export default AlertsTable;

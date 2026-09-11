@@ -62,6 +62,7 @@ export const DocumentWorkflowsPanel = ({
 
 export const RUN_DOCUMENT_WORKFLOW_PANEL_ID = 'RUN_DOCUMENT_WORKFLOW_PANEL_ID';
 export const RUN_DOCUMENT_WORKFLOWS_PANEL_WIDTH = 400;
+export const RUN_DOCUMENT_WORKFLOW_ACTION_ID = 'run-document-workflow-action';
 
 export interface UseRunDocumentWorkflowPanelProps {
   /** Full documents including _id, _index, and all source fields */
@@ -93,7 +94,8 @@ export const useRunDocumentWorkflowPanel = ({
       {
         'aria-label': i18n.CONTEXT_MENU_RUN_WORKFLOW,
         'data-test-subj': 'run-document-workflow-action',
-        key: 'run-document-workflow-action',
+        icon: 'workflow',
+        key: RUN_DOCUMENT_WORKFLOW_ACTION_ID,
         name: i18n.CONTEXT_MENU_RUN_WORKFLOW,
         panel: RUN_DOCUMENT_WORKFLOW_PANEL_ID,
       },

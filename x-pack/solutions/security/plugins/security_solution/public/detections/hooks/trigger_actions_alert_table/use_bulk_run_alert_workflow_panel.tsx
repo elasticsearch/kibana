@@ -25,6 +25,8 @@ export interface UseBulkRunAlertWorkflowPanelResult {
   runWorkflowPanels: ContentPanelConfig[];
 }
 
+export const BULK_RUN_ALERT_WORKFLOW_ACTION_ID = 'bulk-run-alert-workflow';
+
 export const useBulkRunAlertWorkflowPanel = (): UseBulkRunAlertWorkflowPanelResult => {
   const { canExecuteWorkflow } = useWorkflowsCapabilities();
   const workflowUIEnabled = useWorkflowsUIEnabledSetting();
@@ -42,17 +44,19 @@ export const useBulkRunAlertWorkflowPanel = (): UseBulkRunAlertWorkflowPanelResu
     return <AlertWorkflowsPanel alertIds={alertIds} onClose={props.closePopoverMenu} />;
   }, []);
 
-  const runWorkflowItems = useMemo(
+  const runWorkflowItems = useMemo<BulkActionsConfig[]>(
     () =>
       canRunWorkflow
         ? [
             {
-              key: 'bulk-run-alert-workflow',
+              key: BULK_RUN_ALERT_WORKFLOW_ACTION_ID,
               'data-test-subj': 'bulk-run-alert-workflow-action',
               label: i18n.CONTEXT_MENU_RUN_WORKFLOW,
               name: i18n.CONTEXT_MENU_RUN_WORKFLOW,
               panel: RUN_WORKFLOW_BULK_PANEL_ID,
               disableOnQuery: false,
+              icon: 'workflow' as const,
+              groupId: 'workflow' as const,
             },
           ]
         : [],

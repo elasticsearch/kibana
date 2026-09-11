@@ -14,6 +14,8 @@ import { BulkAlertTagsPanel } from './alert_bulk_tags';
 import * as i18n from './translations';
 import { useSetAlertTags } from './use_set_alert_tags';
 
+export const ALERT_TAG_ACTION_ID = 'manage-alert-tags';
+
 export interface UseBulkAlertTagsItemsProps {
   refetch?: () => void;
 }
@@ -42,12 +44,14 @@ export const useBulkAlertTagsItems = ({ refetch }: UseBulkAlertTagsItemsProps) =
       hasAlertsUpdate
         ? [
             {
-              key: 'manage-alert-tags',
+              key: ALERT_TAG_ACTION_ID,
               'data-test-subj': 'alert-tags-context-menu-item',
               name: i18n.ALERT_TAGS_CONTEXT_MENU_ITEM_TITLE,
               panel: 1,
               label: i18n.ALERT_TAGS_CONTEXT_MENU_ITEM_TITLE,
               disableOnQuery: true,
+              icon: 'tag' as const,
+              groupId: 'tags' as const,
             },
           ]
         : [],

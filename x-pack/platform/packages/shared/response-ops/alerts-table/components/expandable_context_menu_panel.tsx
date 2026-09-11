@@ -9,6 +9,10 @@ import React, { useCallback, useState } from 'react';
 import { EuiContextMenuPanel } from '@elastic/eui';
 import { ExpandableContextMenuPanelProvider } from '../contexts/expandable_context_menu_panel_context';
 
+export const EXPANDABLE_CONTEXT_MENU_PANEL_MIN_WIDTH = 240;
+
+const panelStyle = { minWidth: EXPANDABLE_CONTEXT_MENU_PANEL_MIN_WIDTH };
+
 export interface ExpandableContextMenuPanelProps {
   items: React.ReactElement[];
   'data-test-subj'?: string;
@@ -30,22 +34,31 @@ export const ExpandableContextMenuPanel = ({
   items,
   'data-test-subj': testSubj = 'alertsTableActionsMenu',
 }: ExpandableContextMenuPanelProps) => {
-  const [panelContent, setPanelContent] = useState<React.ReactNode | null>(null);
+  const [panel, setPanel] = useState<{
+    content: React.ReactNode;
+    title?: React.ReactNode;
+  } | null>(null);
 
-  const openPanel = useCallback((panel: React.ReactNode) => {
-    setPanelContent(panel);
+  const openPanel = useCallback((content: React.ReactNode, title?: React.ReactNode) => {
+    setPanel({ content, title });
   }, []);
 
   const closePanel = useCallback(() => {
-    setPanelContent(null);
+    setPanel(null);
   }, []);
 
   return (
     <ExpandableContextMenuPanelProvider value={{ openPanel, closePanel }}>
-      {panelContent ? (
-        <EuiContextMenuPanel>{panelContent}</EuiContextMenuPanel>
+      {panel ? (
+        <EuiContextMenuPanel
+          title={panel.title}
+          onClose={panel.title ? closePanel : undefined}
+          style={panelStyle}
+        >
+          {panel.content}
+        </EuiContextMenuPanel>
       ) : (
-        <EuiContextMenuPanel items={items} data-test-subj={testSubj} />
+        <EuiContextMenuPanel items={items} data-test-subj={testSubj} style={panelStyle} />
       )}
     </ExpandableContextMenuPanelProvider>
   );

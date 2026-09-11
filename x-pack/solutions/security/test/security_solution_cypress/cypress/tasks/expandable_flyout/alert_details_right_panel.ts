@@ -16,6 +16,7 @@ import {
   DOCUMENT_DETAILS_FLYOUT_TABLE_TAB,
 } from '../../screens/expandable_flyout/alert_details_right_panel';
 import {
+  CREATE_NEW_CASE_FROM_MODAL_BUTTON,
   DOCUMENT_DETAILS_FLYOUT_FOOTER_ADD_TO_NEW_CASE_CREATE_BUTTON,
   DOCUMENT_DETAILS_FLYOUT_FOOTER_ADD_TO_NEW_CASE_DESCRIPTION_INPUT,
   DOCUMENT_DETAILS_FLYOUT_FOOTER_ADD_TO_NEW_CASE_NAME_INPUT,
@@ -92,6 +93,7 @@ export const selectTakeActionItem = (option: string) => {
  * Create new case from the expandable flyout take action button
  */
 export const fillOutFormToCreateNewCase = () => {
+  cy.get(CREATE_NEW_CASE_FROM_MODAL_BUTTON).click();
   cy.get(DOCUMENT_DETAILS_FLYOUT_FOOTER_ADD_TO_NEW_CASE_NAME_INPUT).type('case');
   cy.get(DOCUMENT_DETAILS_FLYOUT_FOOTER_ADD_TO_NEW_CASE_DESCRIPTION_INPUT).type('case description');
 

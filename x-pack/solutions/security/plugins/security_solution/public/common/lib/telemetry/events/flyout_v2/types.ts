@@ -239,8 +239,7 @@ export type FlyoutHeaderItem = (typeof FLYOUT_HEADER_ITEM)[keyof typeof FLYOUT_H
  * "Take action" menu.
  */
 export const FLYOUT_ACTION = {
-  ADD_TO_CASE_NEW: 'add_to_case_new',
-  ADD_TO_CASE_EXISTING: 'add_to_case_existing',
+  ADD_TO_CASE: 'add_to_case',
   STATUS_OPEN: 'status_open',
   STATUS_ACKNOWLEDGED: 'status_acknowledged',
   STATUS_CLOSED: 'status_closed',

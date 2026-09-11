@@ -211,7 +211,7 @@ describe.skip(
 
         openAlertDetailsView();
 
-        cy.getByTestSubj('add-to-existing-case-action').click();
+        cy.getByTestSubj('add-to-case-action').click();
         cy.getByTestSubj(`cases-table-row-select-${caseId}`).click();
         cy.contains(`An alert was added to \"Test ${caseOwner} case`);
 

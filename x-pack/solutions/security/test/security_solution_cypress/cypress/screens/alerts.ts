@@ -80,9 +80,9 @@ export const TAKE_ACTION_POPOVER_BTN = '[data-test-subj="selectedShowBulkActions
 
 export const TIMELINE_CONTEXT_MENU_BTN = '[data-test-subj="timeline-context-menu-button"]';
 
-export const ATTACH_ALERT_TO_CASE_BUTTON = '[data-test-subj="add-to-existing-case-action"]';
-
-export const ATTACH_TO_NEW_CASE_BUTTON = '[data-test-subj="add-to-new-case-action"]';
+export const ATTACH_ALERT_TO_CASE_BUTTON = '[data-test-subj="add-to-case-action"]';
+export const CREATE_NEW_CASE_FROM_MODAL_BUTTON =
+  '[data-test-subj="cases-table-add-case-filter-bar"]';
 
 export const DATAGRID_CHANGES_IN_PROGRESS = '[data-test-subj="body-data-grid"] .euiProgress';
 
@@ -249,9 +249,8 @@ export const HOVER_ACTIONS = {
   SHOW_TOP: '[data-test-subj="actionItem-security-default-cellActions-showTopN"]',
 };
 
-export const ADD_TO_NEW_CASE_BUTTON = '[data-test-subj="attach-new-case"]';
-
-export const ADD_TO_EXISTING_CASE_BUTTON = '[data-test-subj="attach-existing-case"]';
+export const ADD_TO_CASE_BUTTON = '[data-test-subj="alerts-table-add-to-case"]';
+export const ADD_TO_CASE_MODAL = '[data-test-subj="all-cases-modal"]';
 
 export const GROUP_ALERTS_BY_BTN = '[data-test-subj="alerts-table-group-selector"]';
 

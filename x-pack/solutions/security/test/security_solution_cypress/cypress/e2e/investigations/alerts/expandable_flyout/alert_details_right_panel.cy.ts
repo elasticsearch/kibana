@@ -22,8 +22,7 @@ import {
   DOCUMENT_DETAILS_FLYOUT_FOOTER_ADD_RULE_EXCEPTION,
   DOCUMENT_DETAILS_FLYOUT_FOOTER_ADD_RULE_EXCEPTION_FLYOUT_CANCEL_BUTTON,
   DOCUMENT_DETAILS_FLYOUT_FOOTER_ADD_RULE_EXCEPTION_FLYOUT_HEADER,
-  DOCUMENT_DETAILS_FLYOUT_FOOTER_ADD_TO_EXISTING_CASE,
-  DOCUMENT_DETAILS_FLYOUT_FOOTER_ADD_TO_NEW_CASE,
+  DOCUMENT_DETAILS_FLYOUT_FOOTER_ADD_TO_CASE,
   DOCUMENT_DETAILS_FLYOUT_FOOTER_INVESTIGATE_IN_TIMELINE,
   DOCUMENT_DETAILS_FLYOUT_FOOTER_INVESTIGATE_IN_TIMELINE_ENTRY,
   DOCUMENT_DETAILS_FLYOUT_FOOTER_INVESTIGATE_IN_TIMELINE_SECTION,
@@ -153,24 +152,20 @@ describe('Alert details expandable flyout right panel', { tags: ['@ess', '@serve
     cy.get(DOCUMENT_DETAILS_FLYOUT_FOOTER_TAKE_ACTION_BUTTON).should('be.visible');
   });
 
-  // TODO this will change when add to existing case is improved
-  //  https://github.com/elastic/security-team/issues/6298
   it('should add to existing case', () => {
     expandAlertAtIndexExpandableFlyout();
-    openTakeActionButtonAndSelectItem(DOCUMENT_DETAILS_FLYOUT_FOOTER_ADD_TO_NEW_CASE);
+    openTakeActionButtonAndSelectItem(DOCUMENT_DETAILS_FLYOUT_FOOTER_ADD_TO_CASE);
     fillOutFormToCreateNewCase();
-    openTakeActionButtonAndSelectItem(DOCUMENT_DETAILS_FLYOUT_FOOTER_ADD_TO_EXISTING_CASE);
+    openTakeActionButtonAndSelectItem(DOCUMENT_DETAILS_FLYOUT_FOOTER_ADD_TO_CASE);
 
     cy.get(EXISTING_CASE_SELECT_BUTTON).contains('Select').click();
 
     cy.get(VIEW_CASE_TOASTER_LINK).should('contain.text', 'View case');
   });
 
-  // TODO this will change when add to new case is improved
-  //  https://github.com/elastic/security-team/issues/6298
   it('should add to new case', () => {
     expandAlertAtIndexExpandableFlyout();
-    openTakeActionButtonAndSelectItem(DOCUMENT_DETAILS_FLYOUT_FOOTER_ADD_TO_NEW_CASE);
+    openTakeActionButtonAndSelectItem(DOCUMENT_DETAILS_FLYOUT_FOOTER_ADD_TO_CASE);
     fillOutFormToCreateNewCase();
 
     cy.get(VIEW_CASE_TOASTER_LINK).should('contain.text', 'View case');

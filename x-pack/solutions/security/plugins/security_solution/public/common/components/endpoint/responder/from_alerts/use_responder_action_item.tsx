@@ -12,6 +12,8 @@ import { useUserPrivileges } from '../../../user_privileges';
 import type { AlertTableContextMenuItem } from '../../../../../detections/components/alerts_table/types';
 import { useWithResponderActionDataFromAlert } from './use_responder_action_data';
 
+export const RESPOND_ACTION_ID = 'endpointResponseActions-action-item';
+
 export const useResponderActionItem = (
   eventDetailsData: TimelineEventsDetailsItem[] | null,
   onClick: () => void
@@ -28,7 +30,7 @@ export const useResponderActionItem = (
 
     if (!isAuthzLoading && canAccessResponseConsole) {
       actions.push({
-        key: 'endpointResponseActions-action-item',
+        key: RESPOND_ACTION_ID,
         'data-test-subj': 'endpointResponseActions-action-item',
         disabled: isDisabled,
         toolTipContent: tooltip,

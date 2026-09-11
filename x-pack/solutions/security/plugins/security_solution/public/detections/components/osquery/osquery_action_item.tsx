@@ -12,8 +12,10 @@ interface IProps {
   handleClick: () => void;
 }
 
+export const OSQUERY_ACTION_ID = 'osquery-action-item';
+
 export const getOsqueryActionItem = ({ handleClick }: IProps): AlertTableContextMenuItem => ({
-  key: 'osquery-action-item',
+  key: OSQUERY_ACTION_ID,
   'data-test-subj': 'osquery-action-item',
   onClick: handleClick,
   name: ACTION_OSQUERY,

@@ -36,6 +36,8 @@ import { useSendBulkToTimeline } from './use_send_bulk_to_timeline';
 
 const { setEventsLoading } = dataTableActions;
 
+export const BULK_INVESTIGATE_IN_TIMELINE_ACTION_ID = 'add-bulk-to-timeline';
+
 export interface UseAddBulkToTimelineActionProps {
   /* filters being passed to the Alert/events table */
   localFilters: Filter[];
@@ -208,10 +210,12 @@ export const useAddBulkToTimelineAction = ({
         ? [
             {
               label: investigateInTimelineTitle,
-              key: 'add-bulk-to-timeline',
+              key: BULK_INVESTIGATE_IN_TIMELINE_ACTION_ID,
               'data-test-subj': 'investigate-bulk-in-timeline',
               disableOnQuery: disableActionOnSelectAll,
               onClick: onActionClick,
+              icon: 'timeline' as const,
+              groupId: 'timeline' as const,
             },
           ]
         : [],

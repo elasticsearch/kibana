@@ -7,53 +7,26 @@
 
 import type { FtrProviderContext } from '../../../ftr_provider_context';
 
-const ADD_TO_EXISTING_CASE_SELECTOR = 'add-to-existing-case-action';
-const ADD_TO_NEW_CASE_SELECTOR = 'add-to-new-case-action';
-const CREATE_CASE_FLYOUT = 'create-case-flyout';
+const ADD_TO_CASE_SELECTOR = 'add-to-case-action';
 const SELECT_CASE_MODAL = 'all-cases-modal';
 
 export function ObservabilityAlertsAddToCaseProvider({ getService }: FtrProviderContext) {
   const testSubjects = getService('testSubjects');
 
-  const getAddToExistingCaseSelector = async () => {
-    return await testSubjects.find(ADD_TO_EXISTING_CASE_SELECTOR);
+  const getAddToCaseSelector = async () => {
+    return await testSubjects.find(ADD_TO_CASE_SELECTOR);
   };
 
-  const getAddToExistingCaseSelectorOrFail = async () => {
-    return await testSubjects.existOrFail(ADD_TO_EXISTING_CASE_SELECTOR);
+  const getAddToCaseSelectorOrFail = async () => {
+    return await testSubjects.existOrFail(ADD_TO_CASE_SELECTOR);
   };
 
-  const missingAddToExistingCaseSelectorOrFail = async () => {
-    return await testSubjects.missingOrFail(ADD_TO_EXISTING_CASE_SELECTOR);
+  const missingAddToCaseSelectorOrFail = async () => {
+    return await testSubjects.missingOrFail(ADD_TO_CASE_SELECTOR);
   };
 
-  const getAddToNewCaseSelector = async () => {
-    return await testSubjects.find(ADD_TO_NEW_CASE_SELECTOR);
-  };
-
-  const getAddToNewCaseSelectorOrFail = async () => {
-    return await testSubjects.existOrFail(ADD_TO_NEW_CASE_SELECTOR);
-  };
-
-  const missingAddToNewCaseSelectorOrFail = async () => {
-    return await testSubjects.missingOrFail(ADD_TO_NEW_CASE_SELECTOR);
-  };
-
-  const addToNewCaseButtonClick = async () => {
-    return await (await getAddToNewCaseSelector()).click();
-  };
-
-  const addToExistingCaseButtonClick = async () => {
-    return await (await getAddToExistingCaseSelector()).click();
-  };
-
-  const getCreateCaseFlyoutOrFail = async () => {
-    return await testSubjects.existOrFail(CREATE_CASE_FLYOUT);
-  };
-
-  const closeFlyout = async () => {
-    await testSubjects.click('euiFlyoutCloseButton'); // click close button
-    await testSubjects.missingOrFail('euiFlyoutCloseButton'); // wait for flyout to be closed
+  const addToCaseButtonClick = async () => {
+    return await (await getAddToCaseSelector()).click();
   };
 
   const getAddToExistingCaseModalOrFail = async () => {
@@ -61,16 +34,10 @@ export function ObservabilityAlertsAddToCaseProvider({ getService }: FtrProvider
   };
 
   return {
-    getAddToExistingCaseSelector,
-    getAddToExistingCaseSelectorOrFail,
-    missingAddToExistingCaseSelectorOrFail,
-    getAddToNewCaseSelector,
-    getAddToNewCaseSelectorOrFail,
-    missingAddToNewCaseSelectorOrFail,
-    getCreateCaseFlyoutOrFail,
-    closeFlyout,
-    addToNewCaseButtonClick,
-    addToExistingCaseButtonClick,
+    getAddToCaseSelector,
+    getAddToCaseSelectorOrFail,
+    missingAddToCaseSelectorOrFail,
+    addToCaseButtonClick,
     getAddToExistingCaseModalOrFail,
   };
 }

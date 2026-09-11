@@ -61,6 +61,10 @@ describe('useBulkAlertTagsItems', () => {
     expect(result.current.alertTagsItems[0]['data-test-subj']).toEqual(
       'alert-tags-context-menu-item'
     );
+    expect(result.current.alertTagsItems[0]).toMatchObject({
+      icon: 'tag',
+      groupId: 'tags',
+    });
     expect(result.current.alertTagsPanels[0]['data-test-subj']).toEqual(
       'alert-tags-context-menu-panel'
     );

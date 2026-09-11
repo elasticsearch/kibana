@@ -74,6 +74,8 @@ describe('useAddBulkToTimelineAction', () => {
         onClick: expect.any(Function),
         key: 'add-bulk-to-timeline',
         'data-test-subj': 'investigate-bulk-in-timeline',
+        icon: 'timeline',
+        groupId: 'timeline',
       });
     });
   });

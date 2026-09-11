@@ -13,7 +13,7 @@ import { CASES_ALL_WITH_ALERTS_ROLE } from '../../fixtures/roles';
 
 // Ported from the "When user has all privileges for cases" suite in the FTR
 // pages/alerts/add_to_case.ts. A user with cases write privileges sees the
-// add-to-case row actions and can open the new/existing case dialogs.
+// add-to-case row action and can open the case selector.
 test.describe(
   'Observability alerts - add to case (all privileges)',
   { tag: [...tags.stateful.classic, ...tags.serverless.observability.complete] },
@@ -31,27 +31,18 @@ test.describe(
       await apiServices.cases.cleanup.deleteAllCases();
     });
 
-    test('renders the case options in the row actions menu', async ({ pageObjects }) => {
+    test('renders the case action in the row actions menu', async ({ pageObjects }) => {
       const { alertsTablePage } = pageObjects;
       await alertsTablePage.waitForTableToLoad();
       await alertsTablePage.openActionsMenuForRow(0);
-      await expect(alertsTablePage.addToExistingCaseAction).toBeVisible();
-      await expect(alertsTablePage.addToNewCaseAction).toBeVisible();
+      await expect(alertsTablePage.addToCaseAction).toBeVisible();
     });
 
-    test('opens the create-case flyout from "Add to new case"', async ({ pageObjects }) => {
+    test('opens the case selector from "Add to case"', async ({ pageObjects }) => {
       const { alertsTablePage } = pageObjects;
       await alertsTablePage.waitForTableToLoad();
       await alertsTablePage.openActionsMenuForRow(0);
-      await alertsTablePage.clickAddToNewCase();
-      await expect(alertsTablePage.createCaseFlyout).toBeVisible();
-    });
-
-    test('opens the existing-cases modal from "Add to existing case"', async ({ pageObjects }) => {
-      const { alertsTablePage } = pageObjects;
-      await alertsTablePage.waitForTableToLoad();
-      await alertsTablePage.openActionsMenuForRow(0);
-      await alertsTablePage.clickAddToExistingCase();
+      await alertsTablePage.clickAddToCase();
       await expect(alertsTablePage.addToExistingCaseModal).toBeVisible();
     });
   }

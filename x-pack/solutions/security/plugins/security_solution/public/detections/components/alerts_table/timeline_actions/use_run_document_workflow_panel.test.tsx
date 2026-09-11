@@ -171,6 +171,7 @@ describe('useRunDocumentWorkflowPanel', () => {
       );
       expect(result.current.runWorkflowMenuItem[0].key).toBe('run-document-workflow-action');
       expect(result.current.runWorkflowMenuItem[0].name).toBe(i18n.CONTEXT_MENU_RUN_WORKFLOW);
+      expect(result.current.runWorkflowMenuItem[0].icon).toBe('workflow');
       expect(result.current.runWorkflowMenuItem[0].panel).toBe(RUN_DOCUMENT_WORKFLOW_PANEL_ID);
 
       expect(result.current.runDocumentWorkflowPanel).toHaveLength(1);

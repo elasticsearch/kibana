@@ -128,8 +128,7 @@ test.describe(
       await pageObjects.alertsTablePage.waitForTableToLoad();
       await pageObjects.alertsTablePage.openActionsMenuForRow(0);
       for (const action of [
-        'add-to-existing-case-action',
-        'add-to-new-case-action',
+        'add-to-case-action',
         'viewRuleDetails',
         'viewAlertDetailsPage',
         'untrackAlert',

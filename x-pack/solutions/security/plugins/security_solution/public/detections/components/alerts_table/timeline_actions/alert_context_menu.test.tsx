@@ -131,8 +131,7 @@ jest.mock('./use_add_to_chat_action', () => ({
 }));
 
 const actionMenuButton = 'timeline-context-menu-button';
-const addToExistingCaseButton = 'add-to-existing-case-action';
-const addToNewCaseButton = 'add-to-new-case-action';
+const addToCaseButton = 'add-to-case-action';
 const markAsOpenButton = 'open-alert-status';
 const markAsAcknowledgedButton = 'acknowledged-alert-status';
 const markAsClosedButton = 'alert-close-context-menu-item';
@@ -191,8 +190,7 @@ describe('Alert table context menu', () => {
 
       fireEvent.click(wrapper.getByTestId(actionMenuButton));
 
-      expect(wrapper.getByTestId(addToExistingCaseButton)).toBeTruthy();
-      expect(wrapper.getByTestId(addToNewCaseButton)).toBeTruthy();
+      expect(wrapper.getByTestId(addToCaseButton)).toBeTruthy();
     });
 
     test('it render AddToCase context menu item if timelineId === TimelineId.detectionsRulesDetailsPage', () => {
@@ -204,8 +202,7 @@ describe('Alert table context menu', () => {
 
       fireEvent.click(wrapper.getByTestId(actionMenuButton));
 
-      expect(wrapper.getByTestId(addToExistingCaseButton)).toBeTruthy();
-      expect(wrapper.getByTestId(addToNewCaseButton)).toBeTruthy();
+      expect(wrapper.getByTestId(addToCaseButton)).toBeTruthy();
     });
 
     test('it render AddToCase context menu item if timelineId === TimelineId.active', () => {
@@ -217,8 +214,7 @@ describe('Alert table context menu', () => {
 
       fireEvent.click(wrapper.getByTestId(actionMenuButton));
 
-      expect(wrapper.getByTestId(addToExistingCaseButton)).toBeTruthy();
-      expect(wrapper.getByTestId(addToNewCaseButton)).toBeTruthy();
+      expect(wrapper.getByTestId(addToCaseButton)).toBeTruthy();
     });
   });
 

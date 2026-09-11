@@ -72,6 +72,16 @@ describe('useBulkAlertActionItems', () => {
     it('should include "Mark as closed"', () => {
       expect(items.find((item) => item.key === 'close-alert-with-reason')).not.toBeUndefined();
     });
+    it('should add status group metadata and icons', () => {
+      items.forEach((item) => {
+        expect(item).toEqual(
+          expect.objectContaining({
+            groupId: 'status',
+            icon: expect.anything(),
+          })
+        );
+      });
+    });
   });
 
   describe('onClick with isSelectAllChecked (query-based bulk close)', () => {

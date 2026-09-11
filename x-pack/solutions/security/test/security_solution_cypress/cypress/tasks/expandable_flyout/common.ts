@@ -7,8 +7,9 @@
 
 import { EXPAND_ALERT_BTN as TIMELINE_EXPAND_ALERT_BTN } from '../../screens/timeline';
 import { EXPAND_ALERT_BTN as ALERTS_TABLE_EXPAND_ALERT_BTN } from '../../screens/alerts';
-import { DOCUMENT_DETAILS_FLYOUT_FOOTER_ADD_TO_NEW_CASE } from '../../screens/expandable_flyout/alert_details_right_panel';
+import { DOCUMENT_DETAILS_FLYOUT_FOOTER_ADD_TO_CASE } from '../../screens/expandable_flyout/alert_details_right_panel';
 import {
+  CREATE_NEW_CASE_FROM_MODAL_BUTTON,
   DOCUMENT_DETAILS_FLYOUT_FOOTER_ADD_TO_NEW_CASE_CREATE_BUTTON,
   DOCUMENT_DETAILS_FLYOUT_FOOTER_ADD_TO_NEW_CASE_DESCRIPTION_INPUT,
   DOCUMENT_DETAILS_FLYOUT_FOOTER_ADD_TO_NEW_CASE_NAME_INPUT,
@@ -34,7 +35,8 @@ export const expandAlertInTimelineAtIndexExpandableFlyout = (index = 0) => {
  * create a new case from the expanded expandable flyout
  */
 export const createNewCaseFromExpandableFlyout = () => {
-  openTakeActionButtonAndSelectItem(DOCUMENT_DETAILS_FLYOUT_FOOTER_ADD_TO_NEW_CASE);
+  openTakeActionButtonAndSelectItem(DOCUMENT_DETAILS_FLYOUT_FOOTER_ADD_TO_CASE);
+  cy.get(CREATE_NEW_CASE_FROM_MODAL_BUTTON).click();
   cy.get(DOCUMENT_DETAILS_FLYOUT_FOOTER_ADD_TO_NEW_CASE_NAME_INPUT).type('case');
   cy.get(DOCUMENT_DETAILS_FLYOUT_FOOTER_ADD_TO_NEW_CASE_DESCRIPTION_INPUT).type('case description');
   cy.get(DOCUMENT_DETAILS_FLYOUT_FOOTER_ADD_TO_NEW_CASE_CREATE_BUTTON).click();

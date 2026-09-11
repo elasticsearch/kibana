@@ -9,7 +9,7 @@ import type React from 'react';
 import { createContext, useContext } from 'react';
 
 export interface ExpandableContextMenuPanelContextValue {
-  openPanel: (panel: React.ReactNode) => void;
+  openPanel: (panel: React.ReactNode, title?: React.ReactNode) => void;
   closePanel: () => void;
 }
 

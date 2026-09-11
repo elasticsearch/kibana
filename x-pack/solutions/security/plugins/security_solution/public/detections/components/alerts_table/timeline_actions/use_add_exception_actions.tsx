@@ -14,6 +14,11 @@ import type { AlertTableContextMenuItem } from '../types';
 import { useUserPrivileges } from '../../../../common/components/user_privileges';
 import { useAlertsPrivileges } from '../../../containers/detection_engine/alerts/use_alerts_privileges';
 
+export const ALERT_EXCEPTION_ACTION_IDS = {
+  addEndpointException: 'add-endpoint-exception-menu-item',
+  addRuleException: 'add-exception-menu-item',
+} as const;
+
 export interface UseExceptionActionProps {
   isEndpointAlert: boolean;
   onAddExceptionTypeClick: (type?: ExceptionListTypeEnum) => void;
@@ -44,14 +49,14 @@ export const useAlertExceptionActions = ({
         ? []
         : [
             {
-              key: 'add-endpoint-exception-menu-item',
+              key: ALERT_EXCEPTION_ACTION_IDS.addEndpointException,
               'data-test-subj': 'add-endpoint-exception-menu-item',
               disabled: disabledAddEndpointException,
               onClick: handleEndpointExceptionModal,
               name: ACTION_ADD_ENDPOINT_EXCEPTION,
             },
             {
-              key: 'add-exception-menu-item',
+              key: ALERT_EXCEPTION_ACTION_IDS.addRuleException,
               'data-test-subj': 'add-exception-menu-item',
               disabled: disabledAddException,
               onClick: handleDetectionExceptionModal,

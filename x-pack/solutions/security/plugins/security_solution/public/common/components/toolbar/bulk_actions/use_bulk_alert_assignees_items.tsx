@@ -24,6 +24,11 @@ import { BulkAlertAssigneesPanel } from './alert_bulk_assignees';
 import * as i18n from './translations';
 import { useSetAlertAssignees } from './use_set_alert_assignees';
 
+export const ALERT_ASSIGNEE_ACTION_IDS = {
+  assign: 'manage-alert-assignees',
+  unassignAll: 'remove-all-alert-assignees',
+} as const;
+
 export interface UseBulkAlertAssigneesItemsProps {
   onAssigneesUpdate?: () => void;
   alertAssignments?: string[];
@@ -89,22 +94,26 @@ export const useBulkAlertAssigneesItems = ({
       hasAlertsUpdate && isPlatinumPlus
         ? [
             {
-              key: 'manage-alert-assignees',
+              key: ALERT_ASSIGNEE_ACTION_IDS.assign,
               'data-test-subj': 'alert-assignees-context-menu-item',
               name: i18n.ALERT_ASSIGNEES_CONTEXT_MENU_ITEM_TITLE,
               panel: 2,
               label: i18n.ALERT_ASSIGNEES_CONTEXT_MENU_ITEM_TITLE,
               disableOnQuery: true,
               disable: false,
+              icon: 'users' as const,
+              groupId: 'assignees' as const,
             },
             {
-              key: 'remove-all-alert-assignees',
+              key: ALERT_ASSIGNEE_ACTION_IDS.unassignAll,
               'data-test-subj': 'remove-alert-assignees-menu-item',
               name: i18n.REMOVE_ALERT_ASSIGNEES_CONTEXT_MENU_TITLE,
               label: i18n.REMOVE_ALERT_ASSIGNEES_CONTEXT_MENU_TITLE,
               disableOnQuery: true,
               onClick: onRemoveAllAssignees,
               disable: alertAssignments ? isEmpty(alertAssignments) : false,
+              icon: 'users' as const,
+              groupId: 'assignees' as const,
             },
           ]
         : [],

@@ -9,9 +9,10 @@ import type {
   BulkActionsConfig,
   BulkActionsPanelConfig,
 } from '@kbn/response-ops-alerts-table/types';
-import { useCallback, useMemo } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import type { Filter } from '@kbn/es-query';
 import { buildEsQuery } from '@kbn/es-query';
+import { EuiIcon } from '@elastic/eui';
 import type { MappingRuntimeFields } from '@elastic/elasticsearch/lib/api/types';
 import type { TableId } from '@kbn/securitysolution-data-table';
 import { useBulkClosingReasonItems } from '@kbn/response-ops-detections-close-reason';
@@ -35,6 +36,11 @@ import * as i18n from '../translations';
 import { buildTimeRangeFilter } from '../../components/alerts_table/helpers';
 import { useAlertsPrivileges } from '../../containers/detection_engine/alerts/use_alerts_privileges';
 import { useAlertCloseInfoModal } from '../use_alert_close_info_modal';
+
+export const BULK_ALERT_STATUS_ACTION_IDS = {
+  markAsAcknowledged: 'acknowledged-alert-status',
+  markAsOpen: 'open-alert-status',
+} as const;
 
 export interface UseBulkAlertActionItemsArgs {
   /* Table ID for which this hook is being used */
@@ -222,17 +228,37 @@ export const useBulkAlertActionItems = ({
           : status === FILTER_CLOSED
           ? i18n.BULK_ACTION_CLOSE_SELECTED
           : i18n.BULK_ACTION_ACKNOWLEDGED_SELECTED;
+      const icon = (
+        <EuiIcon
+          type="dot"
+          color={
+            status === FILTER_OPEN
+              ? 'danger'
+              : status === FILTER_ACKNOWLEDGED
+              ? 'primary'
+              : 'subdued'
+          }
+          aria-hidden
+        />
+      );
 
       if (status === FILTER_CLOSED) {
-        return alertClosingReasonItem;
+        return alertClosingReasonItem
+          ? { ...alertClosingReasonItem, icon, groupId: 'status' as const }
+          : undefined;
       }
 
       return {
         label,
-        key: `${status}-alert-status`,
+        key:
+          status === FILTER_OPEN
+            ? BULK_ALERT_STATUS_ACTION_IDS.markAsOpen
+            : BULK_ALERT_STATUS_ACTION_IDS.markAsAcknowledged,
         'data-test-subj': `${status}-alert-status`,
         disableOnQuery: false,
         onClick: getOnAction(status),
+        icon,
+        groupId: 'status' as const,
       };
     },
     [alertClosingReasonItem, getOnAction]

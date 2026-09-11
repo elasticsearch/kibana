@@ -7,7 +7,10 @@
 
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { ExpandableContextMenuPanel } from './expandable_context_menu_panel';
+import {
+  EXPANDABLE_CONTEXT_MENU_PANEL_MIN_WIDTH,
+  ExpandableContextMenuPanel,
+} from './expandable_context_menu_panel';
 import { useExpandableContextMenuPanel } from '../contexts/expandable_context_menu_panel_context';
 
 const InlinePanel = () => {
@@ -37,6 +40,9 @@ describe('ExpandableContextMenuPanel', () => {
     expect(screen.getByTestId('alertsTableActionsMenu')).toBeInTheDocument();
     expect(screen.getByTestId('openPanelItem')).toBeInTheDocument();
     expect(screen.queryByTestId('inlinePanel')).not.toBeInTheDocument();
+    expect(screen.getByTestId('alertsTableActionsMenu')).toHaveStyle({
+      minWidth: `${EXPANDABLE_CONTEXT_MENU_PANEL_MIN_WIDTH}px`,
+    });
   });
 
   it('swaps the menu for the inline panel and moves focus into it', async () => {
@@ -50,6 +56,9 @@ describe('ExpandableContextMenuPanel', () => {
     // The content is wrapped in an EuiContextMenuPanel, whose built-in focus
     // handling moves focus into the panel (rather than dropping it to <body>).
     const contentPanel = screen.getByTestId('inlinePanel').closest('.euiContextMenuPanel');
+    expect(contentPanel).toHaveStyle({
+      minWidth: `${EXPANDABLE_CONTEXT_MENU_PANEL_MIN_WIDTH}px`,
+    });
     await waitFor(() => expect(contentPanel).toHaveFocus());
   });
 

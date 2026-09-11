@@ -41,6 +41,7 @@ const getAttachments = jest.fn().mockReturnValue([alertComment]);
 const useCasesToastMock = useCasesToast as jest.Mock;
 const useCasesAddToNewCaseFlyoutMock = useCasesAddToNewCaseFlyout as jest.Mock;
 const AllCasesSelectorModalMock = AllCasesSelectorModal as unknown as jest.Mock;
+const openCreateNewCaseFlyout = jest.fn();
 
 // test component to test the hook integration
 const TestComponent: React.FC<AddToExistingCaseModalProps> = (
@@ -96,6 +97,11 @@ describe('use cases add to existing case modal hook', () => {
   beforeEach(() => {
     dispatch.mockReset();
     AllCasesSelectorModalMock.mockReset();
+    useCasesAddToNewCaseFlyoutMock.mockReturnValue({
+      close: jest.fn(),
+      open: openCreateNewCaseFlyout,
+    });
+    openCreateNewCaseFlyout.mockReset();
     onSuccess.mockReset();
     mockOpenCreateCaseFlyout.mockReset();
     useCasesAddToNewCaseFlyoutMock.mockReturnValue({
@@ -164,6 +170,40 @@ describe('use cases add to existing case modal hook', () => {
     });
 
     expect(getAttachments).toHaveBeenCalledWith({ theCase: { id: 'test', owner: 'cases' } });
+  });
+
+  it('should forward create case flyout options when creating from the selector', async () => {
+    const headerContent = <div>{'Attack discovery'}</div>;
+    const initialValue = {
+      description: 'Attack discovery details',
+      title: 'Attack discovery title',
+    };
+    AllCasesSelectorModalMock.mockImplementation(({ onRowClick }) => {
+      onRowClick();
+      return null;
+    });
+
+    renderWithTestingProviders(
+      <TestComponent createCaseFlyout={{ headerContent, initialValue }} />
+    );
+    await userEvent.click(screen.getByTestId('open-modal'));
+
+    await waitFor(() => {
+      expect(openCreateNewCaseFlyout).toHaveBeenCalledWith({
+        attachments: [alertComment],
+        headerContent,
+      });
+    });
+    expect(useCasesAddToNewCaseFlyoutMock).toHaveBeenCalledWith(
+      expect.objectContaining({ initialValue })
+    );
+
+    const createdCase = { id: 'created-case', owner: 'cases' } as CaseUI;
+    const createCaseOnSuccess = useCasesAddToNewCaseFlyoutMock.mock.calls[0][0].onSuccess;
+    act(() => {
+      createCaseOnSuccess(createdCase);
+    });
+    expect(onSuccess).toHaveBeenCalledWith(createdCase, true);
   });
 
   it('should show a toaster info when no attachments are defined and noAttachmentsToaster is defined', async () => {
@@ -243,7 +283,7 @@ describe('use cases add to existing case modal hook', () => {
     expect(jest.mocked(useAttachEventsEBT())).toHaveBeenCalled();
   });
 
-  it('should call onSuccess when defined', async () => {
+  it('should report an existing case when onSuccess is called after case selection', async () => {
     const mockBulkCreateAttachments = jest.fn();
 
     useCreateAttachmentsMock.mockReturnValueOnce({
@@ -264,7 +304,7 @@ describe('use cases add to existing case modal hook', () => {
     await userEvent.click(screen.getByTestId('open-modal'));
 
     await waitFor(() => {
-      expect(onSuccess).toHaveBeenCalled();
+      expect(onSuccess).toHaveBeenCalledWith({ id: 'test', owner: 'cases' }, false);
     });
   });
 

@@ -9,6 +9,8 @@ import { useMemo } from 'react';
 import { ACTION_ADD_EVENT_FILTER } from '../translations';
 import type { AlertTableContextMenuItem } from '../types';
 
+export const EVENT_FILTER_ACTION_ID = 'add-event-filter-menu-item';
+
 export const useEventFilterAction = ({
   onAddEventFilterClick,
   disabled = false,
@@ -21,7 +23,7 @@ export const useEventFilterAction = ({
   const eventFilterActionItems = useMemo(
     (): AlertTableContextMenuItem[] => [
       {
-        key: 'add-event-filter-menu-item',
+        key: EVENT_FILTER_ACTION_ID,
         'data-test-subj': 'add-event-filter-menu-item',
         onClick: onAddEventFilterClick,
         disabled,

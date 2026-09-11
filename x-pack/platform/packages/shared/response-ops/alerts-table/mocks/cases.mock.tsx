@@ -31,7 +31,6 @@ export const getCasesMapMock = () =>
   getCasesMock().reduce((acc, val) => acc.set(val.id, val), new Map());
 
 export const openAddToExistingCaseModalMock = jest.fn();
-export const openAddToNewCaseFlyoutMock = jest.fn();
 
 const uiMock: jest.MockedObject<CasesService['ui']> = {
   getCasesContext: jest
@@ -40,9 +39,6 @@ const uiMock: jest.MockedObject<CasesService['ui']> = {
 };
 
 const hooksMock: jest.MockedObject<CasesService['hooks']> = {
-  useCasesAddToNewCaseFlyout: jest.fn().mockImplementation(() => ({
-    open: openAddToNewCaseFlyoutMock,
-  })),
   useCasesAddToExistingCaseModal: jest.fn().mockImplementation(() => ({
     open: openAddToExistingCaseModalMock,
   })),

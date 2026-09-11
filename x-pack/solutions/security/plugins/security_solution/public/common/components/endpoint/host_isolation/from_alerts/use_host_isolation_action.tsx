@@ -27,6 +27,7 @@ import type { AlertTableContextMenuItem } from '../../../../../detections/compon
 import { useGetAgentStatus } from '../../../../../management/hooks/agents/use_get_agent_status';
 
 export type HostIsolationAction = 'isolateHost' | 'unisolateHost';
+export const ISOLATE_HOST_ACTION_ID = 'isolate-host-action-item';
 
 export interface UseHostIsolationActionProps {
   closePopover: () => void;
@@ -114,7 +115,7 @@ export const useHostIsolationAction = ({
     }
 
     const menuItem: AlertTableContextMenuItem = {
-      key: 'isolate-host-action-item',
+      key: ISOLATE_HOST_ACTION_ID,
       'data-test-subj': 'isolate-host-action-item',
       disabled: isHostAgentUnEnrolled,
       onClick: isolateHostHandler,

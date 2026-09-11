@@ -5,15 +5,10 @@
  * 2.0.
  */
 
-import React from 'react';
-import { EuiContextMenu, EuiPopover } from '@elastic/eui';
-import { render, screen, renderHook, act } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import { act, renderHook } from '@testing-library/react';
 import { useAddToCaseActions } from './use_add_to_case_actions';
 import { TestProviders } from '../../../../common/mock';
 import { useKibana } from '../../../../common/lib/kibana';
-
-import type { AlertTableContextMenuItem } from '../types';
 import { allCasesPermissions } from '../../../../cases_test_utils';
 
 jest.mock('../../../../common/lib/kibana');
@@ -50,25 +45,8 @@ const defaultProps = {
   refetch,
 };
 
-const addToNewCase = jest.fn().mockReturnValue(caseHooksReturnedValue);
-const addToExistingCase = jest.fn().mockReturnValue(caseHooksReturnedValue);
+const addToCase = jest.fn().mockReturnValue(caseHooksReturnedValue);
 const useKibanaMock = useKibana as jest.Mock;
-
-const renderContextMenu = (items: AlertTableContextMenuItem[]) => {
-  const panels = [{ id: 0, items }];
-  render(
-    <EuiPopover
-      aria-label="Context menu"
-      isOpen={true}
-      panelPaddingSize="none"
-      anchorPosition="downLeft"
-      closePopover={() => {}}
-      button={<></>}
-    >
-      <EuiContextMenu initialPanelId={0} panels={panels} />
-    </EuiPopover>
-  );
-};
 
 describe('useAddToCaseActions', () => {
   beforeEach(() => {
@@ -76,8 +54,7 @@ describe('useAddToCaseActions', () => {
       services: {
         cases: {
           hooks: {
-            useCasesAddToNewCaseFlyout: addToNewCase,
-            useCasesAddToExistingCaseModal: addToExistingCase,
+            useCasesAddToExistingCaseModal: addToCase,
           },
           helpers: {
             getRuleIdFromEvent: () => null,
@@ -89,107 +66,61 @@ describe('useAddToCaseActions', () => {
     jest.clearAllMocks();
   });
 
-  it('should render case options when event is alert ', () => {
+  it('should render one case action when event is alert', () => {
     const { result } = renderHook(() => useAddToCaseActions(defaultProps), {
       wrapper: TestProviders,
     });
-    expect(result.current.addToCaseActionItems.length).toEqual(2);
-    expect(result.current.addToCaseActionItems[0]['data-test-subj']).toEqual(
-      'add-to-existing-case-action'
-    );
-    expect(result.current.addToCaseActionItems[1]['data-test-subj']).toEqual(
-      'add-to-new-case-action'
-    );
+
+    expect(result.current.addToCaseActionItems).toHaveLength(1);
+    expect(result.current.addToCaseActionItems[0]).toMatchObject({
+      'data-test-subj': 'add-to-case-action',
+      key: 'add-to-case-action',
+      name: 'Add to case',
+    });
   });
 
-  it('should render case options when event is not alert ', () => {
+  it('should render one case action when event is not alert', () => {
     const { result } = renderHook(
       () => useAddToCaseActions({ ...defaultProps, ecsData: { _id: '123' } }),
       {
         wrapper: TestProviders,
       }
     );
-    expect(result.current.addToCaseActionItems.length).toEqual(2);
+    expect(result.current.addToCaseActionItems).toHaveLength(1);
   });
 
-  it('should call useCasesAddToNewCaseFlyout with attachments only when step is not active', () => {
+  it('should open the case modal with alert attachments', () => {
     const { result } = renderHook(() => useAddToCaseActions(defaultProps), {
       wrapper: TestProviders,
     });
+
     act(() => {
-      result.current.handleAddToNewCaseClick();
+      result.current.handleAddToCaseClick();
     });
+
     expect(open).toHaveBeenCalledWith({
-      attachments: [
-        {
-          type: 'security.alert',
-          attachmentId: '123',
-          metadata: {
-            index: '',
-            rule: null,
-          },
-        },
-      ],
+      getAttachments: expect.any(Function),
     });
+    const { getAttachments } = open.mock.calls[0][0];
+    expect(getAttachments()).toEqual([
+      {
+        type: 'security.alert',
+        attachmentId: '123',
+        metadata: {
+          index: '',
+          rule: null,
+        },
+      },
+    ]);
+    expect(refetch).toHaveBeenCalled();
   });
 
-  it('should not prefill useCasesAddToNewCaseFlyout with tour step when step is not active', () => {
+  it('should refetch when the modal succeeds', () => {
     renderHook(() => useAddToCaseActions(defaultProps), {
       wrapper: TestProviders,
     });
-    expect(addToNewCase.mock.calls[0][0]).not.toHaveProperty('initialValue');
-  });
 
-  it('should refetch when adding an alert to a new case', async () => {
-    const { result } = renderHook(() => useAddToCaseActions(defaultProps), {
-      wrapper: TestProviders,
-    });
-
-    expect(result.current.addToCaseActionItems.length).toEqual(2);
-
-    renderContextMenu(result.current.addToCaseActionItems);
-
-    expect(screen.getByTestId('add-to-new-case-action')).toBeInTheDocument();
-    await userEvent.click(screen.getByTestId('add-to-new-case-action'));
-
-    expect(refetch).toHaveBeenCalled();
-  });
-
-  it('should refetch when calling onSuccess of useCasesAddToNewCaseFlyout', () => {
-    const { result } = renderHook(() => useAddToCaseActions(defaultProps), {
-      wrapper: TestProviders,
-    });
-
-    expect(result.current.addToCaseActionItems.length).toEqual(2);
-
-    addToNewCase.mock.calls[0][0].onSuccess();
-
-    expect(refetch).toHaveBeenCalled();
-  });
-
-  it('should refetch when adding an alert to an existing case', async () => {
-    const { result } = renderHook(() => useAddToCaseActions(defaultProps), {
-      wrapper: TestProviders,
-    });
-
-    expect(result.current.addToCaseActionItems.length).toEqual(2);
-
-    renderContextMenu(result.current.addToCaseActionItems);
-
-    expect(screen.getByTestId('add-to-existing-case-action')).toBeInTheDocument();
-    await userEvent.click(screen.getByTestId('add-to-existing-case-action'));
-
-    expect(refetch).toHaveBeenCalled();
-  });
-
-  it('should refetch when calling onSuccess of useCasesAddToExistingCaseModal', () => {
-    const { result } = renderHook(() => useAddToCaseActions(defaultProps), {
-      wrapper: TestProviders,
-    });
-
-    expect(result.current.addToCaseActionItems.length).toEqual(2);
-
-    addToExistingCase.mock.calls[0][0].onSuccess();
+    addToCase.mock.calls[0][0].onSuccess();
 
     expect(refetch).toHaveBeenCalled();
   });

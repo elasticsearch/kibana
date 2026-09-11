@@ -46,8 +46,7 @@ import { FLYOUT_FOOTER_DROPDOWN_BUTTON_TEST_ID } from './test_ids';
 // reported when it's clicked. Kept as one flat map (rather than one per action family) since
 // `wrapActionTelemetry` is applied once to the fully assembled `items` array below.
 const FOOTER_ACTION_TEST_SUBJ: Partial<Record<string, FlyoutActionType>> = {
-  'add-to-existing-case-action': FLYOUT_ACTION.ADD_TO_CASE_EXISTING,
-  'add-to-new-case-action': FLYOUT_ACTION.ADD_TO_CASE_NEW,
+  'add-to-case-action': FLYOUT_ACTION.ADD_TO_CASE,
   'open-alert-status': FLYOUT_ACTION.STATUS_OPEN,
   'acknowledged-alert-status': FLYOUT_ACTION.STATUS_ACKNOWLEDGED,
   'alert-close-context-menu-item': FLYOUT_ACTION.STATUS_CLOSED,

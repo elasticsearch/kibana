@@ -90,6 +90,8 @@ describe('useBulkRunAlertWorkflowPanel', () => {
       expect(result.current.runWorkflowItems[0].label).toBe(i18n.CONTEXT_MENU_RUN_WORKFLOW);
       expect(result.current.runWorkflowItems[0].panel).toBe(RUN_WORKFLOW_BULK_PANEL_ID);
       expect(result.current.runWorkflowItems[0].disableOnQuery).toBe(false);
+      expect(result.current.runWorkflowItems[0].icon).toBe('workflow');
+      expect(result.current.runWorkflowItems[0].groupId).toBe('workflow');
 
       expect(result.current.runWorkflowPanels).toHaveLength(1);
       expect(result.current.runWorkflowPanels[0].id).toBe(RUN_WORKFLOW_BULK_PANEL_ID);

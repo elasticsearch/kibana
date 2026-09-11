@@ -34,8 +34,7 @@ test.describe(
       // case options must be absent for a read-only cases user.
       await alertsTablePage.openActionsMenuForRow(0);
       await expect(alertsTablePage.actionsMenu).toBeVisible();
-      await expect(alertsTablePage.addToExistingCaseAction).toBeHidden();
-      await expect(alertsTablePage.addToNewCaseAction).toBeHidden();
+      await expect(alertsTablePage.addToCaseAction).toBeHidden();
     });
   }
 );

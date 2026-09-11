@@ -71,11 +71,8 @@ export const DOCUMENT_DETAILS_FLYOUT_FOOTER_TAKE_ACTION_BUTTON = getDataTestSubj
 );
 export const DOCUMENT_DETAILS_FLYOUT_FOOTER_TAKE_ACTION_BUTTON_DROPDOWN =
   getDataTestSubjectSelector('takeActionPanelMenu');
-export const DOCUMENT_DETAILS_FLYOUT_FOOTER_ADD_TO_NEW_CASE =
-  getDataTestSubjectSelector('add-to-new-case-action');
-export const DOCUMENT_DETAILS_FLYOUT_FOOTER_ADD_TO_EXISTING_CASE = getDataTestSubjectSelector(
-  'add-to-existing-case-action'
-);
+export const DOCUMENT_DETAILS_FLYOUT_FOOTER_ADD_TO_CASE =
+  getDataTestSubjectSelector('add-to-case-action');
 export const DOCUMENT_DETAILS_FLYOUT_FOOTER_ADD_MARK_AS_ACKNOWLEDGED = getDataTestSubjectSelector(
   'acknowledged-alert-status'
 );
