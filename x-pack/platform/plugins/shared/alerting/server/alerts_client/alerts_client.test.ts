@@ -1201,6 +1201,51 @@ describe('Alerts Client', () => {
           });
         });
 
+        test('should recover alerts when the tracked AAD document is missing', async () => {
+          const alertsClient = new AlertsClient<{}, {}, {}, 'default', 'recovered'>(
+            alertsClientParams
+          );
+
+          await alertsClient.initializeExecution({
+            ...defaultExecutionOpts,
+            activeAlertsFromState: {
+              '1': trackedAlert1Raw,
+            },
+          });
+
+          // Report no alerts so the instance from task state recovers. Search
+          // returns no hits, so there is no tracked AAD document to update.
+          await alertsClient.processAlerts();
+          alertsClient.determineFlappingAlerts();
+          alertsClient.determineDelayedAlerts(determineDelayedAlertsOpts);
+          alertsClient.logAlerts(logAlertsOpts);
+
+          await alertsClient.persistAlerts();
+
+          expect(logger.error).toHaveBeenCalledWith(
+            `Error writing recovered alert(1) to .alerts-test.alerts-default - alert(1) doesn't exist in tracked alerts ${ruleInfo}.`,
+            logTags
+          );
+
+          expect(clusterClient.bulk).toHaveBeenCalledWith({
+            index: '.alerts-test.alerts-default',
+            refresh: 'wait_for',
+            require_alias: !useDataStreamForAlerts,
+            body: [
+              {
+                create: {
+                  _id: 'abc',
+                  ...(useDataStreamForAlerts ? {} : { require_alias: true }),
+                },
+              },
+              getRecoveredIndexedAlertDoc({
+                [ALERT_UUID]: 'abc',
+                [ALERT_STATE_NAMESPACE]: { foo: true },
+              }),
+            ],
+          });
+        });
+
         test('should recover unflattened recovered alerts in existing index', async () => {
           clusterClient.search.mockResolvedValue({
             took: 10,
