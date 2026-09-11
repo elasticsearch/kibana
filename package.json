@@ -2187,7 +2187,7 @@
     "expect": "29.7.0",
     "fast-glob": "3.3.3",
     "fetch-mock": "10.1.0",
-    "find-cypress-specs": "1.54.6",
+    "find-cypress-specs": "1.54.12",
     "fix-esm": "1.0.1",
     "form-data": "4.0.6",
     "geckodriver": "6.1.1",
