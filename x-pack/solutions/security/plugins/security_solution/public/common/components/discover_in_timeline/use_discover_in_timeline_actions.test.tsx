@@ -16,6 +16,7 @@ import { useKibana } from '../../lib/kibana';
 import type { State } from '../../store';
 import { TimelineId } from '../../../../common/types';
 import * as timelineActions from '../../../timelines/store/actions';
+import { timelineDefaults } from '../../../timelines/store/defaults';
 import type { ComponentType, FC, PropsWithChildren } from 'react';
 import React from 'react';
 import type { DataView } from '@kbn/data-views-plugin/common';
@@ -193,6 +194,61 @@ describe('useDiscoverInTimelineActions', () => {
         expect(globalState).toMatchObject({ timeRange: { from: 'now-15m', to: 'now' } });
       });
     });
+    it('should reset the time range the ES|QL search runs against', async () => {
+      // The date picker renders Discover's own copy of the range, but the ES|QL search reads it
+      // from the timefilter service, so both have to be reset for the two to agree.
+      const { result } = renderTestHook();
+      await result.current.resetDiscoverAppState();
+
+      expect(
+        startServicesMock.customDataService.query.timefilter.timefilter.setTime
+      ).toHaveBeenCalledWith({ from: 'now-15m', to: 'now', mode: 'relative' });
+    });
+    it('should restore the time range the ES|QL search runs against from the saved search', async () => {
+      (startServicesMock.savedSearch.get as jest.Mock).mockResolvedValueOnce(savedSearchMock);
+      const { result } = renderTestHook();
+
+      await result.current.resetDiscoverAppState(savedSearchMock.id);
+
+      expect(
+        startServicesMock.customDataService.query.timefilter.timefilter.setTime
+      ).toHaveBeenCalledWith(savedSearchMock.timeRange);
+    });
+    it('should fall back to the default time range when the saved search has none', async () => {
+      const { timeRange, ...savedSearchWithoutTimeRange } = savedSearchMock;
+      (startServicesMock.savedSearch.get as jest.Mock).mockResolvedValueOnce(
+        savedSearchWithoutTimeRange
+      );
+      const { result } = renderTestHook();
+
+      await result.current.resetDiscoverAppState(savedSearchMock.id);
+
+      expect(
+        startServicesMock.customDataService.query.timefilter.timefilter.setTime
+      ).toHaveBeenCalledWith({ from: 'now-15m', to: 'now', mode: 'relative' });
+    });
+    it('should not consider a restore pending while the ES|QL tab is mounted', async () => {
+      (startServicesMock.savedSearch.get as jest.Mock).mockResolvedValueOnce(savedSearchMock);
+      const { result } = renderTestHook();
+
+      await result.current.resetDiscoverAppState(savedSearchMock.id);
+
+      expect(result.current.timelineRestorePending.current).toBe(false);
+    });
+    it('should defer the restore to the ES|QL tab when it holds no state container', async () => {
+      // The tab releases its container when it unmounts, so there is nothing to restore into.
+      // Applying the default state here would wipe what the tab falls back on when it mounts.
+      const { result } = renderHook(() => useDiscoverInTimelineActions({ current: undefined }), {
+        wrapper: getTestProviderWithCustomState(),
+      });
+
+      await result.current.resetDiscoverAppState(savedSearchMock.id);
+
+      expect(
+        startServicesMock.customDataService.query.timefilter.timefilter.setTime
+      ).not.toHaveBeenCalled();
+      expect(result.current.timelineRestorePending.current).toBe(true);
+    });
   });
   describe('updateSavedSearch', () => {
     it('should add defaults to the savedSearch before updating saved search', async () => {
@@ -223,6 +279,100 @@ describe('useDiscoverInTimelineActions', () => {
         expect.objectContaining({
           copyOnSave: true,
         })
+      );
+    });
+
+    it('should initialize the local saved search after creating a new one', async () => {
+      // Without this, the redux copy stays null and every later timeline save skips persisting
+      // the Discover session, because `patchTimeline` is guarded on it.
+      const newSavedSearchId = 'newly-created-saved-search-id';
+      (startServicesMock.savedSearch.save as jest.Mock).mockResolvedValueOnce(newSavedSearchId);
+
+      const { result } = renderTestHook();
+
+      await waitFor(() =>
+        expect(result.current).toEqual(
+          expect.objectContaining({
+            updateSavedSearch: expect.any(Function),
+          })
+        )
+      );
+
+      await act(async () => {
+        await result.current.updateSavedSearch(savedSearchMock, TimelineId.active);
+      });
+
+      expect(mockDispatch).toHaveBeenCalledWith(
+        timelineActions.initializeSavedSearch({
+          id: TimelineId.active,
+          savedSearch: { ...savedSearchMock, id: newSavedSearchId },
+        })
+      );
+    });
+
+    it('should not hand the new Discover session to a timeline created while the save was in flight', async () => {
+      // `TimelineId.active` is a slot: hitting "New" mid-save puts a different timeline in it, and
+      // these dispatches would move the previous timeline's ES|QL session onto the empty one.
+      const store = createMockStore({
+        ...mockState,
+        timeline: {
+          ...mockState.timeline,
+          timelineById: {
+            ...mockState.timeline.timelineById,
+            [TimelineId.active]: {
+              ...mockState.timeline.timelineById[TimelineId.active],
+              savedObjectId: 'the-timeline-being-saved',
+            },
+          },
+        },
+      });
+      const wrapper: FC<PropsWithChildren<{}>> = ({ children }) => (
+        <TestProviders store={store}>{children}</TestProviders>
+      );
+
+      const { columns, dataViewId, indexNames } = timelineDefaults;
+
+      const newSavedSearchId = 'newly-created-saved-search-id';
+      (startServicesMock.savedSearch.save as jest.Mock).mockImplementationOnce(async () => {
+        // the user creates a new timeline before the save resolves
+        store.dispatch(
+          timelineActions.createTimeline({
+            id: TimelineId.active,
+            show: true,
+            columns,
+            dataViewId,
+            indexNames,
+          })
+        );
+        return newSavedSearchId;
+      });
+
+      const { result } = renderTestHook(wrapper);
+
+      await waitFor(() =>
+        expect(result.current).toEqual(
+          expect.objectContaining({ updateSavedSearch: expect.any(Function) })
+        )
+      );
+
+      await act(async () => {
+        await result.current.updateSavedSearch(savedSearchMock, TimelineId.active);
+      });
+
+      expect(mockDispatch).not.toHaveBeenCalledWith(
+        timelineActions.updateSavedSearchId({
+          id: TimelineId.active,
+          savedSearchId: newSavedSearchId,
+        })
+      );
+      expect(mockDispatch).not.toHaveBeenCalledWith(
+        timelineActions.initializeSavedSearch({
+          id: TimelineId.active,
+          savedSearch: { ...savedSearchMock, id: newSavedSearchId },
+        })
+      );
+      expect(mockDispatch).not.toHaveBeenCalledWith(
+        timelineActions.saveTimeline({ id: TimelineId.active, saveAsNew: false })
       );
     });
 

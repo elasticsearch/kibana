@@ -13,4 +13,5 @@ export const useDiscoverInTimelineContext = jest.fn().mockReturnValue({
   defaultDiscoverAppState: {},
   discoverStateContainer: { current: undefined },
   setDiscoverStateContainer: jest.fn(),
+  timelineRestorePending: { current: false },
 });

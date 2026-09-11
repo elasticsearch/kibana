@@ -13,7 +13,12 @@ import type { useDiscoverInTimelineActions } from './use_discover_in_timeline_ac
 export interface DiscoverInTimelineContextType
   extends ReturnType<typeof useDiscoverInTimelineActions> {
   discoverStateContainer: RefObject<ExtendedDiscoverStateContainer | undefined>;
-  setDiscoverStateContainer: (stateContainer: ExtendedDiscoverStateContainer) => void;
+  /**
+   * Called with `undefined` when the ES|QL tab unmounts. The container it held is disposed at
+   * that point and writing to it silently does nothing, so callers must treat an absent
+   * container as "the tab will restore itself when it next mounts".
+   */
+  setDiscoverStateContainer: (stateContainer: ExtendedDiscoverStateContainer | undefined) => void;
 }
 
 export const DiscoverInTimelineContext = createContext<DiscoverInTimelineContextType | null>(null);

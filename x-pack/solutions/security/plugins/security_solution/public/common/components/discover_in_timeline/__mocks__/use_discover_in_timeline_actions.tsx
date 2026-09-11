@@ -5,11 +5,18 @@
  * 2.0.
  */
 
+export const defaultDiscoverTimeRange = {
+  from: 'now-15m',
+  to: 'now',
+  mode: 'relative' as const,
+};
+
 export const useDiscoverInTimelineActions = () => {
   return {
     resetDiscoverAppState: jest.fn().mockResolvedValue(true),
     updateSavedSearch: jest.fn(),
     getAppStateFromSavedSearch: jest.fn(),
+    timelineRestorePending: { current: false },
     defaultDiscoverAppState: {
       query: {
         query: '',

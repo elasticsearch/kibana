@@ -21,7 +21,7 @@ export const DiscoverInTimelineContextProvider: FC<DiscoverInTimelineContextProv
   const actions = useDiscoverInTimelineActions(discoverStateContainer);
 
   const setDiscoverStateContainer = useCallback(
-    (stateContainer: ExtendedDiscoverStateContainer) => {
+    (stateContainer: ExtendedDiscoverStateContainer | undefined) => {
       discoverStateContainer.current = stateContainer;
     },
     []

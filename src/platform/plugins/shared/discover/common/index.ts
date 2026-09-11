@@ -10,7 +10,7 @@
 export const PLUGIN_ID = 'discover';
 export const APP_ICON = 'discoverApp';
 
-export { APP_STATE_URL_KEY } from './constants';
+export { APP_STATE_URL_KEY, GLOBAL_STATE_URL_KEY } from './constants';
 export { DISCOVER_APP_LOCATOR } from './app_locator';
 export type {
   DiscoverAppLocator,

@@ -34,10 +34,12 @@ export const createMockDiscoverStateContainer = (
 
 export const MockDiscoverInTimelineContext: FC<Props> = ({ children }) => {
   const discoverServices = createDiscoverServicesMock();
-  const discoverStateContainer = useRef(createMockDiscoverStateContainer(discoverServices));
+  const discoverStateContainer = useRef<ExtendedDiscoverStateContainer | undefined>(
+    createMockDiscoverStateContainer(discoverServices)
+  );
 
   const setDiscoverStateContainer = useCallback(
-    (stateContainer: ExtendedDiscoverStateContainer) => {
+    (stateContainer: ExtendedDiscoverStateContainer | undefined) => {
       discoverStateContainer.current = stateContainer;
     },
     []

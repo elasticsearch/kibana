@@ -44,6 +44,7 @@ import {
 } from '../../../common/constants';
 
 import { KibanaServices } from '../../common/lib/kibana';
+import { GET_TIMELINE_DISCOVER_SAVED_SEARCH_TITLE } from '../components/timeline/tabs/esql/translations';
 import { ToasterError } from '../../common/components/toasters';
 import { parseOrThrowErrorFactory } from '../../../common/timelines/zod_errors';
 import type {
@@ -63,6 +64,23 @@ interface RequestPatchTimeline<T = string> extends RequestPostTimeline {
 }
 
 type RequestPersistTimeline = RequestPostTimeline & Partial<RequestPatchTimeline<null | string>>;
+
+/**
+ * Derives the Discover session title from the timeline title at persist time.
+ *
+ * The saved search held in redux is a snapshot taken by the ES|QL tab, and a rename dispatches
+ * the title change and the save in the same tick, so that snapshot still carries the previous
+ * title when it reaches this point. Deriving the title here keeps the persisted Discover session
+ * in sync with the timeline it belongs to.
+ */
+const withDiscoverSessionTitle = (
+  savedSearch: SavedSearch,
+  timelineTitle: SavedTimeline['title']
+): SavedSearch => ({
+  ...savedSearch,
+  ...(timelineTitle ? { title: GET_TIMELINE_DISCOVER_SAVED_SEARCH_TITLE(timelineTitle) } : {}),
+});
+
 const createToasterPlainError = (message: string) => new ToasterError([message]);
 
 const parseOrThrow = parseOrThrowErrorFactory(createToasterPlainError);
@@ -128,7 +146,7 @@ const patchTimeline = async ({
   try {
     if (timeline.savedSearchId && savedSearch) {
       const { savedSearch: savedSearchService } = KibanaServices.get();
-      await savedSearchService.save(savedSearch, {
+      await savedSearchService.save(withDiscoverSessionTitle(savedSearch, timeline.title), {
         copyOnSave: false,
       });
     }
@@ -167,7 +185,7 @@ export const copyTimeline = async ({
   try {
     if (timeline.savedSearchId && savedSearch) {
       const { savedSearch: savedSearchService } = KibanaServices.get();
-      const savedSearchCopy = { ...savedSearch };
+      const savedSearchCopy = withDiscoverSessionTitle(savedSearch, timeline.title);
       // delete the id and change the title to make sure we can copy the saved search
       delete savedSearchCopy.id;
       newSavedSearchId = await savedSearchService.save(savedSearchCopy, {
