@@ -32,14 +32,14 @@ export class SamlAuthManager {
     private readonly isServerless: boolean
   ) {}
 
-  async setCustomRole(role: KibanaRole | ElasticsearchRoleDescriptor): Promise<void> {
+  async setCustomRole(role: KibanaRole | ElasticsearchRoleDescriptor): Promise<boolean> {
     const newRoleHash = JSON.stringify(role);
 
     if (newRoleHash === this.customRoleHash) {
       this.log.debug(
         `Custom role '${this.customRoleName}' with provided privileges already exists, reusing it`
       );
-      return;
+      return false;
     }
 
     this.log.debug(
@@ -59,6 +59,7 @@ export class SamlAuthManager {
     }
 
     this.customRoleHash = newRoleHash;
+    return true;
   }
 
   private guardServerless(methodName: string): void {

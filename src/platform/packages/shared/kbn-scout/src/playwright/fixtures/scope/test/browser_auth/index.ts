@@ -11,7 +11,7 @@ import type { KibanaRole } from '../../../../../common';
 import { getPrivilegedRoleName } from '../../../../../common';
 import { coreWorkerFixtures } from '../../worker';
 
-export type LoginFunction = (role: string) => Promise<void>;
+export type LoginFunction = (role: string, forceNewSession?: boolean) => Promise<void>;
 
 export interface BrowserAuthFixture {
   /**
@@ -84,15 +84,19 @@ export const browserAuthFixture = coreWorkerFixtures.extend<{ browserAuth: Brows
       ]);
     };
 
-    const loginAs: LoginFunction = async (role: string) => {
-      const cookie = await samlAuth.session.getInteractiveUserSessionCookieWithRoleScope(role);
+    const loginAs: LoginFunction = async (role: string, forceNewSession = false) => {
+      const cookie = await samlAuth.session.getInteractiveUserSessionCookieWithRoleScope(role, {
+        forceNewSession,
+      });
       await setSessionCookie(cookie);
     };
 
     const loginWithCustomRole = async (role: KibanaRole) => {
       // the samlAuth fixture handles the custom role creation and deletion
-      await samlAuth.setCustomRole(role);
-      return loginAs(samlAuth.customRoleName);
+      const roleChanged = await samlAuth.setCustomRole(role);
+      // The custom role slot is a single fixed name per worker, so when its privileges
+      // change the cached SAML session for that name is stale; force a fresh one.
+      return loginAs(samlAuth.customRoleName, roleChanged);
     };
 
     const loginWithBuiltInRole = async (roleName: string) => {

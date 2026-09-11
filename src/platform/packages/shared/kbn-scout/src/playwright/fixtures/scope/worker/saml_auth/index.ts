@@ -54,7 +54,14 @@ function isGlobalUiSettingOverrideConflict(err: unknown): boolean {
 export interface SamlAuth {
   session: SamlSessionManager;
   customRoleName: string;
-  setCustomRole(role: KibanaRole | ElasticsearchRoleDescriptor): Promise<void>;
+  /**
+   * Provisions the worker's custom role slot with the given privileges.
+   * @returns `true` if the role was created or its privileges overridden, `false` if an
+   *          identical role already existed and was reused. Callers logging in interactively
+   *          must force a fresh session when this returns `true`, since the cached session
+   *          cookie for the reused role name would otherwise be stale.
+   */
+  setCustomRole(role: KibanaRole | ElasticsearchRoleDescriptor): Promise<boolean>;
   /**
    * Fetches the live descriptor of any named ES role and provisions it as the
    * worker's custom role slot. Works for built-in ES roles (e.g. `kibana_admin`,
