@@ -240,6 +240,7 @@ export const AGENT_BUILDER_BUILTIN_SKILLS = [
   'detection-coverage',
   'pci-compliance',
   'endpoint-forensic-analysis',
+  'autonomous-forensic-investigator',
   'investigate-rule',
   'siem-readiness',
   'automatic-migration-rules-start-migration',

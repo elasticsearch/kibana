@@ -272,6 +272,7 @@ export const allowedExperimentalValues = Object.freeze({
    * Shipped dark by default; enable per environment via config.
    */
   endpointForensicAnalysisSkill: false,
+  autonomousForensicInvestigatorSkill: false,
 
   /**
    * Enables the investigate-rule Agent Builder skill.
