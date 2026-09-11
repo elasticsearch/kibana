@@ -6,18 +6,22 @@
  */
 import { i18n } from '@kbn/i18n';
 
-import React, { useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import type { EuiBasicTableColumn, EuiTableSelectionType, EuiSearchBarProps } from '@elastic/eui';
-import { EuiInMemoryTable, EuiSpacer } from '@elastic/eui';
+import { EuiInMemoryTable, EuiPageSection } from '@elastic/eui';
+import moment from 'moment';
+import { AppHeader } from '@kbn/app-header';
 import { TagsList } from '@kbn/observability-shared-plugin/public';
 import { DeleteAnnotationsModal } from '../../components/annotations/components/common/delete_annotations_modal';
 import { useDeleteAnnotation } from '../../components/annotations/hooks/use_delete_annotation';
 import { DeleteAnnotations } from '../../components/annotations/components/common/delete_annotations';
 import { useAnnotationPermissions } from '../../components/annotations/hooks/use_annotation_permissions';
+import { useAnnotations } from '../../components/annotations/use_annotations';
 import { AnnotationApplyTo } from './annotation_apply_to';
 import { TimestampRangeLabel } from '../../components/annotations/components/timestamp_range_label';
 import { DatePicker } from './date_picker';
 import { AnnotationsListChart } from './annotations_list_chart';
+import { useAnnotationsAppHeaderMenu } from './use_annotations_app_header_menu';
 import type { Annotation } from '../../../common/annotations';
 import { useFetchAnnotations } from '../../components/annotations/hooks/use_fetch_annotations';
 
@@ -27,6 +31,18 @@ export function AnnotationsList() {
   const [selection, setSelection] = useState<Annotation[]>([]);
 
   const [isEditing, setIsEditing] = useState<Annotation | null>(null);
+  const { ObservabilityAnnotations, createAnnotation, onAnnotationClick } = useAnnotations({
+    editAnnotation: isEditing,
+    setEditAnnotation: setIsEditing,
+  });
+  const onCreateAnnotation = useCallback(() => {
+    createAnnotation(moment().subtract(1, 'day').toISOString());
+  }, [createAnnotation]);
+  const menu = useAnnotationsAppHeaderMenu({
+    includeCreate: true,
+    canWrite: permissions?.write,
+    onCreate: onCreateAnnotation,
+  });
 
   const [start, setStart] = useState('now-30d');
   const [end, setEnd] = useState('now');
@@ -166,31 +182,38 @@ export function AnnotationsList() {
 
   return (
     <>
-      <EuiSpacer size="m" />
-      <EuiInMemoryTable
-        childrenBetween={
-          <AnnotationsListChart
-            data={data?.items ?? []}
-            start={start}
-            end={end}
-            isEditing={isEditing}
-            setIsEditing={setIsEditing}
-            permissions={permissions}
-          />
-        }
-        tableCaption={i18n.translate('xpack.observability.annotationsTableCaption', {
-          defaultMessage: 'List of annotations for the selected time range.',
+      <AppHeader
+        title={i18n.translate('xpack.observability.annotations.heading', {
+          defaultMessage: 'Annotations',
         })}
-        items={data?.items ?? []}
-        itemId="id"
-        loading={isLoading}
-        columns={columns}
-        search={search}
-        pagination={pagination}
-        sorting={true}
-        selection={selectionValue}
-        tableLayout="auto"
+        menu={menu}
       />
+      <EuiPageSection paddingSize="l" restrictWidth={false}>
+        <EuiInMemoryTable
+          childrenBetween={
+            <AnnotationsListChart
+              data={data?.items ?? []}
+              start={start}
+              end={end}
+              createAnnotation={createAnnotation}
+              ObservabilityAnnotations={ObservabilityAnnotations}
+              onAnnotationClick={onAnnotationClick}
+            />
+          }
+          tableCaption={i18n.translate('xpack.observability.annotationsTableCaption', {
+            defaultMessage: 'List of annotations for the selected time range.',
+          })}
+          items={data?.items ?? []}
+          itemId="id"
+          loading={isLoading}
+          columns={columns}
+          search={search}
+          pagination={pagination}
+          sorting={true}
+          selection={selectionValue}
+          tableLayout="auto"
+        />
+      </EuiPageSection>
       <DeleteAnnotationsModal
         selection={selection}
         isDeleteModalVisible={isDeleteModalVisible}

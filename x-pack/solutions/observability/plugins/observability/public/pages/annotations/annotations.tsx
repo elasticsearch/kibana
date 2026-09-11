@@ -6,18 +6,23 @@
  */
 
 import React from 'react';
+import { EuiPageSection } from '@elastic/eui';
+import { AppHeader } from '@kbn/app-header';
 import { useBreadcrumbs } from '@kbn/observability-shared-plugin/public';
 
 import { i18n } from '@kbn/i18n';
 import { useAnnotationsPrivileges } from './annotations_privileges';
-import { CreateAnnotationBtn } from './create_annotation_btn';
 import { AnnotationsList } from './annotations_list';
+import { useAnnotationsAppHeaderMenu } from './use_annotations_app_header_menu';
 import { useKibana } from '../../utils/kibana_react';
 import { usePluginContext } from '../../hooks/use_plugin_context';
 import { paths } from '../../../common/locators/paths';
-import { HeaderMenu } from '../overview/components/header_menu/header_menu';
 
 export const ANNOTATIONS_PAGE_ID = 'annotations-container';
+
+const pageTitle = i18n.translate('xpack.observability.annotations.heading', {
+  defaultMessage: 'Annotations',
+});
 
 export function AnnotationsPage() {
   const {
@@ -27,6 +32,7 @@ export function AnnotationsPage() {
   const { ObservabilityPageTemplate } = usePluginContext();
 
   const checkPrivileges = useAnnotationsPrivileges();
+  const privilegesMenu = useAnnotationsAppHeaderMenu({ includeCreate: false });
 
   useBreadcrumbs(
     [
@@ -44,15 +50,18 @@ export function AnnotationsPage() {
   return (
     <ObservabilityPageTemplate
       data-test-subj="annotationsPage"
-      pageHeader={{
-        pageTitle: i18n.translate('xpack.observability.annotations.heading', {
-          defaultMessage: 'Annotations',
-        }),
-        rightSideItems: [<CreateAnnotationBtn />],
-      }}
+      pageSectionProps={{ paddingSize: 'none' }}
     >
-      <HeaderMenu />
-      {checkPrivileges ? checkPrivileges : <AnnotationsList />}
+      {checkPrivileges ? (
+        <>
+          <AppHeader title={pageTitle} menu={privilegesMenu} />
+          <EuiPageSection paddingSize="l" restrictWidth={false}>
+            {checkPrivileges}
+          </EuiPageSection>
+        </>
+      ) : (
+        <AnnotationsList />
+      )}
     </ObservabilityPageTemplate>
   );
 }

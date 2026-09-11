@@ -18,8 +18,8 @@ test.describe(
       await pageObjects.annotations.goto();
     });
 
-    test('create an annotation', async ({ page }) => {
-      await page.getByTestId('o11yRenderToolsRightCreateAnnotationButton').click();
+    test('create an annotation', async ({ page, pageObjects }) => {
+      await pageObjects.annotations.clickCreateAnnotation();
       await page.getByTestId('annotationTitle').fill('Test annotation');
       await page.getByTestId('annotationTitle').blur();
       await page.getByTestId('annotationMessage').fill('Test annotation description');

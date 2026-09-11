@@ -18,38 +18,29 @@ import {
   TooltipTable,
   BarSeries,
 } from '@elastic/charts';
-import { EuiButton, EuiHorizontalRule, EuiToolTip, formatDate } from '@elastic/eui';
-import { InPortal } from 'react-reverse-portal';
+import { EuiHorizontalRule, formatDate } from '@elastic/eui';
 import { i18n } from '@kbn/i18n';
 import { parse } from '@kbn/datemath';
 import type { TooltipValue } from '@elastic/charts/dist/specs';
-import moment from 'moment';
 import { useChartThemes } from '../../hooks/use_chart_themes';
-import type { AnnotationsPermissions } from '../../components/annotations/hooks/use_annotation_permissions';
-import { createAnnotationPortal } from './create_annotation_btn';
-import { useAnnotations } from '../../components/annotations/use_annotations';
+import type { useAnnotations } from '../../components/annotations/use_annotations';
 import type { Annotation } from '../../../common/annotations';
 
 export function AnnotationsListChart({
   data,
   start,
   end,
-  isEditing,
-  setIsEditing,
-  permissions,
+  createAnnotation,
+  ObservabilityAnnotations,
+  onAnnotationClick,
 }: {
   data: Annotation[];
   start: string;
   end: string;
-  isEditing: Annotation | null;
-  permissions?: AnnotationsPermissions;
-  setIsEditing: (annotation: Annotation | null) => void;
+  createAnnotation: ReturnType<typeof useAnnotations>['createAnnotation'];
+  ObservabilityAnnotations: ReturnType<typeof useAnnotations>['ObservabilityAnnotations'];
+  onAnnotationClick: ReturnType<typeof useAnnotations>['onAnnotationClick'];
 }) {
-  const { ObservabilityAnnotations, createAnnotation, onAnnotationClick } = useAnnotations({
-    editAnnotation: isEditing,
-    setEditAnnotation: setIsEditing,
-  });
-
   const brushEndListener: BrushEndListener = ({ x }) => {
     if (!x) {
       return;
@@ -80,31 +71,6 @@ export function AnnotationsListChart({
 
   return (
     <>
-      <InPortal node={createAnnotationPortal}>
-        <EuiToolTip
-          content={
-            !permissions?.write
-              ? i18n.translate('xpack.observability.createAnnotation.missingPermissions', {
-                  defaultMessage: 'You do not have permission to create annotations',
-                })
-              : ''
-          }
-        >
-          <EuiButton
-            isDisabled={!permissions?.write}
-            data-test-subj="o11yRenderToolsRightCreateAnnotationButton"
-            key="createAnnotation"
-            onClick={() => {
-              createAnnotation(moment().subtract(1, 'day').toISOString());
-            }}
-            fill={true}
-          >
-            {i18n.translate('xpack.observability.renderToolsRight.createAnnotationButtonLabel', {
-              defaultMessage: 'Create annotation',
-            })}
-          </EuiButton>
-        </EuiToolTip>
-      </InPortal>
       <Chart size={{ height: 300 }}>
         <Settings
           onElementClick={([geometry, _]) => {
