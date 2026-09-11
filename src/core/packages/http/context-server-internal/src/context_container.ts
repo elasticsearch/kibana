@@ -20,6 +20,29 @@ import type {
   HandlerContextType,
 } from '@kbn/core-http-server';
 
+/**
+ * Resolves a plugin's declared dependency start contract on behalf of the plugin that registered
+ * the route being handled, identified by its opaque id. Supplied by the plugins service, which
+ * owns both the opaque-id-to-name mapping and the runtime contract resolver.
+ *
+ * @internal
+ */
+export type PluginContractLoader = (
+  source: PluginOpaqueId,
+  dependencyName: string
+) => Promise<unknown>;
+
+/** Names {@link ContextContainer.buildContext} puts on every context, so no plugin may claim them. */
+const RESERVED_CONTEXT_NAMES: ReadonlySet<string> = new Set(['resolve', 'loadPluginContract']);
+
+const rejectPluginContractLoad: PluginContractLoader = (_source, dependencyName) =>
+  Promise.reject(
+    new Error(
+      `Cannot load the start contract of "${dependencyName}": context.loadPluginContract() is ` +
+        `only available to routes registered by a standard plugin.`
+    )
+  );
+
 /** @internal */
 export class ContextContainer implements IContextContainer {
   /**
@@ -41,7 +64,8 @@ export class ContextContainer implements IContextContainer {
    */
   constructor(
     private readonly pluginDependencies: ReadonlyMap<PluginOpaqueId, PluginOpaqueId[]>,
-    private readonly coreId: CoreId
+    private readonly coreId: CoreId,
+    private readonly loadPluginContract: PluginContractLoader = rejectPluginContractLoad
   ) {
     this.contextNamesBySource = new Map<symbol, string[]>([[coreId, []]]);
   }
@@ -55,7 +79,7 @@ export class ContextContainer implements IContextContainer {
     provider: IContextProvider<Context, ContextName>
   ): this => {
     const contextName = name as string;
-    if (contextName === 'resolve') {
+    if (RESERVED_CONTEXT_NAMES.has(contextName)) {
       throw new Error(`Cannot register a provider for ${contextName}, it is a reserved keyword.`);
     }
     if (this.contextProviders.has(contextName)) {
@@ -95,6 +119,11 @@ export class ContextContainer implements IContextContainer {
     const builtContextPromises: Record<string, Promise<unknown>> = {};
 
     const builtContext = {} as HandlerContextType<RequestHandler>;
+    // Scoped to `source`, the opaque id of the plugin that registered this route, which is what
+    // lets the loader enforce that the dependency is declared in *that* plugin's manifest.
+    (builtContext as unknown as RequestHandlerContextBase).loadPluginContract = <T>(
+      dependencyName: string
+    ) => this.loadPluginContract(source, dependencyName) as Promise<T>;
     (builtContext as unknown as RequestHandlerContextBase).resolve = async (keys) => {
       const resolved = await Promise.all(
         keys.map(async (key) => {

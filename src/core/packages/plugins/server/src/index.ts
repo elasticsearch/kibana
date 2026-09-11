@@ -22,3 +22,10 @@ export type {
 } from './types';
 
 export { SharedGlobalConfigKeys } from './shared_global_config';
+
+export type { InitState } from './deferred_init';
+
+export {
+  DeferredInitializationError,
+  isDeferredInitializationError,
+} from '@kbn/core-deferred-init-common';

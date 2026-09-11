@@ -22,6 +22,7 @@ import { notificationServiceMock } from '@kbn/core-notifications-browser-mocks';
 import { applicationServiceMock } from '@kbn/core-application-browser-mocks';
 import { chromeServiceMock } from '@kbn/core-chrome-browser-mocks';
 import { customBrandingServiceMock } from '@kbn/core-custom-branding-browser-mocks';
+import { deferredInitServiceMock } from '@kbn/core-deferred-init-browser-mocks';
 import { securityServiceMock } from '@kbn/core-security-browser-mocks';
 import { userProfileServiceMock } from '@kbn/core-user-profile-browser-mocks';
 import { renderingServiceMock } from '@kbn/core-rendering-browser-mocks';
@@ -36,6 +37,7 @@ export function createCoreStartMock({ basePath = '' } = {}) {
     application: applicationServiceMock.createStartContract(),
     chrome: chromeServiceMock.createStartContract(),
     customBranding: customBrandingServiceMock.createStartContract(),
+    deferredInit: deferredInitServiceMock.createStartContract(),
     docLinks: docLinksServiceMock.createStartContract(),
     executionContext: executionContextServiceMock.createStartContract(),
     featureFlags: coreFeatureFlagsMock.createStart(),

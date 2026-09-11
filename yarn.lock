@@ -5288,6 +5288,22 @@
   version "0.0.0"
   uid ""
 
+"@kbn/core-deferred-init-browser-internal@link:src/core/packages/plugins/deferred-init-browser-internal":
+  version "0.0.0"
+  uid ""
+
+"@kbn/core-deferred-init-browser-mocks@link:src/core/packages/plugins/deferred-init-browser-mocks":
+  version "0.0.0"
+  uid ""
+
+"@kbn/core-deferred-init-browser@link:src/core/packages/plugins/deferred-init-browser":
+  version "0.0.0"
+  uid ""
+
+"@kbn/core-deferred-init-common@link:src/core/packages/plugins/deferred-init-common":
+  version "0.0.0"
+  uid ""
+
 "@kbn/core-deprecations-browser-internal@link:src/core/packages/deprecations/browser-internal":
   version "0.0.0"
   uid ""
@@ -6425,6 +6441,18 @@
   uid ""
 
 "@kbn/default-tracer@link:src/platform/packages/shared/kbn-default-tracer":
+  version "0.0.0"
+  uid ""
+
+"@kbn/deferred-init-example-consumer-plugin@link:examples/deferred_init_example_consumer":
+  version "0.0.0"
+  uid ""
+
+"@kbn/deferred-init-example-dependency-plugin@link:examples/deferred_init_example_dependency":
+  version "0.0.0"
+  uid ""
+
+"@kbn/deferred-init-example-plugin@link:examples/deferred_init_example":
   version "0.0.0"
   uid ""
 

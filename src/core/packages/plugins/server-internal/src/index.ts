@@ -16,3 +16,4 @@ export type {
 export { config } from './plugins_config';
 export type { PluginDependencies } from './types';
 export { PluginWrapper } from './plugin';
+export { DeferredInitEngine } from './deferred_init';

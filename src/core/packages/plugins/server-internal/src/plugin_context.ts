@@ -20,6 +20,8 @@ import type {
 } from '@kbn/core-http-request-handler-context-server';
 import { CoreRouteHandlerContext } from '@kbn/core-http-request-handler-context-server-internal';
 import type { InternalCoreStart } from '@kbn/core-lifecycle-server-internal';
+import type { LazyInitPlugins } from '@kbn/core-plugins-contracts-server';
+import type { PluginName } from '@kbn/core-base-common';
 import type { PluginWrapper } from './plugin';
 import type {
   PluginsServicePrebootSetupDeps,
@@ -28,6 +30,23 @@ import type {
 } from './plugins_service';
 import { getGlobalConfig, getGlobalConfig$ } from './legacy_config';
 import type { IRuntimePluginContractResolver } from './plugin_contract_resolver';
+import { createGuardedRouter, type DeferredInitEngine } from './deferred_init';
+
+/**
+ * The `core.plugins.lazyInit` contract, scoped to the calling plugin. Identical on the setup and
+ * start contexts: every method is post-boot-safe, and only `trigger()` ever causes a lazy plugin
+ * to run its deferred phases.
+ */
+const createLazyInitContract = (
+  pluginName: PluginName,
+  runtimeResolver: IRuntimePluginContractResolver
+): LazyInitPlugins => ({
+  trigger: () => runtimeResolver.trigger(pluginName),
+  getStatus: (target) => runtimeResolver.getLazyInitStatus(pluginName, target),
+  status$: (target) => runtimeResolver.lazyInitStatus$(pluginName, target),
+  onLazyStartService: (target, callback) =>
+    runtimeResolver.onLazyStartService(pluginName, target, callback),
+});
 
 /** @internal */
 export interface InstanceInfo {
@@ -189,12 +208,31 @@ export function createPluginSetupContext<TPlugin, TPluginDependencies>({
   deps,
   plugin,
   runtimeResolver,
+  deferredInitEngine,
 }: {
   deps: PluginsServiceSetupDeps;
   plugin: PluginWrapper<TPlugin, TPluginDependencies>;
   runtimeResolver: IRuntimePluginContractResolver;
+  deferredInitEngine?: DeferredInitEngine;
 }): CoreSetup {
   const router = deps.http.createRouter('', plugin.opaqueId);
+
+  // Defined only for plugins that opted into lazy init, so the router gating below can narrow on
+  // it instead of re-checking both conditions (and asserting non-null) at each use.
+  const lazyInitEngine = plugin.enableLazyInitialize ? deferredInitEngine : undefined;
+
+  // For lazy plugins, hand the plugin a guarded router whose routes return 503 until its deferred
+  // phases complete. Resolved lazily (memoized) on first `createRouter()` call. Asset serving via
+  // `resources` keeps the raw, un-gated router.
+  let exposedRouter: IRouter | undefined;
+  const getExposedRouter = (): IRouter => {
+    if (!exposedRouter) {
+      exposedRouter = lazyInitEngine
+        ? createGuardedRouter(router, lazyInitEngine, plugin.name)
+        : router;
+    }
+    return exposedRouter;
+  };
 
   return {
     analytics: {
@@ -236,13 +274,13 @@ export function createPluginSetupContext<TPlugin, TPluginDependencies>({
       getDeprecatedRoutes: deps.http.getDeprecatedRoutes,
       registerRouteHandlerContext: <
         Context extends RequestHandlerContext,
-        ContextName extends keyof Omit<Context, 'resolve'>
+        ContextName extends keyof Omit<Context, 'resolve' | 'loadPluginContract'>
       >(
         contextName: ContextName,
         provider: IContextProvider<Context, ContextName>
       ) => deps.http.registerRouteHandlerContext(plugin.opaqueId, contextName, provider),
       createRouter: <Context extends RequestHandlerContext = RequestHandlerContext>() =>
-        router as IRouter<Context>,
+        getExposedRouter() as IRouter<Context>,
       resources: deps.httpResources.createRegistrar(router),
       registerOnPreRouting: deps.http.registerOnPreRouting,
       registerOnPreAuth: deps.http.registerOnPreAuth,
@@ -307,6 +345,9 @@ export function createPluginSetupContext<TPlugin, TPluginDependencies>({
     plugins: {
       onSetup: (...dependencyNames) => runtimeResolver.onSetup(plugin.name, dependencyNames),
       onStart: (...dependencyNames) => runtimeResolver.onStart(plugin.name, dependencyNames),
+      loadPluginContract: (dependencyName) =>
+        runtimeResolver.loadPluginContract(plugin.name, dependencyName),
+      lazyInit: createLazyInitContract(plugin.name, runtimeResolver),
     },
     pricing: {
       isFeatureAvailable: deps.pricing.isFeatureAvailable,
@@ -420,6 +461,9 @@ export function createPluginStartContext<TPlugin, TPluginDependencies>({
     },
     plugins: {
       onStart: (...dependencyNames) => runtimeResolver.onStart(plugin.name, dependencyNames),
+      loadPluginContract: (dependencyName) =>
+        runtimeResolver.loadPluginContract(plugin.name, dependencyName),
+      lazyInit: createLazyInitContract(plugin.name, runtimeResolver),
     },
     pricing: deps.pricing,
     security: {

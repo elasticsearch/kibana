@@ -106,6 +106,7 @@ const setup = ({ storage }: { storage?: TestSOContentStorage } = {}) => {
   const requestHandlerCoreContext = coreMock.createRequestHandlerContext();
   const requestHandlerContext = jest.mocked<RequestHandlerContext>({
     core: Promise.resolve(requestHandlerCoreContext),
+    loadPluginContract: jest.fn(),
     resolve: jest.fn(),
   });
 

@@ -98,7 +98,7 @@ export const createMockClients = () => {
 export type MockClients = ReturnType<typeof createMockClients>;
 
 export type SecuritySolutionRequestHandlerContextMock = MockedKeys<
-  AwaitedProperties<Omit<SecuritySolutionRequestHandlerContext, 'resolve'>>
+  AwaitedProperties<Omit<SecuritySolutionRequestHandlerContext, 'resolve' | 'loadPluginContract'>>
 > & {
   core: MockClients['core'];
 };

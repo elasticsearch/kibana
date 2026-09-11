@@ -1,0 +1,18 @@
+{
+  "type": "plugin",
+  "id": "@kbn/deferred-init-example-consumer-plugin",
+  "owner": ["@elastic/kibana-core"],
+  "group": "platform",
+  "visibility": "private",
+  "plugin": {
+    "id": "deferredInitExampleConsumer",
+    "browser": false,
+    "server": true,
+    "requiredPlugins": [],
+    "optionalPlugins": [],
+    // A deferred-init plugin cannot be a required/optional dependency: core would inject its
+    // uninitialized start contract into `start()`. Declared here instead, which keeps it out of
+    // that injection and out of the boot ordering, and is what makes `loadPluginContract` legal.
+    "runtimePluginDependencies": ["deferredInitExample"]
+  }
+}

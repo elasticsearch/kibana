@@ -434,7 +434,7 @@ export interface HttpServiceSetup<
    */
   registerRouteHandlerContext: <
     Context extends DefaultRequestHandlerType,
-    ContextName extends keyof Omit<Context, 'resolve'>
+    ContextName extends keyof Omit<Context, 'resolve' | 'loadPluginContract'>
   >(
     contextName: ContextName,
     provider: IContextProvider<Context, ContextName>

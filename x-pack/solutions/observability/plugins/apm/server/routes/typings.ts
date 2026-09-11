@@ -29,7 +29,7 @@ export type ApmPluginRequestHandlerContext = CustomRequestHandlerContext<{
 // what is available in system connectors
 export type MinimalApmPluginRequestHandlerContext = Omit<
   ApmPluginRequestHandlerContext,
-  'core' | 'resolve'
+  'core' | 'resolve' | 'loadPluginContract'
 > & {
   core: Promise<{
     elasticsearch: {

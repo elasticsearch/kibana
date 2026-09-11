@@ -22,6 +22,7 @@ import type { NotificationsStart } from '@kbn/core-notifications-browser';
 import type { ApplicationStart } from '@kbn/core-application-browser';
 import type { ChromeStart } from '@kbn/core-chrome-browser';
 import type { CustomBrandingStart } from '@kbn/core-custom-branding-browser';
+import type { DeferredInitStart } from '@kbn/core-deferred-init-browser';
 import type { PluginsServiceStart } from '@kbn/core-plugins-contracts-browser';
 import type { PricingServiceStart } from '@kbn/core-pricing-browser';
 import type { SecurityServiceStart } from '@kbn/core-security-browser';
@@ -48,6 +49,14 @@ export interface CoreStart {
   chrome: ChromeStart;
   /** {@link CustomBrandingStart} */
   customBranding: CustomBrandingStart;
+  /**
+   * {@link DeferredInitStart}
+   *
+   * Optional in the public type: Core always provides this at runtime, but it is typed as
+   * optional so the many hand-built `CoreStart` literals across plugins and tests don't all
+   * need to construct it. Access it with optional chaining (`core.deferredInit?.`).
+   */
+  deferredInit?: DeferredInitStart;
   /** {@link DocLinksStart} */
   docLinks: DocLinksStart;
   /** {@link ExecutionContextStart} */

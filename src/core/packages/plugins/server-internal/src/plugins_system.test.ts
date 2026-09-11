@@ -27,6 +27,7 @@ import { loggingSystemMock } from '@kbn/core-logging-server-mocks';
 import { PluginWrapper } from './plugin';
 import { findCircularDependencies, normalizeCycle, PluginsSystem } from './plugins_system';
 import { coreInternalLifecycleMock } from '@kbn/core-lifecycle-server-mocks';
+import { DeferredInitEngine } from './deferred_init';
 
 function createPlugin(
   id: string,
@@ -81,6 +82,9 @@ let coreContext: CoreContext;
 
 beforeEach(() => {
   runtimeResolverMock.setDependencyMap.mockReset();
+  runtimeResolverMock.setDeferredInitEngine.mockReset();
+  runtimeResolverMock.setLazyPluginNames.mockReset();
+  runtimeResolverMock.loadPluginContract.mockReset();
   runtimeResolverMock.resolveSetupRequests.mockReset();
   runtimeResolverMock.resolveStartRequests.mockReset();
 
@@ -730,6 +734,370 @@ describe('start', () => {
       pluginA: 'contractA',
       pluginB: 'contractB',
     });
+  });
+
+  it('leaves a lazy plugin out of the boot loop and hands the engine its two deferred phases', async () => {
+    const engine = new DeferredInitEngine(logger.get());
+    jest.spyOn(engine, 'setRunner');
+    const localPluginsSystem = new PluginsSystem(coreContext, PluginType.standard, engine);
+    const startContext = { start: 'context' };
+    mockCreatePluginStartContext.mockReturnValue(startContext);
+    runtimeResolverMock.notifyStartContractAvailable.mockReset();
+
+    const dependency = createPlugin('dependency');
+    jest.spyOn(dependency, 'setup').mockReturnValue({});
+    jest.spyOn(dependency, 'start').mockReturnValue('dependencyContract');
+    const lazyPlugin = createPlugin('lazyPlugin', { required: ['dependency'] });
+    jest.spyOn(lazyPlugin, 'enableLazyInitialize', 'get').mockReturnValue(true);
+    jest.spyOn(lazyPlugin, 'setup').mockReturnValue({});
+    jest.spyOn(lazyPlugin, 'start').mockReturnValue('lazyContract');
+    jest.spyOn(lazyPlugin, 'runLazyInitialize').mockResolvedValue(undefined);
+
+    localPluginsSystem.addPlugin(dependency);
+    localPluginsSystem.addPlugin(lazyPlugin);
+
+    await localPluginsSystem.setupPlugins(setupDeps);
+    const contracts = await localPluginsSystem.startPlugins(startDeps);
+
+    // Boot: the dependency started, the lazy plugin did not, and nothing was published for it.
+    expect(dependency.start).toHaveBeenCalledTimes(1);
+    expect(lazyPlugin.start).not.toHaveBeenCalled();
+    expect(lazyPlugin.runLazyInitialize).not.toHaveBeenCalled();
+    expect([...contracts.keys()]).toEqual(['dependency']);
+    expect(runtimeResolverMock.notifyStartContractAvailable).toHaveBeenCalledTimes(1);
+    expect(runtimeResolverMock.notifyStartContractAvailable).toHaveBeenCalledWith(
+      'dependency',
+      'dependencyContract'
+    );
+
+    expect(engine.setRunner).toHaveBeenCalledTimes(1);
+    const [pluginId, runner] = (engine.setRunner as jest.Mock).mock.calls[0];
+    expect(pluginId).toBe('lazyPlugin');
+
+    // First trigger, phase one: `lazyInitialize` gets the same arguments `start()` will.
+    await runner.lazyInitialize();
+    expect(lazyPlugin.runLazyInitialize).toHaveBeenCalledWith(startContext, {
+      dependency: 'dependencyContract',
+    });
+    expect(lazyPlugin.start).not.toHaveBeenCalled();
+
+    // Phase two: `start()` runs and its contract is published to the resolver.
+    await runner.start();
+    expect(lazyPlugin.start).toHaveBeenCalledWith(startContext, {
+      dependency: 'dependencyContract',
+    });
+    expect(runtimeResolverMock.notifyStartContractAvailable).toHaveBeenCalledWith(
+      'lazyPlugin',
+      'lazyContract'
+    );
+  });
+
+  it('does not attach a runner for plugins that did not opt into lazy init', async () => {
+    const engine = new DeferredInitEngine(logger.get());
+    jest.spyOn(engine, 'setRunner');
+    const localPluginsSystem = new PluginsSystem(coreContext, PluginType.standard, engine);
+
+    const plugin = createPlugin('regularPlugin');
+    jest.spyOn(plugin, 'setup').mockReturnValue({});
+    jest.spyOn(plugin, 'start').mockReturnValue('contract');
+
+    localPluginsSystem.addPlugin(plugin);
+
+    await localPluginsSystem.setupPlugins(setupDeps);
+    await localPluginsSystem.startPlugins(startDeps);
+
+    expect(engine.setRunner).not.toHaveBeenCalled();
+  });
+});
+
+describe('start - lazy plugins on a node without the ui role', () => {
+  const setupLazySystem = () => {
+    const engine = new DeferredInitEngine(logger.get());
+    jest.spyOn(engine, 'ensureInitialized');
+    const localPluginsSystem = new PluginsSystem(coreContext, PluginType.standard, engine);
+
+    const lazyPlugin = createPlugin('lazyPlugin');
+    jest.spyOn(lazyPlugin, 'enableLazyInitialize', 'get').mockReturnValue(true);
+    jest.spyOn(lazyPlugin, 'setup').mockReturnValue({});
+    jest.spyOn(lazyPlugin, 'start').mockReturnValue('lazyContract');
+    const regularPlugin = createPlugin('regularPlugin');
+    jest.spyOn(regularPlugin, 'setup').mockReturnValue({});
+    jest.spyOn(regularPlugin, 'start').mockReturnValue('contract');
+
+    localPluginsSystem.addPlugin(lazyPlugin);
+    localPluginsSystem.addPlugin(regularPlugin);
+    return { engine, localPluginsSystem };
+  };
+
+  it('triggers every lazy plugin once boot is done, since no request ever will', async () => {
+    const { engine, localPluginsSystem } = setupLazySystem();
+    localPluginsSystem.setNodeRoles({ ui: false, backgroundTasks: true, migrator: false });
+
+    await localPluginsSystem.setupPlugins(setupDeps);
+    await localPluginsSystem.startPlugins(startDeps);
+
+    expect(engine.ensureInitialized).toHaveBeenCalledTimes(1);
+    expect(engine.ensureInitialized).toHaveBeenCalledWith('lazyPlugin');
+  });
+
+  it('leaves lazy plugins idle on a node with the ui role', async () => {
+    const { engine, localPluginsSystem } = setupLazySystem();
+    localPluginsSystem.setNodeRoles({ ui: true, backgroundTasks: true, migrator: false });
+
+    await localPluginsSystem.setupPlugins(setupDeps);
+    await localPluginsSystem.startPlugins(startDeps);
+
+    expect(engine.ensureInitialized).not.toHaveBeenCalled();
+    expect(engine.getState('lazyPlugin')).toBe('idle');
+  });
+
+  it('leaves lazy plugins idle when the node roles are unknown', async () => {
+    const { engine, localPluginsSystem } = setupLazySystem();
+
+    await localPluginsSystem.setupPlugins(setupDeps);
+    await localPluginsSystem.startPlugins(startDeps);
+
+    expect(engine.ensureInitialized).not.toHaveBeenCalled();
+  });
+});
+
+describe('start - deferred-init start-cycle guard', () => {
+  it('brackets the start loop with begin/endStartCycle on the engine', async () => {
+    const engine = new DeferredInitEngine(logger.get());
+    jest.spyOn(engine, 'beginStartCycle');
+    jest.spyOn(engine, 'endStartCycle');
+    const localPluginsSystem = new PluginsSystem(coreContext, PluginType.standard, engine);
+
+    const plugin = createPlugin('somePlugin');
+    jest.spyOn(plugin, 'setup').mockReturnValue({});
+    jest.spyOn(plugin, 'start').mockReturnValue('contract');
+    localPluginsSystem.addPlugin(plugin);
+
+    await localPluginsSystem.setupPlugins(setupDeps);
+    await localPluginsSystem.startPlugins(startDeps);
+
+    expect(engine.beginStartCycle).toHaveBeenCalledTimes(1);
+    expect(engine.endStartCycle).toHaveBeenCalledTimes(1);
+    expect((engine.beginStartCycle as jest.Mock).mock.invocationCallOrder[0]).toBeLessThan(
+      (engine.endStartCycle as jest.Mock).mock.invocationCallOrder[0]
+    );
+  });
+
+  it('clears the start cycle even when a plugin start() throws', async () => {
+    const engine = new DeferredInitEngine(logger.get());
+    jest.spyOn(engine, 'endStartCycle');
+    const localPluginsSystem = new PluginsSystem(coreContext, PluginType.standard, engine);
+
+    const plugin = createPlugin('boom-plugin');
+    jest.spyOn(plugin, 'setup').mockReturnValue({});
+    const error = new Error('boom');
+    jest.spyOn(plugin, 'start').mockRejectedValueOnce(error);
+    localPluginsSystem.addPlugin(plugin);
+
+    await localPluginsSystem.setupPlugins(setupDeps);
+    await expect(localPluginsSystem.startPlugins(startDeps)).rejects.toBe(error);
+
+    expect(engine.endStartCycle).toHaveBeenCalledTimes(1);
+  });
+
+  it('propagates a start() error immediately, without retrying', async () => {
+    const plugin = createPlugin('failing-start');
+    jest.spyOn(plugin, 'setup').mockResolvedValue({});
+    const error = new Error('boom');
+    jest.spyOn(plugin, 'start').mockRejectedValueOnce(error);
+
+    pluginsSystem.addPlugin(plugin);
+    mockCreatePluginSetupContext.mockImplementation(() => ({}));
+    mockCreatePluginStartContext.mockImplementation(() => ({}));
+
+    await pluginsSystem.setupPlugins(setupDeps);
+
+    await expect(pluginsSystem.startPlugins(startDeps)).rejects.toBe(error);
+    expect(plugin.start).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('deferred-init engine wiring', () => {
+  it('registers the deferred-init engine with the runtime contract resolver, when present', async () => {
+    const engine = new DeferredInitEngine(logger.get());
+    const localPluginsSystem = new PluginsSystem(coreContext, PluginType.standard, engine);
+    const plugin = createPlugin('somePlugin');
+    jest.spyOn(plugin, 'setup').mockReturnValue({});
+    localPluginsSystem.addPlugin(plugin);
+
+    await localPluginsSystem.setupPlugins(setupDeps);
+
+    expect(runtimeResolverMock.setDeferredInitEngine).toHaveBeenCalledWith(engine);
+  });
+
+  it('does not attempt to register an engine when none was provided', async () => {
+    const plugin = createPlugin('somePlugin');
+    jest.spyOn(plugin, 'setup').mockReturnValue({});
+    pluginsSystem.addPlugin(plugin);
+
+    await pluginsSystem.setupPlugins(setupDeps);
+
+    expect(runtimeResolverMock.setDeferredInitEngine).not.toHaveBeenCalled();
+  });
+});
+
+describe('loadPluginContractFor', () => {
+  it('resolves via the runtime resolver, scoped to the plugin owning the opaque id', () => {
+    const plugin = createPlugin('somePlugin', { runtime: ['lazyPlugin'] });
+    pluginsSystem.addPlugin(plugin);
+
+    pluginsSystem.loadPluginContractFor(plugin.opaqueId, 'lazyPlugin');
+
+    expect(runtimeResolverMock.loadPluginContract).toHaveBeenCalledWith('somePlugin', 'lazyPlugin');
+  });
+
+  it('returns undefined for an opaque id that belongs to no plugin in this system', () => {
+    pluginsSystem.addPlugin(createPlugin('somePlugin'));
+
+    expect(pluginsSystem.loadPluginContractFor(Symbol('core'), 'lazyPlugin')).toBeUndefined();
+    expect(runtimeResolverMock.loadPluginContract).not.toHaveBeenCalled();
+  });
+
+  it('sees plugins added after a previous lookup cached the opaque-id map', () => {
+    const first = createPlugin('firstPlugin');
+    pluginsSystem.addPlugin(first);
+    pluginsSystem.loadPluginContractFor(first.opaqueId, 'lazyPlugin');
+
+    const late = createPlugin('latePlugin');
+    pluginsSystem.addPlugin(late);
+
+    pluginsSystem.loadPluginContractFor(late.opaqueId, 'lazyPlugin');
+    expect(runtimeResolverMock.loadPluginContract).toHaveBeenLastCalledWith(
+      'latePlugin',
+      'lazyPlugin'
+    );
+  });
+});
+
+describe('setup - lazy plugins cannot be injected dependencies', () => {
+  const createSystemWithEngine = () =>
+    new PluginsSystem(coreContext, PluginType.standard, new DeferredInitEngine(logger.get()));
+
+  const addLazyPlugin = (system: PluginsSystem<PluginType.standard>, id = 'lazyPlugin') => {
+    const lazyPlugin = createPlugin(id);
+    jest.spyOn(lazyPlugin, 'enableLazyInitialize', 'get').mockReturnValue(true);
+    jest.spyOn(lazyPlugin, 'setup').mockReturnValue({});
+    system.addPlugin(lazyPlugin);
+    return lazyPlugin;
+  };
+
+  it('throws when a lazy plugin is declared as a required dependency', async () => {
+    const system = createSystemWithEngine();
+    addLazyPlugin(system);
+    const dependent = createPlugin('dependentPlugin', { required: ['lazyPlugin'] });
+    jest.spyOn(dependent, 'setup').mockReturnValue({});
+    system.addPlugin(dependent);
+
+    await expect(system.setupPlugins(setupDeps)).rejects.toThrowError(
+      /"dependentPlugin" -> "lazyPlugin"/
+    );
+  });
+
+  it('throws when a lazy plugin is declared as an optional dependency', async () => {
+    const system = createSystemWithEngine();
+    addLazyPlugin(system);
+    const dependent = createPlugin('dependentPlugin', { optional: ['lazyPlugin'] });
+    jest.spyOn(dependent, 'setup').mockReturnValue({});
+    system.addPlugin(dependent);
+
+    await expect(system.setupPlugins(setupDeps)).rejects.toThrowError(
+      /"dependentPlugin" -> "lazyPlugin"/
+    );
+  });
+
+  it('throws before any plugin is set up, so the failure cannot be half-applied', async () => {
+    const system = createSystemWithEngine();
+    const lazyPlugin = addLazyPlugin(system);
+    const dependent = createPlugin('dependentPlugin', { required: ['lazyPlugin'] });
+    jest.spyOn(dependent, 'setup').mockReturnValue({});
+    system.addPlugin(dependent);
+
+    await expect(system.setupPlugins(setupDeps)).rejects.toThrow();
+
+    expect(lazyPlugin.setup).not.toHaveBeenCalled();
+    expect(dependent.setup).not.toHaveBeenCalled();
+  });
+
+  it('reports every offending edge at once', async () => {
+    const system = createSystemWithEngine();
+    addLazyPlugin(system);
+    for (const id of ['dependentA', 'dependentB']) {
+      const dependent = createPlugin(id, { required: ['lazyPlugin'] });
+      jest.spyOn(dependent, 'setup').mockReturnValue({});
+      system.addPlugin(dependent);
+    }
+
+    await expect(system.setupPlugins(setupDeps)).rejects.toThrowError(
+      /"dependentA" -> "lazyPlugin".*"dependentB" -> "lazyPlugin"/
+    );
+  });
+
+  it('allows a lazy plugin declared as a runtime plugin dependency', async () => {
+    const system = createSystemWithEngine();
+    addLazyPlugin(system);
+    const dependent = createPlugin('dependentPlugin', { runtime: ['lazyPlugin'] });
+    jest.spyOn(dependent, 'setup').mockReturnValue({});
+    system.addPlugin(dependent);
+
+    await expect(system.setupPlugins(setupDeps)).resolves.toBeDefined();
+    expect(dependent.setup).toHaveBeenCalledTimes(1);
+  });
+
+  it('allows a lazy plugin to declare its own required dependencies', async () => {
+    const system = createSystemWithEngine();
+    const dependency = createPlugin('normalDependency');
+    jest.spyOn(dependency, 'setup').mockReturnValue({});
+    system.addPlugin(dependency);
+
+    const lazyPlugin = createPlugin('lazyPlugin', { required: ['normalDependency'] });
+    jest.spyOn(lazyPlugin, 'enableLazyInitialize', 'get').mockReturnValue(true);
+    jest.spyOn(lazyPlugin, 'setup').mockReturnValue({});
+    system.addPlugin(lazyPlugin);
+
+    await expect(system.setupPlugins(setupDeps)).resolves.toBeDefined();
+  });
+
+  it('ignores a browser-only dependent, which is never handed a server contract', async () => {
+    const system = createSystemWithEngine();
+    addLazyPlugin(system);
+    const browserOnlyDependent = createPlugin('browserOnlyDependent', {
+      required: ['lazyPlugin'],
+      server: false,
+    });
+    system.addPlugin(browserOnlyDependent);
+
+    await expect(system.setupPlugins(setupDeps)).resolves.toBeDefined();
+  });
+
+  it('ignores a browser-only plugin that claims to be lazy, since it cannot be', async () => {
+    const system = createSystemWithEngine();
+    const browserOnlyLazy = createPlugin('browserOnlyLazy', { server: false });
+    jest.spyOn(browserOnlyLazy, 'enableLazyInitialize', 'get').mockReturnValue(true);
+    system.addPlugin(browserOnlyLazy);
+
+    const dependent = createPlugin('dependentPlugin', { required: ['browserOnlyLazy'] });
+    jest.spyOn(dependent, 'setup').mockReturnValue({});
+    system.addPlugin(dependent);
+
+    await expect(system.setupPlugins(setupDeps)).resolves.toBeDefined();
+    expect(runtimeResolverMock.setLazyPluginNames).toHaveBeenCalledWith(new Set());
+  });
+
+  it('hands the lazy plugin names to the runtime contract resolver', async () => {
+    const system = createSystemWithEngine();
+    addLazyPlugin(system);
+    const dependent = createPlugin('dependentPlugin', { runtime: ['lazyPlugin'] });
+    jest.spyOn(dependent, 'setup').mockReturnValue({});
+    system.addPlugin(dependent);
+
+    await system.setupPlugins(setupDeps);
+
+    expect(runtimeResolverMock.setLazyPluginNames).toHaveBeenCalledWith(new Set(['lazyPlugin']));
   });
 });
 

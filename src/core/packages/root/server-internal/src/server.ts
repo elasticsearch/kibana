@@ -340,6 +340,7 @@ export class Server {
     const { uiPlugins, pluginPaths, pluginTree } = this.discoveredPlugins!.standard;
     const contextServiceSetup = this.context.setup({
       pluginDependencies: new Map([...pluginTree.asOpaqueIds]),
+      loadPluginContract: this.plugins.loadPluginContractForRoute,
     });
     const executionContextSetup = this.executionContext.setup();
     const docLinksSetup = this.docLinks.setup();

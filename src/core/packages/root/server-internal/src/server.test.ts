@@ -225,6 +225,9 @@ test('injects legacy dependency to context#setup()', async () => {
       [pluginA, []],
       [pluginB, [pluginA]],
     ]),
+    // Backs `context.loadPluginContract()`; the context service knows a route's owner only by
+    // opaque id, so the plugins service supplies the name lookup and the resolver.
+    loadPluginContract: expect.any(Function),
   });
 });
 

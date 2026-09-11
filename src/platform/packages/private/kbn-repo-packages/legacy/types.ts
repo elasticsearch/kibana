@@ -29,6 +29,7 @@ export interface LegacyKibanaPlatformPluginManifest {
   // TODO: make required.
   description?: string;
   enabledOnAnonymousPages?: boolean;
+  enableLazyInitialize?: boolean;
   serviceFolders: readonly string[];
   requiredPlugins: readonly string[];
   optionalPlugins: readonly string[];

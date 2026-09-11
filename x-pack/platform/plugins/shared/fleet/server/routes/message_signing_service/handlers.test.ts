@@ -27,7 +27,9 @@ const mockCheckSuperuser = checkSuperuser as jest.MockedFunction<typeof checkSup
 const rotateKeyPairHandlerWithErrorHandler = withDefaultErrorHandler(rotateKeyPairHandler);
 
 describe('FleetMessageSigningServiceHandler', () => {
-  let context: AwaitedProperties<Omit<FleetRequestHandlerContext, 'resolve'>>;
+  let context: AwaitedProperties<
+    Omit<FleetRequestHandlerContext, 'resolve' | 'loadPluginContract'>
+  >;
   let response: ReturnType<typeof httpServerMock.createResponseFactory>;
   let request: KibanaRequest<
     undefined,

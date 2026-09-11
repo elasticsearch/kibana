@@ -28,6 +28,7 @@ dependsOn:
   - '@kbn/core-node-server'
   - '@kbn/core-saved-objects-base-server-internal'
   - '@kbn/core-http-server'
+  - '@kbn/core-status-common'
   - '@kbn/core-http-request-handler-context-server'
   - '@kbn/core-lifecycle-server'
   - '@kbn/core-lifecycle-server-internal'
@@ -51,6 +52,8 @@ dependsOn:
   - '@kbn/core-di-internal'
   - '@kbn/core-di-server'
   - '@kbn/core-http-request-handler-context-server-internal'
+  - '@kbn/core-deferred-init-common'
+  - '@kbn/core-http-router-server-mocks'
 tags:
   - shared-server
   - package

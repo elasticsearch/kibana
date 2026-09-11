@@ -32,16 +32,27 @@ const createServiceMock = (): PluginsServiceMock =>
   lazyObject({
     discover: jest.fn(),
     getExposedPluginConfigsToUsage: jest.fn(),
+    loadPluginContractForRoute: jest.fn(),
     preboot: jest.fn(),
     setup: jest.fn().mockResolvedValue(createInternalSetupContractMock()),
     start: jest.fn().mockResolvedValue(createInternalStartContractMock()),
     stop: jest.fn(),
   });
 
+const createLazyInitMock = () =>
+  lazyObject({
+    trigger: jest.fn(),
+    getStatus: jest.fn(),
+    status$: jest.fn(),
+    onLazyStartService: jest.fn(),
+  });
+
 const createSetupContractMock = () => {
   const contract: jest.Mocked<PluginsServiceSetup> = lazyObject({
     onSetup: jest.fn(),
     onStart: jest.fn(),
+    loadPluginContract: jest.fn(),
+    lazyInit: createLazyInitMock(),
   });
 
   return contract;
@@ -50,6 +61,8 @@ const createSetupContractMock = () => {
 const createStartContractMock = () => {
   const contract: jest.Mocked<PluginsServiceStart> = lazyObject({
     onStart: jest.fn(),
+    loadPluginContract: jest.fn(),
+    lazyInit: createLazyInitMock(),
   });
   return contract;
 };

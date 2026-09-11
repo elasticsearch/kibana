@@ -31,6 +31,7 @@ dependsOn:
   - '@kbn/core-application-browser-mocks'
   - '@kbn/core-chrome-browser-mocks'
   - '@kbn/core-custom-branding-browser-mocks'
+  - '@kbn/core-deferred-init-browser-mocks'
   - '@kbn/core-security-browser-mocks'
   - '@kbn/core-user-profile-browser-mocks'
   - '@kbn/core-feature-flags-browser-mocks'

@@ -19,6 +19,9 @@ export type {
   MakeUsageFromSchema,
   ExposedToBrowserDescriptor,
   DynamicConfigDescriptor,
+  InitState,
 } from './src';
 
 export { SharedGlobalConfigKeys } from './src';
+
+export { DeferredInitializationError, isDeferredInitializationError } from './src';

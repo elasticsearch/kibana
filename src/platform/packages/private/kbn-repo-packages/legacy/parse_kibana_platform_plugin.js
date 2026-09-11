@@ -68,6 +68,7 @@ function parseLegacyKibanaPlatformPlugin(manifestPath) {
       owner: manifest.owner,
       description: manifest.description,
       enabledOnAnonymousPages: Boolean(manifest.enabledOnAnonymousPages),
+      enableLazyInitialize: Boolean(manifest.enableLazyInitialize),
       requiredPlugins: isValidDepsDeclaration(manifest.requiredPlugins, 'requiredPlugins'),
       optionalPlugins: isValidDepsDeclaration(manifest.optionalPlugins, 'optionalPlugins'),
       requiredBundles: isValidDepsDeclaration(manifest.requiredBundles, 'requiredBundles'),

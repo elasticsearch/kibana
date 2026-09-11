@@ -13,7 +13,7 @@ import type { Logger } from '@kbn/logging';
 import { v4 as uuid } from 'uuid';
 import prettyMilliseconds from 'pretty-ms';
 import { duration } from 'moment';
-import type { ElasticsearchClient } from '@kbn/core/server';
+import type { ElasticsearchClient } from '@kbn/core-elasticsearch-server';
 import { LOCKS_CONCRETE_INDEX_NAME, setupLockManagerIndex } from './setup_lock_manager_index';
 
 export type LockId = string;

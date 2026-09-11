@@ -153,6 +153,7 @@ describe('registerAlertAnalysisWorkflowRuleAttachmentRoutes', () => {
     hasAtLeast = jest.fn().mockReturnValue(true);
     context = {
       licensing: Promise.resolve({ license: { hasAtLeast } }),
+      loadPluginContract: jest.fn(),
       resolve: jest.fn().mockResolvedValue({
         core: {
           savedObjects: {

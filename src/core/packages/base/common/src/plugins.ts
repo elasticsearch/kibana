@@ -89,4 +89,11 @@ export interface DiscoveredPlugin {
    * configured, etc.) Default is false.
    */
   readonly enabledOnAnonymousPages?: boolean;
+
+  /**
+   * Whether this plugin opted into core-managed lazy/deferred Elasticsearch initialization.
+   * When `true`, core automatically gates the plugin's registered app behind a loading screen
+   * (and its status observable) until the plugin's server-side deferred init completes.
+   */
+  readonly enableLazyInitialize?: boolean;
 }

@@ -15,7 +15,8 @@
   ],
   "kbn_references": [
     "@kbn/logging",
-    "@kbn/core",
+    "@kbn/core-elasticsearch-server",
+    "@kbn/core-lifecycle-server",
     "@kbn/core-elasticsearch-client-server-mocks",
     "@kbn/core-logging-server-mocks",
   ]

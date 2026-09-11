@@ -71,6 +71,7 @@
     "@kbn/react-mute-legacy-root-warning",
     "@kbn/core-pricing-browser-internal",
     "@kbn/core-pricing-browser-mocks",
+    "@kbn/core-deferred-init-browser-internal",
     "@kbn/core-di-browser-internal",
     "@kbn/core-di-mocks",
     "@kbn/core-notifications-browser",

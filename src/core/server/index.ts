@@ -295,6 +295,11 @@ export type {
   SharedGlobalConfig,
   MakeUsageFromSchema,
   ExposedToBrowserDescriptor,
+  InitState,
+} from '@kbn/core-plugins-server';
+export {
+  DeferredInitializationError,
+  isDeferredInitializationError,
 } from '@kbn/core-plugins-server';
 export type {
   PluginsServiceSetup,
@@ -305,6 +310,7 @@ export type {
   PluginContractMap,
   PluginContractResolverResponse,
   PluginContractResolver,
+  LoadPluginContract,
 } from '@kbn/core-plugins-contracts-server';
 
 export type { PluginName, DiscoveredPlugin } from '@kbn/core-base-common';

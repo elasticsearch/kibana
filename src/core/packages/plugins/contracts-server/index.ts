@@ -10,10 +10,12 @@
 export type {
   PluginsServiceSetup,
   PluginsServiceStart,
+  LazyInitPlugins,
   PluginContractMap,
   PluginContractResolver,
   PluginContractResolverResponse,
   PluginContractResolverResponseItem,
   FoundPluginContractResolverResponseItem,
   NotFoundPluginContractResolverResponseItem,
+  LoadPluginContract,
 } from './src/contracts';

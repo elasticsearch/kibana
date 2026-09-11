@@ -7,5 +7,11 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
-export { LockAcquisitionError, isLockAcquisitionError } from './src/lock_manager_client';
+export {
+  LockAcquisitionError,
+  isLockAcquisitionError,
+  withLock,
+  getLock,
+} from './src/lock_manager_client';
+export type { LockId, LockDocument, AcquireOptions } from './src/lock_manager_client';
 export { LockManagerService } from './src/lock_manager_service';

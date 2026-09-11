@@ -1,0 +1,26 @@
+{
+  "extends": "@kbn/tsconfig-base/tsconfig.json",
+  "compilerOptions": {
+    "outDir": "target/types",
+    "types": [
+      "jest",
+      "node",
+      "react"
+    ]
+  },
+  "include": [
+    "**/*.ts",
+    "**/*.tsx",
+  ],
+  "exclude": [
+    "target/**/*"
+  ],
+  "kbn_references": [
+    "@kbn/core-deferred-init-common",
+    "@kbn/core-deferred-init-browser",
+    "@kbn/core-application-browser",
+    "@kbn/core-base-browser-internal",
+    "@kbn/core-http-browser-internal",
+    "@kbn/core-lifecycle-browser",
+  ]
+}

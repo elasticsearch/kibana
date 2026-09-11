@@ -1,0 +1,7 @@
+{
+  "type": "shared-browser",
+  "id": "@kbn/core-deferred-init-browser",
+  "owner": "@elastic/kibana-core",
+  "group": "platform",
+  "visibility": "shared"
+}

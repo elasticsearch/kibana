@@ -41,6 +41,7 @@ import type { InternalCoreSetup, InternalCoreStart } from '@kbn/core-lifecycle-b
 import { PluginsService } from '@kbn/core-plugins-browser-internal';
 import { PricingService } from '@kbn/core-pricing-browser-internal';
 import { CustomBrandingService } from '@kbn/core-custom-branding-browser-internal';
+import { DeferredInitService } from '@kbn/core-deferred-init-browser-internal';
 import { SecurityService } from '@kbn/core-security-browser-internal';
 import { UserProfileService } from '@kbn/core-user-profile-browser-internal';
 import { UserStorageService } from '@kbn/core-user-storage-browser-internal';
@@ -118,6 +119,7 @@ export class CoreSystem {
   private readonly userProfile: UserProfileService;
   private readonly userStorage: UserStorageService;
   private readonly pricing: PricingService;
+  private readonly deferredInit: DeferredInitService;
   private fatalErrorsSetup: FatalErrorsSetup | null = null;
   private overlayNavigationSubscription: Subscription | undefined;
 
@@ -178,6 +180,7 @@ export class CoreSystem {
     this.executionContext = new ExecutionContextService();
     this.plugins = new PluginsService(this.coreContext, injectedMetadata.uiPlugins);
     this.pricing = new PricingService();
+    this.deferredInit = new DeferredInitService();
     this.coreApp = new CoreAppsService(this.coreContext);
     this.customBranding = new CustomBrandingService();
 
@@ -279,11 +282,13 @@ export class CoreSystem {
       const application = this.application.setup({ http, analytics });
       this.coreApp.setup({ application, http, injectedMetadata, notifications });
       const featureFlags = this.featureFlags.setup({ http, injectedMetadata });
+      const deferredInit = this.deferredInit.setup({ http });
 
       const core: InternalCoreSetup = {
         analytics,
         application,
         chrome,
+        deferredInit,
         fatalErrors: this.fatalErrorsSetup,
         featureFlags,
         http,
@@ -428,6 +433,7 @@ export class CoreSystem {
       });
 
       const pricing = await this.pricing.start({ http });
+      const deferredInit = this.deferredInit.start({ http });
 
       const core: InternalCoreStart = {
         analytics,
@@ -453,6 +459,7 @@ export class CoreSystem {
         userProfile,
         rendering,
         pricing,
+        deferredInit,
       };
 
       await this.plugins.start(core);
@@ -525,6 +532,7 @@ export class CoreSystem {
     this.featureFlags.stop();
     this.security.stop();
     this.userProfile.stop();
+    this.deferredInit.stop();
     this.rootDomElement.textContent = '';
   }
 

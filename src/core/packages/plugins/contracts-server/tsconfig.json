@@ -15,5 +15,6 @@
   ],
   "kbn_references": [
     "@kbn/core-base-common",
+    "@kbn/core-deferred-init-common",
   ]
 }

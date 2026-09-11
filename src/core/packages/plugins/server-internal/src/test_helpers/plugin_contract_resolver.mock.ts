@@ -13,8 +13,16 @@ export const createRuntimePluginContractResolverMock =
   (): jest.Mocked<IRuntimePluginContractResolver> => {
     return {
       setDependencyMap: jest.fn(),
+      setDeferredInitEngine: jest.fn(),
+      setLazyPluginNames: jest.fn(),
       onSetup: jest.fn(),
       onStart: jest.fn(),
+      notifyStartContractAvailable: jest.fn(),
+      loadPluginContract: jest.fn(),
+      trigger: jest.fn(),
+      getLazyInitStatus: jest.fn(),
+      lazyInitStatus$: jest.fn(),
+      onLazyStartService: jest.fn(),
       resolveSetupRequests: jest.fn(),
       resolveStartRequests: jest.fn(),
     };

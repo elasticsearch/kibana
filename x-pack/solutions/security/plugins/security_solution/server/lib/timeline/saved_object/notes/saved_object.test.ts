@@ -200,6 +200,7 @@ describe('persistNote', () => {
         client: mockSavedObjectClient,
       },
     },
+    loadPluginContract: jest.fn(),
     resolve: jest.fn(),
   } as unknown as RequestHandlerContext;
   const mockNote = { eventId: 'id', note: 'test note', timelineId: '' };

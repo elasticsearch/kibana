@@ -131,6 +131,35 @@ test('`constructor` correctly initializes plugin instance', () => {
   expect(plugin.runtimePluginDependencies).toEqual(['some-runtime-dep']);
 });
 
+describe('`enableLazyInitialize`', () => {
+  function createPlugin(manifestProps: Partial<PluginManifest> = {}) {
+    const manifest = createPluginManifest(manifestProps);
+    const opaqueId = Symbol();
+    return new PluginWrapper({
+      path: 'some-plugin-path',
+      manifest,
+      opaqueId,
+      initializerContext: createPluginInitializerContext({
+        coreContext,
+        opaqueId,
+        manifest,
+        instanceInfo,
+        nodeInfo,
+      }),
+    });
+  }
+
+  test('reflects the manifest flag even before `init()` has run', () => {
+    const plugin = createPlugin({ enableLazyInitialize: true });
+    expect(plugin.enableLazyInitialize).toBe(true);
+  });
+
+  test('defaults to `false` when unset in the manifest', () => {
+    const plugin = createPlugin();
+    expect(plugin.enableLazyInitialize).toBe(false);
+  });
+});
+
 describe('`constructor` correctly sets non-external source', () => {
   function createPlugin(path: string) {
     const manifest = createPluginManifest();
@@ -596,6 +625,86 @@ test('`stop` calls `stop` defined by the plugin instance', async () => {
 
   await expect(plugin.stop()).resolves.toBeUndefined();
   expect(mockPluginInstance.stop).toHaveBeenCalledTimes(1);
+});
+
+describe('lazy plugins', () => {
+  const createLazyPlugin = () => {
+    const manifest = createPluginManifest({ enableLazyInitialize: true });
+    const opaqueId = Symbol();
+    return new PluginWrapper({
+      path: 'plugin-with-initializer-path',
+      manifest,
+      opaqueId,
+      initializerContext: createPluginInitializerContext({
+        coreContext,
+        opaqueId,
+        manifest,
+        instanceInfo,
+        nodeInfo,
+      }),
+    });
+  };
+
+  test('`runLazyInitialize` calls plugin.lazyInitialize with the start context and dependencies', async () => {
+    const plugin = createLazyPlugin();
+    const context = { any: 'thing' } as any;
+    const deps = { otherDep: 'value' };
+    const mockPluginInstance = {
+      setup: jest.fn(),
+      start: jest.fn(),
+      lazyInitialize: jest.fn().mockResolvedValue(undefined),
+    };
+    mockPluginInitializer.mockResolvedValue(mockPluginInstance);
+
+    await plugin.init();
+    await plugin.setup({} as any, {} as any);
+    await plugin.runLazyInitialize(context, deps);
+
+    expect(mockPluginInstance.lazyInitialize).toHaveBeenCalledWith(context, deps);
+  });
+
+  test('`runLazyInitialize` is a no-op when the plugin defines no lazyInitialize', async () => {
+    const plugin = createLazyPlugin();
+    mockPluginInitializer.mockResolvedValue({ setup: jest.fn(), start: jest.fn() });
+
+    await plugin.init();
+    await plugin.setup({} as any, {} as any);
+
+    await expect(plugin.runLazyInitialize({} as any, {})).resolves.toBeUndefined();
+  });
+
+  test('`stop` skips the instance stop and rejects `startDependencies` when start never ran', async () => {
+    const plugin = createLazyPlugin();
+    const mockPluginInstance = { setup: jest.fn(), start: jest.fn(), stop: jest.fn() };
+    mockPluginInitializer.mockResolvedValue(mockPluginInstance);
+
+    await plugin.init();
+    await plugin.setup({} as any, {} as any);
+    // Someone (a task runner, say) is waiting on `getStartServices()` of a plugin nobody triggered.
+    const waiter = plugin.startDependencies.catch((e) => e);
+
+    await expect(plugin.stop()).resolves.toBeUndefined();
+
+    expect(mockPluginInstance.stop).not.toHaveBeenCalled();
+    await expect(waiter).resolves.toThrow(/stopping without having started/);
+  });
+
+  test('`stop` calls the instance stop once the deferred start has run', async () => {
+    const plugin = createLazyPlugin();
+    const mockPluginInstance = {
+      setup: jest.fn(),
+      start: jest.fn().mockReturnValue('contract'),
+      stop: jest.fn(),
+    };
+    mockPluginInitializer.mockResolvedValue(mockPluginInstance);
+
+    await plugin.init();
+    await plugin.setup({} as any, {} as any);
+    await plugin.start({} as any, {});
+
+    await expect(plugin.stop()).resolves.toBeUndefined();
+    expect(mockPluginInstance.stop).toHaveBeenCalledTimes(1);
+  });
 });
 
 test('`stop` cleans up the plugin container', async () => {

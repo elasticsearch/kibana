@@ -16,7 +16,13 @@ import { loggingSystemMock } from '@kbn/core-logging-server-mocks';
 import type { NodeInfo } from '@kbn/core-node-server';
 import { nodeServiceMock } from '@kbn/core-node-server-mocks';
 import type { InstanceInfo } from './plugin_context';
-import { createPluginInitializerContext, createPluginPrebootSetupContext } from './plugin_context';
+import {
+  createPluginInitializerContext,
+  createPluginPrebootSetupContext,
+  createPluginSetupContext,
+  createPluginStartContext,
+} from './plugin_context';
+import { createRuntimePluginContractResolverMock } from './test_helpers';
 
 import { PluginType } from '@kbn/core-base-common';
 import type { PluginManifest } from '@kbn/core-plugins-server';
@@ -249,5 +255,123 @@ describe('createPluginPrebootSetupContext', () => {
       'some-reason',
       holdSetupPromise
     );
+  });
+});
+
+describe('createPluginSetupContext', () => {
+  let coreContext: CoreContext;
+  let opaqueId: symbol;
+  let nodeInfo: NodeInfo;
+
+  beforeEach(async () => {
+    opaqueId = Symbol();
+    coreContext = {
+      coreId: Symbol('core'),
+      env: Env.createDefault(REPO_ROOT, getEnvOptions()),
+      logger: loggingSystemMock.create(),
+      configService: configServiceMock.create(),
+    };
+    nodeInfo = nodeServiceMock.createInternalPrebootContract();
+  });
+
+  const createPlugin = (manifest: PluginManifest) =>
+    new PluginWrapper({
+      path: 'some-path',
+      manifest,
+      opaqueId,
+      initializerContext: createPluginInitializerContext({
+        coreContext,
+        opaqueId,
+        manifest,
+        instanceInfo: { uuid: 'instance-uuid', airgapped: false },
+        nodeInfo,
+      }),
+    });
+
+  const createRuntimeResolver = () => createRuntimePluginContractResolverMock();
+
+  describe('plugins.lazyInit', () => {
+    // The contract is always defined: the observation methods let an ordinary plugin watch a lazy
+    // dependency, so they cannot be reserved for lazy plugins.
+    it('is defined even when the plugin does not have enableLazyInitialize', () => {
+      const plugin = createPlugin(createPluginManifest({ enableLazyInitialize: false }));
+      const ctx = createPluginSetupContext({
+        deps: coreInternalLifecycleMock.createInternalSetup(),
+        plugin,
+        runtimeResolver: createRuntimeResolver(),
+      });
+
+      expect(ctx.plugins.lazyInit).toBeDefined();
+    });
+
+    it('scopes every method to the calling plugin and delegates to the runtime resolver', async () => {
+      const plugin = createPlugin(createPluginManifest({ enableLazyInitialize: true }));
+      const runtimeResolver = createRuntimeResolver();
+      runtimeResolver.trigger.mockResolvedValue(undefined);
+      runtimeResolver.getLazyInitStatus.mockReturnValue('available');
+      const status$ = {} as any;
+      runtimeResolver.lazyInitStatus$.mockReturnValue(status$);
+      const callback = jest.fn();
+
+      const ctx = createPluginSetupContext({
+        deps: coreInternalLifecycleMock.createInternalSetup(),
+        plugin,
+        runtimeResolver,
+      });
+
+      await ctx.plugins.lazyInit.trigger();
+      expect(runtimeResolver.trigger).toHaveBeenCalledWith('some-plugin-id');
+
+      expect(ctx.plugins.lazyInit.getStatus('some-runtime-dep')).toBe('available');
+      expect(runtimeResolver.getLazyInitStatus).toHaveBeenCalledWith(
+        'some-plugin-id',
+        'some-runtime-dep'
+      );
+
+      expect(ctx.plugins.lazyInit.status$('some-runtime-dep')).toBe(status$);
+      expect(runtimeResolver.lazyInitStatus$).toHaveBeenCalledWith(
+        'some-plugin-id',
+        'some-runtime-dep'
+      );
+
+      ctx.plugins.lazyInit.onLazyStartService('some-runtime-dep', callback);
+      expect(runtimeResolver.onLazyStartService).toHaveBeenCalledWith(
+        'some-plugin-id',
+        'some-runtime-dep',
+        callback
+      );
+    });
+
+    it('trigger rejects when the resolver rejects', async () => {
+      const plugin = createPlugin(createPluginManifest({ enableLazyInitialize: true }));
+      const runtimeResolver = createRuntimeResolver();
+      runtimeResolver.trigger.mockRejectedValue(new Error('init failed'));
+
+      const ctx = createPluginSetupContext({
+        deps: coreInternalLifecycleMock.createInternalSetup(),
+        plugin,
+        runtimeResolver,
+      });
+
+      await expect(ctx.plugins.lazyInit.trigger()).rejects.toThrow('init failed');
+    });
+
+    it('is exposed identically on the start context', async () => {
+      const plugin = createPlugin(createPluginManifest({ enableLazyInitialize: true }));
+      const runtimeResolver = createRuntimeResolver();
+      runtimeResolver.getLazyInitStatus.mockReturnValue('idle');
+
+      const ctx = createPluginStartContext({
+        deps: coreInternalLifecycleMock.createInternalStart(),
+        plugin,
+        runtimeResolver,
+      });
+
+      expect(ctx.plugins.lazyInit.getStatus('some-plugin-id')).toBe('idle');
+      expect(runtimeResolver.getLazyInitStatus).toHaveBeenCalledWith(
+        'some-plugin-id',
+        'some-plugin-id'
+      );
+    });
   });
 });

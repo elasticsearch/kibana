@@ -27,6 +27,7 @@ dependsOn:
   - '@kbn/core-elasticsearch-server-internal'
   - '@kbn/core-saved-objects-base-server-internal'
   - '@kbn/core-lifecycle-server'
+  - '@kbn/core-deferred-init-common'
 tags:
   - shared-server
   - package

@@ -7,7 +7,8 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
-import type { CoreSetup, Logger } from '@kbn/core/server';
+import type { CoreSetup } from '@kbn/core-lifecycle-server';
+import type { Logger } from '@kbn/logging';
 import type { LockId } from './lock_manager_client';
 import { withLock, getLock } from './lock_manager_client';
 

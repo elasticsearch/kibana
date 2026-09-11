@@ -18,7 +18,8 @@ project:
   sourceRoot: src/platform/packages/shared/kbn-lock-manager
 dependsOn:
   - '@kbn/logging'
-  - '@kbn/core'
+  - '@kbn/core-elasticsearch-server'
+  - '@kbn/core-lifecycle-server'
   - '@kbn/core-elasticsearch-client-server-mocks'
   - '@kbn/core-logging-server-mocks'
 tags:

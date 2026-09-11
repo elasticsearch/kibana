@@ -12,6 +12,7 @@ import type { CoreContext } from '@kbn/core-base-browser-internal';
 import type { DiscoveredPlugin, PluginOpaqueId } from '@kbn/core-base-common';
 import type { CoreSetup, CoreStart } from '@kbn/core-lifecycle-browser';
 import type { PluginInitializerContext } from '@kbn/core-plugins-browser';
+import { mountWithInitializingGate } from '@kbn/core-deferred-init-browser-internal';
 import type { PluginWrapper } from './plugin';
 import type { PluginsServiceSetupDeps, PluginsServiceStartDeps } from './plugins_service';
 import type { IRuntimePluginContractResolver } from './plugin_contract_resolver';
@@ -77,7 +78,24 @@ export function createPluginSetupContext<
   return {
     analytics: deps.analytics,
     application: {
-      register: (app) => deps.application.register(plugin.opaqueId, app),
+      register: (app) => {
+        if (!plugin.discoveredPlugin.enableLazyInitialize) {
+          deps.application.register(plugin.opaqueId, app);
+          return;
+        }
+        deps.application.register(plugin.opaqueId, {
+          ...app,
+          mount: mountWithInitializingGate({
+            pluginId: plugin.name,
+            mount: app.mount,
+            status$: deps.deferredInit.getStatus$(plugin.name),
+            // A full reload guarantees a fresh attempt is observed (init state lives server-side
+            // and is polled from scratch), rather than relying on the in-place `refresh()` nudge.
+            onRetry: () => window.location.reload(),
+            getStartServices: () => plugin.startDependencies,
+          }),
+        });
+      },
       registerAppUpdater: (statusUpdater$) => deps.application.registerAppUpdater(statusUpdater$),
     },
     chrome: deps.chrome,
@@ -152,6 +170,7 @@ export function createPluginStartContext<
       currentLocation$: deps.application.currentLocation$,
     },
     customBranding: deps.customBranding,
+    deferredInit: deps.deferredInit,
     docLinks: deps.docLinks,
     executionContext: deps.executionContext,
     featureFlags: deps.featureFlags,

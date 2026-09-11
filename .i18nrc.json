@@ -1,6 +1,7 @@
 {
   "paths": {
     "advancedSettings": "src/platform/plugins/private/advanced_settings",
+    "deferredInitExample": "examples/deferred_init_example",
     "aiAssistantManagementSelection": "src/platform/plugins/shared/ai_assistant_management/selection",
     "alerts": "packages/kbn-alerts/src",
     "alertsUIShared": "src/platform/packages/shared/kbn-alerts-ui-shared/src",

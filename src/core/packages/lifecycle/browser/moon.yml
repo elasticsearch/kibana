@@ -31,6 +31,7 @@ dependsOn:
   - '@kbn/core-overlays-browser'
   - '@kbn/core-chrome-browser'
   - '@kbn/core-custom-branding-browser'
+  - '@kbn/core-deferred-init-browser'
   - '@kbn/core-plugins-contracts-browser'
   - '@kbn/core-security-browser'
   - '@kbn/core-user-profile-browser'

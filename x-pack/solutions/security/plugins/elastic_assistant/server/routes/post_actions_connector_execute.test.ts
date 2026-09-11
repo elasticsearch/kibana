@@ -57,6 +57,7 @@ const existingConversation = getConversationResponseMock();
 const reportEvent = jest.fn();
 const appendConversationMessages = jest.fn();
 const mockContext = {
+  loadPluginContract: jest.fn(),
   resolve: jest.fn().mockResolvedValue({
     elasticAssistant: {
       actions: {
@@ -225,6 +226,7 @@ describe('postActionsConnectorExecuteRoute', () => {
   test('returns 403 when updating a conversation that user does not own', async () => {
     const resolvedContext = await mockContext.resolve();
     const mockContextBadUser = {
+      loadPluginContract: jest.fn(),
       resolve: jest.fn().mockResolvedValue({
         ...resolvedContext,
         elasticAssistant: {

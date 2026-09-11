@@ -19,6 +19,7 @@ project:
 dependsOn:
   - '@kbn/core-lifecycle-browser'
   - '@kbn/core-application-browser-internal'
+  - '@kbn/core-deferred-init-browser'
   - '@kbn/core-injected-metadata-browser-internal'
   - '@kbn/core-http-browser-internal'
   - '@kbn/core-security-browser-internal'

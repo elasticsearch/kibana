@@ -9,6 +9,9 @@ examples/content_management_examples @elastic/appex-sharedux
 examples/controls_example @elastic/kibana-presentation
 examples/data_streams_example @elastic/kibana-core
 examples/data_view_field_editor_example @elastic/kibana-data-discovery
+examples/deferred_init_example @elastic/kibana-core
+examples/deferred_init_example_consumer @elastic/kibana-core
+examples/deferred_init_example_dependency @elastic/kibana-core
 examples/dependency_injection @elastic/kibana-core
 examples/developer_examples @elastic/appex-sharedux
 examples/discover_customization_examples @elastic/kibana-data-discovery
@@ -279,6 +282,10 @@ src/core/packages/plugins/browser-internal @elastic/kibana-core
 src/core/packages/plugins/browser-mocks @elastic/kibana-core
 src/core/packages/plugins/contracts-browser @elastic/kibana-core
 src/core/packages/plugins/contracts-server @elastic/kibana-core
+src/core/packages/plugins/deferred-init-browser @elastic/kibana-core
+src/core/packages/plugins/deferred-init-browser-internal @elastic/kibana-core
+src/core/packages/plugins/deferred-init-browser-mocks @elastic/kibana-core
+src/core/packages/plugins/deferred-init-common @elastic/kibana-core
 src/core/packages/plugins/server @elastic/kibana-core
 src/core/packages/plugins/server-internal @elastic/kibana-core
 src/core/packages/plugins/server-mocks @elastic/kibana-core

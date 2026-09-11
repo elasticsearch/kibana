@@ -1010,6 +1010,15 @@ importers:
       '@kbn/core-data-streams-server-mocks':
         specifier: workspace:*
         version: link:src/core/packages/data-streams/server-mocks
+      '@kbn/core-deferred-init-browser':
+        specifier: workspace:*
+        version: link:src/core/packages/plugins/deferred-init-browser
+      '@kbn/core-deferred-init-browser-internal':
+        specifier: workspace:*
+        version: link:src/core/packages/plugins/deferred-init-browser-internal
+      '@kbn/core-deferred-init-common':
+        specifier: workspace:*
+        version: link:src/core/packages/plugins/deferred-init-common
       '@kbn/core-deprecations-browser':
         specifier: workspace:*
         version: link:src/core/packages/deprecations/browser
@@ -1703,6 +1712,15 @@ importers:
       '@kbn/default-tracer':
         specifier: workspace:*
         version: link:src/platform/packages/shared/kbn-default-tracer
+      '@kbn/deferred-init-example-consumer-plugin':
+        specifier: workspace:*
+        version: link:examples/deferred_init_example_consumer
+      '@kbn/deferred-init-example-dependency-plugin':
+        specifier: workspace:*
+        version: link:examples/deferred_init_example_dependency
+      '@kbn/deferred-init-example-plugin':
+        specifier: workspace:*
+        version: link:examples/deferred_init_example
       '@kbn/delete-managed-asset-callout':
         specifier: workspace:*
         version: link:src/platform/packages/shared/kbn-management/delete_managed_assets_callout
@@ -4959,6 +4977,9 @@ importers:
       '@kbn/core-custom-branding-server-mocks':
         specifier: workspace:*
         version: link:src/core/packages/custom-branding/server-mocks
+      '@kbn/core-deferred-init-browser-mocks':
+        specifier: workspace:*
+        version: link:src/core/packages/plugins/deferred-init-browser-mocks
       '@kbn/core-deprecations-browser-mocks':
         specifier: workspace:*
         version: link:src/core/packages/deprecations/browser-mocks
@@ -6597,6 +6618,12 @@ importers:
 
   examples/data_view_field_editor_example: {}
 
+  examples/deferred_init_example: {}
+
+  examples/deferred_init_example_consumer: {}
+
+  examples/deferred_init_example_dependency: {}
+
   examples/dependency_injection: {}
 
   examples/developer_examples: {}
@@ -7136,6 +7163,14 @@ importers:
   src/core/packages/plugins/contracts-browser: {}
 
   src/core/packages/plugins/contracts-server: {}
+
+  src/core/packages/plugins/deferred-init-browser: {}
+
+  src/core/packages/plugins/deferred-init-browser-internal: {}
+
+  src/core/packages/plugins/deferred-init-browser-mocks: {}
+
+  src/core/packages/plugins/deferred-init-common: {}
 
   src/core/packages/plugins/server: {}
 

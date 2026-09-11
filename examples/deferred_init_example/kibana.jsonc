@@ -1,0 +1,15 @@
+{
+  "type": "plugin",
+  "id": "@kbn/deferred-init-example-plugin",
+  "owner": ["@elastic/kibana-core"],
+  "group": "platform",
+  "visibility": "private",
+  "plugin": {
+    "id": "deferredInitExample",
+    "browser": true,
+    "server": true,
+    "requiredPlugins": ["deferredInitExampleDependency"],
+    "optionalPlugins": [],
+    "enableLazyInitialize": true
+  }
+}

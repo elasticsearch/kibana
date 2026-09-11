@@ -275,6 +275,8 @@ export type { ToastsApi } from '@kbn/core-notifications-browser-internal';
 
 export type { CustomBrandingStart, CustomBrandingSetup } from '@kbn/core-custom-branding-browser';
 
+export type { DeferredInitStart } from '@kbn/core-deferred-init-browser';
+
 export type { ThemeServiceSetup, ThemeServiceStart, CoreTheme } from '@kbn/core-theme-browser';
 
 export type {

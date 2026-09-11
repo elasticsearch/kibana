@@ -1,0 +1,8 @@
+{
+  "type": "shared-browser",
+  "id": "@kbn/core-deferred-init-browser-mocks",
+  "owner": "@elastic/kibana-core",
+  "group": "platform",
+  "visibility": "shared",
+  "devOnly": true
+}

@@ -18,6 +18,8 @@
     "@kbn/core-lifecycle-browser",
     "@kbn/core-lifecycle-browser-internal",
     "@kbn/core-plugins-browser",
+    "@kbn/core-deferred-init-browser-internal",
+    "@kbn/core-application-browser",
     "@kbn/logging-mocks",
     "@kbn/core-base-browser-mocks",
     "@kbn/core-analytics-browser-mocks",

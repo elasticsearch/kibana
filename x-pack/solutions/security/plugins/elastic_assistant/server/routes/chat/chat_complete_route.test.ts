@@ -64,6 +64,7 @@ const existingConversation = getConversationResponseMock();
 const reportEvent = jest.fn();
 const appendConversationMessages = jest.fn();
 const mockContext = {
+  loadPluginContract: jest.fn(),
   resolve: jest.fn().mockResolvedValue({
     elasticAssistant: {
       actions: {

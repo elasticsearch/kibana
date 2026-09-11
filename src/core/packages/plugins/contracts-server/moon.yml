@@ -18,6 +18,7 @@ project:
   sourceRoot: src/core/packages/plugins/contracts-server
 dependsOn:
   - '@kbn/core-base-common'
+  - '@kbn/core-deferred-init-common'
 tags:
   - shared-server
   - package

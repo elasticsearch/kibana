@@ -22,6 +22,7 @@ dependsOn:
   - '@kbn/config-schema'
   - '@kbn/zod'
   - '@kbn/es-errors'
+  - '@kbn/core-deferred-init-common'
   - '@kbn/core-http-server'
   - '@kbn/core-spaces-common'
   - '@kbn/hapi-mocks'

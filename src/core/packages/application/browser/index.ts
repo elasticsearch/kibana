@@ -34,3 +34,9 @@ export type {
   NavigateToUrlOptions,
 } from './src/contracts';
 export type { ScopedHistory } from './src/scoped_history';
+export { AppInitializingGate } from './src/app_initializing_gate';
+export type {
+  AppInitializingGateProps,
+  AppInitializingState,
+  AppInitializingError,
+} from './src/app_initializing_gate';

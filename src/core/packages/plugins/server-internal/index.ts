@@ -7,7 +7,7 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
-export { PluginsService, PluginWrapper, config } from './src';
+export { PluginsService, PluginWrapper, config, DeferredInitEngine } from './src';
 export type {
   InternalPluginsServiceSetup,
   InternalPluginsServiceStart,

@@ -81,6 +81,21 @@ describe('ContextContainer', () => {
       );
     });
 
+    it('throws error if called with `loadPluginContract` as a context name', async () => {
+      const contextContainer = new ContextContainer(plugins, coreId);
+
+      expect(() =>
+        contextContainer.registerContext<TestContext<{ ctxFromA: string; core: any }>, 'ctxFromA'>(
+          coreId,
+          // @ts-expect-error protected with typing too
+          'loadPluginContract',
+          () => 'aString'
+        )
+      ).toThrowErrorMatchingInlineSnapshot(
+        `"Cannot register a provider for loadPluginContract, it is a reserved keyword."`
+      );
+    });
+
     it('throws error if called with an unknown symbol', async () => {
       const contextContainer = new ContextContainer(plugins, coreId);
       await expect(() =>
@@ -123,7 +138,8 @@ describe('ContextContainer', () => {
     const resolveAllContexts = async (ctx: Record<string, any>): Promise<unknown> => {
       const resolved = {} as Record<string, any>;
       for (const key of Object.getOwnPropertyNames(ctx)) {
-        if (key === 'resolve') {
+        // Context-level utilities that every built context carries, not registered context parts.
+        if (key === 'resolve' || key === 'loadPluginContract') {
           continue;
         }
         resolved[key] = await ctx[key];
@@ -593,6 +609,51 @@ describe('ContextContainer', () => {
     });
   });
 
+  describe('context.loadPluginContract', () => {
+    const buildContextFor = async (source: symbol, loader?: jest.Mock) => {
+      const contextContainer = new ContextContainer(plugins, coreId, loader);
+      const rawHandler = jest.fn((_context: unknown) => 'handler' as any);
+      const handler = contextContainer.createHandler(source, rawHandler);
+      await handler(createKibanaRequest(), createKibanaResponseFactory());
+      return rawHandler.mock.calls[0][0] as {
+        loadPluginContract: <T>(name: string) => Promise<T>;
+      };
+    };
+
+    it('scopes the call to the plugin that registered the route', async () => {
+      const loader = jest.fn().mockResolvedValue('theContract');
+      const context = await buildContextFor(pluginA, loader);
+
+      await expect(context.loadPluginContract('pluginB')).resolves.toBe('theContract');
+      // `pluginA` -- not the requested dependency -- is what lets the loader enforce that the
+      // dependency is declared in the *caller's* manifest.
+      expect(loader).toHaveBeenCalledWith(pluginA, 'pluginB');
+    });
+
+    it('uses the source of the handler, not of the context provider', async () => {
+      const loader = jest.fn().mockResolvedValue(undefined);
+      const context = await buildContextFor(pluginB, loader);
+
+      await context.loadPluginContract('pluginA');
+      expect(loader).toHaveBeenCalledWith(pluginB, 'pluginA');
+    });
+
+    it('propagates a rejection from the loader, e.g. a failed deferred init', async () => {
+      const failure = new Error('deferred init failed');
+      const context = await buildContextFor(pluginA, jest.fn().mockRejectedValue(failure));
+
+      await expect(context.loadPluginContract('pluginB')).rejects.toBe(failure);
+    });
+
+    it('rejects with a clear message when no loader was supplied, as in preboot', async () => {
+      const context = await buildContextFor(pluginA);
+
+      await expect(context.loadPluginContract('pluginB')).rejects.toThrowError(
+        /only available to routes registered by a standard plugin/
+      );
+    });
+  });
+
   describe('createHandler', () => {
     it('throws error if called with an unknown symbol', async () => {
       const contextContainer = new ContextContainer(plugins, coreId);
@@ -623,7 +684,7 @@ describe('ContextContainer', () => {
       const response = createKibanaResponseFactory();
       await handler1(request, response);
       expect(rawHandler1).toHaveBeenCalledWith(
-        { resolve: expect.any(Function) },
+        { resolve: expect.any(Function), loadPluginContract: expect.any(Function) },
         request,
         response
       );
