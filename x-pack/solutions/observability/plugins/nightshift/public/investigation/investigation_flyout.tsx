@@ -46,6 +46,7 @@ import type {
   SignificantEventInvestigation,
 } from '@kbn/significant-events-schema';
 import { AiButton } from '@kbn/shared-ux-ai-components';
+import { InvestigationCanvas } from '@kbn/investigation-canvas';
 import { useKibana } from '../hooks/use_kibana';
 import { buildInvestigationConversationChatOptions } from '../chat/open_significant_event_in_chat';
 import {
@@ -650,6 +651,14 @@ export function InvestigationFlyout({
             </EuiText>
           )}
           <EuiSpacer size="l" />
+          {state?.canvas && (
+            <>
+              <FlyoutSectionTitle>Canvas</FlyoutSectionTitle>
+              <EuiSpacer size="s" />
+              <InvestigationCanvas canvas={state.canvas} />
+              <EuiSpacer size="l" />
+            </>
+          )}
           <EuiTabs data-test-subj="nightshiftInvestigationFlyoutTabs">
             {tabs.map((tab) => (
               <EuiTab

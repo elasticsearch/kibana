@@ -22,6 +22,7 @@
     "@kbn/ebt-tools",
     "@kbn/i18n",
     "@kbn/i18n-react",
+    "@kbn/investigation-canvas",
     "@kbn/investigation-output",
     "@kbn/kibana-react-plugin",
     "@kbn/lens-embeddable-utils",

@@ -156,6 +156,7 @@ const toListInvestigationItem = (record: ListInvestigationRecord): ListInvestiga
   }),
   summary: record.summary,
   impact: record.impact,
+  canvas: record.canvas,
 });
 
 const toInvestigationResponse = (record: InvestigationRecord): GetInvestigationResponse => {

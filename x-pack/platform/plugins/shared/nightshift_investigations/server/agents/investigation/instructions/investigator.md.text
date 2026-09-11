@@ -664,5 +664,74 @@ been reporting via `investigation_progress_report`:
   absolute time range preferred — description is a short label). Seed from alert grouping or sig
   event causal features; finalize after hypotheses are settled. Keep entity count to 1–5; prefer
   services over granular infrastructure. Omit the field entirely only when no signals exist.
+- **canvas** (optional):
+
+  A static JSX string rendered as a visual summary of investigation findings via react-jsx-parser.
+
+  When to populate: when you found concrete numerical findings worth visualizing (error counts,
+  latency percentiles, request rates, service error distributions). Omit for purely narrative
+  conclusions.
+
+  Hard constraints:
+  - Single root JSX element (wrap everything in `<div>` if needed)
+  - NO imports, exports, function declarations, class declarations
+  - NO JavaScript control flow: no if/else, no for/while, no .map(), no .filter()
+  - NO event handlers: no onClick, onChange, etc.
+  - All data must be inline literals — arrays of objects with string/number values
+  - Do NOT reference any variable not listed under Bindings
+
+  Bindings (use as bare names, no import needed):
+  - `baseTheme` — pass to `<Settings baseTheme={baseTheme} />`
+  - `Position` — `Position.Bottom`, `Position.Left`, `Position.Right`, `Position.Top`
+  - `ScaleType` — `ScaleType.Ordinal`, `ScaleType.Linear`, `ScaleType.Time`
+  - `PartitionLayout` — `PartitionLayout.Sunburst`, `PartitionLayout.Mosaic`
+
+  Available @elastic/charts components:
+  - `<Chart>` — root wrapper for ALL chart types; always required
+  - `<Settings baseTheme={baseTheme} />` — ALWAYS include as first child of Chart
+  - `<Axis id="x" position={Position.Bottom} title="Label" />`
+  - `<BarSeries id="s" xAccessor="service" yAccessors={['count']} xScaleType={ScaleType.Ordinal} yScaleType={ScaleType.Linear} data={[{service: 'cart', count: 42}]} />`
+  - `<LineSeries id="s" xAccessor="ts" yAccessors={['y']} xScaleType={ScaleType.Time} yScaleType={ScaleType.Linear} data={[{ts: 1700000000000, y: 99.2}]} />`
+  - `<AreaSeries` — same props as LineSeries `/>`
+  - `<Partition id="p" valueAccessor="v" layers={[{groupByRollup: 'label'}]} data={[{label: 'cart', v: 42}]} />`
+  - `<Metric id="m" data={[[{value: 99.2, title: 'P99 Latency'}]]} />`
+
+  Available custom EUI-backed components:
+  - `<Section title="Header">children</Section>` — section with title heading
+  - `<StatTile value="99.2ms" label="P99 Latency" color="danger" />` — KPI stat (color: primary|success|warning|danger)
+  - `<DataTable columns={[{field:'service',name:'Service'},{field:'errors',name:'Errors'}]} rows={[{service:'cart',errors:14}]} />`
+  - `<KeyFindings items={[{title:'Memory spike', description:'RSS increased 3x in 5 minutes', severity:'high'}]} />`
+  - `<Badge label="critical" color="danger" />`
+  - `<CodeBlock language="json">content here</CodeBlock>`
+  - `<Timeline items={[{timestamp:'14:23:01', label:'Deploy v2.3.1', description:'Rolled to us-east-1'}]} />`
+
+  Example:
+  ```jsx
+  <div>
+    <Section title="Error Distribution by Service">
+      <Chart>
+        <Settings baseTheme={baseTheme} />
+        <Axis id="x" position={Position.Bottom} />
+        <Axis id="y" position={Position.Left} title="Error Count" />
+        <BarSeries
+          id="errors"
+          xAccessor="service"
+          yAccessors={['count']}
+          xScaleType={ScaleType.Ordinal}
+          yScaleType={ScaleType.Linear}
+          data={[
+            {service: 'cart', count: 142},
+            {service: 'checkout', count: 67},
+            {service: 'payment', count: 12}
+          ]}
+        />
+      </Chart>
+    </Section>
+    <Section title="Key Metrics">
+      <StatTile value="142" label="Peak Error Rate (req/min)" color="danger" />
+      <StatTile value="99.2ms" label="P99 Latency" color="warning" />
+    </Section>
+  </div>
+  ```
 
 </output_format>

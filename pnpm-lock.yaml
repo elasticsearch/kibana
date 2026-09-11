@@ -2249,6 +2249,9 @@ importers:
       '@kbn/interpreter':
         specifier: workspace:*
         version: link:src/platform/packages/shared/kbn-interpreter
+      '@kbn/investigation-canvas':
+        specifier: workspace:*
+        version: link:x-pack/platform/packages/shared/kbn-investigation-canvas
       '@kbn/investigation-output':
         specifier: workspace:*
         version: link:x-pack/platform/packages/shared/kbn-investigation-output
@@ -4499,6 +4502,9 @@ importers:
       react-intl:
         specifier: 6.6.6
         version: 6.6.6(react@18.2.0)(typescript@6.0.3)
+      react-jsx-parser:
+        specifier: ^2.4.1
+        version: 2.4.1(react-dom@18.2.0(react@18.2.0))(react@18.2.0)
       react-markdown:
         specifier: 10.1.0
         version: 10.1.0(@types/react@18.2.79)(react@18.2.0)(supports-color@10.2.2)
@@ -8786,6 +8792,8 @@ importers:
   x-pack/platform/packages/shared/kbn-ingest-pipeline-json-editor: {}
 
   x-pack/platform/packages/shared/kbn-ink: {}
+
+  x-pack/platform/packages/shared/kbn-investigation-canvas: {}
 
   x-pack/platform/packages/shared/kbn-investigation-output: {}
 
@@ -22940,6 +22948,13 @@ packages:
 
   react-is@18.3.1:
     resolution: {integrity: sha512-/LLMVyas0ljjAtoYiPqYiL8VWXzUUdThrmU5+n20DZv+a+ClRoevUzw5JxU+Ieh5/c87ytoTBV9G1FiKfNJdmg==}
+
+  react-jsx-parser@2.4.1:
+    resolution: {integrity: sha512-gE25DiHseuKmSbb5O1K1IkyQ/bwth3zl4z3EdW8XMhwrb2agUpuh8GvqHFvGwh/wdZjDDuadGrSR2lEgjcOvqQ==}
+    engines: {bun: ^1.1.27}
+    peerDependencies:
+      react: '>=18'
+      react-dom: '>=18'
 
   react-lifecycles-compat@3.0.4:
     resolution: {integrity: sha512-fBASbA6LnOU9dOU2eW7aQ8xmYBSXUIWr+UmF9b1efZBazGNO+rcXT/icdKnYm2pTwcRylVUYwW7H1PHfLekVzA==}
@@ -42002,6 +42017,16 @@ snapshots:
   react-is@18.1.0: {}
 
   react-is@18.3.1: {}
+
+  react-jsx-parser@2.4.1(react-dom@18.2.0(react@18.2.0))(react@18.2.0):
+    dependencies:
+      acorn: 8.18.0
+      acorn-jsx: 5.3.2(acorn@8.18.0)
+      react: 18.2.0
+      react-dom: 18.2.0(react@18.2.0)
+    optionalDependencies:
+      '@types/react': 18.2.79
+      '@types/react-dom': 18.2.25
 
   react-lifecycles-compat@3.0.4: {}
 

@@ -43,6 +43,7 @@ const updateInvestigationBodySchema = z.object({
   trigger_feedback: orAbsent(z.array(triggerFeedbackSchema).max(MAX_TRIGGER_FEEDBACK)),
   conversation_id: orAbsent(z.string().max(MAX_KEYWORD_LENGTH)),
   impact: orAbsent(investigationImpactSchema),
+  canvas: orAbsent(z.string().max(100_000)),
 });
 
 export const updateInvestigationRoute = createNightshiftInvestigationsServerRoute({

@@ -1291,6 +1291,7 @@ packages:
   - 'x-pack/platform/packages/shared/kbn-inference-tracing-config'
   - 'x-pack/platform/packages/shared/kbn-ingest-pipeline-json-editor'
   - 'x-pack/platform/packages/shared/kbn-ink'
+  - 'x-pack/platform/packages/shared/kbn-investigation-canvas'
   - 'x-pack/platform/packages/shared/kbn-investigation-output'
   - 'x-pack/platform/packages/shared/kbn-key-value-metadata-table'
   - 'x-pack/platform/packages/shared/kbn-kibana-api-cli'

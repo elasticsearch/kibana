@@ -1,0 +1,7 @@
+{
+  "type": "shared-browser",
+  "id": "@kbn/investigation-canvas",
+  "owner": ["@elastic/nightshift-context-and-research-team"],
+  "group": "observability",
+  "visibility": "shared"
+}

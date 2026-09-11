@@ -725,6 +725,13 @@ steps:
                     - name
             required:
               - entities
+          canvas:
+            type: string
+            description: >
+              Optional static JSX string for visual rendering in the investigation canvas.
+              Generated via react-jsx-parser. Use for visualizing numerical findings such as
+              error counts, latency, or service comparisons. Omit for purely narrative conclusions.
+            maxLength: 100000
         required:
           - summary
           - hypotheses
@@ -756,6 +763,7 @@ steps:
         blind_spots: ${{ steps.investigate.output.structured_output.blind_spots }}
         trigger_feedback: ${{ steps.investigate.output.structured_output.trigger_feedback }}
         impact: ${{ steps.investigate.output.structured_output.impact }}
+        canvas: "${{ steps.investigate.output.structured_output.canvas }}"
         conversation_id: "${{ steps.investigate.output.conversation_id }}"
     on-failure:
       retry:

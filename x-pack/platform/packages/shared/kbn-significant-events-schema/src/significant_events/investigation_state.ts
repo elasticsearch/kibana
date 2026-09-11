@@ -307,5 +307,7 @@ export const investigationStateSchema = z.object({
    * features; finalized after hypotheses settle. At most 10 entries; service-level preferred.
    */
   impact: investigationImpactSchema.optional(),
+  /** Optional static JSX string for visual rendering in the investigation canvas. */
+  canvas: z.string().max(100_000).optional(),
 });
 export type InvestigationState = z.infer<typeof investigationStateSchema>;

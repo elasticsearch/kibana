@@ -115,6 +115,7 @@ export interface InvestigationStructuredOutput {
   blind_spots?: InvestigationBlindSpot[];
   trigger_feedback?: TriggerFeedback[];
   impact?: InvestigationImpact;
+  canvas?: string;
 }
 
 /** Body of PATCH /internal/nightshift/investigations/{id}. */
