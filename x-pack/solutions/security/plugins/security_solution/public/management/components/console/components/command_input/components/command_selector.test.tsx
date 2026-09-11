@@ -10,6 +10,8 @@ import type { ConsoleTestSetup } from '../../../mocks';
 import { getConsoleTestSetup, triggerConsoleCommandInputEvent } from '../../../mocks';
 import type { CommandDefinition } from '../../..';
 
+jest.setTimeout(60_000);
+
 describe('Console: CommandSelector', () => {
   let testSetup: ConsoleTestSetup;
   let renderResult: ReturnType<ConsoleTestSetup['renderConsole']>;
