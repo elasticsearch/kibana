@@ -15,21 +15,69 @@ const MAX_CONTEXT_JSON_BYTES = 30 * 1024;
 // Triage/summary text is always generated with a small, low-cost OpenRouter model.
 const TRIAGE_OPENROUTER_CONNECTOR_ID = `openrouter-${slugifyId(TRIAGE_OPENROUTER_MODEL)}`;
 
+// Output budget for the per-suite structured triage.
+const TRIAGE_MAX_TOKENS = 4000;
+const TRIAGE_MAX_ERROR_CHARS = 200;
+
 const TRIAGE_SYSTEM_PROMPT =
   'You are an SRE assistant triaging failed LLM evaluation CI runs. Be concise and factual, and base every statement on the provided context.';
 
+const TRIAGE_TOOL_NAME = 'report_triage';
+
+const TRIAGE_TOOL = {
+  type: 'function',
+  function: {
+    name: TRIAGE_TOOL_NAME,
+    description:
+      'Report the triage of a failed LLM evaluation CI suite as a list of distinct error groups.',
+    parameters: {
+      type: 'object',
+      properties: {
+        groups: {
+          type: 'array',
+          description: 'One entry per distinct error. Empty when the excerpts show no clear error.',
+          items: {
+            type: 'object',
+            properties: {
+              error: {
+                type: 'string',
+                description: `Most relevant error line, verbatim from the excerpts, one line, at most ${TRIAGE_MAX_ERROR_CHARS} characters.`,
+              },
+              location: {
+                type: 'string',
+                description: 'file:line, test, or scenario if shown in the excerpts; else empty.',
+              },
+              models: {
+                type: 'array',
+                items: { type: 'string' },
+                description: 'Ids of every failing model that hit this error.',
+              },
+              rootCause: {
+                type: 'string',
+                description: 'One short sentence with the likely cause plus one short action.',
+              },
+            },
+            required: ['error', 'location', 'models', 'rootCause'],
+          },
+        },
+      },
+      required: ['groups'],
+    },
+  },
+};
+
+const TRIAGE_TOOL_CHOICE = { type: 'function', function: { name: TRIAGE_TOOL_NAME } };
+
 // Static output contract for the per-suite structured triage prompt.
-const TRIAGE_OUTPUT_INSTRUCTIONS = `Return ONLY a JSON object of this shape (no prose, no markdown, no code fences):
-{"groups":[{"error":"<most relevant error line, verbatim from the excerpts, one line>","location":"<file:line / test or scenario if shown, else empty>","models":["<affected model id>"],"rootCause":"<short cause + one short action>"}]}
+const TRIAGE_OUTPUT_INSTRUCTIONS = `Report the result by calling the \`${TRIAGE_TOOL_NAME}\` tool with {"groups":[{"error":"<most relevant error line, verbatim from the excerpts, one line>","location":"<file:line / test or scenario if shown, else empty>","models":["<affected model id>"],"rootCause":"<short cause + one short action>"}]}. Do not answer in prose.
 
 Rules:
 - One group per distinct error. Merge the same failure (same message/location) into one group and list all its affected models.
-- Quote "error" verbatim from the excerpts; do not invent errors, file names, line numbers, or causes.
+- Quote "error" verbatim from the excerpts, trimmed to a single line of at most ${TRIAGE_MAX_ERROR_CHARS} characters; do not invent errors, file names, line numbers, or causes.
 - Set "location" only if the excerpts show it; otherwise use an empty string.
 - Keep "rootCause" to one short sentence plus one short action.
 - Never reproduce secrets: if a line contains an API key, token, password, or other credential, replace that value with [REDACTED].
-- If the excerpts show no clear error, return {"groups": []}.
-- Output valid JSON only: no prose before or after, no comments, no trailing commas, no code fences.`;
+- If the excerpts show no clear error, call the tool with {"groups": []}.`;
 
 // Static output contract for the weekly cross-suite rollup prompt.
 const WEEKLY_ROLLUP_OUTPUT_INSTRUCTIONS = `Output exactly these bullets, in this order, and nothing else:
@@ -233,7 +281,7 @@ function buildWeeklyRollupUserPrompt(suites, meta = {}) {
   return lines.join('\n');
 }
 
-function buildOpenrouterChatRequest(connector, messages) {
+function buildOpenrouterChatRequest(connector, messages, options = {}) {
   const config = connector.config && typeof connector.config === 'object' ? connector.config : {};
   const secrets =
     connector.secrets && typeof connector.secrets === 'object' ? connector.secrets : {};
@@ -246,6 +294,8 @@ function buildOpenrouterChatRequest(connector, messages) {
     throw new Error('OpenRouter connector is missing apiUrl, defaultModel, or apiKey');
   }
 
+  const { maxTokens = 800, tools, toolChoice } = options;
+
   return {
     url: apiUrl,
     headers: {
@@ -256,7 +306,8 @@ function buildOpenrouterChatRequest(connector, messages) {
       model: defaultModel,
       messages,
       temperature: 0.2,
-      max_tokens: 800,
+      max_tokens: maxTokens,
+      ...(tools ? { tools, tool_choice: toolChoice } : {}),
     },
   };
 }
@@ -266,9 +317,7 @@ function parseOpenrouterChatContent(responseJson) {
     throw new Error('OpenRouter response was not JSON');
   }
 
-  const choices = /** @type {{ choices?: Array<{ message?: { content?: string } }> }} */ (
-    responseJson
-  ).choices;
+  const choices = responseJson.choices;
 
   const content = choices?.[0]?.message?.content;
   if (typeof content !== 'string' || !content.trim()) {
@@ -279,9 +328,9 @@ function parseOpenrouterChatContent(responseJson) {
 }
 
 /**
- * POST a built OpenRouter chat request and return the message content.
+ * POST a built OpenRouter chat request and return the parsed response body.
  */
-async function postOpenrouterChatRequest({ url, headers, body }) {
+async function postOpenrouterChat({ url, headers, body }) {
   const response = await fetch(url, {
     method: 'POST',
     headers,
@@ -302,14 +351,18 @@ async function postOpenrouterChatRequest({ url, headers, body }) {
     throw new Error(`Inference request failed (${response.status}): ${detail}`);
   }
 
-  let json = null;
   try {
-    json = text ? JSON.parse(text) : null;
+    return text ? JSON.parse(text) : null;
   } catch {
     throw new Error('Inference response was not JSON');
   }
+}
 
-  return parseOpenrouterChatContent(json);
+/**
+ * POST a built OpenRouter chat request and return the message content.
+ */
+async function postOpenrouterChatRequest(request) {
+  return parseOpenrouterChatContent(await postOpenrouterChat(request));
 }
 
 /**
@@ -329,14 +382,10 @@ function resolveTriageConnector() {
  */
 function parseTriageGroups(rawText) {
   const text = String(rawText ?? '').trim();
-  const unfenced = text
-    .replace(/^```(?:json)?\s*/i, '')
-    .replace(/\s*```$/i, '')
-    .trim();
 
   let parsed;
   try {
-    parsed = JSON.parse(unfenced);
+    parsed = JSON.parse(text);
   } catch {
     throw new Error('Triage model did not return valid JSON');
   }
@@ -377,8 +426,9 @@ async function runTriageModel(userPrompt, { maxChars = 1500 } = {}) {
 
 /**
  * Resolve the OpenRouter connector, send the shared system prompt + the given user
- * prompt, and return the parsed structured triage groups and the model id used.
- * Used by the per-suite triage, which renders the message deterministically.
+ * prompt as a forced `report_triage` tool call, and return the parsed groups and
+ * the model id used. Used by the per-suite triage, which renders the message
+ * deterministically.
  */
 async function runTriageModelStructured(userPrompt) {
   const { connector, modelId } = resolveTriageConnector();
@@ -388,16 +438,39 @@ async function runTriageModelStructured(userPrompt) {
     { role: 'user', content: userPrompt },
   ];
 
-  const raw = await postOpenrouterChatRequest(buildOpenrouterChatRequest(connector, messages));
+  const responseJson = await postOpenrouterChat(
+    buildOpenrouterChatRequest(connector, messages, {
+      maxTokens: TRIAGE_MAX_TOKENS,
+      tools: [TRIAGE_TOOL],
+      toolChoice: TRIAGE_TOOL_CHOICE,
+    })
+  );
 
-  return { groups: parseTriageGroups(raw), modelId };
+  const message = responseJson?.choices?.[0]?.message;
+  try {
+    return { groups: parseTriageGroups(message?.tool_calls?.[0]?.function?.arguments), modelId };
+  } catch (error) {
+    // The Buildkite step log is the only place the raw reply is visible; the
+    // Slack/GitHub fallback line stays generic.
+    console.error(
+      `Raw triage model reply: ${redactSecrets(JSON.stringify(message ?? responseJson)).slice(
+        0,
+        500
+      )}`
+    );
+    throw error;
+  }
 }
 
 module.exports = {
   MAX_LOG_EXCERPT_CHARS,
   MAX_CONTEXT_JSON_BYTES,
+  TRIAGE_MAX_TOKENS,
   TRIAGE_SYSTEM_PROMPT,
   TRIAGE_OPENROUTER_CONNECTOR_ID,
+  TRIAGE_TOOL_NAME,
+  TRIAGE_TOOL,
+  TRIAGE_TOOL_CHOICE,
   failureLogMetadataKey,
   failureLogMetadataKeysForProject,
   truncateText,
@@ -408,6 +481,7 @@ module.exports = {
   extractSuiteRootCauseLine,
   buildOpenrouterChatRequest,
   parseOpenrouterChatContent,
+  postOpenrouterChat,
   postOpenrouterChatRequest,
   resolveTriageConnector,
   parseTriageGroups,
