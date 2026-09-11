@@ -8,14 +8,23 @@
 import { act, waitFor, renderHook } from '@testing-library/react';
 import { useSeverityAction } from './use_severity_action';
 
-import * as api from '../../../containers/api';
 import { basicCase } from '../../../containers/mock';
 import { CaseSeverity } from '../../../../common/types/domain';
 import { TestProviders } from '../../../common/mock';
+import { useUpdateCases } from '../../../containers/use_bulk_update_case';
 import React from 'react';
 import { coreMock } from '@kbn/core/public/mocks';
 
 jest.mock('../../../containers/api');
+// Wrap the real hook so individual tests can swap in a synchronous `mutate`; the toaster tests below still exercise the real mutation lifecycle.
+jest.mock('../../../containers/use_bulk_update_case', () => ({
+  ...jest.requireActual('../../../containers/use_bulk_update_case'),
+  useUpdateCases: jest.fn(),
+}));
+
+const { useUpdateCases: realUseUpdateCases } = jest.requireActual(
+  '../../../containers/use_bulk_update_case'
+);
 
 describe('useSeverityAction', () => {
   const onAction = jest.fn();
@@ -23,6 +32,7 @@ describe('useSeverityAction', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    (useUpdateCases as jest.Mock).mockImplementation(realUseUpdateCases);
   });
 
   it('renders an action', async () => {
@@ -77,7 +87,8 @@ describe('useSeverityAction', () => {
   });
 
   it('update the severity cases', async () => {
-    const updateSpy = jest.spyOn(api, 'updateCases');
+    const mutate = jest.fn();
+    (useUpdateCases as jest.Mock).mockReturnValue({ mutate, isLoading: false });
 
     const { result } = renderHook(
       () => useSeverityAction({ onAction, onActionSuccess, isDisabled: false }),
@@ -99,14 +110,13 @@ describe('useSeverityAction', () => {
         actions[index]!.onClick();
       });
 
-      await waitFor(() => {
-        expect(onAction).toHaveBeenCalled();
-      });
-
-      expect(onActionSuccess).toHaveBeenCalled();
-      expect(updateSpy).toHaveBeenCalledWith({
-        cases: [{ severity, id: basicCase.id, version: basicCase.version }],
-      });
+      expect(onAction).toHaveBeenCalled();
+      expect(mutate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          cases: [{ severity, id: basicCase.id, version: basicCase.version }],
+        }),
+        expect.objectContaining({ onSuccess: onActionSuccess })
+      );
     }
   });
 
