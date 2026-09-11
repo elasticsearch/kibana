@@ -9,7 +9,7 @@ import Boom from '@hapi/boom';
 import type { KueryNode } from '@kbn/es-query';
 import { AlertingAuthorizationEntity, ReadOperations } from '../../../../authorization';
 import type { RulesClientContext } from '../../../../rules_client/types';
-import { findRuleTemplatesSo } from '../../../../data/rule_template';
+import { searchRuleTemplatesSo } from '../../../../data/rule_template';
 import { RULE_TEMPLATE_SAVED_OBJECT_TYPE } from '../../../../saved_objects';
 import type { FindRuleTemplatesParams } from './types';
 import { findRuleTemplatesParamsSchema } from './schema';
@@ -18,6 +18,7 @@ import type { RuleTemplate } from '../../types';
 import {
   buildRuleTypeIdsFilter,
   buildTagsFilter,
+  buildTemplateSearchQuery,
   combineFilters,
   combineFilterWithAuthorizationFilter,
 } from '../../../../rules_client/common/filters';
@@ -57,8 +58,7 @@ export async function findRuleTemplates(
       operation: ReadOperations.Find,
     });
 
-  const { ruleTypeId, tags, perPage, page, search, defaultSearchOperator, sortField, sortOrder } =
-    params;
+  const { ruleTypeId, tags, perPage, page, search, sortField, sortOrder } = params;
 
   const ruleTypeFilter = ruleTypeId
     ? buildRuleTypeIdsFilter([ruleTypeId], RULE_TEMPLATE_SAVED_OBJECT_TYPE)
@@ -70,25 +70,20 @@ export async function findRuleTemplates(
     ? combineFilterWithAuthorizationFilter(combinedFilters, authorizationFilter as KueryNode)
     : combinedFilters;
 
-  const searchFields = ['name', 'tags', 'description'];
-
   const {
     page: resultPage,
     per_page: resultPerPage,
     total,
     saved_objects: data,
-  } = await findRuleTemplatesSo({
+  } = await searchRuleTemplatesSo({
     savedObjectsClient: context.unsecuredSavedObjectsClient,
-    savedObjectsFindOptions: {
-      page,
-      perPage,
-      search,
-      searchFields,
-      defaultSearchOperator,
-      sortField: mapSortField(sortField),
-      sortOrder,
-      filter: finalFilter,
-    },
+    namespaces: [context.spaceId || 'default'],
+    page,
+    perPage,
+    sortField: mapSortField(sortField),
+    sortOrder,
+    filter: finalFilter,
+    searchQuery: buildTemplateSearchQuery(search),
   });
 
   const authorizedData = data.map((so) => {

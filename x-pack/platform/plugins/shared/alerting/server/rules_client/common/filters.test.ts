@@ -11,8 +11,11 @@ import {
   buildConsumersFilter,
   buildFilter,
   buildRuleTypeIdsFilter,
+  buildTemplateSearchQuery,
+  buildTemplateSearchWildcardValue,
   combineFilterWithAuthorizationFilter,
   combineFilters,
+  toSavedObjectEsQuery,
 } from './filters';
 import { RULE_SAVED_OBJECT_TYPE } from '../../saved_objects';
 
@@ -442,6 +445,89 @@ describe('filters', () => {
       expect(toKqlExpression(buildAlertingV1RuleTemplateEngineFilter())).toBe(
         '(alerting_rule_template.attributes.engine: v1 OR NOT alerting_rule_template.attributes.engine: *)'
       );
+    });
+  });
+
+  describe('buildTemplateSearchQuery', () => {
+    const escapeRegex = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const matchesWildcard = (title: string, wildcardValue: string): boolean => {
+      let regex = '';
+      for (let i = 0; i < wildcardValue.length; i++) {
+        const character = wildcardValue[i];
+        if (character === '\\' && i + 1 < wildcardValue.length) {
+          regex += escapeRegex(wildcardValue[i + 1]);
+          i += 1;
+          continue;
+        }
+        regex += character === '*' ? '.*' : escapeRegex(character);
+      }
+      return new RegExp(`^${regex}$`, 'i').test(title);
+    };
+
+    it('returns undefined when search is empty or only quotes', () => {
+      expect(buildTemplateSearchQuery()).toBeUndefined();
+      expect(buildTemplateSearchQuery('')).toBeUndefined();
+      expect(buildTemplateSearchQuery('   ')).toBeUndefined();
+      expect(buildTemplateSearchQuery('""')).toBeUndefined();
+    });
+
+    it('emits a wildcard on name.keyword and tags, keeping spaces', () => {
+      expect(buildTemplateSearchQuery('idle data')).toEqual({
+        bool: {
+          should: [
+            {
+              wildcard: {
+                'alerting_rule_template.name.keyword': { value: '*idle data*' },
+              },
+            },
+            {
+              wildcard: {
+                'alerting_rule_template.tags': {
+                  value: '*idle data*',
+                  case_insensitive: true,
+                },
+              },
+            },
+          ],
+          minimum_should_match: 1,
+        },
+      });
+    });
+
+    it.each([
+      ['Kubernetes idle data threshold', 'kub', '*kub*', true],
+      ['Kubernetes idle data threshold', 'thresh', '*thresh*', true],
+      ['Kubernetes idle data threshold', 'idle data', '*idle data*', true],
+      ['Kubernetes idle data threshold', 'data thresh', '*data thresh*', true],
+      ['Kubernetes idle data threshold', 'kub*', '*kub**', true],
+      ['Kubernetes idle data threshold', '*kub*', '**kub**', true],
+      ['[Kubernetes OTel] Container CPU throttling', 'kub', '*kub*', true],
+      ['Idle data streams', 'idle data', '*idle data*', true],
+      ['Maximum CPU threshold per service', 'CPU threshold', '*CPU threshold*', true],
+      ['CPU average combined with latency threshold', 'CPU threshold', '*CPU threshold*', false],
+      ['CPU average combined with latency threshold', 'CPU*threshold', '*CPU*threshold*', true],
+      ['Maximum CPU threshold per service', 'CPU*threshold', '*CPU*threshold*', true],
+      ['Maximum CPU threshold per service', '"CPU threshold"', '*CPU threshold*', true],
+      ['CPU average combined with latency threshold', '"CPU threshold"', '*CPU threshold*', false],
+      ['foo?', 'foo?', '*foo\\?*', true],
+      ['food', 'foo?', '*foo\\?*', false],
+      ['foo\\bar', 'foo\\', '*foo\\\\*', true],
+      ['foo*', 'foo\\', '*foo\\\\*', false],
+    ])('%s + %j', (title, search, wildcard, shouldMatch) => {
+      expect(buildTemplateSearchWildcardValue(search)).toBe(wildcard);
+      expect(matchesWildcard(title, wildcard)).toBe(shouldMatch);
+    });
+  });
+
+  describe('toSavedObjectEsQuery', () => {
+    it('rewrites type.attributes.field to the ES field path', () => {
+      const node = nodeBuilder.is('alerting_rule_template.attributes.engine', 'v1');
+      expect(toSavedObjectEsQuery(node)).toEqual({
+        bool: {
+          minimum_should_match: 1,
+          should: [{ match: { 'alerting_rule_template.engine': 'v1' } }],
+        },
+      });
     });
   });
 
