@@ -117,9 +117,16 @@ export const getEntityAnomalyOverview = async ({
     soClient,
   });
 
-  let resolvedJobIds = allSecurityJobIds;
+  // getJobConfig uses the space-aware anomalyDetectorsProvider and silently drops any job
+  // not installed in the current space, so its keys are the installed security job IDs.
+  // Using template IDs from getSecurityMlJobIds directly would match anomaly records from
+  // other spaces whose jobs share the same template-defined IDs.
+  const installedSecurityJobIds = [...allJobConfigs.keys()];
+  if (installedSecurityJobIds.length === 0) return empty;
+
+  let resolvedJobIds = installedSecurityJobIds;
   if (threatTactics && threatTactics.length > 0) {
-    const tacticMatchedIds = allSecurityJobIds.filter((id) =>
+    const tacticMatchedIds = installedSecurityJobIds.filter((id) =>
       allJobConfigs.get(id)?.threatTactics.some((t) => threatTactics.includes(t))
     );
     resolvedJobIds = tacticMatchedIds;

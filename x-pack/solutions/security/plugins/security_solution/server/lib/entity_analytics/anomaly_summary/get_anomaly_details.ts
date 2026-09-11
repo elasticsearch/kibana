@@ -108,9 +108,14 @@ export const getEntityAnomalies = async ({
     soClient,
   });
 
+  // getJobConfig uses the space-aware anomalyDetectorsProvider and silently drops any job
+  // not installed in the current space, so its keys are the installed security job IDs.
+  const installedSecurityJobIds = [...allConfigs.keys()];
+  if (installedSecurityJobIds.length === 0) return { anomalies: [], total: 0 };
+
   let resolvedJobIds = jobIds;
   if (threatTactics && threatTactics.length > 0) {
-    const tacticMatchedIds = allSecurityJobIds.filter((id) =>
+    const tacticMatchedIds = installedSecurityJobIds.filter((id) =>
       allConfigs.get(id)?.threatTactics.some((t) => threatTactics.includes(t))
     );
 
@@ -130,6 +135,7 @@ export const getEntityAnomalies = async ({
     toMs,
     scoreRanges,
     jobIds: resolvedJobIds,
+    securityJobIds: installedSecurityJobIds,
     sort,
     from: offset,
     size: pageSize,

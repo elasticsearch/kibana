@@ -132,10 +132,25 @@ describe('getEntityAnomalyOverview', () => {
     });
   });
 
+  describe('when no ML jobs are installed in the current space', () => {
+    it('returns empty result without calling mlAnomalySearch', async () => {
+      mockGetSecurityMlJobIds.mockResolvedValue(['job-1']);
+      // getJobConfig returns empty — simulates jobs defined in module templates but not installed
+      mockGetJobConfig.mockResolvedValue(new Map());
+
+      const result = await getEntityAnomalyOverview(baseParams);
+
+      expect(result).toEqual(emptyResult);
+      expect(mockMlAnomalySearch).not.toHaveBeenCalled();
+    });
+  });
+
   describe('when the search returns no anomalies', () => {
     it('returns empty result when all_jobs buckets is empty', async () => {
       mockGetSecurityMlJobIds.mockResolvedValue(['job-1']);
-      mockGetJobConfig.mockResolvedValue(new Map());
+      mockGetJobConfig.mockResolvedValue(
+        new Map([['job-1', { threatTactics: [], threatTechniques: [] }]])
+      );
       mockMlAnomalySearch.mockResolvedValue(makeSearchResponse([], [], 0));
 
       const result = await getEntityAnomalyOverview(baseParams);
@@ -147,7 +162,9 @@ describe('getEntityAnomalyOverview', () => {
   describe('when mlAnomalySearch throws', () => {
     it('logs a warning and returns empty result', async () => {
       mockGetSecurityMlJobIds.mockResolvedValue(['job-1']);
-      mockGetJobConfig.mockResolvedValue(new Map());
+      mockGetJobConfig.mockResolvedValue(
+        new Map([['job-1', { threatTactics: [], threatTechniques: [] }]])
+      );
       mockMlAnomalySearch.mockRejectedValue(new Error('ES error'));
 
       const result = await getEntityAnomalyOverview(baseParams);
@@ -506,7 +523,9 @@ describe('getEntityAnomalyOverview', () => {
 
     beforeEach(() => {
       mockGetSecurityMlJobIds.mockResolvedValue(['job-a']);
-      mockGetJobConfig.mockResolvedValue(new Map());
+      mockGetJobConfig.mockResolvedValue(
+        new Map([['job-a', { threatTactics: [], threatTechniques: [] }]])
+      );
       mockMlAnomalySearch.mockResolvedValue(makeSearchResponse([], [], 0));
     });
 

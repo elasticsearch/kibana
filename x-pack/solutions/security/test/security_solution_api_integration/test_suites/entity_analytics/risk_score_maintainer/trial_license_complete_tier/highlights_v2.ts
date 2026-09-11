@@ -294,9 +294,28 @@ export default ({ getService }: FtrProviderContext): void => {
         refresh: true,
       });
 
-      // Index an anomaly record directly into the shared ML results index, using a
-      // job_id from a bundled Security ML module manifest (no real ML job needs to
-      // exist for getSecurityMlJobIds()/searchEntityAnomalies() to pick it up).
+      // Create a minimal ML anomaly detector job so getJobConfig() can find it via
+      // anomalyDetectorsProvider (which requires the job to exist in ES and be synced
+      // to a Kibana saved object in this space).
+      await es.ml
+        .putJob({
+          job_id: ML_JOB_ID,
+          analysis_config: {
+            bucket_span: '1h',
+            detectors: [{ function: 'high_count', partition_field_name: 'host.name' }],
+            influencers: ['host.name'],
+          },
+          data_description: { time_field: 'timestamp' },
+          groups: ['security'],
+        })
+        .catch(() => {}); // ignore if job already exists
+      await supertest
+        .get('/api/ml/saved_objects/sync')
+        .set('kbn-xsrf', 'true')
+        .set('elastic-api-version', '2023-10-31')
+        .expect(200); // sync ML jobs to Kibana saved objects
+
+      // Index an anomaly record into the shared ML results index for the host entity.
       await es.bulk({
         operations: [
           { index: { _index: ML_ANOMALIES_SHARED_INDEX, _id: ML_ANOMALY_RECORD_ID } },
@@ -329,6 +348,7 @@ export default ({ getService }: FtrProviderContext): void => {
     after(async () => {
       await entityStoreUtils.cleanEngines();
       await cleanUpRiskScoreMaintainer({ es, log });
+      await es.ml.deleteJob({ job_id: ML_JOB_ID, wait_for_completion: true }).catch(() => {});
       await deleteAllDocuments(es, VULNERABILITIES_LATEST_INDEX).catch(() => {});
       await es.indices
         .deleteIndexTemplate({ name: VULNERABILITIES_INDEX_TEMPLATE_NAME })
