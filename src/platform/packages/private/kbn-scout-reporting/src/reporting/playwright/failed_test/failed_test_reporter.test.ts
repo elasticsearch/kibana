@@ -12,6 +12,7 @@ import type {
   FullResult,
   Suite,
   TestCase,
+  TestError,
   TestResult,
 } from '@playwright/test/reporter';
 import { ToolingLog } from '@kbn/tooling-log';
@@ -46,8 +47,16 @@ const createMockTestCase = (overrides: {
   outcome: ReturnType<TestCase['outcome']>;
   title?: string;
   filePath?: string;
+  expectedStatus?: TestCase['expectedStatus'];
+  results?: Array<Pick<TestResult, 'status'>>;
 }): TestCase => {
-  const { outcome, title = 'should work', filePath = 'path/to/file.spec.ts' } = overrides;
+  const {
+    outcome,
+    title = 'should work',
+    filePath = 'path/to/file.spec.ts',
+    expectedStatus = 'passed',
+    results = [{ status: 'failed' }],
+  } = overrides;
 
   return {
     titlePath: () => ['', 'local', filePath, 'My Suite', title],
@@ -59,6 +68,8 @@ const createMockTestCase = (overrides: {
       titlePath: () => ['', 'local', filePath, 'My Suite'],
     },
     outcome: () => outcome,
+    expectedStatus,
+    results,
   } as unknown as TestCase;
 };
 
@@ -74,7 +85,8 @@ const createMockResult = (
     stdout: [],
   } as unknown as TestResult);
 
-const createMockFullResult = (): FullResult => ({ status: 'failed', duration: 1000 } as FullResult);
+const createMockFullResult = (status: FullResult['status'] = 'failed'): FullResult =>
+  ({ status, duration: 1000 } as FullResult);
 
 describe('ScoutFailedTestReporter', () => {
   let reporter: ScoutFailedTestReporter;
@@ -128,6 +140,82 @@ describe('ScoutFailedTestReporter', () => {
 
     expect(excludeTestIds.has(flakyId)).toBe(true);
     expect(excludeTestIds.has(hardFailureId)).toBe(false);
+  });
+
+  it('records global errors and a run timeout as runner errors, not test failures', () => {
+    const saveRunnerErrorsSpy = jest
+      .spyOn(ScoutFailureTracker.prototype, 'saveRunnerErrors')
+      .mockImplementation(() => {});
+    reporter.onBegin(createMockConfig(), createMockSuite([]));
+
+    reporter.onError({ message: 'global teardown threw' } as TestError);
+    reporter.onError({ value: 'string thrown' } as TestError);
+    reporter.onEnd(createMockFullResult('timedout'));
+
+    expect(reportLogEventSpy).not.toHaveBeenCalled();
+    expect(trackerAddFailureSpy).not.toHaveBeenCalled();
+    expect(saveRunnerErrorsSpy).toHaveBeenCalledWith({
+      status: 'timedout',
+      errors: ['global teardown threw', 'string thrown', 'Playwright run timedout'],
+    });
+  });
+
+  it('records the --max-failures cutoff notice and the tests it cut off as runner errors', () => {
+    const saveRunnerErrorsSpy = jest
+      .spyOn(ScoutFailureTracker.prototype, 'saveRunnerErrors')
+      .mockImplementation(() => {});
+    const failed = createMockTestCase({ outcome: 'unexpected', title: 'failed' });
+    const neverStarted = createMockTestCase({ outcome: 'skipped', title: 'never', results: [] });
+    const skippedAtRuntime = createMockTestCase({
+      outcome: 'skipped',
+      title: 'runtime skip',
+      results: [{ status: 'skipped' }],
+    });
+    const declaredSkip = createMockTestCase({
+      outcome: 'skipped',
+      title: 'test.skip',
+      expectedStatus: 'skipped',
+      results: [{ status: 'skipped' }],
+    });
+    const interruptedTest = createMockTestCase({
+      outcome: 'skipped',
+      title: 'interrupted',
+      results: [{ status: 'interrupted' }],
+    });
+    reporter.onBegin(
+      createMockConfig(),
+      createMockSuite([failed, neverStarted, skippedAtRuntime, declaredSkip, interruptedTest])
+    );
+    reporter.onTestEnd(failed, createMockResult({ status: 'failed' }));
+    // Playwright emits this (colored) global error when the --max-failures threshold is hit.
+    reporter.onError({
+      message: '\u001b[31mTesting stopped early after 1 maximum allowed failures.\u001b[39m',
+    } as TestError);
+    reporter.onEnd(createMockFullResult('failed'));
+
+    expect(saveRunnerErrorsSpy).toHaveBeenCalledWith({
+      status: 'failed',
+      errors: ['Testing stopped early after 1 maximum allowed failures.', '2 test(s) did not run'],
+    });
+  });
+
+  it('does not record a runner error for a completed run with only declared skips', () => {
+    const saveRunnerErrorsSpy = jest
+      .spyOn(ScoutFailureTracker.prototype, 'saveRunnerErrors')
+      .mockImplementation(() => {});
+    const failed = createMockTestCase({ outcome: 'unexpected', title: 'failed' });
+    const declaredSkip = createMockTestCase({
+      outcome: 'skipped',
+      title: 'test.skip',
+      expectedStatus: 'skipped',
+      results: [{ status: 'skipped' }],
+    });
+    reporter.onBegin(createMockConfig(), createMockSuite([failed, declaredSkip]));
+
+    reporter.onTestEnd(failed, createMockResult({ status: 'failed' }));
+    reporter.onEnd(createMockFullResult('failed'));
+
+    expect(saveRunnerErrorsSpy).toHaveBeenCalledWith({ status: 'failed', errors: [] });
   });
 
   it('stamps distinct attempt numbers on each attempt of a repeatedly-failing test', () => {

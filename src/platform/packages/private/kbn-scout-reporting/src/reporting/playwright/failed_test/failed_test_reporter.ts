@@ -13,6 +13,7 @@ import type {
   Reporter,
   Suite,
   TestCase,
+  TestError,
   TestResult,
 } from '@playwright/test/reporter';
 
@@ -22,6 +23,7 @@ import {
   type CodeOwnersEntry,
 } from '@kbn/code-owners';
 import { ToolingLog } from '@kbn/tooling-log';
+import stripANSI from 'strip-ansi';
 import path from 'node:path';
 import {
   BROWSER_CONSOLE_ERRORS_ATTACHMENT,
@@ -57,6 +59,8 @@ export class ScoutFailedTestReporter implements Reporter {
   private kibanaModule: TestFailure['kibanaModule'];
   /** Root suite captured in `onBegin`; walked in `onEnd` to identify tests that ended up flaky. */
   private suite?: Suite;
+  /** Errors reported outside any test (global setup/teardown, config, worker crashes). */
+  private readonly runnerErrors: string[] = [];
 
   constructor(private readonly reporterOptions: ScoutPlaywrightReporterOptions = {}) {
     this.log = new ToolingLog({
@@ -173,22 +177,47 @@ export class ScoutFailedTestReporter implements Reporter {
     this.failureTracker?.addFailure(testFailure);
   }
 
+  onError(error: TestError) {
+    // Playwright colors some of these (e.g. the --max-failures cutoff notice).
+    const message =
+      error.message ?? (error.value !== undefined ? String(error.value) : 'unknown error');
+    this.runnerErrors.push(stripFilePath(stripANSI(message)));
+  }
+
   onEnd(result: FullResult) {
+    const allTests = this.suite?.allTests() ?? [];
+
     // A test's outcome is only knowable once every attempt has run, so flaky tests are excluded
     // here rather than in onTestEnd. Their failing attempt still stays in the report artifact
     // above (useful debugging material); only the GitHub-issue tracker excludes them, since it
     // shouldn't open issues for tests that ultimately passed.
     const flakyTestIds = new Set(
-      (this.suite?.allTests() ?? [])
-        .filter((test) => test.outcome() === 'flaky')
-        .map((test) => getTestIdentity(test).id)
+      allTests.filter((test) => test.outcome() === 'flaky').map((test) => getTestIdentity(test).id)
     );
+
+    // 'failed' is explained by the per-test failures; a global timeout or interruption is not.
+    if (result.status === 'timedout' || result.status === 'interrupted') {
+      this.runnerErrors.push(`Playwright run ${result.status}`);
+    }
+
+    // Tests Playwright never ran (e.g. cut off by --max-failures) are neither failures nor
+    // intentional skips; same classification as Playwright's own "did not run" summary line.
+    const didNotRun = allTests.filter(
+      (test) =>
+        test.outcome() === 'skipped' &&
+        !test.results.some((attempt) => attempt.status === 'interrupted') &&
+        (test.results.length === 0 || test.expectedStatus !== 'skipped')
+    ).length;
+    if (didNotRun > 0) {
+      this.runnerErrors.push(`${didNotRun} test(s) did not run`);
+    }
 
     // Save & conclude the report
     try {
       this.report.save(this.reportRootPath);
       // Save failure tracking file for GitHub issue integration
       this.failureTracker?.save({ excludeTestIds: flakyTestIds });
+      this.failureTracker?.saveRunnerErrors({ status: result.status, errors: this.runnerErrors });
     } finally {
       this.report.conclude();
     }

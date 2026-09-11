@@ -7,6 +7,5 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
-export { runFailedTestsReporterCli } from './failed_tests_reporter/failed_tests_reporter_cli';
-export { runRetryResultCheckerCli } from './failed_tests_reporter/retry_result_checker';
-export { runSkippedOnMainCli } from './failed_tests_reporter/skipped_on_main/cli';
+require('@kbn/setup-node-env');
+require('@kbn/failed-test-reporter-cli').runSkippedOnMainCli();

@@ -4,6 +4,7 @@ set -euo pipefail
 
 source .buildkite/scripts/steps/functional/common.sh
 source .buildkite/scripts/steps/test/ftr_smart_retry.sh
+source .buildkite/scripts/steps/test/skipped_on_main.sh
 
 BUILDKITE_PARALLEL_JOB=${BUILDKITE_PARALLEL_JOB:-}
 FTR_CONFIG_GROUP_KEY=${FTR_CONFIG_GROUP_KEY:-}
@@ -99,6 +100,9 @@ while read -r config; do
   """
   fi
 
+  # marks JUnit reports written by this config so they can be evaluated in isolation
+  junitMarker=$(mktemp)
+
   # prevent non-zero exit code from breaking the loop
   set +e;
   node ./scripts/functional_tests \
@@ -109,6 +113,31 @@ while read -r config; do
     "$EXTRA_ARGS"
   lastCode=$?
   set -e;
+
+  # Only sound when FTR exited with the code it reserves for "every test ran and only tests failed"
+  # (FTR_TEST_FAILURES_EXIT_CODE in src/platform/packages/shared/kbn-test/src/functional_tests/lib/run_ftr.ts).
+  # FTR emits 1 instead when --bail (from BAIL_ARG, FTR_EXTRA_ARGS or the config's mochaOpts.bail)
+  # or a server crash stopped the run early, or when a runner/server/config error occurred; the
+  # JUnit report does not describe any of those.
+  if [[ $lastCode -ne 0 ]]; then
+    if [[ $lastCode -ne 11 ]]; then
+      skipped_on_main_skipped "$config" "exit code $lastCode is not the test-failures code (11): the run stopped early or hit a runner error"
+    elif skipped_on_main_applicable; then
+      junitArgs=()
+      while IFS= read -r junitFile; do
+        junitArgs+=(--junit-file "$junitFile")
+      done < <(find "target/junit/$JOB" -name '*.xml' -newer "$junitMarker" 2>/dev/null)
+
+      if [[ ${#junitArgs[@]} -eq 0 ]]; then
+        skipped_on_main_skipped "$config" "no JUnit report was written (failure happened before tests ran)"
+      elif forgive_skipped_on_main "$config" "${junitArgs[@]}"; then
+        lastCode=0
+      fi
+    else
+      skipped_on_main_skipped "$config" "not a PR build or flaky test runner"
+    fi
+  fi
+  rm -f "$junitMarker"
 
   # Scout reporter
   if [[ "${SCOUT_REPORTER_ENABLED:-}" =~ ^(1|true)$ ]]; then
