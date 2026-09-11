@@ -28,21 +28,29 @@ import {
   enabledRuleForBulkOpsWithActions2WithUiam,
 } from '../../../../rules_client/tests/test_helpers';
 import { RULE_SAVED_OBJECT_TYPE } from '../../../../saved_objects';
-import { softDeleteGaps } from '../../../../lib/rule_gaps/soft_delete/soft_delete_gaps';
+import type { AlertsService } from '../../../../alerts_service';
 import { eventLoggerMock } from '@kbn/event-log-plugin/server/event_logger.mock';
 import { eventLogClientMock } from '@kbn/event-log-plugin/server/event_log_client.mock';
 import { nodeBuilder, toKqlExpression } from '@kbn/es-query';
-
-jest.mock('../../../../lib/rule_gaps/soft_delete/soft_delete_gaps');
+import { softDeleteGapsByQuery } from '../../../../lib/rule_gaps/soft_delete_gaps_by_query';
 
 jest.mock('../../../../invalidate_pending_api_keys/bulk_mark_api_keys_for_invalidation', () => ({
   bulkMarkApiKeysForInvalidation: jest.fn(),
 }));
 
-const softDeleteGapsMock = softDeleteGaps as jest.Mock;
+jest.mock('../../../../lib/rule_gaps/soft_delete_gaps_by_query', () => ({
+  softDeleteGapsByQuery: jest.fn(),
+}));
+
+const softDeleteGapsByQueryMock = softDeleteGapsByQuery as jest.Mock;
+
 const logger = loggerMock.create();
 const eventLogClient = eventLogClientMock.create();
 const eventLogger = eventLoggerMock.create();
+
+const mockAlertsService = {
+  setAlertsToUntracked: jest.fn().mockResolvedValue([]),
+};
 
 const kibanaVersion = 'v8.2.0';
 const createAPIKeyMock = jest.fn();
@@ -60,6 +68,7 @@ const {
   createAPIKey: createAPIKeyMock,
   logger,
   eventLogger,
+  alertsService: mockAlertsService as unknown as AlertsService,
 });
 
 const getBulkOperationStatusErrorResponse = (statusCode: number) => ({
@@ -184,11 +193,11 @@ describe('bulkDelete', () => {
       unsecuredSavedObjectsClient,
     });
 
-    expect(softDeleteGapsMock).toHaveBeenCalledWith({
+    expect(softDeleteGapsByQueryMock).toHaveBeenCalledWith({
       ruleIds,
+      spaceId: 'default',
       eventLogClient,
       logger,
-      eventLogger,
     });
 
     expect(bulkMarkApiKeysForInvalidation).toHaveBeenCalledTimes(1);
@@ -292,7 +301,7 @@ describe('bulkDelete', () => {
     );
   });
 
-  test('swallows errors when soft deleting gaps fails', async () => {
+  test('swallows errors when soft deleting gaps fails and still returns deleted rules', async () => {
     mockCreatePointInTimeFinderAsInternalUser({
       saved_objects: [enabledRuleForBulkOpsWithActions1, enabledRuleForBulkOpsWithActions2],
     });
@@ -304,12 +313,42 @@ describe('bulkDelete', () => {
       ],
     });
 
-    softDeleteGapsMock.mockRejectedValue(new Error('Boom!'));
+    softDeleteGapsByQueryMock.mockRejectedValueOnce(new Error('Boom!'));
 
-    await rulesClient.bulkDeleteRules({ filter: 'fake_filter' });
+    const result = await rulesClient.bulkDeleteRules({ filter: 'fake_filter' });
+
     expect(rulesClientParams.logger.error).toHaveBeenCalledWith(
       'delete(): Failed to soft delete gaps for rules: id1,id2: Boom!'
     );
+    expect(result.rules).toHaveLength(2);
+    expect(result.errors).toEqual([]);
+  });
+
+  // `softDeleteGapsByQuery` swallows its own errors, so a rejecting
+  // `getEventLogClient` is the only way the outer try/catch is reached in
+  // production — e.g. when the ES or saved objects client is unavailable.
+  test('still returns deleted rules when getEventLogClient throws', async () => {
+    mockCreatePointInTimeFinderAsInternalUser({
+      saved_objects: [enabledRuleForBulkOpsWithActions1, enabledRuleForBulkOpsWithActions2],
+    });
+
+    unsecuredSavedObjectsClient.bulkDelete.mockResolvedValue({
+      statuses: [
+        { id: 'id1', type: 'alert', success: true },
+        { id: 'id2', type: 'alert', success: true },
+      ],
+    });
+
+    rulesClientParams.getEventLogClient.mockRejectedValueOnce(new Error('No event log client'));
+
+    const result = await rulesClient.bulkDeleteRules({ filter: 'fake_filter' });
+
+    expect(softDeleteGapsByQueryMock).not.toHaveBeenCalled();
+    expect(rulesClientParams.logger.error).toHaveBeenCalledWith(
+      'delete(): Failed to soft delete gaps for rules: id1,id2: No event log client'
+    );
+    expect(result.rules).toHaveLength(2);
+    expect(result.errors).toEqual([]);
   });
 
   test('should try to delete rules, two successful and one with 500 error', async () => {
@@ -411,11 +450,11 @@ describe('bulkDelete', () => {
       unsecuredSavedObjectsClient,
     });
 
-    expect(softDeleteGapsMock).toHaveBeenCalledWith({
-      ruleIds: ['id1', 'id2'],
+    expect(softDeleteGapsByQueryMock).toHaveBeenCalledWith({
+      ruleIds: ['id1'],
+      spaceId: 'default',
       eventLogClient,
       logger,
-      eventLogger,
     });
 
     expect(bulkMarkApiKeysForInvalidation).toHaveBeenCalledTimes(1);
@@ -488,6 +527,21 @@ describe('bulkDelete', () => {
       expect.anything(),
       expect.anything()
     );
+
+    expect(softDeleteGapsByQueryMock).toHaveBeenCalledTimes(2);
+    expect(softDeleteGapsByQueryMock).toHaveBeenNthCalledWith(1, {
+      ruleIds: ['id1'],
+      spaceId: 'default',
+      eventLogClient,
+      logger,
+    });
+    expect(softDeleteGapsByQueryMock).toHaveBeenNthCalledWith(2, {
+      ruleIds: ['id2'],
+      spaceId: 'default',
+      eventLogClient,
+      logger,
+    });
+
     expect(result).toStrictEqual({
       rules: [returnedRuleForBulkOps1, returnedRuleForBulkOps2],
       errors: [],
@@ -1124,6 +1178,63 @@ describe('bulkDelete', () => {
         ],
         expect.any(Object)
       );
+    });
+  });
+
+  describe('gap soft-deletion ordering and scope', () => {
+    test('should soft-delete gaps only for successfully deleted rules', async () => {
+      unsecuredSavedObjectsClient.bulkDelete.mockResolvedValue({
+        statuses: [
+          { id: 'id1', type: RULE_SAVED_OBJECT_TYPE, success: true },
+          getBulkOperationStatusErrorResponse(500),
+          { id: 'id3', type: RULE_SAVED_OBJECT_TYPE, success: true },
+        ],
+      });
+
+      await rulesClient.bulkDeleteRules({ filter: 'fake_filter' });
+
+      expect(softDeleteGapsByQueryMock).toHaveBeenCalledTimes(1);
+      expect(softDeleteGapsByQueryMock).toHaveBeenCalledWith({
+        ruleIds: ['id1', 'id3'],
+        spaceId: 'default',
+        eventLogClient,
+        logger,
+      });
+    });
+
+    test('should not soft-delete gaps when no rules are successfully deleted', async () => {
+      unsecuredSavedObjectsClient.bulkDelete.mockResolvedValue({
+        statuses: [
+          getBulkOperationStatusErrorResponse(500),
+          getBulkOperationStatusErrorResponse(500),
+        ],
+      });
+
+      await rulesClient.bulkDeleteRules({ filter: 'fake_filter' });
+
+      expect(softDeleteGapsByQueryMock).not.toHaveBeenCalled();
+    });
+
+    test('should soft-delete gaps after SO deletion, not before', async () => {
+      const callOrder: string[] = [];
+
+      unsecuredSavedObjectsClient.bulkDelete.mockImplementation(async () => {
+        callOrder.push('bulkDeleteSo');
+        return {
+          statuses: [
+            { id: 'id1', type: 'alert', success: true },
+            { id: 'id2', type: 'alert', success: true },
+          ],
+        };
+      });
+
+      softDeleteGapsByQueryMock.mockImplementation(async () => {
+        callOrder.push('softDeleteGaps');
+      });
+
+      await rulesClient.bulkDeleteRules({ filter: 'fake_filter' });
+
+      expect(callOrder.indexOf('bulkDeleteSo')).toBeLessThan(callOrder.indexOf('softDeleteGaps'));
     });
   });
 });

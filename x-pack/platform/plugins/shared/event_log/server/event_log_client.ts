@@ -20,6 +20,7 @@ import type { IEventLogClient } from './types';
 import type {
   QueryEventsBySavedObjectResult,
   QueryEventsBySavedObjectSearchAfterResult,
+  SoftDeleteByQueryParams,
 } from './es/cluster_client_adapter';
 import type { SavedObjectBulkGetterResult } from './saved_object_provider_registry';
 export type PluginClusterClient = Pick<IClusterClient, 'asInternalUser'>;
@@ -95,6 +96,14 @@ export type FindOptionsSearchAfterType = Omit<FindOptionsType, 'page'> & {
   pit_id?: string;
   search_after?: estypes.SortResults;
 };
+
+const softDeleteByQuerySchema = schema.object({
+  query: schema.object({}, { unknowns: 'allow' }),
+  field: schema.oneOf([schema.literal('kibana.alert.rule.gap.deleted')]),
+  conflicts: schema.maybe(schema.oneOf([schema.literal('abort'), schema.literal('proceed')])),
+  slices: schema.maybe(schema.oneOf([schema.literal('auto'), schema.number({ min: 1 })])),
+  requestsPerSecond: schema.maybe(schema.number({ min: 1 })),
+});
 
 interface EventLogServiceCtorParams {
   esContext: EsContext;
@@ -238,6 +247,13 @@ export class EventLogClient implements IEventLogClient {
 
   public async refreshIndex(): Promise<void> {
     await this.esContext.esAdapter.refreshIndex();
+  }
+
+  public async softDeleteByQuery(
+    params: SoftDeleteByQueryParams
+  ): Promise<estypes.UpdateByQueryResponse> {
+    softDeleteByQuerySchema.validate(params);
+    return this.esContext.esAdapter.softDeleteByQuery(params);
   }
 
   public async findEventsBySavedObjectIdsSearchAfter(

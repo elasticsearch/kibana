@@ -2817,6 +2817,125 @@ describe('refreshIndex', () => {
     );
   });
 });
+
+describe('softDeleteByQuery', () => {
+  const gapQuery: estypes.QueryDslQueryContainer = {
+    bool: {
+      must: [
+        { term: { 'event.action': 'gap' } },
+        { term: { 'event.provider': 'alerting' } },
+        { terms: { 'rule.id': ['rule-1'] } },
+      ],
+      must_not: [{ term: { 'kibana.alert.rule.gap.deleted': true } }],
+    },
+  };
+
+  beforeEach(() => {
+    clusterClient.updateByQuery.mockResolvedValue({
+      updated: 1,
+      version_conflicts: 0,
+      failures: [],
+    } as estypes.UpdateByQueryResponse);
+  });
+
+  test('runs one update_by_query against the data stream with a null-safe set-field script', async () => {
+    await clusterClientAdapter.softDeleteByQuery({
+      query: gapQuery,
+      field: 'kibana.alert.rule.gap.deleted',
+    });
+
+    expect(clusterClient.updateByQuery).toHaveBeenCalledTimes(1);
+    expect(clusterClient.updateByQuery).toHaveBeenCalledWith({
+      index: 'kibana-event-log-ds',
+      conflicts: 'proceed',
+      slices: 'auto',
+      query: gapQuery,
+      script: {
+        source:
+          'if (ctx._source.kibana?.alert?.rule?.gap != null) { ctx._source.kibana.alert.rule.gap.deleted = true; }',
+        lang: 'painless',
+      },
+    });
+  });
+
+  test('builds a null-safe script for a shallow field', async () => {
+    await clusterClientAdapter.softDeleteByQuery({ query: gapQuery, field: 'a.b' });
+
+    const [call] = clusterClient.updateByQuery.mock.calls[0] as [estypes.UpdateByQueryRequest];
+    expect(call.script).toEqual({
+      source: 'if (ctx._source.a != null) { ctx._source.a.b = true; }',
+      lang: 'painless',
+    });
+  });
+
+  test('builds a script for a flat single-segment field', async () => {
+    await clusterClientAdapter.softDeleteByQuery({ query: gapQuery, field: 'deleted' });
+
+    const [call] = clusterClient.updateByQuery.mock.calls[0] as [estypes.UpdateByQueryRequest];
+    expect(call.script).toEqual({
+      source: 'ctx._source.deleted = true;',
+      lang: 'painless',
+    });
+  });
+
+  // Field validation is now enforced by the EventLogClient schema; the adapter
+  // trusts its caller. See event_log_client.test.ts for rejection cases.
+
+  test('does not pass wait_for_completion (blocking)', async () => {
+    await clusterClientAdapter.softDeleteByQuery({ query: gapQuery, field: 'a.b' });
+
+    const [call] = clusterClient.updateByQuery.mock.calls[0];
+    expect(call).not.toHaveProperty('wait_for_completion');
+  });
+
+  // `requests_per_second` caps documents per second across the whole operation,
+  // so a default value would throttle throughput rather than limit round trips.
+  test('does not throttle by default', async () => {
+    await clusterClientAdapter.softDeleteByQuery({ query: gapQuery, field: 'a.b' });
+
+    const [call] = clusterClient.updateByQuery.mock.calls[0];
+    expect(call).not.toHaveProperty('requests_per_second');
+  });
+
+  test('honors conflicts, slices, and requestsPerSecond overrides', async () => {
+    await clusterClientAdapter.softDeleteByQuery({
+      query: gapQuery,
+      field: 'a.b',
+      conflicts: 'abort',
+      slices: 4,
+      requestsPerSecond: 250,
+    });
+
+    expect(clusterClient.updateByQuery).toHaveBeenCalledWith(
+      expect.objectContaining({ conflicts: 'abort', slices: 4, requests_per_second: 250 })
+    );
+  });
+
+  test('returns the update_by_query response', async () => {
+    clusterClient.updateByQuery.mockResolvedValue({
+      updated: 5,
+      version_conflicts: 1,
+      failures: [],
+    } as estypes.UpdateByQueryResponse);
+
+    const response = await clusterClientAdapter.softDeleteByQuery({
+      query: gapQuery,
+      field: 'a.b',
+    });
+
+    expect(response.updated).toBe(5);
+    expect(response.version_conflicts).toBe(1);
+  });
+
+  test('propagates errors from update_by_query', async () => {
+    clusterClient.updateByQuery.mockRejectedValue(new Error('boom'));
+
+    await expect(
+      clusterClientAdapter.softDeleteByQuery({ query: gapQuery, field: 'a.b' })
+    ).rejects.toThrow('boom');
+  });
+});
+
 type RetryableFunction = () => boolean;
 
 const RETRY_UNTIL_DEFAULT_COUNT = 20;

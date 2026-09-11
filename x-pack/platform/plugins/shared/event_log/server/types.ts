@@ -13,7 +13,7 @@ import type { SpaceId } from '@kbn/core-spaces-common';
 
 export type { IEvent, IValidatedEvent } from '../generated/schemas';
 export { EventSchema, ECS_VERSION } from '../generated/schemas';
-import type { BulkResponse } from '@elastic/elasticsearch/lib/api/types';
+import type { BulkResponse, UpdateByQueryResponse } from '@elastic/elasticsearch/lib/api/types';
 import type { IEvent } from '../generated/schemas';
 import type {
   AggregateOptionsType,
@@ -25,6 +25,7 @@ import type {
   QueryEventsBySavedObjectResult,
   InternalFields,
   QueryEventsBySavedObjectSearchAfterResult,
+  SoftDeleteByQueryParams,
 } from './es/cluster_client_adapter';
 
 export type {
@@ -100,6 +101,7 @@ export interface IEventLogClient {
   ): Promise<QueryEventsBySavedObjectSearchAfterResult>;
   closePointInTime(pitId: string): Promise<void>;
   refreshIndex(): Promise<void>;
+  softDeleteByQuery(params: SoftDeleteByQueryParams): Promise<UpdateByQueryResponse>;
 }
 
 export interface IEventLogger {

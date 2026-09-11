@@ -58,6 +58,45 @@ export default ({ getService }: FtrProviderContext): void => {
   const esArchiver = getService('esArchiver');
   const utils = getService('securitySolutionUtils');
   const rolesUsersProvider = getService('rolesUsersProvider');
+  const retry = getService('retry');
+
+  const EVENT_LOG_DATA_STREAM = '.kibana-event-log-ds';
+
+  const countSoftDeletedGaps = async (ruleId: string): Promise<number> => {
+    await es.indices.refresh({ index: EVENT_LOG_DATA_STREAM });
+    const { count } = await es.count({
+      index: EVENT_LOG_DATA_STREAM,
+      query: {
+        bool: {
+          must: [
+            { term: { 'event.action': 'gap' } },
+            { term: { 'event.provider': 'alerting' } },
+            { term: { 'rule.id': ruleId } },
+            { term: { 'kibana.alert.rule.gap.deleted': true } },
+          ],
+        },
+      },
+    });
+    return count;
+  };
+
+  const countActiveGaps = async (ruleId: string): Promise<number> => {
+    await es.indices.refresh({ index: EVENT_LOG_DATA_STREAM });
+    const { count } = await es.count({
+      index: EVENT_LOG_DATA_STREAM,
+      query: {
+        bool: {
+          must: [
+            { term: { 'event.action': 'gap' } },
+            { term: { 'event.provider': 'alerting' } },
+            { term: { 'rule.id': ruleId } },
+          ],
+          must_not: [{ term: { 'kibana.alert.rule.gap.deleted': true } }],
+        },
+      },
+    });
+    return count;
+  };
 
   const postBulkAction = () =>
     supertest
@@ -288,6 +327,82 @@ export default ({ getService }: FtrProviderContext): void => {
 
       // Check that the updates have been persisted
       await fetchRule(ruleId).expect(404);
+    });
+
+    it('should soft-delete gaps when deleting rules', async () => {
+      const ruleId = 'ruleId';
+      const createdRule = await createRule(supertest, log, getSimpleRule(ruleId));
+
+      const { gapEvents } = await generateGapsForRule(
+        es,
+        { id: createdRule.id, name: createdRule.name },
+        5
+      );
+      expect(gapEvents).toHaveLength(5);
+      expect(await countActiveGaps(createdRule.id)).toBe(5);
+
+      await postBulkAction().send({ query: '', action: BulkActionTypeEnum.delete }).expect(200);
+
+      await fetchRule(ruleId).expect(404);
+
+      // Gap soft-deletion is synchronous (a blocking update_by_query), so gaps are
+      // updated by the time the API responds; retry only covers ES refresh visibility.
+      await retry.tryForTime(30_000, async () => {
+        expect(await countSoftDeletedGaps(createdRule.id)).toBe(5);
+        expect(await countActiveGaps(createdRule.id)).toBe(0);
+      });
+    });
+
+    it('should soft-delete gaps for every rule when bulk deleting multiple rules', async () => {
+      const ruleA = await createRule(supertest, log, getSimpleRule('rule-a'));
+      const ruleB = await createRule(supertest, log, getSimpleRule('rule-b'));
+
+      await generateGapsForRule(es, { id: ruleA.id, name: ruleA.name }, 3);
+      await generateGapsForRule(es, { id: ruleB.id, name: ruleB.name }, 4);
+      expect(await countActiveGaps(ruleA.id)).toBe(3);
+      expect(await countActiveGaps(ruleB.id)).toBe(4);
+
+      await postBulkAction().send({ query: '', action: BulkActionTypeEnum.delete }).expect(200);
+
+      await retry.tryForTime(30_000, async () => {
+        expect(await countSoftDeletedGaps(ruleA.id)).toBe(3);
+        expect(await countActiveGaps(ruleA.id)).toBe(0);
+        expect(await countSoftDeletedGaps(ruleB.id)).toBe(4);
+        expect(await countActiveGaps(ruleB.id)).toBe(0);
+      });
+    });
+
+    it('should leave already soft-deleted gaps untouched and soft-delete the remaining ones', async () => {
+      const createdRule = await createRule(supertest, log, getSimpleRule('rule-mixed'));
+
+      const { gapEvents } = await generateGapsForRule(
+        es,
+        { id: createdRule.id, name: createdRule.name },
+        5
+      );
+      expect(gapEvents).toHaveLength(5);
+
+      // Pre-mark 2 of the 5 gaps as already soft-deleted.
+      const alreadyDeletedIds = gapEvents.slice(0, 2).map((gap) => gap._id as string);
+      await es.updateByQuery({
+        index: EVENT_LOG_DATA_STREAM,
+        refresh: true,
+        conflicts: 'proceed',
+        query: { ids: { values: alreadyDeletedIds } },
+        script: {
+          source: 'ctx._source.kibana.alert.rule.gap.deleted = true;',
+          lang: 'painless',
+        },
+      });
+      expect(await countSoftDeletedGaps(createdRule.id)).toBe(2);
+      expect(await countActiveGaps(createdRule.id)).toBe(3);
+
+      await postBulkAction().send({ query: '', action: BulkActionTypeEnum.delete }).expect(200);
+
+      await retry.tryForTime(30_000, async () => {
+        expect(await countSoftDeletedGaps(createdRule.id)).toBe(5);
+        expect(await countActiveGaps(createdRule.id)).toBe(0);
+      });
     });
 
     it('should duplicate rules', async () => {

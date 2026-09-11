@@ -3342,6 +3342,7 @@ x-pack/platform/plugins/shared/actions/server/lib/token_tracking @elastic/securi
 
 /x-pack/solutions/security/test/security_solution_cypress/cypress/e2e/detection_response/rule_management @elastic/security-detection-engineering
 /x-pack/solutions/security/plugins/security_solution/docs/rfcs/detection_response @elastic/security-detection-engineering
+/x-pack/solutions/security/plugins/security_solution/docs/testing/test_plans/detection_engineering @elastic/security-detection-engineering
 /x-pack/solutions/security/plugins/security_solution/docs/testing/test_plans/detection_response/prebuilt_rules @elastic/security-detection-engineering
 /x-pack/solutions/security/plugins/security_solution/docs/testing/test_plans/detection_response/rule_management @elastic/security-detection-engineering
 /x-pack/solutions/security/test/security_solution_api_integration/test_suites/detections_response/rules_management @elastic/security-detection-engineering

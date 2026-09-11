@@ -139,6 +139,97 @@ const generateNonOverlappingGapEvents = (
   });
 };
 
+const baseGapEventEnvelope = (rule: { id: string; name: string }) => ({
+  event: {
+    provider: 'alerting',
+    action: 'gap',
+    kind: 'alert',
+    category: ['siem'],
+  },
+  saved_objects: [
+    {
+      rel: 'primary',
+      type: 'alert',
+      id: rule.id,
+      type_id: 'siem.queryRule',
+    },
+  ],
+  rule: {
+    id: rule.id,
+    license: 'basic',
+    category: 'siem.queryRule',
+    ruleset: 'siem',
+    name: rule.name,
+  },
+  ecs: {
+    version: '1.8.0',
+  },
+});
+
+/**
+ * Indexes gap events that match the gap query but lack the `kibana.alert.rule.gap`
+ * object the soft-delete script assigns into — one missing only `gap`, one missing
+ * the whole `kibana` object. The script's null guard must skip both rather than
+ * fail the batch, so well-formed gaps in the same operation still get flipped.
+ * Returns the number of documents indexed.
+ */
+export const generateMalformedGapEventsForRule = async (
+  esClient: Client,
+  rule: { id: string; name: string }
+): Promise<number> => {
+  if (!esClient) throw new Error('Failed to get ES client');
+
+  const timestamp = moment().subtract(1, 'hour').toISOString();
+  const { event, saved_objects: savedObjects, rule: ruleFields, ecs } = baseGapEventEnvelope(rule);
+
+  const documents = [
+    // `kibana.alert.rule` exists but has no `gap` child.
+    {
+      '@timestamp': timestamp,
+      event,
+      kibana: {
+        alert: {
+          rule: {
+            revision: 1,
+            rule_type_id: 'siem.queryRule',
+            consumer: 'siem',
+            execution: { uuid: faker.string.uuid() },
+          },
+        },
+        saved_objects: savedObjects,
+        space_ids: ['default'],
+        server_uuid: '5d29f261-1b85-4d90-9088-53e0e0e87c7c',
+        version: '9.1.0',
+      },
+      rule: ruleFields,
+      ecs,
+    },
+    // No `kibana` object at all.
+    {
+      '@timestamp': timestamp,
+      event,
+      rule: ruleFields,
+      ecs,
+    },
+  ];
+
+  const operations = documents.flatMap((doc) => [
+    { create: { _index: '.kibana-event-log-ds' } },
+    doc,
+  ]);
+
+  const response = await esClient.bulk({ operations, refresh: true });
+  if (response.errors) {
+    throw new Error(
+      `Failed to index malformed gap events: ${JSON.stringify(
+        response.items.filter((item) => item.create?.error)
+      )}`
+    );
+  }
+
+  return documents.length;
+};
+
 export const generateGapsForRule = async (
   esClient: Client,
   rule: { id: string; name: string },

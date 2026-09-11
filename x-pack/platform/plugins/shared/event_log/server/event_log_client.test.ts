@@ -280,6 +280,38 @@ describe('EventLogStart', () => {
       });
     });
   });
+
+  describe('softDeleteByQuery', () => {
+    const validParams = {
+      query: { bool: { must: [{ term: { 'event.action': 'gap' } }] } },
+      field: 'kibana.alert.rule.gap.deleted' as const,
+    };
+
+    test('delegates to the adapter when params are valid', async () => {
+      await eventLogClient.softDeleteByQuery(validParams);
+      expect(esContext.esAdapter.softDeleteByQuery).toHaveBeenCalledWith(validParams);
+    });
+
+    test.each([
+      ['an arbitrary field path', 'some.other.field'],
+      ['a flat field', 'deleted'],
+      ['an injection attempt', 'deleted = true; ctx._source.other'],
+      ['an empty string', ''],
+      ['a field with leading dot', '.deleted'],
+      ['a field with trailing dot', 'deleted.'],
+      ['a partial match of the allowed field', 'kibana.alert.rule.gap'],
+      ['a superset of the allowed field', 'kibana.alert.rule.gap.deleted.extra'],
+    ])('rejects %s', async (_label, field) => {
+      await expect(
+        eventLogClient.softDeleteByQuery({
+          ...validParams,
+          field,
+        })
+      ).rejects.toThrow(/\[field\]:/);
+
+      expect(esContext.esAdapter.softDeleteByQuery).not.toHaveBeenCalled();
+    });
+  });
 });
 
 function fakeEvent(overrides = {}) {
