@@ -125,7 +125,17 @@ describe('tracesDataSourceProfileProvider', () => {
     ).toEqual(RESOLUTION_MISMATCH);
   });
 
-  it('should NOT match when the solutionType is NOT Observability', () => {
+  it('should match in Classic but not other solution views', () => {
+    expect(
+      tracesDataSourceProfileProvider.resolve({
+        rootContext: {
+          profileId: 'classic-nav-root-profile',
+          solutionType: SolutionType.Default,
+        },
+        dataSource: createDataViewDataSource({ dataViewId: 'other_view_id' }),
+        dataView: { getIndexPattern: () => 'traces-*' } as unknown as DataView,
+      } as DataSourceProfileProviderParams)
+    ).toEqual(RESOLUTION_MATCH);
     expect(
       tracesDataSourceProfileProvider.resolve({
         rootContext: {

@@ -9,6 +9,7 @@
 
 export const SECURITY_PROFILE_ID = {
   root: 'security-root-profile',
+  dataSource: 'security-data-source-profile',
   document: 'security-document-profile',
   enhanced_document: 'enhanced-security-document-profile',
 };

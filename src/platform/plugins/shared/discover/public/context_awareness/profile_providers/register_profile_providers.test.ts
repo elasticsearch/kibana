@@ -21,6 +21,8 @@ import type { BaseProfileProvider } from '../profile_service';
 import { SolutionType } from '../profiles';
 import { METRICS_DATA_SOURCE_PROFILE_ID } from './common/metrics_data_source_profile/profile';
 import { OBSERVABILITY_TRACES_DATA_SOURCE_PROFILE_ID } from './observability/traces_data_source_profile/profile';
+import { SECURITY_PROFILE_ID } from './security/constants';
+import { SPARKLINE_DATA_SOURCE_PROFILE_ID } from './common/sparkline_data_source_profile/profile';
 
 const levels = ['root', 'data-source', 'document'];
 let mockAllCollectedProfiles: Array<{ level: string; profileId: string }> = [];
@@ -89,6 +91,21 @@ const setupObservabilityProfileStack = async () => {
     profileProviderServices,
     rootContext,
   };
+};
+
+const setupRootProfileService = () => {
+  const profileProviderServices = createProfileProviderSharedServicesMock();
+  const { rootProfileServiceMock, dataSourceProfileServiceMock, documentProfileServiceMock } =
+    createContextAwarenessMocks({ shouldRegisterProviders: false });
+  registerProfileProviders({
+    rootProfileService: rootProfileServiceMock,
+    dataSourceProfileService: dataSourceProfileServiceMock,
+    documentProfileService: documentProfileServiceMock,
+    enabledExperimentalProfileIds: [],
+    sharedServices: profileProviderServices,
+    services: profileProviderServices,
+  });
+  return rootProfileServiceMock;
 };
 
 describe('registerProfileProviders', () => {
@@ -189,6 +206,46 @@ describe('registerProfileProviders', () => {
 
     const allCollectedProfileIds = mockAllCollectedProfiles.map((p) => p.profileId);
     expect(allCollectedProfileIds).toEqual(uniq(allCollectedProfileIds));
+  });
+
+  it('distinguishes Search navigation from Classic navigation', async () => {
+    const rootProfileService = setupRootProfileService();
+
+    await expect(
+      rootProfileService.resolve({ solutionNavId: SolutionType.Search })
+    ).resolves.toEqual(expect.objectContaining({ solutionType: SolutionType.Search }));
+    await expect(rootProfileService.resolve({ solutionNavId: null })).resolves.toEqual(
+      expect.objectContaining({ solutionType: SolutionType.Default })
+    );
+  });
+
+  it('registers Security after solution-agnostic profiles and before Observability profiles', () => {
+    const profileProviderServices = createProfileProviderSharedServicesMock();
+    const { rootProfileServiceMock, dataSourceProfileServiceMock, documentProfileServiceMock } =
+      createContextAwarenessMocks({ shouldRegisterProviders: false });
+    registerProfileProviders({
+      rootProfileService: rootProfileServiceMock,
+      dataSourceProfileService: dataSourceProfileServiceMock,
+      documentProfileService: documentProfileServiceMock,
+      enabledExperimentalProfileIds: [],
+      sharedServices: profileProviderServices,
+      services: profileProviderServices,
+    });
+
+    const dataSourceProfileIds = mockAllCollectedProfiles
+      .filter(({ level }) => level === 'data-source')
+      .map(({ profileId }) => profileId);
+    const securityIndex = dataSourceProfileIds.indexOf(SECURITY_PROFILE_ID.dataSource);
+
+    expect(securityIndex).toBeGreaterThan(
+      dataSourceProfileIds.indexOf(SPARKLINE_DATA_SOURCE_PROFILE_ID)
+    );
+    expect(securityIndex).toBeLessThan(
+      dataSourceProfileIds.indexOf(OBSERVABILITY_TRACES_DATA_SOURCE_PROFILE_ID)
+    );
+    expect(securityIndex).toBeLessThan(
+      dataSourceProfileIds.indexOf('observability-logs-data-source-profile')
+    );
   });
 
   describe('Observability cross-profile resolution', () => {

@@ -30,7 +30,10 @@ export const createObservabilityLogDocumentProfileProvider = (
     getDocViewer: createGetDocViewer(services),
   },
   resolve: ({ record, rootContext, dataSourceContext }) => {
-    if (rootContext.solutionType !== SolutionType.Observability) {
+    if (
+      rootContext.solutionType !== SolutionType.Observability &&
+      rootContext.solutionType !== SolutionType.Default
+    ) {
       return { isMatch: false };
     }
 

@@ -9,23 +9,19 @@
 
 import type { RootProfileProvider } from '../../../profiles';
 import { SolutionType } from '../../../profiles';
-import type { SecurityProfileProviderFactory } from '../types';
-import { SECURITY_PROFILE_ID } from '../constants';
 
-export const createSecurityRootProfileProvider: SecurityProfileProviderFactory<
-  RootProfileProvider
-> = () => ({
-  profileId: SECURITY_PROFILE_ID.root,
+export const createSearchRootProfileProvider = (): RootProfileProvider => ({
+  profileId: 'search-root-profile',
   profile: {},
-  resolve: (params) => {
-    if (params.solutionNavId !== SolutionType.Security) {
+  resolve: ({ solutionNavId }) => {
+    if (solutionNavId !== SolutionType.Search) {
       return { isMatch: false };
     }
 
     return {
       isMatch: true,
       context: {
-        solutionType: SolutionType.Security,
+        solutionType: SolutionType.Search,
       },
     };
   },

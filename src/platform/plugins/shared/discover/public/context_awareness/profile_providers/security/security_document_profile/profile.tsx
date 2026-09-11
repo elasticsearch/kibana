@@ -10,7 +10,7 @@
 import React from 'react';
 import { getFieldValue } from '@kbn/discover-utils';
 import type { DocumentProfileProvider } from '../../../profiles';
-import { DocumentType, SolutionType } from '../../../profiles';
+import { DataSourceCategory, DocumentType } from '../../../profiles';
 import type { ProfileProviderServices } from '../../profile_provider_services';
 import { SECURITY_PROFILE_ID, SIGNAL_RULE_NAME_FIELD_NAME } from '../constants';
 import * as i18n from '../translations';
@@ -52,8 +52,8 @@ export const createSecurityDocumentProfileProvider: SecurityProfileProviderFacto
         };
       },
     },
-    resolve: ({ rootContext }) => {
-      if (rootContext.solutionType !== SolutionType.Security) {
+    resolve: ({ dataSourceContext }) => {
+      if (dataSourceContext.category !== DataSourceCategory.Security) {
         return { isMatch: false };
       }
 

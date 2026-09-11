@@ -126,7 +126,7 @@ describe('logDocumentProfileProvider', () => {
     ).toEqual(RESOLUTION_MISMATCH);
   });
 
-  it('does not match records when solution type is not Observability', () => {
+  it('matches records in Classic but not other solution views', () => {
     const params: Omit<DocumentProfileProviderParams, 'rootContext'> = {
       dataSourceContext: DATA_SOURCE_CONTEXT,
       record: buildMockRecord('another-index', {
@@ -144,7 +144,7 @@ describe('logDocumentProfileProvider', () => {
         ...params,
         rootContext: { profileId: 'other-data-source-profile', solutionType: SolutionType.Default },
       })
-    ).toEqual(RESOLUTION_MISMATCH);
+    ).toEqual(RESOLUTION_MATCH);
     expect(
       logDocumentProfileProvider.resolve({
         ...params,

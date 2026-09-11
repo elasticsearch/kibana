@@ -40,7 +40,8 @@ export const createTracesDataSourceProfileProvider = ({
   },
   resolve: (params) => {
     if (
-      params.rootContext.solutionType === SolutionType.Observability &&
+      (params.rootContext.solutionType === SolutionType.Observability ||
+        params.rootContext.solutionType === SolutionType.Default) &&
       apmContextService.tracesService.isTracesIndexPattern(extractIndexPatternFrom(params)) &&
       (params.dataSource?.type === DataSourceType.DataView ||
         isValidNonTransformationalESQLQuery(params.query))

@@ -43,10 +43,12 @@ export const createObservabilityTracesDocumentProfileProvider = ({
     ),
   },
   resolve: ({ record, rootContext }) => {
-    const isObservabilitySolutionView = rootContext.solutionType === SolutionType.Observability;
+    const isSupportedSolution =
+      rootContext.solutionType === SolutionType.Observability ||
+      rootContext.solutionType === SolutionType.Default;
 
     if (
-      isObservabilitySolutionView &&
+      isSupportedSolution &&
       isTraceDocument(record, apmContextService.tracesService.isTracesIndexPattern)
     ) {
       return {

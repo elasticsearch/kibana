@@ -1,8 +1,8 @@
 {
     "attributes": {
-        "name": "security-discover-alerts*",
+        "name": ".alerts-security.alerts-discover*",
         "timeFieldName": "@timestamp",
-        "title": "security-discover-alerts*"
+        "title": ".alerts-security.alerts-discover*"
     },
     "coreMigrationVersion": "8.8.0",
     "created_at": "2025-01-01T00:00:00.000Z",
@@ -16,9 +16,9 @@
 
 {
     "attributes": {
-        "name": "security-discover-events*",
+        "name": "endgame-discover-events*",
         "timeFieldName": "@timestamp",
-        "title": "security-discover-events*"
+        "title": "endgame-discover-events*"
     },
     "coreMigrationVersion": "8.8.0",
     "created_at": "2025-01-01T00:00:00.000Z",
@@ -32,9 +32,9 @@
 
 {
     "attributes": {
-        "name": "security-discover-attacks*",
+        "name": ".alerts-security.attack.discovery.alerts-discover*",
         "timeFieldName": "@timestamp",
-        "title": "security-discover-attacks*"
+        "title": ".alerts-security.attack.discovery.alerts-discover*"
     },
     "coreMigrationVersion": "8.8.0",
     "created_at": "2025-01-01T00:00:00.000Z",
@@ -48,9 +48,9 @@
 
 {
     "attributes": {
-        "name": "security-discover-iocs*",
+        "name": ".siem-signals-discover-iocs*",
         "timeFieldName": "@timestamp",
-        "title": "security-discover-iocs*"
+        "title": ".siem-signals-discover-iocs*"
     },
     "coreMigrationVersion": "8.8.0",
     "created_at": "2025-01-01T00:00:00.000Z",
@@ -96,7 +96,7 @@
     "attributes": {
         "name": "security-discover-alerts-rendered",
         "timeFieldName": "@timestamp",
-        "title": "security-discover-alerts*,.alerts-security.alerts-discover*"
+        "title": ".alerts-security.alerts-discover*"
     },
     "coreMigrationVersion": "8.8.0",
     "created_at": "2025-01-01T00:00:00.000Z",

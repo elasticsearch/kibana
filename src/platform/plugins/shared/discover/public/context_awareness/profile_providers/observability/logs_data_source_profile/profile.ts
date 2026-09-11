@@ -60,7 +60,10 @@ export const createLogsDataSourceProfileProvider = (
     getDeepAnalysisPlaybook,
   },
   resolve: (params) => {
-    if (params.rootContext.solutionType !== SolutionType.Observability) {
+    if (
+      params.rootContext.solutionType !== SolutionType.Observability &&
+      params.rootContext.solutionType !== SolutionType.Default
+    ) {
       return { isMatch: false };
     }
 

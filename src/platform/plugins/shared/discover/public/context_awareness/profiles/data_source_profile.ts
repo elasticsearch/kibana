@@ -25,6 +25,7 @@ export enum DataSourceCategory {
   Traces = 'traces',
   Metrics = 'metrics',
   Logs = 'logs',
+  Security = 'security',
   Default = 'default',
 }
 

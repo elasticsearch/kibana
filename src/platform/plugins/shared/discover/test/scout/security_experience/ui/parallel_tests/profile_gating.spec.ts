@@ -18,14 +18,13 @@ import {
 } from '../fixtures';
 
 /**
- * Sanity coverage that the Security flyout enhancement is gated on the security solution view: the
- * security root profile only resolves when `solutionNavId === Security`. Under a non-security view the
- * same alert document opens the default Discover doc viewer without the security header.
+ * Sanity coverage that the Security flyout enhancement resolves in the classic solution view from
+ * the security data source profile rather than relying on the security root profile.
  *
  * Stateful only — the solution view cannot be switched on serverless (it is fixed by project type).
  */
 spaceTest.describe(
-  'Security in Discover - Profile gated on security solution view',
+  'Security in Discover - Profile resolution in classic solution view',
   { tag: tags.stateful.all },
   () => {
     // Force a wide viewport so the doc viewer flyout (pushMinBreakpoint="xl") renders in push mode.
@@ -40,7 +39,7 @@ spaceTest.describe(
     });
 
     spaceTest(
-      'does not enhance the alert flyout under the classic solution view',
+      'enhances the alert flyout under the classic solution view',
       async ({ scoutSpace, browserAuth, pageObjects }) => {
         await scoutSpace.setSolutionView('classic');
         await browserAuth.loginAsPrivilegedUser();
@@ -52,8 +51,8 @@ spaceTest.describe(
         await docViewer.openAndWaitForFlyout({ rowIndex: 0 });
 
         await expect(securityDiscoverFlyout.docViewer).toBeVisible();
-        await expect(securityDiscoverFlyout.alertTitle).toBeHidden();
-        await expect(securityDiscoverFlyout.overviewTab).toBeHidden();
+        await expect(securityDiscoverFlyout.alertTitle).toBeVisible();
+        await expect(securityDiscoverFlyout.overviewTab).toBeVisible();
       }
     );
   }

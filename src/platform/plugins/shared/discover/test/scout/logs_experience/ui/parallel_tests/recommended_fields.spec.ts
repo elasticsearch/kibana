@@ -26,7 +26,7 @@ spaceTest.describe(
   },
   () => {
     spaceTest.beforeAll(async ({ scoutSpace, config }) => {
-      await setupLogsExperience(scoutSpace, config);
+      await setupLogsExperience(scoutSpace, config, { solutionView: 'classic' });
     });
 
     spaceTest.beforeEach(async ({ browserAuth }) => {

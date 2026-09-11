@@ -7,10 +7,10 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
-import type { RootProfileProvider } from '../../../profiles';
+import type { DataSourceProfileProvider } from '../../../profiles';
 import { ALERTS_INDEX_PATTERN } from '../constants';
 
-export const createDefaultSecuritySolutionAppStateGetter: () => RootProfileProvider['profile']['getDefaultAppState'] =
+export const createDefaultSecuritySolutionAppStateGetter: () => DataSourceProfileProvider['profile']['getDefaultAppState'] =
   () => (prev) => (params) => {
     const { dataView } = params;
     const appState = { ...prev(params) };

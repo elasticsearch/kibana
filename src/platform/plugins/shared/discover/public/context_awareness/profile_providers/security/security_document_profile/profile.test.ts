@@ -13,7 +13,7 @@ import { DocViewsRegistry } from '@kbn/unified-doc-viewer';
 import { createProfileProviderSharedServicesMock } from '../../../__mocks__';
 import { EMPTY_CONTEXT_AWARENESS_TOOLKIT } from '../../../toolkit';
 import { createSecurityDocumentProfileProvider } from './profile';
-import { DocumentType } from '../../..';
+import { DataSourceCategory, DocumentType, SolutionType } from '../../..';
 
 const mockServices = createProfileProviderSharedServicesMock();
 const provider = createSecurityDocumentProfileProvider(mockServices);
@@ -121,5 +121,36 @@ describe('createSecurityDocumentProfileProvider — getDocViewer', () => {
     );
     docViewer.docViewsRegistry(registry);
     expect(registry.getAll()).toHaveLength(0);
+  });
+});
+
+describe('createSecurityDocumentProfileProvider — resolve', () => {
+  const record = buildRecord({ 'event.kind': 'signal' });
+  const rootContext = { profileId: 'root-profile', solutionType: SolutionType.Default };
+
+  it('matches based on Security data source context in Classic', () => {
+    expect(
+      provider.resolve({
+        rootContext,
+        dataSourceContext: {
+          profileId: 'security-data-source-profile',
+          category: DataSourceCategory.Security,
+        },
+        record,
+      })
+    ).toEqual({ isMatch: true, context: { type: DocumentType.Default } });
+  });
+
+  it('does not match without Security data source context', () => {
+    expect(
+      provider.resolve({
+        rootContext: { profileId: 'security-root-profile', solutionType: SolutionType.Security },
+        dataSourceContext: {
+          profileId: 'default-data-source-profile',
+          category: DataSourceCategory.Default,
+        },
+        record,
+      })
+    ).toEqual({ isMatch: false });
   });
 });

@@ -166,6 +166,29 @@ describe('tracesDocumentProfileProvider', () => {
       ).toEqual(RESOLUTION_MISMATCH);
     });
   });
+
+  describe('when root profile is Classic', () => {
+    it('matches records with a trace id independently of data source context', () => {
+      const spanDocumentProfileProvider =
+        createObservabilityTracesDocumentProfileProvider(mockServices);
+
+      expect(
+        spanDocumentProfileProvider.resolve({
+          rootContext: getRootContext({
+            profileId: 'classic-nav-root-profile',
+            solutionType: SolutionType.Default,
+          }),
+          dataSourceContext: {
+            profileId: 'default-data-source-profile',
+            category: DataSourceCategory.Default,
+          },
+          record: buildTraceMockRecord('traces-index', {
+            'trace.id': ['c0ffee'],
+          }),
+        })
+      ).toEqual(RESOLUTION_MATCH);
+    });
+  });
 });
 
 const buildTraceMockRecord = (index: string, fields: Record<string, unknown> = {}) =>

@@ -100,7 +100,7 @@ describe('logsDataSourceProfileProvider', () => {
     }
   );
 
-  it('does NOT match data view sources when solution type is not Observability', () => {
+  it('matches in Classic but not other solution views', () => {
     const params: Omit<DataSourceProfileProviderParams, 'rootContext'> = {
       dataSource: createEsqlDataSource(),
       query: { esql: `from ${VALID_IMPLICIT_DATA_INDEX_PATTERN}` },
@@ -113,7 +113,7 @@ describe('logsDataSourceProfileProvider', () => {
         ...params,
         rootContext: { profileId: 'other-root-profile', solutionType: SolutionType.Default },
       })
-    ).toEqual(RESOLUTION_MISMATCH);
+    ).toEqual(RESOLUTION_MATCH);
     expect(
       logsDataSourceProfileProvider.resolve({
         ...params,

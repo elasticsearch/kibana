@@ -21,7 +21,10 @@ export const createResolve = (
   ]);
 
   return (params) => {
-    if (params.rootContext.solutionType !== SolutionType.Observability) {
+    if (
+      params.rootContext.solutionType !== SolutionType.Observability &&
+      params.rootContext.solutionType !== SolutionType.Default
+    ) {
       return { isMatch: false };
     }
 

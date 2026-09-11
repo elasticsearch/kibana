@@ -45,7 +45,7 @@ describe('createResolve', () => {
     expect(result).toEqual(RESOLUTION_MISMATCH);
   });
 
-  it('should not match when the solution type is not Observability', () => {
+  it('should match in Classic but not other solution views', () => {
     const params: Omit<DataSourceProfileProviderParams, 'rootContext'> = {
       dataSource: createEsqlDataSource(),
       query: { esql: `FROM ${VALID_INDEX_PATTERN}` },
@@ -61,7 +61,7 @@ describe('createResolve', () => {
         ...params,
         rootContext: { profileId: 'other-root-profile', solutionType: SolutionType.Default },
       })
-    ).toEqual(RESOLUTION_MISMATCH);
+    ).toEqual(RESOLUTION_MATCH);
     expect(
       resolve({
         ...params,
