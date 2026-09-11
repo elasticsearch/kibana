@@ -19,10 +19,12 @@ Examples that should NOT trigger a service map visual:
 
 Call `get_service_topology` to retrieve the service dependency graph.
 
-**For a specific service's neighborhood:**
+**For a specific service's neighborhood (preferred for map rendering):**
 ```
-get_service_topology(serviceName: "checkout", direction: "both", start: "now-15m", end: "now")
+get_service_topology(serviceName: "checkout", direction: "both", depth: 2, start: "now-15m", end: "now")
 ```
+
+Prefer `direction: "both"` with `depth: 2` when the result will be rendered as a map: it gives users a broader view without requiring another fetch.
 
 **For upstream callers only:**
 ```
@@ -46,13 +48,14 @@ Pass the topology data directly to `attachments.add`:
   "description": "Service topology map for checkout",
   "data": {
     "connections": <connections array from get_service_topology result>,
+    "nodeMetadata": <nodeMetadata object from get_service_topology result>,
     "serviceName": "checkout",
     "title": "Service Map — checkout"
   }
 }
 ```
 
-The `data.connections` field should contain the exact connections array returned by `get_service_topology`. Do NOT transform, restructure, or compute positions — the renderer handles layout and styling automatically.
+The `data.connections` field should contain the exact connections array returned by `get_service_topology`. The `data.nodeMetadata` field should contain the exact `nodeMetadata` object returned alongside it — it carries per-service `alertsCount`, `sloStatus`, `sloCount`, and ML anomaly fields (`anomalySeverity`, `anomalyScore`), which render as alert, SLO, and anomaly badges on the service nodes. Pass both through verbatim; do NOT transform, restructure, or compute positions — the renderer handles layout and styling automatically. If `get_service_topology` did not return `nodeMetadata`, omit the field.
 
 ### Step 3: Render the attachment
 
@@ -67,6 +70,6 @@ After creating the attachment, render it inline:
 - If `get_service_topology` returns an empty `connections` array, do NOT create a service map attachment. Instead, tell the user that no topology data was found for the requested service or time range.
 - Do NOT compute node positions or build React Flow JSON — the attachment renderer handles all layout and styling
 - Do NOT use the generic graph attachment (`type: "graph"`) for service maps — use `type: "observability.service-map"`
-- The `serviceName` field in the data is optional but helps label the map when scoped to a specific service
+- Set `serviceName` in the data whenever the map is scoped to a specific service: it becomes the focal node of the rendered map
 - Throughput and error rate are shown as labels on edges when available
 - The map is a static visual — node click popovers and links to APM pages are not yet available

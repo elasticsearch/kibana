@@ -80,6 +80,7 @@ import {
 import { ServiceMapLegend } from './service_map_legend';
 import { AddToDashboardButton } from './add_to_dashboard_button';
 import type { Environment } from '../../../../common/environment_rt';
+import { isEnvironmentDefined } from '../../../../common/environment_filter_values';
 import {
   isServiceNode,
   type ServiceMapNode,
@@ -188,7 +189,12 @@ function GraphInner({
 }: GraphProps) {
   const { services } = useKibana<ApmPluginStartDeps & ApmServices>();
   const { telemetry } = services;
-  const { core, share, lens, dataViews, plugins } = useApmPluginContext();
+  const { core, share, lens, dataViews, plugins, observabilityAgentBuilder } =
+    useApmPluginContext();
+  const ServiceMapInvestigateButton = useMemo(
+    () => observabilityAgentBuilder?.getServiceMapInvestigateButton(),
+    [observabilityAgentBuilder]
+  );
   const { euiTheme } = useEuiTheme();
   const { fitView, zoomIn, zoomOut, setCenter, getNodes, getNodesBounds } =
     useReactFlow<ServiceMapNode>();
@@ -902,6 +908,16 @@ function GraphInner({
             </Panel>
             {!isEmbedded && (
               <Panel position="top-right" css={topLeftToolbarStyles}>
+                {ServiceMapInvestigateButton && (
+                  <ServiceMapInvestigateButton
+                    rangeFrom={rangeFrom ?? start}
+                    rangeTo={rangeTo ?? end}
+                    environment={isEnvironmentDefined(environment) ? environment : undefined}
+                    kuery={kuery || undefined}
+                    serviceGroupId={serviceGroupId}
+                    highlightedServiceNames={highlightedServiceNames}
+                  />
+                )}
                 <EuiPanel
                   hasBorder
                   hasShadow={false}

@@ -15,10 +15,12 @@ import type {
   ObservabilityAgentBuilderPluginSetupDependencies,
 } from '../../types';
 import type { ObservabilityAgentBuilderDataRegistry } from '../../data_registry/data_registry';
+import type { ServiceNodeMetadataMap } from '../../data_registry/data_registry_types';
 import { timeRangeSchemaOptional } from '../../utils/tool_schemas';
-import { MAX_SHORT_STRING_LENGTH } from '../../utils/schema_limits';
+import { MAX_KQL_FILTER_LENGTH, MAX_SHORT_STRING_LENGTH } from '../../utils/schema_limits';
 import { getAgentBuilderResourceAvailability } from '../../utils/get_agent_builder_resource_availability';
 import { getToolHandler } from './handler';
+import type { ServiceTopologyNode } from './types';
 
 export const OBSERVABILITY_GET_SERVICE_TOPOLOGY_TOOL_ID = 'observability.get_service_topology';
 
@@ -50,6 +52,23 @@ const getServiceTopologyToolSchema = z.object({
         'depth=1 returns only immediate (single-hop) dependencies. ' +
         'Omit for unlimited traversal (full multi-hop topology).'
     ),
+  environment: z
+    .string()
+    .max(MAX_SHORT_STRING_LENGTH)
+    .optional()
+    .describe(
+      'Service environment (e.g. "production") used to scope the returned `nodeMetadata` badges. ' +
+        'Pass it whenever the user is looking at a single environment — otherwise alert, SLO and ' +
+        'anomaly counts are aggregated across every environment. Omit for all environments.'
+    ),
+  kuery: z
+    .string()
+    .max(MAX_KQL_FILTER_LENGTH)
+    .optional()
+    .describe(
+      'KQL filter applied when computing the `nodeMetadata` alert and SLO badges, ' +
+        'e.g. \'service.name: "frontend"\'. Omit when no filter applies.'
+    ),
 });
 
 export function createGetServiceTopologyTool({
@@ -75,7 +94,13 @@ export function createGetServiceTopologyTool({
     },
     description: `Retrieves the service topology (dependency graph) for a service, with RED metrics (latency, throughput, error rate) per connection.
 
-Returns connections with source/target nodes and RED metrics. Supports downstream, upstream, or both directions.
+Returns:
+- \`connections\`: source/target nodes with RED metrics. Each service node has a \`service.name\` field; external dependency nodes have a \`span.destination.service.resource\` field.
+- \`nodeMetadata\` (best-effort, may be absent): per-service badge data keyed by service name. Each entry may contain \`alertsCount\`, \`sloStatus\`, \`sloCount\`, \`anomalySeverity\`, \`anomalyScore\`. Pass this field through verbatim when building an \`observability.service-map\` attachment.
+
+Supports downstream, upstream, or both directions.
+
+Scoping: \`environment\` and \`kuery\` scope the \`nodeMetadata\` badges only. The \`connections\` graph is always built from all environments, so do not claim a topology is environment-specific.
 
 When to use:
 - Checking which direct dependencies are failing or slow (depth: 1)
@@ -98,7 +123,7 @@ After reviewing topology results, consider:
       },
     },
     handler: async (toolParams, context) => {
-      const { serviceName, direction, depth, start, end } = toolParams;
+      const { serviceName, direction, depth, start, end, environment, kuery } = toolParams;
       const { request } = context;
 
       try {
@@ -115,12 +140,43 @@ After reviewing topology results, consider:
           end,
         });
 
+        // Collect all service names from the topology connections (best-effort)
+        const serviceNamesInTopology = new Set<string>();
+        for (const conn of topology.connections) {
+          for (const node of [conn.source, conn.target]) {
+            if ('service.name' in node) {
+              serviceNamesInTopology.add((node as ServiceTopologyNode)['service.name']);
+            }
+          }
+        }
+
+        // Enrich with per-service badge metadata (alerts, SLOs, ML anomalies),
+        // scoped to the same environment/kuery the caller is looking at so the
+        // counts match the user's view instead of aggregating every environment.
+        // Best-effort: failures are logged and do not prevent topology from being returned.
+        let nodeMetadata: ServiceNodeMetadataMap | undefined;
+        if (serviceNamesInTopology.size > 0) {
+          try {
+            nodeMetadata = await dataRegistry.getData('servicesAlertsAndSlo', {
+              request,
+              serviceNames: [...serviceNamesInTopology],
+              environment,
+              kuery,
+              start,
+              end,
+            });
+          } catch (enrichError) {
+            logger.debug(`Failed to enrich topology with badge metadata: ${enrichError.message}`);
+          }
+        }
+
         return {
           results: [
             {
               type: ToolResultType.other,
               data: {
                 connections: topology.connections,
+                ...(nodeMetadata !== undefined && { nodeMetadata }),
               },
             },
           ],

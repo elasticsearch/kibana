@@ -1,0 +1,132 @@
+## MANDATORY: output contract
+
+Every response from this skill MUST contain, in this order:
+
+1. **Issues found** — a list of problem services/connections ordered by severity: active alerts > violated SLOs > critical/major ML anomalies > degrading SLOs / minor anomalies > unusual error rates or latency between services > structural observations (isolated services, missing expected connections). If nothing is wrong, state that explicitly.
+2. **Map** — a rendered `observability.service-map` attachment built from the topology fetched in Step 3 (see Step 4). Skip it only when `connections` came back empty, and say so.
+3. **Architecture** — a short explanation of the topology: entry points, central hubs, datastores, message queues, external dependencies, and how requests flow between them. Derived from the `get_service_topology` output — describe it in prose, including where the problem services sit in the flow.
+4. **Links** — deep links to the most problematic services and their alerts (see Links section).
+
+## When to Use This Skill
+
+Use this skill when an `observability.service-map-context` attachment is present. It is created when the user starts a conversation from the APM service map page and carries the view filters only:
+
+- `timeRange.from` / `timeRange.to` — may be datemath (e.g. `now-15m`); pass through to tools verbatim, they parse datemath.
+- `environment` — omitted when the user viewed "All" environments. See "Applying the filters" below: only `get_service_topology` takes an `environment` parameter.
+- `kuery` — optional KQL filter.
+- `serviceGroupId` — optional service group scope. **No tool can apply it.** Never pass it as a tool parameter. When it is present, say once in the response that the survey covers all services in the time range, not only the selected service group.
+- `highlightedServiceNames` — services the user highlighted on the map. When present these are the user's focus: investigate them first.
+
+### Applying the filters
+
+Tool support differs, so translate the filters instead of assuming a shared `environment` parameter:
+
+- `get_services` and `get_alerts` accept `kqlFilter` and a time range only. Express the scope as KQL: `service.environment: "<environment>"`, combined with the context `kuery` using `and` when both are present.
+- `get_service_topology` accepts `environment` and `kuery` parameters directly — pass them so its `nodeMetadata` badge counts match the environment the user was viewing.
+- Nothing applies `serviceGroupId`.
+
+Do NOT use for plain requests to visualize a service map without the context attachment — defer to `service-map`.
+
+## Units & Conventions
+
+- Latency: milliseconds (`latencyMs`, unit `ms`)
+- Error rate: percentage 0–100 (`errorRate`, unit `%`)
+- Throughput: requests per minute (`throughputPerMin`, unit `rpm`)
+
+Pass tool output through verbatim — do not convert units.
+
+## Step 1 — Survey the map scope
+
+Read the filters from the context attachment. Then, in this order:
+
+1. `get_services` over the context time range, with the environment/kuery scope expressed as `kqlFilter` (see "Applying the filters") — the inventory of services on the map, with health signals.
+2. `get_alerts` over the same time range and the same `kqlFilter` — active alerts across ALL services in scope (do not filter to one service).
+
+From these, build the problem list: services with active alerts, violated/degrading SLOs, anomalies, error rate > 10%, or latency far above the scope's typical values. Note services with zero throughput that previously had traffic — zero throughput is NOT healthy.
+
+## Step 2 — Choose the focal service
+
+`get_service_topology` is service-centric — pick the focal service in this order:
+
+1. The first of `highlightedServiceNames`, if present.
+2. Otherwise the worst problem service from Step 1 (alerts first, then SLOs, then anomalies, then RED metrics).
+3. Otherwise (everything healthy) the busiest service — it is most likely the entry point or hub.
+
+## Step 3 — Fetch the topology
+
+Call `get_service_topology` with the focal service, `direction: "both"`, `depth: 2`, the context time range, and the context `environment` and `kuery` when present.
+
+Use the returned `connections` to understand the topology for the Architecture section (Step 6). If `connections` is empty, an isolated service is a finding: report it under Issues (missing exit-span instrumentation, or its dependencies are uninstrumented) and fall back to the next problem service from Step 1 as focal.
+
+`nodeMetadata` carries per-service `alertsCount`, `sloStatus`, `sloCount`, and ML anomaly fields (`anomalySeverity`, `anomalyScore`) — use it to cross-check the problem list from Step 1 and mention badge-worthy services explicitly.
+
+`environment` and `kuery` scope those badge counts, but the `connections` graph itself is built from all environments — do not describe the topology as environment-specific.
+
+## Step 4 — Render the map
+
+Create an `observability.service-map` attachment from the Step 3 result and render it, so the findings sit next to the topology they describe:
+
+```json
+{
+  "type": "observability.service-map",
+  "description": "Service topology for <focal service>",
+  "data": {
+    "connections": <connections array from get_service_topology result>,
+    "nodeMetadata": <nodeMetadata object from get_service_topology result>,
+    "serviceName": "<focal service>",
+    "title": "Service Map — <focal service>",
+    "timeRange": { "start": "<context timeRange.from>", "end": "<context timeRange.to>" }
+  }
+}
+```
+
+Then render the returned id inline:
+
+```xml
+<render_attachment id="ATTACHMENT_ID" />
+```
+
+Pass `connections` and `nodeMetadata` through verbatim — do NOT transform, restructure, or compute positions. Omit `nodeMetadata` if the tool did not return it. Do NOT create the attachment when `connections` is empty; report the isolated-service finding instead.
+
+## Step 5 — Drill into the top problems (bounded)
+
+For at most the top 2 problem services, call `get_trace_metrics` (current vs typical latency/error rate/throughput). Use `get_log_groups` only when an error-rate problem needs a concrete error message. Do not fan out beyond 2 services — this is a map-level overview, not a deep single-service investigation (recommend "Investigate service" on the service page for that).
+
+## Step 6 — Explain the architecture
+
+From `connections`, classify:
+
+- **Entry points**: services with no instrumented upstream callers.
+- **Hubs**: services with many inbound and outbound edges.
+- **Datastores / queues / external**: exit-span destinations (`span.type` of `db`, `messaging`, `external`).
+- **Leaves**: services or destinations with no outbound edges.
+
+Describe the request flow in 2–4 sentences using these roles, and call out where the problem services sit in the flow (e.g. "the alerting service is a hub — its latency affects every entry point upstream").
+
+## Links
+
+Use markdown deep links; substitute actual values. Derive the Kibana base URL from the environment context:
+
+- Service overview: `[<service> overview](https://<kibana>/app/apm/services/<serviceName>/overview?environment=<environment>&rangeFrom=<from>&rangeTo=<to>)`
+- Service alerts tab: `[<service> alerts](https://<kibana>/app/apm/services/<serviceName>/alerts?rangeFrom=<from>&rangeTo=<to>)`
+- Dependencies: `[<service> dependencies](https://<kibana>/app/apm/services/<serviceName>/dependencies)`
+- Full service map: `[Service map](https://<kibana>/app/apm/service-map?environment=<environment>&rangeFrom=<from>&rangeTo=<to>)`
+- Service map docs (for missing-connection / instrumentation questions): `https://www.elastic.co/guide/en/observability/current/apm-service-maps.html`
+
+Omit the `environment` query param when the context attachment has no environment. Link at minimum: each service in Issues found, and the alerts tab of every service with active alerts.
+
+## Critical Rules
+
+- **Issues before architecture** — lead with findings, then the map, then explain the topology.
+- **Always render the map** — unless `connections` is empty; describing the topology in prose only is not enough.
+- **Zero throughput is NOT healthy** — flag as possible outage.
+- **Independent faults get independent findings** — do not collapse distinct problems.
+- **Respect the user's scope** — every tool call uses the context attachment's time range, and its environment/kuery via the translation in "Applying the filters"; do not silently widen them (widening the time window for sparse data is fine if you say so). When a filter cannot be applied (`serviceGroupId`, or the topology graph's environment), say so rather than implying it was.
+
+## Common Mistakes (do NOT do these)
+
+- ❌ Investigating only the focal service and ignoring the rest of the map. → ✅ Step 1 surveys ALL services in scope; the focal service is just the topology anchor.
+- ❌ Calling `get_service_topology` without a focal service selection rationale. → ✅ Follow the Step 2 priority order and state which service you chose and why.
+- ❌ Describing the topology in prose without rendering the `observability.service-map` attachment. → ✅ Create and render it in Step 4 whenever `connections` is non-empty.
+- ❌ Listing problem services without links. → ✅ Every problem service gets a deep link; alerted services also get an alerts-tab link.
+- ❌ Deep-diving one service across many tools. → ✅ Bounded drill-down (top 2), then recommend the service-page investigation for more depth.

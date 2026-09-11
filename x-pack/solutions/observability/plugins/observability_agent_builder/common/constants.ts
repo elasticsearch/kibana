@@ -21,3 +21,7 @@ export const OBSERVABILITY_SLO_ATTACHMENT_TYPE_ID = 'observability.slo';
 export const OBSERVABILITY_HOST_ATTACHMENT_TYPE_ID = 'observability.host';
 export const OBSERVABILITY_TRANSACTION_ATTACHMENT_TYPE_ID = 'observability.transaction';
 export const OBSERVABILITY_MONITOR_ATTACHMENT_TYPE_ID = 'observability.synthetics_monitor';
+// Owned by the APM plugin (see apm/common/agent_builder/attachments/service_map_context.ts);
+// duplicated here because the obs plugin cannot depend on APM.
+export const OBSERVABILITY_SERVICE_MAP_CONTEXT_ATTACHMENT_TYPE_ID =
+  'observability.service-map-context';

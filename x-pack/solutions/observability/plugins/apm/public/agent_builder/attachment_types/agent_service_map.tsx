@@ -20,7 +20,10 @@ import {
 import { useEuiTheme } from '@elastic/eui';
 import { css } from '@emotion/react';
 import '@xyflow/react/dist/style.css';
-import type { ServiceMapAttachmentData } from '../../../common/agent_builder/attachments';
+import type {
+  ServiceMapAttachmentData,
+  ServiceNodeMetadata,
+} from '../../../common/agent_builder/attachments';
 import { ServiceNode } from '../../components/shared/service_map/service_node';
 import { DependencyNode } from '../../components/shared/service_map/dependency_node';
 import { GroupedResourcesNode } from '../../components/shared/service_map/grouped_resources_node';
@@ -34,11 +37,12 @@ const nodeTypes: NodeTypes = {
 
 export interface AgentServiceMapProps {
   connections: ServiceMapAttachmentData['connections'];
+  nodeMetadata?: ServiceMapAttachmentData['nodeMetadata'];
 }
 
 type TopologyNode =
   | { 'service.name': string; 'agent.name'?: string }
-  | { 'span.destination.service.resource': string; 'span.type': string; 'span.subtype': string };
+  | { 'span.destination.service.resource': string; 'span.type'?: string; 'span.subtype'?: string };
 
 function isServiceNode(
   node: TopologyNode
@@ -81,7 +85,35 @@ export function formatEdgeLabel(
   return parts.length > 0 ? parts.join(' · ') : undefined;
 }
 
-function transformConnections(connections: ServiceMapAttachmentData['connections']): {
+function buildServiceNodeData(
+  node: { 'service.name': string; 'agent.name'?: string },
+  id: string,
+  meta?: ServiceNodeMetadata
+): Node {
+  return {
+    id,
+    type: 'service',
+    position: { x: 0, y: 0 },
+    data: {
+      id,
+      label: node['service.name'],
+      isService: true,
+      agentName: node['agent.name'],
+      // Badge fields from ServiceNodeData (kbn-apm-types)
+      ...(meta?.alertsCount !== undefined && { alertsCount: meta.alertsCount }),
+      ...(meta?.sloStatus !== undefined && { sloStatus: meta.sloStatus }),
+      ...(meta?.sloCount !== undefined && { sloCount: meta.sloCount }),
+      ...(meta?.anomalyScore !== undefined && {
+        serviceAnomalyStats: { anomalyScore: meta.anomalyScore },
+      }),
+    },
+  };
+}
+
+function transformConnections(
+  connections: ServiceMapAttachmentData['connections'],
+  nodeMetadata?: ServiceMapAttachmentData['nodeMetadata']
+): {
   nodes: Node[];
   edges: Edge[];
 } {
@@ -93,17 +125,8 @@ function transformConnections(connections: ServiceMapAttachmentData['connections
       const id = getNodeId(node);
       if (!nodesMap.has(id)) {
         if (isServiceNode(node)) {
-          nodesMap.set(id, {
-            id,
-            type: 'service',
-            position: { x: 0, y: 0 },
-            data: {
-              id,
-              label: getNodeLabel(node),
-              isService: true,
-              agentName: node['agent.name'],
-            },
-          });
+          const meta = nodeMetadata?.[node['service.name']];
+          nodesMap.set(id, buildServiceNodeData(node, id, meta));
         } else {
           nodesMap.set(id, {
             id,
@@ -137,14 +160,14 @@ function transformConnections(connections: ServiceMapAttachmentData['connections
   return { nodes: [...nodesMap.values()], edges };
 }
 
-export function AgentServiceMap({ connections }: AgentServiceMapProps) {
+export function AgentServiceMap({ connections, nodeMetadata }: AgentServiceMapProps) {
   const { euiTheme, colorMode } = useEuiTheme();
 
   const { nodes, edges } = useMemo(() => {
-    const { nodes: rawNodes, edges: rawEdges } = transformConnections(connections);
+    const { nodes: rawNodes, edges: rawEdges } = transformConnections(connections, nodeMetadata);
     const layoutedNodes = applyDagreLayout(rawNodes, rawEdges);
     return { nodes: layoutedNodes, edges: rawEdges };
-  }, [connections]);
+  }, [connections, nodeMetadata]);
 
   return (
     <ReactFlowProvider>

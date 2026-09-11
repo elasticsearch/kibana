@@ -10,20 +10,30 @@ import { registerDataProviders } from './register_data_providers';
 import { getApmServiceSummary } from './get_apm_service_summary';
 import { getExitSpanChangePoints, getServiceChangePoints } from './get_change_points';
 import { buildApmToolResources } from '../utils/build_apm_tool_resources';
+import { getServiceMapServiceBadges } from '../../routes/service_map/get_service_map_service_badges';
+import { getServiceAnomalies } from '../../routes/service_map/get_service_anomalies';
 
 jest.mock('./get_apm_service_summary');
 jest.mock('./get_change_points');
 jest.mock('../utils/build_apm_tool_resources');
+jest.mock('../../routes/service_map/get_service_map_service_badges');
+jest.mock('../../routes/service_map/get_service_anomalies', () => ({
+  getServiceAnomalies: jest.fn(),
+  DEFAULT_ANOMALIES: { mlJobIds: [], serviceAnomalies: [] },
+}));
 
 const apmEventClient = {} as any;
 const apmAlertsClient = {} as any;
 const mlClient = {} as any;
 const esClientAsCurrentUser = {} as any;
 
+const sloClient = {} as any;
+
 (buildApmToolResources as jest.Mock).mockResolvedValue({
   apmEventClient,
   apmAlertsClient,
   mlClient,
+  sloClient,
   esClient: { asCurrentUser: esClientAsCurrentUser },
   randomSamplerSeed: 1,
 });
@@ -137,5 +147,95 @@ describe('registerDataProviders (apmServiceSummary / apmServiceChangePoints / ap
       start: '2023-01-01T00:00:00.000Z',
       end: '2023-01-02T00:00:00.000Z',
     });
+  });
+});
+
+describe('registerDataProviders (servicesAlertsAndSlo)', () => {
+  const registerDataProvider = jest.fn();
+  const mockRequest = {} as any;
+
+  function getProvider() {
+    const call = registerDataProvider.mock.calls.find(
+      ([providerName]) => providerName === 'servicesAlertsAndSlo'
+    );
+    if (!call) {
+      throw new Error('No data provider registered under "servicesAlertsAndSlo"');
+    }
+    return call[1] as (args: any) => Promise<Record<string, any>>;
+  }
+
+  beforeAll(() => {
+    registerDataProviders({
+      core: {} as any,
+      plugins: { observabilityAgentBuilder: { registerDataProvider } } as any,
+      config: {} as any,
+      logger: { get: () => ({} as Logger) } as unknown as Logger,
+    });
+  });
+
+  beforeEach(() => {
+    (getServiceMapServiceBadges as jest.Mock).mockReset().mockResolvedValue({
+      alerts: [],
+      slos: [],
+    });
+    (getServiceAnomalies as jest.Mock).mockReset().mockResolvedValue({
+      mlJobIds: [],
+      serviceAnomalies: [],
+    });
+  });
+
+  const baseArgs = {
+    request: mockRequest,
+    serviceNames: ['opbeans-java'],
+    start: '2023-01-01T00:00:00.000Z',
+    end: '2023-01-02T00:00:00.000Z',
+  };
+
+  it('forwards environment and kuery to the badge and anomaly queries', async () => {
+    await getProvider()({ ...baseArgs, environment: 'production', kuery: 'service.name: "x"' });
+
+    expect(getServiceMapServiceBadges).toHaveBeenCalledWith(
+      expect.objectContaining({ environment: 'production', kuery: 'service.name: "x"' })
+    );
+    expect(getServiceAnomalies).toHaveBeenCalledWith(
+      expect.objectContaining({ environment: 'production' })
+    );
+  });
+
+  it('falls back to all environments when none is provided', async () => {
+    await getProvider()(baseArgs);
+
+    expect(getServiceMapServiceBadges).toHaveBeenCalledWith(
+      expect.objectContaining({ environment: 'ENVIRONMENT_ALL' })
+    );
+  });
+
+  it('ignores anomalies for services outside the requested set', async () => {
+    (getServiceAnomalies as jest.Mock).mockResolvedValue({
+      mlJobIds: [],
+      serviceAnomalies: [
+        { serviceName: 'opbeans-java', anomalyScore: 80 },
+        { serviceName: 'not-on-the-map', anomalyScore: 90 },
+      ],
+    });
+
+    const nodeMetadata = await getProvider()(baseArgs);
+
+    expect(Object.keys(nodeMetadata)).toEqual(['opbeans-java']);
+    expect(nodeMetadata['opbeans-java']).toMatchObject({ anomalyScore: 80 });
+  });
+
+  it('keeps the worst anomaly per requested service', async () => {
+    (getServiceAnomalies as jest.Mock).mockResolvedValue({
+      mlJobIds: [],
+      serviceAnomalies: [
+        { serviceName: 'opbeans-java', anomalyScore: 30 },
+        { serviceName: 'opbeans-java', anomalyScore: 75 },
+      ],
+    });
+
+    const nodeMetadata = await getProvider()(baseArgs);
+
+    expect(nodeMetadata['opbeans-java']).toMatchObject({ anomalyScore: 75 });
   });
 });

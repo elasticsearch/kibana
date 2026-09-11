@@ -97,6 +97,55 @@ describe('AgentServiceMap', () => {
   });
 });
 
+describe('AgentServiceMap with nodeMetadata', () => {
+  it('passes alertsCount from nodeMetadata to the service node', () => {
+    render(
+      <AgentServiceMap
+        connections={createConnections()}
+        nodeMetadata={{
+          frontend: { alertsCount: 3 },
+        }}
+      />
+    );
+    // AlertsBadge renders the count as text; ServiceNode shows it when alertsCount > 0
+    expect(screen.getByTestId('serviceMapNodeAlertsBadge')).toBeInTheDocument();
+  });
+
+  it('does not show alert badge when alertsCount is zero', () => {
+    render(
+      <AgentServiceMap
+        connections={createConnections()}
+        nodeMetadata={{
+          frontend: { alertsCount: 0 },
+        }}
+      />
+    );
+    expect(screen.queryByTestId('serviceMapNodeAlertsBadge')).not.toBeInTheDocument();
+  });
+
+  it('renders without error when nodeMetadata is undefined (backward-compatible)', () => {
+    render(<AgentServiceMap connections={createConnections()} />);
+    expect(screen.getByText('frontend')).toBeInTheDocument();
+    expect(screen.getByText('backend')).toBeInTheDocument();
+  });
+
+  it('ignores nodeMetadata for dependency (external) nodes', () => {
+    // Dependency nodes don't have a service name; metadata keyed by their resource name is a no-op
+    render(
+      <AgentServiceMap
+        connections={createConnections()}
+        nodeMetadata={
+          {
+            'postgresql:5432': { alertsCount: 5 },
+          } as Record<string, { alertsCount: number }>
+        }
+      />
+    );
+    // No alert badge expected because dependency nodes never render one
+    expect(screen.queryByTestId('serviceMapNodeAlertsBadge')).not.toBeInTheDocument();
+  });
+});
+
 describe('formatEdgeLabel', () => {
   it('formats all metrics', () => {
     expect(formatEdgeLabel({ latencyMs: 150, throughputPerMin: 42.5, errorRate: 0.02 })).toBe(

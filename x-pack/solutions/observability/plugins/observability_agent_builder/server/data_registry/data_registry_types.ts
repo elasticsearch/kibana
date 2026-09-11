@@ -290,4 +290,29 @@ export interface ObservabilityAgentBuilderDataRegistryTypes {
     request: KibanaRequest;
     configId: string;
   }) => Promise<SyntheticsMonitorDetailsResponse>;
+
+  servicesAlertsAndSlo: (params: {
+    request: KibanaRequest;
+    serviceNames: string[];
+    environment?: string;
+    kuery?: string;
+    start: string;
+    end: string;
+  }) => Promise<ServiceNodeMetadataMap>;
 }
+
+/**
+ * Per-service alert/SLO/anomaly badge data, keyed by `service.name`.
+ * Shaped to drop straight into the service-map attachment's `nodeMetadata`.
+ */
+export type ServiceNodeMetadataMap = Record<
+  string,
+  {
+    alertsCount?: number;
+    sloStatus?: string;
+    sloCount?: number;
+    /** Max ML anomaly severity for the service (`warning` | `minor` | `major` | `critical`). */
+    anomalySeverity?: string;
+    anomalyScore?: number;
+  }
+>;

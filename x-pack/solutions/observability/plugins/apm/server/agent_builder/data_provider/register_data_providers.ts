@@ -17,6 +17,12 @@ import { fetchExitSpanSamplesFromTraceIds } from '../../routes/service_map/fetch
 import { getConnectionStatsItems } from '../../lib/connections/get_connection_stats/get_connection_stats_items';
 import { getConnectionStats } from '../../lib/connections/get_connection_stats';
 import { getServicesItems } from '../../routes/services/get_services/get_services_items';
+import { getServiceMapServiceBadges } from '../../routes/service_map/get_service_map_service_badges';
+import {
+  getServiceAnomalies,
+  DEFAULT_ANOMALIES,
+} from '../../routes/service_map/get_service_anomalies';
+import { getSeverity, isNoAnomalyScore } from '../../../common/anomaly_detection';
 import { ApmDocumentType } from '../../../common/document_type';
 import { ENVIRONMENT_ALL } from '../../../common/environment_filter_values';
 import { getExitSpanChangePoints, getServiceChangePoints } from './get_change_points';
@@ -304,6 +310,93 @@ export function registerDataProviders({
         transactionId: resolvedTransactionId,
         traceId: resolvedTraceId,
       };
+    }
+  );
+
+  observabilityAgentBuilder.registerDataProvider(
+    'servicesAlertsAndSlo',
+    async ({ request, serviceNames, environment, kuery, start, end }) => {
+      const { apmAlertsClient, sloClient, mlClient } = await buildApmToolResources({
+        core,
+        plugins,
+        request,
+      });
+
+      const startMs = parseDatemath(start);
+      const endMs = parseDatemath(end);
+
+      if (!startMs || !endMs) {
+        throw new Error('Invalid date range provided.');
+      }
+
+      const resolvedEnvironment = environment ?? ENVIRONMENT_ALL.value;
+
+      const [badges, anomaliesResponse] = await Promise.all([
+        getServiceMapServiceBadges({
+          serviceNames,
+          environment: resolvedEnvironment,
+          start: startMs,
+          end: endMs,
+          kuery,
+          apmAlertsClient,
+          sloClient,
+        }),
+        getServiceAnomalies({
+          mlClient,
+          environment: resolvedEnvironment,
+          start: startMs,
+          end: endMs,
+        }).catch(() => DEFAULT_ANOMALIES),
+      ]);
+
+      // Build a map keyed by service name
+      const nodeMetadata: Record<
+        string,
+        {
+          alertsCount?: number;
+          sloStatus?: string;
+          sloCount?: number;
+          anomalySeverity?: string;
+          anomalyScore?: number;
+        }
+      > = {};
+
+      for (const { serviceName, alertsCount } of badges.alerts) {
+        nodeMetadata[serviceName] = { ...nodeMetadata[serviceName], alertsCount };
+      }
+
+      for (const { serviceName, sloStatus, sloCount } of badges.slos) {
+        nodeMetadata[serviceName] = { ...nodeMetadata[serviceName], sloStatus, sloCount };
+      }
+
+      // Pick the worst anomaly per service (highest score that is not "no anomaly").
+      // `getServiceAnomalies` is not service-scoped, so restrict its results to the
+      // requested services — otherwise `nodeMetadata` leaks services that are not in
+      // the topology, bloating the payload and inviting the model to mention them.
+      const requestedServiceNames = new Set(serviceNames);
+      const worstAnomalyByService = new Map<string, number>();
+      for (const { serviceName, anomalyScore } of anomaliesResponse.serviceAnomalies) {
+        if (!requestedServiceNames.has(serviceName)) {
+          continue;
+        }
+        if (!isNoAnomalyScore(anomalyScore)) {
+          const current = worstAnomalyByService.get(serviceName);
+          if (current === undefined || anomalyScore > current) {
+            worstAnomalyByService.set(serviceName, anomalyScore);
+          }
+        }
+      }
+
+      for (const [serviceName, anomalyScore] of worstAnomalyByService.entries()) {
+        const anomalySeverity = getSeverity(anomalyScore);
+        nodeMetadata[serviceName] = {
+          ...nodeMetadata[serviceName],
+          anomalyScore,
+          anomalySeverity,
+        };
+      }
+
+      return nodeMetadata;
     }
   );
 }

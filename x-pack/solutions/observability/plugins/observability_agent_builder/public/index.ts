@@ -18,6 +18,7 @@ export {
   OBSERVABILITY_HOST_ATTACHMENT_TYPE_ID,
   OBSERVABILITY_TRANSACTION_ATTACHMENT_TYPE_ID,
   OBSERVABILITY_MONITOR_ATTACHMENT_TYPE_ID,
+  OBSERVABILITY_SERVICE_MAP_CONTEXT_ATTACHMENT_TYPE_ID,
 } from '../common/constants';
 
 export type {
@@ -27,7 +28,11 @@ export type {
   ObservabilityAgentBuilderPluginStartDependencies,
 } from './types';
 
-export type { AlertAiInsightProps, ErrorSampleAiInsightProps } from './components/insights';
+export type {
+  AlertAiInsightProps,
+  ErrorSampleAiInsightProps,
+  ServiceMapInvestigateButtonProps,
+} from './components/insights';
 
 export const plugin = (initializerContext: PluginInitializerContext) =>
   new ObservabilityAgentBuilderPlugin(initializerContext);

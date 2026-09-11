@@ -37,7 +37,7 @@ export const createServiceMapAttachmentType = (): AttachmentTypeDefinition<
       };
     },
     getAgentDescription: () =>
-      'A service map attachment showing the topology of services and their dependencies with RED metrics (latency, throughput, error rate) on each connection. Rendered as an interactive graph with service nodes (circles) and dependency nodes (diamonds).',
+      'A service map attachment showing the topology of services and their dependencies with RED metrics (latency, throughput, error rate) on each connection. Service nodes can optionally carry alertsCount (active alerts), sloStatus (violated/degrading/healthy), sloCount, and ML anomaly fields (anomalySeverity, anomalyScore) that render as inline badges. Pass nodeMetadata verbatim from get_service_topology — the renderer handles all styling automatically. Rendered as a static graph with service nodes (circles) and dependency nodes (diamonds).',
     getTools: () => [],
   };
 };

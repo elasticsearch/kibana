@@ -13,6 +13,7 @@ import type {
   AlertAiInsightProps,
   AlertAskAiAgentButtonProps,
   ErrorSampleAiInsightProps,
+  ServiceMapInvestigateButtonProps,
 } from './components/insights';
 
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
@@ -22,6 +23,7 @@ export interface ObservabilityAgentBuilderPluginPublicStart {
   getAlertAIInsight: () => ComponentType<AlertAiInsightProps>;
   getAlertAskAiAgentButton: () => ComponentType<AlertAskAiAgentButtonProps>;
   getErrorSampleAIInsight: () => ComponentType<ErrorSampleAiInsightProps>;
+  getServiceMapInvestigateButton: () => ComponentType<ServiceMapInvestigateButtonProps>;
 }
 
 // eslint-disable-next-line @typescript-eslint/no-empty-interface

@@ -37,7 +37,10 @@ export const registerServiceMapAttachment = (attachments: AttachmentServiceStart
             height: 500px;
           `}
         >
-          <LazyAgentServiceMap connections={attachment.data.connections} />
+          <LazyAgentServiceMap
+            connections={attachment.data.connections}
+            nodeMetadata={attachment.data.nodeMetadata}
+          />
         </div>
       );
     },

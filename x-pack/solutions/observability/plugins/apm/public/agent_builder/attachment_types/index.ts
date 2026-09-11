@@ -6,3 +6,4 @@
  */
 
 export { registerServiceMapAttachment } from './register_service_map_attachment';
+export { registerServiceMapContextAttachment } from './register_service_map_context_attachment';

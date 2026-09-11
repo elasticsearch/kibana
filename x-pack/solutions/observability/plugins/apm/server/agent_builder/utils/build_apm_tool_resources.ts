@@ -16,6 +16,8 @@ import { getMlClient } from '../../lib/helpers/get_ml_client';
 import type { MinimalAPMRouteHandlerResources } from '../../routes/apm_routes/register_apm_server_routes';
 import { getApmAlertsClient } from '../../lib/helpers/get_apm_alerts_client';
 import type { ApmAlertsClient } from '../../lib/helpers/get_apm_alerts_client';
+import { getApmSloClient } from '../../lib/helpers/get_apm_slo_client';
+import type { ApmSloClient } from '../../lib/helpers/get_apm_slo_client';
 import { getRandomSamplerSeed } from '../../lib/helpers/get_random_sampler';
 
 export interface ApmToolResources {
@@ -24,6 +26,8 @@ export interface ApmToolResources {
   randomSamplerSeed: number;
   mlClient: Awaited<ReturnType<typeof getMlClient>>;
   apmAlertsClient: ApmAlertsClient;
+  /** SLO client; undefined when the SLO plugin is not available. */
+  sloClient: ApmSloClient | undefined;
   esClient: IScopedClusterClient;
   soClient: SavedObjectsClientContract;
 }
@@ -69,6 +73,12 @@ export async function buildApmToolResources({
       setup: plugins.ruleRegistry,
       start: async () => pluginStart.ruleRegistry,
     },
+    slo: plugins.slo
+      ? {
+          setup: plugins.slo,
+          start: async () => pluginStart.slo,
+        }
+      : undefined,
   } as unknown as MinimalAPMRouteHandlerResources['plugins'];
 
   const apmEventClientPromise = getApmEventClient({
@@ -102,10 +112,17 @@ export async function buildApmToolResources({
     request,
   });
 
-  const [apmEventClient, mlClient, apmAlertsClient] = await Promise.all([
+  // SLO client degrades gracefully to undefined when the SLO plugin is absent.
+  const sloClientPromise = getApmSloClient({
+    plugins: pluginsAdapter,
+    request,
+  }).catch(() => undefined);
+
+  const [apmEventClient, mlClient, apmAlertsClient, sloClient] = await Promise.all([
     apmEventClientPromise,
     mlClientPromise,
     apmAlertsClientPromise,
+    sloClientPromise,
   ]);
 
   const apmDataAccessServices = plugins.apmDataAccess.getServices({ apmEventClient });
@@ -116,6 +133,7 @@ export async function buildApmToolResources({
     randomSamplerSeed,
     mlClient,
     apmAlertsClient,
+    sloClient,
     esClient: esScoped,
     soClient,
   };

@@ -16,6 +16,7 @@ import type { AlertAiInsightProps } from './alert_ai_insight';
 import type { ErrorSampleAiInsightProps } from './error_sample_ai_insight';
 import type { LogAiInsightProps, LogAiInsightDocument } from './log_ai_insight';
 import type { AlertAskAiAgentButtonProps } from './alert_ask_ai_agent_button';
+import type { ServiceMapInvestigateButtonProps } from './service_map_investigate_button';
 
 const queryClient = new QueryClient();
 
@@ -23,9 +24,16 @@ export type { AlertAiInsightProps } from './alert_ai_insight';
 export type { ErrorSampleAiInsightProps } from './error_sample_ai_insight';
 export type { LogAiInsightProps, LogAiInsightDocument } from './log_ai_insight';
 export type { AlertAskAiAgentButtonProps } from './alert_ask_ai_agent_button';
+export type { ServiceMapInvestigateButtonProps } from './service_map_investigate_button';
 
 const AlertAiInsightLazy = dynamic(() =>
   import('./alert_ai_insight').then((m) => ({ default: m.AlertAiInsight }))
+);
+
+const ServiceMapInvestigateButtonLazy = dynamic(() =>
+  import('./service_map_investigate_button').then((m) => ({
+    default: m.ServiceMapInvestigateButton,
+  }))
 );
 
 const AlertAskAiAgentButtonLazy = dynamic(() =>
@@ -107,6 +115,24 @@ export function createAlertAskAiAgentButton(
     <QueryClientProvider client={queryClient}>
       <KibanaReactContextProvider>
         <AlertAskAiAgentButtonLazy {...props} />
+      </KibanaReactContextProvider>
+    </QueryClientProvider>
+  );
+}
+
+export function createServiceMapInvestigateButton(
+  core: CoreStart,
+  plugins: ObservabilityAgentBuilderPluginStartDependencies
+) {
+  const { Provider: KibanaReactContextProvider } = createKibanaReactContext({
+    ...core,
+    ...plugins,
+  });
+
+  return (props: ServiceMapInvestigateButtonProps) => (
+    <QueryClientProvider client={queryClient}>
+      <KibanaReactContextProvider>
+        <ServiceMapInvestigateButtonLazy {...props} />
       </KibanaReactContextProvider>
     </QueryClientProvider>
   );

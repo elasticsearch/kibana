@@ -9,4 +9,11 @@ export {
   SERVICE_MAP_ATTACHMENT_TYPE,
   serviceMapAttachmentDataSchema,
   type ServiceMapAttachmentData,
+  type ServiceNodeMetadata,
 } from './service_map';
+
+export {
+  SERVICE_MAP_CONTEXT_ATTACHMENT_TYPE,
+  serviceMapContextAttachmentDataSchema,
+  type ServiceMapContextAttachmentData,
+} from './service_map_context';
