@@ -7,7 +7,7 @@
 
 import type { ToolHandlerContext } from '@kbn/agent-builder-server';
 import type { DescribeAiIndexResponse } from '@kbn/context-engine-plugin/common/http_api/ai_indices';
-import { getCallerAiIndexDataReadService, type AiIndexToolDeps } from '../ai_index_read_service';
+import { getAiIndexDataReadServiceForUser, type AiIndexToolDeps } from '../ai_index_read_service';
 
 export const describeAiIndexHandler = async ({
   deps,
@@ -18,6 +18,6 @@ export const describeAiIndexHandler = async ({
   aiIndexId: string;
   context: Pick<ToolHandlerContext, 'esClient' | 'request'>;
 }): Promise<DescribeAiIndexResponse> => {
-  const readService = await getCallerAiIndexDataReadService({ deps, esClient, request });
+  const readService = await getAiIndexDataReadServiceForUser({ deps, esClient, request });
   return readService.describe(aiIndexId);
 };

@@ -9,19 +9,19 @@ import { elasticsearchServiceMock } from '@kbn/core/server/mocks';
 import { httpServerMock } from '@kbn/core-http-server-mocks';
 import {
   CONTEXT_ENGINE_READ_DENIED_MESSAGE,
-  getCallerAiIndexDataReadService,
+  getAiIndexDataReadServiceForUser,
   getErrorMessage,
 } from './ai_index_read_service';
 import { createAiIndexToolDepsMock } from './ai_index_read_service.mock';
 
-describe('getCallerAiIndexDataReadService', () => {
+describe('getAiIndexDataReadServiceForUser', () => {
   const request = httpServerMock.createKibanaRequest();
   const esClient = elasticsearchServiceMock.createScopedClusterClient();
 
   it('builds the service from the caller-scoped client and request', async () => {
     const { deps, readService, getAiIndexDataReadService } = createAiIndexToolDepsMock();
 
-    await expect(getCallerAiIndexDataReadService({ deps, esClient, request })).resolves.toBe(
+    await expect(getAiIndexDataReadServiceForUser({ deps, esClient, request })).resolves.toBe(
       readService
     );
 
@@ -34,7 +34,7 @@ describe('getCallerAiIndexDataReadService', () => {
   it('fails closed when the caller lacks the read privilege', async () => {
     const { deps, getAiIndexDataReadService } = createAiIndexToolDepsMock({ authorized: false });
 
-    await expect(getCallerAiIndexDataReadService({ deps, esClient, request })).rejects.toThrow(
+    await expect(getAiIndexDataReadServiceForUser({ deps, esClient, request })).rejects.toThrow(
       CONTEXT_ENGINE_READ_DENIED_MESSAGE
     );
     expect(getAiIndexDataReadService).not.toHaveBeenCalled();
@@ -44,7 +44,7 @@ describe('getCallerAiIndexDataReadService', () => {
     const { deps } = createAiIndexToolDepsMock();
 
     await expect(
-      getCallerAiIndexDataReadService({
+      getAiIndexDataReadServiceForUser({
         deps: { ...deps, getSecurityStart: async () => undefined },
         esClient,
         request,

@@ -29,7 +29,7 @@ const queryAiIndicesSchema = z.object({
     .min(1)
     .max(MAX_AI_INDEX_QUERY_LENGTH)
     .describe(
-      'The ES|QL query to run. Its FROM decides which indices are read; use the esql_target returned by the list or describe AI index tools. Do not add a space condition: the server applies the space filter.'
+      'The ES|QL query to run. Its FROM decides which indices are read; use the esql_target from the list or describe AI Index tools. Do not add a space condition: the server adds the space filter.'
     ),
   params: z
     .record(
@@ -49,7 +49,7 @@ const queryAiIndicesSchema = z.object({
     .optional()
     .default(DEFAULT_AI_INDEX_QUERY_LIMIT)
     .describe(
-      `(Optional) Maximum rows to return. Defaults to ${DEFAULT_AI_INDEX_QUERY_LIMIT}, at most ${MAX_AI_INDEX_QUERY_LIMIT}; a smaller LIMIT in the query wins.`
+      `(Optional) Maximum rows to return. Defaults to ${DEFAULT_AI_INDEX_QUERY_LIMIT}, at most ${MAX_AI_INDEX_QUERY_LIMIT}. If the query has a smaller LIMIT, that smaller value is used.`
     ),
 });
 
@@ -60,24 +60,24 @@ export const createQueryAiIndicesTool = (
   type: ToolType.builtin,
   tags: ['context_engine'],
   annotations: {
-    title: 'Query AI indices',
+    title: 'Query AI Indices',
     readOnlyHint: true,
     destructiveHint: false,
     idempotentHint: true,
     openWorldHint: false,
   },
   description: dedent`
-    Run an ES|QL query against Context Engine AI indices and return the rows.
-    Call the describe AI index tool first: it gives the FROM target, the fields, and example queries to start from.
+    Run an ES|QL query against Context Engine AI Indices and return the rows.
+    Call the describe AI Index tool first: it gives the FROM target, the fields, and example queries to start from.
 
-    The server applies the space filter and a row limit (at most ${MAX_AI_INDEX_QUERY_LIMIT}); do not write a space condition in the query.
-    The space is taken from the request (over MCP, from the URL: /api/agent_builder/mcp is the default space, /s/{spaceId}/api/agent_builder/mcp another space).
-    The query's FROM decides which indices are read, and the current user's Elasticsearch index privileges bound what it can reach; the query is not restricted to a single AI index.
-    Express time constraints directly in ES|QL (e.g. WHERE @timestamp >= NOW() - 24 hours) or through params.
+    The server adds the space filter and a row limit (at most ${MAX_AI_INDEX_QUERY_LIMIT}). Do not write a space condition in the query.
+    The space comes from the request. Over MCP that is the URL: /api/agent_builder/mcp is the default space, /s/{spaceId}/api/agent_builder/mcp is another space.
+    The query's FROM decides which indices are read. It is not limited to one AI Index, and it can only read indices you have Elasticsearch read access to.
+    Put time constraints in the ES|QL itself (for example WHERE @timestamp >= NOW() - 24 hours) or in params.
   `,
   schema: queryAiIndicesSchema,
   availability: aiIndexToolsAvailability,
-  // Not esqlResults: UI replays those in Discover/Lens, dropping server-side space filter + limit.
+  // Not esql_results: the UI re-runs those in Discover and Lens without the server's space filter and limit.
   handler: async ({ query, params, limit }, context) => {
     try {
       const { columns, values } = await queryAiIndicesHandler({

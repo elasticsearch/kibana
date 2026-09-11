@@ -17,7 +17,7 @@ import { aiIndexToolsAvailability } from '../ai_index_tools_availability';
 import { getErrorMessage, type AiIndexToolDeps } from '../ai_index_read_service';
 import { describeAiIndexHandler } from './handler';
 
-// Room for MAX_AI_INDEX_DESCRIBE_FIELDS fields plus counts and example queries.
+// Enough for MAX_AI_INDEX_DESCRIBE_FIELDS fields plus the counts and example queries.
 const MAX_DESCRIBE_RESULT_TOKENS = 16_000;
 
 const describeAiIndexSchema = z.object({
@@ -28,7 +28,7 @@ const describeAiIndexSchema = z.object({
     .refine((value) => validateAiIndexId(value) === undefined, {
       message: 'Invalid AI index id.',
     })
-    .describe('AI index id, as returned by the list AI indices tool.'),
+    .describe('AI Index id, as returned by the list AI Indices tool.'),
 });
 
 export const createDescribeAiIndexTool = (
@@ -38,17 +38,17 @@ export const createDescribeAiIndexTool = (
   type: ToolType.builtin,
   tags: ['context_engine'],
   annotations: {
-    title: 'Describe AI index',
+    title: 'Describe AI Index',
     readOnlyHint: true,
     destructiveHint: false,
     idempotentHint: true,
     openWorldHint: false,
   },
   description: dedent`
-    Describe one Context Engine AI index before writing a query for it.
-    Returns a context block: what the index holds, the ES|QL target for FROM, its fields (name, type, searchable, aggregatable), document counts by type and tag, and example ES|QL queries.
-    Example queries run as-is on Elastic's canonical knowledge-indicator indices; adapt field names for other indices.
-    Reads only what the current user is allowed to read in the current space; the space comes from the request (over MCP, from the URL).
+    Describe one Context Engine AI Index before writing a query for it.
+    Returns: what the index holds, the ES|QL target for FROM, its fields (name, type, searchable, aggregatable), document counts by type and tag, and example ES|QL queries.
+    The example queries run as-is on Elastic-managed AI Indices. For other AI Indices, change the field names to match.
+    Reads only what you are allowed to read in the current space. The space comes from the request (over MCP, from the URL).
   `,
   schema: describeAiIndexSchema,
   availability: aiIndexToolsAvailability,

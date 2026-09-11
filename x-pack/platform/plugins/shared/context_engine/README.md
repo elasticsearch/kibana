@@ -187,34 +187,36 @@ AI Indices get the space filter alone; they are queried like any other index.
 
 ## Agent Builder tools
 
-The `contextEngineAgentBuilder` plugin registers three read-only tools under
-`platform.context_engine.*`, each calling the same per-request read service as
-the routes above, so a tool and its route always agree:
+The `contextEngineAgentBuilder` plugin adds three read-only tools under
+`platform.context_engine.*`. Each one runs the same code as the matching route
+above, as the same user, so a tool and its route always return the same thing:
 
 | Tool                | Route                    | Result                                                                            |
 | ------------------- | ------------------------ | --------------------------------------------------------------------------------- |
 | `list_ai_indices`   | `GET …/ai_index`         | `{ id, esql_target, description, managed, assigned_to_agent? }` per listed entry  |
-| `describe_ai_index` | `GET …/{id}/_describe`   | `{ response }`, the context block                                                 |
+| `describe_ai_index` | `GET …/{id}/_describe`   | `{ response }`, the text block describing the index                               |
 | `query_ai_indices`  | `POST …/ai_index/_query` | `{ columns, values }`                                                             |
 
-`assigned_to_agent` is present only when an Agent Builder agent calls the tool
-during a conversation, where it says whether that agent's configuration includes
-the index; over MCP there is no agent, so the field is absent. `query_ai_indices`
-has no `time_range` or `filter`: agents write time constraints in ES|QL or
-`params`. Its rows come back as a plain (`other`) result rather than
-`esql_results` on purpose: the Agent Builder UI replays `esql_results` queries in
-Discover and Lens, which would run them without the server-side space filter and
-limit.
+`assigned_to_agent` only appears when an agent calls the tool during a chat. It
+says whether that agent is set up with the index. Over MCP there is no agent, so
+the field is missing.
 
-Reaching the tools takes Agent Builder's `read` privilege (that is all the MCP
-server itself checks); using them also takes Context Engine's `read` privilege,
-which every handler verifies for the caller and, without it, returns an error
-result.
+`query_ai_indices` has no `time_range` or `filter` parameters. Time constraints
+go in the ES|QL itself or in `params`. Its rows come back as a plain `other`
+result, not `esql_results`. This is deliberate. In chat, an `esql_results`
+result gets a "See in Discover" link that opens the raw query in Discover, and
+when the agent asks for a chart the UI runs the raw query again in Lens. Both
+run the query as written, without the space filter and row limit the server
+adds, so they could show documents from other spaces.
 
-The space is always derived through the request and never passed directly. In
-Agent Builder chat, it is derived from the agent's space. When using a tool over
-MCP, the space is derived from the space the MCP server is served from
-(`/s/{spaceId}/api/agent_builder/mcp`).
+To see the tools, a caller needs Agent Builder's `read` privilege; that is the
+only check the MCP server does. To use them, the caller also needs Context
+Engine's `read` privilege. Every tool checks this itself and returns an error
+result when it is missing.
+
+The space always comes from the request; it cannot be passed as a parameter. In
+Agent Builder chat, it is the agent's space. Over MCP, it is the space in the
+URL the MCP server is served from (`/s/{spaceId}/api/agent_builder/mcp`).
 
 ## Feedback analysis configuration
 

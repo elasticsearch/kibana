@@ -18,12 +18,12 @@ export const columnValues = ({ columns, values }: EsqlResponse, name: string): u
   return values.map((row) => row[index]);
 };
 
-/** KI doc fragment scoping it to one space. */
+/** The fields that place a KI document in one space. */
 export const spaceScoped = (spaceId: string) => ({
   permissions: { kibana: { privileges: [{ space: spaceId }] } },
 });
 
-/** Mirrors sanitizeToolId. */
+/** Turns a tool id into its MCP name, the same way Agent Builder's sanitizeToolId does. */
 export const mcpToolName = (toolId: string): string => toolId.replaceAll('.', '_');
 
 export const withMcpClient = async <T>(

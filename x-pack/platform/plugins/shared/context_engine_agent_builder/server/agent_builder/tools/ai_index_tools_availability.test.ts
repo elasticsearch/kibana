@@ -6,10 +6,7 @@
  */
 
 import { httpServerMock } from '@kbn/core-http-server-mocks';
-import {
-  AGENT_BUILDER_EXPERIMENTAL_FEATURES_SETTING_ID,
-  CONTEXT_ENGINE_ENABLED_SETTING_ID,
-} from '@kbn/management-settings-ids';
+import { CONTEXT_ENGINE_ENABLED_SETTING_ID } from '@kbn/management-settings-ids';
 import type { AvailabilityContext } from '@kbn/agent-builder-server';
 import { aiIndexToolsAvailability } from './ai_index_tools_availability';
 
@@ -32,35 +29,17 @@ describe('aiIndexToolsAvailability', () => {
     expect(aiIndexToolsAvailability.cacheMode).toBe('space');
   });
 
-  it('is available when both settings are enabled', async () => {
+  it('is available when Context Engine is enabled', async () => {
     const result = await aiIndexToolsAvailability.handler(
-      createContext({
-        [AGENT_BUILDER_EXPERIMENTAL_FEATURES_SETTING_ID]: true,
-        [CONTEXT_ENGINE_ENABLED_SETTING_ID]: true,
-      })
+      createContext({ [CONTEXT_ENGINE_ENABLED_SETTING_ID]: true })
     );
 
     expect(result).toEqual({ status: 'available' });
   });
 
-  it('is unavailable when experimental features are off', async () => {
-    const result = await aiIndexToolsAvailability.handler(
-      createContext({
-        [AGENT_BUILDER_EXPERIMENTAL_FEATURES_SETTING_ID]: false,
-        [CONTEXT_ENGINE_ENABLED_SETTING_ID]: true,
-      })
-    );
-
-    expect(result.status).toBe('unavailable');
-    expect(result.reason).toContain('experimental');
-  });
-
   it('is unavailable when Context Engine is off', async () => {
     const result = await aiIndexToolsAvailability.handler(
-      createContext({
-        [AGENT_BUILDER_EXPERIMENTAL_FEATURES_SETTING_ID]: true,
-        [CONTEXT_ENGINE_ENABLED_SETTING_ID]: false,
-      })
+      createContext({ [CONTEXT_ENGINE_ENABLED_SETTING_ID]: false })
     );
 
     expect(result.status).toBe('unavailable');
@@ -69,10 +48,7 @@ describe('aiIndexToolsAvailability', () => {
 
   it('treats an unreadable setting as disabled', async () => {
     const result = await aiIndexToolsAvailability.handler(
-      createContext({
-        [AGENT_BUILDER_EXPERIMENTAL_FEATURES_SETTING_ID]: true,
-        [CONTEXT_ENGINE_ENABLED_SETTING_ID]: new Error('unregistered'),
-      })
+      createContext({ [CONTEXT_ENGINE_ENABLED_SETTING_ID]: new Error('unregistered') })
     );
 
     expect(result.status).toBe('unavailable');

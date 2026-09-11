@@ -24,19 +24,19 @@ export const createListAiIndicesTool = (
   type: ToolType.builtin,
   tags: ['context_engine'],
   annotations: {
-    title: 'List AI indices',
+    title: 'List AI Indices',
     readOnlyHint: true,
     destructiveHint: false,
     idempotentHint: true,
     openWorldHint: false,
   },
   description: dedent`
-    List the Context Engine AI indices you can read in the current space.
-    Start here, then call the describe AI index tool on an entry before writing a query for the query AI indices tool.
+    List the Context Engine AI Indices you can use in the current space.
+    Start here. Then call the describe AI Index tool on an entry before writing a query for the query AI Indices tool.
 
-    Each entry has the id, the ES|QL target to put in FROM (esql_target), a description, whether Elastic manages it, and, when running inside an agent, whether the agent is configured with it (assigned_to_agent).
-    The space is taken from the request (over MCP, from the URL: /api/agent_builder/mcp is the default space, /s/{spaceId}/api/agent_builder/mcp another space).
-    Entries whose visibility probe fails, or whose documents all belong to other spaces, are omitted; empty or unresolved targets may remain listed.
+    Each entry has: the id, the ES|QL target to put in FROM (esql_target), a description, whether Elastic manages it, and, when running inside an agent, whether the agent is set up with it (assigned_to_agent).
+    An AI Index is left out when you cannot read its backing index, or when every document in it belongs to another space. An empty AI Index is still listed.
+    The space comes from the request. Over MCP that is the URL: /api/agent_builder/mcp is the default space, /s/{spaceId}/api/agent_builder/mcp is another space.
   `,
   schema: listAiIndicesSchema,
   availability: aiIndexToolsAvailability,

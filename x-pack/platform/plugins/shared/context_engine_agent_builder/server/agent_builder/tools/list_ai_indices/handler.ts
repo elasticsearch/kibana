@@ -6,14 +6,14 @@
  */
 
 import type { ToolHandlerContext } from '@kbn/agent-builder-server';
-import { getCallerAiIndexDataReadService, type AiIndexToolDeps } from '../ai_index_read_service';
+import { getAiIndexDataReadServiceForUser, type AiIndexToolDeps } from '../ai_index_read_service';
 
 export interface ListAiIndicesItem {
   id: string;
   esql_target: string;
   description?: string;
   managed: boolean;
-  /** Present only when running inside an agent. */
+  /** Present only when running inside an Agent Builder agent. */
   assigned_to_agent?: boolean;
 }
 
@@ -28,7 +28,7 @@ export const listAiIndicesHandler = async ({
   deps: AiIndexToolDeps;
   context: Pick<ToolHandlerContext, 'esClient' | 'request' | 'agentConfiguration'>;
 }): Promise<ListAiIndicesResult> => {
-  const readService = await getCallerAiIndexDataReadService({ deps, esClient, request });
+  const readService = await getAiIndexDataReadServiceForUser({ deps, esClient, request });
   const aiIndices = await readService.listVisible();
   const assignedIds = agentConfiguration ? new Set(agentConfiguration.ai_indices ?? []) : undefined;
 

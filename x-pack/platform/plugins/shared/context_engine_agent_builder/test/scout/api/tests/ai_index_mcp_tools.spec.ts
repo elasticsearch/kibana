@@ -23,13 +23,8 @@ import {
   type EsqlResponse,
 } from '../fixtures';
 
-const {
-  AI_INDEX_COLLECTION_PATH,
-  MCP_PATH,
-  CONTEXT_ENGINE_ENABLED_SETTING,
-  AGENT_BUILDER_EXPERIMENTAL_SETTING,
-} = testData;
-// Unique per run so retried beforeAll does not 409.
+const { AI_INDEX_COLLECTION_PATH, MCP_PATH, CONTEXT_ENGINE_ENABLED_SETTING_ID } = testData;
+// Unique per run, so a retried beforeAll does not collide with ids from the last attempt.
 const RUN_ID = randomUUID().slice(0, 8);
 const OTHER_SPACE_ID = `ce-mcp-other-${RUN_ID}`;
 const INDEX = `ai-index-idx-scout-mcp-${RUN_ID}`;
@@ -53,13 +48,13 @@ const ES_READ = {
   indices: [{ names: [INDEX], privileges: ['read', 'view_index_metadata'] }],
 };
 
-/** Agent Builder + CE read, plus ES read on backing index. */
+/** Can read Agent Builder and Context Engine, and has Elasticsearch read on the backing index. */
 const MCP_ROLE: KibanaRole = {
   elasticsearch: ES_READ,
   kibana: [{ base: [], feature: { ...AGENT_BUILDER_READ, ...CONTEXT_ENGINE_READ }, spaces: ['*'] }],
 };
 
-/** Reaches MCP server but lacks CE read: tools must fail closed. */
+/** Can reach the MCP server but cannot read Context Engine, so every tool must return an error. */
 const MCP_ONLY_ROLE: KibanaRole = {
   elasticsearch: ES_READ,
   kibana: [{ base: [], feature: AGENT_BUILDER_READ, spaces: ['*'] }],
@@ -93,7 +88,7 @@ interface ListedAiIndex {
   assigned_to_agent?: boolean;
 }
 
-/** list -> describe -> query, each step fed by previous output. */
+/** Runs list, then describe, then query, passing each result into the next call. */
 const runChain = async (client: Client) => {
   const { ai_indices: aiIndices } = resultOfType<{ ai_indices: ListedAiIndex[] }>(
     await callToolForResults(client, TOOL.list),
@@ -121,7 +116,6 @@ const runChain = async (client: Client) => {
 };
 
 apiTest.describe('AI index tools over MCP', { tag: tags.stateful.classic }, () => {
-  let adminCredentials: RoleApiCredentials;
   let mcpCredentials: RoleApiCredentials;
   let mcpOnlyCredentials: RoleApiCredentials;
   let mcpUrl: (path?: string) => string;
@@ -131,17 +125,16 @@ apiTest.describe('AI index tools over MCP', { tag: tags.stateful.classic }, () =
     { path = MCP_PATH, credentials = mcpCredentials } = {}
   ) => withMcpClient({ url: mcpUrl(path), headers: credentials.apiKeyHeader }, fn);
 
-  apiTest.beforeAll(async ({ requestAuth, kbnClient, kbnUrl, esClient, apiClient }) => {
-    adminCredentials = await requestAuth.getApiKey('admin');
+  apiTest.beforeAll(async ({ requestAuth, kbnClient, kbnUrl, esClient }) => {
     mcpCredentials = await requestAuth.getApiKeyForCustomRole(MCP_ROLE);
     mcpOnlyCredentials = await requestAuth.getApiKeyForCustomRole(MCP_ONLY_ROLE);
     mcpUrl = (path = MCP_PATH) => kbnUrl.get(path);
 
     await kbnClient.spaces.create({ id: OTHER_SPACE_ID, name: 'CE MCP other space' });
-    // Both settings are per-space.
+    // The setting is per-space.
     for (const space of [undefined, OTHER_SPACE_ID]) {
       await kbnClient.uiSettings.update(
-        { [CONTEXT_ENGINE_ENABLED_SETTING]: true, [AGENT_BUILDER_EXPERIMENTAL_SETTING]: true },
+        { [CONTEXT_ENGINE_ENABLED_SETTING_ID]: true },
         space ? { space } : undefined
       );
     }
@@ -163,9 +156,10 @@ apiTest.describe('AI index tools over MCP', { tag: tags.stateful.classic }, () =
       ],
     });
 
-    const response = await apiClient.post(AI_INDEX_COLLECTION_PATH, {
-      headers: { ...adminCredentials.apiKeyHeader, ...API_HEADERS },
-      responseType: 'json',
+    await kbnClient.request({
+      method: 'POST',
+      path: `/${AI_INDEX_COLLECTION_PATH}`,
+      headers: API_HEADERS,
       body: {
         id: AI_INDEX_ID,
         description: 'Scout MCP fixture',
@@ -174,18 +168,18 @@ apiTest.describe('AI index tools over MCP', { tag: tags.stateful.classic }, () =
         sources: [],
       },
     });
-    expect(response).toHaveStatusCode(201);
   });
 
-  apiTest.afterAll(async ({ apiClient, kbnClient, esClient }) => {
-    await apiClient.delete(`${AI_INDEX_COLLECTION_PATH}/${AI_INDEX_ID}`, {
-      headers: { ...adminCredentials.apiKeyHeader, ...API_HEADERS },
-      responseType: 'json',
+  apiTest.afterAll(async ({ kbnClient, esClient }) => {
+    await kbnClient.request({
+      method: 'DELETE',
+      path: `/${AI_INDEX_COLLECTION_PATH}/${AI_INDEX_ID}`,
+      headers: API_HEADERS,
+      ignoreErrors: [404],
     });
     await esClient.indices.delete({ index: INDEX }, { ignore: [404] });
     await kbnClient.spaces.delete(OTHER_SPACE_ID);
-    await kbnClient.uiSettings.unset(CONTEXT_ENGINE_ENABLED_SETTING);
-    await kbnClient.uiSettings.unset(AGENT_BUILDER_EXPERIMENTAL_SETTING);
+    await kbnClient.uiSettings.unset(CONTEXT_ENGINE_ENABLED_SETTING_ID);
   });
 
   apiTest(

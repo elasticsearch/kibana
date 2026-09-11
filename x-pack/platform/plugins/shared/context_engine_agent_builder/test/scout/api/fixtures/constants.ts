@@ -14,5 +14,4 @@ export const COMMON_HEADERS = {
 export const AI_INDEX_COLLECTION_PATH = 'api/context_engine/ai_index';
 export const MCP_PATH = 'api/agent_builder/mcp';
 
-export const CONTEXT_ENGINE_ENABLED_SETTING = 'contextEngine:enabled';
-export const AGENT_BUILDER_EXPERIMENTAL_SETTING = 'agentBuilder:experimentalFeatures';
+export { CONTEXT_ENGINE_ENABLED_SETTING_ID } from '@kbn/management-settings-ids';

@@ -65,10 +65,6 @@ export const registerContextEngineAgentBuilderIntegration = ({
       return startDeps.security;
     },
     getWorkflowsManagement: () => workflowsManagement,
-    getAiIndexService: async () => {
-      const [, startDeps] = await coreSetup.getStartServices();
-      return startDeps.contextEngine.getAiIndexService();
-    },
     getContextEngineStart: async () => {
       const [, startDeps] = await coreSetup.getStartServices();
       return startDeps.contextEngine;

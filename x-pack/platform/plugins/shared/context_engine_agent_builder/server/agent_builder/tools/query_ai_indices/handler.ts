@@ -10,9 +10,9 @@ import type {
   QueryAiIndicesRequest,
   QueryAiIndicesResponse,
 } from '@kbn/context-engine-plugin/common/http_api/ai_indices';
-import { getCallerAiIndexDataReadService, type AiIndexToolDeps } from '../ai_index_read_service';
+import { getAiIndexDataReadServiceForUser, type AiIndexToolDeps } from '../ai_index_read_service';
 
-/** Same implementation as `POST /api/context_engine/ai_index/_query`. */
+/** Runs the same code as `POST /api/context_engine/ai_index/_query`. */
 export const queryAiIndicesHandler = async ({
   deps,
   request: queryRequest,
@@ -22,6 +22,6 @@ export const queryAiIndicesHandler = async ({
   request: QueryAiIndicesRequest;
   context: Pick<ToolHandlerContext, 'esClient' | 'request'>;
 }): Promise<QueryAiIndicesResponse> => {
-  const readService = await getCallerAiIndexDataReadService({ deps, esClient, request });
+  const readService = await getAiIndexDataReadServiceForUser({ deps, esClient, request });
   return readService.query(queryRequest);
 };

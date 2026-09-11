@@ -23,8 +23,8 @@ export interface AiIndexToolDeps {
 export const CONTEXT_ENGINE_READ_DENIED_MESSAGE =
   'Insufficient privileges to read Context Engine AI indices.';
 
-/** Caller-scoped read service; throws without CE read privilege. */
-export const getCallerAiIndexDataReadService = async ({
+/** Read service that runs as the current user. Throws if the user lacks Context Engine read privilege. */
+export const getAiIndexDataReadServiceForUser = async ({
   deps: { getContextEngineStart, getSecurityStart },
   esClient,
   request,
