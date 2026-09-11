@@ -61,9 +61,16 @@ describe('EditScheduledReportFlyout', () => {
     onClose,
   };
 
+  const mockUiSettings = (settings: Record<string, string>) => {
+    mockedUseUiSetting.mockImplementation((key) => settings[key as string]);
+  };
+
   beforeAll(() => {
     moment.tz.setDefault('UTC');
-    mockedUseUiSetting.mockReturnValue('UTC');
+    mockUiSettings({
+      'dateFormat:tz': 'UTC',
+      dateFormat: 'MMM D, YYYY @ HH:mm:ss.SSS',
+    });
   });
 
   beforeEach(() => {

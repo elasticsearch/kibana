@@ -81,14 +81,21 @@ describe('ScheduledReportForm', () => {
   let user: ReturnType<typeof userEvent.setup>;
   const today = new Date('2025-11-10T12:00:00.000Z');
 
+  const mockUiSettings = (settings: Record<string, string>) => {
+    mockedUseUiSetting.mockImplementation((key) => settings[key as string]);
+  };
+
   beforeAll(() => {
     moment.tz.setDefault('UTC');
-    mockedUseUiSetting.mockReturnValue('UTC');
     window.scrollTo = jest.fn();
     window.HTMLElement.prototype.scrollIntoView = jest.fn();
   });
 
   beforeEach(() => {
+    mockUiSettings({
+      'dateFormat:tz': 'UTC',
+      dateFormat: 'MMM D, YYYY @ HH:mm:ss.SSS zz',
+    });
     (useKibana as jest.Mock).mockReturnValue({
       services: mockKibanaServices,
     });
@@ -126,6 +133,74 @@ describe('ScheduledReportForm', () => {
     expect(await screen.findByTestId('scheduleExportForm')).toBeInTheDocument();
     expect(screen.getByText(i18n.SCHEDULED_REPORT_FORM_DETAILS_SECTION_TITLE)).toBeInTheDocument();
     expect(screen.getByTestId('scheduleExportSubmitButton')).toBeInTheDocument();
+  });
+
+  it('displays the start date using the dateFormat ui setting without seconds or timezone', async () => {
+    renderWithProviders(
+      <ScheduledReportForm
+        {...defaultProps}
+        scheduledReport={{
+          ...defaultProps.scheduledReport,
+          startDate: '2025-11-10T12:00:00.000Z',
+        }}
+      />
+    );
+
+    expect(await screen.findByTestId('startDatePicker-input')).toHaveValue('Nov 10, 2025 @ 12:00');
+  });
+
+  it('appends a default time format when the dateFormat ui setting is date-only', async () => {
+    mockUiSettings({
+      'dateFormat:tz': 'UTC',
+      dateFormat: 'MMM D, YYYY',
+    });
+
+    renderWithProviders(
+      <ScheduledReportForm
+        {...defaultProps}
+        scheduledReport={{
+          ...defaultProps.scheduledReport,
+          startDate: '2025-11-10T12:00:00.000Z',
+        }}
+      />
+    );
+
+    expect(await screen.findByTestId('startDatePicker-input')).toHaveValue('Nov 10, 2025 @ 12:00');
+  });
+
+  it('does not shift the displayed or submitted start date by the dateFormat:tz timezone', async () => {
+    moment.tz.setDefault('America/New_York');
+    user = userEvent.setup({ delay: null });
+    mockUiSettings({
+      'dateFormat:tz': 'America/New_York',
+      dateFormat: 'MMM D, YYYY @ HH:mm',
+    });
+
+    renderWithProviders(
+      <ScheduledReportForm
+        {...defaultProps}
+        availableReportTypes={[{ label: 'PDF', id: 'printablePdfV2' }]}
+        scheduledReport={{
+          ...defaultProps.scheduledReport,
+          startDate: '2025-11-10T12:00:00.000Z',
+        }}
+      />
+    );
+
+    expect(await screen.findByTestId('startDatePicker-input')).toHaveValue('Nov 10, 2025 @ 07:00');
+
+    await user.click(await screen.findByTestId('scheduleExportSubmitButton'));
+
+    await waitFor(() => {
+      expect(onSubmitForm).toHaveBeenCalledWith(
+        expect.objectContaining({
+          timezone: 'UTC', // Kibana timezone setting is America/New_York, but the date picker defined for the scheduled report is UTC
+          startDate: '2025-11-10T12:00:00.000Z',
+        }),
+        true
+      );
+    });
+    moment.tz.setDefault('UTC');
   });
 
   it('calls onSubmit correctly', async () => {

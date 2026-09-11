@@ -23,6 +23,7 @@ import {
   EuiSpacer,
   EuiTitle,
 } from '@elastic/eui';
+import { useUiSetting } from '@kbn/kibana-react-plugin/public';
 import { useKibana } from '@kbn/reporting-public';
 import { REPORTING_MANAGEMENT_SCHEDULES } from '@kbn/reporting-common';
 import type { FormSchema } from '@kbn/es-ui-shared-plugin/static/forms/hook_form_lib';
@@ -57,6 +58,7 @@ import * as i18n from '../translations';
 import { SCHEDULED_REPORT_FORM_ID } from '../constants';
 import { getStartDateValidator } from '../validators/start_date_validator';
 import { scheduledReportMessageVariables } from '../schemas/scheduled_report_message_variables';
+import { getParsedDateFormat } from '../utils';
 
 const { emptyField } = fieldValidators;
 
@@ -164,6 +166,8 @@ export const ScheduledReportForm = ({
     [http.basePath]
   );
   const { defaultTimezone } = useDefaultTimezone();
+  const rawDateFormat = useUiSetting<string>('dateFormat');
+  const dateFormat = useMemo(() => getParsedDateFormat(rawDateFormat), [rawDateFormat]);
   const hasCcBcc =
     Boolean(scheduledReport.emailCcRecipients?.length) ||
     Boolean(scheduledReport.emailBccRecipients?.length);
@@ -385,6 +389,7 @@ export const ScheduledReportForm = ({
                     fullWidth: true,
                     showTimeSelect: true,
                     readOnly,
+                    dateFormat,
                     'data-test-subj': 'startDatePicker',
                   },
                 }}

@@ -6,7 +6,7 @@
  */
 
 import { Frequency } from '@kbn/rrule';
-import { transformEmailNotification, transformScheduledReport } from './utils';
+import { getParsedDateFormat, transformEmailNotification, transformScheduledReport } from './utils';
 import type { ScheduledReportApiJSON } from '@kbn/reporting-common/types';
 import { RecurrenceEnd } from '@kbn/response-ops-recurring-schedule-form/constants';
 
@@ -156,6 +156,46 @@ describe('transformScheduledReport', () => {
     expect(transformScheduledReport(report)).toEqual(
       expect.objectContaining({ sendByEmail: false, emailRecipients: [] })
     );
+  });
+});
+
+describe('getParsedDateFormat', () => {
+  it('removes seconds and fractional seconds', () => {
+    expect(getParsedDateFormat('MMM D, YYYY @ HH:mm:ss.SSS')).toBe('MMM D, YYYY @ HH:mm');
+    expect(getParsedDateFormat('HH:mm:ss.SSSSSSSSS')).toBe('HH:mm');
+    expect(getParsedDateFormat('HH:mm:s')).toBe('HH:mm');
+  });
+
+  it('removes timezone tokens', () => {
+    expect(getParsedDateFormat('YYYY-MM-DD HH:mm z')).toBe('YYYY-MM-DD HH:mm');
+    expect(getParsedDateFormat('YYYY-MM-DD HH:mm zz')).toBe('YYYY-MM-DD HH:mm');
+    expect(getParsedDateFormat('YYYY-MM-DD HH:mm Z')).toBe('YYYY-MM-DD HH:mm');
+    expect(getParsedDateFormat('YYYY-MM-DD HH:mm ZZ')).toBe('YYYY-MM-DD HH:mm');
+  });
+
+  it('appends a time to date-only formats', () => {
+    expect(getParsedDateFormat('MMM D, YYYY')).toBe('MMM D, YYYY @ HH:mm');
+    expect(getParsedDateFormat('LL')).toBe('LL @ HH:mm');
+  });
+
+  it('keeps formats that already include a time', () => {
+    expect(getParsedDateFormat('YYYY-MM-DD hh:mm A')).toBe('YYYY-MM-DD hh:mm A');
+    expect(getParsedDateFormat('LLL')).toBe('LLL');
+    expect(getParsedDateFormat('kk:mm')).toBe('kk:mm');
+  });
+
+  it('replaces LTS with LT to drop its seconds', () => {
+    expect(getParsedDateFormat('L LTS')).toBe('L LT');
+    expect(getParsedDateFormat('L LT')).toBe('L LT');
+  });
+
+  it('leaves bracketed literals untouched', () => {
+    expect(getParsedDateFormat('YYYY-MM-DD [seconds] HH:mm:ss')).toBe('YYYY-MM-DD [seconds] HH:mm');
+    expect(getParsedDateFormat('YYYY-MM-DD [at] HH:mm [ZZ]')).toBe('YYYY-MM-DD [at] HH:mm [ZZ]');
+  });
+
+  it('does not treat letters inside bracketed literals as time tokens', () => {
+    expect(getParsedDateFormat('YYYY-MM-DD [hours]')).toBe('YYYY-MM-DD [hours] @ HH:mm');
   });
 });
 
