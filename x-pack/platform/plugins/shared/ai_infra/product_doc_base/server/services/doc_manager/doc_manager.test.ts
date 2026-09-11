@@ -7,7 +7,11 @@
 
 import type { MockedLogger } from '@kbn/logging-mocks';
 import { loggerMock } from '@kbn/logging-mocks';
-import { securityServiceMock, httpServerMock } from '@kbn/core/server/mocks';
+import {
+  securityServiceMock,
+  httpServerMock,
+  elasticsearchServiceMock,
+} from '@kbn/core/server/mocks';
 import { taskManagerMock } from '@kbn/task-manager-plugin/server/mocks';
 import { licensingMock } from '@kbn/licensing-plugin/server/mocks';
 import type { ProductDocInstallClient } from '../doc_install_status';
@@ -18,6 +22,7 @@ import {
   scheduleInstallAllTask,
   scheduleUninstallAllTask,
   scheduleEnsureUpToDateTask,
+  scheduleEnsureSecurityLabsUpToDateTask,
   getTaskStatus,
   waitUntilTaskCompleted,
 } from '../../tasks';
@@ -32,6 +37,10 @@ const scheduleUninstallAllTaskMock = scheduleUninstallAllTask as jest.MockedFn<
 const scheduleEnsureUpToDateTaskMock = scheduleEnsureUpToDateTask as jest.MockedFn<
   typeof scheduleEnsureUpToDateTask
 >;
+const scheduleEnsureSecurityLabsUpToDateTaskMock =
+  scheduleEnsureSecurityLabsUpToDateTask as jest.MockedFn<
+    typeof scheduleEnsureSecurityLabsUpToDateTask
+  >;
 const waitUntilTaskCompletedMock = waitUntilTaskCompleted as jest.MockedFn<
   typeof waitUntilTaskCompleted
 >;
@@ -44,6 +53,11 @@ describe('DocumentationManager', () => {
   let licensing: ReturnType<typeof licensingMock.createStart>;
   let auditService: ReturnType<typeof securityServiceMock.createStart>['audit'];
   let docInstallClient: jest.Mocked<ProductDocInstallClient>;
+  let esClient: ReturnType<typeof elasticsearchServiceMock.createElasticsearchClient>;
+  let packageInstaller: {
+    installSecurityLabs: jest.Mock;
+    getSecurityLabsStatus: jest.Mock;
+  };
 
   let docManager: DocumentationManager;
 
@@ -52,6 +66,21 @@ describe('DocumentationManager', () => {
     taskManager = taskManagerMock.createStart();
     licensing = licensingMock.createStart();
     auditService = securityServiceMock.createStart().audit;
+    esClient = elasticsearchServiceMock.createElasticsearchClient();
+    esClient.inference.get.mockResolvedValue({
+      endpoints: [
+        {
+          inference_id: defaultInferenceEndpoints.JINAv5,
+          task_type: 'text_embedding',
+          service: 'elasticsearch',
+          service_settings: {},
+        },
+      ],
+    });
+    packageInstaller = {
+      installSecurityLabs: jest.fn().mockResolvedValue(undefined),
+      getSecurityLabsStatus: jest.fn().mockResolvedValue({ status: 'uninstalled' }),
+    };
 
     docInstallClient = {
       getInstallationStatus: jest.fn(),
@@ -69,6 +98,10 @@ describe('DocumentationManager', () => {
       licensing,
       auditService,
       docInstallClient,
+      esClient,
+      packageInstaller: packageInstaller as unknown as ConstructorParameters<
+        typeof DocumentationManager
+      >[0]['packageInstaller'],
     });
   });
 
@@ -76,6 +109,7 @@ describe('DocumentationManager', () => {
     scheduleInstallAllTaskMock.mockReset();
     scheduleUninstallAllTaskMock.mockReset();
     scheduleEnsureUpToDateTaskMock.mockReset();
+    scheduleEnsureSecurityLabsUpToDateTaskMock.mockReset();
     waitUntilTaskCompletedMock.mockReset();
     getTaskStatusMock.mockReset();
   });
@@ -107,6 +141,14 @@ describe('DocumentationManager', () => {
     });
 
     it('calls waitUntilTaskCompleted if wait=true', async () => {
+      docInstallClient.getInstallationStatus
+        .mockResolvedValueOnce({
+          kibana: { status: 'uninstalled' },
+        } as Awaited<ReturnType<ProductDocInstallClient['getInstallationStatus']>>)
+        .mockResolvedValueOnce({
+          kibana: { status: 'installed' },
+        } as Awaited<ReturnType<ProductDocInstallClient['getInstallationStatus']>>);
+
       await docManager.install({ wait: true, inferenceId: DEFAULT_INFERENCE_ID });
 
       expect(scheduleInstallAllTaskMock).toHaveBeenCalledTimes(1);
@@ -209,6 +251,154 @@ describe('DocumentationManager', () => {
           outcome: 'unknown',
         },
       });
+    });
+  });
+
+  describe('#ensureDefaultProductDocumentation', () => {
+    beforeEach(() => {
+      getTaskStatusMock.mockResolvedValue('not_scheduled');
+      licensing.getLicense.mockResolvedValue(
+        licensingMock.createLicense({ license: { type: 'enterprise' } })
+      );
+    });
+
+    it('installs when default inference ID documentation is not installed', async () => {
+      docInstallClient.getInstallationStatus
+        .mockResolvedValueOnce({
+          kibana: { status: 'uninstalled' },
+        } as Awaited<ReturnType<ProductDocInstallClient['getInstallationStatus']>>)
+        .mockResolvedValueOnce({
+          kibana: { status: 'uninstalled' },
+        } as Awaited<ReturnType<ProductDocInstallClient['getInstallationStatus']>>);
+
+      await docManager.ensureDefaultProductDocumentation();
+
+      expect(scheduleInstallAllTaskMock).toHaveBeenCalledWith({
+        taskManager,
+        logger,
+        inferenceId: defaultInferenceEndpoints.JINAv5,
+      });
+      expect(waitUntilTaskCompletedMock).not.toHaveBeenCalled();
+      expect(scheduleEnsureUpToDateTaskMock).not.toHaveBeenCalled();
+    });
+
+    it('schedules no task when default inference ID documentation is already installed', async () => {
+      docInstallClient.getInstallationStatus.mockResolvedValue({
+        kibana: { status: 'installed' },
+      } as Awaited<ReturnType<ProductDocInstallClient['getInstallationStatus']>>);
+
+      await docManager.ensureDefaultProductDocumentation();
+
+      // Updates for already-installed IDs are handled by updateAll() on startup
+      expect(scheduleInstallAllTaskMock).not.toHaveBeenCalled();
+      expect(scheduleEnsureUpToDateTaskMock).not.toHaveBeenCalled();
+    });
+
+    it('reinstalls when default inference ID documentation is in error state', async () => {
+      docInstallClient.getInstallationStatus
+        .mockResolvedValueOnce({
+          kibana: { status: 'error' },
+        } as Awaited<ReturnType<ProductDocInstallClient['getInstallationStatus']>>)
+        .mockResolvedValueOnce({
+          kibana: { status: 'error' },
+        } as Awaited<ReturnType<ProductDocInstallClient['getInstallationStatus']>>);
+
+      await docManager.ensureDefaultProductDocumentation();
+
+      expect(scheduleInstallAllTaskMock).toHaveBeenCalledWith({
+        taskManager,
+        logger,
+        inferenceId: defaultInferenceEndpoints.JINAv5,
+      });
+      expect(scheduleEnsureUpToDateTaskMock).not.toHaveBeenCalled();
+    });
+
+    it('skips when default inference ID documentation is currently installing', async () => {
+      docInstallClient.getInstallationStatus.mockResolvedValue({
+        kibana: { status: 'installing' },
+      } as Awaited<ReturnType<ProductDocInstallClient['getInstallationStatus']>>);
+
+      await docManager.ensureDefaultProductDocumentation();
+
+      expect(scheduleInstallAllTaskMock).not.toHaveBeenCalled();
+      expect(scheduleEnsureUpToDateTaskMock).not.toHaveBeenCalled();
+    });
+
+    it('skips when default inference ID documentation is currently uninstalling', async () => {
+      docInstallClient.getInstallationStatus.mockResolvedValue({
+        kibana: { status: 'uninstalling' },
+      } as Awaited<ReturnType<ProductDocInstallClient['getInstallationStatus']>>);
+
+      await docManager.ensureDefaultProductDocumentation();
+
+      expect(scheduleInstallAllTaskMock).not.toHaveBeenCalled();
+      expect(scheduleEnsureUpToDateTaskMock).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('#ensureDefaultSecurityLabs', () => {
+    beforeEach(() => {
+      licensing.getLicense.mockResolvedValue(
+        licensingMock.createLicense({ license: { type: 'enterprise' } })
+      );
+    });
+
+    it('installs when Security Labs is not installed', async () => {
+      packageInstaller.getSecurityLabsStatus.mockResolvedValue({ status: 'uninstalled' });
+
+      await docManager.ensureDefaultSecurityLabs();
+
+      expect(packageInstaller.installSecurityLabs).toHaveBeenCalledWith({
+        inferenceId: defaultInferenceEndpoints.JINAv5,
+        version: undefined,
+      });
+    });
+
+    it('schedules no install when Security Labs is already installed', async () => {
+      packageInstaller.getSecurityLabsStatus.mockResolvedValue({ status: 'installed' });
+
+      await docManager.ensureDefaultSecurityLabs();
+
+      expect(packageInstaller.installSecurityLabs).not.toHaveBeenCalled();
+      expect(scheduleEnsureSecurityLabsUpToDateTaskMock).not.toHaveBeenCalled();
+    });
+
+    it('installs when Security Labs is in error state', async () => {
+      packageInstaller.getSecurityLabsStatus.mockResolvedValue({ status: 'error' });
+
+      await docManager.ensureDefaultSecurityLabs();
+
+      expect(packageInstaller.installSecurityLabs).toHaveBeenCalledWith({
+        inferenceId: defaultInferenceEndpoints.JINAv5,
+        version: undefined,
+      });
+    });
+
+    it('skips when Security Labs is currently installing', async () => {
+      packageInstaller.getSecurityLabsStatus.mockResolvedValue({ status: 'installing' });
+
+      await docManager.ensureDefaultSecurityLabs();
+
+      expect(packageInstaller.installSecurityLabs).not.toHaveBeenCalled();
+    });
+
+    it('skips when Security Labs is currently uninstalling', async () => {
+      packageInstaller.getSecurityLabsStatus.mockResolvedValue({ status: 'uninstalling' });
+
+      await docManager.ensureDefaultSecurityLabs();
+
+      expect(packageInstaller.installSecurityLabs).not.toHaveBeenCalled();
+    });
+
+    it('skips when license is invalid', async () => {
+      packageInstaller.getSecurityLabsStatus.mockResolvedValue({ status: 'uninstalled' });
+      licensing.getLicense.mockResolvedValue(
+        licensingMock.createLicense({ license: { type: 'basic' } })
+      );
+
+      await docManager.ensureDefaultSecurityLabs();
+
+      expect(packageInstaller.installSecurityLabs).not.toHaveBeenCalled();
     });
   });
 

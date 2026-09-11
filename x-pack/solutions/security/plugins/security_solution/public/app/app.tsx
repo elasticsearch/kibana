@@ -20,6 +20,7 @@ import { CellActionsProvider } from '@kbn/cell-actions';
 import { NavigationProvider } from '@kbn/security-solution-navigation';
 import { EntityStoreEuidApiProvider, useInstallEntityStoreV2 } from '@kbn/entity-store/public';
 import { APP_NAME } from '../../common/constants';
+import { useEnsureSecurityLabs } from '../common/hooks/use_ensure_security_labs';
 import { UpsellingProvider } from '../common/components/upselling_provider';
 import { ManageUserInfo } from '../detections/components/user_info';
 import { ErrorToastDispatcher } from '../common/components/error_toast_dispatcher';
@@ -117,6 +118,13 @@ const SecurityAppComponent: React.FC<SecurityAppComponentProps> = ({
   const CloudProvider = services.cloud?.CloudContextProvider ?? React.Fragment;
 
   useInstallEntityStoreV2(services);
+  useEnsureSecurityLabs({
+    productDocBase: services.productDocBase,
+    uiSettings: services.uiSettings,
+    logger: services.logger,
+    // Product-doc install routes require manage llm_product_doc (Agent Builder All / manageAgents).
+    hasManagePrivilege: services.application.capabilities.agentBuilder?.manageAgents === true,
+  });
 
   // Set conversation flyout active config on mount, clear on unmount.
   // Skip if the sidebar is already open (e.g. navigating from Agent Builder

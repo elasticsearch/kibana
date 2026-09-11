@@ -8,6 +8,11 @@
 import type { Logger } from '@kbn/logging';
 import type { CoreSetup, CoreStart, Plugin, PluginInitializerContext } from '@kbn/core/server';
 import { SavedObjectsClient } from '@kbn/core/server';
+import {
+  GEN_AI_SETTINGS_DEFAULT_AI_CONNECTOR,
+  GEN_AI_SETTINGS_DEFAULT_AI_CONNECTOR_DEFAULT_ONLY,
+} from '@kbn/management-settings-ids';
+import { isEisAvailableFromInferenceGet } from '@kbn/product-doc-common';
 import { productDocInstallStatusSavedObjectTypeName } from '../common/consts';
 import type { ProductDocBaseConfig } from './config';
 import type {
@@ -25,6 +30,11 @@ import { SearchService } from './services/search';
 import { registerRoutes } from './routes';
 import { registerTaskDefinitions } from './tasks';
 
+// Sentinels that mean no default AI connector/model is configured. Either can
+// appear depending on which settings UI last wrote genAiSettings:defaultAIConnector
+// (gen_ai_settings vs search_inference_endpoints "Use AI features" toggle).
+const AI_DISABLED_SENTINELS = new Set(['NO_DEFAULT_MODEL', 'NO_DEFAULT_CONNECTOR']);
+
 export class ProductDocBasePlugin
   implements
     Plugin<
@@ -36,14 +46,17 @@ export class ProductDocBasePlugin
 {
   private logger: Logger;
   private internalServices?: InternalServices;
+  private cloud?: ProductDocBaseSetupDependencies['cloud'];
 
   constructor(private readonly context: PluginInitializerContext<ProductDocBaseConfig>) {
     this.logger = context.logger.get();
   }
   setup(
     coreSetup: CoreSetup<ProductDocBaseStartDependencies, ProductDocBaseStartContract>,
-    { taskManager }: ProductDocBaseSetupDependencies
+    { taskManager, cloud }: ProductDocBaseSetupDependencies
   ): ProductDocBaseSetupContract {
+    this.cloud = cloud;
+
     const getServices = () => {
       if (!this.internalServices) {
         throw new Error('getServices called before #start');
@@ -106,6 +119,7 @@ export class ProductDocBasePlugin
       taskManager,
       auditService: core.security.audit,
       packageInstaller,
+      esClient: core.elasticsearch.client.asInternalUser,
     });
 
     this.internalServices = {
@@ -116,12 +130,14 @@ export class ProductDocBasePlugin
       licensing,
       taskManager,
     };
-    documentationManager.updateAll().catch((err) => {
-      this.logger.error(`Error scheduling product documentation updateAll task: ${err.message}`);
-    });
-    documentationManager.updateSecurityLabsAll().catch((err) => {
-      this.logger.error(`Error scheduling Security Labs update task: ${err.message}`);
-    });
+
+    this.runStartupTasks(core, documentationManager, isServerless, this.cloud).catch(
+      (err: Error) => {
+        this.logger.error(
+          `Unexpected error in product documentation startup tasks: ${err.message}`
+        );
+      }
+    );
     return {
       management: {
         install: documentationManager.install.bind(documentationManager),
@@ -140,5 +156,63 @@ export class ProductDocBasePlugin
       },
       search: searchService.search.bind(searchService),
     };
+  }
+
+  private async runStartupTasks(
+    core: CoreStart,
+    documentationManager: DocumentationManager,
+    isServerless: boolean,
+    cloud: ProductDocBaseSetupDependencies['cloud']
+  ): Promise<void> {
+    const uiSettingsSoClient = new SavedObjectsClient(core.savedObjects.createInternalRepository());
+    const uiSettingsClient = core.uiSettings.asScopedToClient(uiSettingsSoClient);
+
+    const [defaultAIConnector, defaultAIConnectorOnly] = await Promise.all([
+      uiSettingsClient.get<string>(GEN_AI_SETTINGS_DEFAULT_AI_CONNECTOR).catch(() => ''),
+      uiSettingsClient
+        .get<boolean>(GEN_AI_SETTINGS_DEFAULT_AI_CONNECTOR_DEFAULT_ONLY)
+        .catch(() => false),
+    ]);
+
+    const isAiDisabled =
+      AI_DISABLED_SENTINELS.has(defaultAIConnector) && defaultAIConnectorOnly === true;
+
+    if (isAiDisabled) {
+      this.logger.info('Skipping product documentation auto-install: Use AI features is disabled');
+      return;
+    }
+
+    const eisAvailable = await isEisAvailableFromInferenceGet(() =>
+      core.elasticsearch.client.asInternalUser.inference.get({})
+    );
+    if (!eisAvailable) {
+      this.logger.info(
+        'Skipping product documentation auto-install: Elastic Inference Service (EIS) is not available'
+      );
+      return;
+    }
+
+    // Product docs for all projects
+    documentationManager.ensureDefaultProductDocumentation().catch((err: Error) => {
+      this.logger.error(
+        `Error ensuring product documentation for default inference ID: ${err.message}`
+      );
+    });
+    documentationManager.updateAll().catch((err: Error) => {
+      this.logger.error(`Error scheduling product documentation updateAll task: ${err.message}`);
+    });
+
+    // Security Labs only for serverless security projects
+    const isSecurityProject = isServerless ? cloud?.serverless?.projectType === 'security' : false;
+    if (isSecurityProject) {
+      documentationManager.ensureDefaultSecurityLabs().catch((err: Error) => {
+        this.logger.error(
+          `Error ensuring Security Labs content for default inference ID: ${err.message}`
+        );
+      });
+      documentationManager.updateSecurityLabsAll().catch((err: Error) => {
+        this.logger.error(`Error scheduling Security Labs update task: ${err.message}`);
+      });
+    }
   }
 }

@@ -32,7 +32,10 @@ export {
 } from './src/indices';
 export type { ProductDocumentationAttributes } from './src/documents';
 export {
+  eisInferenceIdCandidates,
   getProductDocInferenceIdCandidates,
+  isEisAvailable,
+  isEisAvailableFromInferenceGet,
   productDocInferenceIdCandidates,
   resolveDefaultInferenceId,
   resolveDefaultInferenceIdFromInferenceGet,

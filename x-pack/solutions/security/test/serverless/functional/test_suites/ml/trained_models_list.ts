@@ -35,7 +35,7 @@ export default function ({ getService, getPageObjects }: FtrProviderContext) {
         await ml.testExecution.logTestStep(
           'should display the stats bar and the analytics table with one trained model'
         );
-        await ml.trainedModels.assertStats(2);
+        await ml.trainedModels.assertStats(3);
         await ml.trainedModelsTable.assertTableIsPopulated();
       });
     });

@@ -12,7 +12,7 @@
     "configPath": ["xpack", "productDocBase"],
     "requiredPlugins": ["licensing", "taskManager"],
     "requiredBundles": [],
-    "optionalPlugins": [],
+    "optionalPlugins": ["cloud"],
     "extraPublicDirs": []
   }
 }

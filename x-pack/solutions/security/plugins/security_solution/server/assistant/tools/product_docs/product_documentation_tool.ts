@@ -17,8 +17,8 @@ import type { ContentReferencesStore } from '@kbn/elastic-assistant-common';
 import type { RetrieveDocumentationResultDoc } from '@kbn/llm-tasks-plugin/server';
 import type { Require } from '@kbn/elastic-assistant-plugin/server/types';
 import {
-  getProductDocInferenceIdCandidates,
   resolveDefaultInferenceIdFromInferenceGet,
+  resolveInstalledProductDocInferenceId,
 } from '@kbn/product-doc-common';
 import { APP_UI_ID } from '../../../../common';
 
@@ -48,21 +48,17 @@ export const PRODUCT_DOCUMENTATION_TOOL: AssistantTool = {
     const { connectorId, llmTasks, request, contentReferencesStore, esClient } =
       params as ProductDocumentationToolParams;
 
+    const getDefaultInferenceId = () =>
+      resolveDefaultInferenceIdFromInferenceGet(() => esClient.inference.get({}));
+
     return tool(
       async ({ query, product }) => {
-        const defaultInferenceId = await resolveDefaultInferenceIdFromInferenceGet(() =>
-          esClient.inference.get({})
-        );
-
-        let inferenceId = defaultInferenceId;
-        for (const candidateInferenceId of getProductDocInferenceIdCandidates(defaultInferenceId)) {
-          if (
-            await llmTasks.retrieveDocumentationAvailable({ inferenceId: candidateInferenceId })
-          ) {
-            inferenceId = candidateInferenceId;
-            break;
-          }
-        }
+        const inferenceId =
+          (await resolveInstalledProductDocInferenceId({
+            getDefaultInferenceId,
+            isDocumentationAvailable: (candidateInferenceId) =>
+              llmTasks.retrieveDocumentationAvailable({ inferenceId: candidateInferenceId }),
+          })) ?? (await getDefaultInferenceId());
 
         const response = await llmTasks.retrieveDocumentation({
           searchTerm: query,

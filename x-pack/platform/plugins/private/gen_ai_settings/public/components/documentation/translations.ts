@@ -148,21 +148,6 @@ export const INSUFFICIENT_PRIVILEGES = i18n.translate(
   }
 );
 
-export const TOOL_AUTO_ENABLE_FAILED_DESCRIPTION = i18n.translate(
-  'genAiSettings.documentation.toolAutoEnableFailed.description',
-  {
-    defaultMessage:
-      'The product documentation tool could not be enabled automatically on the Elastic AI agent. Enable it manually to start using it.',
-  }
-);
-
-export const TOOL_AUTO_ENABLE_FAILED_LINK = i18n.translate(
-  'genAiSettings.documentation.toolAutoEnableFailed.link',
-  {
-    defaultMessage: 'Enable product documentation tool',
-  }
-);
-
 export const getModelDeploymentTimeoutSuggestion = (inferenceId: string) =>
   i18n.translate('genAiSettings.documentation.error.modelDeploymentTimeoutSuggestion', {
     defaultMessage:

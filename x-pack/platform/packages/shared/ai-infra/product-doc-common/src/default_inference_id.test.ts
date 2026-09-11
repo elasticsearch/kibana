@@ -9,6 +9,8 @@ import { defaultInferenceEndpoints } from '@kbn/inference-common';
 import { ResourceTypes } from './resource_type';
 import {
   getProductDocInferenceIdCandidates,
+  isEisAvailable,
+  isEisAvailableFromInferenceGet,
   resolveDefaultInferenceId,
   resolveDefaultInferenceIdFromInferenceGet,
   resolveInstalledProductDocInferenceId,
@@ -59,6 +61,54 @@ describe('resolveDefaultInferenceId', () => {
         { resourceType: ResourceTypes.securityLabs }
       )
     ).toBe(defaultInferenceEndpoints.JINAv5);
+  });
+});
+
+describe('isEisAvailable', () => {
+  it('returns true when Jina is present', () => {
+    expect(isEisAvailable(new Set([defaultInferenceEndpoints.JINAv5]))).toBe(true);
+  });
+
+  it('returns true when EIS ELSER is present', () => {
+    expect(isEisAvailable(new Set([defaultInferenceEndpoints.ELSER_IN_EIS_INFERENCE_ID]))).toBe(
+      true
+    );
+  });
+
+  it('returns false when only default ELSER is present', () => {
+    expect(isEisAvailable(new Set([defaultInferenceEndpoints.ELSER]))).toBe(false);
+  });
+
+  it('returns false when no endpoints are present', () => {
+    expect(isEisAvailable(new Set())).toBe(false);
+  });
+});
+
+describe('isEisAvailableFromInferenceGet', () => {
+  it('returns true when inference lookup includes an EIS endpoint', async () => {
+    await expect(
+      isEisAvailableFromInferenceGet(() =>
+        Promise.resolve({
+          endpoints: [{ inference_id: defaultInferenceEndpoints.JINAv5 }],
+        })
+      )
+    ).resolves.toBe(true);
+  });
+
+  it('returns false when inference lookup has no EIS endpoints', async () => {
+    await expect(
+      isEisAvailableFromInferenceGet(() =>
+        Promise.resolve({
+          endpoints: [{ inference_id: defaultInferenceEndpoints.ELSER }],
+        })
+      )
+    ).resolves.toBe(false);
+  });
+
+  it('returns false when inference lookup fails', async () => {
+    await expect(
+      isEisAvailableFromInferenceGet(() => Promise.reject(new Error('failed')))
+    ).resolves.toBe(false);
   });
 });
 

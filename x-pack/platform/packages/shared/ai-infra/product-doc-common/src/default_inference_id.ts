@@ -14,6 +14,12 @@ export const productDocInferenceIdCandidates = [
   defaultInferenceEndpoints.ELSER,
 ] as const;
 
+/** Inference IDs that indicate Elastic Inference Service (EIS) is available. */
+export const eisInferenceIdCandidates = [
+  defaultInferenceEndpoints.JINAv5,
+  defaultInferenceEndpoints.ELSER_IN_EIS_INFERENCE_ID,
+] as const;
+
 export interface ResolveDefaultInferenceIdOptions {
   /**
    * Reserved for future resource-specific defaults. Currently unused: all knowledge
@@ -22,6 +28,26 @@ export interface ResolveDefaultInferenceIdOptions {
    */
   resourceType?: ResourceType;
 }
+
+/**
+ * Returns true when at least one EIS-backed embedding endpoint is present
+ * (Jina v5 or ELSER-in-EIS). Used to gate auto-install of product documentation.
+ */
+export const isEisAvailable = (endpointIds: ReadonlySet<string>): boolean => {
+  return eisInferenceIdCandidates.some((id) => endpointIds.has(id));
+};
+
+export const isEisAvailableFromInferenceGet = async (
+  inferenceGet: () => Promise<{ endpoints?: Array<{ inference_id: string }> }>
+): Promise<boolean> => {
+  try {
+    const result = await inferenceGet();
+    const endpointIds = new Set((result.endpoints ?? []).map((endpoint) => endpoint.inference_id));
+    return isEisAvailable(endpointIds);
+  } catch {
+    return false;
+  }
+};
 
 /**
  * Resolves the default inference ID for knowledge base installation,

@@ -69,15 +69,23 @@ export const registerInstallationRoutes = ({
       },
     },
     async (ctx, req, res) => {
-      const esClient = (await ctx.core).elasticsearch.client.asCurrentUser;
+      const { logger } = getServices();
+      const esClient = (await ctx.core).elasticsearch.client.asInternalUser;
       const resourceType = req.query?.resourceType as ResourceType;
 
-      const inferenceId = await resolveDefaultInferenceIdFromInferenceGet(
-        () => esClient.inference.get({}),
-        { resourceType }
-      );
-
-      return res.ok<DefaultInferenceIdResponse>({ body: { inferenceId } });
+      try {
+        const inferenceId = await resolveDefaultInferenceIdFromInferenceGet(
+          () => esClient.inference.get({}),
+          { resourceType }
+        );
+        return res.ok<DefaultInferenceIdResponse>({ body: { inferenceId } });
+      } catch (err) {
+        logger.error(`Failed to resolve default inference ID: ${err.message}`);
+        return res.customError({
+          statusCode: 503,
+          body: { message: 'Unable to resolve default inference endpoint' },
+        });
+      }
     }
   );
 
