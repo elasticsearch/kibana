@@ -394,7 +394,7 @@ spaceTest.describe('Lens ad hoc data view', { tag: '@local-stateful-classic' }, 
         await expect(queryHits).toBeVisible();
         await expect(queryHits).not.toHaveText('');
 
-        const dvName = await dvSwitch.getAttribute('title');
+        const dvName = await dvSwitch.getByTestId('fullText').innerText();
         await dvSwitch.click();
         const hasBadge = discoverPage.getByTestId(`dataViewItemTempBadge-${dvName}`);
         await expect(hasBadge).toBeVisible();
@@ -462,7 +462,7 @@ spaceTest.describe('Lens ad hoc data view', { tag: '@local-stateful-classic' }, 
           await expect(queryHits).toBeVisible();
           await expect(queryHits).not.toHaveText('');
 
-          const dvName = await dvSwitch.getAttribute('title');
+          const dvName = await dvSwitch.getByTestId('fullText').innerText();
           await dvSwitch.click();
           const hasBadge = discoverPage.getByTestId(`dataViewItemTempBadge-${dvName}`);
           await expect(hasBadge).toBeVisible();

@@ -61,7 +61,7 @@ export class DataDrift {
 
   async waitForDataViewTitle(expectedTitle: string) {
     await this.dataSourceSelectorButton.waitFor({ state: 'visible' });
-    await expect(this.dataSourceSelectorButton).toHaveAttribute('title', expectedTitle, {
+    await expect(this.dataSourceSelectorButton).toHaveAccessibleName(expectedTitle, {
       timeout: 5000,
     });
   }

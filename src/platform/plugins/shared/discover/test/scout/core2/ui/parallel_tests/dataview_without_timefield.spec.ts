@@ -98,7 +98,7 @@ spaceTest.describe('Data view without timefield', { tag: '@local-stateful-classi
       await page.goBack();
       await pageObjects.dataGrid.waitForDocTableRendered();
 
-      await expect(page.testSubj.locator('discover-dataView-switch-link')).toHaveText(
+      await expect(pageObjects.discover.getSelectedDataView()).toHaveAccessibleName(
         'without-timefield'
       );
 

@@ -71,7 +71,7 @@ export default function ({ getService, getPageObjects }: FtrProviderContext) {
       await discover.waitForDiscoverAppOnScreen();
 
       const el = await testSubjects.find('discover-dataView-switch-link');
-      const text = await el.getVisibleText();
+      const text = await (await el.findByTestSubject('fullText')).getVisibleText();
 
       expect(text).to.be('logstash-*');
     });

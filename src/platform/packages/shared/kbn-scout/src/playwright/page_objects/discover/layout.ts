@@ -51,6 +51,10 @@ export abstract class LayoutMixin extends SaveMixin {
     await dataViewSwitch.click();
   }
 
+  private async getDataViewSwitchName(dataViewSwitch: Locator): Promise<string> {
+    return (await dataViewSwitch.getByTestId('fullText').innerText()).trim();
+  }
+
   async selectDataView(
     name: string,
     {
@@ -59,7 +63,7 @@ export abstract class LayoutMixin extends SaveMixin {
     }: { createAdHocIfMissing?: boolean; waitForFieldList?: boolean } = {}
   ) {
     const dataViewSwitch = await this.getVisibleDataViewSwitch();
-    const currentValue = await dataViewSwitch.innerText();
+    const currentValue = await this.getDataViewSwitchName(dataViewSwitch);
     if (currentValue === name) {
       return;
     }
@@ -94,7 +98,7 @@ export abstract class LayoutMixin extends SaveMixin {
    * Returns the trimmed display name of the currently selected data view.
    */
   async getSelectedDataViewName(): Promise<string> {
-    return (await this.getSelectedDataView().innerText()).trim();
+    return this.getDataViewSwitchName(await this.getVisibleDataViewSwitch());
   }
 
   private async fillAndSubmitDataViewEditor({ name, adHoc = false }: DataViewOptions) {
@@ -147,7 +151,7 @@ export abstract class LayoutMixin extends SaveMixin {
         adHoc ? 'exploreIndexPatternButton' : 'saveIndexPatternButton'
       );
 
-      await expect(this.getSelectedDataView()).toHaveText(title, { timeout: 20_000 });
+      await expect(this.getSelectedDataView()).toHaveAccessibleName(title, { timeout: 20_000 });
     }).toPass({ timeout: 45_000, intervals: [0] });
 
     await this.waitUntilTabIsLoaded();
@@ -188,12 +192,7 @@ export abstract class LayoutMixin extends SaveMixin {
   }
 
   async isCurrentDataViewAdHoc(): Promise<boolean> {
-    const dataViewSwitch = await this.getVisibleDataViewSwitch();
-    const dataViewTitle = await dataViewSwitch.getAttribute('title');
-
-    if (!dataViewTitle) {
-      throw new Error('Current data view switch is missing a title attribute');
-    }
+    const dataViewTitle = await this.getSelectedDataViewName();
 
     await this.openDataViewSwitcher();
     const switcher = this.page.testSubj.locator('indexPattern-switcher');

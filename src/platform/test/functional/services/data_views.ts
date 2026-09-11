@@ -96,14 +96,15 @@ export class DataViewsService extends FtrService {
    * Returns name for the currently selected Data View
    */
   async getSelectedName() {
-    return this.testSubjects.getVisibleText('*dataView-switch-link');
+    const dataViewSwitch = await this.testSubjects.find('*dataView-switch-link');
+    return (await dataViewSwitch.findByTestSubject('fullText')).getVisibleText();
   }
 
   /**
    * Checks if currently selected Data View has temporary badge
    */
   async isAdHoc() {
-    const dataView = await this.testSubjects.getAttribute('*dataView-switch-link', 'title');
+    const dataView = await this.getSelectedName();
     await this.testSubjects.click('*dataView-switch-link');
     const hasBadge = await this.testSubjects.exists(`dataViewItemTempBadge-${dataView}`);
     await this.testSubjects.click('*dataView-switch-link');
@@ -114,7 +115,7 @@ export class DataViewsService extends FtrService {
    * Checks if currently selected Data View has managed badge
    */
   async isManaged() {
-    const dataView = await this.testSubjects.getAttribute('*dataView-switch-link', 'title');
+    const dataView = await this.getSelectedName();
     await this.testSubjects.click('*dataView-switch-link');
     const hasBadge = await this.testSubjects.exists(`dataViewItemManagedBadge-${dataView}`);
     await this.testSubjects.click('*dataView-switch-link');

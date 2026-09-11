@@ -45,7 +45,9 @@ export async function createAdHocDataViewFromLens(page: ScoutPage, name: string)
   await page.testSubj.click('exploreIndexPatternButton');
   await flyout.waitFor({ state: 'hidden' });
   // Wait until the switcher reflects the new DV name
-  await expect(page.testSubj.locator('lns-dataView-switch-link')).toContainText(name);
+  await expect(
+    page.testSubj.locator('lns-dataView-switch-link').getByTestId('fullText')
+  ).toHaveText(name);
 }
 
 /**

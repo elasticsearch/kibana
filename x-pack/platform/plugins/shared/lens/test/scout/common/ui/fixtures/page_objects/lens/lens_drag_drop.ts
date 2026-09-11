@@ -531,7 +531,8 @@ export class LensDragDrop {
   async switchDataPanelIndexPattern(dataViewTitle: string) {
     const switchLink = this.page.testSubj.locator('lns-dataView-switch-link');
     await switchLink.waitFor({ state: 'visible' });
-    if ((await switchLink.innerText()).trim() === dataViewTitle) {
+    const fullText = switchLink.locator('[data-test-subj="fullText"]');
+    if ((await fullText.innerText()).trim() === dataViewTitle) {
       return;
     }
 
