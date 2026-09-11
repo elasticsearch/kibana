@@ -12,6 +12,8 @@ import type {
   Logger,
   Plugin,
   PluginInitializerContext,
+  SavedObjectsClientContract,
+  SavedObjectsServiceStart,
 } from '@kbn/core/server';
 import { DEFAULT_APP_CATEGORIES } from '@kbn/core/server';
 import { ApiPrivileges } from '@kbn/core-security-server';
@@ -38,6 +40,20 @@ import {
   PLUGIN_ID,
   PLUGIN_NAME,
 } from '../common/constants';
+
+// Model settings are admin policy that must apply to every user, including those
+// without read access to the settings saved object, so the read bypasses user authz
+// while staying scoped to the request's active space.
+const getInferenceSettingsClient = (
+  savedObjects: SavedObjectsServiceStart,
+  request: KibanaRequest
+): SavedObjectsClientContract => {
+  const internalClient = savedObjects.getUnsafeInternalClient({
+    includedHiddenTypes: [INFERENCE_SETTINGS_SO_TYPE],
+  });
+  const namespace = savedObjects.getScopedClient(request).getCurrentNamespace();
+  return namespace ? internalClient.asScopedToNamespace(namespace) : internalClient;
+};
 
 export class SearchInferenceEndpointsPlugin
   implements
@@ -75,9 +91,7 @@ export class SearchInferenceEndpointsPlugin
 
     const getForFeature = async (featureId: string, request: KibanaRequest) => {
       const [coreStart, pluginsStart] = await core.getStartServices();
-      const soClient = coreStart.savedObjects.getScopedClient(request, {
-        includedHiddenTypes: [INFERENCE_SETTINGS_SO_TYPE],
-      });
+      const soClient = getInferenceSettingsClient(coreStart.savedObjects, request);
       const getConnectorById = (id: string) => pluginsStart.inference.getConnectorById(id, request);
       return getForFeatureFn(featureRegistry, soClient, getConnectorById, featureId, this.logger);
     };
@@ -179,9 +193,8 @@ export class SearchInferenceEndpointsPlugin
       },
       endpoints: {
         getForFeature: async (featureId: string, request: KibanaRequest) => {
-          const soClient = core.savedObjects.getScopedClient(request, {
-            includedHiddenTypes: [INFERENCE_SETTINGS_SO_TYPE],
-          });
+          const soClient = getInferenceSettingsClient(core.savedObjects, request);
+          const getConnectorById = (id: string) => plugins.inference.getConnectorById(id, request);
           const uiSettingsClient = core.uiSettings.asScopedToClient(
             core.savedObjects.getScopedClient(request)
           );
