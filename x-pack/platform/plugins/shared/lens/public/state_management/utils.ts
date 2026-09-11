@@ -13,6 +13,7 @@ import type {
   DatasourceStates,
   DataViewsState,
   FramePublicAPI,
+  TableInspectorAdapter,
 } from '@kbn/lens-common';
 
 /**
@@ -28,6 +29,7 @@ export function getUpdatedFrameWithDatasourceState(
     state: newDatasourceState,
     layerId,
     indexPatterns: framePublicAPI.dataViews.indexPatterns,
+    activeDataTable: framePublicAPI.activeData?.[layerId],
   });
   return {
     ...framePublicAPI,
@@ -41,7 +43,8 @@ export function getUpdatedFrameWithDatasourceState(
 export const getDatasourceLayers = memoizeOne(function getDatasourceLayers(
   datasourceStates: DatasourceStates,
   datasourceMap: DatasourceMap,
-  indexPatterns: DataViewsState['indexPatterns']
+  indexPatterns: DataViewsState['indexPatterns'],
+  activeData?: TableInspectorAdapter
 ): DatasourceLayers {
   const datasourceLayers: DatasourceLayers = {};
   Object.keys(datasourceMap)
@@ -56,6 +59,7 @@ export const getDatasourceLayers = memoizeOne(function getDatasourceLayers(
           state: datasourceState,
           layerId: layer,
           indexPatterns,
+          activeDataTable: activeData?.[layer],
         });
       });
     });

@@ -18,6 +18,7 @@ import { Settings, TooltipType, Heatmap, Tooltip } from '@elastic/charts';
 import { chartPluginMock } from '@kbn/charts-plugin/public/mocks';
 import { EmptyPlaceholder } from '@kbn/charts-plugin/public';
 import { createDatatableUtilitiesMock } from '@kbn/data-plugin/common/mocks';
+import { ESQL_TABLE_TYPE } from '@kbn/data-plugin/common';
 import { fieldFormatsServiceMock } from '@kbn/field-formats-plugin/public/mocks';
 import type { Datatable } from '@kbn/expressions-plugin/public';
 import { mountWithIntl, shallowWithIntl } from '@kbn/test-jest-helpers';
@@ -695,7 +696,7 @@ describe('HeatmapComponent', function () {
       timestampMeta: Datatable['columns'][number]['meta'] = { type: 'date' }
     ): Datatable => ({
       type: 'datatable',
-      meta: { type: 'esql' },
+      meta: { type: ESQL_TABLE_TYPE },
       columns: [
         { id: 'timestamp', name: 'timestamp', meta: timestampMeta },
         { id: 'category', name: 'category', meta: { type: 'string' } },
@@ -704,14 +705,19 @@ describe('HeatmapComponent', function () {
       rows,
     });
 
-    const renderXScale = async (timeData: Datatable) => {
+    const renderHeatmap = async (timeData: Datatable, heatmapArgs: HeatmapArguments = timeArgs) => {
       const component = mountWithIntl(
-        <HeatmapComponent {...wrapperProps} data={timeData} args={timeArgs} />
+        <HeatmapComponent {...wrapperProps} data={timeData} args={heatmapArgs} />
       );
       await act(async () => {
         await component.update();
       });
-      return component.find(Heatmap).prop('xScale');
+      return component.find(Heatmap);
+    };
+
+    const renderXScale = async (timeData: Datatable) => {
+      const heatmap = await renderHeatmap(timeData);
+      return heatmap.prop('xScale');
     };
 
     it('renders time-based heatmap with ES|QL data using the bucket interval', async () => {
@@ -793,6 +799,36 @@ describe('HeatmapComponent', function () {
       );
 
       expect(xScale).toEqual({ type: 'ordinal' });
+    });
+
+    it('forces a Time scale for an ES|QL date x-axis even when xScaleType is not "time"', async () => {
+      // Regression coverage for the reload case: after reload gridConfig.xScaleType is no longer
+      // 'time' (here 'ordinal'), but an ES|QL date x-column is inherently chronological, so the
+      // component must still force a Time scale and drop the configured xSortPredicate.
+      const ordinalArgs: HeatmapArguments = {
+        ...timeArgs,
+        gridConfig: {
+          ...timeArgs.gridConfig,
+          xScaleType: 'ordinal',
+          xSortPredicate: 'asc',
+        },
+      };
+
+      const fiveMinutesMs = 5 * 60 * 1000;
+      const heatmap = await renderHeatmap(
+        buildTimeData([
+          { timestamp: '2024-01-01T00:00:00.000Z', category: 'A', value: 10 },
+          { timestamp: '2024-01-01T00:05:00.000Z', category: 'A', value: 20 },
+          { timestamp: '2024-01-01T00:10:00.000Z', category: 'B', value: 15 },
+        ]),
+        ordinalArgs
+      );
+
+      expect(heatmap.prop('xScale')).toEqual({
+        type: 'time',
+        interval: { type: 'fixed', unit: 'ms', value: fiveMinutesMs },
+      });
+      expect(heatmap.prop('xSortPredicate')).toBeUndefined();
     });
 
     it('brushes a time range filter even when no bucket metadata is available', async () => {

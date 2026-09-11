@@ -228,4 +228,24 @@ describe('Text-based: getDropProps', () => {
       nextLabel: 'category',
     });
   });
+  it('uses the activeData overlay to treat a persisted non-numeric column as numeric for metric-dimension drops', () => {
+    const props = {
+      ...defaultProps,
+      source: notNumericDraggedField,
+      target: {
+        ...defaultProps.target,
+        isMetricDimension: true,
+      },
+      activeData: {
+        first: {
+          type: 'datatable',
+          columns: [{ id: 'category', name: 'category', meta: { type: 'number' } }],
+          rows: [],
+        },
+      },
+    } as unknown as DatasourceDimensionDropHandlerProps<TextBasedPrivateState>;
+    // Without the overlay this returns undefined (persisted type is `string`); the Query Result
+    // Type overlay marks `category` as `number`, so the drop into the metric dimension is allowed.
+    expect(getDropProps(props)).toEqual({ dropTypes: ['field_replace'], nextLabel: 'category' });
+  });
 });

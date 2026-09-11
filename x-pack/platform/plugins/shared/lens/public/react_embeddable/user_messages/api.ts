@@ -172,7 +172,8 @@ export function buildUserMessagesHelpers(
           },
         },
         datasourceMap,
-        dataViewObject.indexPatterns
+        dataViewObject.indexPatterns,
+        activeData
       ),
       query: getRepresentativeQuery(activeAttributes) ?? EMPTY_KQL_QUERY,
       filters: mergedSearchContext.filters ?? [],

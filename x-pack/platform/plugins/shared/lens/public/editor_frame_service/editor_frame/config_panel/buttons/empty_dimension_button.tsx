@@ -20,6 +20,7 @@ import type {
   IndexPatternMap,
   DragDropOperation,
   Visualization,
+  TableInspectorAdapter,
 } from '@kbn/lens-common';
 import { isDraggedField } from '../../../../utils';
 import { generateId } from '../../../../id_generator';
@@ -106,6 +107,7 @@ export function EmptyDimensionButton({
   order,
   target,
   isInlineEditing,
+  activeData,
 }: {
   order: [2, number, number, number];
   group: VisualizationDimensionGroupConfig;
@@ -125,6 +127,7 @@ export function EmptyDimensionButton({
     };
   };
   isInlineEditing: boolean;
+  activeData?: TableInspectorAdapter;
 }) {
   const { euiTheme } = useEuiTheme();
   const [{ dragging }] = useDragDropContext();
@@ -158,6 +161,7 @@ export function EmptyDimensionButton({
       columnId: newColumnId,
     },
     indexPatterns,
+    activeData,
   }) || { dropTypes: [], nextLabel: '' };
 
   const canDuplicate = !!(

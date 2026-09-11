@@ -415,7 +415,10 @@ export const HeatmapComponent: FC<HeatmapRenderProps> = memo(
     const appliedTimeRange = xAxisColumn
       ? datatableUtilities.getColumnTimeRange(xAxisColumn)
       : undefined;
-    const isTimeBasedSwimLane = xAxisMeta?.type === 'date' && Boolean(dateHistogramMeta?.interval);
+
+    const isDateX = xAxisMeta?.type === 'date';
+    const isTimeBasedSwimLane = isDateX && Boolean(dateHistogramMeta?.interval);
+    const isEsqlMode = table?.meta?.type === ESQL_TABLE_TYPE;
 
     const yValuesFormatter = useMemo(
       () => formatFactory(yAxisColumn?.meta.params),
@@ -431,9 +434,15 @@ export const HeatmapComponent: FC<HeatmapRenderProps> = memo(
       (v) => v[valueAccessor!] === null || typeof v[valueAccessor!] === 'number'
     );
 
+    // A date x-axis is time-based only when it's a form-based date-histogram swimlane
+    // (`dateHistogramMeta.interval`) or an ES|QL date column (which never carries histogram meta but
+    // is inherently chronological). A form-based non-histogram date axis (e.g. top-values of a date
+    // field) is bucketed/ordinal, so it must keep its baked `ordinal` scale and configured sort.
+    const isTimeBasedX = isTimeBasedSwimLane || (isEsqlMode && isDateX);
+
     // Convert date strings to timestamps for ES|QL time data
     // This needs to happen before x scale logic so both interval computation and rendering work correctly
-    if (xAxisColumn?.id && xAxisMeta?.type === 'date') {
+    if (xAxisColumn?.id && isTimeBasedX) {
       const firstXValue = chartData[0]?.[xAxisColumn.id];
       if (typeof firstXValue === 'string') {
         chartData = chartData.map((row) => {
@@ -450,9 +459,11 @@ export const HeatmapComponent: FC<HeatmapRenderProps> = memo(
       }
     }
 
+    const xScaleType = isTimeBasedX ? ScaleType.Time : args.gridConfig.xScaleType;
+
     const { scale: xScale, intervalMs: xIntervalMs } = computeXScale(
-      args.gridConfig.xScaleType,
-      isTimeBasedSwimLane,
+      xScaleType,
+      isTimeBasedX,
       chartData,
       xAxisColumn,
       dateHistogramMeta,
@@ -464,8 +475,6 @@ export const HeatmapComponent: FC<HeatmapRenderProps> = memo(
     const handleCursorUpdate = useActiveCursor(chartsActiveCursorService, chartRef, {
       datatables: [formattedTable.table],
     });
-
-    const isEsqlMode = table?.meta?.type === ESQL_TABLE_TYPE;
 
     const xValuesFormatter = useMemo(() => {
       // For ES|QL time-based x-axis with computed interval, use scaled date format
@@ -993,7 +1002,10 @@ export const HeatmapComponent: FC<HeatmapRenderProps> = memo(
               valueFormatter={valueFormatter}
               xScale={xScale}
               xSortPredicate={
-                !isTimeBasedSwimLane && xAxisColumn
+                // A time-based date x-axis is chronologically ordered by the Time scale, so its
+                // configured sort predicate is dropped. Non-time-based axes (non-date, or a
+                // form-based top-values-of-a-date bucketed axis) keep their configured predicate.
+                xAxisColumn && !isTimeBasedX
                   ? getSortPredicate(xAxisColumn, args.gridConfig.xSortPredicate)
                   : undefined
               }

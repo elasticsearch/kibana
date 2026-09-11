@@ -23,6 +23,7 @@ import type {
   IndexPatternMap,
   DragDropOperation,
   Visualization,
+  TableInspectorAdapter,
 } from '@kbn/lens-common';
 import { isOperation } from '../../../../types_guards';
 import { isDraggedField } from '../../../../utils';
@@ -41,6 +42,7 @@ export function DraggableDimensionButton({
   registerNewButtonRef,
   indexPatterns,
   target,
+  activeData,
 }: {
   target: DragDropOperation & {
     id: string;
@@ -63,6 +65,7 @@ export function DraggableDimensionButton({
   state: unknown;
   registerNewButtonRef: (id: string, instance: HTMLDivElement | null) => void;
   indexPatterns: IndexPatternMap;
+  activeData?: TableInspectorAdapter;
 }) {
   const [{ dragging }] = useDragDropContext();
   const { euiTheme } = useEuiTheme();
@@ -88,6 +91,7 @@ export function DraggableDimensionButton({
     source: dragging,
     target,
     indexPatterns,
+    activeData,
   }) || { dropTypes: [], nextLabel: '' };
 
   const canDuplicate = !!(

@@ -641,7 +641,8 @@ export const LensTopNavMenu = ({
       const datasourceLayers = getDatasourceLayers(
         datasourceStates,
         datasourceMap,
-        dataViews.indexPatterns
+        dataViews.indexPatterns,
+        activeData
       );
 
       const exportDatatables =

@@ -7,6 +7,8 @@
 import type { DataViewsPublicPluginStart } from '@kbn/data-views-plugin/public';
 import type { DatatableColumn } from '@kbn/expressions-plugin/public';
 import type {
+  DataType,
+  OperationMetadata,
   ValueFormatConfig,
   IndexPatternRef,
   TextBasedPrivateState,
@@ -71,26 +73,64 @@ export const isNumeric = (column: TextBasedLayerColumn | DatatableColumn) =>
 
 export const isNotNumeric = (column: TextBasedLayerColumn | DatatableColumn) => !isNumeric(column);
 
+export function resolveTextBasedColumnType(
+  column: TextBasedLayerColumn,
+  activeColumn?: DatatableColumn
+): DataType {
+  return (activeColumn?.meta?.type ?? column.meta?.type) as DataType;
+}
+
+/**
+ * Whether the layer has at least one numeric column, resolved against the Query Result Type
+ * overlay when `activeColumns` is available, and falling back to the persisted column type otherwise.
+ */
+export function hasNumericColumn(
+  columns: TextBasedLayerColumn[],
+  activeColumns?: DatatableColumn[]
+): boolean {
+  return columns.some(
+    (column) =>
+      resolveTextBasedColumnType(
+        column,
+        activeColumns?.find((activeColumn) => activeColumn.id === column.columnId)
+      ) === 'number'
+  );
+}
+
+/**
+ * Derives the type-shaped operation metadata (dataType, isBucketed, scale) from a single
+ * resolved Query Result Type from activeData, so these fields never disagree with each other.
+ */
+export function operationFromDataType(
+  dataType: DataType
+): Pick<OperationMetadata, 'dataType' | 'isBucketed' | 'scale'> {
+  switch (dataType) {
+    case 'date':
+      return { dataType, isBucketed: true, scale: 'interval' };
+    case 'number':
+      return { dataType, isBucketed: false, scale: 'ratio' };
+    default:
+      return { dataType, isBucketed: true, scale: 'ordinal' };
+  }
+}
+
+// A column can be dropped/used in a metric dimension when the layer has no numeric column
+// (so non-numeric fields have to act as metrics) or when the column itself is numeric.
+// `hasNumberColumn` must be derived from the same type source as `selectedColumnType`
+// (the Query Result Type overlay when available), otherwise the two can disagree.
 export function canColumnBeDroppedInMetricDimension(
-  columns: TextBasedLayerColumn[] | DatatableColumn[],
+  hasNumberColumn: boolean,
   selectedColumnType?: string
 ): boolean {
-  // check if at least one numeric field exists
-  const hasNumberTypeColumns = columns?.some(isNumeric);
-  return !hasNumberTypeColumns || (hasNumberTypeColumns && selectedColumnType === 'number');
+  return !hasNumberColumn || selectedColumnType === 'number';
 }
 
 export function canColumnBeUsedBeInMetricDimension(
-  columns: TextBasedLayerColumn[] | DatatableColumn[],
+  hasNumberColumn: boolean,
+  columnCount: number,
   selectedColumnType?: string
 ): boolean {
-  // check if at least one numeric field exists
-  const hasNumberTypeColumns = columns?.some(isNumeric);
-  return (
-    !hasNumberTypeColumns ||
-    columns.length >= MAX_NUM_OF_COLUMNS ||
-    (hasNumberTypeColumns && selectedColumnType === 'number')
-  );
+  return !hasNumberColumn || columnCount >= MAX_NUM_OF_COLUMNS || selectedColumnType === 'number';
 }
 
 export function mergeLayer({

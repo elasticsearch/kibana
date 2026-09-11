@@ -691,6 +691,7 @@ export function LayerPanel(props: LayerPanelProps) {
                               state={layerDatasourceState}
                               layerDatasource={layerDatasource}
                               datasourceLayers={framePublicAPI.datasourceLayers}
+                              activeData={framePublicAPI.activeData}
                               onDrop={onDrop}
                               indexPatterns={dataViews.indexPatterns}
                             >
@@ -774,6 +775,7 @@ export function LayerPanel(props: LayerPanelProps) {
                         layerDatasource={layerDatasource}
                         state={layerDatasourceState}
                         datasourceLayers={framePublicAPI.datasourceLayers}
+                        activeData={framePublicAPI.activeData}
                         onClick={(id) => {
                           props.onEmptyDimensionAdd(id, group);
                           setOpenDimension({

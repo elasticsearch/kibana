@@ -164,6 +164,7 @@ export function getLayerMetaInfo(
       layerId: dataLayerIds[0],
       state: datasourceState,
       indexPatterns,
+      activeDataTable: activeData?.[dataLayerIds[0]],
     });
   } catch (error) {
     showMemoizedErrorNotification(error);

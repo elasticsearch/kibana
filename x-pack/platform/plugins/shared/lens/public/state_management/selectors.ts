@@ -135,9 +135,10 @@ export const selectDatasourceLayers = createSelector(
     selectDatasourceStates,
     selectInjectedDependencies as SelectInjectedDependenciesFunction<DatasourceMap>,
     selectDataViews,
+    selectActiveData,
   ],
-  (datasourceStates, datasourceMap, dataViews) =>
-    getDatasourceLayers(datasourceStates, datasourceMap, dataViews.indexPatterns)
+  (datasourceStates, datasourceMap, dataViews, activeData) =>
+    getDatasourceLayers(datasourceStates, datasourceMap, dataViews.indexPatterns, activeData)
 );
 
 export const selectFramePublicAPI = createSelector(
@@ -153,7 +154,8 @@ export const selectFramePublicAPI = createSelector(
       datasourceLayers: getDatasourceLayers(
         datasourceStates,
         datasourceMap,
-        dataViews.indexPatterns
+        dataViews.indexPatterns,
+        activeData
       ),
       activeData,
       dataViews,

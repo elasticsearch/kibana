@@ -7,7 +7,14 @@
 import type { DataViewsPublicPluginStart } from '@kbn/data-views-plugin/public';
 import type { DatatableColumn } from '@kbn/expressions-plugin/public';
 import { mockDataViewsService } from '../../data_views_service/mocks';
-import { loadIndexPatternRefs, getAllColumns, canColumnBeUsedBeInMetricDimension } from './utils';
+import {
+  loadIndexPatternRefs,
+  getAllColumns,
+  canColumnBeUsedBeInMetricDimension,
+  hasNumericColumn,
+  resolveTextBasedColumnType,
+  MAX_NUM_OF_COLUMNS,
+} from './utils';
 import type { TextBasedLayerColumn } from '@kbn/lens-common';
 
 describe('Text based languages utils', () => {
@@ -159,84 +166,72 @@ describe('Text based languages utils', () => {
   });
 
   describe('canColumnBeUsedBeInMetricDimension', () => {
-    it('should return true if there are non numeric field', async () => {
-      const fieldList = [
-        {
-          id: 'a',
-          name: 'Test 1',
-          meta: {
-            type: 'string',
-          },
-        },
-        {
-          id: 'b',
-          name: 'Test 2',
-          meta: {
-            type: 'string',
-          },
-        },
-      ] as DatatableColumn[];
-      const flag = canColumnBeUsedBeInMetricDimension(fieldList, 'string');
+    it('should return true if there are no numeric columns', async () => {
+      const flag = canColumnBeUsedBeInMetricDimension(false, 2, 'string');
       expect(flag).toBeTruthy();
     });
 
-    it('should return true if there are numeric field and the selected type is number', async () => {
-      const fieldList = [
-        {
-          id: 'a',
-          name: 'Test 1',
-          meta: {
-            type: 'number',
-          },
-        },
-        {
-          id: 'b',
-          name: 'Test 2',
-          meta: {
-            type: 'string',
-          },
-        },
-      ] as DatatableColumn[];
-      const flag = canColumnBeUsedBeInMetricDimension(fieldList, 'number');
+    it('should return true if there are numeric columns and the selected type is number', async () => {
+      const flag = canColumnBeUsedBeInMetricDimension(true, 2, 'number');
       expect(flag).toBeTruthy();
     });
 
-    it('should return false if there are non numeric fields and the selected type is non numeric', async () => {
-      const fieldList = [
-        {
-          id: 'a',
-          name: 'Test 1',
-          meta: {
-            type: 'number',
-          },
-        },
-        {
-          id: 'b',
-          name: 'Test 2',
-          meta: {
-            type: 'string',
-          },
-        },
-      ] as DatatableColumn[];
-      const flag = canColumnBeUsedBeInMetricDimension(fieldList, 'date');
+    it('should return false if there are numeric columns and the selected type is non numeric', async () => {
+      const flag = canColumnBeUsedBeInMetricDimension(true, 2, 'date');
       expect(flag).toBeFalsy();
     });
 
-    it('should return true if there are many columns regardless the types', async () => {
-      const fieldList = [
-        { id: 'a', name: 'Test 1', meta: { type: 'number' } },
-        { id: 'b', name: 'Test 2', meta: { type: 'number' } },
-        { id: 'c', name: 'Test 3', meta: { type: 'date' } },
-        { id: 'd', name: 'Test 4', meta: { type: 'string' } },
-        { id: 'e', name: 'Test 5', meta: { type: 'string' } },
-        { id: 'f', name: 'Test 6', meta: { type: 'string' } },
-        { id: 'g', name: 'Test 7', meta: { type: 'string' } },
-        { id: 'h', name: 'Test 8', meta: { type: 'string' } },
-        { id: 'i', name: 'Test 9', meta: { type: 'string' } },
-        { id: 'j', name: 'Test 10', meta: { type: 'string' } },
-      ] as DatatableColumn[];
-      const flag = canColumnBeUsedBeInMetricDimension(fieldList, 'date');
+    it('should return true if there are many columns regardless of the types', async () => {
+      const flag = canColumnBeUsedBeInMetricDimension(true, MAX_NUM_OF_COLUMNS, 'date');
       expect(flag).toBeTruthy();
+    });
+  });
+
+  describe('resolveTextBasedColumnType', () => {
+    const column = {
+      columnId: 'col-uuid',
+      fieldName: '@timestamp',
+      meta: { type: 'string' },
+    } satisfies TextBasedLayerColumn;
+
+    it('prefers activeData column type', () => {
+      expect(
+        resolveTextBasedColumnType(column, {
+          id: 'col-uuid',
+          name: '@timestamp',
+          meta: { type: 'date' },
+        })
+      ).toEqual('date');
+    });
+
+    it('falls back to persisted meta.type', () => {
+      expect(resolveTextBasedColumnType(column)).toEqual('string');
+    });
+  });
+
+  describe('hasNumericColumn', () => {
+    const columns = [
+      { columnId: 'a', fieldName: 'bytes', meta: { type: 'string' } },
+      { columnId: 'b', fieldName: 'name', meta: { type: 'string' } },
+    ] satisfies TextBasedLayerColumn[];
+
+    it('detects a numeric column from the activeData overlay even if persisted meta is not numeric', () => {
+      const activeColumns = [
+        { id: 'a', name: 'bytes', meta: { type: 'number' } },
+      ] as DatatableColumn[];
+      expect(hasNumericColumn(columns, activeColumns)).toBe(true);
+    });
+
+    it('falls back to persisted meta.type when no activeData is present', () => {
+      expect(hasNumericColumn(columns)).toBe(false);
+    });
+
+    it('does not treat a persisted number as numeric when the overlay says otherwise', () => {
+      const persistedNumber = [
+        { columnId: 'a', fieldName: 'ts', meta: { type: 'number' } },
+      ] satisfies TextBasedLayerColumn[];
+      const activeColumns = [{ id: 'a', name: 'ts', meta: { type: 'date' } }] as DatatableColumn[];
+      expect(hasNumericColumn(persistedNumber, activeColumns)).toBe(false);
     });
   });
 });
