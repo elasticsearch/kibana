@@ -2,10 +2,10 @@
 apiVersion: backstage.io/v1alpha1
 kind: Resource
 metadata:
-  name: bk-kibana-scout-report-flaky-tests
+  name: bk-kibana-report-flaky-tests
   description: Aggregates test events from the AppEx QA cluster into a flaky test report and publishes it as a build artifact
   links:
-    - url: 'https://buildkite.com/elastic/kibana-scout-report-flaky-tests'
+    - url: 'https://buildkite.com/elastic/kibana-report-flaky-tests'
       title: Pipeline link
 spec:
   type: buildkite-pipeline
@@ -15,13 +15,13 @@ spec:
     apiVersion: buildkite.elastic.dev/v1
     kind: Pipeline
     metadata:
-      name: kibana / scout / report-flaky-tests
+      name: kibana / report-flaky-tests
       description: Aggregates test events from the AppEx QA cluster into a flaky test report and publishes it as a build artifact
     spec:
       env:
         # Set a channel and flip to 'true' once the report has an owning channel
         KIBANA_SLACK_NOTIFICATIONS_ENABLED: 'false'
-        # Inputs of .buildkite/scripts/steps/scout_report_flaky_tests.sh. Schedules may override
+        # Inputs of .buildkite/scripts/steps/report_flaky_tests.sh. Schedules may override
         # them to produce different reports (other pipelines, consistently failing tests, ...).
         FLAKY_TESTS_PIPELINES: 'kibana-on-merge'
         FLAKY_TESTS_LOOKBACK_DAYS: '7'
@@ -31,11 +31,11 @@ spec:
       cancel_intermediate_builds: true
       default_branch: main
       repository: elastic/kibana
-      pipeline_file: .buildkite/pipelines/scout_report_flaky_tests.yml
+      pipeline_file: .buildkite/pipelines/report_flaky_tests.yml
       initial_step_plugins:
         - sparse-checkout#v1.6.0:
             paths:
-              - .buildkite/pipelines/scout_report_flaky_tests.yml
+              - .buildkite/pipelines/report_flaky_tests.yml
             cleanup_sparse_state: true
       provider_settings:
         build_branches: false

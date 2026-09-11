@@ -1,5 +1,5 @@
 steps:
-  - command: .buildkite/scripts/steps/scout_report_flaky_tests.sh
+  - command: .buildkite/scripts/steps/report_flaky_tests.sh
     label: ':mag: Discover flaky tests'
     key: discover-flaky-tests
     timeout_in_minutes: 30

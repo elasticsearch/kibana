@@ -3853,6 +3853,12 @@ x-pack/solutions/observability/plugins/synthetics/server/saved_objects/synthetic
 /.buildkite/scripts/steps/test/scout/ @elastic/appex-qa @elastic/kibana-operations
 /.buildkite/scout_ci_config.yml @elastic/appex-qa
 
+# Flaky test report pipeline (kibana / report-flaky-tests)
+/.buildkite/pipeline-resource-definitions/kibana-report-flaky-tests.yml @elastic/appex-qa @elastic/kibana-operations
+/.buildkite/pipelines/report_flaky_tests.yml @elastic/appex-qa @elastic/kibana-operations
+/.buildkite/scripts/steps/report_flaky_tests.sh @elastic/appex-qa @elastic/kibana-operations
+/.buildkite/scripts/steps/check_flaky_test_issues.sh @elastic/appex-qa @elastic/kibana-operations
+
 # Evals (Buildkite + scripts)
 /.buildkite/pipelines/evals/ @elastic/nightshift-context-and-research-team @elastic/security-genai-research-and-development
 /.buildkite/scripts/steps/evals/ @elastic/nightshift-context-and-research-team @elastic/security-genai-research-and-development
