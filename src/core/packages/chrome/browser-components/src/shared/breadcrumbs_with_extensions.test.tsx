@@ -42,6 +42,9 @@ describe('BreadcrumbsWithExtensionsWrapper', () => {
     renderWithChrome([{ content: <span data-test-subj="react-extension">Badge</span> }]);
     expect(screen.getByTestId('breadcrumb-child')).toBeInTheDocument();
     expect(screen.getByTestId('react-extension')).toBeInTheDocument();
+    expect(screen.getByTestId('react-extension').parentElement).toHaveClass(
+      'header__breadcrumbsAppendExtension--first'
+    );
   });
 
   it('renders a content extension alongside children', () => {

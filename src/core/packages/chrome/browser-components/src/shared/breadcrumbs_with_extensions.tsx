@@ -8,33 +8,39 @@
  */
 
 import type { PropsWithChildren } from 'react';
-import React, { Suspense } from 'react';
-import { EuiFlexGroup } from '@elastic/eui';
+import React, { Suspense, useMemo } from 'react';
+import { EuiFlexGroup, useEuiTheme } from '@elastic/eui';
 import classnames from 'classnames';
 import { css } from '@emotion/react';
 import { useBreadcrumbsAppendExtensions } from './chrome_hooks';
 
-const styles = {
-  breadcrumbsWithExtensionContainer: css`
-    overflow: hidden; // enables text-ellipsis in the last breadcrumb
-    .euiHeaderBreadcrumbs,
-    .euiBreadcrumbs {
-      // stop breadcrumbs from growing.
-      // this makes the extension appear right next to the last breadcrumb
-      flex-grow: 0;
-      margin-right: 0;
-
-      overflow: hidden; // enables text-ellipsis in the last breadcrumb
-    }
-
-    .header__breadcrumbsAppendExtension--last {
-      flex-grow: 1;
-    }
-  `,
-};
-
 export const BreadcrumbsWithExtensionsWrapper = ({ children }: PropsWithChildren) => {
+  const { euiTheme } = useEuiTheme();
   const breadcrumbsAppendExtensions = useBreadcrumbsAppendExtensions();
+
+  const styles = useMemo(
+    () => css`
+      overflow: hidden; // enables text-ellipsis in the last breadcrumb
+      .euiHeaderBreadcrumbs,
+      .euiBreadcrumbs {
+        // stop breadcrumbs from growing.
+        // this makes the extension appear right next to the last breadcrumb
+        flex-grow: 0;
+        margin-right: 0;
+
+        overflow: hidden; // enables text-ellipsis in the last breadcrumb
+      }
+
+      .header__breadcrumbsAppendExtension--first {
+        margin-inline-start: ${euiTheme.size.xxs};
+      }
+
+      .header__breadcrumbsAppendExtension--last {
+        flex-grow: 1;
+      }
+    `,
+    [euiTheme]
+  );
 
   return breadcrumbsAppendExtensions.length === 0 ? (
     <>{children}</>
@@ -44,15 +50,17 @@ export const BreadcrumbsWithExtensionsWrapper = ({ children }: PropsWithChildren
       wrap={false}
       alignItems={'center'}
       gutterSize={'none'}
-      css={styles.breadcrumbsWithExtensionContainer}
+      css={styles}
     >
       {children}
       {breadcrumbsAppendExtensions.map((breadcrumbsAppendExtension, index) => {
+        const isFirst = index === 0;
         const isLast = breadcrumbsAppendExtensions.length - 1 === index;
         return (
           <div
             key={index}
             className={classnames({
+              'header__breadcrumbsAppendExtension--first': isFirst,
               'header__breadcrumbsAppendExtension--last': isLast,
             })}
           >
