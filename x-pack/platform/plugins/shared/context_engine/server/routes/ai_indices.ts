@@ -516,7 +516,7 @@ export const registerAiIndexRoutes = ({
       security: READ_SECURITY,
       access: 'public',
       summary: 'List AI Indices',
-      description: `Lists the AI Indices the caller can use in the current space. An AI Index is left out when the caller cannot read its backing index, or when every document in it belongs to another space. An empty AI Index is still listed. Up to ${MAX_AI_INDICES} entries.`,
+      description: `Lists the AI Indices the caller can use in the current space. An AI Index is left out when the caller cannot read its backing index, or when every document in it belongs to another space. An empty AI Index is still listed. Up to ${MAX_AI_INDICES} entries. The space comes from the request URL (\`/s/{spaceId}/…\`, or the default space); it cannot be set any other way.`,
       options: {
         tags: ['oas-tag:context engine'],
         availability: { stability: 'experimental' },
@@ -547,7 +547,7 @@ export const registerAiIndexRoutes = ({
       security: READ_SECURITY,
       access: 'public',
       summary: 'Query AI Indices',
-      description: `Runs an ES|QL query as the current user, with a space filter and a row limit (at most ${MAX_AI_INDEX_QUERY_LIMIT}) applied server-side. The query decides which indices it reads; Elasticsearch index privileges bound what it can reach.`,
+      description: `Runs an ES|QL query as the current user, with a space filter and a row limit (at most ${MAX_AI_INDEX_QUERY_LIMIT}) applied server-side. The space comes from the request URL (\`/s/{spaceId}/…\`, or the default space); nothing in the request body can change it or replace the space filter. The query decides which indices it reads; Elasticsearch index privileges bound what it can reach.`,
       options: {
         tags: ['oas-tag:context engine'],
         availability: { stability: 'experimental' },
@@ -583,7 +583,7 @@ export const registerAiIndexRoutes = ({
       security: READ_SECURITY,
       access: 'public',
       summary: 'Describe an AI Index',
-      description: `Returns a free-form text context block for an agent: the AI Index, its ES|QL target, the fields its backing indices expose (at most ${MAX_AI_INDEX_DESCRIBE_FIELDS}) and which are semantic, knowledge item type and tag counts in the current space, and example ES|QL queries. Read as the current user, so Elasticsearch index privileges bound what it can reach.`,
+      description: `Returns a free-form text context block for an agent: the AI Index, its ES|QL target, the fields its backing indices expose (at most ${MAX_AI_INDEX_DESCRIBE_FIELDS}) and which are semantic, knowledge item type and tag counts in the current space, and example ES|QL queries. Read as the current user, so Elasticsearch index privileges bound what it can reach. The space comes from the request URL (\`/s/{spaceId}/…\`, or the default space); it cannot be set any other way.`,
       options: {
         tags: ['oas-tag:context engine'],
         availability: { stability: 'experimental' },

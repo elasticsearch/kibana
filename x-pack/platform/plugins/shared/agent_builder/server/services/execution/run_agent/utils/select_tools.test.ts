@@ -6,8 +6,19 @@
  */
 
 import { z } from '@kbn/zod/v4';
+import { httpServerMock } from '@kbn/core/server/mocks';
 import { ToolOrigin, ToolType } from '@kbn/agent-builder-common';
+import type { AgentConfiguration } from '@kbn/agent-builder-common';
+import { contextEngineAiIndexTools } from '@kbn/agent-builder-common/tools';
 import type { ExecutableTool } from '@kbn/agent-builder-server';
+import { createMockedExecutableTool, createToolProviderMock } from '../../../../test_utils';
+import {
+  createAttachmentStateManagerMock,
+  createAttachmentsService,
+  createScopedRunnerMock,
+  createSkillsServiceMock,
+} from '../../../../test_utils/runner';
+import type { ProcessedConversation } from './prepare_conversation';
 import { selectTools } from './select_tools';
 
 jest.mock('../../../tools/builtin/attachments', () => {
@@ -80,6 +91,7 @@ describe('selectTools', () => {
         tools: [{ tool_ids: ['registry.static'] }],
         enable_elastic_capabilities: false,
       } as any,
+      aiIndicesEnabled: false,
       attachmentsService,
       spaceId: 'default',
       runner: {
@@ -141,6 +153,7 @@ describe('selectTools', () => {
       request: {} as any,
       toolProvider: { list: jest.fn().mockResolvedValue([]) } as any,
       agentConfiguration: { tools: [], enable_elastic_capabilities: false } as any,
+      aiIndicesEnabled: false,
       attachmentsService,
       spaceId: 'default',
       runner: {
@@ -152,5 +165,66 @@ describe('selectTools', () => {
     expect(result.staticTools.find((tool) => tool.id === 'attachment.inline')?.origin).toBe(
       ToolOrigin.inline
     );
+  });
+
+  describe('AI-index tools', () => {
+    const aiIndexToolIds = Object.values(contextEngineAiIndexTools);
+
+    const selectStaticToolIds = async ({
+      aiIndicesEnabled,
+      aiIndices,
+    }: {
+      aiIndicesEnabled: boolean;
+      aiIndices?: string[];
+    }) => {
+      const attachmentStateManager = createAttachmentStateManagerMock();
+      attachmentStateManager.getActive.mockReturnValue([]);
+      const toolProvider = createToolProviderMock();
+      toolProvider.list.mockResolvedValue(
+        aiIndexToolIds.map((id) => createMockedExecutableTool({ id }))
+      );
+      const agentConfiguration: AgentConfiguration = {
+        tools: [],
+        enable_elastic_capabilities: false,
+        ai_indices: aiIndices,
+      };
+
+      const result = await selectTools({
+        conversation: {
+          attachmentTypes: [],
+          attachmentStateManager,
+        } as unknown as ProcessedConversation,
+        previousDynamicToolIds: [],
+        filteredSkills: [],
+        skills: createSkillsServiceMock(),
+        request: httpServerMock.createKibanaRequest(),
+        toolProvider,
+        agentConfiguration,
+        aiIndicesEnabled,
+        attachmentsService: createAttachmentsService(),
+        spaceId: 'default',
+        runner: createScopedRunnerMock(),
+      });
+      return result.staticTools.map((tool) => tool.id).filter((id) => id !== 'attachments.read');
+    };
+
+    it('adds the three tools when the feature is on and the agent has AI Indices', async () => {
+      await expect(
+        selectStaticToolIds({ aiIndicesEnabled: true, aiIndices: ['elastic'] })
+      ).resolves.toEqual(aiIndexToolIds);
+    });
+
+    it('adds nothing when the agent has no AI Indices', async () => {
+      await expect(selectStaticToolIds({ aiIndicesEnabled: true, aiIndices: [] })).resolves.toEqual(
+        []
+      );
+      await expect(selectStaticToolIds({ aiIndicesEnabled: true })).resolves.toEqual([]);
+    });
+
+    it('adds nothing when the feature is off', async () => {
+      await expect(
+        selectStaticToolIds({ aiIndicesEnabled: false, aiIndices: ['elastic'] })
+      ).resolves.toEqual([]);
+    });
   });
 });

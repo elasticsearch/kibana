@@ -179,11 +179,13 @@ privileges. Callers also need, on every backing index (`ai-index-*`):
   Elasticsearch returns 403. The counts aggregation also needs `read`; without
   it the two counts sections are omitted and the rest of the block is returned.
 
-Kibana adds only the space filter. For the built-in SML index
-(`ai-index-idx-sml-data`), Elasticsearch additionally applies implicit
-document-level security mirroring Kibana object privileges, so callers only see
-knowledge indicators for dashboards, rules or connectors they could open. Custom
-AI Indices get the space filter alone; they are queried like any other index.
+Two things decide what a caller can see: the space filter Kibana adds, and the
+caller's own Elasticsearch permissions on the backing indices. Nothing checks
+whether the caller could open the Kibana object a knowledge indicator describes.
+That matters for the built-in SML index (`ai-index-idx-sml-data`): anyone with
+Elasticsearch `read` on it may see knowledge indicators for dashboards, rules or
+connectors they cannot open in Kibana. This is by design; the Elastic AI Index
+is queried like any other index.
 
 ## Agent Builder tools
 
@@ -214,9 +216,16 @@ only check the MCP server does. To use them, the caller also needs Context
 Engine's `read` privilege. Every tool checks this itself and returns an error
 result when it is missing.
 
+In Agent Builder chat, any agent with at least one AI Index gets these three
+tools automatically (while the `aiIndices` experimental feature is on). Its
+system prompt tells it to list, then describe, then query, and leaves space
+scoping to `query_ai_indices` rather than handing the agent a filter to copy.
+The `ki-retrieval` skill teaches the same steps with the same tools.
+
 The space always comes from the request; it cannot be passed as a parameter. In
 Agent Builder chat, it is the agent's space. Over MCP, it is the space in the
-URL the MCP server is served from (`/s/{spaceId}/api/agent_builder/mcp`).
+URL the MCP server is served from: `/api/agent_builder/mcp` is the default
+space and `/s/{spaceId}/api/agent_builder/mcp` is another space.
 
 ## Feedback analysis configuration
 

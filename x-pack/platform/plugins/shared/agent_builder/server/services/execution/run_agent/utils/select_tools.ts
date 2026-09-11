@@ -8,6 +8,7 @@
 import type { KibanaRequest } from '@kbn/core-http-server';
 import { defaultAgentToolIds } from '@kbn/agent-builder-common';
 import { ToolOrigin, ToolType, filterToolsBySelection } from '@kbn/agent-builder-common';
+import { contextEngineAiIndexTools } from '@kbn/agent-builder-common/tools';
 import type {
   ToolProvider,
   ExecutableTool,
@@ -38,6 +39,7 @@ export const selectTools = async ({
   request,
   toolProvider,
   agentConfiguration,
+  aiIndicesEnabled,
   attachmentsService,
   spaceId,
   runner,
@@ -50,6 +52,7 @@ export const selectTools = async ({
   toolProvider: ToolProvider;
   attachmentsService: AttachmentsService;
   agentConfiguration: AgentConfiguration;
+  aiIndicesEnabled: boolean;
   spaceId: string;
   runner: ScopedRunner;
 }): Promise<SelectToolsResult> => {
@@ -82,6 +85,9 @@ export const selectTools = async ({
       ...agentConfiguration.tools,
       ...(agentConfiguration.enable_elastic_capabilities
         ? [{ tool_ids: defaultAgentToolIds }]
+        : []),
+      ...(aiIndicesEnabled && (agentConfiguration.ai_indices?.length ?? 0) > 0
+        ? [{ tool_ids: Object.values(contextEngineAiIndexTools) }]
         : []),
     ],
     toolProvider,
