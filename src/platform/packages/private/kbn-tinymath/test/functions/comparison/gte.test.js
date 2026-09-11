@@ -57,4 +57,25 @@ describe('Gte', () => {
       expect(gte([-1, -1], [-2, 2])).toBeFalsy();
     });
   });
+
+  describe('mixed eq and gt values', () => {
+    it('arrays', () => {
+      expect(gte([5, 10], [5, 3])).toBeTruthy();
+      expect(gte([1, 2], [1, 1])).toBeTruthy();
+      expect(gte([1, 2], 1)).toBeTruthy();
+
+      // an element below the bound still fails
+      expect(gte([1, 2, 0], 1)).toBeFalsy();
+      expect(gte([5, 10, 4], [5, 3, 5])).toBeFalsy();
+    });
+  });
+
+  describe('number greater than or equal to array', () => {
+    it('passes only when the number is >= every element', () => {
+      expect(gte(2, [1, 2])).toBeTruthy();
+      expect(gte(5, [5, 5])).toBeTruthy();
+      expect(gte(0, [1, 2])).toBeFalsy();
+      expect(gte(2, [1, 3])).toBeFalsy();
+    });
+  });
 });
