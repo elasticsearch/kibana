@@ -7,7 +7,7 @@
 
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
-import { ConfigInputField, ConfigNumberField } from './configuration_field';
+import { ConfigInputField, ConfigInputListField, ConfigNumberField } from './configuration_field';
 import { FieldType } from '../../types/types';
 import type { ConfigEntryView } from '../../types/types';
 
@@ -158,6 +158,98 @@ describe('ConfigInputField', () => {
 
     const input = screen.getByTestId('url-input');
     expect(input).toHaveAttribute('aria-invalid', 'true');
+  });
+});
+
+describe('ConfigInputListField', () => {
+  const createConfigEntry = (overrides: Partial<ConfigEntryView> = {}): ConfigEntryView => ({
+    key: 'scopes',
+    isValid: true,
+    label: 'OAuth2 scopes',
+    description: 'The permissions requested by the application.',
+    validationErrors: [],
+    required: false,
+    sensitive: false,
+    value: null,
+    default_value: null,
+    updatable: true,
+    type: FieldType.LIST,
+    supported_task_types: ['text_embedding'],
+    ...overrides,
+  });
+
+  const defaultProps = {
+    isLoading: false,
+    validateAndSetConfigValue: jest.fn(),
+  };
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it('renders existing list values', () => {
+    render(
+      <ConfigInputListField
+        {...defaultProps}
+        configEntry={createConfigEntry({ value: ['scope-a', 'scope-b'] })}
+      />
+    );
+
+    expect(screen.getByText('scope-a')).toBeInTheDocument();
+    expect(screen.getByText('scope-b')).toBeInTheDocument();
+  });
+
+  it('adds a trimmed list value', () => {
+    const validateAndSetConfigValue = jest.fn();
+    render(
+      <ConfigInputListField
+        {...defaultProps}
+        configEntry={createConfigEntry()}
+        validateAndSetConfigValue={validateAndSetConfigValue}
+      />
+    );
+
+    const input = screen.getByRole('combobox');
+    fireEvent.change(input, { target: { value: ' scope-a ' } });
+    fireEvent.keyDown(input, { key: 'Enter' });
+
+    expect(validateAndSetConfigValue).toHaveBeenCalledWith(['scope-a']);
+  });
+
+  it('emits null and does not restore the default when cleared', () => {
+    const validateAndSetConfigValue = jest.fn();
+    const configEntry = createConfigEntry({ default_value: ['default-scope'] });
+    const { rerender } = render(
+      <ConfigInputListField
+        {...defaultProps}
+        configEntry={configEntry}
+        validateAndSetConfigValue={validateAndSetConfigValue}
+      />
+    );
+
+    fireEvent.click(screen.getByTestId('comboBoxClearButton'));
+    expect(validateAndSetConfigValue).toHaveBeenCalledWith(null);
+
+    rerender(
+      <ConfigInputListField
+        {...defaultProps}
+        configEntry={{ ...configEntry, value: null }}
+        validateAndSetConfigValue={validateAndSetConfigValue}
+      />
+    );
+    expect(screen.queryByText('default-scope')).not.toBeInTheDocument();
+  });
+
+  it('is disabled in edit mode when the field is not updatable', () => {
+    render(
+      <ConfigInputListField
+        {...defaultProps}
+        configEntry={createConfigEntry({ updatable: false })}
+        isEdit
+      />
+    );
+
+    expect(screen.getByRole('combobox')).toBeDisabled();
   });
 });
 

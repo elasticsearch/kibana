@@ -315,6 +315,13 @@ export const HEADERS_DUPLICATE_KEY_MESSAGE = i18n.translate(
   }
 );
 
+export const LIST_FIELD_PLACEHOLDER = i18n.translate(
+  'xpack.inferenceEndpointUICommon.components.listFieldPlaceholder',
+  {
+    defaultMessage: 'To add an item, type and then hit ENTER.',
+  }
+);
+
 export const TEMPERATURE_LABEL = i18n.translate(
   'xpack.inferenceEndpointUICommon.components.temperatureTextFieldLabel',
   {

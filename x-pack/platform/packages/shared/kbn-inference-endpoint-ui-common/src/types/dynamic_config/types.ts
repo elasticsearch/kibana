@@ -7,7 +7,7 @@
 
 import type { TASK_SETTINGS, SERVICE_SETTINGS } from '../../constants';
 import { type ServiceProviderKeys } from '../../constants';
-import type { FieldsConfiguration } from '../types';
+import type { FieldsConfiguration, Map } from '../types';
 
 export interface SelectOption {
   label: string;
@@ -25,7 +25,10 @@ export enum FieldType {
   INTEGER = 'int',
   BOOLEAN = 'bool',
   MAP = 'map',
+  LIST = 'list',
 }
+
+export type ConfigValue = string | number | boolean | null | Map | string[];
 
 export interface ConfigCategoryProperties {
   label: string;
@@ -39,7 +42,7 @@ export interface Validation {
 }
 
 export interface ConfigProperties {
-  default_value: string | number | boolean | null;
+  default_value: ConfigValue;
   description: string | null;
   label: string;
   required: boolean;
@@ -57,7 +60,7 @@ interface ConfigEntry extends ConfigProperties {
 export interface ConfigEntryView extends ConfigEntry {
   isValid: boolean;
   validationErrors: string[];
-  value: string | number | boolean | null;
+  value: ConfigValue;
 }
 
 type ServiceProviderKeysType = keyof typeof ServiceProviderKeys;
@@ -67,7 +70,7 @@ export interface OverrideFieldsContentType {
   additional?: FieldsConfiguration[];
   supplementalData?: Record<string, Partial<ConfigProperties>>[];
   /** Default values to apply to existing provider configuration fields (e.g., model_id default values) */
-  defaultValues?: Record<string, string | number | boolean | null>;
+  defaultValues?: Record<string, ConfigValue>;
 }
 export type InternalOverrideFieldsType = {
   [Key in ServiceProviderKeysType | string]?: OverrideFieldsContentType;

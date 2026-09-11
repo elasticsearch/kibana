@@ -8,7 +8,7 @@
 import React from 'react';
 
 import { EuiFlexGroup } from '@elastic/eui';
-import type { ConfigEntryView, Map } from '../../types/types';
+import type { ConfigEntryView, ConfigValue } from '../../types/types';
 import { ItemFormRow } from './item_form_row';
 
 interface ConfigurationFormItemsProps {
@@ -20,7 +20,7 @@ interface ConfigurationFormItemsProps {
   isPreconfigured?: boolean;
   isInternalProvider?: boolean;
   items: ConfigEntryView[];
-  setConfigEntry: (key: string, value: string | number | boolean | null | Map) => void;
+  setConfigEntry: (key: string, value: ConfigValue) => void;
 }
 
 export const ConfigurationFormItems: React.FC<ConfigurationFormItemsProps> = ({

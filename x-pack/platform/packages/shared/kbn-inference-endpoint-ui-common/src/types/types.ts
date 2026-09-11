@@ -7,7 +7,7 @@
 
 import type { ApplicationStart } from '@kbn/core/public';
 import type { CloudStart } from '@kbn/cloud-plugin/public';
-import type { ConfigProperties } from './dynamic_config/types';
+import type { ConfigProperties, ConfigValue } from './dynamic_config/types';
 
 interface ConfigEntry extends ConfigProperties {
   key: string;
@@ -20,7 +20,7 @@ export type Map = Record<string, string>;
 export interface ConfigEntryView extends ConfigEntry {
   isValid: boolean;
   validationErrors: string[];
-  value: string | number | boolean | null | Map;
+  value: ConfigValue;
 }
 
 export type FieldsConfiguration = Record<string, ConfigProperties>;
@@ -76,8 +76,13 @@ export function isMapWithStringValues(value: unknown): value is Map {
   return (
     typeof value === 'object' &&
     value !== null &&
+    Array.isArray(value) === false &&
     Object.values(value).every((v) => typeof v === 'string')
   );
+}
+
+export function isStringArray(value: unknown): value is string[] {
+  return Array.isArray(value) && value.every((v) => typeof v === 'string');
 }
 
 export interface InferenceEndpointUiCommonPluginStartDependencies {

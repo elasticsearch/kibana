@@ -5,9 +5,9 @@
  * 2.0.
  */
 
-import { FieldType, type Map } from '../../types/types';
+import { FieldType, type ConfigValue } from '../../types/types';
 
-export const validIntInput = (value: string | number | boolean | null | Map): boolean => {
+export const validIntInput = (value: ConfigValue): boolean => {
   // reject non integers (including x.0 floats), but don't validate if empty
   return (value !== null || value !== '') &&
     (isNaN(Number(value)) ||
@@ -17,15 +17,13 @@ export const validIntInput = (value: string | number | boolean | null | Map): bo
     : true;
 };
 
-export const ensureCorrectTyping = (
-  type: FieldType,
-  value: string | number | boolean | null | Map
-): string | number | boolean | null | Map => {
+export const ensureCorrectTyping = (type: FieldType, value: ConfigValue): ConfigValue => {
   switch (type) {
     case FieldType.INTEGER:
       return validIntInput(value) ? ensureIntType(value) : value;
     case FieldType.BOOLEAN:
       return ensureBooleanType(value);
+    case FieldType.LIST:
     case FieldType.MAP:
       return value;
     default:
@@ -33,11 +31,11 @@ export const ensureCorrectTyping = (
   }
 };
 
-export const ensureStringType = (value: string | number | boolean | null | Map): string => {
+export const ensureStringType = (value: ConfigValue): string => {
   return value !== null ? String(value) : '';
 };
 
-export const ensureIntType = (value: string | number | boolean | null | Map): number | null => {
+export const ensureIntType = (value: ConfigValue): number | null => {
   // int is null-safe to prevent empty values from becoming zeroes
   if (value === null || value === '') {
     return null;
@@ -46,6 +44,6 @@ export const ensureIntType = (value: string | number | boolean | null | Map): nu
   return parseInt(String(value), 10);
 };
 
-export const ensureBooleanType = (value: string | number | boolean | null | Map): boolean => {
+export const ensureBooleanType = (value: ConfigValue): boolean => {
   return Boolean(value);
 };

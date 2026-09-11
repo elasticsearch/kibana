@@ -8,7 +8,7 @@
 import React, { useMemo, useState } from 'react';
 import { EuiButtonGroup, EuiFlexGroup, EuiFlexItem, EuiTitle } from '@elastic/eui';
 import { FormattedMessage } from '@kbn/i18n-react';
-import type { ConfigEntryView, Map } from '../../types/types';
+import type { ConfigEntryView, ConfigValue } from '../../types/types';
 import { ItemFormRow } from './item_form_row';
 
 interface AuthenticationFormItemsProps {
@@ -16,7 +16,7 @@ interface AuthenticationFormItemsProps {
   isLoading: boolean;
   isPreconfigured?: boolean;
   items: ConfigEntryView[];
-  setConfigEntry: (key: string, value: string | number | boolean | null | Map) => void;
+  setConfigEntry: (key: string, value: ConfigValue) => void;
   reenterSecretsOnEdit?: boolean;
 }
 
