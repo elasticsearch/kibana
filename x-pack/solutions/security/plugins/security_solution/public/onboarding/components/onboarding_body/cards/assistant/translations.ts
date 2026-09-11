@@ -16,7 +16,6 @@ export const ASSISTANT_CARD_TITLE = i18n.translate(
 export const ASSISTANT_CARD_DESCRIPTION = i18n.translate(
   'xpack.securitySolution.onboarding.assistantCard.description',
   {
-    defaultMessage:
-      'Choose and configure any AI provider available to use with Elastic AI Assistant.',
+    defaultMessage: 'Choose and configure any AI provider available to use with Elastic AI Agent.',
   }
 );

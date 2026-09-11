@@ -38,7 +38,7 @@ export const ConnectorSetup = React.memo<ConnectorSetupProps>(
             direction="column"
             justifyContent="center"
             alignItems="center"
-            gutterSize="m"
+            gutterSize="l"
           >
             <EuiFlexItem grow={false}>
               <EuiFlexGroup direction="row" justifyContent="center">
@@ -73,6 +73,7 @@ export const ConnectorSetup = React.memo<ConnectorSetupProps>(
                 iconSide="left"
                 onClick={() => setIsModalVisible(true)}
                 isLoading={false}
+                size="s"
               >
                 {i18n.CREATE_NEW_CONNECTOR_BUTTON}
               </EuiButton>
