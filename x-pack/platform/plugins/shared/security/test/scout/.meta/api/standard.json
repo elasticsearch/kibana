@@ -1,5 +1,5 @@
 {
-  "sha1": "aa22bdd03f2f5f2b7fe230d95a6d21603487142f",
+  "sha1": "461f6c86115011303acaca8188c53ac11e1806c2",
   "testChannels": [
     "ci-on-commit"
   ],
@@ -30,6 +30,48 @@
         "file": "x-pack/platform/plugins/shared/security/test/scout/api/tests/builtin_roles_kibana_access.spec.ts",
         "line": 138,
         "column": 7
+      }
+    },
+    {
+      "id": "69ff0915262387d-b48a55d14d8ccd8",
+      "title": "Session Cookie should allow a single valid cookie",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic",
+        "@cloud-stateful-classic"
+      ],
+      "location": {
+        "file": "x-pack/platform/plugins/shared/security/test/scout/api/tests/session_cookie.spec.ts",
+        "line": 39,
+        "column": 55
+      }
+    },
+    {
+      "id": "69ff0915262387d-37d72664fc754fd",
+      "title": "Session Cookie should allow multiple cookies that are the same",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic",
+        "@cloud-stateful-classic"
+      ],
+      "location": {
+        "file": "x-pack/platform/plugins/shared/security/test/scout/api/tests/session_cookie.spec.ts",
+        "line": 52,
+        "column": 22
+      }
+    },
+    {
+      "id": "69ff0915262387d-42694047304bf17",
+      "title": "Session Cookie should not allow multiple different cookies",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic",
+        "@cloud-stateful-classic"
+      ],
+      "location": {
+        "file": "x-pack/platform/plugins/shared/security/test/scout/api/tests/session_cookie.spec.ts",
+        "line": 58,
+        "column": 79
       }
     },
     {

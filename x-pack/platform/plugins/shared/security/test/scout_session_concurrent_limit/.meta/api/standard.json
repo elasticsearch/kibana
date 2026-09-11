@@ -1,0 +1,151 @@
+{
+  "sha1": "8f657d20b48f20ddaec2c756e146cbb9098bc155",
+  "testChannels": [
+    "ci-on-commit"
+  ],
+  "tests": [
+    {
+      "id": "dc3bc6be7210f55-650f05b75bb4ef2",
+      "title": "Session Concurrent Limit cleanup should properly clean up sessions that exceeded concurrent session limit",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic"
+      ],
+      "location": {
+        "file": "x-pack/platform/plugins/shared/security/test/scout_session_concurrent_limit/api/tests/session_concurrent_limit_cleanup.spec.ts",
+        "line": 64,
+        "column": 8
+      }
+    },
+    {
+      "id": "dc3bc6be7210f55-6e1efb79e798411",
+      "title": "Session Concurrent Limit cleanup should properly clean up sessions that exceeded concurrent session limit even for multiple providers",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic"
+      ],
+      "location": {
+        "file": "x-pack/platform/plugins/shared/security/test/scout_session_concurrent_limit/api/tests/session_concurrent_limit_cleanup.spec.ts",
+        "line": 83,
+        "column": 18
+      }
+    },
+    {
+      "id": "dc3bc6be7210f55-8a5843bbeedd967",
+      "title": "Session Concurrent Limit cleanup should properly clean up sessions that exceeded concurrent session limit when legacy sessions are present",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic"
+      ],
+      "location": {
+        "file": "x-pack/platform/plugins/shared/security/test/scout_session_concurrent_limit/api/tests/session_concurrent_limit_cleanup.spec.ts",
+        "line": 118,
+        "column": 11
+      }
+    },
+    {
+      "id": "dc3bc6be7210f55-ac703eb541dac42",
+      "title": "Session Concurrent Limit cleanup should not clean up session if the limit is not exceeded",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic"
+      ],
+      "location": {
+        "file": "x-pack/platform/plugins/shared/security/test/scout_session_concurrent_limit/api/tests/session_concurrent_limit_cleanup.spec.ts",
+        "line": 195,
+        "column": 11
+      }
+    },
+    {
+      "id": "dc3bc6be7210f55-925ac135fa0ceab",
+      "title": "Session Concurrent Limit cleanup should not clean up sessions of the anonymous users",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic"
+      ],
+      "location": {
+        "file": "x-pack/platform/plugins/shared/security/test/scout_session_concurrent_limit/api/tests/session_concurrent_limit_cleanup.spec.ts",
+        "line": 215,
+        "column": 11
+      }
+    },
+    {
+      "id": "dc3bc6be7210f55-d396dd511a6ce48",
+      "title": "Session Concurrent Limit cleanup should not clean up unauthenticated sessions",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic"
+      ],
+      "location": {
+        "file": "x-pack/platform/plugins/shared/security/test/scout_session_concurrent_limit/api/tests/session_concurrent_limit_cleanup.spec.ts",
+        "line": 238,
+        "column": 9
+      }
+    },
+    {
+      "id": "cf19ac11ecfc717-d4a0b80b46f9deb",
+      "title": "Session Concurrent Limit global should properly enforce session limit with single provider",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic"
+      ],
+      "location": {
+        "file": "x-pack/platform/plugins/shared/security/test/scout_session_concurrent_limit/api/tests/session_concurrent_limit_global.spec.ts",
+        "line": 58,
+        "column": 5
+      }
+    },
+    {
+      "id": "cf19ac11ecfc717-44ccb44f6216e23",
+      "title": "Session Concurrent Limit global should properly enforce session limit with single provider and multiple users",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic"
+      ],
+      "location": {
+        "file": "x-pack/platform/plugins/shared/security/test/scout_session_concurrent_limit/api/tests/session_concurrent_limit_global.spec.ts",
+        "line": 73,
+        "column": 11
+      }
+    },
+    {
+      "id": "cf19ac11ecfc717-fc4d8222b2b570a",
+      "title": "Session Concurrent Limit global should properly enforce session limit even for multiple concurrent logins",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic"
+      ],
+      "location": {
+        "file": "x-pack/platform/plugins/shared/security/test/scout_session_concurrent_limit/api/tests/session_concurrent_limit_global.spec.ts",
+        "line": 111,
+        "column": 11
+      }
+    },
+    {
+      "id": "cf19ac11ecfc717-95163605b81de09",
+      "title": "Session Concurrent Limit global should properly enforce session limit with multiple providers",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic"
+      ],
+      "location": {
+        "file": "x-pack/platform/plugins/shared/security/test/scout_session_concurrent_limit/api/tests/session_concurrent_limit_global.spec.ts",
+        "line": 131,
+        "column": 5
+      }
+    },
+    {
+      "id": "cf19ac11ecfc717-1eb9bdb0ec41ef7",
+      "title": "Session Concurrent Limit global should not enforce session limit for anonymous users",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic"
+      ],
+      "location": {
+        "file": "x-pack/platform/plugins/shared/security/test/scout_session_concurrent_limit/api/tests/session_concurrent_limit_global.spec.ts",
+        "line": 157,
+        "column": 5
+      }
+    }
+  ]
+}

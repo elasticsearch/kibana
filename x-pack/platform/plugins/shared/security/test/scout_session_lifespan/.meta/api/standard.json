@@ -1,0 +1,34 @@
+{
+  "sha1": "e4974aa9b0838eebbd0820d059684ae965653122",
+  "testChannels": [
+    "ci-on-commit"
+  ],
+  "tests": [
+    {
+      "id": "bad1986e365f8f6-cff4da14f9f3c3c",
+      "title": "Session Lifespan cleanup should properly clean up session expired because of lifespan",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic"
+      ],
+      "location": {
+        "file": "x-pack/platform/plugins/shared/security/test/scout_session_lifespan/api/tests/session_lifespan.spec.ts",
+        "line": 28,
+        "column": 89
+      }
+    },
+    {
+      "id": "bad1986e365f8f6-38540ff9b72db6d",
+      "title": "Session Lifespan cleanup should properly clean up session expired because of lifespan when providers override global session config",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic"
+      ],
+      "location": {
+        "file": "x-pack/platform/plugins/shared/security/test/scout_session_lifespan/api/tests/session_lifespan.spec.ts",
+        "line": 49,
+        "column": 18
+      }
+    }
+  ]
+}

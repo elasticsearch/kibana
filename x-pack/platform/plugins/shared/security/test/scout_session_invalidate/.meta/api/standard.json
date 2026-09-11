@@ -1,0 +1,112 @@
+{
+  "sha1": "76903139fd36ca7b42c3aa32d24bb630e02aa61e",
+  "testChannels": [
+    "ci-on-commit"
+  ],
+  "tests": [
+    {
+      "id": "f8c781d85059999-cd0a1c873919a66",
+      "title": "Session Invalidate should be able to invalidate all sessions at once",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic"
+      ],
+      "location": {
+        "file": "x-pack/platform/plugins/shared/security/test/scout_session_invalidate/api/tests/session_invalidate.spec.ts",
+        "line": 73,
+        "column": 26
+      }
+    },
+    {
+      "id": "f8c781d85059999-d0ccd32eefb59e6",
+      "title": "Session Invalidate should do nothing if specified provider type is not configured",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic"
+      ],
+      "location": {
+        "file": "x-pack/platform/plugins/shared/security/test/scout_session_invalidate/api/tests/session_invalidate.spec.ts",
+        "line": 83,
+        "column": 11
+      }
+    },
+    {
+      "id": "f8c781d85059999-87d196c873d6671",
+      "title": "Session Invalidate should be able to invalidate session only for a specific provider type",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic"
+      ],
+      "location": {
+        "file": "x-pack/platform/plugins/shared/security/test/scout_session_invalidate/api/tests/session_invalidate.spec.ts",
+        "line": 96,
+        "column": 5
+      }
+    },
+    {
+      "id": "f8c781d85059999-8c7bb8fa9f60498",
+      "title": "Session Invalidate should do nothing if specified provider name is not configured",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic"
+      ],
+      "location": {
+        "file": "x-pack/platform/plugins/shared/security/test/scout_session_invalidate/api/tests/session_invalidate.spec.ts",
+        "line": 116,
+        "column": 26
+      }
+    },
+    {
+      "id": "f8c781d85059999-4eaf74af809a988",
+      "title": "Session Invalidate should be able to invalidate session only for a specific provider name",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic"
+      ],
+      "location": {
+        "file": "x-pack/platform/plugins/shared/security/test/scout_session_invalidate/api/tests/session_invalidate.spec.ts",
+        "line": 139,
+        "column": 14
+      }
+    },
+    {
+      "id": "f8c781d85059999-ad747906acf8b9a",
+      "title": "Session Invalidate should do nothing if specified username does not have session",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic"
+      ],
+      "location": {
+        "file": "x-pack/platform/plugins/shared/security/test/scout_session_invalidate/api/tests/session_invalidate.spec.ts",
+        "line": 156,
+        "column": 12
+      }
+    },
+    {
+      "id": "f8c781d85059999-7261bffbf38e0e4",
+      "title": "Session Invalidate should be able to invalidate session only for a specific user",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic"
+      ],
+      "location": {
+        "file": "x-pack/platform/plugins/shared/security/test/scout_session_invalidate/api/tests/session_invalidate.spec.ts",
+        "line": 182,
+        "column": 14
+      }
+    },
+    {
+      "id": "f8c781d85059999-bbfd836589d78bd",
+      "title": "Session Invalidate only super users should be able to invalidate sessions",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic"
+      ],
+      "location": {
+        "file": "x-pack/platform/plugins/shared/security/test/scout_session_invalidate/api/tests/session_invalidate.spec.ts",
+        "line": 201,
+        "column": 12
+      }
+    }
+  ]
+}

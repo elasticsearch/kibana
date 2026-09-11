@@ -11,6 +11,7 @@ import { schema } from '@kbn/config-schema';
 import type {
   CoreSetup,
   CoreStart,
+  ElasticsearchClient,
   KibanaRequest,
   PluginInitializerContext,
 } from '@kbn/core/server';
@@ -34,6 +35,8 @@ export function initRoutes(
   core: CoreSetup<PluginStartDependencies>
 ) {
   const logger = initializerContext.logger.get();
+  // Capture once — reading esClient.openPointInTime on disable would recapture the mock.
+  let unpatchedOpenPointInTime: ElasticsearchClient['openPointInTime'] | undefined;
 
   const authenticationAppOptions = { simulateUnauthorized: false };
   core.http.resources.register(
@@ -622,6 +625,56 @@ export function initRoutes(
 
   router.post(
     {
+      path: '/session/_refresh_session_index',
+      security: {
+        authz: {
+          enabled: false,
+          reason: 'This route is opted out from authorization',
+        },
+      },
+      validate: false,
+    },
+    async (context, request, response) => {
+      const [coreStart] = await core.getStartServices();
+      await coreStart.elasticsearch.client.asInternalUser.indices.refresh({
+        index: '.kibana_security_session*',
+        expand_wildcards: 'all',
+        ignore_unavailable: true,
+      } as any);
+      return response.ok();
+    }
+  );
+
+  router.post(
+    {
+      path: '/session/_remove_created_at',
+      security: {
+        authz: {
+          enabled: false,
+          reason: 'This route is opted out from authorization',
+        },
+      },
+      validate: {
+        body: schema.object({
+          ids: schema.arrayOf(schema.string({ maxLength: 1024 }), { maxSize: 100 }),
+        }),
+      },
+    },
+    async (context, request, response) => {
+      const { ids } = request.body;
+      const [coreStart] = await core.getStartServices();
+      await coreStart.elasticsearch.client.asInternalUser.updateByQuery({
+        index: '.kibana_security_session*',
+        script: 'ctx._source.remove("createdAt")',
+        query: { ids: { values: ids } },
+        refresh: true,
+      } as any);
+      return response.ok();
+    }
+  );
+
+  router.post(
+    {
       path: '/simulate_point_in_time_failure',
       security: {
         authc: {
@@ -639,7 +692,8 @@ export function initRoutes(
     },
     async (context, request, response) => {
       const esClient = (await context.core).elasticsearch.client.asInternalUser;
-      const originalOpenPointInTime = esClient.openPointInTime;
+      const originalOpenPointInTime = unpatchedOpenPointInTime ?? esClient.openPointInTime;
+      unpatchedOpenPointInTime = originalOpenPointInTime;
 
       if (request.body.simulateOpenPointInTimeFailure) {
         // @ts-expect-error

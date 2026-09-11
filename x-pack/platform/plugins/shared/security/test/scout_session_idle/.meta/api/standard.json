@@ -1,0 +1,138 @@
+{
+  "sha1": "fbefe46fb16dc5a7aba67731b7e3c55998cad972",
+  "testChannels": [
+    "ci-on-commit"
+  ],
+  "tests": [
+    {
+      "id": "79dd1ff0b212b6c-46c4891f0aa4f6c",
+      "title": "Session Idle cleanup should properly clean up session expired because of idle timeout",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic"
+      ],
+      "location": {
+        "file": "x-pack/platform/plugins/shared/security/test/scout_session_idle/api/tests/session_idle_cleanup.spec.ts",
+        "line": 30,
+        "column": 89
+      }
+    },
+    {
+      "id": "79dd1ff0b212b6c-dd7b1546357f33b",
+      "title": "Session Idle cleanup should properly clean up session expired because of idle timeout when providers override global session config",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic"
+      ],
+      "location": {
+        "file": "x-pack/platform/plugins/shared/security/test/scout_session_idle/api/tests/session_idle_cleanup.spec.ts",
+        "line": 53,
+        "column": 18
+      }
+    },
+    {
+      "id": "79dd1ff0b212b6c-0a0cfb4123db495",
+      "title": "Session Idle cleanup should not clean up session if user is active",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic"
+      ],
+      "location": {
+        "file": "x-pack/platform/plugins/shared/security/test/scout_session_idle/api/tests/session_idle_cleanup.spec.ts",
+        "line": 98,
+        "column": 19
+      }
+    },
+    {
+      "id": "73f195c551ccd07-f2943b2414a28ec",
+      "title": "Session Idle expired should return kbn-session-error-reason header if session is expired",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic"
+      ],
+      "location": {
+        "file": "x-pack/platform/plugins/shared/security/test/scout_session_idle/api/tests/session_idle_expired.spec.ts",
+        "line": 24,
+        "column": 11
+      }
+    },
+    {
+      "id": "05f9eb03c508213-795508561ffdae3",
+      "title": "Session Idle extension GET /internal/security/session should return current session information",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic"
+      ],
+      "location": {
+        "file": "x-pack/platform/plugins/shared/security/test/scout_session_idle/api/tests/session_idle_extension.spec.ts",
+        "line": 30,
+        "column": 18
+      }
+    },
+    {
+      "id": "05f9eb03c508213-6e0cb1d71515ae8",
+      "title": "Session Idle extension GET /internal/security/session should not extend the session",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic"
+      ],
+      "location": {
+        "file": "x-pack/platform/plugins/shared/security/test/scout_session_idle/api/tests/session_idle_extension.spec.ts",
+        "line": 41,
+        "column": 12
+      }
+    },
+    {
+      "id": "05f9eb03c508213-c4f1d230a710cee",
+      "title": "Session Idle extension POST /internal/security/session should redirect to GET",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic"
+      ],
+      "location": {
+        "file": "x-pack/platform/plugins/shared/security/test/scout_session_idle/api/tests/session_idle_extension.spec.ts",
+        "line": 52,
+        "column": 16
+      }
+    },
+    {
+      "id": "05f9eb03c508213-9920a11e5aff4f8",
+      "title": "Session Idle extension POST /internal/security/session should extend the session",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic"
+      ],
+      "location": {
+        "file": "x-pack/platform/plugins/shared/security/test/scout_session_idle/api/tests/session_idle_extension.spec.ts",
+        "line": 58,
+        "column": 75
+      }
+    },
+    {
+      "id": "404804b82b7ed91-9bf1e1ffe8400ed",
+      "title": "Session index shard missing quietly fails if shards are unavailable",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic"
+      ],
+      "location": {
+        "file": "x-pack/platform/plugins/shared/security/test/scout_session_idle/api/tests/session_shard_missing.spec.ts",
+        "line": 34,
+        "column": 36
+      }
+    },
+    {
+      "id": "404804b82b7ed91-a72426c9dcc7a35",
+      "title": "Session index shard missing fails if shards are unavailable more than 10 times",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic"
+      ],
+      "location": {
+        "file": "x-pack/platform/plugins/shared/security/test/scout_session_idle/api/tests/session_shard_missing.spec.ts",
+        "line": 45,
+        "column": 11
+      }
+    }
+  ]
+}
