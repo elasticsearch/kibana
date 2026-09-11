@@ -41,6 +41,7 @@ export interface CreateModelProviderOpts {
   logger: Logger;
   searchInferenceEndpoints: SearchInferenceEndpointsPluginStart;
   telemetryMetadata?: ConnectorTelemetryMetadata;
+  agentId?: string;
   maxContentLength?: number;
   reasoningLevel?: ChatCompletionReasoningEffort;
 }
@@ -55,7 +56,12 @@ export type CreateModelProviderFactoryFn = (
 export type ModelProviderFactoryFn = (
   opts: Pick<
     CreateModelProviderOpts,
-    'request' | 'defaultConnectorId' | 'telemetryMetadata' | 'maxContentLength' | 'reasoningLevel'
+    | 'request'
+    | 'defaultConnectorId'
+    | 'telemetryMetadata'
+    | 'agentId'
+    | 'maxContentLength'
+    | 'reasoningLevel'
   >
 ) => ModelProvider;
 
@@ -101,6 +107,7 @@ export const createModelProvider = ({
   searchInferenceEndpoints,
   logger,
   telemetryMetadata,
+  agentId,
   maxContentLength,
   reasoningLevel,
 }: CreateModelProviderOpts): ModelProvider => {
@@ -200,6 +207,7 @@ export const createModelProvider = ({
       },
       chatModelOptions: {
         telemetryMetadata: resolvedTelemetryMetadata,
+        ...(agentId !== undefined ? { agentId } : {}),
         ...(maxContentLength !== undefined ? { maxContentLength } : {}),
         ...(reasoning ? { reasoning } : {}),
       },
@@ -209,7 +217,7 @@ export const createModelProvider = ({
       request,
       bindTo: {
         connectorId,
-        ...(telemetryMetadata ? { metadata: { connectorTelemetry: telemetryMetadata } } : {}),
+        metadata: { connectorTelemetry: resolvedTelemetryMetadata },
       },
       callbacks: {
         complete: [completionCallback],

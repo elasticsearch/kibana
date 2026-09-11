@@ -392,6 +392,42 @@ describe('InferenceChatModel', () => {
       });
     });
 
+    it('includes agentId flat on chatComplete metadata when set', async () => {
+      const chatModel = new InferenceChatModel({
+        chatComplete,
+        connector,
+        telemetryMetadata,
+        agentId: 'agent-a',
+      });
+
+      const response = createResponse({ content: 'dummy' });
+      chatComplete.mockResolvedValue(response);
+
+      await chatModel.invoke('question');
+
+      expect(chatComplete).toHaveBeenCalledWith(
+        expect.objectContaining({
+          metadata: {
+            connectorTelemetry: telemetryMetadata,
+            agentId: 'agent-a',
+          },
+        })
+      );
+    });
+
+    it('omits agentId from chatComplete metadata when not set', async () => {
+      const chatModel = new InferenceChatModel({ chatComplete, connector, telemetryMetadata });
+
+      const response = createResponse({ content: 'dummy' });
+      chatComplete.mockResolvedValue(response);
+
+      await chatModel.invoke('question');
+
+      expect(chatComplete).toHaveBeenCalledWith(
+        expect.objectContaining({ metadata: { connectorTelemetry: telemetryMetadata } })
+      );
+    });
+
     it('uses invocation parameters', async () => {
       const chatModel = new InferenceChatModel({
         chatComplete,

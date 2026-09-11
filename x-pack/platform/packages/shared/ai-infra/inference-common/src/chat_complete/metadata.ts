@@ -15,6 +15,7 @@ import type { Attributes } from '@opentelemetry/api';
 export interface ChatCompleteMetadata {
   connectorTelemetry?: ConnectorTelemetryMetadata;
   anonymization?: ChatCompleteAnonymizationMetadata;
+  agentId?: string;
   attributes?: Attributes;
 }
 

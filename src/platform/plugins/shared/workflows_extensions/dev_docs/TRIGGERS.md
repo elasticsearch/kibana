@@ -65,6 +65,7 @@ export const commonMyTriggerDefinition: CommonTriggerDefinition = {
 - `eventSchema` must be a Zod object schema; payloads are validated at emit time.
 - When you provide `documentation.examples`, each example must only reference fields present on `eventSchema` (agents pattern-match YAML examples).
 - When you provide `snippets.condition`, it must be valid KQL using only `event.*` fields from `eventSchema` (validated at registration).
+- Set `exclusivity: 'per-space'` when at most one enabled workflow may subscribe to this trigger per Kibana space. Workflows management enforces this generically — a second enable attempt for the same space receives a 409 conflict. Omit for triggers that fan out to any number of subscribers (the default). The value is validated at registration; invalid values throw at setup.
 
 ### Step 2: Register on server
 

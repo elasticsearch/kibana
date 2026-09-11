@@ -378,5 +378,26 @@ describe('AgentBuilder runner', () => {
         );
       }
     );
+
+    it('passes agentId to the model provider factory', async () => {
+      const runnerDeps = createRunnerDepsMock();
+      runnerDeps.agentsService.getRegistry.mockResolvedValue(agentClient);
+
+      const params: RunAgentParams = {
+        agentId: 'root-agent',
+        agentParams: {
+          nextInput: { message: 'hello' },
+          conversation: { id: 'conv-123', rounds: [] } as any,
+        },
+        request: scopedRunnerDeps.request,
+      };
+
+      const runner = createRunner(runnerDeps);
+      await runner.runAgent(params);
+
+      expect(runnerDeps.modelProviderFactory).toHaveBeenCalledWith(
+        expect.objectContaining({ agentId: 'root-agent' })
+      );
+    });
   });
 });

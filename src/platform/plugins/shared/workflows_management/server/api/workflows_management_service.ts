@@ -408,7 +408,7 @@ export class WorkflowsService {
     workflow: CreateWorkflowCommand,
     spaceId: string,
     request: KibanaRequest,
-    options?: { nameFallback?: string }
+    options?: { nameFallback?: string; originManagedWorkflowId?: string }
   ): Promise<WorkflowDetailDto> {
     await this.ensureInitialized();
     return this.crudService.createWorkflow(workflow, spaceId, request, options);

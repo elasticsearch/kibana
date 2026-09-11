@@ -143,17 +143,17 @@ describe('runWorkflow', () => {
       it('calls setupDependencies with all expected arguments', async () => {
         await runWorkflowWithDefaults();
 
-        expect(mockSetupDependencies).toHaveBeenCalledWith(
+        expect(mockSetupDependencies).toHaveBeenCalledWith({
           workflowRunId,
           spaceId,
           logger,
-          mockConfig,
+          config: mockConfig,
           dependencies,
           workflowExecutionRepository,
           stepExecutionRepository,
           fakeRequest,
-          mockWorkflowExecutionEngine
-        );
+          workflowsExecutionEngine: mockWorkflowExecutionEngine,
+        });
       });
 
       it('calls workflowRuntime.start then workflowExecutionLoop in order', async () => {

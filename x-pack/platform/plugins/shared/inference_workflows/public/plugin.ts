@@ -25,6 +25,20 @@ export class InferenceWorkflowsPublicPlugin
     deps.workflowsExtensions.registerStepDefinition(() =>
       import('./steps/ai/ai_classify_step').then((m) => m.AiClassifyStepDefinition)
     );
+    deps.workflowsExtensions.registerStepDefinition(() =>
+      import('./workflow_anonymization').then((module) => module.aiPiiStepDefinition)
+    );
+    deps.workflowsExtensions.registerStepDefinition(() =>
+      import('./workflow_anonymization').then((module) => module.callSiteProceedStepDefinition)
+    );
+    deps.workflowsExtensions.registerStepDefinition(() =>
+      import('./workflow_anonymization').then((module) => module.piiRestoreStepDefinition)
+    );
+    deps.workflowsExtensions.registerTriggerDefinition(() =>
+      import('./workflow_anonymization').then(
+        (module) => module.aroundCompletionPublicTriggerDefinition
+      )
+    );
     return {};
   }
 

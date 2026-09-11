@@ -36,8 +36,7 @@ import type {
   AnonymizationPluginSetup,
 } from '@kbn/anonymization-plugin/server';
 import type { InferenceEndpoint } from './util/get_inference_endpoints';
-
-/* eslint-disable @typescript-eslint/no-empty-interface*/
+import type { WorkflowAnonymizationProvider } from './workflow_anonymization_provider';
 
 export interface InferenceSetupDependencies {
   actions: ActionsPluginSetup;
@@ -52,7 +51,19 @@ export interface InferenceStartDependencies {
 /**
  * Setup contract of the inference plugin.
  */
-export interface InferenceServerSetup {}
+export interface InferenceServerSetup {
+  registerWorkflowAnonymizationProvider(provider: WorkflowAnonymizationProvider): void;
+  /** Operational config values derived from the inference plugin's config, exposed so that
+   *  consumer plugins (e.g. inference_workflows) can share the same settings without
+   *  duplicating config keys. */
+  anonymizationConfig: {
+    /** Trigger-resolution cache TTL in milliseconds. 0 means caching is disabled. */
+    triggerCacheTtlMs: number;
+    /** Whether workflow-driven anonymization is enabled. Consumer plugins should use this
+     *  to gate any unconditional startup work (e.g. managed workflow installation). */
+    workflowDrivenEnabled: boolean;
+  };
+}
 
 /**
  * Options to create an inference client using the {@link InferenceServerStart.getClient} API.

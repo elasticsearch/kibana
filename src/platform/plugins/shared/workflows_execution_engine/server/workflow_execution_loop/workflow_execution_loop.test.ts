@@ -62,10 +62,13 @@ describe('workflowExecutionLoop', () => {
     const params = createParams();
     await workflowExecutionLoop(params as any);
 
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const { executionFlowLoop } = require('./execution_flow_loop');
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const { persistenceLoop, flushState } = require('./persistence_loop');
+    const { executionFlowLoop } = jest.requireMock('./execution_flow_loop') as {
+      executionFlowLoop: jest.Mock;
+    };
+    const { persistenceLoop, flushState } = jest.requireMock('./persistence_loop') as {
+      persistenceLoop: jest.Mock;
+      flushState: jest.Mock;
+    };
 
     expect(executionFlowLoop).toHaveBeenCalledWith(params);
     expect(persistenceLoop).toHaveBeenCalled();
@@ -78,12 +81,32 @@ describe('workflowExecutionLoop', () => {
     expect(params.workflowLogger.flushEvents).toHaveBeenCalled();
   });
 
+  it('uses the shared execution loop without periodic persistence in sync mode', async () => {
+    const params = { ...createParams(), executionMode: 'sync' as const };
+    await workflowExecutionLoop(params as any);
+
+    const { executionFlowLoop } = jest.requireMock('./execution_flow_loop') as {
+      executionFlowLoop: jest.Mock;
+    };
+    const { persistenceLoop, flushState } = jest.requireMock('./persistence_loop') as {
+      persistenceLoop: jest.Mock;
+      flushState: jest.Mock;
+    };
+
+    expect(executionFlowLoop).toHaveBeenCalledWith(params);
+    expect(persistenceLoop).not.toHaveBeenCalled();
+    expect(flushState).not.toHaveBeenCalled();
+    expect(params.workflowRuntime.saveState).toHaveBeenCalled();
+    expect(params.stepIoService.flush).toHaveBeenCalled();
+  });
+
   it('sets workflow error when execution loop throws', async () => {
     const params = createParams();
     const testError = new Error('execution failed');
 
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const { executionFlowLoop } = require('./execution_flow_loop');
+    const { executionFlowLoop } = jest.requireMock('./execution_flow_loop') as {
+      executionFlowLoop: jest.Mock;
+    };
     (executionFlowLoop as jest.Mock).mockRejectedValueOnce(testError);
 
     await workflowExecutionLoop(params as any);
@@ -109,11 +132,42 @@ describe('workflowExecutionLoop', () => {
     expect(params.workflowExecutionCursor.stop).toHaveBeenCalled();
   });
 
+  it('marks abort-with-error-reason (e.g. timeout) as FAILED and captures the error', async () => {
+    const params = createParams();
+    const abortController = new AbortController();
+    const timeoutError = new Error('Pre-LLM anonymization timed out after 5000ms');
+    const loopPromise = workflowExecutionLoop({ ...params, signal: abortController.signal } as any);
+    abortController.abort(timeoutError);
+    await loopPromise;
+
+    expect(params.workflowExecutionCursor.captureError).toHaveBeenCalledWith(timeoutError);
+    expect(params.workflowExecutionState.updateWorkflowExecution).toHaveBeenCalledWith(
+      expect.objectContaining({
+        status: ExecutionStatus.FAILED,
+      })
+    );
+    expect(params.workflowExecutionCursor.stop).toHaveBeenCalled();
+  });
+
+  it('treats AbortError DOMException as CANCELLED (not FAILED) — signal from sync timeout or platform abort', async () => {
+    const params = createParams();
+    const abortController = new AbortController();
+    const loopPromise = workflowExecutionLoop({ ...params, signal: abortController.signal } as any);
+    abortController.abort(new DOMException('timeout', 'AbortError'));
+    await loopPromise;
+
+    expect(params.workflowExecutionState.updateWorkflowExecution).toHaveBeenCalledWith(
+      expect.objectContaining({
+        status: ExecutionStatus.CANCELLED,
+      })
+    );
+    expect(params.workflowExecutionCursor.captureError).not.toHaveBeenCalled();
+  });
+
   it('marks Task Manager abort as system cancellation and suppresses workflow log errors', async () => {
     const params = createParams();
     const abortController = new AbortController();
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const { flushState } = require('./persistence_loop');
+    const { flushState } = jest.requireMock('./persistence_loop') as { flushState: jest.Mock };
     const loopPromise = workflowExecutionLoop({ ...params, signal: abortController.signal } as any);
     abortController.abort(new WorkflowTaskManagerAbortError());
     await loopPromise;

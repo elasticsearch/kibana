@@ -57,6 +57,7 @@ describe('createChatModel', () => {
   it('calls createClient with the right parameters', async () => {
     await createChatModel({
       request,
+      namespace: 'space-a',
       connectorId: '.my-connector',
       actions,
       logger,
@@ -73,6 +74,7 @@ describe('createChatModel', () => {
     expect(createClientMock).toHaveBeenCalledWith({
       actions,
       request,
+      namespace: 'space-a',
       logger,
       esClient: mockEsClient,
       anonymizationRulesPromise: Promise.resolve([]),
@@ -84,6 +86,7 @@ describe('createChatModel', () => {
   it('calls getConnectorById with the right parameters', async () => {
     await createChatModel({
       request,
+      namespace: 'space-a',
       connectorId: '.my-connector',
       actions,
       logger,
@@ -117,6 +120,7 @@ describe('createChatModel', () => {
 
     await createChatModel({
       request,
+      namespace: 'space-a',
       connectorId: '.my-connector',
       actions,
       logger,

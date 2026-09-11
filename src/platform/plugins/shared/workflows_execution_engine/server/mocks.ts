@@ -27,6 +27,7 @@ export {
 export const workflowsExecutionEngineMock = {
   createSetup: jest.fn().mockReturnValue({} as jest.Mocked<WorkflowsExecutionEnginePluginSetup>),
   createStart: jest.fn().mockReturnValue({
+    supportsSynchronousExecution: true,
     __internalStorage: {
       workflowExecutionsDataClient: createMockWorkflowDataClient(),
       stepExecutionsDataClient: createMockStepDataClient(),

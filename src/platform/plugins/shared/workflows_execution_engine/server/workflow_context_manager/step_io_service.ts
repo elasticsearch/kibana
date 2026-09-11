@@ -21,7 +21,7 @@ import { EVICTION_EXEMPT_STEP_TYPES, LOOP_STEP_TYPES } from './step_io_pinned_ty
 import type { StepExecutionMetadata, StepIoStateAccessor } from './workflow_execution_state';
 import { WorkflowScopeStack } from './workflow_scope_stack';
 import type { OutputSizeStats } from '../lib/telemetry/events/workflows_execution/types';
-import type { StepExecutionRepository } from '../repositories/step_execution_repository';
+import type { StepExecutionPersistence } from '../repositories/execution_persistence';
 import { formatBytes, safeOutputSize } from '../step/errors';
 import { buildStepExecutionId } from '../utils';
 
@@ -32,7 +32,7 @@ import { buildStepExecutionId } from '../utils';
 export type PredecessorsResolver = (node: GraphNodeUnion) => ReadonlyArray<GraphNodeUnion>;
 
 export interface StepIoServiceInit {
-  stepRepository: StepExecutionRepository;
+  stepRepository: StepExecutionPersistence;
   state: StepIoStateAccessor;
   pinnedStepTypes?: ReadonlySet<string>;
   /**
@@ -141,7 +141,7 @@ export interface StepIoLifecycle {
  * stepExecutionRepository.
  */
 export class StepIoService implements StepIoWriter, StepIoLifecycle {
-  private readonly stepRepository: StepExecutionRepository;
+  private readonly stepRepository: StepExecutionPersistence;
   private readonly state: StepIoStateAccessor;
   private readonly pinnedStepTypes: ReadonlySet<string>;
   private readonly evictionMinBytes: number;
