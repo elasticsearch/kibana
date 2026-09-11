@@ -136,6 +136,11 @@ export const ALERT_SUPPRESSION_INSUFFICIENT_LICENSING_ICON =
 export const HIGHLIGHTED_ROWS_IN_TABLE =
   '[data-test-subj="euiDataGridBody"] .alertsTableHighlightedRow';
 
+export const ADDITIONAL_FILTERS_BUTTON = '[data-test-subj="additionalFilters-popover"]';
+
+export const SHOW_BUILDING_BLOCK_ALERTS_CHECKBOX =
+  '[data-test-subj="showBuildingBlockAlertsCheckbox"]';
+
 export const MAX_SIGNALS_DETAILS = '[data-test-subj="maxSignalsPropertyValue"]';
 
 export const DESCRIPTION_SETUP_GUIDE_BUTTON = '[data-test-subj="stepAboutDetailsToggle-setup"]';

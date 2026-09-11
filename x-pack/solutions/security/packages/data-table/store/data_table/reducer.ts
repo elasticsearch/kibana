@@ -51,6 +51,7 @@ import {
   upsertTableColumn,
 } from './helpers';
 
+import { tableDefaults } from './defaults';
 import type { TableState } from './types';
 import { EMPTY_TABLE_BY_ID } from './types';
 
@@ -259,7 +260,7 @@ export const dataTableReducer = reducerWithInitialState(initialDataTableState)
       [id]: {
         ...state.tableById[id],
         additionalFilters: {
-          ...state.tableById[id].additionalFilters,
+          ...(state.tableById[id]?.additionalFilters ?? tableDefaults.additionalFilters),
           showBuildingBlockAlerts,
         },
       },
@@ -272,7 +273,7 @@ export const dataTableReducer = reducerWithInitialState(initialDataTableState)
       [id]: {
         ...state.tableById[id],
         additionalFilters: {
-          ...state.tableById[id].additionalFilters,
+          ...(state.tableById[id]?.additionalFilters ?? tableDefaults.additionalFilters),
           showOnlyThreatIndicatorAlerts,
         },
       },

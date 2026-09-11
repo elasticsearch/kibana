@@ -447,13 +447,27 @@ export const RuleDetailsPage = connector(
       [clearEventsLoading, clearEventsDeleted, clearSelected, setFilterGroup]
     );
 
-    const isBuildingBlockTypeNotNull = rule?.building_block_type != null;
-    // Set showBuildingBlockAlerts if rule is a Building Block Rule otherwise we won't show alerts
-    useEffect(() => {
-      setShowBuildingBlockAlerts(isBuildingBlockTypeNotNull);
-    }, [isBuildingBlockTypeNotNull, setShowBuildingBlockAlerts]);
-
+    const isBuildingBlockRule = rule?.building_block_type != null;
     const ruleRuleId = rule?.rule_id ?? '';
+    const [ruleIdWithInitializedAlertFilters, setRuleIdWithInitializedAlertFilters] = useState<
+      string | null
+    >(null);
+
+    // Building block alerts are hidden by default, so they must be explicitly enabled when viewing
+    // a building block rule, otherwise its own alerts would be filtered out of its details page.
+    useEffect(() => {
+      if (ruleRuleId === '') {
+        return;
+      }
+      setShowBuildingBlockAlerts(isBuildingBlockRule);
+      setRuleIdWithInitializedAlertFilters(ruleRuleId);
+    }, [ruleRuleId, isBuildingBlockRule, setShowBuildingBlockAlerts]);
+
+    // The alerts table must not be mounted until the default filters above have been applied,
+    // otherwise it would issue its first query with the wrong building block filter.
+    const areAlertFiltersInitialized =
+      ruleRuleId !== '' && ruleIdWithInitializedAlertFilters === ruleRuleId;
+
     const alertDefaultFilters = useMemo(
       () => [
         ...buildAlertsFilter(ruleRuleId ?? ''),
@@ -908,7 +922,7 @@ export const RuleDetailsPage = connector(
                           />
                           <EuiSpacer />
                         </Display>
-                        {ruleId != null && (
+                        {ruleId != null && rule != null && areAlertFiltersInitialized && (
                           <GroupedAlertsTable
                             accordionButtonContent={defaultGroupTitleRenderers}
                             accordionExtraActionGroupStats={accordionExtraActionGroupStats}
