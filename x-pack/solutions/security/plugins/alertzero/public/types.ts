@@ -19,7 +19,8 @@ export interface AlertZeroClientConfig {
 export type AlertZeroSetupDependencies = Record<string, never>;
 
 export interface AlertZeroStartDependencies {
-  agentBuilder?: AgentBuilderPluginStart;
+  /** Required plugin, see `requiredPlugins` in kibana.jsonc. */
+  agentBuilder: AgentBuilderPluginStart;
   spaces?: SpacesPluginStart;
   workflowsManagement?: WorkflowsPublicPluginStart;
 }

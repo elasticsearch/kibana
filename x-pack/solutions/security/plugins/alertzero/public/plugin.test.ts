@@ -6,6 +6,8 @@
  */
 
 import { coreMock } from '@kbn/core/public/mocks';
+import { agentBuilderMocks } from '@kbn/agent-builder-plugin/public/mocks';
+import { getInvestigationTabIds } from '@kbn/agentic-investigations-common';
 import type { AlertZeroClientConfig } from './types';
 import { AlertZeroPublicPlugin } from './plugin';
 
@@ -39,5 +41,35 @@ describe('AlertZeroPublicPlugin feature-flag gating', () => {
     expect(coreSetup.application.register).toHaveBeenCalledWith(
       expect.objectContaining({ id: 'alertzero', appRoute: '/app/alertzero' })
     );
+  });
+});
+
+describe('AlertZeroPublicPlugin conversation template UI registration', () => {
+  const startPlugin = (enabled: boolean) => {
+    const plugin = new AlertZeroPublicPlugin(createContext(createConfig({ enabled })));
+    const agentBuilder = agentBuilderMocks.createStart();
+
+    plugin.start(coreMock.createStart(), { agentBuilder } as never);
+
+    return agentBuilder;
+  };
+
+  it('registers the investigation template UI and its tabs when enabled', () => {
+    const { conversationTemplates } = startPlugin(true);
+
+    expect(conversationTemplates.registerTemplateUIDefinition).toHaveBeenCalledWith(
+      'investigation',
+      expect.any(Function)
+    );
+    for (const tabId of getInvestigationTabIds('investigation')) {
+      expect(conversationTemplates.registerTab).toHaveBeenCalledWith(tabId, expect.any(Function));
+    }
+  });
+
+  it('registers nothing when disabled', () => {
+    const { conversationTemplates } = startPlugin(false);
+
+    expect(conversationTemplates.registerTemplateUIDefinition).not.toHaveBeenCalled();
+    expect(conversationTemplates.registerTab).not.toHaveBeenCalled();
   });
 });

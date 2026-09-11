@@ -31,6 +31,8 @@ interface ConversationQueueProps {
   onClickCard: (id: Investigation['id']) => void;
   onClickRecommendedAction: ConversationsActionsGroupProps['onClickRecommendedAction'];
   isFiltered?: boolean;
+  /** Id of the conversation whose details flyout is open, highlighted in the list. */
+  selectedId?: string;
 }
 
 const StyledAccordion = styled(EuiAccordion)`
@@ -56,6 +58,7 @@ export const ConversationQueue = memo<ConversationQueueProps>(
     onClickAction,
     onClickCard,
     onClickRecommendedAction,
+    selectedId,
   }) => {
     const { euiTheme } = useEuiTheme();
     const buttonContent = (
@@ -107,6 +110,7 @@ export const ConversationQueue = memo<ConversationQueueProps>(
                   <ConversationCard
                     investigation={investigation}
                     hasBorder={i < briefingList.length - 1}
+                    isSelected={investigation.id === selectedId}
                     onClickAction={onClickAction}
                     onClickCard={onClickCard}
                     onClickRecommendedAction={onClickRecommendedAction}

@@ -5,67 +5,57 @@
  * 2.0.
  */
 
-import React, { memo } from 'react';
+import React from 'react';
+import { FormattedMessage, FormattedRelative, FormattedTime } from '@kbn/i18n-react';
 import {
-  EuiFlyoutHeader,
-  EuiButtonIcon,
-  EuiToolTip,
-  useEuiTheme,
   EuiFlexGroup,
   EuiFlexItem,
+  EuiSpacer,
+  EuiText,
+  EuiTextTruncate,
+  EuiTitle,
 } from '@elastic/eui';
-import { DETAILS_FLYOUT_LABELS } from './translations';
+import type { Investigation } from '../../types';
+import { InvestigationHeaderBlocks } from './header_blocks';
 
-export const ConversationDetailsFlyoutHeader: React.FC<{ onClose: () => void }> = memo(
-  ({ onClose }) => {
-    const { euiTheme } = useEuiTheme();
-    return (
-      <EuiFlyoutHeader hasBorder css={{ paddingBlock: `${euiTheme.size.m} !important` }}>
-        <EuiFlexGroup direction="row" alignItems="center" justifyContent="flexEnd" gutterSize="s">
-          <EuiFlexItem grow={false}>
-            <EuiToolTip
-              position="top"
-              content={DETAILS_FLYOUT_LABELS.header.flyoutMenu.share}
-              disableScreenReaderOutput
-              display="inlineBlock"
-            >
-              <EuiButtonIcon
-                aria-label={DETAILS_FLYOUT_LABELS.header.flyoutMenu.share}
-                iconType="share"
-                color="text"
-                onClick={() => {
-                  // TODO: Implement if needed
-                }}
-              />
-            </EuiToolTip>
-          </EuiFlexItem>
-          <div
-            style={{
-              display: ' inline-block',
-              width: '1px',
-              height: euiTheme.size.base,
-              background: euiTheme.colors.lightShade,
-            }}
-          />
-          <EuiFlexItem grow={false}>
-            <EuiToolTip
-              position="top"
-              content={DETAILS_FLYOUT_LABELS.header.flyoutMenu.close}
-              disableScreenReaderOutput
-              display="inlineBlock"
-            >
-              <EuiButtonIcon
-                aria-label={DETAILS_FLYOUT_LABELS.header.flyoutMenu.close}
-                iconType="cross"
-                color="text"
-                onClick={onClose}
-              />
-            </EuiToolTip>
-          </EuiFlexItem>
-        </EuiFlexGroup>
-      </EuiFlyoutHeader>
-    );
-  }
-);
+export interface ConversationDetailsFlyoutHeaderProps {
+  investigation: Investigation;
+}
 
-ConversationDetailsFlyoutHeader.displayName = 'ConversationDetailsFlyoutHeader';
+/**
+ * Header slot content. Agent Builder renders this inside its own `EuiFlyoutHeader` and points the
+ * flyout's `aria-labelledby` at it, so the title text has to live here.
+ */
+export const ConversationDetailsFlyoutHeader = ({
+  investigation,
+}: ConversationDetailsFlyoutHeaderProps) => {
+  const { title, createdAt } = investigation;
+
+  return (
+    <>
+      <EuiFlexGroup direction="column" gutterSize="xs">
+        <EuiFlexItem>
+          <EuiTitle size="s">
+            <h2>
+              <EuiTextTruncate text={title} />
+            </h2>
+          </EuiTitle>
+        </EuiFlexItem>
+        <EuiFlexItem>
+          <EuiText size="xs" color="subdued">
+            <FormattedMessage
+              id="xpack.alertzero.detailsFlyout.header.since"
+              defaultMessage="Since {time} ({relative})"
+              values={{
+                time: <FormattedTime value={createdAt} />,
+                relative: <FormattedRelative value={createdAt} />,
+              }}
+            />
+          </EuiText>
+        </EuiFlexItem>
+      </EuiFlexGroup>
+      <EuiSpacer size="m" />
+      <InvestigationHeaderBlocks investigation={investigation} />
+    </>
+  );
+};

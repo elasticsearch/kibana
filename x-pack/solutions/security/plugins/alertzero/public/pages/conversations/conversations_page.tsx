@@ -24,7 +24,7 @@ import {
   type ConversationsActionsGroupProps,
   type BaseActionsProps,
   type CardActionType,
-  ConversationDetailsFlyout,
+  InvestigationDetailsFlyout,
   BlastRadius,
   AssignActionModal,
   BaseActionModal,
@@ -70,13 +70,6 @@ export const ConversationsPage: React.FC = () => {
     [setModalState]
   );
 
-  const onClickCard = useCallback(
-    (id: Investigation['recordId']) => {
-      setSelectedIdForDetails(id);
-    },
-    [setSelectedIdForDetails]
-  );
-
   const onClickRecommendedAction: ConversationsActionsGroupProps['onClickRecommendedAction'] =
     useCallback(
       ({ id }) => {
@@ -85,18 +78,20 @@ export const ConversationsPage: React.FC = () => {
       [setSelectedIdForRecommendedAction]
     );
 
+  const closeDetails = useCallback(() => setSelectedIdForDetails(undefined), []);
+
+  const selectedDetailsConversation = useMemo(
+    () =>
+      selectedIdForDetails ? conversations.find((c) => c.id === selectedIdForDetails) : undefined,
+    [conversations, selectedIdForDetails]
+  );
+
   const selectedRecommendedActionConversation = useMemo(
     () =>
       selectedIdForRecommendedAction
         ? conversations.find((c) => c.id === selectedIdForRecommendedAction)
         : undefined,
     [conversations, selectedIdForRecommendedAction]
-  );
-
-  const selectedDetailsConversation: Investigation | undefined = useMemo(
-    () =>
-      selectedIdForDetails ? conversations.find((c) => c.id === selectedIdForDetails) : undefined,
-    [conversations, selectedIdForDetails]
   );
 
   const sortedConversations = useMemo(
@@ -158,12 +153,10 @@ export const ConversationsPage: React.FC = () => {
         />
       )}
 
-      {selectedIdForDetails && selectedDetailsConversation && (
-        <ConversationDetailsFlyout
+      {selectedDetailsConversation && (
+        <InvestigationDetailsFlyout
           investigation={selectedDetailsConversation}
-          onClose={() => setSelectedIdForDetails(undefined)}
-          onClickAction={onClickAction}
-          onClickRecommendedAction={onClickRecommendedAction}
+          onClose={closeDetails}
         />
       )}
 
@@ -253,7 +246,8 @@ export const ConversationsPage: React.FC = () => {
                   isFiltered={filteredQueueItems.length !== sortedConversations.length}
                   onClickRecommendedAction={onClickRecommendedAction}
                   onClickAction={onClickAction}
-                  onClickCard={onClickCard}
+                  onClickCard={setSelectedIdForDetails}
+                  selectedId={selectedIdForDetails}
                 />
               </EuiFlexItem>
             ))

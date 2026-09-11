@@ -72,6 +72,11 @@ export interface BaseActionsProps {
   isFlyout?: boolean;
   onClickAction: (action: CardActionType, recordId: Investigation['recordId']) => void;
   onClickRecommendedAction?: ConversationsActionsGroupProps['onClickRecommendedAction'];
+  /**
+   * Opens the conversation in chat. Required when rendering outside a `KibanaContextProvider`
+   * (e.g. an Agent Builder flyout slot), where the default `useOpenInChat` cannot reach services.
+   */
+  onOpenChat?: () => void;
   'data-test-subj'?: string;
 }
 
@@ -81,12 +86,14 @@ export const BaseActions = memo<BaseActionsProps>(
     isFlyout = false,
     onClickAction,
     onClickRecommendedAction,
+    onOpenChat: onOpenChatOverride,
     'data-test-subj': dataTestSubj,
   }) => {
     const [isOpen, setIsOpen] = useState(false);
     const handleClose = useCallback(() => setIsOpen(false), []);
     const handleToggle = useCallback(() => setIsOpen((prev) => !prev), []);
-    const onOpenChat = useOpenInChat(investigation.id);
+    const openInChat = useOpenInChat(investigation.id);
+    const onOpenChat = onOpenChatOverride ?? openInChat;
 
     const button = isFlyout ? (
       <EuiButton

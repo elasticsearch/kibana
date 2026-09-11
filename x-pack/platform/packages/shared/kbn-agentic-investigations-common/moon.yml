@@ -22,6 +22,9 @@ dependsOn:
   - '@kbn/kibana-react-plugin'
   - '@kbn/agent-builder-browser'
   - '@kbn/agent-builder-common'
+  - '@kbn/flyout-info-blocks'
+  - '@kbn/react-hooks'
+  - '@kbn/test-jest-helpers'
 tags:
   - shared-browser
   - package
