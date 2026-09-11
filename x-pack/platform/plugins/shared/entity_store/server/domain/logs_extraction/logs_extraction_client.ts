@@ -133,12 +133,16 @@ export class LogsExtractionClient {
     this.extractionMode = extractionMode ?? 'single';
   }
 
-  /** Returns the SO update patch for this extraction mode. Each mode writes to its own cursor field
-   * so the two processes do not overwrite each other's position. */
+  /** Maps each extraction mode to its cursor field. single and priority share logExtractionState;
+   * nonPriority has its own field so the two processes do not overwrite each other's position. */
+  private static readonly CURSOR_FIELD: Record<ExtractionMode, keyof EngineDescriptor> = {
+    single: 'logExtractionState',
+    priority: 'logExtractionState',
+    nonPriority: 'nonPriorityLogExtractionState',
+  };
+
   private cursorPatch(state: EngineLogExtractionState): Partial<EngineDescriptor> {
-    return this.extractionMode === 'nonPriority'
-      ? { nonPriorityLogExtractionState: state }
-      : { logExtractionState: state };
+    return { [LogsExtractionClient.CURSOR_FIELD[this.extractionMode]]: state } as Partial<EngineDescriptor>;
   }
 
   private async getLogExtractionConfigAndState(

@@ -2128,6 +2128,29 @@ describe('LogsExtractionClient extraction mode cursor routing', () => {
     expect(updateCalls.every((u) => !('nonPriorityLogExtractionState' in u))).toBe(true);
   });
 
+  it('priority mode writes logExtractionState and resumes from the existing checkpoint', async () => {
+    const { client, mockEngineDescriptorClient } = createContextWithMode('priority');
+    const existingCheckpoint = '2025-01-15T11:30:00.000Z';
+    mockEngineDescriptorClient.findOrThrow.mockResolvedValue(
+      createMockEngineDescriptor('user', {
+        checkpointTimestamp: existingCheckpoint,
+        lastExecutionTimestamp: existingCheckpoint,
+      }) as Awaited<ReturnType<EngineDescriptorClient['findOrThrow']>>
+    );
+    mockIngestEntities.mockResolvedValue(undefined);
+    mockExtractSuccessSequence({ columns: extractionColumns, values: [] });
+
+    await client.extractLogs('user');
+
+    const updateCalls = mockEngineDescriptorClient.update.mock.calls.map(([, update]) => update);
+    // priority shares logExtractionState with single — never touches nonPriorityLogExtractionState.
+    expect(updateCalls.every((u) => !('nonPriorityLogExtractionState' in u))).toBe(true);
+    expect(updateCalls.some((u) => 'logExtractionState' in u)).toBe(true);
+    // The first ES|QL query starts from the existing checkpoint, not from lookbackPeriod.
+    const firstQuery = mockExecuteEsqlQuery.mock.calls[0][0].query;
+    expect(firstQuery).toContain(existingCheckpoint);
+  });
+
   it('nonPriority with a live logExtractionState checkpoint starts from lookbackPeriod, not from the priority cursor', async () => {
     // The priority process has a live checkpoint; the non-priority cursor is absent (null).
     // The non-priority client must not read the priority cursor — it starts fresh.
