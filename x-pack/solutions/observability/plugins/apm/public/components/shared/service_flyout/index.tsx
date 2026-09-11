@@ -9,6 +9,7 @@ import { EuiFlyoutBody, EuiPortal, useGeneratedHtmlId } from '@elastic/eui';
 import { i18n } from '@kbn/i18n';
 import React, { useEffect, useState } from 'react';
 import type { Environment } from '../../../../common/environment_rt';
+import type { LatencyAggregationType } from '../../../../common/latency_aggregation_types';
 import type { ServiceNodeData } from '../../../../common/service_map';
 import { ResponsiveFlyout } from '../responsive_flyout';
 import { ServiceFlyoutFooter } from './footer';
@@ -42,6 +43,14 @@ interface ServiceFlyoutProps {
   initialRangeFrom: string;
   initialRangeTo: string;
   initialTransactionType?: string;
+  /** Initial latency aggregation type, e.g. inherited from a rule or the host page. */
+  latencyAggregationType?: LatencyAggregationType;
+  /**
+   * Set by hosts whose surrounding UI is computed from raw documents (Discover):
+   * the key metric charts then stay ES|QL over raw documents for every schema,
+   * so they agree with the host instead of the rollup-based APM chart APIs.
+   */
+  preferDocumentBasedCharts?: boolean;
   onView?: (params: { tabId: ServiceFlyoutTabId }) => void;
   onClose: () => void;
 }
@@ -53,6 +62,8 @@ export function ServiceFlyout({
   initialRangeFrom,
   initialRangeTo,
   initialTransactionType,
+  latencyAggregationType,
+  preferDocumentBasedCharts,
   onView,
   onClose,
 }: ServiceFlyoutProps) {
@@ -87,6 +98,8 @@ export function ServiceFlyout({
             rangeTo={flyoutRange.rangeTo}
             transactionType={transactionType}
             refreshToken={refreshToken}
+            latencyAggregationType={latencyAggregationType}
+            preferDocumentBasedCharts={preferDocumentBasedCharts}
             onTransactionTypeChange={setTransactionType}
             onEnvironmentChange={setFlyoutEnvironment}
             onRangeChange={setFlyoutRange}

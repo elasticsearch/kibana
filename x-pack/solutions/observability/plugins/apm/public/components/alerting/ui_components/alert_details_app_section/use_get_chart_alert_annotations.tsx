@@ -20,7 +20,7 @@ import { useEuiTheme } from '@elastic/eui';
 import { isAnomalyRuleType } from './helpers';
 
 interface UseGetChartAlertAnnotationsProps {
-  alert: TopAlert;
+  alert?: TopAlert;
   dateFormat: string;
   showAnnotations: boolean;
   /** Include the threshold rect/line in the annotations. Defaults to `showAnnotations`. */
@@ -39,7 +39,7 @@ export const useGetChartAlertAnnotations = ({
 }: UseGetChartAlertAnnotationsProps): ReactElement[] | undefined => {
   const { euiTheme } = useEuiTheme();
 
-  if (!showAnnotations && customAlertEvaluationThreshold == null) return undefined;
+  if (!alert || (!showAnnotations && customAlertEvaluationThreshold == null)) return undefined;
 
   const includeThreshold =
     showThresholdAnnotation ?? (showAnnotations || customAlertEvaluationThreshold != null);

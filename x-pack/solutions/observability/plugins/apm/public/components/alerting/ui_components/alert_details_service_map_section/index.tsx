@@ -15,7 +15,8 @@ import {
   EuiTitle,
 } from '@elastic/eui';
 import { i18n } from '@kbn/i18n';
-import { ALERT_END, ALERT_START } from '@kbn/rule-data-utils';
+import type { ApmRuleType } from '@kbn/rule-data-utils';
+import { ALERT_END, ALERT_RULE_TYPE_ID, ALERT_START } from '@kbn/rule-data-utils';
 import { getPaddedAlertTimeRange } from '@kbn/observability-get-padded-alert-time-range-util';
 import {
   SERVICE_ENVIRONMENT,
@@ -26,9 +27,14 @@ import {
 import { ApmEmbeddableContext } from '../../../../embeddable/embeddable_context';
 import { ServiceMapEmbeddable } from '../../../../embeddable/service_map/service_map_embeddable';
 import { getServiceMapUrl } from '../../../../embeddable/service_map/get_service_map_url';
-import { SERVICE_FLYOUT_SOURCES } from '../../../shared/service_flyout/constants';
 import { useApmEmbeddableDeps } from '../../context/apm_embeddable_deps_context';
 import type { AlertDetailsAppSectionProps } from '../alert_details_app_section/types';
+import {
+  getAggsTypeFromRule,
+  getAlertDetailsRangeStart,
+  getAnomalyTimestamp,
+  isAnomalyRuleType,
+} from '../alert_details_app_section/helpers';
 import { getServiceMapTimeRange } from './get_service_map_time_range';
 import { buildKueryFromAlert, buildFiltersFromAlert } from './build_alert_filters';
 
@@ -43,7 +49,7 @@ const EXPLORE_IN_SERVICE_MAP_LABEL = i18n.translate(
 
 const EMBEDDABLE_HEIGHT = 400;
 
-export function AlertDetailsServiceMapSection({ alert }: AlertDetailsAppSectionProps) {
+export function AlertDetailsServiceMapSection({ alert, rule }: AlertDetailsAppSectionProps) {
   const embeddableDeps = useApmEmbeddableDeps();
 
   const serviceName =
@@ -88,8 +94,18 @@ export function AlertDetailsServiceMapSection({ alert }: AlertDetailsAppSectionP
       ? transactionTypeField[0]
       : transactionTypeField;
 
-    const paddedRange = alertStart
-      ? getPaddedAlertTimeRange(String(alertStart), alertEnd != null ? String(alertEnd) : undefined)
+    // Anchor the padded window like the alert details charts do: for anomaly alerts
+    // the range starts at the anomaly timestamp, so the flyout covers the same window.
+    const rangeStart = alertStart
+      ? getAlertDetailsRangeStart({
+          alertStart: String(alertStart),
+          isAnomaly: isAnomalyRuleType(alert.fields[ALERT_RULE_TYPE_ID] as ApmRuleType),
+          anomalyTimestamp: getAnomalyTimestamp(alert),
+        })
+      : undefined;
+
+    const paddedRange = rangeStart
+      ? getPaddedAlertTimeRange(rangeStart, alertEnd != null ? String(alertEnd) : undefined)
       : undefined;
 
     return {
@@ -97,9 +113,10 @@ export function AlertDetailsServiceMapSection({ alert }: AlertDetailsAppSectionP
       initialTransactionType: rawTransactionType != null ? String(rawTransactionType) : undefined,
       rangeFrom: paddedRange?.from,
       rangeTo: paddedRange?.to,
-      source: SERVICE_FLYOUT_SOURCES.alertDetails,
+      // Inherit the rule's aggregation so e.g. a p95 latency rule opens a p95 flyout chart.
+      latencyAggregationType: getAggsTypeFromRule(rule.params.aggregationType ?? 'avg'),
     };
-  }, [alert, alertStart, alertEnd]);
+  }, [alert, rule.params.aggregationType, alertStart, alertEnd]);
 
   const [hasNoServices, setHasNoServices] = useState(false);
 

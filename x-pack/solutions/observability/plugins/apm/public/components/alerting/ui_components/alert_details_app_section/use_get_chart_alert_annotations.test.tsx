@@ -47,6 +47,19 @@ describe('useGetChartAlertAnnotations', () => {
     expect(result.current).toHaveLength(4);
   });
 
+  it('returns undefined without an alert, even when showAnnotations is true', () => {
+    const { result } = renderHook(() =>
+      useGetChartAlertAnnotations({
+        alert: undefined,
+        showAnnotations: true,
+        customAlertEvaluationThreshold: 1500,
+        dateFormat: DATE_FORMAT,
+      })
+    );
+
+    expect(result.current).toBeUndefined();
+  });
+
   it('returns undefined when showAnnotations is false and no custom threshold', () => {
     const alert = createMockAlert();
 

@@ -8,7 +8,7 @@
 import { expect } from '@kbn/scout-oblt/ui';
 import { tags } from '@kbn/scout-oblt';
 import { test, testData } from '../../fixtures';
-import { assertFlyoutChartsRendered } from '../../fixtures/service_flyout_helpers';
+import { assertFlyoutApmChartsRendered } from '../../fixtures/service_flyout_helpers';
 import {
   DEPENDENCY_POSTGRESQL,
   EDGE_OPBEANS_JAVA_TO_POSTGRESQL,
@@ -80,11 +80,7 @@ test.describe(
       expect(flyoutTitle).toContain(SERVICE_OPBEANS_JAVA);
       await expect(serviceFlyoutPage.content).toBeVisible();
 
-      await assertFlyoutChartsRendered(serviceFlyoutPage, [
-        'latency',
-        'throughput',
-        'failedTransactionRate',
-      ]);
+      await assertFlyoutApmChartsRendered(serviceFlyoutPage);
 
       await expect(serviceFlyoutPage.transactionsSection).toBeVisible({
         timeout: EXTENDED_TIMEOUT,

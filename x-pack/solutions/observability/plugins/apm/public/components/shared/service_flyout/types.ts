@@ -6,6 +6,7 @@
  */
 
 import type { ServiceFlyoutSource } from './constants';
+import type { LatencyAggregationType } from '../../../../common/latency_aggregation_types';
 
 export interface ServiceFlyoutOptions {
   initialTransactionType?: string;
@@ -13,4 +14,6 @@ export interface ServiceFlyoutOptions {
   rangeTo?: string;
   kuery?: string;
   source?: ServiceFlyoutSource;
+  /** Initial latency aggregation type, e.g. inherited from a rule or the host page. */
+  latencyAggregationType?: LatencyAggregationType;
 }

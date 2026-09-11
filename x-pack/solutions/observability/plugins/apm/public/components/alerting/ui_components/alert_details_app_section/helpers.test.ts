@@ -8,14 +8,41 @@
 import { ML_ANOMALY_SEVERITY } from '@kbn/ml-anomaly-utils/anomaly_severity';
 import { ML_ANOMALY_THRESHOLD } from '@kbn/ml-anomaly-utils/anomaly_threshold';
 import { AnomalyDetectorType } from '../../../../../common/anomaly_detection/apm_ml_detectors';
+import type { TopAlert } from '@kbn/observability-plugin/public';
+import { ANOMALY_TIMESTAMP } from '../../../../../common/es_fields/apm';
 import {
   formatAnomalyCalloutBody,
   formatAnomalyCalloutTitle,
   getAlertDetailsRangeStart,
   getAnomalyCalloutColor,
+  getAnomalyTimestamp,
 } from './helpers';
 
 describe('alert details anomaly helpers', () => {
+  describe('getAnomalyTimestamp', () => {
+    const makeAlert = (anomalyTimestamp?: unknown): TopAlert =>
+      ({ fields: { [ANOMALY_TIMESTAMP]: anomalyTimestamp } } as unknown as TopAlert);
+
+    it('parses an ISO string into epoch millis', () => {
+      expect(getAnomalyTimestamp(makeAlert('2026-07-16T09:00:00.000Z'))).toBe(
+        new Date('2026-07-16T09:00:00.000Z').getTime()
+      );
+    });
+
+    it('accepts an epoch millis number', () => {
+      expect(getAnomalyTimestamp(makeAlert(1750000000000))).toBe(1750000000000);
+    });
+
+    it('returns undefined when the field is missing', () => {
+      expect(getAnomalyTimestamp(makeAlert(undefined))).toBeUndefined();
+      expect(getAnomalyTimestamp(makeAlert(null))).toBeUndefined();
+    });
+
+    it('returns undefined when the field is not a parseable date', () => {
+      expect(getAnomalyTimestamp(makeAlert('not-a-date'))).toBeUndefined();
+    });
+  });
+
   describe('getAlertDetailsRangeStart', () => {
     const alertStart = '2026-07-16T10:00:00.000Z';
 

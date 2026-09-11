@@ -8,7 +8,15 @@
 import { expect } from '@kbn/scout-oblt/ui';
 import type { ServiceFlyoutPage } from './page_objects/service_flyout';
 
-export async function assertFlyoutChartsRendered(
+/** Classic APM services (ECS/unknown schema, non-Discover host). */
+export async function assertFlyoutApmChartsRendered(
+  serviceFlyoutPage: ServiceFlyoutPage
+): Promise<void> {
+  await expect(serviceFlyoutPage.apmCharts).toBeVisible();
+}
+
+/** OTel services and document-based hosts (Discover) render ES|QL Lens charts. */
+export async function assertFlyoutLensChartsRendered(
   serviceFlyoutPage: ServiceFlyoutPage,
   ids: string[]
 ): Promise<void> {

@@ -23,6 +23,7 @@ import {
   isRumAgentName,
 } from '../../../../../common/agent_name';
 import type { AgentName } from '../../../../../typings/es_schemas/ui/fields/agent';
+import type { LatencyAggregationType } from '../../../../../common/latency_aggregation_types';
 
 export function TransactionCharts({
   kuery,
@@ -34,6 +35,7 @@ export function TransactionCharts({
   isServerlessContext,
   comparisonEnabled,
   offset,
+  latencyAggregationType,
 }: {
   kuery: string;
   environment: string;
@@ -44,6 +46,7 @@ export function TransactionCharts({
   isServerlessContext?: boolean;
   comparisonEnabled?: boolean;
   offset?: string;
+  latencyAggregationType?: LatencyAggregationType;
 }) {
   // The default EuiFlexGroup breaks at 768, but we want to break at 1200
   const { isLarge } = useBreakpoints();

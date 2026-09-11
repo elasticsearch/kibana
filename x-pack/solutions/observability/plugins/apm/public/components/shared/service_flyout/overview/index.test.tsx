@@ -51,6 +51,13 @@ jest.mock('./lens_chart', () => ({
   ServiceFlyoutLensChart: () => <div data-test-subj="lensChartMock" />,
 }));
 
+const mockServiceFlyoutApmCharts = jest.fn((_props: unknown) => (
+  <div data-test-subj="apmChartsMock" />
+));
+jest.mock('./apm_charts', () => ({
+  ServiceFlyoutApmCharts: (props: unknown) => mockServiceFlyoutApmCharts(props as never),
+}));
+
 const service: ServiceNodeData = {
   id: 'opbeans-java',
   label: 'opbeans-java',
@@ -72,7 +79,9 @@ const defaultProps = {
   onTransactionTypeChange: jest.fn(),
 };
 
-function renderOverview(overrides: Partial<typeof defaultProps> = {}) {
+function renderOverview(
+  overrides: Partial<React.ComponentProps<typeof ServiceFlyoutOverview>> = {}
+) {
   return render(
     <IntlProvider locale="en">
       <ServiceFlyoutOverview {...defaultProps} {...overrides} />
@@ -83,6 +92,40 @@ function renderOverview(overrides: Partial<typeof defaultProps> = {}) {
 beforeEach(() => {
   jest.clearAllMocks();
   transactionsSectionProps = null;
+});
+
+describe('ServiceFlyoutOverview key metrics chart implementation', () => {
+  it('renders the shared APM chart components for classic APM (non-OTel) services', () => {
+    mockUseServiceHasSystemMetrics.mockReturnValue({ hasSystemMetrics: false, isLoading: false });
+    renderOverview({ service: { ...service, agentName: 'java' } });
+
+    expect(screen.getByTestId('apmChartsMock')).toBeInTheDocument();
+    expect(screen.queryByTestId('lensChartMock')).not.toBeInTheDocument();
+    expect(screen.getByTestId('serviceFlyoutSection-keyMetrics')).toBeInTheDocument();
+  });
+
+  it('keeps the ES|QL Lens charts for OTel services', () => {
+    mockUseServiceHasSystemMetrics.mockReturnValue({ hasSystemMetrics: false, isLoading: false });
+    renderOverview({ service: { ...service, agentName: 'opentelemetry/nodejs' } });
+
+    expect(screen.queryByTestId('apmChartsMock')).not.toBeInTheDocument();
+  });
+
+  it('keeps the ES|QL Lens charts in document-based hosts (Discover)', () => {
+    mockUseServiceHasSystemMetrics.mockReturnValue({ hasSystemMetrics: false, isLoading: false });
+    renderOverview({ preferDocumentBasedCharts: true });
+
+    expect(screen.queryByTestId('apmChartsMock')).not.toBeInTheDocument();
+  });
+
+  it('seeds the latency aggregation type from the flyout options', () => {
+    mockUseServiceHasSystemMetrics.mockReturnValue({ hasSystemMetrics: false, isLoading: false });
+    renderOverview({ latencyAggregationType: 'p95' as any });
+
+    expect(mockServiceFlyoutApmCharts).toHaveBeenCalledWith(
+      expect.objectContaining({ latencyAggregationType: 'p95' })
+    );
+  });
 });
 
 describe('ServiceFlyoutOverview transactions section props', () => {

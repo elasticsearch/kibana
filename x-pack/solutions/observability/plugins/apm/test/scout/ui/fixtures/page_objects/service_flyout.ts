@@ -15,6 +15,7 @@ export class ServiceFlyoutPage {
   public readonly actions: Locator;
   public readonly transactionsSection: Locator;
   public readonly transactionSparklines: Locator;
+  public readonly apmCharts: Locator;
 
   constructor(private readonly page: ScoutPage) {
     this.flyout = page.testSubj.locator('serviceFlyout');
@@ -25,6 +26,7 @@ export class ServiceFlyoutPage {
     this.transactionSparklines = this.transactionsSection.locator(
       '[data-test-subj="transactionSparklineChart"]'
     );
+    this.apmCharts = page.testSubj.locator('serviceFlyoutApmCharts');
   }
 
   getChartLocator(id: string): Locator {
