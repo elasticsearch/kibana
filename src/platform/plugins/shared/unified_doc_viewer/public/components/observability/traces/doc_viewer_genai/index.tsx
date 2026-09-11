@@ -42,7 +42,11 @@ export function DocViewerObsTracesGenAi({
 }: DocViewRenderProps) {
   const [containerRef, setContainerRef] = useState<HTMLDivElement | null>(null);
   const isEsqlMode = Array.isArray(textBasedHits);
-  const { genAi, loading, unrecoverableLongFields } = useGenAiData({ hit, isEsqlMode });
+  const { genAi, loading, unrecoverableLongFields } = useGenAiData({
+    hit,
+    isEsqlMode,
+    indexPattern: dataView?.getIndexPattern(),
+  });
 
   const containerHeight = containerRef
     ? getTabContentAvailableHeight(containerRef, decreaseAvailableHeightBy)

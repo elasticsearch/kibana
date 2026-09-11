@@ -29,6 +29,7 @@ jest.mock('./genai_details_table', () => ({
 }));
 
 const HINT = 'unifiedDocViewerObsTracesGenAiMetadataHint';
+const INDEX_PATTERN = 'traces-apm*,traces-*.otel-*';
 
 const emptyConversation = {
   inputMessages: [],
@@ -46,16 +47,22 @@ function buildHit({ _id, _index }: { _id?: string; _index?: string }): DataTable
   } as unknown as DataTableRecord;
 }
 
+function buildDataView(indexPattern = INDEX_PATTERN): DataView {
+  return { getIndexPattern: () => indexPattern } as unknown as DataView;
+}
+
 function renderTab({
   hit,
   textBasedHits,
   genAi = emptyConversation,
   unrecoverableLongFields = false,
+  dataView = buildDataView(),
 }: {
   hit: DataTableRecord;
   textBasedHits?: DataTableRecord[];
   genAi?: unknown;
   unrecoverableLongFields?: boolean;
+  dataView?: DataView;
 }) {
   (useGenAiData as jest.Mock).mockReturnValue({
     genAi,
@@ -67,7 +74,7 @@ function renderTab({
   return renderWithI18n(
     <DocViewerObsTracesGenAi
       hit={hit}
-      dataView={{} as DataView}
+      dataView={dataView}
       textBasedHits={textBasedHits}
       columns={[]}
     />
@@ -83,14 +90,22 @@ describe('DocViewerObsTracesGenAi', () => {
     const hit = buildHit({});
     renderTab({ hit, textBasedHits: [] });
 
-    expect(useGenAiData).toHaveBeenCalledWith({ hit, isEsqlMode: true });
+    expect(useGenAiData).toHaveBeenCalledWith({
+      hit,
+      isEsqlMode: true,
+      indexPattern: INDEX_PATTERN,
+    });
   });
 
   it('passes isEsqlMode false to the hook in DSL mode', () => {
     const hit = buildHit({ _id: 'doc-1', _index: 'traces-otel' });
     renderTab({ hit });
 
-    expect(useGenAiData).toHaveBeenCalledWith({ hit, isEsqlMode: false });
+    expect(useGenAiData).toHaveBeenCalledWith({
+      hit,
+      isEsqlMode: false,
+      indexPattern: INDEX_PATTERN,
+    });
   });
 
   it('hints at METADATA when long fields cannot be recovered and no conversation rendered', () => {
@@ -122,7 +137,7 @@ describe('DocViewerObsTracesGenAi', () => {
     renderWithI18n(
       <DocViewerObsTracesGenAi
         hit={buildHit({ _id: 'doc-1', _index: 'traces-otel' })}
-        dataView={{} as DataView}
+        dataView={buildDataView()}
         columns={[]}
       />
     );
@@ -142,7 +157,7 @@ describe('DocViewerObsTracesGenAi', () => {
     renderWithI18n(
       <DocViewerObsTracesGenAi
         hit={buildHit({ _id: 'doc-1', _index: 'traces-otel' })}
-        dataView={{} as DataView}
+        dataView={buildDataView()}
         columns={[]}
       />
     );

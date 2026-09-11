@@ -371,9 +371,10 @@ describe('useGenAiData', () => {
     expect(result.current.genAi?.inputMessages[1].content).toHaveLength(2000);
   });
 
-  it('flags a partial array as unrecoverable when the row has no _id/_index', () => {
-    // Reproduces `FROM traces-* | WHERE ... | SORT ...` with no METADATA: the
-    // short message renders, the long one is gone, and nothing can be fetched.
+  it('flags a partial array as unrecoverable when the row has no _id/_index and no span.id', () => {
+    // Reproduces `FROM traces-* | WHERE ... | SORT ... | KEEP @timestamp, ...`
+    // with span.id projected away: the short message renders, the long one is
+    // gone, and nothing can be fetched.
     const { result } = renderHook(() =>
       useGenAiData({
         hit: buildHit({
@@ -415,7 +416,7 @@ describe('useGenAiData', () => {
     expect(mockSearch).not.toHaveBeenCalled();
   });
 
-  it('does not fetch in ES|QL mode when the row has no _id/_index', () => {
+  it('does not fetch in ES|QL mode when the row has no _id/_index and no span.id', () => {
     const { result } = renderHook(() =>
       useGenAiData({
         hit: buildHit({
@@ -545,6 +546,7 @@ describe('useGenAiData', () => {
         params: {
           index: '.ds-traces-otel-default-000001',
           size: 1,
+          track_total_hits: false,
           query: { bool: { filter: [{ ids: { values: ['span-42'] } }] } },
           // Asserted against the constant so adding a long field here does not
           // break this test.
@@ -553,5 +555,183 @@ describe('useGenAiData', () => {
       },
       expect.objectContaining({ abortSignal: expect.anything() })
     );
+  });
+
+  // ---------------------------------------------------------------------------
+  // span.id fallback: ES|QL without METADATA _id, _index
+  // ---------------------------------------------------------------------------
+
+  it('fetches by span.id when _id and _index are absent but span.id + indexPattern are available', async () => {
+    const longMessage = '{"role":"user","content":"' + 'f'.repeat(2000) + '"}';
+    mockSearch.mockReturnValue(
+      of({
+        rawResponse: {
+          hits: { hits: [{ _source: { attributes: { 'gen_ai.input.messages': [longMessage] } } }] },
+        },
+      })
+    );
+
+    const { result } = renderHook(() =>
+      useGenAiData({
+        hit: buildHit({
+          flattened: {
+            'attributes.gen_ai.request.model': ['gpt-4o'],
+            [INPUT_MESSAGES_FIELD]: null,
+            'span.id': 'a1b2c3d4e5f60718',
+            'trace.id': 'trace-xyz',
+          },
+          _id: null,
+          _index: null,
+        }),
+        isEsqlMode: true,
+        indexPattern: 'traces-apm*,traces-*.otel-*',
+      })
+    );
+
+    await waitFor(() => expect(result.current.loading).toBe(false));
+
+    expect(mockSearch).toHaveBeenCalledTimes(1);
+    expect(result.current.unrecoverableLongFields).toBe(false);
+    expect(result.current.genAi?.inputMessages[0].content).toHaveLength(2000);
+  });
+
+  it('requests the document by span.id + trace.id and asks only for the long fields', async () => {
+    mockSearch.mockReturnValue(of({ rawResponse: { hits: { hits: [] } } }));
+
+    const { result } = renderHook(() =>
+      useGenAiData({
+        hit: buildHit({
+          flattened: {
+            'attributes.gen_ai.request.model': ['gpt-4o'],
+            [INPUT_MESSAGES_FIELD]: null,
+            'span.id': 'abc123def456',
+            'trace.id': 'trace-abc',
+          },
+          _id: null,
+          _index: null,
+        }),
+        isEsqlMode: true,
+        indexPattern: 'traces-apm*,traces-*.otel-*',
+      })
+    );
+
+    await waitFor(() => expect(result.current.loading).toBe(false));
+
+    expect(mockSearch).toHaveBeenCalledWith(
+      {
+        params: {
+          index: 'traces-apm*,traces-*.otel-*',
+          size: 1,
+          track_total_hits: false,
+          query: {
+            bool: {
+              filter: [
+                { term: { 'span.id': 'abc123def456' } },
+                { term: { 'trace.id': 'trace-abc' } },
+              ],
+            },
+          },
+          _source: [...GEN_AI_LONG_MESSAGE_FIELDS],
+        },
+      },
+      expect.objectContaining({ abortSignal: expect.anything() })
+    );
+  });
+
+  it('recovers a partial array via span.id in ES|QL mode', async () => {
+    const shortMessage = '{"role":"system","content":"be brief"}';
+    const longMessage = '{"role":"user","content":"' + 'g'.repeat(2000) + '"}';
+    mockSearch.mockReturnValue(
+      of({
+        rawResponse: {
+          hits: {
+            hits: [
+              { _source: { attributes: { 'gen_ai.input.messages': [shortMessage, longMessage] } } },
+            ],
+          },
+        },
+      })
+    );
+
+    const { result } = renderHook(() =>
+      useGenAiData({
+        hit: buildHit({
+          flattened: {
+            'attributes.gen_ai.request.model': ['gpt-4o'],
+            [INPUT_MESSAGES_FIELD]: [shortMessage],
+            'span.id': 'partial-span',
+          },
+          _id: null,
+          _index: null,
+        }),
+        isEsqlMode: true,
+        indexPattern: 'traces-apm*',
+      })
+    );
+
+    await waitFor(() => expect(result.current.loading).toBe(false));
+
+    expect(mockSearch).toHaveBeenCalledTimes(1);
+    expect(result.current.unrecoverableLongFields).toBe(false);
+    expect(result.current.genAi?.inputMessages).toHaveLength(2);
+    expect(result.current.genAi?.inputMessages[1].content).toHaveLength(2000);
+  });
+
+  it('remains unrecoverable when no span.id and no _id are available', () => {
+    // e.g. the query projected span.id away with `| KEEP @timestamp, service.name`
+    const { result } = renderHook(() =>
+      useGenAiData({
+        hit: buildHit({
+          flattened: {
+            'attributes.gen_ai.request.model': ['gpt-4o'],
+            [INPUT_MESSAGES_FIELD]: null,
+          },
+          _id: null,
+          _index: null,
+        }),
+        isEsqlMode: true,
+        indexPattern: 'traces-apm*',
+      })
+    );
+
+    expect(result.current.unrecoverableLongFields).toBe(true);
+    expect(mockSearch).not.toHaveBeenCalled();
+  });
+
+  it('does not re-fetch when re-rendered through the span.id path', async () => {
+    const longMessage = '{"role":"user","content":"' + 's'.repeat(2000) + '"}';
+    mockSearch.mockReturnValue(
+      of({
+        rawResponse: {
+          hits: { hits: [{ _source: { attributes: { 'gen_ai.input.messages': [longMessage] } } }] },
+        },
+      })
+    );
+
+    const { result, rerender } = renderHook(() =>
+      useGenAiData({
+        hit: buildHit({
+          flattened: {
+            'attributes.gen_ai.request.model': ['gpt-4o'],
+            [INPUT_MESSAGES_FIELD]: null,
+            'span.id': 'stable-span',
+          },
+          _id: null,
+          _index: null,
+        }),
+        isEsqlMode: true,
+        indexPattern: 'traces-apm*',
+      })
+    );
+
+    await waitFor(() => expect(result.current.loading).toBe(false));
+    expect(mockSearch).toHaveBeenCalledTimes(1);
+
+    rerender();
+    await waitFor(() => expect(result.current.loading).toBe(false));
+
+    // The cacheKey stayed the same, so no second fetch should have fired.
+    expect(mockSearch).toHaveBeenCalledTimes(1);
+    expect(result.current.genAi?.inputMessages[0].content).toHaveLength(2000);
   });
 });
