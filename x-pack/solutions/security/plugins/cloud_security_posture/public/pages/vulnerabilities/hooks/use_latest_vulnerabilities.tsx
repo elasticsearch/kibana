@@ -98,9 +98,12 @@ export const useLatestVulnerabilities = (options: VulnerabilitiesQuery) => {
       const {
         rawResponse: { hits },
       } = await lastValueFrom(
-        data.search.search<LatestFindingsRequest, LatestFindingsResponse>({
-          params: getVulnerabilitiesQuery(options, pageParam) as LatestFindingsRequest['params'],
-        })
+        data.search.search<LatestFindingsRequest, LatestFindingsResponse>(
+          {
+            params: getVulnerabilitiesQuery(options, pageParam) as LatestFindingsRequest['params'],
+          },
+          { projectRouting: '_alias:_origin' }
+        )
       );
 
       return {

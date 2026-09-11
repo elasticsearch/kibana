@@ -45,9 +45,12 @@ export const useVulnerabilitiesPreview = (options: UseCspOptions) => {
       const {
         rawResponse: { aggregations },
       } = await lastValueFrom(
-        data.search.search<LatestFindingsRequest, LatestFindingsResponse>({
-          params: getVulnerabilitiesQuery(options, true) as LatestFindingsRequest['params'],
-        })
+        data.search.search<LatestFindingsRequest, LatestFindingsResponse>(
+          {
+            params: getVulnerabilitiesQuery(options, true) as LatestFindingsRequest['params'],
+          },
+          { projectRouting: '_alias:_origin' }
+        )
       );
 
       return {

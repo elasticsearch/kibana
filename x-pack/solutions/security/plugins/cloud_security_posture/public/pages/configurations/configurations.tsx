@@ -13,6 +13,10 @@ import { CDR_MISCONFIGURATIONS_DATA_VIEW_ID_PREFIX } from '@kbn/cloud-security-p
 import { findingsNavigation } from '@kbn/cloud-security-posture';
 import { useDataView } from '@kbn/cloud-security-posture/src/hooks/use_data_view';
 import { EuiSpacer } from '@elastic/eui';
+import { ProjectRoutingAccess, useRouteBasedCpsPickerAccess } from '@kbn/cps-utils';
+import type { CPSPluginStart } from '@kbn/cps/public';
+import { useKibana } from '@kbn/kibana-react-plugin/public';
+import type { CoreStart } from '@kbn/core/public';
 import { NoFindingsStates } from '../../components/no_findings_states';
 import { CloudPosturePage, defaultLoadingRenderer } from '../../components/cloud_posture_page';
 import { cloudPosturePages } from '../../common/navigation/constants';
@@ -24,6 +28,8 @@ export const Configurations = () => {
   const location = useLocation();
   const dataViewQuery = useDataView(CDR_MISCONFIGURATIONS_DATA_VIEW_ID_PREFIX);
   const { data: getSetupStatus, isLoading: getSetupStatusIsLoading } = useCspSetupStatusApi();
+  const { application, cps } = useKibana<CoreStart & { cps?: CPSPluginStart }>().services;
+  useRouteBasedCpsPickerAccess(ProjectRoutingAccess.DISABLED, { application, cps });
   const hasMisconfigurationsFindings = !!getSetupStatus?.hasMisconfigurationsFindings;
 
   const hasFindings =

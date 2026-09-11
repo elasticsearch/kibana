@@ -24,6 +24,10 @@ import { i18n } from '@kbn/i18n';
 import { pagePathGetters } from '@kbn/fleet-plugin/public';
 import { extractErrorMessage } from '@kbn/cloud-security-posture-common';
 import { useCspSetupStatusApi } from '@kbn/cloud-security-posture/src/hooks/use_csp_setup_status_api';
+import { ProjectRoutingAccess, useRouteBasedCpsPickerAccess } from '@kbn/cps-utils';
+import type { CPSPluginStart } from '@kbn/cps/public';
+import type { CoreStart } from '@kbn/core/public';
+import { useKibana as useKibanaBase } from '@kbn/kibana-react-plugin/public';
 import { CLOUD_SECURITY_POSTURE_PACKAGE_NAME } from '../../../common/constants';
 import { CloudPosturePageTitle } from '../../components/cloud_posture_page_title';
 import { CloudPosturePage } from '../../components/cloud_posture_page';
@@ -172,6 +176,9 @@ const BenchmarkSearchField = ({
 
 export const Benchmarks = () => {
   const { pageSize, setPageSize } = usePageSize(LOCAL_STORAGE_PAGE_SIZE_BENCHMARK_KEY);
+  const { application, cps } = useKibanaBase<CoreStart & { cps?: CPSPluginStart }>().services;
+  useRouteBasedCpsPickerAccess(ProjectRoutingAccess.DISABLED, { application, cps });
+
   const [query, setQuery] = useState<UseCspBenchmarkIntegrationsProps>({
     name: '',
     page: 1,

@@ -34,7 +34,8 @@
       "spaces"
     ],
     "optionalPlugins": [
-      "usageCollection"
+      "usageCollection",
+      "cps"
     ],
     "requiredBundles": [
       "kibanaReact",

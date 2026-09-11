@@ -94,13 +94,16 @@ export const useLatestFindings = (options: UseFindingsOptions) => {
       const {
         rawResponse: { hits, aggregations },
       } = await lastValueFrom(
-        data.search.search<LatestFindingsRequest, LatestFindingsResponse>({
-          params: getFindingsQuery(
-            options,
-            rulesStates!,
-            pageParam
-          ) as LatestFindingsRequest['params'], // ruleStates always exists since it under the `enabled` dependency.
-        })
+        data.search.search<LatestFindingsRequest, LatestFindingsResponse>(
+          {
+            params: getFindingsQuery(
+              options,
+              rulesStates!,
+              pageParam
+            ) as LatestFindingsRequest['params'], // ruleStates always exists since it under the `enabled` dependency.
+          },
+          { projectRouting: '_alias:_origin' }
+        )
       );
       if (!aggregations) throw new Error('expected aggregations to be an defined');
       if (!Array.isArray(aggregations.count.buckets))

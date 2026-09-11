@@ -53,9 +53,12 @@ export const useGroupedFindings = ({
         data.search.search<
           {},
           IKibanaSearchResponse<SearchResponse<{}, FindingsRootGroupingAggregation>>
-        >({
-          params: getGroupedFindingsQuery(query),
-        })
+        >(
+          {
+            params: getGroupedFindingsQuery(query),
+          },
+          { projectRouting: '_alias:_origin' }
+        )
       );
 
       if (!aggregations) throw new Error('Failed to aggregate by, missing resource id');

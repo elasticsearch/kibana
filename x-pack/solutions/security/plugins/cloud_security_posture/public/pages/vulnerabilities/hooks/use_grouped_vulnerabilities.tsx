@@ -46,9 +46,12 @@ export const useGroupedVulnerabilities = ({
         data.search.search<
           {},
           IKibanaSearchResponse<SearchResponse<{}, VulnerabilitiesRootGroupingAggregation>>
-        >({
-          params: getGroupedVulnerabilitiesQuery(query),
-        })
+        >(
+          {
+            params: getGroupedVulnerabilitiesQuery(query),
+          },
+          { projectRouting: '_alias:_origin' }
+        )
       );
 
       if (!aggregations) throw new Error('Failed to aggregate by, missing resource id');

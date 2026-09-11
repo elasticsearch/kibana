@@ -75,13 +75,16 @@ export const useMisconfigurationFindings = (options: UseCspOptions) => {
       const {
         rawResponse: { hits, aggregations },
       } = await lastValueFrom(
-        data.search.search<LatestFindingsRequest, LatestFindingsResponse>({
-          params: buildMisconfigurationsFindingsQuery(
-            options,
-            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-            rulesStates!
-          ) as LatestFindingsRequest['params'],
-        })
+        data.search.search<LatestFindingsRequest, LatestFindingsResponse>(
+          {
+            params: buildMisconfigurationsFindingsQuery(
+              options,
+              // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+              rulesStates!
+            ) as LatestFindingsRequest['params'],
+          },
+          { projectRouting: '_alias:_origin' }
+        )
       );
       if (!aggregations && options.ignore_unavailable === false)
         throw new Error('expected aggregations to be defined');

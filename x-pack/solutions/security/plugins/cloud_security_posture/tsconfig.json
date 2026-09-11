@@ -80,6 +80,8 @@
     "@kbn/entity-store",
     "@kbn/logging-mocks",
     "@kbn/core-spaces-common",
+    "@kbn/cps",
+    "@kbn/cps-utils",
     "@kbn/es-errors",
     "@kbn/app-header"
   ],
