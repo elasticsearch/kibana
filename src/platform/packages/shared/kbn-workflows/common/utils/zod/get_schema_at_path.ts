@@ -49,12 +49,26 @@ export function getSchemaAtPath(
         const shape = current.shape;
         // `in` walks the prototype chain, so `__proto__` / `constructor` / `toString`
         // would resolve to an Object.prototype member instead of a zod schema.
-        if (!Object.hasOwn(shape, segment)) {
-          return partial
-            ? { schema: current, scopedToPath: segments.slice(0, index).join('.') }
-            : { schema: null, scopedToPath: null };
+        if (Object.hasOwn(shape, segment)) {
+          current = shape[segment];
+        } else {
+          // Typed `additionalProperties: { ... }` compiles to a catchall. Skip `never`
+          // (closed object) and `unknown`/`any` (open map) so only described value
+          // shapes are walked.
+          const catchall = current.def.catchall as z.ZodType | undefined;
+          if (
+            catchall &&
+            !(catchall instanceof z.ZodNever) &&
+            !(catchall instanceof z.ZodUnknown) &&
+            !(catchall instanceof z.ZodAny)
+          ) {
+            current = catchall;
+          } else {
+            return partial
+              ? { schema: current, scopedToPath: segments.slice(0, index).join('.') }
+              : { schema: null, scopedToPath: null };
+          }
         }
-        current = shape[segment];
       } else if (current instanceof z.ZodRecord) {
         const valueType = current.valueType;
         const keyType = current.keyType;

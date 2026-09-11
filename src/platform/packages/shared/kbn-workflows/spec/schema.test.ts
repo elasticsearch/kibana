@@ -708,6 +708,24 @@ describe('JsonModelSchema', () => {
     }
   });
 
+  it('should accept additionalProperties as a value schema (typed map)', () => {
+    const inputs = {
+      properties: {
+        rules: {
+          type: 'object',
+          additionalProperties: {
+            type: 'object',
+            properties: { name: { type: 'string' } },
+            required: ['name'],
+            additionalProperties: false,
+          },
+        },
+      },
+    };
+    const result = JsonModelSchema.safeParse(inputs);
+    expect(result.success).toBe(true);
+  });
+
   it('should validate a nested JSON Schema inputs object', () => {
     const inputs = {
       properties: {

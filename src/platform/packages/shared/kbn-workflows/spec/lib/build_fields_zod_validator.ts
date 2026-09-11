@@ -12,19 +12,45 @@ import { z } from '@kbn/zod/v4';
 import { fromJSONSchema } from '@kbn/zod/v4/from_json_schema';
 import { resolveRef } from './field_conversion';
 
+const hasNamedProperties = (jsonSchema: JSONSchema7): boolean =>
+  jsonSchema.properties != null && Object.keys(jsonSchema.properties).length > 0;
+
 /**
- * Applies `.strict()` to a ZodObject when `additionalProperties: false` is set,
- * so extra keys are rejected at validation time.
+ * Applies `additionalProperties` that fromJSONSchema does not preserve at this wrapper layer.
+ *
+ * - `false` → `.strict()` so extra keys are rejected
+ * - a schema object → `z.record` (no named properties) or `.catchall` (named + extras), so
+ *   `getSchemaAtPath` can walk unknown keys into the value shape
  *
  * Limitation: this only applies at the schema node passed directly to the converter
  * mainly for maintaining backwards compatibility with legacy flat inputs.
  * Keywords nested inside `items` or deeply nested `properties` are compiled by
  * fromJSONSchema before enrichment runs, so they cannot be reached here.
  */
-function applyAdditionalProperties(jsonSchema: JSONSchema7, zodResult: z.ZodType): z.ZodType {
+function applyAdditionalProperties(
+  jsonSchema: JSONSchema7,
+  zodResult: z.ZodType,
+  convertValue?: (schema: JSONSchema7) => z.ZodType
+): z.ZodType {
   if (jsonSchema.additionalProperties === false && zodResult instanceof z.ZodObject) {
     return zodResult.strict();
   }
+
+  const additional = jsonSchema.additionalProperties;
+  if (convertValue && additional && typeof additional === 'object') {
+    const valueSchema = convertValue(additional as JSONSchema7);
+    if (!hasNamedProperties(jsonSchema)) {
+      return z.record(z.string(), valueSchema);
+    }
+    if (zodResult instanceof z.ZodObject) {
+      return zodResult.catchall(valueSchema);
+    }
+    if (zodResult instanceof z.ZodRecord) {
+      return zodResult;
+    }
+    return z.record(z.string(), valueSchema);
+  }
+
   return zodResult;
 }
 
@@ -32,8 +58,12 @@ function applyAdditionalProperties(jsonSchema: JSONSchema7, zodResult: z.ZodType
  * Enriches a Zod schema with constraints that the fromJSONSchema polyfill does not implement.
  * Add a new `applyX` call here whenever a new keyword X is supported in this wrapper.
  */
-function enrichZodSchema(jsonSchema: JSONSchema7, zodResult: z.ZodType): z.ZodType {
-  return applyAdditionalProperties(jsonSchema, zodResult);
+function enrichZodSchema(
+  jsonSchema: JSONSchema7,
+  zodResult: z.ZodType,
+  convertValue?: (schema: JSONSchema7) => z.ZodType
+): z.ZodType {
+  return applyAdditionalProperties(jsonSchema, zodResult, convertValue);
 }
 
 /** Root schema type for $ref resolution (same as resolveRef's second parameter). */
@@ -52,7 +82,7 @@ export function convertJsonSchemaToZod(jsonSchema: JSONSchema7 | null | undefine
   }
   const zodSchema = fromJSONSchema(jsonSchema as Record<string, unknown>);
   if (zodSchema !== undefined) {
-    return enrichZodSchema(jsonSchema, zodSchema);
+    return enrichZodSchema(jsonSchema, zodSchema, convertJsonSchemaToZod);
   }
   return z.any();
 }
@@ -73,9 +103,12 @@ export function convertJsonSchemaToZodWithRefs(
     }
   }
 
+  const convertValue = (schema: JSONSchema7): z.ZodType =>
+    convertJsonSchemaToZodWithRefs(schema, rootSchema);
+
   const zodSchema = fromJSONSchema(schemaToConvert as Record<string, unknown>);
   if (zodSchema !== undefined) {
-    return enrichZodSchema(schemaToConvert, zodSchema);
+    return enrichZodSchema(schemaToConvert, zodSchema, convertValue);
   }
 
   if (schemaToConvert.type === 'object' && schemaToConvert.properties) {
@@ -91,7 +124,7 @@ export function convertJsonSchemaToZodWithRefs(
       }
       shape[key] = zodProp;
     }
-    return enrichZodSchema(schemaToConvert, z.object(shape));
+    return enrichZodSchema(schemaToConvert, z.object(shape), convertValue);
   }
 
   return convertJsonSchemaToZod(schemaToConvert);
@@ -127,7 +160,7 @@ export function buildFieldsZodValidator(
       shape[propertyName] = zodSchema;
     }
   }
-  return enrichZodSchema(schema as JSONSchema7, z.object(shape)) as z.ZodType<
-    Record<string, unknown>
-  >;
+  return enrichZodSchema(schema as JSONSchema7, z.object(shape), (valueSchema) =>
+    convertJsonSchemaToZodWithRefs(valueSchema, schema)
+  ) as z.ZodType<Record<string, unknown>>;
 }

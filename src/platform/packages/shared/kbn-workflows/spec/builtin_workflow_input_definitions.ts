@@ -119,7 +119,17 @@ const alertingV2NotificationGroup: JsonSchema = {
       type: 'object',
       description:
         'Rule metadata keyed by rule id. Each value contains rule metadata (e.g. `{ name }`) for a rule referenced by the episodes. Access via `rules[episode.rule_id].name`.',
-      additionalProperties: true,
+      additionalProperties: {
+        type: 'object',
+        properties: {
+          name: {
+            type: 'string',
+            description: 'Display name of the rule',
+          },
+        },
+        required: ['name'],
+        additionalProperties: false,
+      },
     },
   },
   required: ['id', 'policyId', 'groupKey', 'episodes', 'rules'],

@@ -135,6 +135,17 @@ describe('getSchemaAtPath', () => {
     expect(result.scopedToPath).toBe('a');
     expectZodSchemaEqual(result.schema as z.ZodType, z.unknown());
   });
+
+  it('typed catchall walks into the value shape and rejects unknown value fields', () => {
+    const schema = z.object({}).catchall(z.object({ name: z.string() }));
+    expect(getSchemaAtPath(schema, 'rule-1.name').schema).not.toBeNull();
+    expect(getSchemaAtPath(schema, 'rule-1.nmae').schema).toBeNull();
+  });
+
+  it('does not walk an unknown catchall (open map)', () => {
+    const schema = z.object({}).catchall(z.unknown());
+    expect(getSchemaAtPath(schema, 'anything').schema).toBeNull();
+  });
 });
 
 describe('getSchemaAtPath: real life examples', () => {
