@@ -1,0 +1,7 @@
+{
+  "type": "functional-tests",
+  "id": "@kbn/evals-suite-rule-tuning",
+  "owner": "@elastic/security-threat-hunting",
+  "group": "security",
+  "visibility": "private"
+}

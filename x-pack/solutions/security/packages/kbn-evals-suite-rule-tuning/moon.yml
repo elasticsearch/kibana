@@ -1,0 +1,33 @@
+$schema: https://moonrepo.dev/schemas/project.json
+id: '@kbn/evals-suite-rule-tuning'
+layer: unknown
+owners:
+  defaultOwner: '@elastic/security-threat-hunting'
+toolchains:
+  default: node
+language: typescript
+project:
+  title: '@kbn/evals-suite-rule-tuning'
+  description: Moon project for @kbn/evals-suite-rule-tuning
+  channel: ''
+  owner: '@elastic/security-threat-hunting'
+  sourceRoot: x-pack/solutions/security/packages/kbn-evals-suite-rule-tuning
+dependsOn:
+  - '@kbn/evals'
+  - '@kbn/scout'
+  - '@kbn/tooling-log'
+  - '@kbn/workflows'
+  - '@kbn/core'
+tags:
+  - functional-tests
+  - package
+  - prod
+  - group-security
+  - private
+  - jest-unit-tests
+fileGroups:
+  src:
+    - '**/*.ts'
+    - '!target/**/*'
+  jest-config:
+    - jest.config.js
