@@ -128,6 +128,7 @@ export const spaceTest = securityParallelFixtures.extend<
       });
       extendedApiServices.endpointArtifacts = getEndpointArtifactsApiService({
         kbnClient,
+        esClient,
         log,
         scoutSpace,
       });

@@ -5,7 +5,8 @@
  * 2.0.
  */
 
-import type { KbnClient, ScoutLogger, ScoutParallelWorkerFixtures } from '@kbn/scout';
+import { SECURITY_SOLUTION_SAVED_OBJECT_INDEX } from '@kbn/core-saved-objects-server';
+import type { EsClient, KbnClient, ScoutLogger, ScoutParallelWorkerFixtures } from '@kbn/scout';
 import { measurePerformanceAsync } from '@kbn/scout';
 import { INTERNAL_API_HEADERS, PUBLIC_API_HEADERS } from '../../../constants/api_headers';
 
@@ -38,15 +39,23 @@ export interface EndpointArtifactsApiService {
 
 export const getEndpointArtifactsApiService = ({
   kbnClient,
+  esClient,
   log,
   scoutSpace,
 }: {
   kbnClient: KbnClient;
+  esClient: EsClient;
   log: ScoutLogger;
   scoutSpace?: ScoutParallelWorkerFixtures['scoutSpace'];
 }): EndpointArtifactsApiService => {
   const basePath = scoutSpace?.id ? `/s/${scoutSpace.id}` : '';
 
+  /**
+   * HTTP DELETE goes through the Saved Objects client so Kibana stops
+   * serving the list (ES-only wipe leaves the SO layer stale → 409).
+   * Then ES deleteByQuery + refresh removes leftover list_id copies and
+   * items the API would miss. Match FTR endpoint_artifacts.deleteList.
+   */
   const deleteList = async (listId: string) => {
     await kbnClient.request({
       method: 'DELETE',
@@ -56,18 +65,31 @@ export const getEndpointArtifactsApiService = ({
       ignoreErrors: [404],
       retries: 0,
     });
+    await esClient.deleteByQuery({
+      index: SECURITY_SOLUTION_SAVED_OBJECT_INDEX,
+      conflicts: 'proceed',
+      refresh: true,
+      ignore_unavailable: true,
+      query: {
+        bool: {
+          filter: [{ term: { 'exception-list-agnostic.list_id': listId } }],
+        },
+      },
+    });
   };
 
   return {
     createList: async ({ listId, type, name }) => {
       await measurePerformanceAsync(log, 'security.endpointArtifacts.createList', async () => {
-        // Agnostic lists persist across spaces. A leftover list + items would
-        // make create look successful (409) and poison `toHaveCount(1)`.
+        // Wipe items first. Opening an artifact tab/list page also
+        // ensure-creates the list, so the following POST may 409 —
+        // same as FTR ensureListExists.
         await deleteList(listId);
         await kbnClient.request({
           method: 'POST',
           path: `${basePath}${EXCEPTION_LIST_URL}`,
           headers: PUBLIC_API_HEADERS,
+          ignoreErrors: [409],
           retries: 0,
           body: {
             name: name ?? listId,

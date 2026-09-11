@@ -13,7 +13,7 @@ globalTeardownHook(
   'Delete leftover agnostic endpoint artifact lists and field-caps seed docs',
   async ({ kbnClient, esClient, log }) => {
     log.debug('[teardown] deleting endpoint artifact exception lists');
-    await getEndpointArtifactsApiService({ kbnClient, log }).deleteAll([
+    await getEndpointArtifactsApiService({ kbnClient, esClient, log }).deleteAll([
       ...ENDPOINT_ARTIFACT_LIST_IDS,
     ]);
     await deleteEndpointFieldCapsDocs(esClient, log);

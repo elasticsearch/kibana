@@ -31,7 +31,8 @@ const STATEFUL_ONLY_REASON =
 /**
  * One file per artifact type so Playwright can run files in parallel. Each
  * file owns a single agnostic list id (spaces do not isolate those lists).
- * ALL and READ/NONE stay in the same file so they cannot race on that list.
+ * Policy-tab ALL/READ/NONE and list-page RBAC stay in the same file so they
+ * cannot race on that list.
  */
 export const describeArtifactTabPolicyDetails = (
   artifact: ArtifactTabCase,

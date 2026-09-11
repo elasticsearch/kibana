@@ -110,6 +110,7 @@ export const test = securityFixtures.extend<SecurityTestFixtures, SecurityWorker
       });
       extendedApiServices.endpointArtifacts = getEndpointArtifactsApiService({
         kbnClient,
+        esClient,
         log,
       });
 

@@ -7,12 +7,14 @@
 
 import type { ScoutPage, SecurityPageObjects } from '@kbn/scout-security';
 import { createLazyPageObject } from '@kbn/scout-security';
+import { ArtifactListPage } from './artifact_list';
 import { PolicyArtifactsPage } from './policy_artifacts';
 import { PolicyDetailsPage } from './policy_details';
 
 export type { PolicyArtifactKind } from './policy_artifacts';
 
 export interface ArtifactTabPageObjects extends SecurityPageObjects {
+  artifactListPage: ArtifactListPage;
   policyDetailsPage: PolicyDetailsPage;
   policyArtifactsPage: PolicyArtifactsPage;
 }
@@ -22,6 +24,7 @@ export const extendPageObjects = (
   page: ScoutPage
 ): ArtifactTabPageObjects => ({
   ...pageObjects,
+  artifactListPage: createLazyPageObject(ArtifactListPage, page),
   policyDetailsPage: createLazyPageObject(PolicyDetailsPage, page),
   policyArtifactsPage: createLazyPageObject(PolicyArtifactsPage, page),
 });
