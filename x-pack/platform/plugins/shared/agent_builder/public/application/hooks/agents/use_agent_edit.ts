@@ -8,9 +8,11 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useMutation, useQueryClient } from '@kbn/react-query';
 import {
-  type AgentDefinition,
+  type AgentAccessControl,
   type AgentAccessControlEntry,
+  type AgentDefinition,
   AgentAccessControlMode,
+  getAccessControlEntryKey,
   type ToolSelection,
   defaultAgentToolIds,
 } from '@kbn/agent-builder-common';
@@ -53,11 +55,11 @@ const emptyState = (): AgentEditState => ({
   },
 });
 
-const accessControlEntriesSignature = (entries: AgentAccessControlEntry[] = []): string =>
+const accessControlEntriesSignature = (entries: AgentAccessControl['entries'] = []): string =>
   JSON.stringify(
     [...entries]
-      .map((entry) => ({ type: entry.type, name: entry.name, role: entry.role }))
-      .sort((a, b) => `${a.type}:${a.name}`.localeCompare(`${b.type}:${b.name}`))
+      .map((entry) => ({ key: getAccessControlEntryKey(entry), role: entry.role }))
+      .sort((a, b) => a.key.localeCompare(b.key))
   );
 
 export function useAgentEdit({

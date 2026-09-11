@@ -508,7 +508,7 @@ describe('createRequestToEs', () => {
       description: 'description',
       access_control: {
         access_mode: AgentAccessControlMode.Private,
-        entries: [{ type: 'user' as const, name: 'alice', role: AgentAccessControlRole.Editor }],
+        entries: [{ type: 'user' as const, id: 'u_alice', role: AgentAccessControlRole.Editor }],
       },
       configuration: {
         instructions: 'instructions',

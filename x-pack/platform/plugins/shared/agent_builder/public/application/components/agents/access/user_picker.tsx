@@ -24,11 +24,15 @@ import { useSuggestUsers } from '../../../hooks/use_suggest_users';
 import { accessFlyoutAddPeoplePlaceholder } from './access_i18n';
 
 interface UserPickerProps {
-  /** Usernames already added to the ACL (excluded from the dropdown). */
-  excludedUsernames: string[];
-  onAdd: (username: string) => void;
+  /** Profile uids already added to the ACL (excluded from the dropdown). */
+  excludedUids: string[];
+  /** Usernames of legacy name-only entries already in the ACL (excluded from the dropdown). */
+  excludedUsernames?: string[];
+  onAdd: (profile: UserProfileWithAvatar) => void;
   isDisabled?: boolean;
 }
+
+const EMPTY_USERNAMES: string[] = [];
 
 interface UserOption extends EuiComboBoxOptionOption<string> {
   profile: UserProfileWithAvatar;
@@ -51,28 +55,39 @@ const hiddenOptionIndicatorCss = css`
 
 const profileToOption = (profile: UserProfileWithAvatar): UserOption => ({
   label: getUserDisplayName(profile.user),
-  value: profile.user.username,
-  key: profile.user.username,
+  value: profile.uid,
+  key: profile.uid,
   profile,
 });
 
-export const UserPicker: React.FC<UserPickerProps> = ({ excludedUsernames, onAdd, isDisabled }) => {
+export const UserPicker: React.FC<UserPickerProps> = ({
+  excludedUids,
+  excludedUsernames = EMPTY_USERNAMES,
+  onAdd,
+  isDisabled,
+}) => {
   const [searchValue, setSearchValue] = useState('');
   const debouncedSearch = useDebouncedValue(searchValue, SEARCH_DEBOUNCE_MS);
 
   const { data: profiles, isFetching } = useSuggestUsers(debouncedSearch);
-  const excludedSet = useMemo(() => new Set(excludedUsernames), [excludedUsernames]);
+  const excludedUidSet = useMemo(() => new Set(excludedUids), [excludedUids]);
+  const excludedUsernameSet = useMemo(() => new Set(excludedUsernames), [excludedUsernames]);
 
   const options = useMemo<UserOption[]>(
-    () => (profiles ?? []).filter((p) => !excludedSet.has(p.user.username)).map(profileToOption),
-    [profiles, excludedSet]
+    () =>
+      (profiles ?? [])
+        .filter((p) => !excludedUidSet.has(p.uid) && !excludedUsernameSet.has(p.user.username))
+        .map(profileToOption),
+    [profiles, excludedUidSet, excludedUsernameSet]
   );
 
   const onChange = useCallback(
     (selected: Array<EuiComboBoxOptionOption<string>>) => {
-      const next = selected[0]?.value;
-      if (next) {
-        onAdd(next);
+      const selectedUid = selected[0]?.value;
+      if (!selectedUid) return;
+      const selectedProfile = (selected[0] as UserOption | undefined)?.profile;
+      if (selectedProfile) {
+        onAdd(selectedProfile);
         setSearchValue('');
       }
     },

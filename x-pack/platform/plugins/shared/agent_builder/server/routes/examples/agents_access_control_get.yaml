@@ -5,16 +5,16 @@ responses:
       application/json:
         examples:
           getAgentAccessControlResponseExample:
-            description: "Example response for a caller who can manage access control — the agent has two grantees."
+            description: "Example response for a caller who can manage access control — the agent has two grantees keyed on their Kibana user profile uid."
             value:
               access_control:
                 access_mode: private
                 entries:
                   - type: user
-                    name: alice
+                    id: u_alice_profile_uid
                     role: editor
                   - type: user
-                    name: bob
+                    id: u_bob_profile_uid
                     role: user
               permissions:
                 update_access_control: true
@@ -25,10 +25,24 @@ responses:
                 access_mode: private
                 entries:
                   - type: user
-                    name: bob
+                    id: u_bob_profile_uid
                     role: user
               permissions:
                 update_access_control: false
+          getAgentAccessControlLegacyResponseExample:
+            description: "Example response where the agent still carries an entry stored by username before agent access control adopted stable user ids. Legacy entries are returned with a `name` instead of an `id` and can be sent back unchanged in a PUT."
+            value:
+              access_control:
+                access_mode: private
+                entries:
+                  - type: user
+                    id: u_alice_profile_uid
+                    role: editor
+                  - type: user
+                    name: legacy_bob
+                    role: user
+              permissions:
+                update_access_control: true
   404:
     description: "Not Found — no agent with this ID is visible to the caller. Matches the existing `agentNotFound` shape, so unprivileged callers cannot probe for hidden agents."
     content:

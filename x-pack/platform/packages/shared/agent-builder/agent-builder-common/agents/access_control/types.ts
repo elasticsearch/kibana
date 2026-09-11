@@ -54,12 +54,25 @@ export enum AgentAccessControlRole {
  */
 export type AgentAccessControlPrincipalType = 'user';
 
+/**
+ * An entry carries at least one of `id` or `name`. New entries are written with a stable `id`;
+ * entries persisted before stable ids were adopted only have `name` and are matched on username
+ * until they are removed and re-added (lazy migration).
+ */
 export interface AgentAccessControlEntry {
   type: AgentAccessControlPrincipalType;
-  /** Case-sensitive Kibana username. */
-  name: string;
+  /** Stable user id (profile uid, or the realm-qualified fallback from `toStableUserId`). */
+  id?: string;
+  /** Case-sensitive Kibana username. Legacy; only present on entries written before `id`. */
+  name?: string;
   role: AgentAccessControlRole;
 }
+
+/** Identity key for an entry: `id` when present, otherwise the legacy `name`. */
+export const getAccessControlEntryKey = (
+  entry: Pick<AgentAccessControlEntry, 'type' | 'id' | 'name'>
+): string =>
+  entry.id !== undefined ? `${entry.type}:id:${entry.id}` : `${entry.type}:name:${entry.name}`;
 
 export interface AgentAccessControl {
   access_mode: AgentAccessControlMode;
@@ -76,7 +89,8 @@ export const getDefaultAgentAccessControl = (): AgentAccessControl => ({
 });
 
 export const AGENT_ACCESS_CONTROL_MAX_ENTRIES = 100;
-export const AGENT_ACCESS_CONTROL_PRINCIPAL_NAME_MAX_LENGTH = 1024;
+/** Matches the conversation ACL principal id cap (`CONVERSATION_ACCESS_CONTROL_PRINCIPAL_ID_MAX_LENGTH`). */
+export const AGENT_ACCESS_CONTROL_PRINCIPAL_ID_MAX_LENGTH = 1024;
 
 const ROLE_RANK: Record<AgentAccessControlRole, number> = {
   [AgentAccessControlRole.User]: 1,

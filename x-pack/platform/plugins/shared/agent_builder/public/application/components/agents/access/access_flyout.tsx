@@ -23,13 +23,15 @@ import {
   useEuiTheme,
   type EuiThemeComputed,
 } from '@elastic/eui';
-import type {
-  AgentAccessControl,
-  AgentAccessControlEntry,
-  AgentDefinition,
+import {
+  getAccessControlEntryKey,
+  type AgentAccessControl,
+  type AgentAccessControlEntry,
+  type AgentDefinition,
 } from '@kbn/agent-builder-common';
 import { AccessForm } from './access_form';
 import { AccessControlModeContextStrip } from './access_control_mode_context_strip';
+import { useAccessControlEntryProfiles } from '../../../hooks/agents/use_access_control_entry_profiles';
 import { useAgentAccessControl } from '../../../hooks/agents/use_agent_access_control';
 import { useUpdateAgentAccessControl } from '../../../hooks/agents/use_update_agent_access_control';
 import {
@@ -48,11 +50,13 @@ interface AccessFlyoutProps {
   onClose: () => void;
 }
 
+const EMPTY_ENTRIES: AgentAccessControlEntry[] = [];
+
 const entriesSignature = (entries: AgentAccessControlEntry[]): string =>
   JSON.stringify(
     [...entries]
-      .map((e) => ({ type: e.type, name: e.name, role: e.role }))
-      .sort((a, b) => `${a.type}:${a.name}`.localeCompare(`${b.type}:${b.name}`))
+      .map((e) => ({ key: getAccessControlEntryKey(e), role: e.role }))
+      .sort((a, b) => a.key.localeCompare(b.key))
   );
 
 const skeletonStyles = (euiTheme: EuiThemeComputed) => css`
@@ -104,6 +108,8 @@ export const AccessFlyout: React.FC<AccessFlyoutProps> = ({ agent, onClose }) =>
       setSaveErrorMessage(err.body?.message ?? err.message ?? '');
     },
   });
+
+  const profileByUid = useAccessControlEntryProfiles(draft?.entries ?? EMPTY_ENTRIES);
 
   const isBusy = isLoading || updateMutation.isLoading;
   const isDirty =
@@ -166,6 +172,7 @@ export const AccessFlyout: React.FC<AccessFlyoutProps> = ({ agent, onClose }) =>
         <AccessForm
           agent={agent}
           entries={draft.entries}
+          profileByUid={profileByUid}
           isDisabled={updateMutation.isLoading}
           onChange={(entries) => setDraft((prev) => (prev ? { ...prev, entries } : prev))}
         />

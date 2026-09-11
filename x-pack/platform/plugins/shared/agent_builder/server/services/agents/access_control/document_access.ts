@@ -19,6 +19,7 @@ import {
   hasAgentReadAccess,
   hasAgentUseAccess,
   hasAgentWriteAccess,
+  matchesAccessControlEntry,
 } from './authorization';
 import type { AgentProperties } from '../persisted/client/storage';
 
@@ -147,8 +148,8 @@ export const redactAccessControlForCaller = <T extends { access_control?: AgentA
     ...definition,
     access_control: {
       ...definition.access_control,
-      entries: definition.access_control.entries.filter(
-        (entry) => entry.type === 'user' && user.username && entry.name === user.username
+      entries: definition.access_control.entries.filter((entry) =>
+        matchesAccessControlEntry(entry, user)
       ),
     },
   };

@@ -222,7 +222,7 @@ describe('getAgentPermissions', () => {
         entries: [
           {
             type: 'user' as const,
-            name: nonOwnerUser.username,
+            id: nonOwnerUser.id!,
             role: AgentAccessControlRole.Editor,
           },
         ],
@@ -447,8 +447,16 @@ describe('validateAccessControlUpdateAccess', () => {
 });
 
 describe('redactAccessControlForCaller', () => {
-  const aliceEntry = { type: 'user' as const, name: 'alice', role: AgentAccessControlRole.Editor };
-  const bobEntry = { type: 'user' as const, name: 'bob', role: AgentAccessControlRole.User };
+  const aliceEntry = {
+    type: 'user' as const,
+    id: ownerUser.id!,
+    role: AgentAccessControlRole.Editor,
+  };
+  const bobEntry = {
+    type: 'user' as const,
+    id: nonOwnerUser.id!,
+    role: AgentAccessControlRole.User,
+  };
 
   const privateAgentWithAcl: AgentProperties = {
     ...baseSource,
@@ -518,9 +526,8 @@ describe('redactAccessControlForCaller', () => {
     expect(result.access_control?.entries).toEqual([aliceEntry, bobEntry]);
   });
 
-  it("keeps only the caller's own entry for a user without manage rights", () => {
+  it("keeps only the caller's own id-backed entry for a user without manage rights", () => {
     // Bob has User access via the access_control (User < Manager threshold) so he cannot manage.
-    const bobUser = { username: 'bob', isAdmin: false };
     const definition = {
       id: 'a',
       access_control: {
@@ -531,16 +538,14 @@ describe('redactAccessControlForCaller', () => {
     const result = redactAccessControlForCaller({
       definition,
       source: privateAgentWithAcl,
-      user: bobUser,
+      user: nonOwnerUser,
     });
     expect(result.access_control?.entries).toEqual([bobEntry]);
     // Shallow-copy: the original definition is untouched.
     expect(definition.access_control?.entries).toEqual([aliceEntry, bobEntry]);
   });
 
-  it("keeps only the caller's own entry for a user with Editor via the access_control", () => {
-    // Alice can edit the agent, but ACL management requires Manager.
-    const aliceUser = { username: 'alice', isAdmin: false };
+  it("drops an id-backed entry with the caller's username but a different id (cross-realm case)", () => {
     const definition = {
       id: 'a',
       access_control: {
@@ -551,9 +556,42 @@ describe('redactAccessControlForCaller', () => {
     const result = redactAccessControlForCaller({
       definition,
       source: privateAgentWithAcl,
-      user: aliceUser,
+      user: {
+        id: 'realm:["file","file1","other"]',
+        username: nonOwnerUser.username,
+        isAdmin: false,
+      },
     });
-    expect(result.access_control?.entries).toEqual([aliceEntry]);
+    expect(result.access_control?.entries).toEqual([]);
+  });
+
+  it("keeps the caller's own legacy name-only entry (pre-id migration)", () => {
+    const legacyBobEntry = {
+      type: 'user' as const,
+      name: nonOwnerUser.username,
+      role: AgentAccessControlRole.User,
+    };
+    const definition = {
+      id: 'a',
+      access_control: {
+        access_mode: AgentAccessControlMode.Private,
+        entries: [aliceEntry, legacyBobEntry],
+      },
+    };
+    const result = redactAccessControlForCaller({
+      definition,
+      source: {
+        ...baseSource,
+        access_control: {
+          access_mode: AgentAccessControlMode.Private,
+          entries: [aliceEntry, legacyBobEntry],
+        },
+        created_by_id: ownerUser.id,
+        created_by_name: 'owner',
+      },
+      user: nonOwnerUser,
+    });
+    expect(result.access_control?.entries).toEqual([legacyBobEntry]);
   });
 
   it('returns the full entries list for a user with Manager via legacy acl', () => {
@@ -575,7 +613,7 @@ describe('redactAccessControlForCaller', () => {
       source: {
         ...baseSource,
         visibility: AgentAccessControlMode.Private,
-        acl: { entries: [aliceManagerEntry, bobEntry] },
+        acl: { entries: [aliceManagerEntry] },
         created_by_name: 'owner',
       },
       user: aliceUser,
@@ -584,10 +622,11 @@ describe('redactAccessControlForCaller', () => {
   });
 
   it('redacts entries on the default agent even for the owner', () => {
-    // Default agent never accepts access_control management — even the owner gets [] back.
+    // Default agent never accepts access_control management — even the owner is redacted, so
+    // Bob's entry is dropped and Alice gets [] back.
     const definition = {
       id: agentBuilderDefaultAgentId,
-      access_control: { access_mode: AgentAccessControlMode.Private, entries: [aliceEntry] },
+      access_control: { access_mode: AgentAccessControlMode.Private, entries: [bobEntry] },
     };
     const result = redactAccessControlForCaller({
       definition,
@@ -596,7 +635,7 @@ describe('redactAccessControlForCaller', () => {
         id: agentBuilderDefaultAgentId,
         created_by_id: ownerUser.id,
         created_by_name: 'owner',
-        access_control: { access_mode: AgentAccessControlMode.Private, entries: [aliceEntry] },
+        access_control: { access_mode: AgentAccessControlMode.Private, entries: [bobEntry] },
       },
       user: ownerUser,
     });

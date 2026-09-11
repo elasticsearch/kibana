@@ -7,14 +7,34 @@
 
 import {
   AGENT_ACCESS_CONTROL_MAX_ENTRIES,
-  AGENT_ACCESS_CONTROL_PRINCIPAL_NAME_MAX_LENGTH,
+  AGENT_ACCESS_CONTROL_PRINCIPAL_ID_MAX_LENGTH,
+  getAccessControlEntryKey,
   isAgentAccessControlRole,
   type AgentAccessControlEntry,
 } from '@kbn/agent-builder-common';
 
+/** Checks that the entry names a principal via a well-formed `id` or, failing that, `name`. */
+const validatePrincipal = (entry: AgentAccessControlEntry): string | undefined => {
+  const hasId = entry.id !== undefined;
+  const hasName = entry.name !== undefined;
+  if (!hasId && !hasName) {
+    return 'Each ACL entry requires a non-empty id or name';
+  }
+  const field = hasId ? 'id' : 'name';
+  const value = hasId ? entry.id : entry.name;
+  if (typeof value !== 'string' || value.length === 0) {
+    return `Each ACL entry requires a non-empty ${field}`;
+  }
+  if (value.length > AGENT_ACCESS_CONTROL_PRINCIPAL_ID_MAX_LENGTH) {
+    return `ACL principal ${field} exceeds maximum length of ${AGENT_ACCESS_CONTROL_PRINCIPAL_ID_MAX_LENGTH}`;
+  }
+  return undefined;
+};
+
 /**
  * Validates the entries provided in an access control update. Returns a string describing the first
- * error encountered, or `undefined` when the input is valid.
+ * error encountered, or `undefined` when the input is valid. Entries must carry an `id` or a
+ * legacy `name`.
  */
 export const validateAccessControlUpdate = (
   entries: AgentAccessControlEntry[]
@@ -31,18 +51,16 @@ export const validateAccessControlUpdate = (
     if (!entry || entry.type !== 'user') {
       return 'Each ACL entry requires a type of "user"';
     }
-    if (typeof entry.name !== 'string' || entry.name.length === 0) {
-      return 'Each ACL entry requires a non-empty name';
-    }
-    if (entry.name.length > AGENT_ACCESS_CONTROL_PRINCIPAL_NAME_MAX_LENGTH) {
-      return `ACL principal name exceeds maximum length of ${AGENT_ACCESS_CONTROL_PRINCIPAL_NAME_MAX_LENGTH}`;
+    const principalError = validatePrincipal(entry);
+    if (principalError) {
+      return principalError;
     }
     if (!isAgentAccessControlRole(entry.role)) {
       return `Unknown ACL role: ${String(entry.role)}`;
     }
-    const key = `${entry.type}:${entry.name}`;
+    const key = getAccessControlEntryKey(entry);
     if (seen.has(key)) {
-      return `Duplicate ACL entry for ${entry.type} "${entry.name}"`;
+      return `Duplicate ACL entry for ${entry.type} "${entry.id ?? entry.name}"`;
     }
     seen.add(key);
   }

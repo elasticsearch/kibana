@@ -98,7 +98,7 @@ describe('useAgentEdit submit (create/clone branch)', () => {
       description: 'A clone of an existing agent',
       access_control: {
         access_mode: AgentAccessControlMode.Private,
-        entries: [{ type: 'user', name: 'alice', role: AgentAccessControlRole.Editor }],
+        entries: [{ type: 'user', id: 'u_alice', role: AgentAccessControlRole.Editor }],
       },
       labels: ['support'],
       avatar_color: '#FFFFFF',
@@ -168,7 +168,7 @@ describe('useAgentEdit submit (create/clone branch)', () => {
       description: 'An existing agent',
       access_control: {
         access_mode: AgentAccessControlMode.Shared,
-        entries: [{ type: 'user', name: 'alice', role: AgentAccessControlRole.Editor }],
+        entries: [{ type: 'user', id: 'u_alice', role: AgentAccessControlRole.Editor }],
       },
       labels: [],
       avatar_color: '',
@@ -205,8 +205,8 @@ describe('useAgentEdit submit (create/clone branch)', () => {
       access_control: {
         access_mode: AgentAccessControlMode.Private,
         entries: [
-          { type: 'user', name: 'bob', role: AgentAccessControlRole.User },
-          { type: 'user', name: 'alice', role: AgentAccessControlRole.Editor },
+          { type: 'user', id: 'u_bob', role: AgentAccessControlRole.User },
+          { type: 'user', id: 'u_alice', role: AgentAccessControlRole.Editor },
         ],
       },
       labels: [],
@@ -219,7 +219,7 @@ describe('useAgentEdit submit (create/clone branch)', () => {
       ...mockAgent,
       access_control: {
         access_mode: AgentAccessControlMode.Private,
-        entries: [{ type: 'user', name: 'alice', role: AgentAccessControlRole.Editor }],
+        entries: [{ type: 'user', id: 'u_alice', role: AgentAccessControlRole.Editor }],
       },
     };
 
@@ -237,7 +237,7 @@ describe('useAgentEdit submit (create/clone branch)', () => {
 
     expect(mockUpdateAccessControl).toHaveBeenCalledTimes(1);
     expect(mockUpdateAccessControl).toHaveBeenCalledWith('existing-agent', {
-      entries: [{ type: 'user', name: 'alice', role: AgentAccessControlRole.Editor }],
+      entries: [{ type: 'user', id: 'u_alice', role: AgentAccessControlRole.Editor }],
     });
     expect(mockUpdate).toHaveBeenCalledTimes(1);
     expect(mockUpdate.mock.invocationCallOrder[0]).toBeLessThan(

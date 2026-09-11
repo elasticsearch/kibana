@@ -6,7 +6,7 @@
  */
 
 import {
-  AGENT_ACCESS_CONTROL_PRINCIPAL_NAME_MAX_LENGTH,
+  AGENT_ACCESS_CONTROL_PRINCIPAL_ID_MAX_LENGTH,
   AgentAccessControlRole,
   AgentAccessControlMode,
 } from '@kbn/agent-builder-common';
@@ -148,7 +148,43 @@ describe('agentFormSchema access_control entries', () => {
     configuration: { tools: [] },
   };
 
-  it('rejects principal names longer than the access-control maximum', () => {
+  it('accepts id-backed entries (new writes)', () => {
+    const result = agentFormSchema.safeParse({
+      ...baseData,
+      access_control: {
+        access_mode: AgentAccessControlMode.Private,
+        entries: [{ type: 'user', id: 'u_alice', role: AgentAccessControlRole.User }],
+      },
+    });
+
+    expect(result.success).toBe(true);
+  });
+
+  it('accepts legacy name-only entries (read-through, not sent back)', () => {
+    const result = agentFormSchema.safeParse({
+      ...baseData,
+      access_control: {
+        access_mode: AgentAccessControlMode.Private,
+        entries: [{ type: 'user', name: 'legacy_alice', role: AgentAccessControlRole.User }],
+      },
+    });
+
+    expect(result.success).toBe(true);
+  });
+
+  it('rejects entries missing both id and name', () => {
+    const result = agentFormSchema.safeParse({
+      ...baseData,
+      access_control: {
+        access_mode: AgentAccessControlMode.Private,
+        entries: [{ type: 'user', role: AgentAccessControlRole.User }],
+      },
+    });
+
+    expect(result.success).toBe(false);
+  });
+
+  it('rejects principal ids longer than the access-control maximum', () => {
     const result = agentFormSchema.safeParse({
       ...baseData,
       access_control: {
@@ -156,7 +192,7 @@ describe('agentFormSchema access_control entries', () => {
         entries: [
           {
             type: 'user',
-            name: 'a'.repeat(AGENT_ACCESS_CONTROL_PRINCIPAL_NAME_MAX_LENGTH + 1),
+            id: 'u_'.padEnd(AGENT_ACCESS_CONTROL_PRINCIPAL_ID_MAX_LENGTH + 1, 'a'),
             role: AgentAccessControlRole.User,
           },
         ],

@@ -3,15 +3,25 @@ requestBody:
     application/json:
       examples:
         updateAgentAccessControlRequestExample:
-          description: "Example request granting two users access to the agent — Alice as Editor (can update the agent and its access control), Bob as User (can run the agent)."
+          description: "Example request granting two users access to the agent by their Kibana user profile uid — Alice as Editor (can update the agent and its access control), Bob as User (can run the agent)."
           value:
             entries:
               - type: user
-                name: alice
+                id: u_alice_profile_uid
                 role: editor
               - type: user
-                name: bob
+                id: u_bob_profile_uid
                 role: user
+        keepLegacyAgentAccessControlRequestExample:
+          description: "Example request that keeps an existing legacy entry (identified by `name`, as returned by GET) while adding a new user by profile uid. `name` is deprecated for new grants; use `id`."
+          value:
+            entries:
+              - type: user
+                name: legacy_bob
+                role: user
+              - type: user
+                id: u_alice_profile_uid
+                role: editor
         clearAgentAccessControlRequestExample:
           description: "Submit an empty entries list to remove all custom grants. Access then falls back to the agent's access-control mode."
           value:
@@ -28,10 +38,10 @@ responses:
               access_mode: private
               entries:
                 - type: user
-                  name: alice
+                  id: u_alice_profile_uid
                   role: editor
                 - type: user
-                  name: bob
+                  id: u_bob_profile_uid
                   role: user
   400:
     description: "Bad Request — the request body failed validation, or the request targets the built-in Elastic default agent (which cannot have custom access control)."
@@ -74,8 +84,8 @@ x-codeSamples:
         -H "Content-Type: application/json" \
         -d '{
           "entries": [
-            { "type": "user", "name": "alice", "role": "editor" },
-            { "type": "user", "name": "bob", "role": "user" }
+            { "type": "user", "id": "u_alice_profile_uid", "role": "editor" },
+            { "type": "user", "id": "u_bob_profile_uid", "role": "user" }
           ]
         }'
   - lang: Console
@@ -83,7 +93,7 @@ x-codeSamples:
       PUT kbn://api/agent_builder/agents/{id}/access_control
       {
         "entries": [
-          { "type": "user", "name": "alice", "role": "editor" },
-          { "type": "user", "name": "bob", "role": "user" }
+          { "type": "user", "id": "u_alice_profile_uid", "role": "editor" },
+          { "type": "user", "id": "u_bob_profile_uid", "role": "user" }
         ]
       }

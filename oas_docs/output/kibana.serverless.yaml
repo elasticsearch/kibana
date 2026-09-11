@@ -1783,27 +1783,41 @@ paths:
           content:
             application/json:
               examples:
+                getAgentAccessControlLegacyResponseExample:
+                  description: Example response where the agent still carries an entry stored by username before agent access control adopted stable user ids. Legacy entries are returned with a `name` instead of an `id` and can be sent back unchanged in a PUT.
+                  value:
+                    access_control:
+                      access_mode: private
+                      entries:
+                        - id: u_alice_profile_uid
+                          role: editor
+                          type: user
+                        - name: legacy_bob
+                          role: user
+                          type: user
+                    permissions:
+                      update_access_control: true
                 getAgentAccessControlMaskedResponseExample:
                   description: Example response for a caller without manage permission — only the caller's own entry is returned.
                   value:
                     access_control:
                       access_mode: private
                       entries:
-                        - name: bob
+                        - id: u_bob_profile_uid
                           role: user
                           type: user
                     permissions:
                       update_access_control: false
                 getAgentAccessControlResponseExample:
-                  description: Example response for a caller who can manage access control — the agent has two grantees.
+                  description: Example response for a caller who can manage access control — the agent has two grantees keyed on their Kibana user profile uid.
                   value:
                     access_control:
                       access_mode: private
                       entries:
-                        - name: alice
+                        - id: u_alice_profile_uid
                           role: editor
                           type: user
-                        - name: bob
+                        - id: u_bob_profile_uid
                           role: user
                           type: user
                     permissions:
@@ -1845,7 +1859,7 @@ paths:
 
         Refer to [Spaces](https://www.elastic.co/docs/deploy-manage/manage-spaces) for more information.
 
-        Replace the per-agent access-control entries. The agent owner, cluster admins, and anyone access control grants Manager can call this endpoint. Each call replaces the entire entries list — the most recent successful update wins. To learn more about agents, refer to the [agents documentation](https://www.elastic.co/docs/explore-analyze/ai-features/agent-builder/agent-builder-agents).<br/><br/>[Required authorization] Route required privileges: agentBuilder:manageAgents.
+        Replace the per-agent access-control entries. Each entry identifies one user by their stable user profile `id` (preferred) or, for entries created before ids were adopted, by `name`. The agent owner, cluster admins, and anyone access control grants Manager can call this endpoint. Each call replaces the entire entries list — the most recent successful update wins. To learn more about agents, refer to the [agents documentation](https://www.elastic.co/docs/explore-analyze/ai-features/agent-builder/agent-builder-agents).<br/><br/>[Required authorization] Route required privileges: agentBuilder:manageAgents.
       operationId: put-agent-builder-agents-id-access-control
       parameters:
         - description: A required header to protect against CSRF attacks
@@ -1869,14 +1883,24 @@ paths:
                 description: Submit an empty entries list to remove all custom grants. Access then falls back to the agent's access-control mode.
                 value:
                   entries: []
-              updateAgentAccessControlRequestExample:
-                description: Example request granting two users access to the agent — Alice as Editor (can update the agent and its access control), Bob as User (can run the agent).
+              keepLegacyAgentAccessControlRequestExample:
+                description: Example request that keeps an existing legacy entry (identified by `name`, as returned by GET) while adding a new user by profile uid. `name` is deprecated for new grants; use `id`.
                 value:
                   entries:
-                    - name: alice
+                    - name: legacy_bob
+                      role: user
+                      type: user
+                    - id: u_alice_profile_uid
                       role: editor
                       type: user
-                    - name: bob
+              updateAgentAccessControlRequestExample:
+                description: Example request granting two users access to the agent by their Kibana user profile uid — Alice as Editor (can update the agent and its access control), Bob as User (can run the agent).
+                value:
+                  entries:
+                    - id: u_alice_profile_uid
+                      role: editor
+                      type: user
+                    - id: u_bob_profile_uid
                       role: user
                       type: user
             schema:
@@ -1884,13 +1908,18 @@ paths:
               type: object
               properties:
                 entries:
-                  description: Access-control entries to apply to the agent. Each entry has a `type` (currently only `user` is supported), a `name` (the principal username), and a `role`.
+                  description: Access-control entries to apply to the agent. Each entry has a `type` (currently only `user` is supported), a `role`, and either an `id` (the principal user profile uid, preferred) or a deprecated `name` (username).
                   items:
                     additionalProperties: false
                     type: object
                     properties:
+                      id:
+                        description: Stable identifier of the user to grant access to (Kibana user profile uid). Preferred over `name`.
+                        maxLength: 1024
+                        minLength: 1
+                        type: string
                       name:
-                        description: Case-sensitive Kibana username of the principal to grant access to.
+                        description: Deprecated. Case-sensitive Kibana username of the user to grant access to. Use `id` instead; `name` is only kept so existing entries can be sent back unchanged.
                         maxLength: 1024
                         minLength: 1
                         type: string
@@ -1907,7 +1936,6 @@ paths:
                         type: string
                     required:
                       - type
-                      - name
                       - role
                   maxItems: 100
                   type: array
@@ -1923,10 +1951,10 @@ paths:
                   value:
                     access_mode: private
                     entries:
-                      - name: alice
+                      - id: u_alice_profile_uid
                         role: editor
                         type: user
-                      - name: bob
+                      - id: u_bob_profile_uid
                         role: user
                         type: user
           description: Indicates a successful response
@@ -1974,8 +2002,8 @@ paths:
               -H "Content-Type: application/json" \
               -d '{
                 "entries": [
-                  { "type": "user", "name": "alice", "role": "editor" },
-                  { "type": "user", "name": "bob", "role": "user" }
+                  { "type": "user", "id": "u_alice_profile_uid", "role": "editor" },
+                  { "type": "user", "id": "u_bob_profile_uid", "role": "user" }
                 ]
               }'
         - lang: Console
@@ -1983,8 +2011,8 @@ paths:
             PUT kbn://api/agent_builder/agents/{id}/access_control
             {
               "entries": [
-                { "type": "user", "name": "alice", "role": "editor" },
-                { "type": "user", "name": "bob", "role": "user" }
+                { "type": "user", "id": "u_alice_profile_uid", "role": "editor" },
+                { "type": "user", "id": "u_bob_profile_uid", "role": "user" }
               ]
             }
       x-state: ''
