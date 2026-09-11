@@ -8,7 +8,7 @@
 import type { FC, PropsWithChildren } from 'react';
 import React from 'react';
 import { waitFor, screen } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import userEvent, { type UserEvent } from '@testing-library/user-event';
 
 import type { FormHook } from '@kbn/es-ui-shared-plugin/static/forms/hook_form_lib';
 import { useForm, Form } from '@kbn/es-ui-shared-plugin/static/forms/hook_form_lib';
@@ -27,6 +27,7 @@ const useGetTagsMock = useGetTags as jest.Mock;
 
 describe('Tags', () => {
   let globalForm: FormHook;
+  let user: UserEvent;
 
   const MockHookWrapperComponent: FC<PropsWithChildren<unknown>> = ({ children }) => {
     const { form } = useForm<CaseFormFieldsSchemaProps>({
@@ -45,7 +46,16 @@ describe('Tags', () => {
     );
   };
 
+  beforeAll(() => {
+    jest.useFakeTimers();
+  });
+
+  afterAll(() => {
+    jest.useRealTimers();
+  });
+
   beforeEach(() => {
+    user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
     useGetTagsMock.mockReturnValue({ data: ['test'] });
   });
 
@@ -72,8 +82,11 @@ describe('Tags', () => {
       </MockHookWrapperComponent>
     );
 
-    await userEvent.type(screen.getByRole('combobox'), 'test{enter}');
-    await userEvent.type(screen.getByRole('combobox'), 'case{enter}');
+    await user.click(screen.getByRole('combobox'));
+    await user.paste('test');
+    await user.keyboard('{enter}');
+    await user.paste('case');
+    await user.keyboard('{enter}');
 
     expect(await screen.findByTitle('test')).toBeInTheDocument();
     expect(await screen.findByTitle('case')).toBeInTheDocument();
@@ -87,7 +100,9 @@ describe('Tags', () => {
       </MockHookWrapperComponent>
     );
 
-    await userEvent.type(screen.getByRole('combobox'), ' {enter}');
+    await user.click(screen.getByRole('combobox'));
+    await user.paste(' ');
+    await user.keyboard('{enter}');
 
     expect(
       await screen.findByText('A tag must contain at least one non-space character.')
@@ -103,9 +118,9 @@ describe('Tags', () => {
       </MockHookWrapperComponent>
     );
 
-    await userEvent.click(screen.getByRole('combobox'));
-    await userEvent.paste(`${longTag}`);
-    await userEvent.keyboard('{enter}');
+    await user.click(screen.getByRole('combobox'));
+    await user.paste(`${longTag}`);
+    await user.keyboard('{enter}');
 
     await waitFor(() => {
       expect(
