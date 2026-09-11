@@ -197,14 +197,14 @@ export default function ({ getService, getPageObjects }: FtrProviderContext) {
       await lens.waitForVisualization();
       const styleObj = await lens.getDatatableCellStyle(0, 2);
       expect(styleObj['background-color']).to.be(undefined);
-      expect(styleObj.color).to.be('rgb(140, 217, 187)');
+      expect(styleObj.color).to.be('rgb(98, 206, 166)');
     });
 
     it('should allow to color cell background rather than text', async () => {
       await lens.setTableDynamicColoring('cell');
       await lens.waitForVisualization();
       const styleObj = await lens.getDatatableCellStyle(0, 2);
-      expect(styleObj['background-color']).to.be('rgb(140, 217, 187)');
+      expect(styleObj['background-color']).to.be('rgb(98, 206, 166)');
       // should also set text color when in cell mode
       expect(styleObj.color).to.be('rgb(7, 16, 31)');
     });
