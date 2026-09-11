@@ -17,6 +17,13 @@ export const SERVICE_ACCOUNT_NAME_MAX_LENGTH = 128;
 export const SERVICE_ACCOUNT_MAX_STRING_FIELD_LENGTH = 1024;
 
 /**
+ * Cap on the length of an ephemeral service account token returned by the token
+ * exchange. Ephemeral tokens are self-described, so the cap is generous; it only
+ * exists to bound the validated payload.
+ */
+export const SERVICE_ACCOUNT_TOKEN_MAX_LENGTH = 16384;
+
+/**
  * Cap on the size of a create request body. The body holds nothing but a name
  * bounded by {@link SERVICE_ACCOUNT_NAME_MAX_LENGTH}, so this only needs to leave
  * room for that field plus JSON overhead; revisit it if the body grows.

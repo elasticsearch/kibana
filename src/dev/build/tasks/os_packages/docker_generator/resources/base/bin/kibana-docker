@@ -426,6 +426,7 @@ kibana_vars=(
     xpack.security.loginHelp
     xpack.security.sameSiteCookies
     xpack.security.secureCookies
+    xpack.security.serviceAccounts.requestLifetime
     xpack.security.session.cleanupInterval
     xpack.security.session.concurrentSessions.maxSessions
     xpack.security.session.idleTimeout

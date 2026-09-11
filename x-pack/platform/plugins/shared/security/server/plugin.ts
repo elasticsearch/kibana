@@ -294,6 +294,7 @@ export class SecurityPlugin
       config,
       license,
       customBranding: core.customBranding,
+      getServiceAccounts: () => this.serviceAccountsStart ?? null,
     });
 
     registerSecurityUsageCollector({ usageCollection, config, license });

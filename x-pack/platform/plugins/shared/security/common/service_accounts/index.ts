@@ -9,5 +9,6 @@ export {
   SERVICE_ACCOUNT_NAME_MAX_LENGTH,
   SERVICE_ACCOUNT_MAX_STRING_FIELD_LENGTH,
   SERVICE_ACCOUNT_CREATE_MAX_BODY_BYTES,
+  SERVICE_ACCOUNT_TOKEN_MAX_LENGTH,
 } from './constants';
 export { serviceAccountIdSchema, serviceAccountNameSchema } from './schemas';

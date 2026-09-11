@@ -56,6 +56,7 @@ export class ServiceAccountsService {
 
     return new UiamServiceAccounts({
       logger: this.logger,
+      requestLifetimeMs: config.serviceAccounts.requestLifetime.asMilliseconds(),
       license,
       uiam,
       checkPrivilegesWithRequest,

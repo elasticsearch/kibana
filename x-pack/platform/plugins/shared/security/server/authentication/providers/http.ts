@@ -5,8 +5,14 @@
  * 2.0.
  */
 
+import { timingSafeEqual } from 'crypto';
+
 import type { KibanaRequest } from '@kbn/core/server';
-import { HTTPAuthorizationHeader, isUiamCredential } from '@kbn/core-security-server';
+import {
+  HTTPAuthorizationHeader,
+  isUiamCredential,
+  UIAM_INTERNAL_CALLER_ATTESTATION_HEADER,
+} from '@kbn/core-security-server';
 
 import type { AuthenticationProviderOptions } from './base';
 import { BaseAuthenticationProvider } from './base';
@@ -94,18 +100,11 @@ export class HTTPAuthenticationProvider extends BaseAuthenticationProvider {
     if (
       this.options.uiam &&
       authorizationHeader.scheme.toLowerCase() === 'bearer' &&
-      isUiamCredential(authorizationHeader)
+      isUiamCredential(authorizationHeader) &&
+      request.route.options.tags.includes(ROUTE_TAG_ACCEPT_UIAM_OAUTH) &&
+      !this.hasVerifiedInternalCallerAttestation(request, authorizationHeader)
     ) {
-      if (request.route.options.tags.includes(ROUTE_TAG_ACCEPT_UIAM_OAUTH)) {
-        return this.authenticateViaUiamOAuth(request, authorizationHeader);
-      }
-
-      this.logger.warn(
-        `Detected UIAM OAuth token on a non-MCP endpoint: ` +
-          `${request.route.method.toUpperCase()} ${request.route.path}. ` +
-          `OAuth tokens are only accepted on routes tagged with "${ROUTE_TAG_ACCEPT_UIAM_OAUTH}". ` +
-          `This may indicate a misconfigured MCP client or token misuse.`
-      );
+      return this.authenticateViaUiamOAuth(request, authorizationHeader);
     }
 
     try {
@@ -165,6 +164,34 @@ export class HTTPAuthenticationProvider extends BaseAuthenticationProvider {
    */
   public getHTTPAuthenticationScheme() {
     return null;
+  }
+
+  private hasVerifiedInternalCallerAttestation(
+    request: KibanaRequest,
+    authorizationHeader: HTTPAuthorizationHeader
+  ): boolean {
+    const { uiam } = this.options;
+    if (!uiam) {
+      return false;
+    }
+
+    // Verify the attestation against this credential before bypassing OAuth exchange.
+    const presented = request.headers[UIAM_INTERNAL_CALLER_ATTESTATION_HEADER];
+    if (typeof presented !== 'string' || presented.length === 0) {
+      return false;
+    }
+
+    const expected =
+      uiam.getInternalCallerAttestationHeaders(authorizationHeader)[
+        UIAM_INTERNAL_CALLER_ATTESTATION_HEADER
+      ];
+    const presentedBuffer = Buffer.from(presented);
+    const expectedBuffer = Buffer.from(expected);
+
+    return (
+      presentedBuffer.length === expectedBuffer.length &&
+      timingSafeEqual(presentedBuffer, expectedBuffer)
+    );
   }
 
   /**

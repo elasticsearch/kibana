@@ -5,6 +5,8 @@
  * 2.0.
  */
 
+import { httpServerMock } from '@kbn/core/server/mocks';
+
 import type { ServiceAccountsServiceStart } from './types';
 
 export const serviceAccountsServiceMock = {
@@ -17,5 +19,11 @@ export const serviceAccountsServiceMock = {
       role_assignments: {},
       assumable_by: [],
     }),
+    createFakeRequest: jest.fn().mockImplementation(async () =>
+      httpServerMock.createFakeKibanaRequest({
+        headers: { authorization: 'Bearer essu_mock-service-account-token' },
+      })
+    ),
+    reauthenticateFakeRequest: jest.fn().mockResolvedValue(null),
   }),
 };

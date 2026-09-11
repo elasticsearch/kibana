@@ -11,12 +11,19 @@ import { EsServiceAccounts } from './es_service_accounts';
 import { ServiceAccountsService } from './service_accounts_service';
 import { UiamServiceAccounts } from './uiam_service_accounts';
 import { licenseMock } from '../../common/licensing/index.mock';
-import type { ConfigType } from '../config';
+import { ConfigSchema, createConfig } from '../config';
 import { uiamServiceMock } from '../uiam/uiam_service.mock';
 
 describe('ServiceAccountsService', () => {
-  const startParams = (config: Partial<ConfigType>, overrides = {}) => ({
-    config: config as ConfigType,
+  const startParams = (
+    config: { serviceAccounts?: { enabled: boolean; requestLifetime?: string } },
+    overrides = {}
+  ) => ({
+    config: createConfig(
+      ConfigSchema.validate(config, { serverless: config.serviceAccounts !== undefined }),
+      loggingSystemMock.createLogger(),
+      { isTLSEnabled: false }
+    ),
     license: licenseMock.create(),
     uiam: uiamServiceMock.create(),
     checkPrivilegesWithRequest: jest.fn(),
@@ -62,6 +69,22 @@ describe('ServiceAccountsService', () => {
           startParams({ serviceAccounts: { enabled: true } }, { cloudProjectContext: undefined })
         )
       ).toBeInstanceOf(EsServiceAccounts);
+    });
+
+    it('passes the configured refresh lifetime to the UIAM backend', async () => {
+      jest.useFakeTimers({ doNotFake: ['nextTick', 'setImmediate'] });
+      try {
+        const params = startParams({ serviceAccounts: { enabled: true, requestLifetime: '1s' } });
+        params.license.isEnabled.mockReturnValue(true);
+        const backend = service.start(params);
+        if (!backend) throw new Error('Expected UIAM backend');
+        const request = await backend.createFakeRequest({ serviceAccountId: 'sa-id' });
+        jest.advanceTimersByTime(1_000);
+        await expect(backend.reauthenticateFakeRequest(request)).resolves.toBeNull();
+        expect(params.uiam.exchangeServiceAccountToken).toHaveBeenCalledTimes(1);
+      } finally {
+        jest.useRealTimers();
+      }
     });
   });
 });

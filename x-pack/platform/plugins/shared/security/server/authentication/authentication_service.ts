@@ -45,6 +45,7 @@ import { getDetailedErrorMessage, getErrorStatusCode } from '../errors';
 import type { SecurityFeatureUsageServiceStart } from '../feature_usage';
 import { createRedirectHtmlPage } from '../lib/html_page_utils';
 import { ROUTE_TAG_ACCEPT_UIAM_OAUTH, ROUTE_TAG_AUTH_FLOW } from '../routes/tags';
+import type { ServiceAccountsServiceStart } from '../service_accounts';
 import type { Session } from '../session_management';
 import type { UiamServicePublic } from '../uiam';
 import type { UserProfileServiceStartInternal } from '../user_profile';
@@ -58,6 +59,7 @@ interface AuthenticationServiceSetupParams {
   elasticsearch: Pick<ElasticsearchServiceSetup, 'setUnauthorizedErrorHandler'>;
   config: ConfigType;
   license: SecurityLicense;
+  getServiceAccounts: () => ServiceAccountsServiceStart | null;
 }
 
 interface AuthenticationServiceStartParams {
@@ -112,6 +114,7 @@ export class AuthenticationService {
     license,
     elasticsearch,
     customBranding,
+    getServiceAccounts,
   }: AuthenticationServiceSetupParams) {
     this.license = license;
 
@@ -329,6 +332,18 @@ export class AuthenticationService {
       this.logger.debug(
         `Re-authenticating request due to error: ${getDetailedErrorMessage(error)}`
       );
+
+      // Fake requests never carry a session, so the re-authentication machinery below cannot help
+      // them (and its BWC header-scrubbing must never touch them). The one recoverable case is a
+      // request bound to a service account, whose credential Kibana minted and can mint again;
+      // everything else — API-key fakes from task manager/alerting, external user-created
+      // credentials — is deliberately left to its owner.
+      if (request.isFakeRequest) {
+        const authHeaders = await getServiceAccounts()
+          ?.reauthenticateFakeRequest(request)
+          .catch(() => null);
+        return authHeaders ? toolkit.retry({ authHeaders }) : toolkit.notHandled();
+      }
 
       let authenticationResult;
       const originalHeaders = request.headers;

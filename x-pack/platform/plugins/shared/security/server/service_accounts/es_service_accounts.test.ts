@@ -16,4 +16,19 @@ describe('EsServiceAccounts', () => {
       });
     });
   });
+
+  describe('#createFakeRequest', () => {
+    it('rejects with a 501 so callers surface a clear "not implemented" response', async () => {
+      await expect(new EsServiceAccounts().createFakeRequest()).rejects.toMatchObject({
+        message: 'Creating requests for Elasticsearch service accounts is not yet implemented',
+        output: { statusCode: 501 },
+      });
+    });
+  });
+
+  describe('#reauthenticateFakeRequest', () => {
+    it('resolves to null so unrelated fake requests stay on the not-handled path', async () => {
+      await expect(new EsServiceAccounts().reauthenticateFakeRequest()).resolves.toBeNull();
+    });
+  });
 });

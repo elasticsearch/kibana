@@ -8,7 +8,11 @@
  */
 
 import type { CoreStart, KibanaRequest } from '@kbn/core/server';
-import { HTTPAuthorizationHeader, markExternalUiamCredential } from '@kbn/core-security-server';
+import {
+  deriveInternalCallerAttestation,
+  HTTPAuthorizationHeader,
+  markExternalUiamCredential,
+} from '@kbn/core-security-server';
 import {
   callKibanaApi,
   CallKibanaApiResponseTooLargeError,
@@ -335,6 +339,34 @@ describe('callKibanaApi', () => {
     expect(mockGetAttestationHeaders).toHaveBeenCalledWith(
       new HTTPAuthorizationHeader('ApiKey', 'essu_internal_key')
     );
+  });
+
+  it('derives a new attestation when a service-account Bearer credential is replaced', async () => {
+    const fakeRequest = createFakeRequest({
+      headers: { authorization: 'Bearer essu_service_account_initial' },
+    });
+    const coreStart = createCoreStart({ uiamAttestation: 'enabled' });
+    mockGetAttestationHeaders.mockImplementation((credential: HTTPAuthorizationHeader) => ({
+      [UIAM_ATTESTATION_HEADER]: deriveInternalCallerAttestation('shared-secret', credential),
+    }));
+    const sentAttestations: string[] = [];
+
+    for (const token of ['essu_service_account_initial', 'essu_service_account_replacement']) {
+      // The service-account registry replaces authorization on the same fake request in place.
+      (fakeRequest.headers as Record<string, string>).authorization = `Bearer ${token}`;
+      mockSelfFetch.mockResolvedValue(mockSelfResponse(createMockResponse({ body: { ok: true } })));
+      await callKibanaApi({ fakeRequest, coreStart }, { method: 'GET', path: '/api/status' });
+      const credential = new HTTPAuthorizationHeader('Bearer', token);
+      expect(mockGetAttestationHeaders).toHaveBeenLastCalledWith(credential);
+      const options = mockSelfFetch.mock.calls[sentAttestations.length][1];
+      const attestation = options.headers[UIAM_ATTESTATION_HEADER];
+      expect(attestation).toBe(deriveInternalCallerAttestation('shared-secret', credential));
+      sentAttestations.push(attestation);
+      expect(mockAsScoped).toHaveBeenLastCalledWith(fakeRequest);
+    }
+
+    expect(sentAttestations[0]).not.toBe(sentAttestations[1]);
+    expect(mockGetAttestationHeaders).toHaveBeenCalledTimes(2);
   });
 
   it('does not stamp the attestation for a user-created (external) UIAM credential', async () => {

@@ -285,6 +285,15 @@ export interface UiamServicePublic {
   ): Promise<ServiceAccount>;
 
   /**
+   * Exchanges a service account ID for an ephemeral access token via the UIAM service.
+   *
+   * UIAM authorizes the exchange against the service account's `assumable_by` policy.
+   *
+   * @param serviceAccountId The ID of the service account to exchange a token for.
+   */
+  exchangeServiceAccountToken(serviceAccountId: string): Promise<{ token: string }>;
+
+  /**
    * Creates an OAuth client via the UIAM service.
    * @param accessToken UIAM session access token.
    * @param body The request body for creating the OAuth client.
@@ -743,6 +752,44 @@ export class UiamService implements UiamServicePublic {
 
       throw err;
     }
+  }
+
+  /**
+   * See {@link UiamServicePublic.exchangeServiceAccountToken}.
+   */
+  async exchangeServiceAccountToken(serviceAccountId: string): Promise<{ token: string }> {
+    this.#logger.debug(
+      `Attempting to exchange service account [id=${serviceAccountId}] for an ephemeral token.`
+    );
+    const requestOptions: RequestInit & { dispatcher: Agent | undefined } = {
+      method: 'POST',
+      headers: { 'User-Agent': this.#userAgentHeader },
+      // The certificate identifies Kibana's project for the account's assumable_by policy.
+      dispatcher: this.#dispatcher,
+    };
+    let response: { token: string };
+    try {
+      response = await UiamService.#parseUiamResponse(
+        await fetch(
+          `${this.#config.url}/uiam/api/v1/service-accounts/${encodeURIComponent(
+            serviceAccountId
+          )}/credentials/_exchange`,
+          requestOptions
+        )
+      );
+    } catch (err) {
+      this.#logger.error(
+        `Failed to exchange service account [id=${serviceAccountId}] for a token (HTTP status: ${
+          Boom.isBoom(err) ? err.output.statusCode : 'unavailable'
+        }).`
+      );
+      throw err;
+    }
+
+    this.#logger.debug(
+      `Successfully exchanged service account [id=${serviceAccountId}] for an ephemeral token.`
+    );
+    return response;
   }
 
   /**

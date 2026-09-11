@@ -7,6 +7,7 @@
 
 import Boom from '@hapi/boom';
 
+import type { KibanaRequest } from '@kbn/core/server';
 import type { ServiceAccount } from '@kbn/core-security-server';
 
 import type { ServiceAccountsBackend } from './types';
@@ -21,5 +22,19 @@ import type { ServiceAccountsBackend } from './types';
 export class EsServiceAccounts implements ServiceAccountsBackend {
   async create(): Promise<ServiceAccount> {
     throw Boom.notImplemented('Creating Elasticsearch service accounts is not yet implemented');
+  }
+
+  // See https://github.com/elastic/kibana/issues/284466.
+  async createFakeRequest(): Promise<KibanaRequest> {
+    throw Boom.notImplemented(
+      'Creating requests for Elasticsearch service accounts is not yet implemented'
+    );
+  }
+
+  // This backend never mints service-account-bound requests, so there is nothing to refresh;
+  // `null` (rather than an error) keeps the ES-client unauthorized-error handler on its
+  // not-handled path for unrelated fake requests.
+  async reauthenticateFakeRequest(): Promise<{ authorization: string } | null> {
+    return null;
   }
 }
