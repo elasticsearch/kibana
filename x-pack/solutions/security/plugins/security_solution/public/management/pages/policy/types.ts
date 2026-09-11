@@ -153,9 +153,15 @@ export type PolicyProtection =
     >
   | keyof Pick<UIPolicyConfig['linux'], 'malware' | 'behavior_protection' | 'memory_protection'>;
 
-export type MacPolicyProtection = keyof Pick<UIPolicyConfig['mac'], 'malware' | 'ransomware'>;
+export type MacPolicyProtection = keyof Pick<
+  UIPolicyConfig['mac'],
+  'malware' | 'ransomware' | 'behavior_protection' | 'memory_protection'
+>;
 
-export type LinuxPolicyProtection = keyof Pick<UIPolicyConfig['linux'], 'malware'>;
+export type LinuxPolicyProtection = keyof Pick<
+  UIPolicyConfig['linux'],
+  'malware' | 'behavior_protection' | 'memory_protection'
+>;
 
 export interface GetPolicyListResponse extends GetPackagePoliciesResponse {
   items: PolicyData[];

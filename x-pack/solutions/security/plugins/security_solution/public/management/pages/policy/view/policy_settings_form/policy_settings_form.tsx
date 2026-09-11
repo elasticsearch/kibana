@@ -29,6 +29,7 @@ import { AdvancedSection } from './components/advanced_section';
 import { useTestIdGenerator } from '../../../../hooks/use_test_id_generator';
 import { useGetDeviceControlUpsellComponent } from './hooks/use_get_device_control_component';
 import { DeviceControlCard } from './components/cards/device_control_card';
+import { PerOsPolicySettingsForm } from './per_os/per_os_policy_settings_form';
 
 const PROTECTIONS_SECTION_TITLE = i18n.translate(
   'xpack.securitySolution.endpoint.policy.details.protections',
@@ -50,6 +51,7 @@ export const PolicySettingsForm = memo<PolicySettingsFormProps>((props) => {
   const { storage } = useKibana().services;
 
   const trustedDevices = useIsExperimentalFeatureEnabled('trustedDevices');
+  const isPerOsFormEnabled = useIsExperimentalFeatureEnabled('perOsPolicySettings');
 
   const renderDeviceControlSection = () => {
     if (!trustedDevices) {
@@ -83,7 +85,7 @@ export const PolicySettingsForm = memo<PolicySettingsFormProps>((props) => {
     props.onChange({ isValid, updatedPolicy });
   };
 
-  return (
+  const legacyForm = (
     <div data-test-subj={getTestId()}>
       {showEventMergingBanner && (
         <>
@@ -150,6 +152,8 @@ export const PolicySettingsForm = memo<PolicySettingsFormProps>((props) => {
       <AdvancedSection {...props} data-test-subj={getTestId('advancedSection')} />
     </div>
   );
+
+  return isPerOsFormEnabled ? <PerOsPolicySettingsForm {...props} /> : legacyForm;
 });
 PolicySettingsForm.displayName = 'PolicySettingsForm';
 

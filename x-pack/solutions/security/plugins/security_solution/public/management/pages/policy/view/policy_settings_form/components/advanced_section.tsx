@@ -5,7 +5,7 @@
  * 2.0.
  */
 
-import React, { memo, useCallback, useState } from 'react';
+import React, { memo, useCallback, useId, useState } from 'react';
 import { FormattedMessage } from '@kbn/i18n-react';
 import type { EuiFieldTextProps } from '@elastic/eui';
 import {
@@ -107,15 +107,23 @@ const SHOW = i18n.translate('xpack.securitySolution.endpoint.policy.advanced.sho
   defaultMessage: 'Show',
 });
 
-export type AdvancedSectionProps = PolicyFormComponentCommonProps;
+export interface AdvancedSectionProps extends PolicyFormComponentCommonProps {
+  omitKeys?: readonly string[];
+  /** When true, the show/hide control is full width with a chevron. Defaults to the legacy inline button. */
+  fullWidthToggle?: boolean;
+}
 
 export const AdvancedSection = memo<AdvancedSectionProps>(
-  ({ policy, mode, onChange, 'data-test-subj': dataTestSubj }) => {
+  ({ policy, mode, onChange, omitKeys, fullWidthToggle, 'data-test-subj': dataTestSubj }) => {
     const getTestId = useTestIdGenerator(dataTestSubj);
+    const advancedSettingsId = useId();
     const [showAdvancedPolicy, setShowAdvancedPolicy] = useState<boolean>(false);
     const isPlatinumPlus = useLicense().isPlatinumPlus();
 
     const isEditMode = mode === 'edit';
+    const visibleAdvancedPolicySchema = omitKeys?.length
+      ? AdvancedPolicySchema.filter(({ key }) => !omitKeys.includes(key))
+      : AdvancedPolicySchema;
 
     const handleAdvancedSettingsButtonClick = useCallback(() => {
       setShowAdvancedPolicy((prevState) => !prevState);
@@ -141,6 +149,17 @@ export const AdvancedSection = memo<AdvancedSectionProps>(
         <EuiButtonEmpty
           data-test-subj={getTestId('showButton')}
           onClick={handleAdvancedSettingsButtonClick}
+          aria-expanded={showAdvancedPolicy}
+          aria-controls={advancedSettingsId}
+          {...(fullWidthToggle
+            ? {
+                iconType: showAdvancedPolicy ? ('arrowUp' as const) : ('arrowDown' as const),
+                // EuiButtonEmpty exposes no fullWidth prop (only `flush`/`size`), so the
+                // supported composition point is EUI's css prop. The chevron is what tests
+                // assert on; no styling-free class is added purely as a selector.
+                css: { width: '100%', justifyContent: 'center' },
+              }
+            : {})}
         >
           <FormattedMessage
             id="xpack.securitySolution.endpoint.policy.advanced.showHideButtonLabel"
@@ -151,7 +170,7 @@ export const AdvancedSection = memo<AdvancedSectionProps>(
         <EuiSpacer size="l" />
 
         {showAdvancedPolicy && (
-          <div>
+          <div id={advancedSettingsId}>
             {isEditMode && (
               <>
                 <EuiCallOut
@@ -177,7 +196,7 @@ export const AdvancedSection = memo<AdvancedSectionProps>(
             </EuiText>
 
             <EuiPanel data-test-subj={getTestId('settings')} paddingSize="s">
-              {AdvancedPolicySchema.map(
+              {visibleAdvancedPolicySchema.map(
                 (
                   {
                     key,

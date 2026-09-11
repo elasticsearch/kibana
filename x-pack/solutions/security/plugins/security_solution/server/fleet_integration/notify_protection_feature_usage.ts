@@ -12,14 +12,12 @@ import type { FeatureUsageService } from '../endpoint/services/feature_usage/ser
 
 const OS_KEYS = Object.values(PolicyOperatingSystem);
 const PROTECTION_KEYS = ['memory_protection', 'behavior_protection'] as const;
+const RANSOMWARE_OS_KEYS = [PolicyOperatingSystem.windows, PolicyOperatingSystem.mac] as const;
 
-function isNewlyEnabled(current: ProtectionModes, next: ProtectionModes) {
-  if (current === 'off' && (next === 'prevent' || next === 'detect')) {
-    return true;
-  }
-
-  return false;
-}
+// A protection counts as newly enabled when it moves to an active mode from `off`, or from a
+// branch that does not exist at all — the shape of policies stored before that protection shipped.
+const isNewlyEnabled = (current: ProtectionModes | undefined, next: ProtectionModes | undefined) =>
+  (current === undefined || current === 'off') && (next === 'prevent' || next === 'detect');
 
 function notifyProtection(type: string, featureUsageService: FeatureUsageService) {
   switch (type) {
@@ -50,15 +48,21 @@ export async function notifyProtectionFeatureUsage(
   const newPolicyConfig = newPackagePolicy.inputs[0].config?.policy?.value as PolicyConfig;
   const currentPolicyConfig = currentPackagePolicy.inputs[0].config.policy.value;
 
-  // ransomware is windows only
-  if (
-    isNewlyEnabled(
-      currentPolicyConfig.windows.ransomware.mode,
-      newPolicyConfig.windows.ransomware.mode
-    )
-  ) {
-    notifyProtection('ransomware', featureUsageService);
-  }
+  // ransomware is supported on windows and mac only; notify once across both
+  let ransomwareNotified = false;
+
+  RANSOMWARE_OS_KEYS.forEach((osKey) => {
+    if (
+      !ransomwareNotified &&
+      isNewlyEnabled(
+        currentPolicyConfig[osKey]?.ransomware?.mode,
+        newPolicyConfig[osKey]?.ransomware?.mode
+      )
+    ) {
+      notifyProtection('ransomware', featureUsageService);
+      ransomwareNotified = true;
+    }
+  });
 
   PROTECTION_KEYS.forEach((protectionKey) => {
     // only notify once per protection since protection can't be configured per os
@@ -68,8 +72,8 @@ export async function notifyProtectionFeatureUsage(
       if (
         !notified &&
         isNewlyEnabled(
-          currentPolicyConfig[osKey][protectionKey].mode,
-          newPolicyConfig[osKey][protectionKey].mode
+          currentPolicyConfig[osKey]?.[protectionKey]?.mode,
+          newPolicyConfig[osKey]?.[protectionKey]?.mode
         )
       ) {
         notifyProtection(protectionKey, featureUsageService);
