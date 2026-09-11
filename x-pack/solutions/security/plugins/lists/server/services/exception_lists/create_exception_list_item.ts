@@ -62,6 +62,7 @@ export const createExceptionListItem = async ({
   description,
   meta,
   user,
+  userDisplayName = user,
   tags,
   tieBreaker,
   type,
@@ -70,7 +71,7 @@ export const createExceptionListItem = async ({
   const dateNow = new Date().toISOString();
   const transformedComments = transformCreateCommentsToComments({
     incomingComments: comments,
-    user,
+    user: userDisplayName,
   });
   const savedObject = await savedObjectsClient.create<ExceptionListSoSchema>(savedObjectType, {
     comments: transformedComments,

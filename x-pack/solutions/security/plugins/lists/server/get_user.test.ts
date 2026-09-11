@@ -8,7 +8,7 @@
 import { securityServiceMock } from '@kbn/core/server/mocks';
 import type { SecurityRequestHandlerContext } from '@kbn/core-security-server';
 
-import { getUser } from './get_user';
+import { getUser, getUserDisplayName } from './get_user';
 
 describe('get_user', () => {
   let security: SecurityRequestHandlerContext;
@@ -32,6 +32,26 @@ describe('get_user', () => {
     security.authc.getCurrentUser = jest.fn().mockReturnValue({ username: 'alice' });
     const user = getUser({ security });
     expect(user).toEqual('alice');
+  });
+
+  test('it returns full name before username as the display name', () => {
+    security.authc.getCurrentUser = jest.fn().mockReturnValue({
+      email: 'bob@example.com',
+      full_name: 'Bob Smith',
+      username: '2983883891',
+    });
+    const user = getUserDisplayName({ security });
+    expect(user).toEqual('Bob Smith');
+  });
+
+  test('it returns email before username as the display name if full name is empty', () => {
+    security.authc.getCurrentUser = jest.fn().mockReturnValue({
+      email: 'bob@example.com',
+      full_name: '',
+      username: '2983883891',
+    });
+    const user = getUserDisplayName({ security });
+    expect(user).toEqual('bob@example.com');
   });
 
   test('it returns "elastic" as the user given null as the current user', () => {

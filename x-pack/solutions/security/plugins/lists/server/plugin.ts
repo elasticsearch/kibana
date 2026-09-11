@@ -26,7 +26,7 @@ import type {
   PluginsStart,
 } from './types';
 import { getSpaceId } from './get_space_id';
-import { getUser } from './get_user';
+import { getUser, getUserDisplayName } from './get_user';
 import { initSavedObjects } from './saved_objects';
 import { ExceptionListClient } from './services/exception_lists/exception_list_client';
 import type {
@@ -112,6 +112,7 @@ export class ListPlugin implements Plugin<ListPluginSetup, ListsPluginStart, {},
       } else {
         const spaceId = getSpaceId({ request, spaces });
         const user = getUser({ security });
+        const userDisplayName = getUserDisplayName({ security });
         return {
           getExceptionListClient: (): ExceptionListClient =>
             new ExceptionListClient({
@@ -119,6 +120,7 @@ export class ListPlugin implements Plugin<ListPluginSetup, ListsPluginStart, {},
               savedObjectsClient,
               serverExtensionsClient: this.extensionPoints.getClient(),
               user,
+              userDisplayName,
             }),
           getExtensionPointClient: (): ExtensionPointStorageClientInterface =>
             extensionPoints.getClient(),

@@ -71,6 +71,8 @@ import type { ExtensionPointStorageClientInterface } from '../extension_points';
 export interface ConstructorOptions {
   /** User creating, modifying, deleting, or updating an exception list */
   user: string;
+  /** Human-readable user label for comment authors */
+  userDisplayName?: string;
   /** Saved objects client to create, modify, delete, an exception list */
   savedObjectsClient: SavedObjectsClientContract;
   /** server extensions client that can be useful for injecting domain specific rules */
@@ -278,6 +280,8 @@ export interface CreateExceptionListItemOptions {
   tags: Tags;
   /** container type */
   type: ExceptionListItemType;
+  /** Human-readable user label for comment authors */
+  userDisplayName?: string;
 }
 
 /**
@@ -349,6 +353,8 @@ export interface UpdateExceptionListItemOptions {
   tags: TagsOrUndefined;
   /** container type */
   type: ExceptionListItemTypeOrUndefined;
+  /** Human-readable user label for comment authors */
+  userDisplayName?: string;
 }
 
 /**
