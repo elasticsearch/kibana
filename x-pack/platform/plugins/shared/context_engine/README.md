@@ -13,6 +13,8 @@ stream. AI index records are stored in a hidden Kibana system index
 | `PUT`    | `/api/context_engine/ai_index/{id}`                               | Create or update an AI index         |
 | `GET`    | `/api/context_engine/ai_index/{id}`                               | Get an AI index by id                |
 | `GET`    | `/api/context_engine/ai_index`                                    | List AI indices (max 100)            |
+| `POST`   | `/api/context_engine/ai_index/_query`                             | Run ES\|QL against AI indices        |
+| `GET`    | `/api/context_engine/ai_index/{id}/_describe`                     | Describe an AI index for querying    |
 | `DELETE` | `/api/context_engine/ai_index/{id}`                               | Delete an AI index                   |
 | `PUT`    | `/internal/context_engine/ai_index/{id}/feedback_analysis`        | Update the feedback analysis config  |
 
@@ -42,6 +44,120 @@ Notes:
   are left untouched and must be removed with the Delete index API if desired.
 - `feedback_analysis` configures this index's feedback loop. See
   [Feedback analysis configuration](#feedback-analysis-configuration) below.
+
+## Querying AI indices
+
+`POST /api/context_engine/ai_index/_query` runs caller-supplied ES|QL as the
+current user. Body: `{ query, params?, limit? }`. Two things are server-owned
+and cannot be overridden:
+
+- **Space filter.** Documents are visible when they carry no
+  `permissions.kibana.privileges` element (public), or when one is scoped to
+  the request's space or to `*`. The space comes from the request URL
+  (`/s/{spaceId}/api/...`, default space otherwise), so a caller cannot read
+  another space's documents on any path. `contextEngine:enabled` is a per-space
+  setting, so the route 404s in any space where it is off.
+- **Row limit.** `limit` defaults to 100 and cannot exceed 1000. A trailing
+  `LIMIT` in the query is capped to it; otherwise one is appended.
+
+The query is otherwise a pass-through: it decides which indices it reads
+(`FROM ai-index-idx-a,ai-index-ds-b` and `FROM ai-index-*` both work) and
+Elasticsearch index privileges bound what it can reach. Elasticsearch 4xx
+errors (bad ES|QL, missing index privilege) are returned with their status.
+
+## Describing AI indices
+
+`GET /api/context_engine/ai_index/{id}/_describe` is the step before writing a
+query. It returns `{ response: string }`: a free-form text context block meant
+to be handed to an agent as-is, not parsed.
+
+```
+AI index: sales-knowledge
+Curated sales knowledge.
+Query with ES|QL against: ai-index-idx-sales-knowledge
+
+Fields
+@timestamp: date, searchable, aggregatable
+content.semantic: semantic_text, searchable
+title: text, searchable
+type: keyword, searchable, aggregatable
+
+Semantic fields
+content.semantic
+
+Knowledge item types
+"document": 41
+"detection rule": 3
+
+Tags
+"billing": 12
+
+Example queries (adapt field names for non-canonical indices)
+
+Full text search, lexical and semantic fused together (?query)
+FROM ai-index-idx-sales-knowledge METADATA _id, _index, _score
+| FORK
+    ( WHERE MATCH(title, ?query) OR ... | SORT _score DESC | LIMIT 20 )
+    ( WHERE MATCH(title.semantic, ?query) OR ... | SORT _score DESC | LIMIT 20 )
+| FUSE
+...
+
+Filter by knowledge item type and tag (?type, ?tag; tags is multi-valued, so MATCH)
+...
+
+Count by type
+...
+```
+
+- The `Query with ES|QL against` line is `dest.value`, the string to put after
+  `FROM`.
+- `Fields` lists every mapped field, mapping-defined runtime fields included
+  (`path: type`, then `searchable` and/or `aggregatable` when true), one per
+  line, sorted by path and capped at 500;
+  the heading becomes `Fields (showing 500 of N)` when capped. Types come from
+  `_mapping`; `searchable`/`aggregatable` from `_field_caps`. A path mapped to
+  different types across the matched indices is reported as `conflict`.
+- `Semantic fields` lists the searchable `semantic_text` fields among those
+  shown, detected from the mapping type. Omitted when there are none.
+- `Knowledge item types` and `Tags` show the top 20 `type` / `tags` values by
+  document count in the current space, one `"value": count` per line. Each
+  section is omitted unless its field is an aggregatable `keyword` — always the
+  case on canonical KI indices, but a custom index that maps `type` / `tags` as
+  `text`, or inconsistently across a pattern, gets no counts. One `terms`
+  aggregation backs both; it errors rather than return undercounts if a shard
+  fails. Both sections are also omitted when the caller lacks `read` on the
+  backing indices; the rest of the block still renders.
+- `Example queries` are three fixed ES|QL shapes written for the canonical KI
+  schema (`title`, `description`, `content`, their `.semantic` multi-fields,
+  `type`, `tags`) with only the `FROM` target substituted. They use named
+  parameters (`?query`; `?type` and `?tag`) meant for `_query`'s `params`. They
+  run as-is on canonical indices; for other mappings the agent adapts field
+  names from `Fields`.
+
+Describe runs no ES|QL. It issues `_mapping` and `_field_caps` (both needed:
+`_field_caps` reports `semantic_text` as `text`) plus the one aggregation, all
+as the current user. 404 when the AI index is not registered; Elasticsearch 4xx
+from `_mapping` / `_field_caps` (missing `view_index_metadata`) is returned
+with its status. The aggregation is the exception: its 403 (missing `read`)
+drops the counts sections instead. Each `_mapping` /
+`_field_caps` response is capped at 20 MB before the field cap applies; a
+target broad enough to exceed it returns 400.
+
+### Privileges
+
+`contextEngine:read` grants the routes; it grants **no** Elasticsearch index
+privileges. Callers also need, on every backing index (`ai-index-*`):
+
+- `read` to query, or Elasticsearch returns 403;
+- `view_index_metadata` to describe (`_mapping` and `_field_caps`), or
+  Elasticsearch returns 403. The counts aggregation also needs `read`; without
+  it the two counts sections are omitted and the rest of the block is returned.
+
+Kibana adds only the space filter. For the built-in SML index
+(`ai-index-idx-sml-data`), Elasticsearch additionally applies implicit
+document-level security mirroring Kibana object privileges, so callers only see
+knowledge indicators for dashboards, rules or connectors they could open. Custom
+AI indices get the space filter alone; they are queried like any other index.
 
 ## Feedback analysis configuration
 

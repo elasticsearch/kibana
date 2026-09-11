@@ -11,3 +11,4 @@ import { apiTest as baseApiTest } from '@kbn/scout';
 export const apiTest = baseApiTest.extend<ScoutTestFixtures, ScoutWorkerFixtures>({});
 
 export * as testData from './constants';
+export * from './helpers';

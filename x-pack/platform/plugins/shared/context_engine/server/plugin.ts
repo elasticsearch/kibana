@@ -23,10 +23,12 @@ import type {
   ContextEnginePluginStart,
   ContextEngineSetupDependencies,
   ContextEngineStartDependencies,
+  GetAiIndexDataReadServiceParams,
 } from './types';
 import { registerFeatures } from './features';
 import { registerAiIndexRoutes } from './routes/ai_indices';
 import { registerSignalRoutes } from './routes/signals';
+import { AiIndexDataReadService } from './ai_indices/data_read_service';
 import { AiIndexService } from './ai_indices/service';
 import { AiIndexRegistry } from './ai_indices/registry';
 import { ImprovementsService } from './improvements/service';
@@ -37,6 +39,7 @@ import { registerSignalGeneratorTaskDefinition, scheduleSignalGenerator } from '
 import { createVerifyKiStepDefinition } from './step_types/verify_ki_step';
 import { registerStepDefinitions } from './step_types';
 import { ContextEngineAnalyticsService } from './telemetry';
+import { resolveSpaceId } from './utils/resolve_space_id';
 
 export class ContextEnginePlugin
   implements
@@ -51,6 +54,9 @@ export class ContextEnginePlugin
   private aiIndexService?: AiIndexService;
   private signalsService?: SignalsService;
   private createImprovementsService?: (esClient: ElasticsearchClient) => ImprovementsService;
+  private createAiIndexDataReadService?: (
+    params: GetAiIndexDataReadServiceParams
+  ) => AiIndexDataReadService;
   private esClient?: ElasticsearchClient;
   private isFeedbackLoopEnabled: () => Promise<boolean> = async () => false;
   private readonly aiIndexRegistry = new AiIndexRegistry();
@@ -128,6 +134,12 @@ export class ContextEnginePlugin
         }
         return this.createImprovementsService(esClient);
       },
+      getAiIndexDataReadService: (params) => {
+        if (!this.createAiIndexDataReadService) {
+          throw new Error('AI index read service not available — plugin has not started');
+        }
+        return this.createAiIndexDataReadService(params);
+      },
       getActions: async () => {
         const [, startDeps] = await coreSetup.getStartServices();
         return startDeps.actions;
@@ -156,7 +168,7 @@ export class ContextEnginePlugin
         if (!security) {
           return true;
         }
-        const spaceId = spaces?.spacesService.getSpaceId(request) ?? 'default';
+        const spaceId = resolveSpaceId(spaces, request);
         const { hasAllRequested } = await security.authz
           .checkPrivilegesWithRequest(request)
           .atSpace(spaceId, {
@@ -191,6 +203,7 @@ export class ContextEnginePlugin
       esClient: this.esClient,
       logger: aiIndexLogger,
     });
+    const aiIndexService = this.aiIndexService;
 
     this.signalsService = new SignalsService({
       esClient: this.esClient,
@@ -202,6 +215,15 @@ export class ContextEnginePlugin
     this.createImprovementsService = (esClient: ElasticsearchClient) =>
       new ImprovementsService({ esClient, logger: improvementsLogger });
     const createImprovementsService = this.createImprovementsService;
+
+    this.createAiIndexDataReadService = ({ esClient, request }) =>
+      new AiIndexDataReadService({
+        esClient,
+        spaceId: resolveSpaceId(startDeps.spaces, request),
+        auditLogger: coreStart.security.audit.asScoped(request),
+        aiIndexService,
+      });
+    const createAiIndexDataReadService = this.createAiIndexDataReadService;
 
     // Installed as Kibana, with the cluster privilege it already holds. The index is left for the
     // first user write to create from it, so the store needs no grant on the internal user.
@@ -216,7 +238,6 @@ export class ContextEnginePlugin
       );
     });
 
-    const aiIndexService = this.aiIndexService;
     const registry = this.aiIndexRegistry;
 
     const soClient = coreStart.savedObjects.createInternalRepository();
@@ -257,6 +278,7 @@ export class ContextEnginePlugin
         }
         return this.aiIndexService;
       },
+      getAiIndexDataReadService: (params) => createAiIndexDataReadService(params),
       getSignalsService: () => signalsService,
       getImprovementsService: (esClient) => createImprovementsService(esClient),
     };

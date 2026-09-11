@@ -5,6 +5,7 @@
  * 2.0.
  */
 
+import type { EsqlEsqlColumnInfo, FieldValue } from '@elastic/elasticsearch/lib/api/types';
 import type { ImprovementAction } from './improvement_actions';
 
 /**
@@ -120,4 +121,24 @@ export interface DeleteAiIndexResponse {
 export interface KiTypeCount {
   type: string;
   count: number;
+}
+
+export type AiIndexQueryParamValue = string | number | boolean;
+
+/** The query decides the target; the server injects the space filter and a row limit. */
+export interface QueryAiIndicesRequest {
+  query: string;
+  params?: Record<string, AiIndexQueryParamValue>;
+  /** Defaults to `DEFAULT_AI_INDEX_QUERY_LIMIT`. Capped at `MAX_AI_INDEX_QUERY_LIMIT`. */
+  limit?: number;
+}
+
+export interface QueryAiIndicesResponse {
+  columns: EsqlEsqlColumnInfo[];
+  values: FieldValue[][];
+}
+
+/** Free-form context block for an agent: what the index is, its fields, and how to query it. */
+export interface DescribeAiIndexResponse {
+  response: string;
 }

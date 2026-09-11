@@ -10,7 +10,7 @@ import { tags } from '@kbn/scout';
 import { expect } from '@kbn/scout/api';
 import { apiTest, testData } from '../fixtures';
 
-const AI_INDEX_COLLECTION_PATH = 'api/context_engine/ai_index';
+const { AI_INDEX_COLLECTION_PATH, API_HEADERS, CONTEXT_ENGINE_ENABLED_SETTING } = testData;
 const AI_INDEX_ID = 'scout_test_ai_index';
 const AI_INDEX_PATH = `${AI_INDEX_COLLECTION_PATH}/${AI_INDEX_ID}`;
 const INDEX_AI_INDEX_ID = 'scout_test_index_ai_index';
@@ -19,12 +19,6 @@ const LAZY_AI_INDEX_ID = `${AI_INDEX_ID}_lazy`;
 const LAZY_AI_INDEX_PATH = `${AI_INDEX_COLLECTION_PATH}/${LAZY_AI_INDEX_ID}`;
 const DEST_DATA_STREAM = 'ai-index-ds-scout-test';
 const DEST_INDEX = 'ai-index-idx-scout-test';
-const CONTEXT_ENGINE_ENABLED_SETTING = 'contextEngine:enabled';
-
-const API_HEADERS = {
-  ...testData.COMMON_HEADERS,
-  'elastic-api-version': '2023-10-31',
-};
 
 const aiIndexBody = {
   description: 'AI index created by the Scout API test suite',

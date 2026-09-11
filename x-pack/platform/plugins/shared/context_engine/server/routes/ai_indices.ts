@@ -10,17 +10,25 @@ import type { Type } from '@kbn/config-schema';
 import { schema } from '@kbn/config-schema';
 import type { ElasticsearchClient, IRouter, KibanaResponseFactory, Logger } from '@kbn/core/server';
 import type { RouteSecurity } from '@kbn/core-http-server';
+import { isResponseError } from '@kbn/es-errors';
 import {
   AI_INDEX_API_VERSION,
   AI_INDEX_INTERNAL_API_VERSION,
+  DEFAULT_AI_INDEX_QUERY_LIMIT,
   DEFAULT_FEEDBACK_ANALYSIS_INTERVAL,
   DEFAULT_FEEDBACK_ANALYSIS_SIGNAL_TIME_RANGE_FROM,
   MAX_AI_INDEX_AUTOMATION_LENGTH,
   MAX_AI_INDEX_AUTOMATIONS,
+  MAX_AI_INDEX_DESCRIBE_FIELDS,
   MAX_AI_INDEX_DESCRIPTION_LENGTH,
   MAX_AI_INDEX_DEST_VALUE_LENGTH,
   MAX_AI_INDEX_FEEDBACK_AGENT_ID_LENGTH,
   MAX_AI_INDEX_ID_LENGTH,
+  MAX_AI_INDEX_QUERY_LENGTH,
+  MAX_AI_INDEX_QUERY_LIMIT,
+  MAX_AI_INDEX_QUERY_PARAM_KEY_LENGTH,
+  MAX_AI_INDEX_QUERY_PARAM_VALUE_LENGTH,
+  MAX_AI_INDEX_QUERY_PARAMS,
   MAX_AI_INDEX_SOURCE_VALUE_LENGTH,
   MAX_AI_INDEX_SOURCES,
   MAX_AI_INDICES,
@@ -29,10 +37,12 @@ import {
   MAX_FEEDBACK_ANALYSIS_TIME_RANGE_FROM_LENGTH,
   MIN_FEEDBACK_ANALYSIS_INTERVAL_MINUTES,
   aiIndexByIdPath,
+  aiIndexDescribePath,
   aiIndexFeedbackAnalysisPath,
   aiIndexKiByIdPath,
   aiIndexKiListPath,
   aiIndexPath,
+  aiIndexQueryPath,
   DEFAULT_KI_PAGE_SIZE,
   MAX_KI_PAGE_SIZE,
   MAX_KI_TYPE_FILTER_LENGTH,
@@ -45,6 +55,7 @@ import type {
   ListAiIndexResponse,
   PutAiIndexFeedbackAnalysisResponse,
   PutAiIndexResponse,
+  QueryAiIndicesResponse,
 } from '../../common/http_api/ai_indices';
 import type { ImprovementAction } from '../../common/http_api/improvement_actions';
 import { IMPROVEMENT_ACTIONS } from '../../common/http_api/improvement_actions';
@@ -54,6 +65,7 @@ import { apiPrivileges } from '../../common/features';
 import {
   validateAbsoluteSignalWindow,
   validateAiIndexId,
+  validateAiIndexQueryLimit,
   validateFeedbackAnalysisInterval,
   validateRelativeSignalWindow,
   validateSignalWindowCoversInterval,
@@ -61,19 +73,24 @@ import {
 import {
   InvalidAiIndexDestError,
   AiIndexConflictError,
+  AiIndexDescribeResponseTooLargeError,
   AiIndexManagedError,
   AiIndexNotFoundError,
   AiIndexAlreadyExistsError,
+  AiIndexQueryResponseTooLargeError,
+  InvalidAiIndexQueryError,
   InvalidConnectorSourceError,
   KiNotFoundError,
 } from '../ai_indices/errors';
+import type { AiIndexDataReadServiceApi } from '../ai_indices/data_read_service';
 import type { AiIndexService } from '../ai_indices/service';
 import type { ImprovementsServiceApi } from '../improvements/service';
+import type { GetAiIndexDataReadServiceParams } from '../types';
 import { getKi } from '../ai_indices/ki_get';
 import { getKis } from '../ai_indices/ki_list';
 import { validateSignalFilter } from '../ai_indices/signal_filter';
 import { validateConnectorSources } from '../ai_indices/validate_connector_sources';
-import { AiIndexAuditAction, aiIndexAuditEvent } from './audit_events';
+import { AiIndexAuditAction, aiIndexAuditEvent } from '../audit/audit_events';
 import { withContextEngineFeatureFlag } from './with_feature_flag';
 
 const READ_SECURITY: RouteSecurity = {
@@ -276,8 +293,52 @@ const getKiQuerySchema = schema.object({
   }),
 });
 
+const queryAiIndicesBodySchema = schema.object({
+  query: schema.string({
+    minLength: 1,
+    maxLength: MAX_AI_INDEX_QUERY_LENGTH,
+    meta: {
+      description:
+        'The ES|QL query to run. Its FROM decides which Elasticsearch indices are read (normally `ai-index-*`); the server adds the space filter and a row limit.',
+    },
+  }),
+  params: schema.maybe(
+    schema.recordOf(
+      schema.string({ minLength: 1, maxLength: MAX_AI_INDEX_QUERY_PARAM_KEY_LENGTH }),
+      schema.oneOf([
+        schema.string({ maxLength: MAX_AI_INDEX_QUERY_PARAM_VALUE_LENGTH }),
+        schema.number(),
+        schema.boolean(),
+      ]),
+      {
+        validate: (params) =>
+          Object.keys(params).length > MAX_AI_INDEX_QUERY_PARAMS
+            ? `must not have more than ${MAX_AI_INDEX_QUERY_PARAMS} entries`
+            : undefined,
+        meta: { description: 'Values for `?name` placeholders in the query.' },
+      }
+    )
+  ),
+  limit: schema.maybe(
+    schema.number({
+      min: 1,
+      max: MAX_AI_INDEX_QUERY_LIMIT,
+      validate: validateAiIndexQueryLimit,
+      meta: {
+        description: `Maximum rows to return. Defaults to ${DEFAULT_AI_INDEX_QUERY_LIMIT}; a trailing \`LIMIT\` in the query is capped to this value.`,
+      },
+    })
+  ),
+});
+
 const handleAiIndexError = (error: unknown, response: KibanaResponseFactory) => {
-  if (error instanceof InvalidAiIndexDestError || error instanceof InvalidConnectorSourceError) {
+  if (
+    error instanceof InvalidAiIndexDestError ||
+    error instanceof InvalidConnectorSourceError ||
+    error instanceof AiIndexQueryResponseTooLargeError ||
+    error instanceof AiIndexDescribeResponseTooLargeError ||
+    error instanceof InvalidAiIndexQueryError
+  ) {
     return response.badRequest({ body: { message: error.message } });
   }
   if (error instanceof AiIndexNotFoundError || error instanceof KiNotFoundError) {
@@ -293,16 +354,29 @@ const handleAiIndexError = (error: unknown, response: KibanaResponseFactory) => 
   throw error;
 };
 
+/** Current-user reads: ES 4xx (bad ES|QL, missing privilege) is caller's error. */
+const handleReadError = (error: unknown, response: KibanaResponseFactory) => {
+  if (isResponseError(error)) {
+    const { statusCode, message } = error;
+    if (statusCode !== undefined && statusCode >= 400 && statusCode < 500) {
+      return response.customError({ statusCode, body: { message } });
+    }
+  }
+  return handleAiIndexError(error, response);
+};
+
 export const registerAiIndexRoutes = ({
   router,
   logger,
   getAiIndexService,
+  getAiIndexDataReadService,
   getImprovementsService,
   getActions,
 }: {
   router: IRouter;
   logger: Logger;
   getAiIndexService: () => AiIndexService;
+  getAiIndexDataReadService: (params: GetAiIndexDataReadServiceParams) => AiIndexDataReadServiceApi;
   getImprovementsService: (esClient: ElasticsearchClient) => ImprovementsServiceApi;
   getActions: () => Promise<ActionsPluginStart>;
 }) => {
@@ -464,6 +538,76 @@ export const registerAiIndexRoutes = ({
         } catch (error) {
           auditLogger.log(aiIndexAuditEvent({ action: AiIndexAuditAction.LIST, error }));
           return handleAiIndexError(error, response);
+        }
+      })
+    );
+
+  // Query AI indices with ES|QL
+  router.versioned
+    .post({
+      path: aiIndexQueryPath,
+      security: READ_SECURITY,
+      access: 'public',
+      summary: 'Query AI indices',
+      description: `Runs an ES|QL query as the current user, with a space filter and a row limit (at most ${MAX_AI_INDEX_QUERY_LIMIT}) applied server-side. The query decides which indices it reads; Elasticsearch index privileges bound what it can reach.`,
+      options: {
+        tags: ['oas-tag:context engine'],
+        availability: { stability: 'experimental' },
+      },
+    })
+    .addVersion(
+      {
+        version: AI_INDEX_API_VERSION,
+        validate: {
+          request: {
+            body: queryAiIndicesBodySchema,
+          },
+        },
+      },
+      withContextEngineFeatureFlag(async (ctx, request, response) => {
+        const esClient = (await ctx.core).elasticsearch.client.asCurrentUser;
+        try {
+          const body: QueryAiIndicesResponse = await getAiIndexDataReadService({
+            esClient,
+            request,
+          }).query(request.body);
+          return response.ok({ body });
+        } catch (error) {
+          return handleReadError(error, response);
+        }
+      })
+    );
+
+  // Describe an AI index
+  router.versioned
+    .get({
+      path: aiIndexDescribePath,
+      security: READ_SECURITY,
+      access: 'public',
+      summary: 'Describe an AI index',
+      description: `Returns a free-form text context block for an agent: the AI index, its ES|QL target, the fields its backing indices expose (at most ${MAX_AI_INDEX_DESCRIBE_FIELDS}) and which are semantic, knowledge item type and tag counts in the current space, and example ES|QL queries. Read as the current user, so Elasticsearch index privileges bound what it can reach.`,
+      options: {
+        tags: ['oas-tag:context engine'],
+        availability: { stability: 'experimental' },
+      },
+    })
+    .addVersion(
+      {
+        version: AI_INDEX_API_VERSION,
+        validate: {
+          request: {
+            params: aiIndexIdParamsSchema,
+          },
+        },
+      },
+      withContextEngineFeatureFlag(async (ctx, request, response) => {
+        const esClient = (await ctx.core).elasticsearch.client.asCurrentUser;
+        const { aiIndexId } = request.params;
+        try {
+          const body = await getAiIndexDataReadService({ esClient, request }).describe(aiIndexId);
+          return response.ok({ body });
+        } catch (error) {
+          return handleReadError(error, response);
         }
       })
     );
