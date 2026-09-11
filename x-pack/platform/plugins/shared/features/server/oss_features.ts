@@ -499,10 +499,17 @@ const getBaseVisualizeFeature = ({
   version: 'v1' | 'v2';
 }): Omit<KibanaFeatureConfig, 'id' | 'order'> => {
   const apiAllPrivileges = [];
-  const savedObjectAllPrivileges = ['visualization', 'lens'];
+  const savedObjectAllPrivileges = ['visualization', 'lens', 'vega'];
   const uiAllPrivileges = ['show', 'delete', 'save'];
   const apiReadPrivileges = [];
-  const savedObjectReadPrivileges = ['index-pattern', 'search', 'visualization', 'lens', 'tag'];
+  const savedObjectReadPrivileges = [
+    'index-pattern',
+    'search',
+    'visualization',
+    'lens',
+    'vega',
+    'tag',
+  ];
 
   if (version === 'v1') {
     apiAllPrivileges.push('savedQuery:manage', 'savedQuery:read');
@@ -629,6 +636,7 @@ const getBaseDashboardFeature = ({
     'dashboard',
     'tag',
     'markdown',
+    'vega',
   ];
 
   if (version === 'v1') {
@@ -666,6 +674,7 @@ const getBaseDashboardFeature = ({
             'lens',
             'map',
             'tag',
+            'vega',
           ],
         },
         ui: uiAllPrivileges,

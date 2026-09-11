@@ -56,6 +56,12 @@ dependsOn:
   - '@kbn/presentation-util'
   - '@kbn/zod'
   - '@kbn/presentation-publishing-schemas'
+  - '@kbn/as-code-shared-telemetry'
+  - '@kbn/as-code-utils'
+  - '@kbn/as-code-shared-schemas'
+  - '@kbn/core-saved-objects-server'
+  - '@kbn/core-feature-flags-server'
+  - '@kbn/core-http-server'
 tags:
   - plugin
   - prod

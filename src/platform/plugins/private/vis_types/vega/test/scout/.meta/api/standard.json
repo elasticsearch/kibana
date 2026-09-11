@@ -1,0 +1,328 @@
+{
+  "sha1": "",
+  "testChannels": [
+    "ci-on-commit"
+  ],
+  "tests": [
+    {
+      "id": "424670ebc030949-cb7d90dd7fb7687",
+      "title": "vega - create should create a vega library item with hjson spec",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic",
+        "@cloud-stateful-classic",
+        "@local-serverless-search",
+        "@cloud-serverless-search",
+        "@local-serverless-observability_complete",
+        "@cloud-serverless-observability_complete",
+        "@local-serverless-security_complete",
+        "@cloud-serverless-security_complete"
+      ],
+      "location": {
+        "file": "src/platform/plugins/private/vis_types/vega/test/scout/api/tests/create_vega.spec.ts",
+        "line": 28,
+        "column": 60
+      }
+    },
+    {
+      "id": "424670ebc030949-161614aad7b3964",
+      "title": "vega - create should create a vega library item with json spec",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic",
+        "@cloud-stateful-classic",
+        "@local-serverless-search",
+        "@cloud-serverless-search",
+        "@local-serverless-observability_complete",
+        "@cloud-serverless-observability_complete",
+        "@local-serverless-security_complete",
+        "@cloud-serverless-security_complete"
+      ],
+      "location": {
+        "file": "src/platform/plugins/private/vis_types/vega/test/scout/api/tests/create_vega.spec.ts",
+        "line": 37,
+        "column": 53
+      }
+    },
+    {
+      "id": "424670ebc030949-785b2874fad3d26",
+      "title": "vega - create validation - returns 400 for json spec missing $schema",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic",
+        "@cloud-stateful-classic",
+        "@local-serverless-search",
+        "@cloud-serverless-search",
+        "@local-serverless-observability_complete",
+        "@cloud-serverless-observability_complete",
+        "@local-serverless-security_complete",
+        "@cloud-serverless-security_complete"
+      ],
+      "location": {
+        "file": "src/platform/plugins/private/vis_types/vega/test/scout/api/tests/create_vega.spec.ts",
+        "line": 50,
+        "column": 13
+      }
+    },
+    {
+      "id": "424670ebc030949-4ca2affc11991d6",
+      "title": "vega - create validation - returns 400 when title is missing",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic",
+        "@cloud-stateful-classic",
+        "@local-serverless-search",
+        "@cloud-serverless-search",
+        "@local-serverless-observability_complete",
+        "@cloud-serverless-observability_complete",
+        "@local-serverless-security_complete",
+        "@cloud-serverless-security_complete"
+      ],
+      "location": {
+        "file": "src/platform/plugins/private/vis_types/vega/test/scout/api/tests/create_vega.spec.ts",
+        "line": 62,
+        "column": 40
+      }
+    },
+    {
+      "id": "424670ebc030949-2d95c4e4b55b985",
+      "title": "vega - create authorization - returns 403 for viewer",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic",
+        "@cloud-stateful-classic",
+        "@local-serverless-search",
+        "@cloud-serverless-search",
+        "@local-serverless-observability_complete",
+        "@cloud-serverless-observability_complete",
+        "@local-serverless-security_complete",
+        "@cloud-serverless-security_complete"
+      ],
+      "location": {
+        "file": "src/platform/plugins/private/vis_types/vega/test/scout/api/tests/create_vega.spec.ts",
+        "line": 70,
+        "column": 11
+      }
+    },
+    {
+      "id": "3eb9bdf5e3b549e-5845b6c2812ee5f",
+      "title": "vega - delete should delete a vega library item",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic",
+        "@cloud-stateful-classic",
+        "@local-serverless-search",
+        "@cloud-serverless-search",
+        "@local-serverless-observability_complete",
+        "@cloud-serverless-observability_complete",
+        "@local-serverless-security_complete",
+        "@cloud-serverless-security_complete"
+      ],
+      "location": {
+        "file": "src/platform/plugins/private/vis_types/vega/test/scout/api/tests/delete_vega.spec.ts",
+        "line": 39,
+        "column": 5
+      }
+    },
+    {
+      "id": "3eb9bdf5e3b549e-b3e0a4efa7450ac",
+      "title": "vega - delete should return 404 for a non-existent id",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic",
+        "@cloud-stateful-classic",
+        "@local-serverless-search",
+        "@cloud-serverless-search",
+        "@local-serverless-observability_complete",
+        "@cloud-serverless-observability_complete",
+        "@local-serverless-security_complete",
+        "@cloud-serverless-security_complete"
+      ],
+      "location": {
+        "file": "src/platform/plugins/private/vis_types/vega/test/scout/api/tests/delete_vega.spec.ts",
+        "line": 47,
+        "column": 11
+      }
+    },
+    {
+      "id": "3eb9bdf5e3b549e-b7071f13cb797f7",
+      "title": "vega - delete authorization - returns 403 for viewer",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic",
+        "@cloud-stateful-classic",
+        "@local-serverless-search",
+        "@cloud-serverless-search",
+        "@local-serverless-observability_complete",
+        "@cloud-serverless-observability_complete",
+        "@local-serverless-security_complete",
+        "@cloud-serverless-security_complete"
+      ],
+      "location": {
+        "file": "src/platform/plugins/private/vis_types/vega/test/scout/api/tests/delete_vega.spec.ts",
+        "line": 53,
+        "column": 12
+      }
+    },
+    {
+      "id": "57994e1a3ecb640-4e1c99d9469dc12",
+      "title": "vega - get should return a vega library item by id",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic",
+        "@cloud-stateful-classic",
+        "@local-serverless-search",
+        "@cloud-serverless-search",
+        "@local-serverless-observability_complete",
+        "@cloud-serverless-observability_complete",
+        "@local-serverless-security_complete",
+        "@cloud-serverless-security_complete"
+      ],
+      "location": {
+        "file": "src/platform/plugins/private/vis_types/vega/test/scout/api/tests/get_vega.spec.ts",
+        "line": 36,
+        "column": 56
+      }
+    },
+    {
+      "id": "57994e1a3ecb640-91080394f23a4c5",
+      "title": "vega - get should return 404 for a non-existent id",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic",
+        "@cloud-stateful-classic",
+        "@local-serverless-search",
+        "@cloud-serverless-search",
+        "@local-serverless-observability_complete",
+        "@cloud-serverless-observability_complete",
+        "@local-serverless-security_complete",
+        "@cloud-serverless-security_complete"
+      ],
+      "location": {
+        "file": "src/platform/plugins/private/vis_types/vega/test/scout/api/tests/get_vega.spec.ts",
+        "line": 44,
+        "column": 21
+      }
+    },
+    {
+      "id": "d9c42512dda4ded-7b65301461540c5",
+      "title": "vega - search should return a paginated list of vega library items",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic",
+        "@cloud-stateful-classic",
+        "@local-serverless-search",
+        "@cloud-serverless-search",
+        "@local-serverless-observability_complete",
+        "@cloud-serverless-observability_complete",
+        "@local-serverless-security_complete",
+        "@cloud-serverless-security_complete"
+      ],
+      "location": {
+        "file": "src/platform/plugins/private/vis_types/vega/test/scout/api/tests/search_vega.spec.ts",
+        "line": 39,
+        "column": 56
+      }
+    },
+    {
+      "id": "d9c42512dda4ded-4eb17878777c680",
+      "title": "vega - search should respect per_page limit",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic",
+        "@cloud-stateful-classic",
+        "@local-serverless-search",
+        "@cloud-serverless-search",
+        "@local-serverless-observability_complete",
+        "@cloud-serverless-observability_complete",
+        "@local-serverless-security_complete",
+        "@cloud-serverless-security_complete"
+      ],
+      "location": {
+        "file": "src/platform/plugins/private/vis_types/vega/test/scout/api/tests/search_vega.spec.ts",
+        "line": 47,
+        "column": 40
+      }
+    },
+    {
+      "id": "d9c42512dda4ded-fbf9dda13eb7396",
+      "title": "vega - search should narrow results by query",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic",
+        "@cloud-stateful-classic",
+        "@local-serverless-search",
+        "@cloud-serverless-search",
+        "@local-serverless-observability_complete",
+        "@cloud-serverless-observability_complete",
+        "@local-serverless-security_complete",
+        "@cloud-serverless-security_complete"
+      ],
+      "location": {
+        "file": "src/platform/plugins/private/vis_types/vega/test/scout/api/tests/search_vega.spec.ts",
+        "line": 58,
+        "column": 69
+      }
+    },
+    {
+      "id": "fe2dc6b2ad75d29-407b648a9385ce9",
+      "title": "vega - update should update a vega library item",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic",
+        "@cloud-stateful-classic",
+        "@local-serverless-search",
+        "@cloud-serverless-search",
+        "@local-serverless-observability_complete",
+        "@cloud-serverless-observability_complete",
+        "@local-serverless-security_complete",
+        "@cloud-serverless-security_complete"
+      ],
+      "location": {
+        "file": "src/platform/plugins/private/vis_types/vega/test/scout/api/tests/update_vega.spec.ts",
+        "line": 39,
+        "column": 5
+      }
+    },
+    {
+      "id": "fe2dc6b2ad75d29-7a1a957febdf96e",
+      "title": "vega - update should upsert when id does not exist",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic",
+        "@cloud-stateful-classic",
+        "@local-serverless-search",
+        "@cloud-serverless-search",
+        "@local-serverless-observability_complete",
+        "@cloud-serverless-observability_complete",
+        "@local-serverless-security_complete",
+        "@cloud-serverless-security_complete"
+      ],
+      "location": {
+        "file": "src/platform/plugins/private/vis_types/vega/test/scout/api/tests/update_vega.spec.ts",
+        "line": 49,
+        "column": 40
+      }
+    },
+    {
+      "id": "fe2dc6b2ad75d29-dc5e694ee4b0807",
+      "title": "vega - update authorization - returns 403 for viewer",
+      "expectedStatus": "passed",
+      "tags": [
+        "@local-stateful-classic",
+        "@cloud-stateful-classic",
+        "@local-serverless-search",
+        "@cloud-serverless-search",
+        "@local-serverless-observability_complete",
+        "@cloud-serverless-observability_complete",
+        "@local-serverless-security_complete",
+        "@cloud-serverless-security_complete"
+      ],
+      "location": {
+        "file": "src/platform/plugins/private/vis_types/vega/test/scout/api/tests/update_vega.spec.ts",
+        "line": 61,
+        "column": 16
+      }
+    }
+  ]
+}

@@ -1,0 +1,15 @@
+/*
+ * Copyright Elasticsearch B.V. and/or licensed to Elasticsearch B.V. under one
+ * or more contributor license agreements. Licensed under the "Elastic License
+ * 2.0", the "GNU Affero General Public License v3.0 only", and the "Server Side
+ * Public License v 1"; you may not use this file except in compliance with, at
+ * your election, the "Elastic License 2.0", the "GNU Affero General Public
+ * License v3.0 only", or the "Server Side Public License, v 1".
+ */
+
+import type { z } from '@kbn/zod';
+import type { asCodeSearchRequestSchema } from '@kbn/as-code-shared-schemas';
+import type { searchResponseBodySchema } from './schemas';
+
+export type VegaSearchRequestQuery = Partial<z.output<typeof asCodeSearchRequestSchema>>;
+export type VegaSearchResponseBody = z.output<typeof searchResponseBodySchema>;

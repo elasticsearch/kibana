@@ -7,14 +7,11 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
-import type { SavedObjectReference } from '@kbn/core/server';
 import type { DrilldownTransforms } from '@kbn/embeddable-plugin/common';
-import type { VegaByValueState } from './schema';
+import { getTransformIn } from './get_transform_in';
+import { getTransformOut } from './get_transform_out';
 
-export function getTransforms(drilldownTransforms: DrilldownTransforms) {
-  return {
-    transformIn: (state: VegaByValueState) => drilldownTransforms.transformIn(state),
-    transformOut: (storedState: VegaByValueState, panelReferences?: SavedObjectReference[]) =>
-      drilldownTransforms.transformOut(storedState, panelReferences) as VegaByValueState,
-  };
-}
+export const getTransforms = (drilldownTransforms: DrilldownTransforms) => ({
+  transformIn: getTransformIn(drilldownTransforms.transformIn),
+  transformOut: getTransformOut(drilldownTransforms.transformOut),
+});

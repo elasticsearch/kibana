@@ -1177,6 +1177,7 @@ Array [
           "lens",
           "map",
           "tag",
+          "vega",
         ],
       },
       "ui": Array [
@@ -1253,6 +1254,7 @@ Array [
           "dashboard",
           "tag",
           "markdown",
+          "vega",
           "query",
         ],
       },
@@ -1333,6 +1335,7 @@ Array [
           "lens",
           "map",
           "tag",
+          "vega",
         ],
       },
       "ui": Array [
@@ -1377,6 +1380,7 @@ Array [
           "dashboard",
           "tag",
           "markdown",
+          "vega",
         ],
       },
       "ui": Array [
@@ -2034,6 +2038,7 @@ Array [
         "all": Array [
           "visualization",
           "lens",
+          "vega",
           "query",
           "url",
         ],
@@ -2108,6 +2113,7 @@ Array [
           "search",
           "visualization",
           "lens",
+          "vega",
           "tag",
           "query",
         ],
@@ -2169,6 +2175,7 @@ Array [
         "all": Array [
           "visualization",
           "lens",
+          "vega",
           "url",
         ],
         "read": Array [
@@ -2209,6 +2216,7 @@ Array [
           "search",
           "visualization",
           "lens",
+          "vega",
           "tag",
         ],
       },
@@ -2376,6 +2384,7 @@ Array [
           "lens",
           "map",
           "tag",
+          "vega",
         ],
       },
       "ui": Array [
@@ -2452,6 +2461,7 @@ Array [
           "dashboard",
           "tag",
           "markdown",
+          "vega",
           "query",
         ],
       },
@@ -2532,6 +2542,7 @@ Array [
           "lens",
           "map",
           "tag",
+          "vega",
         ],
       },
       "ui": Array [
@@ -2576,6 +2587,7 @@ Array [
           "dashboard",
           "tag",
           "markdown",
+          "vega",
         ],
       },
       "ui": Array [
@@ -3233,6 +3245,7 @@ Array [
         "all": Array [
           "visualization",
           "lens",
+          "vega",
           "query",
           "url",
         ],
@@ -3307,6 +3320,7 @@ Array [
           "search",
           "visualization",
           "lens",
+          "vega",
           "tag",
           "query",
         ],
@@ -3368,6 +3382,7 @@ Array [
         "all": Array [
           "visualization",
           "lens",
+          "vega",
           "url",
         ],
         "read": Array [
@@ -3408,6 +3423,7 @@ Array [
           "search",
           "visualization",
           "lens",
+          "vega",
           "tag",
         ],
       },

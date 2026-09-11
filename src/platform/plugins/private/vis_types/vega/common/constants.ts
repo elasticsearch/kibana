@@ -12,6 +12,8 @@ import { ON_APPLY_FILTER, ON_OPEN_PANEL_MENU } from '@kbn/ui-actions-plugin/comm
 /** Frozen as part of the Dashboard REST API (`panels[].type`). */
 export const VEGA_EMBEDDABLE_TYPE = 'vega';
 
+export const VEGA_SAVED_OBJECT_TYPE = 'vega';
+
 export const VEGA_SUPPORTED_TRIGGERS = [ON_APPLY_FILTER, ON_OPEN_PANEL_MENU];
 
 /**
@@ -19,3 +21,9 @@ export const VEGA_SUPPORTED_TRIGGERS = [ON_APPLY_FILTER, ON_OPEN_PANEL_MENU];
  * participation, and panel JSON export). Off by default.
  */
 export const VEGA_STANDALONE_EMBEDDABLE_FLAG = 'vega.standaloneEmbeddable';
+
+/**
+ * Feature flag gating the Vega library item CRUD API (`/api/vega`). Off by default.
+ * When off, all routes return 404 and are excluded from the public OAS spec.
+ */
+export const VEGA_API_ENABLED_FLAG = 'vega.apiEnabled';

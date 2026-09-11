@@ -15,8 +15,10 @@ import type {
 import {
   serializedTimeRangeSchema,
   serializedTitlesSchema,
+  BY_REF_SCHEMA_META,
 } from '@kbn/presentation-publishing-schemas';
 import { VEGA_SUPPORTED_TRIGGERS } from '../../common/constants';
+import { vegaSpecSchema } from '../api/schema';
 
 export const getVegaEmbeddableSchema = (getDrilldownsSchema: GetDrilldownsSchemaFnType) => {
   return (
@@ -25,21 +27,7 @@ export const getVegaEmbeddableSchema = (getDrilldownsSchema: GetDrilldownsSchema
         ...serializedTitlesSchema.shape,
         ...serializedTimeRangeSchema.shape,
         ...getDrilldownsSchema(VEGA_SUPPORTED_TRIGGERS).shape,
-        spec: z
-          .discriminatedUnion('format', [
-            z.object({
-              format: z.literal('hjson'),
-              value: z.string().min(1),
-            }),
-            z.object({
-              format: z.literal('json'),
-              value: z.looseObject({}),
-            }),
-          ])
-          .meta({
-            description:
-              'The Vega or Vega-Lite specification. Use `{ "format": "hjson", "value": "<hjson-string>" }` for HJSON (comments and unquoted keys are preserved) or `{ "format": "json", "value": { ... } }` for a JSON object.',
-          }),
+        spec: vegaSpecSchema,
       })
       // Strip unknown keys for forward-compatible additive changes in this public contract.
       .strip()
@@ -52,9 +40,30 @@ export const getVegaEmbeddableSchema = (getDrilldownsSchema: GetDrilldownsSchema
 };
 
 /**
- * NOTE: `vis_types/vega` compiles with `strictNullChecks: false`, which can make the Zod-inferred
- * drilldowns output type incompatible with `SerializedDrilldowns` (e.g. `trigger` becomes optional).
+ * `vis_types/vega` compiles with `strictNullChecks: false`, which makes the Zod-inferred drilldowns
+ * output type incompatible with `SerializedDrilldowns` (e.g. `trigger` becomes optional). Replace
+ * only that inferred property until strict null checks are enabled.
  * See https://github.com/elastic/kibana/issues/287451
  */
-export type VegaByValueState = z.output<ReturnType<typeof getVegaEmbeddableSchema>> &
+type WithSerializedDrilldowns<State> = Omit<State, keyof SerializedDrilldowns> &
   SerializedDrilldowns;
+
+export type VegaByValueState = WithSerializedDrilldowns<
+  z.output<ReturnType<typeof getVegaEmbeddableSchema>>
+>;
+
+export const vegaByReferenceStateSchema = z
+  .object({
+    ...serializedTitlesSchema.shape,
+    ref_id: z.string().meta({
+      description: 'The unique identifier of the Vega library item.',
+    }),
+  })
+  .strip()
+  .meta(BY_REF_SCHEMA_META);
+
+export type VegaByReferenceState = WithSerializedDrilldowns<
+  z.output<typeof vegaByReferenceStateSchema>
+>;
+
+export type VegaEmbeddableState = VegaByValueState | VegaByReferenceState;
