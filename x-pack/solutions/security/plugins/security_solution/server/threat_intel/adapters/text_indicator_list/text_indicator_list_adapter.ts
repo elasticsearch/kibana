@@ -199,6 +199,7 @@ export const textIndicatorListAdapter: FetchAdapter = {
         '@timestamp': ingestedAt,
         content_fingerprint: contentFingerprint,
         space_id: spaceId,
+        revision: 1,
         source: {
           type: 'text_indicator_list',
           // The configured source name from the approved catalog entry, not the literal

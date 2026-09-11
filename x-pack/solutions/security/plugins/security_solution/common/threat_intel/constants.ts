@@ -42,6 +42,10 @@ export const LIST_SOURCES_API_PATH = `${THREAT_INTEL_API_BASE}/sources/list` as 
 // existing source via PATCH, so there is no create-source path.
 export const SOURCE_BY_ID_API_PATH = `${THREAT_INTEL_API_BASE}/sources/{sourceId}` as const;
 
+export const FIND_THREAT_REPORTS_API_PATH = `${THREAT_INTEL_API_BASE}/reports` as const;
+export const GET_THREAT_REPORT_API_PATH = `${THREAT_INTEL_API_BASE}/reports/{reportId}` as const;
+export const READINESS_API_PATH = `${THREAT_INTEL_API_BASE}/readiness` as const;
+
 /**
  * Text-embedding endpoint backing the `semantic_text` Diamond summary fields in
  * the reports mapping. This is not the model that performs Diamond extraction —

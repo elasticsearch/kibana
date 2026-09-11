@@ -17,9 +17,10 @@ import { GLOBAL_SPACE_ID } from '../../../common/threat_intel';
  *
  * Falls back to `'default'` only when the spaces plugin is missing (e.g. legacy
  * setup or test bootstrap) so the rest of the plugin keeps working without
- * spaces installed. When Spaces *is* installed, a failure to resolve the space
- * must fail the request rather than silently reading/writing default/global
- * data — spaces are a security boundary, so this fails closed.
+ * spaces installed. When Spaces *is* installed, `spaces.getSpaceId(request)`
+ * resolves the active space from the request's path; it does not throw, and an
+ * unresolvable request maps to the default space id per the Spaces contract
+ * rather than to another space's data.
  */
 
 export const resolveCurrentSpaceId = (

@@ -4,28 +4,16 @@ version: "1"
 # LLM steps sequentially; partial drain per pass is intentional.
 # Installed once globally: enrichment is content-only and space-blind, so it
 # selects all pending reports regardless of `space_id` (analyst-paste and
-# future custom-source reports included). HTTP calls to the enrich routes are
-# routed through a fixed real space (`routeSpaceId`, currently `default`)
-# rather than the install-time `workflow.spaceId` (`*`, which is not a real
-# space and produces an invalid `/s/*/...` route).
-#
-# MVP tradeoff, not just a routing detail: the enrich routes resolve their LLM
-# connector via the inference feature registry (`resolveScopedModel`), which
-# reads a per-space saved object (Stack Management > Model Settings,
-# `namespaceType: 'single'') scoped to whatever space the request is routed
-# through. Pinning `routeSpaceId` to `default` means every report in the
-# deployment is enriched using only the `default` space's Model Settings,
-# regardless of which space the report is tagged to. That's an accepted MVP
-# simplification (sources are global-only for now too), not an oversight.
-#
-# Future per-space model settings: once reports need distinct model config per
-# owning space, `routeSpaceId` has to stop being a single top-level constant
-# and instead resolve per-report inside `extract_each_report`, from that
-# report's own `space_id` field (already stamped by the ingest adapters), not
-# from `workflow.spaceId`.
-# The LLM steps do not name an inference endpoint. Each route resolves its own
-# model through the inference feature registry, so operators pick the models in
-# Stack Management > Model Settings rather than by editing this workflow.
+# future custom-source reports included). The `kibana.request` steps below
+# call the enrich routes with no `/s/{id}/` prefix, so every request resolves
+# to the `default` space, including the per-space LLM connector each route
+# reads via Stack Management > Model Settings. That means every report in the
+# deployment is enriched using only the `default` space's Model Settings
+# regardless of which space it's tagged to. Accepted MVP simplification
+# (sources are global-only for now too), not an oversight: once reports need
+# distinct model config per owning space, these calls have to resolve a space
+# per report inside `extract_each_report`, from that report's own `space_id`
+# (already stamped by the ingest adapters).
 name: Enrich threat report
 description: Extract IOCs, taxonomy, severity, and Diamond from pending reports
 tags:
@@ -33,7 +21,7 @@ tags:
 enabled: false
 settings:
   concurrency:
-    key: "threat-intel-enrich-global"
+    key: "threat-intel-enrich"
     strategy: drop
     max: 1
 triggers:
@@ -41,15 +29,6 @@ triggers:
     with:
       every: "4h"
 steps:
-  - name: set_route_space
-    type: data.set
-    with:
-      # MVP: hardcoded to a fixed real space, not resolved per report. See the
-      # file header for why (`workflow.spaceId` is `*` here, and the model
-      # resolved via this route's space is a deployment-wide choice for now,
-      # not a per-report one).
-      routeSpaceId: "default"
-
   - name: load_pending_reports
     type: elasticsearch.search
     with:
@@ -113,7 +92,7 @@ steps:
         type: kibana.request
         with:
           method: POST
-          path: "/s/{{ variables.routeSpaceId }}/internal/threat_intel/assess_relevance"
+          path: "/internal/threat_intel/assess_relevance"
           headers:
             elastic-api-version: "1"
             x-elastic-internal-origin: "kibana"
@@ -138,7 +117,7 @@ steps:
         type: kibana.request
         with:
           method: POST
-          path: "/s/{{ variables.routeSpaceId }}/internal/threat_intel/extract_iocs"
+          path: "/internal/threat_intel/extract_iocs"
           headers:
             elastic-api-version: "1"
             x-elastic-internal-origin: "kibana"
@@ -153,7 +132,7 @@ steps:
         type: kibana.request
         with:
           method: POST
-          path: "/s/{{ variables.routeSpaceId }}/internal/threat_intel/enrich_taxonomy"
+          path: "/internal/threat_intel/enrich_taxonomy"
           headers:
             elastic-api-version: "1"
             x-elastic-internal-origin: "kibana"
@@ -168,7 +147,7 @@ steps:
         type: kibana.request
         with:
           method: POST
-          path: "/s/{{ variables.routeSpaceId }}/internal/threat_intel/classify_severity"
+          path: "/internal/threat_intel/classify_severity"
           headers:
             elastic-api-version: "1"
             x-elastic-internal-origin: "kibana"
@@ -222,7 +201,7 @@ steps:
         if: "variables.diamond_suitable: true"
         with:
           method: POST
-          path: "/s/{{ variables.routeSpaceId }}/internal/threat_intel/extract_diamond"
+          path: "/internal/threat_intel/extract_diamond"
           headers:
             elastic-api-version: "1"
             x-elastic-internal-origin: "kibana"
@@ -322,6 +301,23 @@ steps:
               extraction_method: "{{ variables.extraction_method | default: 'pending' }}"
               related_reports: "${{ steps.find_related_reports.output.hits.hits | map: '_id' }}"
               related_reports_count: "${{ steps.find_related_reports.output.hits.total.value | default: 0 }}"
+        on-failure:
+          continue: true
+
+      # One bump per enrich pass. Dedicated script step: ES rejects doc+script
+      # on the same update. Bumps even when severity persist is skipped so IOC/taxonomy
+      # writes still advance the hunt-relevant revision. Must also see a successful
+      # persist_extractions: that step continues on failure, so gating only on the LLM
+      # steps would advance revision when the hunt-relevant write never landed.
+      - name: bump_revision
+        type: elasticsearch.update
+        if: "${{ steps.extract_iocs.error == null and steps.classify_severity.error == null and steps.enrich_taxonomy.error == null and steps.persist_extractions.error == null }}"
+        with:
+          index: "{{ foreach.item._index }}"
+          id: "{{ foreach.item._id }}"
+          script:
+            lang: painless
+            source: "ctx._source.revision = (ctx._source.revision != null ? ctx._source.revision : 0) + 1"
         on-failure:
           continue: true
 

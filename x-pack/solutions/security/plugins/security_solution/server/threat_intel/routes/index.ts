@@ -17,6 +17,9 @@ import { registerEnrichTaxonomyRoute } from './enrich_taxonomy';
 import { registerClassifySeverityRoute } from './classify_severity';
 import { registerAssessRelevanceRoute } from './assess_relevance';
 import { registerListSourcesRoute, registerUpdateSourceRoute } from './list_sources';
+import { registerFindThreatReportsRoute } from './find_threat_reports';
+import { registerGetThreatReportRoute } from './get_threat_report';
+import { registerReadinessRoute } from './readiness';
 
 export interface RouteRegistrationDeps {
   router: IRouter;
@@ -63,4 +66,7 @@ export const registerRoutes = (deps: RouteRegistrationDeps): void => {
   registerAssessRelevanceRoute(deps);
   registerListSourcesRoute(deps);
   registerUpdateSourceRoute(deps);
+  registerFindThreatReportsRoute(deps);
+  registerGetThreatReportRoute(deps);
+  registerReadinessRoute(deps);
 };

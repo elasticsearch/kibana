@@ -13,7 +13,7 @@ tags:
 enabled: false
 settings:
   concurrency:
-    key: "threat-intel-ingest-global"
+    key: "threat-intel-ingest"
     strategy: drop
     max: 1
 triggers:

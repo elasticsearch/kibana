@@ -17,9 +17,9 @@ import {
 } from '../../../common/threat_intel';
 import { HIDDEN_INDEX_SEARCH_OPTIONS } from '../lib/es_options';
 
-const TEMPLATE_VERSION = 27;
-
-const TEMPLATE_META = { managed_by: 'threat_intel', version: TEMPLATE_VERSION };
+// Identifies our templates in Elasticsearch `_meta`. Not an upgrade counter —
+// existing-index upgrades are field-presence migrations + REQUIRED_*_FIELDS.
+const TEMPLATE_META = { managed_by: 'threat_intel' };
 
 /**
  * These are plugin-owned indices, not user data: they must not show up in index
@@ -66,6 +66,8 @@ const threatReportsTemplate = {
         // scope reads to the current space plus `'*'`. This is not an Elasticsearch
         // authorization boundary on the hidden reports index while supply is disabled.
         space_id: { type: 'keyword' as const },
+        // Monotonic hunt-relevant revision. Init 1 on create/ingest; bump on enrich.
+        revision: { type: 'integer' as const },
         source: {
           properties: {
             type: { type: 'keyword' as const },
@@ -106,8 +108,6 @@ const threatReportsTemplate = {
         // Multiplicative composite of severity.score * extracted.relevance,
         // written by enrich_threat_report's capture_ranking_signals step.
         rank_score: { type: 'float' as const },
-        // Hunt-feedback-corroborated derivative of rank_score (rank_score * boost).
-        corroborated_rank_score: { type: 'float' as const },
         extracted: {
           properties: {
             iocs: {
@@ -277,39 +277,42 @@ const threatReportsTemplate = {
             content_scrubbed_at: { type: 'date' as const },
           },
         },
-        // Environment hit rollup keyed by report (when attribution is written).
-        attribution: {
+        // Per-space environment evidence: alert-matching hits from the
+        // Attribute Alerts task (hourly) and hunt outcomes from Hunt Watch's
+        // writer (per hunt run, not yet landed), one element per space. Nested +
+        // `space_id` so a global (`*`) report can carry every space's element
+        // without clobber — merged from the former separate `attribution` and
+        // `feedback` fields since both are per-space evidence about the same
+        // report and neither's fields overlapped. No migration: `object` ->
+        // `nested` cannot be applied in place; pre-GA / flag-off means
+        // drop+recreate. `REQUIRED_REPORT_FIELDS` makes a stale index fail loudly.
+        evidence: {
+          type: 'nested' as const,
           properties: {
-            environment_hits: {
+            space_id: { type: 'keyword' as const },
+            // Attribute Alerts task (hourly, Detection Engine alert matching).
+            alert_hits_total: { type: 'integer' as const },
+            alert_hits: {
               properties: {
                 window: { type: 'keyword' as const },
                 computed_at: { type: 'date' as const },
-                layer_1_ioc_match: { type: 'integer' as const },
-                layer_2_behavioral: { type: 'integer' as const },
+                ioc_match_hits: { type: 'integer' as const },
+                technique_overlap_hits: { type: 'integer' as const },
               },
             },
-            environment_hits_total: { type: 'integer' as const },
-          },
-        },
-        // Per-report hunt outcome aggregate (ioc/ttp hit counts, last hunt window).
-        feedback: {
-          properties: {
-            ioc_hit_count: { type: 'long' as const },
-            ttp_hit_count: { type: 'long' as const },
-            affected_host_count: { type: 'long' as const },
-            affected_user_count: { type: 'long' as const },
+            // Hunt Watch's writer (per hunt run; no writer lands in this branch).
             last_hunted_at: { type: 'date' as const },
+            // Report.revision echoed at hunt time so continuous_threat_hunt can
+            // bypass the time cooldown when enrich bumps revision. Reserved
+            // mapping only until the hunt_feedback route lands.
+            last_hunted_revision: { type: 'integer' as const },
             // Latest targeted hunt status echo (keyword for mapping stability).
             last_hunt_status: { type: 'keyword' as const },
-            // Wall-clock window of the hunt that produced these counts,
-            // ISO-8601 stringified. Lets readers tell "no hits because
-            // not hunted recently" from "no hits in the searched window".
-            last_hunt_window: {
-              properties: {
-                from: { type: 'date' as const },
-                to: { type: 'date' as const },
-              },
-            },
+            last_hunt_run_id: { type: 'keyword' as const },
+            last_hunt_event_hit_count: { type: 'integer' as const },
+            // rank_score * a boost derived from hunt feedback. Reserved mapping
+            // only: no writer or reader exists yet, Hunt Watch's writer owns it.
+            corroborated_rank_score: { type: 'float' as const },
           },
         },
       },
@@ -464,7 +467,7 @@ const COMPANION_INDEX_TEMPLATES: Array<{
 
 /**
  * Concrete report indices to patch. Reports live in a regular index (they are
- * updated in place by enrich, attribution, and feedback), so there is no data
+ * updated in place by enrich and evidence), so there is no data
  * stream to ask for backing indices — resolving the pattern is the only way to
  * find them.
  */
@@ -829,6 +832,60 @@ const migrateExistingIndicatorSourcesMapping = async (
       }. ` +
         `The sources[] field will be rejected by dynamic: strict until the mapping is updated manually.`
     );
+  }
+};
+
+/** `revision` (v28) for clusters created before read-API revision tracking. */
+const migrateExistingRevisionMapping = async (
+  esClient: ElasticsearchClient,
+  reportIndices: readonly string[],
+  logger: Logger
+): Promise<void> => {
+  const log = logger.get('revision-mapping-migration');
+
+  for (const indexName of reportIndices) {
+    try {
+      const { [indexName]: indexMappings } = await esClient.indices.getMapping({
+        index: indexName,
+      });
+      const props = indexMappings?.mappings?.properties as Record<string, unknown> | undefined;
+
+      if (!props?.revision) {
+        await esClient.indices.putMapping({
+          index: indexName,
+          properties: {
+            revision: { type: 'integer' },
+          },
+        });
+        log.info(`Migrated revision mapping on ${indexName} (v28)`);
+      }
+
+      // Existing reports need revision: 1 so the usable bar and Dark consumers
+      // treat them as first-revision docs rather than missing the field.
+      const updateResult = await esClient.updateByQuery({
+        index: indexName,
+        conflicts: 'proceed',
+        refresh: false,
+        query: {
+          bool: {
+            must_not: [{ exists: { field: 'revision' } }],
+          },
+        },
+        script: {
+          lang: 'painless',
+          source: 'ctx._source.revision = 1',
+        },
+      });
+      const updated = updateResult.updated ?? 0;
+      if (updated > 0) {
+        log.info(`Backfilled revision: 1 on ${updated} report(s) in ${indexName}`);
+      }
+    } catch (err) {
+      log.error(
+        `Failed to migrate revision on ${indexName}: ${(err as Error).message}. ` +
+          `Reports without revision will fail the usable bar until this succeeds.`
+      );
+    }
   }
 };
 
@@ -1331,6 +1388,10 @@ const REQUIRED_REPORT_FIELDS: readonly RequiredMapping[] = [
   // carry `block_index`. Maltrail ships enabled by default, so this is a live path.
   { path: 'extracted.iocs.block_index' },
   { path: 'lineage.content_scrubbed_at' },
+  // v30: attribution/feedback merged into evidence, object -> nested. Not
+  // putMapping-able; without this leaf a stale index rejects writes under
+  // dynamic:strict and the workflow swallows it.
+  { path: 'evidence.space_id' },
   { path: 'extracted.iocs.value', ignoreAbove: FEED_TEXT_IGNORE_ABOVE },
   { path: 'extracted.iocs.defanged', ignoreAbove: FEED_TEXT_IGNORE_ABOVE },
   { path: 'extracted.iocs.reference', ignoreAbove: FEED_TEXT_IGNORE_ABOVE },
@@ -1517,7 +1578,7 @@ export const installIndexTemplates = async ({
     await esClient.indices.putIndexTemplate(template.body);
   }
 
-  // Reports are a regular hidden index (enrich/attribution/feedback update by id),
+  // Reports are a regular hidden index (enrich/evidence update by id),
   // not a data stream. Companions are sources + indicators only.
   await ensureCompanionIndex(esClient, THREAT_REPORTS_INDEX, log);
   await ensureCompanionIndex(esClient, THREAT_INTEL_SOURCES_INDEX, log);
@@ -1540,6 +1601,7 @@ export const installIndexTemplates = async ({
   await migrateExistingReportKeywordBounds(esClient, reportIndices, log);
   await migrateExistingVulnerabilityMappings(esClient, reportIndices, log);
   await migrateExistingContentScrubbedMapping(esClient, reportIndices, log);
+  await migrateExistingRevisionMapping(esClient, reportIndices, log);
   await migrateExistingIndicesToHidden(esClient, reportIndices, log);
 
   // Fails the install (and therefore bootstrap readiness) when a migration left the

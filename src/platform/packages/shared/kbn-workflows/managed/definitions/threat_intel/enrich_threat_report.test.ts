@@ -75,6 +75,26 @@ describe('THREAT_INTEL_ENRICH_REPORT_WORKFLOW yaml', () => {
       expect(gate.with?.extraction_method).toBe('pending');
     });
 
+    it('bumps revision once after a successful enrich pass', () => {
+      const bump = findStepByName(workflow.steps, 'bump_revision') as {
+        if?: string;
+        with?: { script?: { source?: string } };
+      };
+      expect(bump).toBeDefined();
+      expect(bump.if).toContain('steps.extract_iocs.error == null');
+      expect(bump.if).toContain('steps.persist_extractions.error == null');
+      expect(bump.with?.script?.source).toContain('ctx._source.revision');
+    });
+
+    // The gate references persist_extractions by name; a rename that misses the
+    // gate makes `steps.<missing>.error == null` vacuously true and bumps
+    // revision even when the write never landed.
+    it('gates revision on a step that actually exists', () => {
+      const bump = findStepByName(workflow.steps, 'bump_revision') as { if?: string };
+      expect(findStepByName(workflow.steps, 'persist_extractions')).toBeDefined();
+      expect(bump.if).toContain('steps.persist_extractions.error');
+    });
+
     // The two gates are separate conditions over the same steps, so updating one
     // and not the other would leave a report neither marked complete nor retryable.
     it('keeps the two gates complementary', () => {
@@ -116,13 +136,19 @@ describe('THREAT_INTEL_ENRICH_REPORT_WORKFLOW yaml', () => {
     expect(workflow.enabled).toBe(false);
   });
 
-  it('routes enrich HTTP calls through a fixed real space, not workflow.spaceId', () => {
-    expect(THREAT_INTEL_ENRICH_REPORT_WORKFLOW.yaml).toContain('routeSpaceId: "default"');
+  // Not "-global": a space literally named "global" running the pre-space-aware
+  // version of this workflow would collide with a real global install's key.
+  it('uses a concurrency key with no space or "global" suffix', () => {
+    expect(THREAT_INTEL_ENRICH_REPORT_WORKFLOW.yaml).toContain('key: "threat-intel-enrich"');
+  });
+
+  // No `/s/{id}/` prefix resolves to the `default` space implicitly, same as the
+  // former `routeSpaceId: "default"` variable did, without needing the variable.
+  it('calls the enrich routes with no space prefix, resolving to the default space', () => {
+    expect(THREAT_INTEL_ENRICH_REPORT_WORKFLOW.yaml).not.toContain('routeSpaceId');
+    expect(THREAT_INTEL_ENRICH_REPORT_WORKFLOW.yaml).not.toMatch(/path:\s*"\/s\//);
     expect(THREAT_INTEL_ENRICH_REPORT_WORKFLOW.yaml).toContain(
-      '/s/{{ variables.routeSpaceId }}/internal/threat_intel/'
-    );
-    expect(THREAT_INTEL_ENRICH_REPORT_WORKFLOW.yaml).not.toContain(
-      '/s/{{ variables.spaceId }}/internal/threat_intel/'
+      'path: "/internal/threat_intel/assess_relevance"'
     );
   });
 

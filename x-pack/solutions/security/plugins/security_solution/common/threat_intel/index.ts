@@ -39,8 +39,26 @@ export {
   CLASSIFY_SEVERITY_API_PATH,
   LIST_SOURCES_API_PATH,
   SOURCE_BY_ID_API_PATH,
+  FIND_THREAT_REPORTS_API_PATH,
+  GET_THREAT_REPORT_API_PATH,
+  READINESS_API_PATH,
   DIAMOND_SUMMARY_EMBEDDING_INFERENCE_ID,
   THREAT_INTEL_ENRICH_INFERENCE_FEATURE_ID,
   THREAT_INTEL_DIAMOND_INFERENCE_FEATURE_ID,
 } from './constants';
 export { CATALOG_SOURCE_URLS, resolveCatalogSourceUrl } from './catalog_source_urls';
+export type {
+  FindThreatReportsQuery,
+  FindThreatReportsResponse,
+  ThreatReportSummary,
+  ThreatReportSort,
+  GetThreatReportResponse,
+  ReadinessResponse,
+  ReadinessStatus,
+} from './contracts/find_threat_reports';
+export {
+  findThreatReportsQuerySchema,
+  FIND_THREAT_REPORTS_DEFAULT_PAGE_SIZE,
+  FIND_THREAT_REPORTS_MAX_PAGE_SIZE,
+  THREAT_REPORT_SORTS,
+} from './contracts/find_threat_reports';

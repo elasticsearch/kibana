@@ -107,7 +107,7 @@ describe('scrub_report_content task', () => {
     expect(query.max_docs).toBeGreaterThan(0);
   });
 
-  it('removes the fetched body but keeps enrichment and feedback fields', async () => {
+  it('removes the fetched body but keeps enrichment and evidence fields', async () => {
     const { runner, esClient } = setupRunner({ updated: 1 });
 
     await runner.run();
@@ -118,8 +118,7 @@ describe('scrub_report_content task', () => {
     expect(source).toContain('lineage.content_scrubbed_at');
     // Ranking and hunt cooldown depend on these surviving past retention.
     expect(source).not.toContain('extracted');
-    expect(source).not.toContain('feedback');
-    expect(source).not.toContain('attribution');
+    expect(source).not.toContain('evidence');
   });
 
   it('accumulates the scrubbed count across runs', async () => {

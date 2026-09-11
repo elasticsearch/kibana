@@ -3,9 +3,13 @@ version: "1"
 # alerts in the last 7d tie back to that report, then write the totals onto the doc.
 # IOC promotion drives Indicator Match hits; extracted ATT&CK techniques drive overlap
 # with other rules. Scoped to the workflow's Kibana space; up to 100 reports per pass.
-# Unlike enrich/ingest, this pass does not include space_id: "*" catalog rows:
-# environment_hits are per-space alert totals, and writing them onto a shared
-# global doc would let each space's hourly run clobber the others.
+# Includes `space_id: "*"` catalog rows. `evidence` is a nested per-space array
+# (shared with Hunt Watch's hunt-outcome writer), so spaces cannot clobber each
+# other. This task only ever sets its own keys (`alert_hits*`) on the matched
+# element, never the whole element, so it cannot wipe out that space's hunt
+# fields. Writes use `elasticsearch.update` + script (Bulk rejects scripts on
+# indices with `semantic_text`). `retry_on_conflict` covers cross-space
+# concurrency on shared global docs (`concurrency.key` is per-space only).
 name: Attribute alerts to reports
 description: Count environment alerts linked to each threat report and store totals on the report
 tags:
@@ -37,8 +41,8 @@ steps:
             - range:
                 lineage.extracted_at:
                   gte: "now-30d"
-            - term:
-                space_id: "{{ variables.spaceId }}"
+            - terms:
+                space_id: ["{{ variables.spaceId }}", "*"]
           should:
             # nested `exists`; `exists` on the parent path matches nothing.
             - nested:
@@ -56,10 +60,35 @@ steps:
       sort:
         - "@timestamp"
 
-  - name: init_attribution_bulk
+  # Static script, set once outside the loop. Params carry every per-report value;
+  # the source never interpolates. Held in a variable so the update step can
+  # reference it without embedding a multi-line string inside Liquid.
+  #
+  # Sets only `alert_hits`/`alert_hits_total` on the matched (or newly appended)
+  # element, never the whole element: `evidence` is shared with Hunt
+  # Watch's writer, which sets a disjoint set of keys (`last_hunt_*`,
+  # `corroborated_rank_score`) on the same per-space element. A blind replace
+  # here would erase that space's hunt fields whenever this task runs after it.
+  - name: set_evidence_script
     type: data.set
     with:
-      bulk_operations: []
+      evidence_script: |
+        if (!(ctx._source.evidence instanceof List)) { ctx._source.evidence = new ArrayList(); }
+        boolean found = false;
+        for (int i = 0; i < ctx._source.evidence.size(); i++) {
+          if (ctx._source.evidence[i].space_id == params.space_id) {
+            ctx._source.evidence[i].alert_hits = ['window': params.window, 'computed_at': params.computed_at, 'ioc_match_hits': params.ioc_match_hits, 'technique_overlap_hits': params.technique_overlap_hits];
+            ctx._source.evidence[i].alert_hits_total = params.alert_hits_total;
+            found = true;
+          }
+        }
+        if (!found) {
+          Map el = new HashMap();
+          el.space_id = params.space_id;
+          el.alert_hits = ['window': params.window, 'computed_at': params.computed_at, 'ioc_match_hits': params.ioc_match_hits, 'technique_overlap_hits': params.technique_overlap_hits];
+          el.alert_hits_total = params.alert_hits_total;
+          ctx._source.evidence.add(el);
+        }
 
   # One search for all layer-1 counts. Per-report `term` queries inside foreach
   # were 100 sequential alert searches per hourly pass.
@@ -142,20 +171,25 @@ steps:
           layer1_count: "${{ steps.count_all_layer1_hits.output.aggregations.by_report_ref.refs.buckets | default: [] | where: 'key', variables.report_ref | map: 'alert_count' | map: 'doc_count' | first | default: 0 }}"
           layer2_count: "${{ steps.layer2_search.output.hits.total.value | default: 0 }}"
 
-      - name: queue_bulk_update_meta
-        type: data.set
+      # Scripted per-space upsert into the nested `evidence` array.
+      # Update API (not Bulk): Bulk rejects scripts on indices with `semantic_text`.
+      # No upsert body: the report was just loaded, so a missing doc must fail
+      # loudly rather than materialize a partial row. Never touches `revision`.
+      - name: write_evidence
+        type: elasticsearch.update
         with:
-          bulk_operations: "${{ variables.bulk_operations | push: {'update': {'_index': foreach.item._index, '_id': foreach.item._id}} }}"
-
-      - name: queue_bulk_update_doc
-        type: data.set
-        with:
-          bulk_operations: "${{ variables.bulk_operations | push: {'doc': {'attribution': {'environment_hits': {'window': '7d', 'computed_at': now, 'layer_1_ioc_match': variables.layer1_count, 'layer_2_behavioral': variables.layer2_count}, 'environment_hits_total': variables.layer1_count | plus: variables.layer2_count}}}} }}"
-
-  - name: write_attributions_bulk
-    type: elasticsearch.bulk
-    if: "variables.bulk_operations.size > 0"
-    with:
-      operations: "${{ variables.bulk_operations }}"
-    on-failure:
-      continue: true
+          index: "{{ foreach.item._index }}"
+          id: "{{ foreach.item._id }}"
+          retry_on_conflict: 3
+          script:
+            lang: painless
+            source: "${{ variables.evidence_script }}"
+            params:
+              space_id: "{{ variables.spaceId }}"
+              window: "7d"
+              computed_at: "${{ now }}"
+              ioc_match_hits: "${{ variables.layer1_count }}"
+              technique_overlap_hits: "${{ variables.layer2_count }}"
+              alert_hits_total: "${{ variables.layer1_count | plus: variables.layer2_count }}"
+        on-failure:
+          continue: true

@@ -11,3 +11,10 @@ export { extractDiamond } from './extract_diamond';
 export { enrichTaxonomy } from './enrich_taxonomy';
 export { classifySeverity } from './classify_severity';
 export { assessRelevance } from './assess_relevance';
+export {
+  findThreatReports,
+  USABLE_REPORT_FILTER,
+  buildFindReportFilters,
+} from './find_threat_reports';
+export { getThreatReport, ThreatReportNotFoundError } from './get_threat_report';
+export { getThreatIntelReadiness } from './readiness';

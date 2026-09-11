@@ -61,7 +61,7 @@ export interface ListSourcesItem {
   report_count: number;
   /** Latest `lineage.ingested_at` across reports for this source. */
   last_ingested_at?: string;
-  /** Sum of `attribution.environment_hits_total` across reports for this source. */
+  /** Sum of `evidence.alert_hits_total` across reports for this source. */
   env_hits_total: number;
 }
 
@@ -201,8 +201,18 @@ export const loadSourceReportStatsByAdapterId = async ({
             last_ingested: {
               max: { field: 'lineage.ingested_at' },
             },
+            // Nested + filtered to the caller space (plain sum on nested is 0;
+            // unfiltered nested sum would count every space).
             env_hits: {
-              sum: { field: 'attribution.environment_hits_total' },
+              nested: { path: 'evidence' },
+              aggs: {
+                this_space: {
+                  filter: { term: { 'evidence.space_id': spaceId } },
+                  aggs: {
+                    total: { sum: { field: 'evidence.alert_hits_total' } },
+                  },
+                },
+              },
             },
           },
         },
@@ -217,7 +227,7 @@ export const loadSourceReportStatsByAdapterId = async ({
                 key: string | number;
                 doc_count: number;
                 last_ingested?: { value?: number | null; value_as_string?: string };
-                env_hits?: { value?: number | null };
+                env_hits?: { this_space?: { total?: { value?: number | null } } };
               }>;
             }
           | undefined
@@ -243,7 +253,7 @@ export const loadSourceReportStatsByAdapterId = async ({
       statsByAdapterId.set(adapterId, {
         report_count: bucket.doc_count,
         ...(lastIngested ? { last_ingested_at: lastIngested } : {}),
-        env_hits_total: Math.round(bucket.env_hits?.value ?? 0),
+        env_hits_total: Math.round(bucket.env_hits?.this_space?.total?.value ?? 0),
       });
     }
   } catch (err) {

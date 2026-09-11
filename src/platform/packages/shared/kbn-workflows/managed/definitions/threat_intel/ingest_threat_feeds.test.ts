@@ -40,6 +40,12 @@ describe('THREAT_INTEL_INGEST_FEEDS_WORKFLOW yaml', () => {
     expect(workflow.enabled).toBe(false);
   });
 
+  // Not "-global": a space literally named "global" running the pre-space-aware
+  // version of this workflow would collide with a real global install's key.
+  it('uses a concurrency key with no space or "global" suffix', () => {
+    expect(THREAT_INTEL_INGEST_FEEDS_WORKFLOW.yaml).toContain('key: "threat-intel-ingest"');
+  });
+
   // Load-bearing invariant: a disabled source must cause no fetch. The only source
   // enumeration the workflow does is `load_sources`, and every fetch runs inside the
   // foreach over its hits — so filtering `enabled: true` here is what keeps a disabled

@@ -25,8 +25,8 @@ const DEFAULT_INTERVAL = '24h';
 const TASK_TIMEOUT = '10m';
 
 /**
- * Retention window for the untrusted part of a report. Enrichment, attribution,
- * and feedback fields are deliberately kept past this point: they drive ranking
+ * Retention window for the untrusted part of a report. Enrichment and evidence
+ * fields are deliberately kept past this point: they drive ranking
  * and hunt cooldown, and they are our own derived data rather than fetched
  * third-party content.
  */
@@ -99,7 +99,7 @@ interface ScrubReportContentState {
 
 /**
  * Drops fetched report bodies once they age past the retention window, keeping
- * the enrichment and feedback that ranking depends on. Reports are untrusted
+ * the enrichment and evidence that ranking depends on. Reports are untrusted
  * third-party content, so holding them indefinitely is a liability.
  */
 export const registerScrubReportContentTask = ({
@@ -116,7 +116,7 @@ export const registerScrubReportContentTask = ({
       title: 'Threat Intelligence — Scrub aged report content',
       description:
         `Removes fetched report body content older than ${CONTENT_RETENTION_DAYS} days from ` +
-        '.kibana-threat-reports, keeping extraction, attribution, and feedback fields.',
+        '.kibana-threat-reports, keeping extraction and evidence fields.',
       timeout: TASK_TIMEOUT,
       maxAttempts: 1,
       cost: TaskCost.Normal,
