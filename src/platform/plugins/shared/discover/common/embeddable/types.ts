@@ -22,6 +22,28 @@ export interface NonPersistedDisplayOptions {
   solutionNavIdOverride?: 'oblt' | 'security' | 'search';
   enableDocumentViewer?: boolean;
   enableFilters?: boolean;
+  documentViewerFlyoutType?: 'push' | 'overlay';
+  /**
+   * When true and stored columns are empty, apply Discover profile/ES|QL column defaults
+   * for display only. Matching profile widths stay display-only after column edits.
+   * Dashboard hosts should leave this unset.
+   */
+  autoApplyDiscoverColumnDefaults?: boolean;
+  /**
+   * When false, keep the document table toolbar on one line. Defaults to wrapping.
+   * Dashboard hosts should leave this unset.
+   */
+  wrapToolbar?: boolean;
+  /**
+   * When false, hide the keyboard shortcuts toolbar control. Defaults to showing it.
+   * Dashboard hosts should leave this unset.
+   */
+  showKeyboardShortcuts?: boolean;
+  /**
+   * When false, hide the Sort toolbar control. Column-header sorting stays available.
+   * Dashboard hosts should leave this unset.
+   */
+  showSortSelector?: boolean;
 }
 
 export type EditableSavedSearchAttributes = Partial<

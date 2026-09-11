@@ -7,6 +7,7 @@
 
 import type { z } from '@kbn/zod';
 
+import { platformCoreTools } from '@kbn/agent-builder-common';
 import { SupportedChartType } from '@kbn/agent-builder-common/tools/tool_result';
 import {
   metricConfigSchemaESQL,
@@ -230,8 +231,7 @@ export const chartTypeRegistry: ChartTypeRegistry = {
   [SupportedChartType.Datatable]: {
     schema: datatableConfigSchemaESQL,
     prompt: {
-      selection:
-        'Structured table with sortable columns. Choose when precise values, sortable columns, or multi-dimensional breakdowns matter more than visual patterns (e.g. "list top 20 hosts by CPU usage").',
+      selection: `Aggregated structured table with sortable columns. Choose when precise values, sortable columns, or multi-dimensional breakdowns of STATS or metric results matter more than visual patterns (e.g. "list top 20 hosts by CPU usage"). Do not use this for raw Elasticsearch documents or search hits — those belong in a Discover session via ${platformCoreTools.createDiscoverSession}.`,
       review: {
         critical: ['Invented custom cell or text colors are a critical issue.'],
       },

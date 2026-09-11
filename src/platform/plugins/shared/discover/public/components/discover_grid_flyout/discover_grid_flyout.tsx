@@ -36,6 +36,7 @@ export interface DiscoverGridFlyoutProps
     | 'requestStateMeta'
     | 'notice'
     | 'flyoutMenuTrailingActions'
+    | 'flyoutType'
   > {
   savedSearchId?: string;
   filters?: Filter[];
@@ -88,6 +89,7 @@ export function DiscoverGridFlyout({
   requestStateMeta,
   notice,
   flyoutMenuTrailingActions,
+  flyoutType,
 }: DiscoverGridFlyoutProps) {
   const services = useDiscoverServices();
   const isEsqlQuery = isOfAggregateQueryType(query);
@@ -133,6 +135,7 @@ export function DiscoverGridFlyout({
       }
       flyoutMenuTrailingActions={flyoutMenuTrailingActions}
       flyoutWidthLocalStorageKey={FLYOUT_WIDTH_KEY}
+      flyoutType={flyoutType}
       services={services}
       docViewsRegistry={docViewer?.docViewsRegistry}
       renderCustomHeader={docViewer?.renderHeader}

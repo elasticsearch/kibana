@@ -8,7 +8,7 @@
  */
 
 import { isOfAggregateQueryType } from '@kbn/es-query';
-import { getIndexPatternFromESQLQuery, hasTransformationalCommand } from '@kbn/esql-utils';
+import { getIndexPatternFromESQLQuery } from '@kbn/esql-utils';
 import { SOURCE_COLUMN } from '@kbn/unified-data-table';
 import { isEqual } from 'lodash';
 import type { DataDocumentsMsg, SavedSearchData } from '../discover_data_state_container';
@@ -16,10 +16,8 @@ import { FetchStatus } from '../../../types';
 import type { InternalStateStore, TabActionInjector, TabState } from '../redux';
 import { internalStateActions } from '../redux';
 import { getValidViewMode } from '../../utils/get_valid_view_mode';
+import { getEsqlDefaultColumns } from '../../../../utils/get_esql_default_columns';
 import { shouldResetProfileAppStateDefaultField } from './profile_app_state_defaults';
-
-const ESQL_MAX_NUM_OF_COLUMNS = 50;
-const ESQL_TABLE_VIEW_COLUMN_THRESHOLD = 5;
 
 /*
  * Takes care of ES|QL state transformations when a new result is returned
@@ -124,15 +122,10 @@ export const buildEsqlFetchSubscribe = ({
 
     if (responseColumns !== undefined) {
       nextAllColumns = responseColumns;
-
-      if (
-        hasTransformationalCommand(nextQuery.esql) ||
-        nextAllColumns.length <= ESQL_TABLE_VIEW_COLUMN_THRESHOLD
-      ) {
-        nextDefaultColumns = nextAllColumns.slice(0, ESQL_MAX_NUM_OF_COLUMNS);
-      } else {
-        nextDefaultColumns = [];
-      }
+      nextDefaultColumns = getEsqlDefaultColumns({
+        esql: nextQuery.esql,
+        responseColumns: nextAllColumns,
+      });
     }
 
     const isInitialFetch = prevEsqlData.initialFetch;

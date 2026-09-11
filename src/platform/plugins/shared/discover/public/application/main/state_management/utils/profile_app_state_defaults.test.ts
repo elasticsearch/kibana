@@ -202,6 +202,30 @@ describe('getProfileAppStateDefaults', () => {
       });
     });
 
+    it('does not apply configured default columns when the profile omits columns', async () => {
+      const { profilesManagerMock: profilesManager, dataSourceProfileProviderMock } =
+        createContextAwarenessMocks();
+
+      dataSourceProfileProviderMock.profile.getDefaultAppState = jest.fn(() => () => ({}));
+
+      const scopedProfilesManagerWithoutColumns = profilesManager.createScopedProfilesManager({
+        scopedEbtManager: scopedEbtManagerMock,
+        toolkit: EMPTY_CONTEXT_AWARENESS_TOOLKIT,
+      });
+      await scopedProfilesManagerWithoutColumns.resolveDataSourceProfile({});
+
+      const appState = getProfileAppStateDefaults({
+        scopedProfilesManager: scopedProfilesManagerWithoutColumns,
+        profileAppStateDefaults: createProfileAppStateDefaults(['columns']),
+        dataView: dataViewWithTimefieldMock,
+      }).getPostFetchState({
+        defaultColumns: ['message', 'bytes'],
+        esqlQueryColumns: undefined,
+      });
+
+      expect(appState).toBeUndefined();
+    });
+
     it('should return undefined', () => {
       const appState = getProfileAppStateDefaults({
         scopedProfilesManager,

@@ -16,7 +16,10 @@ import type { Attachment } from '@kbn/agent-builder-common/attachments';
 import type { AgentBuilderPluginSetup } from '@kbn/agent-builder-server';
 import { httpServerMock } from '@kbn/core-http-server-mocks';
 import { platformCoreTools } from '@kbn/agent-builder-common';
-import { ESQL_QUERY_RESULTS_ATTACHMENT_TYPE } from '../../common/agent_builder';
+import {
+  DISCOVER_SESSION_ATTACHMENT_TYPE,
+  ESQL_QUERY_RESULTS_ATTACHMENT_TYPE,
+} from '../../common/agent_builder';
 import { registerAttachments } from './register_attachments';
 
 const createMockAgentBuilder = () => {
@@ -30,7 +33,14 @@ const createMockAgentBuilder = () => {
       },
       skills: { register: jest.fn() },
     } as unknown as AgentBuilderPluginSetup,
-    getRegisteredType: () => registeredTypes[0],
+    getRegisteredType: (id: string) => {
+      const attachmentType = registeredTypes.find((type) => type.id === id);
+      if (!attachmentType) {
+        throw new Error(`Attachment type ${id} was not registered`);
+      }
+      return attachmentType;
+    },
+    getRegisteredTypes: () => registeredTypes,
   };
 };
 
@@ -56,7 +66,16 @@ describe('registerAttachments', () => {
   beforeAll(() => {
     const { mock, getRegisteredType } = createMockAgentBuilder();
     registerAttachments(mock);
-    attachmentType = getRegisteredType();
+    attachmentType = getRegisteredType(ESQL_QUERY_RESULTS_ATTACHMENT_TYPE);
+  });
+
+  it('registers esql.query_results and discover.session', () => {
+    const { mock, getRegisteredTypes } = createMockAgentBuilder();
+    registerAttachments(mock);
+    expect(getRegisteredTypes().map((type) => type.id)).toEqual([
+      ESQL_QUERY_RESULTS_ATTACHMENT_TYPE,
+      DISCOVER_SESSION_ATTACHMENT_TYPE,
+    ]);
   });
 
   it('registers the attachment type with the correct id', () => {

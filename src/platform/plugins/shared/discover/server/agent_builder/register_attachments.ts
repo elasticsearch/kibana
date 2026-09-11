@@ -13,6 +13,7 @@ import type { Attachment } from '@kbn/agent-builder-common/attachments';
 import { platformCoreTools } from '@kbn/agent-builder-common';
 import type { AgentBuilderPluginSetup } from '@kbn/agent-builder-server';
 import { ESQL_QUERY_RESULTS_ATTACHMENT_TYPE } from '../../common/agent_builder';
+import { createDiscoverSessionAttachmentType } from './create_discover_session_attachment';
 
 const columnSchema = z.object({
   name: z.string(),
@@ -135,4 +136,5 @@ const formatQueryResultsData = (data: EsqlQueryResultsData): string => {
 
 export const registerAttachments = (agentBuilder: AgentBuilderPluginSetup) => {
   agentBuilder.attachments.registerType(createEsqlQueryResultsAttachmentType());
+  agentBuilder.attachments.registerType(createDiscoverSessionAttachmentType());
 };

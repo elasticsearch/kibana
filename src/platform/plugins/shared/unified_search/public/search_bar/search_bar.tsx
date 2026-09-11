@@ -86,6 +86,11 @@ export interface SearchBarOwnProps<QT extends AggregateQuery | Query = Query> {
    * the `unifiedSearch.newDateRangePickerEnabled` feature flag is also enabled.
    */
   enableDateRangePicker?: boolean;
+  /**
+   * When false, hide the date picker's previous / next / zoom time-window buttons.
+   * Defaults to true.
+   */
+  showTimeWindowButtons?: boolean;
   filters?: Filter[];
   additionalQueryBarMenuItems?: AdditionalQueryBarMenuItems;
   filtersForSuggestions?: Filter[];
@@ -845,6 +850,7 @@ export class SearchBarUI<QT extends (Query | AggregateQuery) | Query = Query> ex
           onOpenQueryInNewTab={this.props.onOpenQueryInNewTab}
           useBackgroundSearchButton={this.props.useBackgroundSearchButton}
           enableDateRangePicker={this.props.enableDateRangePicker}
+          showTimeWindowButtons={this.props.showTimeWindowButtons}
           enableResourceBrowser={this.props.enableResourceBrowser}
         />
       </div>

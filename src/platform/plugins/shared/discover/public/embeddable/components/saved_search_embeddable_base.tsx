@@ -24,6 +24,14 @@ const containerStyles = css`
   position: relative;
 `;
 
+const constrainWidthStyles = css`
+  min-width: 0;
+`;
+
+const gridAreaStyles = css`
+  min-height: 0;
+`;
+
 export interface SavedSearchEmbeddableBaseProps {
   isLoading: boolean;
   totalHitCount?: number;
@@ -31,6 +39,7 @@ export interface SavedSearchEmbeddableBaseProps {
   append?: React.ReactElement;
   interceptedWarnings?: SearchResponseWarning[];
   inlineEditing?: InlineEditing;
+  constrainWidth?: boolean;
 }
 
 export const SavedSearchEmbeddableBase: FC<PropsWithChildren<SavedSearchEmbeddableBaseProps>> = ({
@@ -40,11 +49,12 @@ export const SavedSearchEmbeddableBase: FC<PropsWithChildren<SavedSearchEmbeddab
   append,
   interceptedWarnings,
   inlineEditing,
+  constrainWidth = false,
   children,
 }) => {
   return (
     <EuiFlexGroup
-      css={containerStyles}
+      css={[containerStyles, constrainWidth ? constrainWidthStyles : undefined]}
       direction="column"
       gutterSize="xs"
       responsive={false}
@@ -72,8 +82,15 @@ export const SavedSearchEmbeddableBase: FC<PropsWithChildren<SavedSearchEmbeddab
         </EuiFlexItem>
       )}
 
-      <EuiFlexGroup css={{ minHeight: 0 }} responsive={false} direction="column" gutterSize="none">
-        <EuiFlexItem css={{ minHeight: 0 }}>{children}</EuiFlexItem>
+      <EuiFlexGroup
+        css={[gridAreaStyles, constrainWidth ? constrainWidthStyles : undefined]}
+        responsive={false}
+        direction="column"
+        gutterSize="none"
+      >
+        <EuiFlexItem css={[gridAreaStyles, constrainWidth ? constrainWidthStyles : undefined]}>
+          {children}
+        </EuiFlexItem>
 
         {Boolean(append) && <EuiFlexItem grow={false}>{append}</EuiFlexItem>}
         {inlineEditing?.isActive && (

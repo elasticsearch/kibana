@@ -26,6 +26,7 @@ import type { UnifiedDocViewerFlyoutProps } from '@kbn/unified-doc-viewer-plugin
 import { EMPTY_CONTEXT_AWARENESS_TOOLKIT } from '../../context_awareness';
 
 let mockRenderCustomHeader: UnifiedDocViewerFlyoutProps['renderCustomHeader'] | undefined;
+let lastFlyoutProps: UnifiedDocViewerFlyoutProps | undefined;
 
 jest.mock('@kbn/unified-doc-viewer-plugin/public', () => {
   const actual = jest.requireActual('@kbn/unified-doc-viewer-plugin/public');
@@ -33,6 +34,7 @@ jest.mock('@kbn/unified-doc-viewer-plugin/public', () => {
   return {
     ...actual,
     UnifiedDocViewerFlyout: (props: UnifiedDocViewerFlyoutProps) => {
+      lastFlyoutProps = props;
       return (
         <>
           <div data-test-subj="mockFlyoutTitle">
@@ -66,12 +68,14 @@ describe('Discover flyout', function () {
     expandedHit,
     query,
     services = getServices(),
+    flyoutType,
   }: {
     dataView?: DataView;
     records?: DataTableRecord[];
     expandedHit?: EsHitRecord;
     query?: Query | AggregateQuery;
     services?: DiscoverServices;
+    flyoutType?: UnifiedDocViewerFlyoutProps['flyoutType'];
   }) => {
     const onClose = jest.fn();
     setUnifiedDocViewerServices(mockUnifiedDocViewerServices);
@@ -94,6 +98,7 @@ describe('Discover flyout', function () {
       onFilter: jest.fn(),
       onRemoveColumn: jest.fn(),
       setExpandedDoc: jest.fn(),
+      flyoutType,
     };
 
     render(
@@ -111,6 +116,7 @@ describe('Discover flyout', function () {
 
   beforeEach(() => {
     mockRenderCustomHeader = undefined;
+    lastFlyoutProps = undefined;
     jest.clearAllMocks();
   });
 
@@ -339,5 +345,17 @@ describe('Discover flyout', function () {
 
       expect(screen.getByTestId('customDocViewerFooter')).toHaveTextContent('Custom Footer');
     });
+  });
+
+  it('does not pass flyoutType when unset so UnifiedDocViewerFlyout defaults to push', async () => {
+    await renderComponent({});
+
+    expect(lastFlyoutProps?.flyoutType).toBeUndefined();
+  });
+
+  it('forwards flyoutType overlay to UnifiedDocViewerFlyout', async () => {
+    await renderComponent({ flyoutType: 'overlay' });
+
+    expect(lastFlyoutProps?.flyoutType).toBe('overlay');
   });
 });

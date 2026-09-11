@@ -30,7 +30,9 @@ Use this skill when:
 - A user asks to update an existing visualization by attachment ID.
 
 Do **not** use this skill when:
-- The user only needs raw documents or table/query output without a visualization.
+- The user wants raw documents, events, search hits, or a Discover-style document table. Use the discover-session skill and \`${
+    platformCoreTools.createDiscoverSession
+  }\` instead. Do **not** use chartType \`"data_table"\` as a substitute for a document table.
 - The user first needs broad data discovery and exploration across unknown sources.
 - The request is about persisted saved objects instead of in-memory attachment workflows.
 - The primary goal is to compose or update a dashboard. Use the dashboard-management skill for dashboard panel creation and layout.

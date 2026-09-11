@@ -30,6 +30,8 @@ import { createMockStorage, createMockTimeHistory } from './mocks';
 import { SearchSessionState } from '@kbn/data-plugin/public';
 import { getSessionServiceMock } from '@kbn/data-plugin/public/search/session/mocks';
 import { kqlPluginMock } from '@kbn/kql/public/mocks';
+import { cpsPluginMock } from '@kbn/cps/public/mocks';
+import { createSearchBar } from './create_search_bar';
 
 const startMock = coreMock.createStart();
 startMock.chrome.getActiveSolutionNavId$.mockReturnValue(new BehaviorSubject('oblt'));
@@ -158,6 +160,73 @@ describe('SearchBar', () => {
       expect(screen.queryByTestId('unifiedFilterBar')).not.toBeInTheDocument();
       expect(screen.getByTestId('kbnQueryBar')).toBeInTheDocument();
     });
+  });
+
+  it('forwards showTimeWindowButtons to the query bar', async () => {
+    render(
+      wrapSearchBarInContext({
+        showFilterBar: false,
+        showQueryInput: false,
+        showTimeWindowButtons: false,
+      })
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId('dataSharedTimefilterDuration')).toBeInTheDocument();
+    });
+    expect(screen.queryByRole('group', { name: 'Time window actions' })).not.toBeInTheDocument();
+  });
+
+  it('forwards showTimeWindowButtons through the stateful SearchBar', async () => {
+    const data = dataPluginMock.createStartContract();
+    data.query.timefilter.timefilter.getRefreshInterval = jest.fn(() => ({
+      value: 0,
+      pause: true,
+    }));
+    data.query.timefilter.timefilter.getRefreshIntervalDefaults = jest.fn(() => ({
+      value: 0,
+      pause: true,
+    }));
+    data.query.timefilter.timefilter.getTime = jest.fn(() => ({ from: 'now-15m', to: 'now' }));
+    data.query.timefilter.timefilter.getTimeDefaults = jest.fn(() => ({
+      from: 'now-15m',
+      to: 'now',
+    }));
+    data.query.timefilter.timefilter.getMinRefreshInterval = jest.fn(() => 1000);
+    data.query.timefilter.history = createMockTimeHistory();
+
+    const StatefulSearchBar = createSearchBar({
+      core: startMock,
+      data,
+      storage: createMockStorage(),
+      kql: kqlPluginMock.createStartContract(),
+      cps: cpsPluginMock.createStartContract(),
+    });
+
+    render(
+      <EuiThemeProvider>
+        <I18nProvider>
+          <StatefulSearchBar
+            appName="test"
+            useDefaultBehaviors={false}
+            disableSubscribingToGlobalDataServices
+            showFilterBar={false}
+            showQueryInput={false}
+            showTimeWindowButtons={false}
+            dateRangeFrom="now-15m"
+            dateRangeTo="now"
+            query={kqlQuery}
+            filters={[]}
+            indexPatterns={[]}
+          />
+        </I18nProvider>
+      </EuiThemeProvider>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId('dataSharedTimefilterDuration')).toBeInTheDocument();
+    });
+    expect(screen.queryByRole('group', { name: 'Time window actions' })).not.toBeInTheDocument();
   });
 
   it('Should render filter bar, when required fields are provided', async () => {

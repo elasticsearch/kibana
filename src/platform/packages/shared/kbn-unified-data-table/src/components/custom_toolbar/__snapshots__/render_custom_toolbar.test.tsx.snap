@@ -1,5 +1,80 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
+exports[`renderCustomToolbar should keep controls on one line when wrap is false 1`] = `
+<React.Fragment>
+  <EuiFlexGroup
+    alignItems="center"
+    className="unifiedDataTableToolbar"
+    data-test-subj="unifiedDataTableToolbar"
+    gutterSize="s"
+    justifyContent="spaceBetween"
+    responsive={false}
+    wrap={false}
+  >
+    <EuiFlexItem
+      grow={false}
+    >
+      <div>
+        left
+      </div>
+    </EuiFlexItem>
+    <EuiFlexItem
+      grow={false}
+    >
+      <EuiFlexGroup
+        alignItems="center"
+        gutterSize="s"
+        responsive={false}
+      >
+        <React.Fragment>
+          <EuiFlexItem
+            grow={false}
+          >
+            <div
+              className="unifiedDataTableToolbarControlButton"
+            >
+              column
+            </div>
+          </EuiFlexItem>
+          <EuiFlexItem
+            grow={false}
+          >
+            <div
+              className="unifiedDataTableToolbarControlButton"
+            >
+              columnSorting
+            </div>
+          </EuiFlexItem>
+        </React.Fragment>
+        <EuiFlexItem
+          grow={false}
+        >
+          <div
+            className="unifiedDataTableToolbarControlGroup"
+          >
+            <div
+              className="unifiedDataTableToolbarControlIconButton"
+            >
+              keyboard
+            </div>
+            <div
+              className="unifiedDataTableToolbarControlIconButton"
+            >
+              display
+            </div>
+            <div
+              className="unifiedDataTableToolbarControlIconButton"
+            >
+              fullScreen
+            </div>
+          </div>
+        </EuiFlexItem>
+      </EuiFlexGroup>
+    </EuiFlexItem>
+  </EuiFlexGroup>
+</React.Fragment>
+`;
+
 exports[`renderCustomToolbar should render correctly for smaller screens 1`] = `
 <React.Fragment>
   <EuiFlexGroup

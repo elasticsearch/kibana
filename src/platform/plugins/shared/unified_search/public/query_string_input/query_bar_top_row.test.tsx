@@ -720,6 +720,32 @@ describe('QueryBarTopRowTopRow', () => {
         expect(screen.getByTestId(pickerButtonTestSubj)).toBeInTheDocument();
         expect(screen.queryByTestId('querySubmitButton')).not.toBeInTheDocument();
       });
+
+      if (useNewPicker) {
+        expect(screen.getByTestId('dateRangePickerTimeWindowButtons')).toBeInTheDocument();
+      }
+    });
+
+    it('Should hide time window buttons when showTimeWindowButtons is false', async () => {
+      render(
+        wrapWithPicker({
+          isDirty: false,
+          screenTitle: 'Another Screen',
+          showDatePicker: true,
+          showSubmitButton: false,
+          showTimeWindowButtons: false,
+          dateRangeFrom: 'now-7d',
+          dateRangeTo: 'now',
+          timeHistory: mockTimeHistory,
+        })
+      );
+
+      await waitFor(() => {
+        expect(screen.getByTestId(pickerButtonTestSubj)).toBeInTheDocument();
+      });
+
+      expect(screen.queryByTestId('dateRangePickerTimeWindowButtons')).not.toBeInTheDocument();
+      expect(screen.queryByRole('group', { name: 'Time window actions' })).not.toBeInTheDocument();
     });
 
     it('Should render only query input bar', async () => {

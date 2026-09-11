@@ -317,6 +317,7 @@ export function createSearchBar({
             esqlQueryStats={props.esqlQueryStats}
             enableResourceBrowser={props.enableResourceBrowser}
             enableDateRangePicker={props.enableDateRangePicker}
+            showTimeWindowButtons={props.showTimeWindowButtons}
             esqlApproximation={props.esqlApproximation}
           />
         </core.i18n.Context>

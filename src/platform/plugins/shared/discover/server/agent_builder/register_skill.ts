@@ -11,6 +11,7 @@ import { defineSkillType } from '@kbn/agent-builder-server/skills/type_definitio
 import { platformCoreTools } from '@kbn/agent-builder-common';
 import type { AgentBuilderPluginSetup } from '@kbn/agent-builder-server';
 import { DISCOVER_DATA_ANALYSIS_SKILL_ID } from '../../common/agent_builder';
+import { discoverSessionSkill } from './discover_session_skill';
 
 const TOOL_IDS = [
   platformCoreTools.generateEsql,
@@ -19,9 +20,10 @@ const TOOL_IDS = [
   platformCoreTools.listIndices,
   platformCoreTools.productDocumentation,
   platformCoreTools.createVisualization,
+  platformCoreTools.createDiscoverSession,
 ];
 
-const discoverDataAnalysisSkill = defineSkillType({
+export const discoverDataAnalysisSkill = defineSkillType({
   id: DISCOVER_DATA_ANALYSIS_SKILL_ID,
   name: 'discover-data-analysis',
   basePath: 'skills/platform/discover',
@@ -61,7 +63,7 @@ If no Shape Profile block is present, infer analysis strategy from the column na
 3. Follow the appropriate path below.
 
 #### Path A: Raw document results (no aggregation in query)
-The sample rows are only for understanding the schema — do NOT just describe them.
+The sample rows are only for understanding the schema — do NOT just describe them. Do NOT call ${platformCoreTools.createVisualization} with the raw document query or with chartType "data_table".
 1. Run 2-3 SEPARATE, FOCUSED aggregation queries against the FULL dataset BEFORE writing any analysis. Do NOT run more than 3 — additional queries waste context. For each query, use generateEsql to produce the query, then executeEsql to run it. When calling generateEsql, describe what you want in natural language and include the exact column names and index from the attachment.
 2. CRITICAL: Each query must group by ONE field only (at most two). NEVER group by more than 2 fields in a single query — it creates too many rows and wastes tokens. Always use LIMIT 10 on aggregation results to keep output small.
 3. Run separate queries for different aspects. Good examples:
@@ -69,6 +71,7 @@ The sample rows are only for understanding the schema — do NOT just describe t
    - Time trend: STATS count BY time bucket, limited to 10
    - Top values of one categorical field: STATS count BY field, sorted desc, limited to 10
 4. Present your analysis based on the ACTUAL aggregation results with real numbers.
+5. If the user asked to see the documents themselves, call ${platformCoreTools.createDiscoverSession} with the document ES|QL query and render it with <render_attachment>. Do this in addition to (not instead of) the aggregation analysis unless they only wanted the table.
 
 #### Path B: Aggregated results (query already contains STATS or similar)
 The sample rows ARE the actual aggregated results — analyze them directly.
@@ -81,10 +84,10 @@ The sample rows ARE the actual aggregated results — analyze them directly.
 - Always present analysis based on ACTUAL results with real numbers.
 
 ### Visualizations
-IMPORTANT: After running your analysis queries, immediately call the createVisualization tool to render a chart for your most important finding. This is NOT optional — you must call the tool, not describe or suggest a chart. Do not ask the user for permission. Choose the chart type based on the data:
+IMPORTANT: After running your analysis queries, immediately call ${platformCoreTools.createVisualization} to render a chart for your most important **aggregated** finding. This is NOT optional — you must call the tool, not describe or suggest a chart. Do not ask the user for permission. Choose the chart type based on the data:
 - Time-based trends: line or area chart.
 - Categorical distributions: bar chart or pie chart.
-Use the same ES|QL query that produced the data you are visualizing.
+Use the same aggregated ES|QL query that produced the finding. Do NOT use chartType "data_table" for raw documents — those belong in ${platformCoreTools.createDiscoverSession} plus <render_attachment>.
 
 ### Data Freshness
 Mention the time range from the attachment in your overview. Do NOT run a separate query for data freshness — it is already provided in the attachment.
@@ -158,10 +161,12 @@ Use natural phrasing. Example: "I can also run a few other analyses on this data
 Do NOT execute any of these — only mention them as next-step options.
 
 ### Additional Capabilities
-- If the discover_run_query tool is available and the user asks to run or open a query in Discover, use it. This opens the query in Discover.`,
+- If the discover_run_query tool is available and the user asks to run or open a query in Discover, use it. This opens the query in Discover.
+- If the user asks to see the current documents in a table in chat, call ${platformCoreTools.createDiscoverSession} and render the attachment. Do not use a Lens data_table for that.`,
   getRegistryTools: () => TOOL_IDS,
 });
 
 export const registerSkill = (agentBuilder: AgentBuilderPluginSetup) => {
   agentBuilder.skills.register(discoverDataAnalysisSkill);
+  agentBuilder.skills.register(discoverSessionSkill);
 };

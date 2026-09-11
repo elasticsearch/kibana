@@ -65,6 +65,7 @@ import { registerDiscoverEBTManagerAnalytics } from './ebt_manager/discover_ebt_
 import type { ProfileProviderSharedServices, ProfilesManager } from './context_awareness';
 import { forwardLegacyUrls } from './plugin_imports/forward_legacy_urls';
 import { registerEsqlResultsAttachmentUi } from './agent_builder/register_esql_results_ui';
+import { registerDiscoverSessionAttachmentUi } from './agent_builder/register_discover_session_ui';
 import { getProfilesInspectorView } from './context_awareness/inspector/get_profiles_inspector_view';
 
 /**
@@ -257,6 +258,13 @@ export class DiscoverPlugin
   start(core: CoreStart, plugins: DiscoverStartPlugins): DiscoverStart {
     if (plugins.agentBuilder) {
       registerEsqlResultsAttachmentUi(plugins.agentBuilder);
+      registerDiscoverSessionAttachmentUi({
+        agentBuilder: plugins.agentBuilder,
+        unifiedSearch: plugins.unifiedSearch,
+        locator: this.locator,
+        embeddable: plugins.embeddable,
+        application: core.application,
+      });
     }
 
     plugins.cps?.cpsManager?.registerAppAccess('discover', () => ProjectRoutingAccess.EDITABLE);

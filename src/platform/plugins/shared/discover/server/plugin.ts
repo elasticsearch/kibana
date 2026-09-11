@@ -28,6 +28,7 @@ import { initializeLocatorServices } from './locator';
 import { registerSampleData } from './sample_data';
 import { getUiSettings } from './ui_settings';
 import { registerAttachments } from './agent_builder/register_attachments';
+import { registerTools } from './agent_builder/register_tools';
 import { registerSkill } from './agent_builder/register_skill';
 import type { ConfigSchema } from './config';
 import { appLocatorGetLocationCommon } from '../common/app_locator_get_location';
@@ -100,6 +101,7 @@ export class DiscoverServerPlugin
 
     if (plugins.agentBuilder) {
       registerAttachments(plugins.agentBuilder);
+      registerTools(plugins.agentBuilder);
       registerSkill(plugins.agentBuilder);
     }
 

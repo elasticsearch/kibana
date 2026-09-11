@@ -978,6 +978,43 @@ describe('UnifiedDataTable', () => {
       },
       EXTENDED_JEST_TIMEOUT
     );
+
+    it(
+      'should hide the Sort toolbar control when showSortSelector is false without disabling column sorting',
+      async () => {
+        await renderComponent({
+          ...getProps(),
+          isSortEnabled: true,
+          showSortSelector: false,
+        });
+
+        expect(getLastEuiDataGridProps().toolbarVisibility).toMatchObject({
+          showSortSelector: false,
+        });
+        expect(getLastEuiDataGridProps().sorting).toEqual(
+          expect.objectContaining({
+            onSort: expect.any(Function),
+          })
+        );
+      },
+      EXTENDED_JEST_TIMEOUT
+    );
+
+    it(
+      'should keep the Sort toolbar control hidden when sorting is disabled',
+      async () => {
+        await renderComponent({
+          ...getProps(),
+          isSortEnabled: false,
+          showSortSelector: true,
+        });
+
+        expect(getLastEuiDataGridProps().toolbarVisibility).toMatchObject({
+          showSortSelector: false,
+        });
+      },
+      EXTENDED_JEST_TIMEOUT
+    );
   });
 
   describe('custom control columns', () => {

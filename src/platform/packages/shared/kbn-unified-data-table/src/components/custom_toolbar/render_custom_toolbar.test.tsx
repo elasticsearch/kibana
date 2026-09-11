@@ -61,4 +61,23 @@ describe('renderCustomToolbar', () => {
       })
     ).toMatchSnapshot();
   });
+
+  it('should keep controls on one line when wrap is false', () => {
+    expect(
+      getRenderCustomToolbarWithElements({
+        leftSide: <div>left</div>,
+        wrap: false,
+      })({
+        toolbarProps: {
+          hasRoomForGridControls: true,
+          columnControl: 'column',
+          columnSortingControl: 'columnSorting',
+          displayControl: 'display',
+          fullScreenControl: 'fullScreen',
+          keyboardShortcutsControl: 'keyboard',
+        },
+        gridProps: {},
+      })
+    ).toMatchSnapshot();
+  });
 });
