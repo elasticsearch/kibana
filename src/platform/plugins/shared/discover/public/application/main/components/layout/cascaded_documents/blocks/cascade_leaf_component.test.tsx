@@ -42,11 +42,14 @@ jest.mock('@kbn/unified-data-table', () => ({
 
 const unifiedDataTableMock = jest.mocked(UnifiedDataTable);
 
-const esqlQuery: AggregateQuery = { esql: 'FROM logs | STATS count() BY category' };
+const esqlQuery: AggregateQuery = { esql: 'FROM logs | STATS count() BY extension' };
 const expandedDoc = buildDataTableRecord(esHitsMock[0], dataViewWithTimefieldMock);
 const nextExpandedDoc = buildDataTableRecord(esHitsMock[1], dataViewWithTimefieldMock);
 const cellData = [expandedDoc, nextExpandedDoc];
 const cellId = 'leaf-1';
+const nodePath = ['extension'];
+const nodePathMap = { extension: 'png' };
+const cascadePath = { nodePath, nodePathMap };
 const cascadedColumnsMeta: DataTableColumnsMeta = {
   category: {
     type: 'string',
@@ -87,6 +90,8 @@ const renderLeafCellWithContext = ({
         <ESQLDataCascadeLeafCell
           cellData={cellData}
           cellId={cellId}
+          nodePath={nodePath}
+          nodePathMap={nodePathMap}
           rowIndex={0}
           virtualizerController={virtualizerController}
           dataGridDensityState={DataGridDensity.COMPACT}
@@ -184,7 +189,7 @@ describe('ESQLDataCascadeLeafCell', () => {
 
     const unifiedDataTableProps = unifiedDataTableMock.mock.lastCall?.[0]!;
 
-    expect(getExpandedDocSetter).toHaveBeenCalledWith(cellId);
+    expect(getExpandedDocSetter).toHaveBeenCalledWith(cellId, cascadePath);
     expect(getRenderDocumentViewMetaSetter).toHaveBeenCalledWith(cellId);
     expect(unifiedDataTableProps.rows).toEqual(cellData);
     expect(unifiedDataTableProps.columnsMeta).toEqual(cascadedColumnsMeta);
@@ -227,7 +232,7 @@ describe('ESQLDataCascadeLeafCell', () => {
     view.rerender(renderLeafCellWithContext({ contextValue: nextContext.contextValue, services }));
 
     unifiedDataTableProps = unifiedDataTableMock.mock.lastCall?.[0]!;
-    expect(nextContext.getExpandedDocSetter).toHaveBeenCalledWith(cellId);
+    expect(nextContext.getExpandedDocSetter).toHaveBeenCalledWith(cellId, cascadePath);
     expect(nextContext.getRenderDocumentViewMetaSetter).toHaveBeenCalledWith(cellId);
     expect(unifiedDataTableProps.expandedDoc).toEqual(expandedDoc);
     expect(unifiedDataTableProps.setExpandedDoc).toBe(ownerBoundSetExpandedDoc);

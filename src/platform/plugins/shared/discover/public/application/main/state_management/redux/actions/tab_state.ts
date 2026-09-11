@@ -61,6 +61,7 @@ import {
 import type {
   DiscoverAppState,
   DiscoverInternalState,
+  ExpandedDocCascadePath,
   TabState,
   UpdateESQLQueryActionPayload,
 } from '../types';
@@ -119,6 +120,7 @@ export const updateAppState: InternalStateThunkActionCreator<[AppStatePayload]> 
 type ExpandedDocPayload = TabActionPayload<{
   expandedDoc: DataTableRecord | undefined;
   expandedDocOwner?: string;
+  expandedDocCascadePath?: ExpandedDocCascadePath;
   initialDocViewerTabId?: string;
   initialDocViewerTabState?: object;
   shouldUpdateUrl?: boolean;

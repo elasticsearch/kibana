@@ -179,6 +179,7 @@ describe('CascadeRowCellPrimitive', () => {
           expect.objectContaining({
             cellId: expect.any(String),
             nodePath: expect.any(Array),
+            nodePathMap: expect.any(Object),
             data: expect.anything(),
             rowIndex: expect.any(Number),
           })

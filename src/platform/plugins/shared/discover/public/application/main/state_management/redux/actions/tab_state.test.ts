@@ -162,6 +162,7 @@ describe('tab_state actions', () => {
       const tab = selectTab(internalState.getState(), tabId);
 
       expect(tab.expandedDoc).toBe(expandedDoc);
+      expect(tab.expandedDocOwner).toBe('cascade_node_1');
       expect(tab.appState.expandedDoc).toBeUndefined();
     });
 

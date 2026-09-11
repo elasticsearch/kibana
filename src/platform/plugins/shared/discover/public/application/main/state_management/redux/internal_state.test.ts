@@ -502,6 +502,38 @@ describe('InternalStateStore', () => {
     expect(selectTab(store.getState(), tabId).initialDocViewerTabId).toBe('Table');
   });
 
+  it('should set expandedDocCascadePath for cascade owned flyouts', async () => {
+    const { store } = await setup();
+    const tabId = store.getState().tabs.unsafeCurrentId;
+    const mockDoc = buildDataTableRecord({ _index: 'test', _id: 'doc1' }, dataViewMock);
+    const expandedDocCascadePath = {
+      nodePath: ['extension'],
+      nodePathMap: { extension: 'png' },
+    };
+
+    store.dispatch(
+      internalStateActions.setExpandedDoc({
+        tabId,
+        expandedDoc: mockDoc,
+        expandedDocOwner: 'nested-grid',
+        expandedDocCascadePath,
+      })
+    );
+
+    expect(selectTab(store.getState(), tabId).expandedDocCascadePath).toEqual(
+      expandedDocCascadePath
+    );
+
+    store.dispatch(
+      internalStateActions.setExpandedDoc({
+        tabId,
+        expandedDoc: undefined,
+      })
+    );
+
+    expect(selectTab(store.getState(), tabId).expandedDocCascadePath).toBeUndefined();
+  });
+
   it('should default expandedDocOwner to the main grid when not provided', async () => {
     const { store } = await setup();
     const tabId = store.getState().tabs.unsafeCurrentId;
@@ -646,6 +678,7 @@ describe('InternalStateStore', () => {
 
     expect(selectTab(store.getState(), tabId).expandedDoc).toBeUndefined();
     expect(selectTab(store.getState(), tabId).expandedDocOwner).toBeUndefined();
+    expect(selectTab(store.getState(), tabId).expandedDocCascadePath).toBeUndefined();
     expect(selectTab(store.getState(), tabId).renderDocumentViewMeta).toBeUndefined();
     expect(selectTab(store.getState(), tabId).initialDocViewerTabId).toBeUndefined();
   });

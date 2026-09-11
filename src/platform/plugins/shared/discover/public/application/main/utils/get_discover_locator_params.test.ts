@@ -8,12 +8,17 @@
  */
 
 import { createDiscoverSessionMock } from '@kbn/saved-search-plugin/common/mocks';
+import { buildDataTableRecord } from '@kbn/discover-utils';
 import { dataViewMock } from '@kbn/discover-utils/src/__mocks__';
 import type { Filter } from '@kbn/es-query';
+import { constructCascadeQuery } from '@kbn/esql-utils';
 import { DataSourceType } from '../../../../common/data_sources';
 import { getDiscoverInternalStateMock } from '../../../__mocks__/discover_state.mock';
 import { internalStateActions } from '../state_management/redux';
-import { getDiscoverLocatorParams } from './get_discover_locator_params';
+import {
+  getDiscoverLocatorParams,
+  toCascadeDocShareLocatorParams,
+} from './get_discover_locator_params';
 
 const filters: Filter[] = [];
 const timeRange = { from: 'now-15m', to: 'now' };
@@ -88,5 +93,74 @@ describe('getDiscoverLocatorParams', () => {
       tab: { id: currentTab.id, label: currentTab.label },
     });
     expect(dataSource).toBeUndefined();
+  });
+});
+
+describe('toCascadeDocShareLocatorParams', () => {
+  it('scopes session params to a nested group-by document share', async () => {
+    const toolkit = getDiscoverInternalStateMock();
+    await toolkit.initializeTabs();
+    const currentTab = toolkit.getCurrentTab();
+    const expandedDoc = buildDataTableRecord(
+      { _id: 'doc-1', _index: 'logs', _source: { extension: 'png' } },
+      dataViewMock
+    );
+    const groupingQuery = { esql: 'FROM logs | STATS count() BY extension' };
+    const cascadePath = {
+      nodePath: ['extension'],
+      nodePathMap: { extension: 'png' },
+    };
+    const cascadeQuery = constructCascadeQuery({
+      query: groupingQuery,
+      dataView: dataViewMock,
+      esqlVariables: undefined,
+      nodeType: 'leaf',
+      ...cascadePath,
+    });
+
+    if (!cascadeQuery) {
+      throw new Error('Expected a cascade leaf query');
+    }
+
+    toolkit.internalState.dispatch(
+      internalStateActions.updateAppState({
+        tabId: currentTab.id,
+        appState: {
+          query: groupingQuery,
+          columns: ['count', 'extension'],
+          sort: [['count', 'desc']],
+        },
+      })
+    );
+    toolkit.internalState.dispatch(
+      internalStateActions.setExpandedDoc({
+        tabId: currentTab.id,
+        expandedDoc,
+      })
+    );
+
+    const persistedDiscoverSession = createDiscoverSessionMock({ id: 'session-id' });
+    const locatorParams = toCascadeDocShareLocatorParams({
+      locatorParams: getDiscoverLocatorParams({
+        currentTab: toolkit.getCurrentTab(),
+        dataView: dataViewMock,
+        persistedDiscoverSession,
+        filters,
+        timeRange,
+        refreshInterval,
+        profileState,
+      }),
+      query: cascadeQuery,
+      expandedDoc: toolkit.getCurrentTab().expandedDoc,
+    });
+
+    expect(locatorParams.query).toEqual(cascadeQuery);
+    expect(locatorParams.expandedDoc).toEqual({ id: 'doc-1', index: 'logs' });
+    expect(locatorParams.savedSearchId).toBeUndefined();
+    expect(locatorParams.columns).toEqual([]);
+    expect(locatorParams.grid).toBeUndefined();
+    expect(locatorParams.sort).toBeUndefined();
+    expect(locatorParams.timeRange).toEqual(timeRange);
+    expect(locatorParams.filters).toEqual(filters);
   });
 });

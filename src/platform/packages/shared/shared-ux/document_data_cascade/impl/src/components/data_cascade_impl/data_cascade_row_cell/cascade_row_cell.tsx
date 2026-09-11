@@ -156,10 +156,11 @@ export function CascadeRowCellPrimitive<G extends GroupNode, L extends LeafNode>
       cellId: leafCacheKey,
       key: leafCacheKey,
       nodePath,
+      nodePathMap,
       virtualizerController: childController,
       rowIndex: row.index,
     });
-  }, [children, leafData, leafCacheKey, nodePath, childController, row.index]);
+  }, [children, leafData, leafCacheKey, nodePath, nodePathMap, childController, row.index]);
 
   return (
     <EuiFlexGroup>

@@ -61,6 +61,7 @@ export interface CascadeRowCellRendererProps<G extends GroupNode, L extends Leaf
   data: L[] | null;
   cellId: string;
   nodePath: string[];
+  nodePathMap: Record<string, string>;
   virtualizerController: ChildVirtualizerController;
   rowIndex: number;
 }

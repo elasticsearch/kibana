@@ -18,6 +18,7 @@ import type { UnifiedDataTableRestorableState } from '@kbn/unified-data-table';
 import type {
   CascadedDocumentsState,
   DiscoverAppState,
+  ExpandedDocCascadePath,
   internalStateActions,
 } from '../../../state_management/redux';
 import type { UpdateESQLQueryFn } from '../../../../../context_awareness';
@@ -40,7 +41,10 @@ export interface CascadedDocumentsContext
   renderViewModeToggle: RenderViewModeToggle | undefined;
   expandedDoc$: BehaviorSubject<DataTableRecord | undefined>;
   expandedDocOwner$: BehaviorSubject<string | undefined>;
-  getExpandedDocSetter: (owner: string) => NonNullable<UnifiedDataTableProps['setExpandedDoc']>;
+  getExpandedDocSetter: (
+    owner: string,
+    expandedDocCascadePath?: ExpandedDocCascadePath
+  ) => NonNullable<UnifiedDataTableProps['setExpandedDoc']>;
   getRenderDocumentViewMetaSetter: (
     owner: string
   ) => UnifiedDataTableProps['setRenderDocumentViewMeta'] | undefined;
