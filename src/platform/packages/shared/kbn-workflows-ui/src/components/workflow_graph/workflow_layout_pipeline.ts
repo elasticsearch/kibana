@@ -33,7 +33,11 @@ export interface LayoutSnapshot {
  */
 export const computeWorkflowLayout = (
   transformed: TransformResult,
-  { direction }: { direction: LayoutDirection }
+  {
+    direction,
+    nodeSep,
+    rankSep,
+  }: { direction: LayoutDirection; nodeSep?: number; rankSep?: number }
 ): LayoutSnapshot => {
   const { nodes, edges, foreachGroups, bypassLaneNodes } = transformed;
 
@@ -71,8 +75,8 @@ export const computeWorkflowLayout = (
 
   const laid = dagLayout(dagNodes, dagEdges, dagGroups, {
     direction,
-    nodeSep: WORKFLOW_NODE_SEP,
-    rankSep: WORKFLOW_RANK_SEP,
+    nodeSep: nodeSep ?? WORKFLOW_NODE_SEP,
+    rankSep: rankSep ?? WORKFLOW_RANK_SEP,
     compoundPadding: WORKFLOW_COMPOUND_PADDING,
   });
 

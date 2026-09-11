@@ -275,7 +275,8 @@ function NodeStepIcon({
   );
 }
 
-// Compact preview card — icon-only, used in the workflow-list hover popover.
+// Dense preview card — icon, step name and step-type subtitle. Used by the
+// inline attachment preview and the workflow-list hover popover.
 function NodePreviewCard({
   stepType,
   label,
@@ -283,6 +284,7 @@ function NodePreviewCard({
   isTriggerNode,
   iconType,
   palette,
+  stepLabelColor,
   triggerIconColor,
   renderStepIcon,
   targetHandlePos,
@@ -294,11 +296,13 @@ function NodePreviewCard({
   isTriggerNode: boolean;
   iconType: ReturnType<typeof getStepIconType>;
   palette: NodePalette;
+  stepLabelColor: string;
   triggerIconColor: string;
   renderStepIcon?: RenderStepIcon;
   targetHandlePos: Position;
   sourceHandlePos: Position;
 }) {
+  const { euiTheme } = useEuiTheme();
   return (
     <>
       {!isTrigger && <Handle type="target" position={targetHandlePos} style={{ opacity: 0 }} />}
@@ -307,23 +311,78 @@ function NodePreviewCard({
         css={{
           width: '100%',
           height: '100%',
-          background: palette.iconAreaBg,
+          background: euiTheme.colors.backgroundBasePlain,
           border: `1px solid ${palette.outerBorder}`,
           borderRadius: 6,
           display: 'flex',
           alignItems: 'center',
-          justifyContent: 'center',
+          gap: 10,
+          padding: 8,
+          overflow: 'hidden',
         }}
       >
-        <NodeStepIcon
-          iconType={iconType}
-          iconColor={palette.iconColor}
-          forceTriggerPinkFill={isTriggerNode}
-          triggerIconColor={triggerIconColor}
-          renderStepIcon={renderStepIcon}
-          stepType={stepType}
-          isTrigger={isTrigger ?? false}
-        />
+        <div
+          css={{
+            flex: '0 0 auto',
+            width: 32,
+            height: 32,
+            background: palette.iconAreaBg,
+            border: `1px solid ${palette.innerBoxBorder}`,
+            borderRadius: 6,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          <NodeStepIcon
+            iconType={iconType}
+            iconColor={palette.iconColor}
+            forceTriggerPinkFill={isTriggerNode}
+            triggerIconColor={triggerIconColor}
+            renderStepIcon={renderStepIcon}
+            stepType={stepType}
+            isTrigger={isTrigger ?? false}
+          />
+        </div>
+        <div
+          css={{
+            flex: '1 1 auto',
+            minWidth: 0,
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 2,
+          }}
+        >
+          <span
+            css={{
+              fontFamily: euiTheme.font.family,
+              fontSize: 12,
+              fontWeight: 500,
+              lineHeight: '16px',
+              color: stepLabelColor,
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+            }}
+            title={label}
+          >
+            {label}
+          </span>
+          <span
+            css={{
+              fontFamily: euiTheme.font.familyCode ?? euiTheme.font.family,
+              fontSize: 11,
+              lineHeight: '14px',
+              color: euiTheme.colors.textSubdued,
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+            }}
+            title={stepType}
+          >
+            {stepType}
+          </span>
+        </div>
       </div>
       <Handle type="source" position={sourceHandlePos} style={{ opacity: 0 }} />
     </>
@@ -493,8 +552,9 @@ function WorkflowGraphNodeInner(node: NodeProps<Node<WorkflowGraphNodeData>>) {
     !isTrigger &&
     !colors.hasStatusIcon;
 
-  // Compact icon-only render for the workflow-list hover preview. All hooks
-  // above are still called every render, so the early return is safe.
+  // Dense preview render for inline attachment previews: icon + step name +
+  // step-type subtitle. No interaction, no retry badge, no run button. All
+  // hooks above are still called every render, so the early return is safe.
   if (preview) {
     return (
       <NodePreviewCard
@@ -504,6 +564,7 @@ function WorkflowGraphNodeInner(node: NodeProps<Node<WorkflowGraphNodeData>>) {
         isTriggerNode={isTriggerNode}
         iconType={iconType}
         palette={colors.palette}
+        stepLabelColor={colors.stepLabelColor}
         triggerIconColor={colors.triggerIconColor}
         renderStepIcon={renderStepIcon}
         targetHandlePos={targetHandlePos}

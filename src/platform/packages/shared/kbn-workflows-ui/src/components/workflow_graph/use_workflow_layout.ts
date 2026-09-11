@@ -51,6 +51,10 @@ interface UseWorkflowLayoutParams {
   stepExecutions?: WorkflowStepExecutionDto[];
   /** Dagre rank direction: `'TB'` (default) or `'LR'`. */
   direction?: LayoutDirection;
+  /** Override the default rank separation (arrow length in layout direction). */
+  rankSep?: number;
+  /** Override the default node separation (gap between siblings in a rank). */
+  nodeSep?: number;
   onPerfMark?: (name: 'transform_ms' | 'layout_ms', ms: number) => void;
   onLayoutFailed?: (reason: string) => void;
 }
@@ -72,6 +76,8 @@ export function useWorkflowLayout({
   transformed: transformedProp,
   stepExecutions,
   direction = 'TB',
+  rankSep,
+  nodeSep,
   onPerfMark,
   onLayoutFailed,
 }: UseWorkflowLayoutParams): UseWorkflowLayoutResult {
@@ -93,7 +99,7 @@ export function useWorkflowLayout({
     if (!workflow) return { nodes: [], edges: [] };
     try {
       const t1 = performance.now();
-      const snap = computeWorkflowLayout(transformed, { direction });
+      const snap = computeWorkflowLayout(transformed, { direction, nodeSep, rankSep });
       onPerfMark?.('layout_ms', performance.now() - t1);
       return snap;
     } catch (err) {
@@ -106,7 +112,7 @@ export function useWorkflowLayout({
     // fingerprint because both are computed from the same `workflow`/
     // `transformedProp` on the same render.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [topologyFingerprint, direction, onLayoutFailed, onPerfMark]);
+  }, [topologyFingerprint, direction, nodeSep, rankSep, onLayoutFailed, onPerfMark]);
 
   const stepExecutionMap = useMemo(() => {
     if (!stepExecutions) return null;

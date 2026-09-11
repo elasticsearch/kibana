@@ -321,6 +321,7 @@ const componentStyles = {
   wrapper: ({ euiTheme }: UseEuiTheme) =>
     css({
       position: 'relative',
+      padding: '10px 0',
       backgroundColor: euiTheme.colors.backgroundBaseSubdued,
       '.diff-hidden-lines .center': {
         gap: euiTheme.size.s,
