@@ -29,6 +29,15 @@ export default function ({ getService, getPageObjects }: FtrProviderContext) {
     });
 
     describe('create new', () => {
+      // A failing test in this stateful suite can leave a save modal open, whose backdrop mask
+      // intercepts every click and wedges each downstream test until it times out. Reset to a
+      // clean state on failure so one test's failure can't cascade into the rest of the suite.
+      afterEach(async function () {
+        if (this.currentTest?.isFailed()) {
+          await dashboard.navigateToApp();
+        }
+      });
+
       it('warns on duplicate name for new dashboard', async function () {
         await dashboard.clickNewDashboard();
         await dashboard.saveDashboard(dashboardName);
