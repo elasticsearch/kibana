@@ -611,11 +611,20 @@ export function LensPageProvider({ getService, getPageObjects }: FtrProviderCont
      * @param layerIndex - the index of the layer
      */
     async openDimensionEditor(dimension: string, layerIndex = 0, dimensionIndex = 0) {
+      await this.ensureLayerTabIsActive(layerIndex);
       await retry.try(async () => {
         const dimensionEditor = (
           await testSubjects.findAll(`lns-layerPanel-${layerIndex} > ${dimension}`, 1000)
         )[dimensionIndex];
+        if (!dimensionEditor) {
+          throw new Error(
+            `Could not find dimension "${dimension}" at layer ${layerIndex}, index ${dimensionIndex}`
+          );
+        }
         await dimensionEditor.click();
+        await testSubjects.existOrFail('lns-indexPattern-dimensionContainerClose', {
+          timeout: 1000,
+        });
       });
     },
 
@@ -733,8 +742,10 @@ export function LensPageProvider({ getService, getPageObjects }: FtrProviderCont
      * Removes the dimension matching a specific test subject
      */
     async removeDimension(dimensionTestSubj: string) {
-      await testSubjects.moveMouseTo(`${dimensionTestSubj} > indexPattern-dimension-remove`);
-      await testSubjects.click(`${dimensionTestSubj} > indexPattern-dimension-remove`);
+      await retry.try(async () => {
+        await testSubjects.moveMouseTo(`${dimensionTestSubj} > indexPattern-dimension-remove`);
+        await testSubjects.click(`${dimensionTestSubj} > indexPattern-dimension-remove`);
+      });
     },
     /**
      * adds new filter to filters agg
