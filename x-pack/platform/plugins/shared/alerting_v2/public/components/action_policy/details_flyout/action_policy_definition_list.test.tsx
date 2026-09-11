@@ -6,11 +6,10 @@
  */
 
 import React from 'react';
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import { I18nProvider } from '@kbn/i18n-react';
 import { ActionPolicyDefinitionList } from './action_policy_definition_list';
 import type { ActionPolicyDefinitionListProps } from './action_policy_definition_list';
-import userEvent from '@testing-library/user-event';
 
 const renderWithI18n = (props: ActionPolicyDefinitionListProps) =>
   render(
@@ -82,12 +81,10 @@ describe('ActionPolicyDefinitionList', () => {
     expect(screen.getByText('+1')).toBeDefined();
   });
 
-  it('opens the tags popover when the "+N" button is clicked', async () => {
-    const user = userEvent.setup();
-
+  it('opens the tags popover when the "+N" button is clicked', () => {
     renderWithI18n(defaultProps);
 
-    await user.click(screen.getByText('+1'));
+    fireEvent.click(screen.getByText('+1'));
 
     expect(screen.getByText('tag-b')).toBeInTheDocument();
   });
