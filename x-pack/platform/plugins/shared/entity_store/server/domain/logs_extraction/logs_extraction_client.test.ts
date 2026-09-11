@@ -2089,7 +2089,9 @@ describe('LogsExtractionClient extraction mode cursor routing', () => {
   it('nonPriority mode writes nonPriorityLogExtractionState on mid-run and end-of-run persists', async () => {
     const { client, mockEngineDescriptorClient } = createContextWithMode('nonPriority');
     mockEngineDescriptorClient.findOrThrow.mockResolvedValue(
-      createMockEngineDescriptor('user') as Awaited<ReturnType<EngineDescriptorClient['findOrThrow']>>
+      createMockEngineDescriptor('user') as Awaited<
+        ReturnType<EngineDescriptorClient['findOrThrow']>
+      >
     );
     mockIngestEntities.mockResolvedValue(undefined);
     // probe → extraction (1 row, non-final) → empty probe (end of window) → sweep
@@ -2113,7 +2115,9 @@ describe('LogsExtractionClient extraction mode cursor routing', () => {
   it('single mode writes logExtractionState — regression guard for the default path', async () => {
     const { client, mockEngineDescriptorClient } = createContextWithMode('single');
     mockEngineDescriptorClient.findOrThrow.mockResolvedValue(
-      createMockEngineDescriptor('user') as Awaited<ReturnType<EngineDescriptorClient['findOrThrow']>>
+      createMockEngineDescriptor('user') as Awaited<
+        ReturnType<EngineDescriptorClient['findOrThrow']>
+      >
     );
     mockIngestEntities.mockResolvedValue(undefined);
     mockExtractSuccessSequence({ columns: extractionColumns, values: [] });
