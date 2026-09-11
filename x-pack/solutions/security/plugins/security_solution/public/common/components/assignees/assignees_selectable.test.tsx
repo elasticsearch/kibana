@@ -7,7 +7,7 @@
 
 import React from 'react';
 import { render } from '@testing-library/react';
-import { userEvent } from '@testing-library/user-event';
+import { userEvent, type UserEvent } from '@testing-library/user-event';
 
 import { AssigneesSelectable } from './assignees_selectable';
 
@@ -49,10 +49,13 @@ const renderAssigneesSelectable = (
   );
 };
 
-// Failing: See https://github.com/elastic/kibana/issues/260306
-describe.skip('<AssigneesSelectable />', () => {
+describe('<AssigneesSelectable />', () => {
+  let user: UserEvent;
+
   beforeEach(() => {
     jest.clearAllMocks();
+    // Disable pointer events check to avoid the per-event getComputedStyle ancestor walk that blows the Jest timeout under CI load
+    user = userEvent.setup({ pointerEventsCheck: 0 });
     (useGetCurrentUserProfile as jest.Mock).mockReturnValue({
       isLoading: false,
       data: mockUserProfiles[0],
@@ -95,12 +98,12 @@ describe.skip('<AssigneesSelectable />', () => {
       onSelectionChange: onSelectionChangeMock,
     });
 
-    await userEvent.click(getByText('User 1'));
-    await userEvent.click(getByText('User 2'));
-    await userEvent.click(getByText('User 3'));
-    await userEvent.click(getByText('User 3'));
-    await userEvent.click(getByText('User 2'));
-    await userEvent.click(getByText('User 1'));
+    await user.click(getByText('User 1'));
+    await user.click(getByText('User 2'));
+    await user.click(getByText('User 3'));
+    await user.click(getByText('User 3'));
+    await user.click(getByText('User 2'));
+    await user.click(getByText('User 1'));
 
     expect(onSelectionChangeMock).toHaveBeenCalledTimes(6);
     expect(onSelectionChangeMock.mock.calls).toEqual([
