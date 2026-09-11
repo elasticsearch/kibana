@@ -153,6 +153,22 @@ describe('convertToRRule', () => {
     expect(summary).toEqual('every month on day 22');
   });
 
+  test('should return the summary for maintenance window that is recurring on the last day of the month', () => {
+    const summary = recurringSummary({
+      startDate,
+      recurringSchedule: {
+        bymonth: 'lastday',
+        customFrequency: Frequency.MONTHLY,
+        ends: 'never',
+        frequency: 'CUSTOM',
+        interval: 1,
+      },
+      presets,
+    });
+
+    expect(summary).toEqual('every month on the last day of the month');
+  });
+
   test('should return the summary for maintenance window that is recurring on a custom monthly by weekday schedule', () => {
     const summary = recurringSummary({
       startDate,

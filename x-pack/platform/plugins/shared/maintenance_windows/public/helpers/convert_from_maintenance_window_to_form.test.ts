@@ -325,6 +325,35 @@ describe('convertFromMaintenanceWindowToForm', () => {
     });
   });
 
+  test('should convert a maintenance window that is recurring on the last day of the month', () => {
+    const maintenanceWindow = convertFromMaintenanceWindowToForm({
+      title,
+      duration,
+      rRule: {
+        dtstart: startDate.toISOString(),
+        tzid: 'UTC',
+        freq: Frequency.MONTHLY,
+        interval: 1,
+        bymonthday: [-1],
+      },
+    } as MaintenanceWindowUI);
+
+    expect(maintenanceWindow).toEqual({
+      title,
+      startDate: startDate.toISOString(),
+      endDate: endDate.toISOString(),
+      timezone: ['UTC'],
+      recurring: true,
+      recurringSchedule: {
+        bymonth: 'lastday',
+        customFrequency: Frequency.MONTHLY,
+        ends: 'never',
+        frequency: 'CUSTOM',
+        interval: 1,
+      },
+    });
+  });
+
   test('should convert a maintenance window that is recurring on a custom yearly schedule', () => {
     const maintenanceWindow = convertFromMaintenanceWindowToForm({
       title,

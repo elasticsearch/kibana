@@ -16,13 +16,25 @@ import {
   validateScheduleV1,
 } from '../validation';
 import { validateInteger } from '../validation/validate_integer/v1';
+import { validateMonthDayV1 } from '../../r_rule/validation';
 
 interface GetScheduleSchemaOptions {
   metaId?: string;
   recurringMetaId?: string;
+  // Opt-in: consumers such as the alerting snooze API publish onMonthDay as 1-31 in their contracts.
+  allowLastDayOfMonth?: boolean;
 }
 
-const getRecurringRequestSchema = (recurringMetaId?: string) =>
+const MONTH_DAY_DESCRIPTION =
+  'The specific days of the month for a recurring schedule. Valid values are 1-31.';
+
+const LAST_DAY_OF_MONTH_DESCRIPTION =
+  'The specific days of the month for a recurring schedule. Valid values are `1` to `31`, or `-1` for the last day of the month.';
+
+const getRecurringRequestSchema = (
+  recurringMetaId?: string,
+  allowLastDayOfMonth: boolean = false
+) =>
   schema.object(
     {
       end: schema.maybe(
@@ -58,17 +70,24 @@ const getRecurringRequestSchema = (recurringMetaId?: string) =>
       ),
       onMonthDay: schema.maybe(
         schema.arrayOf(
-          schema.number({
-            min: 1,
-            max: 31,
-            validate: (value: number) => validateInteger(value, 'onMonthDay'),
-          }),
+          allowLastDayOfMonth
+            ? schema.number({
+                min: -1,
+                max: 31,
+                validate: (value: number) => validateMonthDayV1(value, 'schedule onMonthDay'),
+              })
+            : schema.number({
+                min: 1,
+                max: 31,
+                validate: (value: number) => validateInteger(value, 'onMonthDay'),
+              }),
           {
             minSize: 1,
             maxSize: 31,
             meta: {
-              description:
-                'The specific days of the month for a recurring schedule. Valid values are 1-31.',
+              description: allowLastDayOfMonth
+                ? LAST_DAY_OF_MONTH_DESCRIPTION
+                : MONTH_DAY_DESCRIPTION,
             },
           }
         )
@@ -105,6 +124,7 @@ const getRecurringRequestSchema = (recurringMetaId?: string) =>
 export const getScheduleRequestSchema = ({
   metaId = 'schedule_request',
   recurringMetaId,
+  allowLastDayOfMonth,
 }: GetScheduleSchemaOptions = {}) =>
   schema.object(
     {
@@ -133,7 +153,7 @@ export const getScheduleRequestSchema = ({
           },
         })
       ),
-      recurring: schema.maybe(getRecurringRequestSchema(recurringMetaId)),
+      recurring: schema.maybe(getRecurringRequestSchema(recurringMetaId, allowLastDayOfMonth)),
     },
     {
       validate: validateScheduleV1,
@@ -143,7 +163,10 @@ export const getScheduleRequestSchema = ({
 
 export const scheduleRequestSchema = getScheduleRequestSchema();
 
-const getRecurringResponseSchema = (recurringMetaId?: string) =>
+const getRecurringResponseSchema = (
+  recurringMetaId?: string,
+  allowLastDayOfMonth: boolean = false
+) =>
   schema.object(
     {
       end: schema.maybe(
@@ -175,8 +198,9 @@ const getRecurringResponseSchema = (recurringMetaId?: string) =>
         schema.arrayOf(schema.number(), {
           maxSize: 31,
           meta: {
-            description:
-              'The specific days of the month for a recurring schedule. Valid values are 1-31.',
+            description: allowLastDayOfMonth
+              ? LAST_DAY_OF_MONTH_DESCRIPTION
+              : MONTH_DAY_DESCRIPTION,
           },
         })
       ),
@@ -203,6 +227,7 @@ const getRecurringResponseSchema = (recurringMetaId?: string) =>
 export const getScheduleResponseSchema = ({
   metaId = 'schedule_response',
   recurringMetaId,
+  allowLastDayOfMonth,
 }: GetScheduleSchemaOptions = {}) =>
   schema.object(
     {
@@ -225,7 +250,7 @@ export const getScheduleResponseSchema = ({
           },
         })
       ),
-      recurring: schema.maybe(getRecurringResponseSchema(recurringMetaId)),
+      recurring: schema.maybe(getRecurringResponseSchema(recurringMetaId, allowLastDayOfMonth)),
     },
     { meta: { id: metaId } }
   );

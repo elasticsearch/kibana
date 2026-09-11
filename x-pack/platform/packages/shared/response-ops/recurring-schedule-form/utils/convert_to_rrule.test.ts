@@ -250,6 +250,28 @@ describe('convertToRRule', () => {
     });
   });
 
+  test('should convert a recurring schedule that is recurring on the last day of the month', () => {
+    const rRule = convertToRRule({
+      startDate,
+      timezone,
+      recurringSchedule: {
+        bymonth: 'lastday',
+        customFrequency: Frequency.MONTHLY,
+        ends: 'never',
+        frequency: 'CUSTOM',
+        interval: 1,
+      },
+    });
+
+    expect(rRule).toEqual({
+      dtstart: startDate,
+      tzid: 'UTC',
+      freq: Frequency.MONTHLY,
+      interval: 1,
+      bymonthday: [-1],
+    });
+  });
+
   test('should convert a recurring schedule that is recurring on a custom monthly by weekday schedule', () => {
     const rRule = convertToRRule({
       startDate,

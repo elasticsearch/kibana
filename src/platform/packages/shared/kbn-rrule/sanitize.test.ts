@@ -93,9 +93,16 @@ describe('sanitizeOptions', () => {
   });
 
   it('filters out invalid bymonthday values', () => {
-    expect(sanitizeOptions({ ...options, bymonthday: [0, 15, 32] })).toEqual({
+    expect(sanitizeOptions({ ...options, bymonthday: [0, 15, 32, -32] })).toEqual({
       ...options,
       bymonthday: [15],
+    });
+  });
+
+  it('keeps negative bymonthday values counting back from the end of the month', () => {
+    expect(sanitizeOptions({ ...options, bymonthday: [-31, -1] })).toEqual({
+      ...options,
+      bymonthday: [-31, -1],
     });
   });
 

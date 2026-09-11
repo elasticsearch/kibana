@@ -246,6 +246,13 @@ export const RECURRING_SCHEDULE_FORM_CUSTOM_REPEAT_MONTHLY_ON_DAY = (startDate: 
     values: { dayNumber: startDate.date() },
   });
 
+export const RECURRING_SCHEDULE_FORM_CUSTOM_REPEAT_MONTHLY_ON_LAST_DAY = i18n.translate(
+  'responseOpsRecurringScheduleForm.repeatOnMonthlyLastDay',
+  {
+    defaultMessage: 'On the last day',
+  }
+);
+
 export const RECURRING_SCHEDULE_FORM_RECURRING_SUMMARY_PREFIX = (summary: string) =>
   i18n.translate('responseOpsRecurringScheduleForm.recurringSummaryPrefix', {
     defaultMessage: 'Repeats {summary}',
@@ -318,6 +325,13 @@ export const RECURRING_SCHEDULE_FORM_MONTHLY_BY_DAY_SUMMARY = (monthday: number)
       monthday,
     },
   });
+
+export const RECURRING_SCHEDULE_FORM_MONTHLY_BY_LAST_DAY_SUMMARY = i18n.translate(
+  'responseOpsRecurringScheduleForm.monthlyByLastDaySummary',
+  {
+    defaultMessage: 'on the last day of the month',
+  }
+);
 
 export const RECURRING_SCHEDULE_FORM_YEARLY_BY_MONTH_SUMMARY = (date: string) =>
   i18n.translate('responseOpsRecurringScheduleForm.yearlyBymonthSummary', {

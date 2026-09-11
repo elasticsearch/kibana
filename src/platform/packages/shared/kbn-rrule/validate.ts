@@ -46,10 +46,13 @@ export function validateOptions(opts: ConstructorOptions) {
     options.bymonthday != null &&
     (options.bymonthday.length < 1 ||
       options.bymonthday.some(
-        (monthDay) => !Number.isInteger(monthDay) || monthDay < 1 || monthDay > 31
+        (monthDay) =>
+          !Number.isInteger(monthDay) || monthDay === 0 || monthDay < -31 || monthDay > 31
       ))
   ) {
-    throw new Error('bymonthday must be an array of numbers between 1 and 31');
+    throw new Error(
+      'bymonthday must be an array of numbers between 1 and 31, or between -31 and -1'
+    );
   }
 
   if (

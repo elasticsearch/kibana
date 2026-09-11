@@ -13,7 +13,10 @@ import type {
   RecurrenceFrequency,
   RecurringSchedule,
 } from '@kbn/response-ops-recurring-schedule-form/types';
-import { RecurrenceEnd } from '@kbn/response-ops-recurring-schedule-form/constants';
+import {
+  LAST_DAY_OF_MONTH,
+  RecurrenceEnd,
+} from '@kbn/response-ops-recurring-schedule-form/constants';
 import type { RRuleParams } from '@kbn/alerting-types';
 import type { MaintenanceWindowUI } from '../../common';
 import type { FormProps } from '../components/schema';
@@ -69,6 +72,8 @@ export const convertFromMaintenanceWindowToForm = (
   if (frequency === Frequency.MONTHLY) {
     if (rRule.byweekday) {
       recurringSchedule.bymonth = 'weekday';
+    } else if (rRule.bymonthday?.includes(LAST_DAY_OF_MONTH)) {
+      recurringSchedule.bymonth = 'lastday';
     } else if (rRule.bymonthday) {
       recurringSchedule.bymonth = 'day';
     }

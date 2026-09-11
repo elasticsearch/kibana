@@ -146,8 +146,21 @@ describe('validateOptions', () => {
       expect(() =>
         validateOptions({ ...options, bymonthday: [0, 15, 32] })
       ).toThrowErrorMatchingInlineSnapshot(
-        `"bymonthday must be an array of numbers between 1 and 31"`
+        `"bymonthday must be an array of numbers between 1 and 31, or between -31 and -1"`
       );
+    });
+
+    it('throws an error with out of range negative values', () => {
+      expect(() =>
+        validateOptions({ ...options, bymonthday: [-32] })
+      ).toThrowErrorMatchingInlineSnapshot(
+        `"bymonthday must be an array of numbers between 1 and 31, or between -31 and -1"`
+      );
+    });
+
+    it('does not throw for negative values counting back from the end of the month', () => {
+      expect(() => validateOptions({ ...options, bymonthday: [-1] })).not.toThrow();
+      expect(() => validateOptions({ ...options, bymonthday: [-31, -1, 1, 31] })).not.toThrow();
     });
 
     it('throws an error with string values', () => {
@@ -155,7 +168,7 @@ describe('validateOptions', () => {
         // @ts-expect-error
         validateOptions({ ...options, bymonthday: ['invalid'] })
       ).toThrowErrorMatchingInlineSnapshot(
-        `"bymonthday must be an array of numbers between 1 and 31"`
+        `"bymonthday must be an array of numbers between 1 and 31, or between -31 and -1"`
       );
     });
 
@@ -163,7 +176,7 @@ describe('validateOptions', () => {
       expect(() =>
         validateOptions({ ...options, bymonthday: [] })
       ).toThrowErrorMatchingInlineSnapshot(
-        `"bymonthday must be an array of numbers between 1 and 31"`
+        `"bymonthday must be an array of numbers between 1 and 31, or between -31 and -1"`
       );
     });
   });

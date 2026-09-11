@@ -11,16 +11,29 @@ import {
   validateEndDateV1,
   validateRecurrenceByWeekdayV1,
   validateTimezoneV1,
+  validateMonthDayV1,
 } from '../../validation';
 
 interface GetRRuleRequestSchemaOptions {
   meta?: { id: string };
   validateTimezone?: (timezone: string) => string | undefined;
+  // Opt-in: consumers such as the alerting rule APIs publish bymonthday as 1-31 in their contracts.
+  allowLastDayOfMonth?: boolean;
 }
+
+const getMonthDayNumberSchema = (allowLastDayOfMonth: boolean) =>
+  allowLastDayOfMonth
+    ? schema.number({
+        min: -1,
+        max: 31,
+        validate: (value: number) => validateMonthDayV1(value, 'rRule bymonthday'),
+      })
+    : schema.number({ min: 1, max: 31 });
 
 export const getRRuleRequestSchema = ({
   meta,
   validateTimezone = validateTimezoneV1,
+  allowLastDayOfMonth = false,
 }: GetRRuleRequestSchemaOptions = {}) =>
   schema.object(
     {
@@ -64,7 +77,10 @@ export const getRRuleRequestSchema = ({
         })
       ),
       bymonthday: schema.maybe(
-        schema.arrayOf(schema.number({ min: 1, max: 31 }), { minSize: 1, maxSize: 31 })
+        schema.arrayOf(getMonthDayNumberSchema(allowLastDayOfMonth), {
+          minSize: 1,
+          maxSize: 31,
+        })
       ),
       bymonth: schema.maybe(
         schema.arrayOf(schema.number({ min: 1, max: 12 }), { minSize: 1, maxSize: 12 })

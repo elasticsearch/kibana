@@ -123,6 +123,16 @@ describe('transformScheduledReport', () => {
     );
   });
 
+  it('handles monthly on the last day of the month', () => {
+    const report = {
+      ...baseReport,
+      schedule: { rrule: { freq: Frequency.MONTHLY, tzid: 'UTC', bymonthday: [-1] } },
+    } as ScheduledReportApiJSON;
+    expect(transformScheduledReport(report).recurringSchedule).toEqual(
+      expect.objectContaining({ frequency: 'CUSTOM', bymonth: 'lastday', bymonthday: -1 })
+    );
+  });
+
   it('handles monthly with byweekday', () => {
     const report = {
       ...baseReport,

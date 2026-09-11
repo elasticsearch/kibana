@@ -55,9 +55,9 @@ export function sanitizeOptions(opts: Options) {
   }
 
   if (options.bymonthday) {
-    // Only days between 1 and 31 are valid
+    // 1 to 31 counts forward from the start of the month, -31 to -1 backward from the end
     options.bymonthday = options.bymonthday.filter(
-      (day) => typeof day === 'number' && day >= 1 && day <= 31
+      (day) => typeof day === 'number' && day !== 0 && day >= -31 && day <= 31
     );
     if (!options.bymonthday.length) {
       delete options.bymonthday;

@@ -7,7 +7,7 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
-import moment, { type Moment } from 'moment-timezone';
+import moment, { type Moment, type unitOfTime } from 'moment-timezone';
 
 import type { ConstructorOptions } from './types';
 import { Frequency, Weekday, type WeekdayStr, type Options, type IterOptions } from './types';
@@ -30,6 +30,8 @@ type AllResult = Date[] & {
 
 const ALL_LIMIT = 10000;
 const TIMEOUT_LIMIT = 100000;
+// Enough to step over the longest run of skippable periods a month-length or bymonth gap can create
+const MAX_CONSECUTIVE_EMPTY_PERIODS = 12;
 
 export class RRule {
   private options: Options;
@@ -65,6 +67,7 @@ export class RRule {
 
     const nextRecurrences: Moment[] = [];
     let iters = 0;
+    let consecutiveEmptyPeriods = 0;
 
     while (!count || (count && yieldedRecurrenceCount < count)) {
       iters++;
@@ -90,16 +93,34 @@ export class RRule {
           return null;
         }
       } else {
+        const refDT = moment(current).tz(tzid);
+        // The first iteration examines the dtstart period itself, so no interval is applied.
+        const appliedInterval = isFirstIteration ? 0 : this.options.interval ?? 1;
         getNextRecurrences({
-          refDT: moment(current).tz(tzid),
+          refDT,
           ...this.options,
-          interval: isFirstIteration ? 0 : this.options.interval,
+          interval: appliedInterval,
           wkst: this.options.wkst ? (this.options.wkst as Weekday) : Weekday.MO,
         }).forEach((r) => nextRecurrences.push(r));
         isFirstIteration = false;
 
         if (nextRecurrences.length === 0) {
-          return null;
+          // A period can legitimately contain no recurrence, e.g. bymonthday 31 in February. Step
+          // over it instead of ending the series, but give up once too many are empty in a row so
+          // that rules which can never match (e.g. bymonth 2 with bymonthday 30) still terminate.
+          if (++consecutiveEmptyPeriods > MAX_CONSECUTIVE_EMPTY_PERIODS) {
+            return null;
+          }
+          const freq = getDerivedFrequency({
+            freq: this.options.freq ?? Frequency.YEARLY,
+            byweekday: this.options.byweekday,
+            bysetpos: this.options.bysetpos,
+          });
+          // Step by the interval that was actually applied, otherwise an empty dtstart period
+          // would also skip the period right after it.
+          current = moment(refDT).add(appliedInterval, FREQUENCY_UNITS[freq]).toDate();
+        } else {
+          consecutiveEmptyPeriods = 0;
         }
       }
     }
@@ -166,6 +187,31 @@ const parseByWeekdayPos = function (byweekday: ConstructorOptions['byweekday']) 
   } else return null;
 };
 
+/**
+ * If the frequency is DAILY but there's a byweekday, or if the frequency is MONTHLY with a byweekday
+ * with no corresponding bysetpos, the WEEKLY code path determines recurrences.
+ */
+const getDerivedFrequency = function ({
+  freq,
+  byweekday,
+  bysetpos,
+}: Pick<IterOptions, 'byweekday' | 'bysetpos'> & { freq: Frequency }) {
+  return byweekday &&
+    (freq === Frequency.DAILY || (freq === Frequency.MONTHLY && !bysetpos?.length))
+    ? Frequency.WEEKLY
+    : freq;
+};
+
+const FREQUENCY_UNITS: Record<Frequency, unitOfTime.DurationConstructor> = {
+  [Frequency.YEARLY]: 'y',
+  [Frequency.MONTHLY]: 'M',
+  [Frequency.WEEKLY]: 'w',
+  [Frequency.DAILY]: 'd',
+  [Frequency.HOURLY]: 'h',
+  [Frequency.MINUTELY]: 'm',
+  [Frequency.SECONDLY]: 's',
+};
+
 export const getNextRecurrences = function ({
   refDT,
   wkst = Weekday.MO,
@@ -195,12 +241,7 @@ export const getNextRecurrences = function ({
     bysetpos,
   };
 
-  // If the frequency is DAILY but there's a byweekday, or if the frequency is MONTHLY with a byweekday with no
-  // corresponding bysetpos, use the WEEKLY code path to determine recurrences
-  const derivedFreq =
-    byweekday && (freq === Frequency.DAILY || (freq === Frequency.MONTHLY && !bysetpos?.length))
-      ? Frequency.WEEKLY
-      : freq;
+  const derivedFreq = getDerivedFrequency({ freq, byweekday, bysetpos });
 
   switch (derivedFreq) {
     case Frequency.YEARLY: {
@@ -366,12 +407,26 @@ const getMonthOfRecurrences = function ({
     derivedBymonthday = [...posPositions, ...negPositions];
   }
 
+  const daysInMonth = refDT.daysInMonth();
+
   return derivedBymonthday.flatMap((date) => {
-    const currentDate = moment(refDT).date(date);
+    const dayOfMonth = resolveMonthday(date, daysInMonth);
+    if (dayOfMonth === null) return [];
+    const currentDate = moment(refDT).date(dayOfMonth);
     if (bymonth && !bymonth.includes(currentDate.month() + 1)) return [];
     if (!derivedByweekday.includes(currentDate.isoWeekday())) return [];
     return getDayOfRecurrences({ refDT: currentDate, byhour, byminute, bysecond });
   });
+};
+
+/**
+ * Resolves an RFC 5545 BYMONTHDAY value to a day of the month, returning null when the month is
+ * too short to contain it (e.g. 31 or -30 in February).
+ */
+const resolveMonthday = function (monthday: number, daysInMonth: number): number | null {
+  const dayOfMonth = monthday < 0 ? daysInMonth + monthday + 1 : monthday;
+  if (!Number.isInteger(dayOfMonth) || dayOfMonth < 1 || dayOfMonth > daysInMonth) return null;
+  return dayOfMonth;
 };
 
 const getWeekOfRecurrences = function ({

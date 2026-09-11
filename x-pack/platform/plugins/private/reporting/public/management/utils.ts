@@ -16,6 +16,7 @@ import type {
   RecurringSchedule,
 } from '@kbn/response-ops-recurring-schedule-form/types';
 import {
+  LAST_DAY_OF_MONTH,
   RRULE_TO_ISO_WEEKDAYS,
   RecurrenceEnd,
 } from '@kbn/response-ops-recurring-schedule-form/constants';
@@ -110,6 +111,9 @@ export const transformScheduledReport = (report: ScheduledReportApiJSON): Schedu
     if (rRule.byweekday?.length) {
       recurringSchedule.bymonth = 'weekday';
       recurringSchedule.bymonthweekday = rRule.byweekday[0];
+    } else if (rRule.bymonthday?.includes(LAST_DAY_OF_MONTH)) {
+      recurringSchedule.bymonth = 'lastday';
+      recurringSchedule.bymonthday = LAST_DAY_OF_MONTH;
     } else if (rRule.bymonthday?.length) {
       recurringSchedule.bymonth = 'day';
       recurringSchedule.bymonthday = rRule.bymonthday[0];

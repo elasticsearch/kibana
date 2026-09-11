@@ -891,7 +891,7 @@ describe('RRule', () => {
         freq: Frequency.MONTHLY,
         interval: 1,
         tzid: 'UTC',
-        bymonthday: [0, -1, 32],
+        bymonthday: [0, 32, -32],
       });
       expect(rule.all(14)).toMatchInlineSnapshot(`
         Array [
@@ -911,6 +911,223 @@ describe('RRule', () => {
           2021-01-19T00:00:00.000Z,
         ]
       `);
+    });
+
+    it('skips months that are too short for the requested day', () => {
+      const rule = new RRule({
+        dtstart: new Date(DATE_2019_DECEMBER_19),
+        freq: Frequency.MONTHLY,
+        interval: 1,
+        tzid: 'UTC',
+        bymonthday: [31],
+      });
+      expect(rule.all(8)).toMatchInlineSnapshot(`
+        Array [
+          2019-12-31T00:00:00.000Z,
+          2020-01-31T00:00:00.000Z,
+          2020-03-31T00:00:00.000Z,
+          2020-05-31T00:00:00.000Z,
+          2020-07-31T00:00:00.000Z,
+          2020-08-31T00:00:00.000Z,
+          2020-10-31T00:00:00.000Z,
+          2020-12-31T00:00:00.000Z,
+        ]
+      `);
+    });
+
+    it('does not skip the period after an empty dtstart period', () => {
+      const rule = new RRule({
+        dtstart: new Date('2025-06-01T00:00:00.000Z'),
+        freq: Frequency.MONTHLY,
+        interval: 1,
+        tzid: 'UTC',
+        bymonthday: [31],
+      });
+      // June has 30 days, so the dtstart period is empty. July must still be examined.
+      expect(rule.all(3)).toMatchInlineSnapshot(`
+        Array [
+          2025-07-31T00:00:00.000Z,
+          2025-08-31T00:00:00.000Z,
+          2025-10-31T00:00:00.000Z,
+        ]
+      `);
+    });
+
+    it('does not skip a year when the dtstart year has no matching day', () => {
+      const rule = new RRule({
+        dtstart: new Date('2019-06-01T00:00:00.000Z'),
+        freq: Frequency.YEARLY,
+        interval: 1,
+        tzid: 'UTC',
+        bymonth: [2],
+        bymonthday: [29],
+      });
+      // February 2019 already passed and is not a leap year, so 2020 is the first match.
+      expect(rule.all(2)).toMatchInlineSnapshot(`
+        Array [
+          2020-02-29T00:00:00.000Z,
+          2024-02-29T00:00:00.000Z,
+        ]
+      `);
+    });
+  });
+
+  describe('negative bymonthday', () => {
+    it('recurs on the last day of every month, whatever its length', () => {
+      const rule = new RRule({
+        dtstart: new Date(DATE_2019_DECEMBER_19),
+        freq: Frequency.MONTHLY,
+        interval: 1,
+        tzid: 'UTC',
+        bymonthday: [-1],
+      });
+      expect(rule.all(14)).toMatchInlineSnapshot(`
+        Array [
+          2019-12-31T00:00:00.000Z,
+          2020-01-31T00:00:00.000Z,
+          2020-02-29T00:00:00.000Z,
+          2020-03-31T00:00:00.000Z,
+          2020-04-30T00:00:00.000Z,
+          2020-05-31T00:00:00.000Z,
+          2020-06-30T00:00:00.000Z,
+          2020-07-31T00:00:00.000Z,
+          2020-08-31T00:00:00.000Z,
+          2020-09-30T00:00:00.000Z,
+          2020-10-31T00:00:00.000Z,
+          2020-11-30T00:00:00.000Z,
+          2020-12-31T00:00:00.000Z,
+          2021-01-31T00:00:00.000Z,
+        ]
+      `);
+    });
+
+    it('resolves the last day of February in a leap year', () => {
+      const rule = new RRule({
+        dtstart: new Date(DATE_2020),
+        freq: Frequency.MONTHLY,
+        interval: 1,
+        tzid: 'UTC',
+        bymonthday: [-1],
+      });
+      expect(rule.all(3)).toMatchInlineSnapshot(`
+        Array [
+          2020-01-31T00:00:00.000Z,
+          2020-02-29T00:00:00.000Z,
+          2020-03-31T00:00:00.000Z,
+        ]
+      `);
+    });
+
+    it('counts back from the end of the month for values below -1', () => {
+      const rule = new RRule({
+        dtstart: new Date(DATE_2020),
+        freq: Frequency.MONTHLY,
+        interval: 1,
+        tzid: 'UTC',
+        bymonthday: [-2],
+      });
+      expect(rule.all(6)).toMatchInlineSnapshot(`
+        Array [
+          2020-01-30T00:00:00.000Z,
+          2020-02-28T00:00:00.000Z,
+          2020-03-30T00:00:00.000Z,
+          2020-04-29T00:00:00.000Z,
+          2020-05-30T00:00:00.000Z,
+          2020-06-29T00:00:00.000Z,
+        ]
+      `);
+    });
+
+    it('combines with positive days', () => {
+      const rule = new RRule({
+        dtstart: new Date(DATE_2020),
+        freq: Frequency.MONTHLY,
+        interval: 1,
+        tzid: 'UTC',
+        bymonthday: [1, -1],
+      });
+      expect(rule.all(6)).toMatchInlineSnapshot(`
+        Array [
+          2020-01-01T00:00:00.000Z,
+          2020-01-31T00:00:00.000Z,
+          2020-02-01T00:00:00.000Z,
+          2020-02-29T00:00:00.000Z,
+          2020-03-01T00:00:00.000Z,
+          2020-03-31T00:00:00.000Z,
+        ]
+      `);
+    });
+
+    it('honours interval when tracking the end of the month', () => {
+      const rule = new RRule({
+        dtstart: new Date(DATE_2020),
+        freq: Frequency.MONTHLY,
+        interval: 2,
+        tzid: 'UTC',
+        bymonthday: [-1],
+      });
+      expect(rule.all(6)).toMatchInlineSnapshot(`
+        Array [
+          2020-01-31T00:00:00.000Z,
+          2020-03-31T00:00:00.000Z,
+          2020-05-31T00:00:00.000Z,
+          2020-07-31T00:00:00.000Z,
+          2020-09-30T00:00:00.000Z,
+          2020-11-30T00:00:00.000Z,
+        ]
+      `);
+    });
+
+    it('skips months that are too short to contain the requested day', () => {
+      const rule = new RRule({
+        dtstart: new Date(DATE_2020),
+        freq: Frequency.MONTHLY,
+        interval: 1,
+        tzid: 'UTC',
+        bymonthday: [-30],
+      });
+      expect(rule.all(6)).toMatchInlineSnapshot(`
+        Array [
+          2020-01-02T00:00:00.000Z,
+          2020-03-02T00:00:00.000Z,
+          2020-04-01T00:00:00.000Z,
+          2020-05-02T00:00:00.000Z,
+          2020-06-01T00:00:00.000Z,
+          2020-07-02T00:00:00.000Z,
+        ]
+      `);
+    });
+
+    it('works with yearly frequency', () => {
+      const rule = new RRule({
+        dtstart: new Date(DATE_2020),
+        freq: Frequency.YEARLY,
+        interval: 1,
+        tzid: 'UTC',
+        bymonth: [2],
+        bymonthday: [-1],
+      });
+      expect(rule.all(5)).toMatchInlineSnapshot(`
+        Array [
+          2020-02-29T00:00:00.000Z,
+          2021-02-28T00:00:00.000Z,
+          2022-02-28T00:00:00.000Z,
+          2023-02-28T00:00:00.000Z,
+          2024-02-29T00:00:00.000Z,
+        ]
+      `);
+    });
+
+    it('ends the series when no month can ever match', () => {
+      const rule = new RRule({
+        dtstart: new Date(DATE_2020),
+        freq: Frequency.MONTHLY,
+        interval: 1,
+        tzid: 'UTC',
+        bymonth: [2],
+        bymonthday: [-30],
+      });
+      expect(rule.all(5)).toEqual([]);
     });
   });
 

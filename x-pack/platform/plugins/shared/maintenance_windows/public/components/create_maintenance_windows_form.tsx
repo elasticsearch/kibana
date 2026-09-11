@@ -422,6 +422,7 @@ export const CreateMaintenanceWindowForm = React.memo<CreateMaintenanceWindowFor
               endDate={endDate}
               timezone={timezone}
               initialRecurringSchedule={initialValue?.recurringSchedule}
+              allowLastDayOfMonth
             />
           </EuiFlexItem>
         )}

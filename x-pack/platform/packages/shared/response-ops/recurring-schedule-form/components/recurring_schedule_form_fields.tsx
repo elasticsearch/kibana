@@ -59,6 +59,8 @@ export interface RecurringScheduleFieldsProps {
   readOnly?: boolean;
   compressed?: boolean;
   initialRecurringSchedule?: RecurringSchedule;
+  // Reporting still validates bymonthday as 1-31 via Task Manager.
+  allowLastDayOfMonth?: boolean;
 }
 
 /**
@@ -77,6 +79,7 @@ export const RecurringScheduleFormFields = memo(
     readOnly = false,
     compressed = false,
     initialRecurringSchedule,
+    allowLastDayOfMonth = false,
   }: RecurringScheduleFieldsProps) => {
     const [formData] = useFormData<{ recurringSchedule: RecurringSchedule }>({
       watch: [
@@ -179,6 +182,7 @@ export const RecurringScheduleFormFields = memo(
               compressed={compressed}
               minFrequency={minFrequency}
               readOnly={readOnly}
+              allowLastDayOfMonth={allowLastDayOfMonth}
             />
           )}
 

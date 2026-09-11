@@ -135,6 +135,22 @@ describe('RecurringScheduleForm', () => {
     expect(await screen.findByTestId('customRecurringScheduleIntervalInput')).toBeInTheDocument();
   });
 
+  it('offers last day of the month when allowLastDayOfMonth is true', async () => {
+    render(
+      <TestWrapper iv={{ recurringSchedule: { frequency: 'CUSTOM', ends: RecurrenceEnd.NEVER } }}>
+        <RecurringScheduleFormFields {...baseProps} allowLastDayOfMonth />
+      </TestWrapper>
+    );
+
+    await userEvent.selectOptions(
+      screen.getByTestId('customRecurringScheduleFrequencySelect'),
+      String(Frequency.MONTHLY)
+    );
+
+    const bymonthField = await screen.findByTestId('bymonth-field');
+    expect(within(bymonthField).getByTestId('lastday')).toHaveTextContent('On the last day');
+  });
+
   it('renders hourly if frequency = hourly', async () => {
     render(
       <TestWrapper

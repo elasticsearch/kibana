@@ -27,6 +27,9 @@ import {
 
 export const ISO_WEEKDAYS = [1, 2, 3, 4, 5, 6, 7] as const;
 
+// RFC 5545 BYMONTHDAY counts backward from the end of the month for negative values
+export const LAST_DAY_OF_MONTH = -1;
+
 export const DEFAULT_FREQUENCY_OPTIONS = [
   {
     text: RECURRING_SCHEDULE_FORM_FREQUENCY_HOURLY,

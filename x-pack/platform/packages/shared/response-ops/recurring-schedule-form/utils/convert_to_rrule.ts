@@ -7,7 +7,7 @@
 
 import moment from 'moment';
 import { Frequency } from '@kbn/rrule';
-import { ISO_WEEKDAYS_TO_RRULE } from '../constants';
+import { ISO_WEEKDAYS_TO_RRULE, LAST_DAY_OF_MONTH } from '../constants';
 import { getPresets } from './get_presets';
 import { parseSchedule } from './parse_schedule';
 import { getNthByWeekday } from './get_nth_by_weekday';
@@ -85,6 +85,8 @@ export const convertToRRule = ({
       rRule.bymonthday = [startDateMoment.date()];
     } else if (form.bymonth === 'weekday') {
       rRule.byweekday = [getNthByWeekday(startDateMoment)];
+    } else if (form.bymonth === 'lastday') {
+      rRule.bymonthday = [LAST_DAY_OF_MONTH];
     }
   }
 
