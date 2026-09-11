@@ -52,10 +52,9 @@ interface GetExpressionRendererPropsParams {
   onRender: (count: number) => void;
   handleEvent: (event: ExpressionRendererEvent) => void;
   onData: ExpressionWrapperProps['onData$'];
-  logError: (type: 'runtime' | 'validation') => void;
+  onRuntimeError: (error: Error) => void;
   api: LensApi;
   addUserMessages: (messages: UserMessage[]) => void;
-  updateBlockingErrors: (error: Error) => void;
   forceDSL?: boolean;
   getDisplayOptions: () => VisualizationDisplayOptions;
 }
@@ -153,11 +152,10 @@ export async function getExpressionRendererParams(
     onRender,
     handleEvent,
     onData = noop,
-    logError,
+    onRuntimeError,
     api,
     renderMode,
     addUserMessages,
-    updateBlockingErrors,
     searchContext,
     forceDSL,
     getDisplayOptions,
@@ -220,10 +218,7 @@ export async function getExpressionRendererParams(
       },
       ExpressionRenderer: expressionRenderer,
       addUserMessages,
-      onRuntimeError: (error: Error) => {
-        updateBlockingErrors(error);
-        logError('runtime');
-      },
+      onRuntimeError,
       abortController,
       hasCompatibleActions: buildHasCompatibleActions(api, services),
       getCompatibleCellValueActions: buildGetCompatibleCellValueActions(api, services),

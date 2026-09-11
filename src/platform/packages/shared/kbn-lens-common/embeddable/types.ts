@@ -397,7 +397,6 @@ export type LensInternalApi = Simplify<
       updateValidationMessages: (newMessages: UserMessage[]) => void;
       blockingError$: PublishingSubject<Error | undefined>;
       updateBlockingError: (newBlockingError: Error | undefined) => void;
-      resetAllMessages: () => void;
       getDisplayOptions: () => VisualizationDisplayOptions;
       updateEditingState: (inProgress: boolean) => void;
       isEditingInProgress: () => boolean;

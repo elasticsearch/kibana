@@ -105,7 +105,7 @@ export function buildUserMessagesHelpers(
   addUserMessages: (messages: UserMessage[]) => void;
   updateWarnings: () => void;
   updateMessages: (messages: UserMessage[]) => void;
-  resetMessages: () => void;
+  discardRuntimeMessages: () => void;
   updateBlockingErrors: (blockingMessages: UserMessage[] | Error) => void;
   updateValidationErrors: (messages: UserMessage[]) => void;
 } {
@@ -119,9 +119,8 @@ export function buildUserMessagesHelpers(
     }
   };
 
-  const resetMessages = () => {
+  const discardRuntimeMessages = () => {
     runtimeUserMessages = {};
-    internalApi.resetAllMessages();
   };
 
   const getUserMessages: UserMessagesGetter = (locationId, filters) => {
@@ -236,7 +235,7 @@ export function buildUserMessagesHelpers(
 
   return {
     addUserMessages,
-    resetMessages,
+    discardRuntimeMessages,
     getUserMessages,
     /**
      * Here pass all the messages that comes directly from the Lens validation/info system

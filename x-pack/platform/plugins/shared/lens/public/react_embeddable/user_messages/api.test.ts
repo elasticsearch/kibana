@@ -96,7 +96,7 @@ function buildUserMessagesApi(
 }
 
 describe('User Messages API', () => {
-  describe('resetMessages', () => {
+  describe('discardRuntimeMessages', () => {
     it('should reset the runtime errors', () => {
       const { userMessagesApi } = buildUserMessagesApi();
       // add runtime messages
@@ -105,7 +105,7 @@ describe('User Messages API', () => {
       const userMessageInfo = createUserMessage(['embeddableBadge'], 'info');
       userMessagesApi.addUserMessages([userMessageError, userMessageWarning, userMessageInfo]);
       expect(userMessagesApi.getUserMessages('embeddableBadge').length).toEqual(3);
-      userMessagesApi.resetMessages();
+      userMessagesApi.discardRuntimeMessages();
       expect(userMessagesApi.getUserMessages('embeddableBadge').length).toEqual(0);
     });
   });

@@ -115,10 +115,6 @@ export function initializeInternalApi(
     updateDataViews: (dataViews: DataView[] | undefined) => dataViews$.next(dataViews),
     updateMessages: (newMessages: UserMessage[]) => messages$.next(newMessages),
     updateValidationMessages: (newMessages: UserMessage[]) => validationMessages$.next(newMessages),
-    resetAllMessages: () => {
-      messages$.next([]);
-      validationMessages$.next([]);
-    },
     updateBlockingError: (blockingError: Error | undefined) => blockingError$.next(blockingError),
     setAsCreated: () => isNewlyCreated$.next(false),
     getDisplayOptions: () => {

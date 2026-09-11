@@ -5,9 +5,10 @@
  * 2.0.
  */
 
-import React from 'react';
+import React, { useCallback } from 'react';
 import type {
   ExpressionRendererEvent,
+  IExpressionLoaderParams,
   ReactExpressionRendererProps,
   ReactExpressionRendererType,
 } from '@kbn/expressions-plugin/public';
@@ -73,6 +74,14 @@ export function ExpressionWrapper({
   paddingTop,
   abortController,
 }: ExpressionWrapperProps) {
+  const handleRenderError = useCallback<NonNullable<IExpressionLoaderParams['onRenderError']>>(
+    (_domNode, error) => {
+      addUserMessages(getOriginalRequestErrorMessages(error));
+      onRuntimeError(error.original ?? error);
+    },
+    [addUserMessages, onRuntimeError]
+  );
+
   if (!expression) return null;
   return (
     <>
@@ -101,12 +110,8 @@ export function ExpressionWrapper({
           syncCursor={syncCursor}
           executionContext={executionContext}
           abortController={abortController}
-          renderError={(errorMessage, error) => {
-            const messages = getOriginalRequestErrorMessages(error || null);
-            addUserMessages(messages);
-            onRuntimeError(error?.original || new Error(errorMessage ? errorMessage : ''));
-            return <></>; // the embeddable will take care of displaying the messages
-          }}
+          renderError={() => <></>} // the embeddable will take care of displaying the messages
+          onRenderError={handleRenderError}
           onEvent={handleEvent}
           hasCompatibleActions={hasCompatibleActions}
           getCompatibleCellValueActions={getCompatibleCellValueActions}
