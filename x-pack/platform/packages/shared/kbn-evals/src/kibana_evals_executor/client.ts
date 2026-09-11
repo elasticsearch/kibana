@@ -255,6 +255,9 @@ export class KibanaEvalsClient implements EvalsExecutorClient {
                         },
                         expected: example.output ?? null,
                         metadata: example.metadata ?? {},
+                        ...(example.id != null && { exampleId: example.id }),
+                        exampleIndex,
+                        repetition: rep,
                       });
                       return {
                         result: _result,

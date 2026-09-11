@@ -60,6 +60,26 @@ export interface EvaluatorParams<TExample extends Example, TTaskOutput extends T
   output: TTaskOutput;
   expected: TExample['output'];
   metadata: TExample['metadata'];
+  /**
+   * Identity of the example under evaluation. Without it an evaluator cannot key
+   * its own observations per example, so per-example readouts (paired A/B across
+   * two runs, per-example regression tracking) have to re-derive an identity by
+   * hashing `input` — which breaks the moment a dataset edits an input string.
+   *
+   * Optional because inline datasets may carry no persisted id (`Example.id`);
+   * `exampleIndex` and `repetition` are always populated and are stable within a run.
+   */
+  exampleId?: string;
+  /**
+   * Zero-based position within the dataset. Optional for compatibility with direct
+   * evaluator invocations outside `KibanaEvalsClient`.
+   */
+  exampleIndex?: number;
+  /**
+   * Zero-based repetition number. Optional for compatibility with direct evaluator
+   * invocations outside `KibanaEvalsClient`.
+   */
+  repetition?: number;
 }
 
 /**
