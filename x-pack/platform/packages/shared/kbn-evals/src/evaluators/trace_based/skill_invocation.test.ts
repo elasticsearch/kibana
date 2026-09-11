@@ -63,7 +63,33 @@ describe('createSkillInvocationEvaluator', () => {
     expect(calledQuery).toContain('total_spans = COUNT(*)');
     expect(calledQuery).toContain('attributes.elastic.inference.span.kind == "TOOL"');
     expect(calledQuery).toContain('attributes.gen_ai.tool.name == "filestore.read"');
+    expect(calledQuery).toContain('attributes.gen_ai.tool.name == "load_skill"');
     expect(calledQuery).toContain('*/data-exploration/SKILL.md*');
+    expect(calledQuery).toContain('*data-exploration*');
+  });
+
+  it('should count load_skill invocations by skill name parameter', async () => {
+    const evaluator = createSkillInvocationEvaluator({
+      traceEsClient: mockEsClient,
+      log: mockLog,
+      skillName: 'endpoint-forensic-analysis',
+    });
+
+    (mockEsClient.esql.query as jest.Mock).mockResolvedValue({
+      columns: [
+        { name: 'total_spans', type: 'long' },
+        { name: 'total_tool_spans', type: 'long' },
+        { name: 'skill_invoked', type: 'long' },
+      ],
+      values: [[40, 5, 1]],
+    });
+
+    const result = await evaluateWith(evaluator, VALID_TRACE_ID);
+
+    expect(result.score).toBe(1);
+    const calledQuery = (mockEsClient.esql.query as jest.Mock).mock.calls[0][0].query;
+    expect(calledQuery).toContain('attributes.gen_ai.tool.name == "load_skill"');
+    expect(calledQuery).toContain('*endpoint-forensic-analysis*');
   });
 
   it('should return 1 when the skill was invoked', async () => {
@@ -160,6 +186,30 @@ describe('createSkillInvocationEvaluator', () => {
 
     expect(result.score).toBe(1);
     expect(mockEsClient.esql.query).toHaveBeenCalledTimes(2);
+  });
+
+  it('should not retry once the trace is indexed but the skill span is absent', async () => {
+    // A trace with spans but no skill-load span is a genuine "not invoked"
+    // (e.g. a distractor), not indexing lag — score 0 deterministically.
+    const evaluator = createSkillInvocationEvaluator({
+      traceEsClient: mockEsClient,
+      log: mockLog,
+      skillName: 'data-exploration',
+    });
+
+    (mockEsClient.esql.query as jest.Mock).mockResolvedValue({
+      columns: [
+        { name: 'total_spans', type: 'long' },
+        { name: 'total_tool_spans', type: 'long' },
+        { name: 'skill_invoked', type: 'long' },
+      ],
+      values: [[50, 0, 0]],
+    });
+
+    const result = await evaluateWith(evaluator, VALID_TRACE_ID);
+
+    expect(result.score).toBe(0);
+    expect(mockEsClient.esql.query).toHaveBeenCalledTimes(1);
   });
 
   it('should include the skill name in the evaluator name', () => {

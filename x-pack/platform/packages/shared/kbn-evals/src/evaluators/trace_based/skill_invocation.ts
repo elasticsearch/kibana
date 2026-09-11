@@ -46,8 +46,14 @@ export function createSkillInvocationEvaluator({
   ),
   skill_invoked = COUNT(
     CASE(
-      attributes.gen_ai.tool.name == "filestore.read"
-        AND attributes.gen_ai.tool.call.arguments LIKE "*/${skillName}/SKILL.md*",
+      (
+        attributes.gen_ai.tool.name == "filestore.read"
+          AND attributes.gen_ai.tool.call.arguments LIKE "*/${skillName}/SKILL.md*"
+      )
+      OR (
+        attributes.gen_ai.tool.name == "load_skill"
+          AND attributes.gen_ai.tool.call.arguments LIKE "*${skillName}*"
+      ),
       1,
       NULL
     )
@@ -57,28 +63,25 @@ export function createSkillInvocationEvaluator({
         const totalSpansIndex = response.columns.findIndex(
           (column) => column.name === 'total_spans'
         );
-        const totalToolSpansIndex = response.columns.findIndex(
-          (column) => column.name === 'total_tool_spans'
-        );
         const skillInvokedIndex = response.columns.findIndex(
           (column) => column.name === 'skill_invoked'
         );
 
-        if (totalSpansIndex === -1 || totalToolSpansIndex === -1 || skillInvokedIndex === -1) {
+        if (totalSpansIndex === -1 || skillInvokedIndex === -1) {
           log.warning('Expected columns not found in trace query response');
           return null;
         }
 
         const totalSpans = row?.[totalSpansIndex] as number | undefined;
-        const totalToolSpans = row?.[totalToolSpansIndex] as number | undefined;
         const skillInvoked = row?.[skillInvokedIndex] as number | undefined;
 
+        // Retry only while the trace itself is not yet indexed (OTLP → ES lag).
+        // Once any span for the trace is present, the agent's skill-load span
+        // (load_skill / SKILL.md filestore.read) is written in the same
+        // send_to_self batch as the rest of the trace, so its absence is a
+        // genuine "skill not invoked" (correct 0 for distractors) — not lag.
         if (!totalSpans) {
           return null;
-        }
-
-        if (!totalToolSpans) {
-          return 0;
         }
 
         return (skillInvoked ?? 0) > 0 ? 1 : 0;
