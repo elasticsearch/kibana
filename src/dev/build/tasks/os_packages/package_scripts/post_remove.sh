@@ -65,6 +65,7 @@ if [ "$REMOVE_DIRS" = "true" ]; then
   fi
 
   if [ -d "<%= configDir %>" ]; then
+    rm --force "<%= configDir %>"/kibana.keystore
     rmdir --ignore-fail-on-non-empty "<%= configDir %>"
   fi
 
