@@ -18,6 +18,7 @@ import { SiemMigrationAuditLogger } from '../../common/api/util/audit';
 import { installTranslated } from './util/installation';
 import { authz } from './util/authz';
 import { withLicense } from '../../common/api/util/with_license';
+import { withExistingMigration } from '../../common/api/util/with_existing_migration_id';
 
 export const registerSiemRuleMigrationsInstallRoute = (
   router: SecuritySolutionPluginRouter,
@@ -40,39 +41,41 @@ export const registerSiemRuleMigrationsInstallRoute = (
         },
       },
       withLicense(
-        async (context, req, res): Promise<IKibanaResponse<InstallMigrationRulesResponse>> => {
-          const { migration_id: migrationId } = req.params;
-          const { ids, enabled = false } = req.body;
-          const siemMigrationAuditLogger = new SiemMigrationAuditLogger(
-            context.securitySolution,
-            'rules'
-          );
+        withExistingMigration(
+          async (context, req, res): Promise<IKibanaResponse<InstallMigrationRulesResponse>> => {
+            const { migration_id: migrationId } = req.params;
+            const { ids, enabled = false } = req.body;
+            const siemMigrationAuditLogger = new SiemMigrationAuditLogger(
+              context.securitySolution,
+              'rules'
+            );
 
-          try {
-            const ctx = await context.resolve(['core', 'alerting', 'securitySolution']);
+            try {
+              const ctx = await context.resolve(['core', 'alerting', 'securitySolution']);
 
-            const securitySolutionContext = ctx.securitySolution;
-            const savedObjectsClient = ctx.core.savedObjects.client;
-            const rulesClient = await ctx.alerting.getRulesClient();
+              const securitySolutionContext = ctx.securitySolution;
+              const savedObjectsClient = ctx.core.savedObjects.client;
+              const rulesClient = await ctx.alerting.getRulesClient();
 
-            await siemMigrationAuditLogger.logInstallRules({ ids, migrationId });
+              await siemMigrationAuditLogger.logInstallRules({ ids, migrationId });
 
-            const installed = await installTranslated({
-              migrationId,
-              ids,
-              enabled,
-              securitySolutionContext,
-              savedObjectsClient,
-              rulesClient,
-            });
+              const installed = await installTranslated({
+                migrationId,
+                ids,
+                enabled,
+                securitySolutionContext,
+                savedObjectsClient,
+                rulesClient,
+              });
 
-            return res.ok({ body: { installed } });
-          } catch (error) {
-            logger.error(error);
-            await siemMigrationAuditLogger.logInstallRules({ ids, migrationId, error });
-            return res.badRequest({ body: error.message });
+              return res.ok({ body: { installed } });
+            } catch (error) {
+              logger.error(error);
+              await siemMigrationAuditLogger.logInstallRules({ ids, migrationId, error });
+              return res.badRequest({ body: error.message });
+            }
           }
-        }
+        )
       )
     );
 };

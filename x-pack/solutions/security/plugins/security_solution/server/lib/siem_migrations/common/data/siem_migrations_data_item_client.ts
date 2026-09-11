@@ -90,15 +90,19 @@ export abstract class SiemMigrationsDataItemClient<
     );
   }
 
-  /** Updates an array of migration items */
-  async update<U extends Partial<ItemDocument>>(itemsUpdate: U[]): Promise<void> {
+  /** Updates an array of migration items that belong to the specified migration */
+  async update<U extends Partial<ItemDocument>>(
+    migrationId: string,
+    itemsUpdate: U[]
+  ): Promise<void> {
     const index = await this.getIndexName();
     const profileId = await this.getProfileUid();
+    const itemsToUpdate = await this.filterItemsInMigration(migrationId, itemsUpdate);
 
     const updatedAt = new Date().toISOString();
     const batches: U[][] = [];
-    for (let i = 0; i < itemsUpdate.length; i += BULK_MAX_SIZE) {
-      batches.push(itemsUpdate.slice(i, i + BULK_MAX_SIZE));
+    for (let i = 0; i < itemsToUpdate.length; i += BULK_MAX_SIZE) {
+      batches.push(itemsToUpdate.slice(i, i + BULK_MAX_SIZE));
     }
 
     const batchPromises = batches.map((itemsUpdateSlice) =>
@@ -126,6 +130,48 @@ export abstract class SiemMigrationsDataItemClient<
     );
 
     await Promise.all(batchPromises);
+  }
+
+  /**
+   * Discards the items that do not belong to the migration.
+   *
+   * Item ids are caller supplied and updates are issued by document id, so without this an update
+   * scoped to one migration could reach the items of another.
+   */
+  private async filterItemsInMigration<U extends Partial<ItemDocument>>(
+    migrationId: string,
+    itemsUpdate: U[]
+  ): Promise<U[]> {
+    const ids = itemsUpdate
+      .map(({ id }) => id)
+      .filter((id): id is string => typeof id === 'string');
+    if (ids.length === 0) {
+      return [];
+    }
+
+    const index = await this.getIndexName();
+    const idsInMigration = new Set<string>();
+    for (let i = 0; i < ids.length; i += BULK_MAX_SIZE) {
+      const idsBatch = ids.slice(i, i + BULK_MAX_SIZE);
+      const result = await this.esClient
+        .search<I>({
+          index,
+          query: this.getFilterQuery(migrationId, { ids: idsBatch }),
+          size: idsBatch.length,
+          _source: false,
+        })
+        .catch((error) => {
+          this.logger.error(`Error searching migration ${this.type}: ${error.message}`);
+          throw error;
+        });
+      result.hits.hits.forEach(({ _id }) => {
+        if (_id) {
+          idsInMigration.add(_id);
+        }
+      });
+    }
+
+    return itemsUpdate.filter(({ id }) => typeof id === 'string' && idsInMigration.has(id));
   }
 
   /** Retrieves an array of migration items of a specific migration */

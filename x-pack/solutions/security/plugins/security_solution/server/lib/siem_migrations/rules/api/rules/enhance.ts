@@ -81,7 +81,7 @@ export const registerSiemRuleMigrationsEnhanceRoute = (
                 });
               }
 
-              await dataClient.update(rulesToBeUpdate);
+              await dataClient.update(migrationId, rulesToBeUpdate);
 
               return res.ok({
                 body: {

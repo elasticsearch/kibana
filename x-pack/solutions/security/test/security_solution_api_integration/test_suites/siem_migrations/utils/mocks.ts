@@ -100,7 +100,7 @@ export const getMigrationRuleDocuments = (
 
 const getDefaultMigrationDoc: () => Omit<StoredSiemMigration, 'id'> = () => ({
   name: 'Default Migration',
-  created_by: SOME_USER_ID,
+  created_by: '',
   created_at: new Date().toISOString(),
   last_execution: {
     is_aborted: false,

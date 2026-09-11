@@ -196,7 +196,7 @@ export const installTranslated = async ({
     );
     installedCount += rulesToUpdate.length;
     installationErrors.push(...errors);
-    await ruleMigrationsClient.data.items.update(rulesToUpdate);
+    await ruleMigrationsClient.data.items.update(migrationId, rulesToUpdate);
     prebuiltRulesToInstall = await prebuiltRuleBatches.next();
   }
 
@@ -219,7 +219,7 @@ export const installTranslated = async ({
     );
     installedCount += rulesToUpdate.length;
     installationErrors.push(...errors);
-    await ruleMigrationsClient.data.items.update(rulesToUpdate);
+    await ruleMigrationsClient.data.items.update(migrationId, rulesToUpdate);
     customRulesToInstall = await customRuleBatches.next();
   }
 

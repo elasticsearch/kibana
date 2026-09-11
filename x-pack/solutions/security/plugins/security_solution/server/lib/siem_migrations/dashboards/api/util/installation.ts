@@ -72,7 +72,7 @@ export const installTranslated = async ({
     );
     installedCount += dashboardsToUpdate.length;
     installationErrors.push(...errors);
-    await dashboardMigrationsClient.data.items.update(dashboardsToUpdate);
+    await dashboardMigrationsClient.data.items.update(migrationId, dashboardsToUpdate);
     dashboardsToInstall = await dashboardBatches.next();
   }
 

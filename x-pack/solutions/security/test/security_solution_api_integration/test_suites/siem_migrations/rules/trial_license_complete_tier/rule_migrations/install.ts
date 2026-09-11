@@ -188,10 +188,18 @@ export default ({ getService }: FtrProviderContext) => {
       });
     });
 
-    it('should return zero installed rules as a response for the non-existing migration', async () => {
+    it('should return 404 for the non-existing migration', async () => {
       const migrationId = uuidv4();
-      const installResponse = await migrationRulesRoutes.install({ migrationId, payload: {} });
-      expect(installResponse.body).toEqual({ installed: 0 });
+      const installResponse = await migrationRulesRoutes.install({
+        migrationId,
+        payload: {},
+        expectStatusCode: 404,
+      });
+      expect(installResponse.body).toMatchObject({
+        statusCode: 404,
+        error: 'Not Found',
+        message: `No Migration found with id: ${migrationId}`,
+      });
     });
 
     it('should return an error if body payload is not passed', async () => {

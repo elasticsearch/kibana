@@ -16,6 +16,7 @@ import { SIEM_RULE_MIGRATION_RESOURCES_MISSING_PATH } from '../../../../../../co
 import type { SecuritySolutionPluginRouter } from '../../../../../types';
 import { authz } from '../util/authz';
 import { withLicense } from '../../../common/api/util/with_license';
+import { withExistingMigration } from '../../../common/api/util/with_existing_migration_id';
 
 export const registerSiemRuleMigrationsResourceGetMissingRoute = (
   router: SecuritySolutionPluginRouter,
@@ -37,32 +38,37 @@ export const registerSiemRuleMigrationsResourceGetMissingRoute = (
         },
       },
       withLicense(
-        async (
-          context,
-          req,
-          res
-        ): Promise<IKibanaResponse<GetRuleMigrationResourcesMissingResponse>> => {
-          const migrationId = req.params.migration_id;
-          try {
-            const ctx = await context.resolve(['securitySolution']);
-            const ruleMigrationsClient = ctx.securitySolution.siemMigrations.getRulesClient();
+        withExistingMigration(
+          async (
+            context,
+            req,
+            res
+          ): Promise<IKibanaResponse<GetRuleMigrationResourcesMissingResponse>> => {
+            const migrationId = req.params.migration_id;
+            try {
+              const ctx = await context.resolve(['securitySolution']);
+              const ruleMigrationsClient = ctx.securitySolution.siemMigrations.getRulesClient();
 
-            const options = { filters: { hasContent: false } };
-            const batches = ruleMigrationsClient.data.resources.searchBatches(migrationId, options);
+              const options = { filters: { hasContent: false } };
+              const batches = ruleMigrationsClient.data.resources.searchBatches(
+                migrationId,
+                options
+              );
 
-            const missingResources: SiemMigrationResourceBase[] = [];
-            let results = await batches.next();
-            while (results.length) {
-              missingResources.push(...results.map(({ type, name }) => ({ type, name })));
-              results = await batches.next();
+              const missingResources: SiemMigrationResourceBase[] = [];
+              let results = await batches.next();
+              while (results.length) {
+                missingResources.push(...results.map(({ type, name }) => ({ type, name })));
+                results = await batches.next();
+              }
+
+              return res.ok({ body: missingResources });
+            } catch (err) {
+              logger.error(err);
+              return res.badRequest({ body: err.message });
             }
-
-            return res.ok({ body: missingResources });
-          } catch (err) {
-            logger.error(err);
-            return res.badRequest({ body: err.message });
           }
-        }
+        )
       )
     );
 };

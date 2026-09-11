@@ -27,6 +27,7 @@ const DEFAULT_PIT_KEEP_ALIVE: Duration = '30s' as const;
 
 export class SiemMigrationsDataBaseClient {
   protected esClient: ElasticsearchClient;
+  private profileUidPromise?: Promise<string>;
 
   constructor(
     protected getIndexName: SiemMigrationsIndexNameProvider,
@@ -38,7 +39,13 @@ export class SiemMigrationsDataBaseClient {
     this.esClient = esScopedClient.asInternalUser;
   }
 
-  protected async getProfileUid() {
+  protected async getProfileUid(): Promise<string> {
+    // Cached so a transient lookup failure cannot change the identity used within a single client
+    this.profileUidPromise = this.profileUidPromise ?? this.resolveProfileUid();
+    return this.profileUidPromise;
+  }
+
+  private async resolveProfileUid(): Promise<string> {
     if (this.currentUser.profile_uid) {
       return this.currentUser.profile_uid;
     }
@@ -48,11 +55,36 @@ export class SiemMigrationsDataBaseClient {
         username,
         with_profile_uid: true,
       });
-      return users[username].profile_uid;
+      return users[username].profile_uid ?? username;
     } catch (error) {
       this.logger.error(`Error getting profile_uid for user ${username}: ${error}`);
       return username;
     }
+  }
+
+  /**
+   * Returns every `created_by` value that identifies the current user.
+   *
+   * `created_by` is stamped with the user profile uid when it can be resolved, and falls back to the
+   * username otherwise, so a single user can be recorded under either value depending on the session.
+   */
+  protected async getOwnerIds(): Promise<string[]> {
+    const profileUid = await this.getProfileUid();
+    const { username } = this.currentUser;
+    return [...new Set([profileUid, username].filter((id): id is string => Boolean(id)))];
+  }
+
+  /**
+   * Returns whether a document stamped with `createdBy` belongs to the current user.
+   *
+   * Documents without an owner predate ownership being recorded and stay accessible to the whole space.
+   */
+  protected async isOwnedByCurrentUser(createdBy: string | undefined): Promise<boolean> {
+    if (!createdBy) {
+      return true;
+    }
+    const ownerIds = await this.getOwnerIds();
+    return ownerIds.includes(createdBy);
   }
 
   /** Fetches index mappings as the current user. */

@@ -62,4 +62,17 @@ export const dsl = {
   isNotFailed(): QueryDslQueryContainer {
     return { bool: { must_not: dsl.isFailed() } };
   },
+  isOwnedBy(ownerIds: string[]): QueryDslQueryContainer {
+    return {
+      bool: {
+        should: [
+          { terms: { created_by: ownerIds } },
+          // Migrations created before ownership was recorded have no owner, they stay visible to the whole space
+          { bool: { must_not: { exists: { field: 'created_by' } } } },
+          { term: { created_by: '' } },
+        ],
+        minimum_should_match: 1,
+      },
+    };
+  },
 };

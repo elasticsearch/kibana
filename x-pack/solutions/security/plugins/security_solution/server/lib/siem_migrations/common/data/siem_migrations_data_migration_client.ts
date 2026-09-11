@@ -12,6 +12,7 @@ import type { MigrationDocument, Stored } from '../types';
 import { SiemMigrationsDataBaseClient } from './siem_migrations_data_base_client';
 import { isNotFoundError } from '../api/util/is_not_found_error';
 import { MAX_ES_SEARCH_SIZE } from './constants';
+import { dsl } from './dsl_queries';
 import { MIGRATION_ID_NOT_FOUND } from '../translations';
 
 export class SiemMigrationsDataMigrationClient<
@@ -42,8 +43,21 @@ export class SiemMigrationsDataMigrationClient<
    *
    * Gets the migration document by id or returns undefined if it does not exist.
    *
+   * Migrations owned by another user are reported as non-existent so their existence is not disclosed.
+   *
    * */
   async get(migrationId: string): Promise<Stored<M> | undefined> {
+    const storedMigration = await this.fetch(migrationId);
+    if (!storedMigration) {
+      return undefined;
+    }
+
+    const isOwner = await this.isOwnedByCurrentUser(storedMigration.created_by);
+    return isOwner ? storedMigration : undefined;
+  }
+
+  /** Gets the migration document by id without checking ownership, for internal bookkeeping only. */
+  private async fetch(migrationId: string): Promise<Stored<M> | undefined> {
     const index = await this.getIndexName();
     return this.esClient
       .get<Stored<M>>({ index, id: migrationId })
@@ -58,15 +72,16 @@ export class SiemMigrationsDataMigrationClient<
   }
 
   /**
-   * Gets all migrations from the index.
+   * Gets all the migrations owned by the current user.
    */
   async getAll(): Promise<Stored<M>[]> {
     const index = await this.getIndexName();
+    const ownerIds = await this.getOwnerIds();
     return this.esClient
       .search<Stored<M>>({
         index,
         size: MAX_ES_SEARCH_SIZE, // Adjust size as needed
-        query: { match_all: {} },
+        query: dsl.isOwnedBy(ownerIds),
         _source: true,
       })
       .then((result) => this.processResponseHits(result))
@@ -109,7 +124,7 @@ export class SiemMigrationsDataMigrationClient<
    * Saves a migration as ended, updating the last execution parameters with the current timestamp.
    */
   async saveAsFinished({ id, error }: { id: string; error?: string }): Promise<void> {
-    const currentMigrationDoc = await this.get(id);
+    const currentMigrationDoc = await this.fetch(id);
     if (!currentMigrationDoc) {
       throw new Error(MIGRATION_ID_NOT_FOUND(id));
     }

@@ -184,7 +184,14 @@ describe('RuleMigrationsDataMigrationClient', () => {
         index: '.kibana-siem-rule-migrations',
         size: 10000,
         query: {
-          match_all: {},
+          bool: {
+            should: [
+              { terms: { created_by: [currentUser.profile_uid] } },
+              { bool: { must_not: { exists: { field: 'created_by' } } } },
+              { term: { created_by: '' } },
+            ],
+            minimum_should_match: 1,
+          },
         },
         _source: true,
       });

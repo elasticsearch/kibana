@@ -13,6 +13,7 @@ import { SIEM_RULE_MIGRATIONS_PREBUILT_RULES_PATH } from '../../../../../common/
 import type { SecuritySolutionPluginRouter } from '../../../../types';
 import { authz } from './util/authz';
 import { withLicense } from '../../common/api/util/with_license';
+import { withExistingMigration } from '../../common/api/util/with_existing_migration_id';
 import { getPrebuiltRulesForMigration } from './util/prebuilt_rules';
 
 export const registerSiemRuleMigrationsPrebuiltRulesRoute = (
@@ -35,31 +36,33 @@ export const registerSiemRuleMigrationsPrebuiltRulesRoute = (
         },
       },
       withLicense(
-        async (
-          context,
-          req,
-          res
-        ): Promise<IKibanaResponse<GetRuleMigrationPrebuiltRulesResponse>> => {
-          const { migration_id: migrationId } = req.params;
-          try {
-            const ctx = await context.resolve(['core', 'alerting', 'securitySolution']);
-            const ruleMigrationsClient = ctx.securitySolution.siemMigrations.getRulesClient();
-            const savedObjectsClient = ctx.core.savedObjects.client;
-            const rulesClient = await ctx.alerting.getRulesClient();
+        withExistingMigration(
+          async (
+            context,
+            req,
+            res
+          ): Promise<IKibanaResponse<GetRuleMigrationPrebuiltRulesResponse>> => {
+            const { migration_id: migrationId } = req.params;
+            try {
+              const ctx = await context.resolve(['core', 'alerting', 'securitySolution']);
+              const ruleMigrationsClient = ctx.securitySolution.siemMigrations.getRulesClient();
+              const savedObjectsClient = ctx.core.savedObjects.client;
+              const rulesClient = await ctx.alerting.getRulesClient();
 
-            const prebuiltRules = await getPrebuiltRulesForMigration(
-              migrationId,
-              ruleMigrationsClient,
-              rulesClient,
-              savedObjectsClient
-            );
+              const prebuiltRules = await getPrebuiltRulesForMigration(
+                migrationId,
+                ruleMigrationsClient,
+                rulesClient,
+                savedObjectsClient
+              );
 
-            return res.ok({ body: prebuiltRules });
-          } catch (err) {
-            logger.error(err);
-            return res.badRequest({ body: err.message });
+              return res.ok({ body: prebuiltRules });
+            } catch (err) {
+              logger.error(err);
+              return res.badRequest({ body: err.message });
+            }
           }
-        }
+        )
       )
     );
 };

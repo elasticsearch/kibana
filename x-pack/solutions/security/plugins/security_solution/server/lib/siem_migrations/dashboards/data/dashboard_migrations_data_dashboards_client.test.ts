@@ -166,6 +166,13 @@ describe('DashboardMigrationsDataDashboardsClient', () => {
   });
 
   describe('update', () => {
+    const migrationId = 'migration1';
+    const mockItemsInMigration = (ids: string[]) => {
+      (esClient.asInternalUser.search as unknown as jest.Mock).mockResolvedValueOnce({
+        hits: { hits: ids.map((id) => ({ _id: id })) },
+      });
+    };
+
     test('should update dashboard migrations in bulk', async () => {
       const dashboardMigrations = [
         {
@@ -180,7 +187,9 @@ describe('DashboardMigrationsDataDashboardsClient', () => {
         },
       ];
 
-      await dashboardMigrationsDataDashboardsClient.update(dashboardMigrations);
+      mockItemsInMigration(['doc1', 'doc2']);
+
+      await dashboardMigrationsDataDashboardsClient.update(migrationId, dashboardMigrations);
 
       expect(esClient.asInternalUser.bulk).toHaveBeenCalledWith({
         refresh: 'wait_for',
@@ -218,8 +227,10 @@ describe('DashboardMigrationsDataDashboardsClient', () => {
       const error = new Error('Bulk update failed');
       esClient.asInternalUser.bulk = jest.fn().mockRejectedValue(error);
 
+      mockItemsInMigration(['doc1']);
+
       await expect(
-        dashboardMigrationsDataDashboardsClient.update(dashboardMigrations)
+        dashboardMigrationsDataDashboardsClient.update(migrationId, dashboardMigrations)
       ).rejects.toThrow('Bulk update failed');
       expect(logger.error).toHaveBeenCalledWith(
         'Error updating migration dashboard: Bulk update failed'

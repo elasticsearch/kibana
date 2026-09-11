@@ -169,6 +169,13 @@ describe('RuleMigrationsDataRulesClient', () => {
   });
 
   describe('update', () => {
+    const migrationId = 'migration1';
+    const mockItemsInMigration = (ids: string[]) => {
+      (esClient.asInternalUser.search as unknown as jest.Mock).mockResolvedValueOnce({
+        hits: { hits: ids.map((id) => ({ _id: id })) },
+      });
+    };
+
     test('should update rule migrations in bulk', async () => {
       const ruleMigrations = [
         {
@@ -183,7 +190,9 @@ describe('RuleMigrationsDataRulesClient', () => {
         },
       ];
 
-      await ruleMigrationsDataRulesClient.update(ruleMigrations);
+      mockItemsInMigration(['doc1', 'doc2']);
+
+      await ruleMigrationsDataRulesClient.update(migrationId, ruleMigrations);
 
       expect(esClient.asInternalUser.bulk).toHaveBeenCalledWith({
         refresh: 'wait_for',
@@ -210,6 +219,28 @@ describe('RuleMigrationsDataRulesClient', () => {
       });
     });
 
+    test('should not update items that belong to another migration', async () => {
+      const ruleMigrations = [
+        { id: 'doc1', status: SiemMigrationStatus.COMPLETED },
+        { id: 'foreignDoc', status: SiemMigrationStatus.COMPLETED },
+      ];
+
+      mockItemsInMigration(['doc1']);
+
+      await ruleMigrationsDataRulesClient.update(migrationId, ruleMigrations);
+
+      expect(esClient.asInternalUser.bulk).toHaveBeenCalledWith(
+        expect.objectContaining({
+          operations: [
+            { update: { _index: '.kibana-siem-rule-migrations', _id: 'doc1' } },
+            expect.objectContaining({
+              doc: expect.objectContaining({ status: SiemMigrationStatus.COMPLETED }),
+            }),
+          ],
+        })
+      );
+    });
+
     test('should throw an error if bulk update fails', async () => {
       const ruleMigrations = [
         {
@@ -221,9 +252,11 @@ describe('RuleMigrationsDataRulesClient', () => {
       const error = new Error('Bulk update failed');
       esClient.asInternalUser.bulk = jest.fn().mockRejectedValue(error);
 
-      await expect(ruleMigrationsDataRulesClient.update(ruleMigrations)).rejects.toThrow(
-        'Bulk update failed'
-      );
+      mockItemsInMigration(['doc1']);
+
+      await expect(
+        ruleMigrationsDataRulesClient.update(migrationId, ruleMigrations)
+      ).rejects.toThrow('Bulk update failed');
       expect(logger.error).toHaveBeenCalledWith(
         'Error updating migration rule: Bulk update failed'
       );

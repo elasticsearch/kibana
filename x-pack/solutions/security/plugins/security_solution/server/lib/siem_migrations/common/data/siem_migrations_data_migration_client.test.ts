@@ -128,6 +128,61 @@ describe('SiemMigrationsDataMigrationClient', () => {
       expect(esClient.asInternalUser.get).toHaveBeenCalled();
       expect(logger.error).toHaveBeenCalledWith(`Error getting migration ${id}: Error: Test error`);
     });
+
+    test('should return undefined if the migration belongs to another user', async () => {
+      const id = 'testId';
+
+      (esClient.asInternalUser.get as unknown as jest.MockedFn<GetApi>).mockResolvedValueOnce({
+        _index: '.kibana-siem-rule-migrations',
+        found: true,
+        _id: id,
+        _source: {
+          created_by: 'anotherProfileUid',
+          created_at: new Date().toISOString(),
+        },
+      });
+
+      const result = await siemMigrationsDataMigrationClient.get(id);
+
+      expect(result).toBeUndefined();
+    });
+
+    test('should return the migration when it is owned under the username fallback', async () => {
+      const id = 'testId';
+      const client = new SiemMigrationsDataMigrationClient(
+        indexNameProvider,
+        { username: 'testUser' } as unknown as AuthenticatedUser,
+        esClient,
+        logger,
+        dependencies
+      );
+
+      (esClient.asInternalUser.get as unknown as jest.MockedFn<GetApi>).mockResolvedValueOnce({
+        _index: '.kibana-siem-rule-migrations',
+        found: true,
+        _id: id,
+        _source: { created_by: 'testUser', created_at: new Date().toISOString() },
+      });
+
+      const result = await client.get(id);
+
+      expect(result).toMatchObject({ id, created_by: 'testUser' });
+    });
+
+    test('should return migrations that have no owner recorded', async () => {
+      const id = 'testId';
+
+      (esClient.asInternalUser.get as unknown as jest.MockedFn<GetApi>).mockResolvedValueOnce({
+        _index: '.kibana-siem-rule-migrations',
+        found: true,
+        _id: id,
+        _source: { created_by: '', created_at: new Date().toISOString() },
+      });
+
+      const result = await siemMigrationsDataMigrationClient.get(id);
+
+      expect(result).toMatchObject({ id });
+    });
   });
 
   describe('prepareDelete', () => {
@@ -184,7 +239,14 @@ describe('SiemMigrationsDataMigrationClient', () => {
         index: '.kibana-siem-rule-migrations',
         size: 10000,
         query: {
-          match_all: {},
+          bool: {
+            should: [
+              { terms: { created_by: [currentUser.profile_uid] } },
+              { bool: { must_not: { exists: { field: 'created_by' } } } },
+              { term: { created_by: '' } },
+            ],
+            minimum_should_match: 1,
+          },
         },
         _source: true,
       });
