@@ -47,6 +47,8 @@ export default function ({ getService }: FtrProviderContext) {
             name: expect.any(String),
             uuid: expect.any(String),
             managedBy: 'Index Lifecycle Management',
+            ilmPolicyName: 'kibana-reporting',
+            indexMode: 'standard',
             preferILM: true,
           },
         ],

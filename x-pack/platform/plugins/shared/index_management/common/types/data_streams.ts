@@ -119,6 +119,8 @@ export interface DataStreamIndex {
   uuid: string;
   preferILM: boolean;
   managedBy?: string;
+  ilmPolicyName?: string;
+  indexMode?: string;
 }
 
 export interface DataRetention {

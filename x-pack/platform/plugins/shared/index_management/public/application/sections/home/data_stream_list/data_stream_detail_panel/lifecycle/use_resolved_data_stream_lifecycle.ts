@@ -268,8 +268,8 @@ interface UseResolvedDataStreamLifecycleArgs {
  * Streams parent for wired streams (`_meta.managed_by === 'streams'`), or the index template
  * otherwise. It exposes both the effective values and whether each part is inherited.
  *
- * This is the single source of truth consumed by both the details summary and the edit
- * flyout, keeping the displayed values and the "Inherited" markers consistent.
+ * The edit flyout consumes these resolved values. The details summary may instead show
+ * the actual lifecycle of historical backing indices that remain eligible in a lookup stream.
  */
 export const useResolvedDataStreamLifecycle = ({
   dataStream,

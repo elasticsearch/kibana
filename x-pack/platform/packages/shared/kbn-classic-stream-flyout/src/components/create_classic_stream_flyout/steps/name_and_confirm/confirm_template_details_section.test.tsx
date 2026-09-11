@@ -35,7 +35,11 @@ const createMockIlmPolicy = (phases: PolicyFromES['policy']['phases'] = {}): Pol
   },
 });
 
-const createMockSimulatedTemplate = (mode: string = 'standard', ilmPolicyName?: string) => ({
+const createMockSimulatedTemplate = (
+  mode: string = 'standard',
+  ilmPolicyName?: string,
+  lifecycle?: { enabled: boolean; data_retention?: string }
+) => ({
   template: {
     settings: {
       index: {
@@ -43,6 +47,7 @@ const createMockSimulatedTemplate = (mode: string = 'standard', ilmPolicyName?: 
         ...(ilmPolicyName ? { lifecycle: { name: ilmPolicyName } } : {}),
       },
     },
+    ...(lifecycle ? { lifecycle } : {}),
   },
 });
 
@@ -254,6 +259,107 @@ describe('ConfirmTemplateDetailsSection', () => {
         await findByText('my-policy');
         await findByText('ILM');
         expect(queryByText('30d')).not.toBeInTheDocument();
+      });
+    });
+
+    describe('lookup index mode (lifecycle not applied)', () => {
+      it('shows the not-applied notice instead of the ILM policy and does not fetch the policy', async () => {
+        const template = createMockTemplate();
+        const mockGetSimulatedTemplate = jest
+          .fn()
+          .mockResolvedValue(createMockSimulatedTemplate('lookup', 'my-ilm-policy'));
+        const mockGetIlmPolicy = jest
+          .fn()
+          .mockResolvedValue(createMockIlmPolicy({ hot: { min_age: '0ms', actions: {} } }));
+
+        const { findByText, findByTestId, queryByText } = renderComponent(
+          template,
+          mockGetIlmPolicy,
+          mockGetSimulatedTemplate
+        );
+
+        await findByText('Lookup');
+        await findByText('Retention');
+        await findByTestId('lookupRetentionNotApplied');
+        expect(queryByText('my-ilm-policy')).not.toBeInTheDocument();
+        expect(queryByText('ILM')).not.toBeInTheDocument();
+        expect(mockGetIlmPolicy).not.toHaveBeenCalled();
+      });
+
+      it('shows the not-applied notice instead of the data stream lifecycle value', async () => {
+        const template = createMockTemplate({
+          lifecycle: { enabled: true, value: 30, unit: 'd' },
+        });
+        const mockGetSimulatedTemplate = jest
+          .fn()
+          .mockResolvedValue(createMockSimulatedTemplate('lookup'));
+
+        const { findByText, findByTestId, queryByText } = renderComponent(
+          template,
+          undefined,
+          mockGetSimulatedTemplate
+        );
+
+        await findByText('Lookup');
+        await findByText('Retention');
+        await findByTestId('lookupRetentionNotApplied');
+        expect(queryByText('30d')).not.toBeInTheDocument();
+      });
+
+      it('shows the not-applied notice for a data stream lifecycle inherited from a component template', async () => {
+        const template = createMockTemplate({ lifecycle: undefined });
+        const mockGetSimulatedTemplate = jest.fn().mockResolvedValue(
+          createMockSimulatedTemplate('lookup', undefined, {
+            enabled: true,
+            data_retention: '30d',
+          })
+        );
+
+        const { findByText, findByTestId } = renderComponent(
+          template,
+          undefined,
+          mockGetSimulatedTemplate
+        );
+
+        await findByText('Lookup');
+        await findByText('Retention');
+        await findByTestId('lookupRetentionNotApplied');
+      });
+
+      it('does not show a Retention row for a disabled inherited data stream lifecycle', async () => {
+        const template = createMockTemplate({ lifecycle: undefined });
+        const mockGetSimulatedTemplate = jest.fn().mockResolvedValue(
+          createMockSimulatedTemplate('lookup', undefined, {
+            enabled: false,
+          })
+        );
+
+        const { findByText, queryByText, queryByTestId } = renderComponent(
+          template,
+          undefined,
+          mockGetSimulatedTemplate
+        );
+
+        await findByText('Lookup');
+        expect(queryByText('Retention')).not.toBeInTheDocument();
+        expect(queryByTestId('lookupRetentionNotApplied')).not.toBeInTheDocument();
+      });
+
+      it('does not show a Retention row when the lookup template has no lifecycle', async () => {
+        const template = createMockTemplate({ lifecycle: undefined });
+        const mockGetSimulatedTemplate = jest
+          .fn()
+          .mockResolvedValue(createMockSimulatedTemplate('lookup'));
+
+        const { findByText, queryByText, queryByTestId } = renderComponent(
+          template,
+          undefined,
+          mockGetSimulatedTemplate
+        );
+
+        await findByText('Lookup');
+        expect(queryByText('Retention')).not.toBeInTheDocument();
+        expect(queryByTestId('lookupRetentionNotApplied')).not.toBeInTheDocument();
       });
     });
   });
@@ -789,6 +895,86 @@ describe('ConfirmTemplateDetailsSection', () => {
       unmount();
 
       expect(capturedSignal?.aborted).toBe(true);
+    });
+
+    it('ignores a resolved result from an obsolete simulated template request', async () => {
+      let resolveFirstRequest!: (value: ReturnType<typeof createMockSimulatedTemplate>) => void;
+      const firstRequest = new Promise<ReturnType<typeof createMockSimulatedTemplate>>(
+        (resolve) => {
+          resolveFirstRequest = resolve;
+        }
+      );
+      const mockGetSimulatedTemplate = jest
+        .fn()
+        .mockImplementationOnce(() => firstRequest)
+        .mockResolvedValueOnce(createMockSimulatedTemplate('logsdb'));
+
+      const { rerender, findByText, queryByText } = renderComponent(
+        createMockTemplate({ name: 'template-1' }),
+        undefined,
+        mockGetSimulatedTemplate
+      );
+      await waitFor(() => expect(mockGetSimulatedTemplate).toHaveBeenCalledTimes(1));
+
+      rerender(
+        <IntlProvider>
+          <ConfirmTemplateDetailsSection
+            template={createMockTemplate({ name: 'template-2' })}
+            getSimulatedTemplate={mockGetSimulatedTemplate}
+          />
+        </IntlProvider>
+      );
+      await findByText('LogsDB');
+
+      await act(async () => {
+        resolveFirstRequest(createMockSimulatedTemplate('lookup'));
+      });
+
+      await waitFor(() => {
+        expect(queryByText('Lookup')).not.toBeInTheDocument();
+        expect(queryByText('LogsDB')).toBeInTheDocument();
+      });
+    });
+
+    it('ignores a rejected result from an obsolete simulated template request', async () => {
+      let rejectFirstRequest!: (reason: Error) => void;
+      const firstRequest = new Promise<ReturnType<typeof createMockSimulatedTemplate>>(
+        (_, reject) => {
+          rejectFirstRequest = reject;
+        }
+      );
+      const mockGetSimulatedTemplate = jest
+        .fn()
+        .mockImplementationOnce(() => firstRequest)
+        .mockResolvedValueOnce(createMockSimulatedTemplate('logsdb'));
+
+      const { rerender, findByText, queryByText } = renderComponent(
+        createMockTemplate({ name: 'template-1' }),
+        undefined,
+        mockGetSimulatedTemplate
+      );
+      await waitFor(() => expect(mockGetSimulatedTemplate).toHaveBeenCalledTimes(1));
+
+      rerender(
+        <IntlProvider>
+          <ConfirmTemplateDetailsSection
+            template={createMockTemplate({ name: 'template-2' })}
+            getSimulatedTemplate={mockGetSimulatedTemplate}
+          />
+        </IntlProvider>
+      );
+      await findByText('LogsDB');
+
+      await act(async () => {
+        rejectFirstRequest(new Error('Obsolete request failed'));
+      });
+
+      await waitFor(() => {
+        expect(
+          queryByText(/There was an error while loading index mode and data retention info/i)
+        ).not.toBeInTheDocument();
+        expect(queryByText('LogsDB')).toBeInTheDocument();
+      });
     });
   });
 

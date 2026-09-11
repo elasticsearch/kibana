@@ -18,6 +18,7 @@ import { FormWizardNav } from './form_wizard_nav';
 
 interface Props<T extends object, S extends string> extends ProviderProps<T> {
   isSaving?: boolean;
+  isNextButtonDisabled?: boolean;
   apiError: JSX.Element | null;
   texts?: Partial<NavTexts>;
   rightContentNav?: JSX.Element | null | ((stepId: S) => JSX.Element | null);
@@ -30,6 +31,7 @@ export function FormWizard<T extends object = { [key: string]: any }, S extends 
   apiError,
   isEditing,
   isSaving,
+  isNextButtonDisabled,
   onSave,
   onChange,
   onStepChange,
@@ -137,6 +139,7 @@ export function FormWizard<T extends object = { [key: string]: any }, S extends 
                 lastStep={lastStep}
                 isStepValid={isCurrentStepValid}
                 isSaving={isSaving}
+                isNextButtonDisabled={isNextButtonDisabled}
                 onBack={onBack}
                 onNext={onNext}
                 texts={texts}

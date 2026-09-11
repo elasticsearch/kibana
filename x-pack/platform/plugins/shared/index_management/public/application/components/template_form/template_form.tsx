@@ -103,6 +103,7 @@ export const TemplateForm = ({
   history,
 }: Props) => {
   const [wizardContent, setWizardContent] = useState<Forms.Content<WizardContent> | null>(null);
+  const [isReviewSaveBlocked, setIsReviewSaveBlocked] = useState(false);
   const {
     config: { enableIndexMode },
   } = useAppContext();
@@ -304,6 +305,7 @@ export const TemplateForm = ({
           onSave={onSaveTemplate}
           isEditing={isEditing}
           isSaving={isSaving}
+          isNextButtonDisabled={isReviewSaveBlocked}
           apiError={apiError}
           texts={i18nTexts}
           onChange={onWizardContentChange}
@@ -351,6 +353,7 @@ export const TemplateForm = ({
             <StepReviewContainer
               getTemplateData={buildTemplateObject(indexTemplate)}
               dataStreamOptions={dataStreamOptions}
+              onSaveBlockedChange={setIsReviewSaveBlocked}
             />
           </FormWizardStep>
         </FormWizard>

@@ -444,6 +444,34 @@ describe('<TemplateCreate />', () => {
     }, 20000);
   });
 
+  describe('component template lifecycle check', () => {
+    it('blocks saving while the component template simulation is pending', async () => {
+      let resolveSimulation: (response: unknown) => void = () => {};
+      const simulation = new Promise<unknown>((resolve) => {
+        resolveSimulation = resolve;
+      });
+      httpRequestsMockHelpers.setLoadComponentTemplatesResponse(componentTemplates);
+      httpRequestsMockHelpers.setSimulateTemplateResponse(simulation as never);
+      await renderTemplateCreate(httpSetup);
+      await screen.findByTestId(APP_HEADER_TEST_SUBJECTS.title);
+
+      await completeStepOne({ name: TEMPLATE_NAME, indexPatterns: DEFAULT_INDEX_PATTERNS });
+      await completeStepTwo('test_component_template_1');
+      await completeStepThree(JSON.stringify({}));
+      await completeStepFour();
+      await completeStepFive(JSON.stringify({}));
+
+      expect(await screen.findByTestId('simulateIndexTemplateLoading')).toBeInTheDocument();
+      expect(screen.getByTestId('nextButton')).toBeDisabled();
+      expect(screen.getByTestId('backButton')).toBeEnabled();
+
+      resolveSimulation({ template: { settings: {} } });
+
+      await waitFor(() => expect(screen.getByTestId('nextButton')).toBeEnabled());
+      expect(screen.queryByTestId('simulateIndexTemplateLoading')).not.toBeInTheDocument();
+    }, 20000);
+  });
+
   describe('form payload & api errors', () => {
     beforeEach(async () => {
       const MAPPING_FIELDS = [BOOLEAN_MAPPING_FIELD, KEYWORD_MAPPING_FIELD, TEXT_MAPPING_FIELD];

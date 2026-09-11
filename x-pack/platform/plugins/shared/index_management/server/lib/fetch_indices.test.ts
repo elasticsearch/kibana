@@ -97,6 +97,61 @@ describe('[Index management API Routes] fetch indices lib function', () => {
         ],
       });
     });
+    test('lookup indices expose their configured lifecycle policies', async () => {
+      getIndices.mockResolvedValue({
+        lookup_index: createTestIndexState({
+          settings: {
+            index: {
+              number_of_shards: 1,
+              number_of_replicas: 1,
+              mode: 'lookup',
+              lifecycle: { name: 'stale-policy' },
+            },
+          },
+        }),
+        another_lookup_index: createTestIndexState({
+          settings: {
+            index: {
+              number_of_shards: 1,
+              number_of_replicas: 1,
+              mode: 'lookup',
+              lifecycle: { name: 'another-policy' },
+            },
+          },
+        }),
+      });
+      getIndicesStats.mockResolvedValue({
+        indices: {
+          lookup_index: createTestIndexStats({ uuid: 'lookup_index' }),
+          another_lookup_index: createTestIndexStats({ uuid: 'another_lookup_index' }),
+        },
+      });
+
+      await expect(router.runRequest(mockRequest)).resolves.toEqual({
+        body: [
+          createTestIndexResponse({
+            name: 'lookup_index',
+            uuid: 'lookup_index',
+            mode: 'lookup',
+            ilmPolicyName: 'stale-policy',
+          }),
+          createTestIndexResponse({
+            name: 'another_lookup_index',
+            uuid: 'another_lookup_index',
+            mode: 'lookup',
+            ilmPolicyName: 'another-policy',
+          }),
+        ],
+      });
+      expect(getIndices).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          filter_path: expect.arrayContaining([
+            '*.settings.index.mode',
+            '*.settings.index.lifecycle.name',
+          ]),
+        })
+      );
+    });
     test('hidden index', async () => {
       getIndices.mockResolvedValue({
         hidden_index: createTestIndexState({
@@ -201,6 +256,102 @@ describe('[Index management API Routes] fetch indices lib function', () => {
             size: 1000,
           },
         ],
+      });
+    });
+
+    test('lookup indices expose their configured lifecycle policies', async () => {
+      getIndices.mockResolvedValue({
+        lookup_index: createTestIndexState({
+          settings: {
+            index: {
+              number_of_shards: 1,
+              number_of_replicas: 1,
+              mode: 'lookup',
+              lifecycle: { name: 'stale-policy' },
+            },
+          },
+        }),
+        another_lookup_index: createTestIndexState({
+          settings: {
+            index: {
+              number_of_shards: 1,
+              number_of_replicas: 1,
+              mode: 'lookup',
+              lifecycle: { name: 'another-policy' },
+            },
+          },
+        }),
+      });
+      getMeteringStats.mockResolvedValue({
+        indices: [
+          { name: 'lookup_index', num_docs: 100, size_in_bytes: 1000 },
+          { name: 'another_lookup_index', num_docs: 200, size_in_bytes: 2000 },
+        ],
+      });
+
+      const response = await router.runRequest(mockRequest);
+
+      expect(response.body[0]).toMatchObject({
+        name: 'lookup_index',
+        mode: 'lookup',
+        ilmPolicyName: 'stale-policy',
+      });
+      expect(response.body[1]).toMatchObject({
+        name: 'another_lookup_index',
+        mode: 'lookup',
+        ilmPolicyName: 'another-policy',
+      });
+    });
+  });
+
+  describe('without index stats or metering', () => {
+    beforeAll(() => {
+      registerIndicesRoutes({
+        ...routeDependencies,
+        config: {
+          ...routeDependencies.config,
+          isSizeAndDocCountEnabled: false,
+          isIndexStatsEnabled: false,
+        },
+        router,
+      });
+    });
+
+    test('lookup indices expose their configured lifecycle policies', async () => {
+      getIndices.mockResolvedValue({
+        lookup_index: createTestIndexState({
+          settings: {
+            index: {
+              number_of_shards: 1,
+              number_of_replicas: 1,
+              mode: 'lookup',
+              lifecycle: { name: 'stale-policy' },
+            },
+          },
+        }),
+        another_lookup_index: createTestIndexState({
+          settings: {
+            index: {
+              number_of_shards: 1,
+              number_of_replicas: 1,
+              mode: 'lookup',
+              lifecycle: { name: 'another-policy' },
+            },
+          },
+        }),
+      });
+
+      const response = await router.runRequest(mockRequest);
+
+      expect(response.body[0]).toMatchObject({
+        name: 'lookup_index',
+        mode: 'lookup',
+        ilmPolicyName: 'stale-policy',
+      });
+      expect(response.body[1]).toMatchObject({
+        name: 'another_lookup_index',
+        mode: 'lookup',
+        ilmPolicyName: 'another-policy',
       });
     });
   });

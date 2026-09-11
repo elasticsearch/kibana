@@ -27,7 +27,11 @@ import type { IndexManagementLocatorParams } from '@kbn/index-management-shared-
 import type { DataStream, TemplateDeserialized } from '../../../../../../../common';
 import { API_BASE_PATH } from '../../../../../../../common/constants';
 import { splitSizeAndUnits } from '../../../../../../../common';
-import { isNextGenIlm } from '../../../../../lib/data_streams';
+import {
+  getIlmPolicyNameForSummary,
+  isIlmLifecyclePreferred,
+  isNextGenIlm,
+} from '../../../../../lib/data_streams';
 import { useAppContext } from '../../../../../app_context';
 import {
   updateDSFailureStore,
@@ -154,24 +158,17 @@ export const useEditDataLifecycle = ({
     }
   }, []);
 
-  // Eagerly load ILM policies for the summary's policy inspection (stateful, next-gen ILM only).
+  // Eagerly load ILM policies for the summary's policy inspection.
   useEffect(() => {
     if (config.isServerless) return;
     if (!dataStream) return;
-    if (!isNextGenIlm(dataStream)) return;
-    if (typeof dataStream.ilmPolicyName !== 'string' || dataStream.ilmPolicyName.length === 0)
-      return;
+    if (!isIlmLifecyclePreferred(dataStream)) return;
+    const summaryIlmPolicyName = getIlmPolicyNameForSummary(dataStream);
+    if (typeof summaryIlmPolicyName !== 'string' || summaryIlmPolicyName.length === 0) return;
     if (ilmPolicies.length > 0) return;
 
     loadIlmPolicies();
-  }, [
-    config.isServerless,
-    dataStream,
-    dataStream?.ilmPolicyName,
-    dataStream?.nextGenerationManagedBy,
-    ilmPolicies.length,
-    loadIlmPolicies,
-  ]);
+  }, [config.isServerless, dataStream, ilmPolicies.length, loadIlmPolicies]);
 
   useEffect(() => {
     const licensing = plugins.licensing;
@@ -458,7 +455,11 @@ export const useEditDataLifecycle = ({
                 : undefined;
 
             const nextLifecycle = (() => {
-              if (!successfulData || successfulData.inheritLifecycle) {
+              if (!successfulData) {
+                return undefined;
+              }
+
+              if (successfulData.inheritLifecycle) {
                 return { inherit: {} };
               }
 
@@ -511,7 +512,7 @@ export const useEditDataLifecycle = ({
 
             const nextIngest = {
               ...upsertRequest.stream.ingest,
-              lifecycle: nextLifecycle,
+              ...(nextLifecycle ? { lifecycle: nextLifecycle } : {}),
               // Only override the failure store when the failed-data tab was part of this apply.
               // The Inspect-policy "Apply" shortcut sends only `successfulData`, so we keep the
               // stream's current failure store (already carried over by the spread above) instead
@@ -545,7 +546,11 @@ export const useEditDataLifecycle = ({
         };
 
         const applySuccessful = async () => {
-          if (!successfulData || successfulData.inheritLifecycle) {
+          if (!successfulData) {
+            return;
+          }
+
+          if (successfulData.inheritLifecycle) {
             // "Inherit" means reset to the index template defaults (Streams behavior),
             // not disabling lifecycle outright.
             const template = await loadIndexTemplate();
@@ -749,12 +754,24 @@ export const useEditDataLifecycle = ({
         const failedReason =
           failedResult.status === 'rejected' ? getErrorMessage(failedResult.reason) : undefined;
 
+        // An un-attempted half resolves without doing anything, so the paired messages below
+        // ("one half saved, the other did not") only hold when both halves were attempted.
+        const attemptedSuccessful = Boolean(successfulData);
+        const attemptedFailed = Boolean(failedData);
+
         if (successfulFailed && failedFailed) {
           services.notificationService.showDangerToast(
             i18n.translate('xpack.idxMgmt.dataStreamDetailPanel.saveErrorTitle', {
               defaultMessage: 'Could not save changes',
             }),
             [successfulReason, failedReason].filter(Boolean).join('; ')
+          );
+        } else if (!attemptedSuccessful || !attemptedFailed) {
+          services.notificationService.showDangerToast(
+            i18n.translate('xpack.idxMgmt.dataStreamDetailPanel.saveErrorTitle', {
+              defaultMessage: 'Could not save changes',
+            }),
+            successfulReason ?? failedReason
           );
         } else if (successfulFailed) {
           services.notificationService.showDangerToast(

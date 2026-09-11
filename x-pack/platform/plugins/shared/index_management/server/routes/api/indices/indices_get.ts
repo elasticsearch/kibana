@@ -37,6 +37,7 @@ export function registerIndicesGet({ router, lib: { handleEsError }, config }: R
             '*.settings.index.frozen',
             '*.settings.index.hidden',
             '*.settings.index.mode',
+            '*.settings.index.lifecycle.name',
             '*.data_stream',
           ],
           // for better performance only compute aliases and settings of indices but not mappings
@@ -82,6 +83,7 @@ export function registerIndicesGet({ router, lib: { handleEsError }, config }: R
             hidden: indexData.settings?.index?.hidden === 'true',
             data_stream: indexData.data_stream,
             mode: indexData.settings?.index?.mode,
+            ilmPolicyName: indexData.settings?.index?.lifecycle?.name,
           };
 
           if (aliases.length) {

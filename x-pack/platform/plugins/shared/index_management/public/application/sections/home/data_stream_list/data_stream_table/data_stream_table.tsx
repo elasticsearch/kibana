@@ -32,7 +32,11 @@ import type { EuiContextMenuPanelItemDescriptor } from '@elastic/eui/src/compone
 import { MAX_DATA_RETENTION } from '../../../../../../common/constants';
 import { useAppContext } from '../../../../app_context';
 import type { DataStream } from '../../../../../../common/types';
-import { isNextGenIlm } from '../../../../lib/data_streams';
+import {
+  isIlmLifecyclePreferred,
+  isLookupDslNotApplicable,
+  isLookupIndexMode,
+} from '../../../../lib/data_streams';
 import type { UseRequestResponse } from '../../../../../shared_imports';
 import { reactRouterNavigate } from '../../../../../shared_imports';
 import { getDataStreamDetailsLink, getIndexListUri } from '../../../../services/routing';
@@ -51,7 +55,7 @@ import { DataRetentionValue } from '../data_retention_value';
 import { formatByteSizeString } from '../../../../lib/format_bytes';
 
 interface TableDataStream extends DataStream {
-  isNextGenIlm: boolean;
+  isIlmLifecyclePreferred: boolean;
 }
 
 interface Props {
@@ -102,7 +106,7 @@ export const DataStreamTable: React.FunctionComponent<Props> = ({
   const data = useMemo(() => {
     return (dataStreams || []).map((dataStream) => ({
       ...dataStream,
-      isNextGenIlm: isNextGenIlm(dataStream),
+      isIlmLifecyclePreferred: isIlmLifecyclePreferred(dataStream),
     }));
   }, [dataStreams]);
 
@@ -266,13 +270,14 @@ export const DataStreamTable: React.FunctionComponent<Props> = ({
     sortable: true,
     render: (lifecycle: DataStream['lifecycle'], dataStream) => (
       <ConditionalWrap
-        condition={dataStream.isNextGenIlm}
+        condition={dataStream.isIlmLifecyclePreferred}
         wrap={(children) => <EuiTextColor color="subdued">{children}</EuiTextColor>}
       >
         <>
           <DataRetentionValue dataStream={dataStream} infiniteAsIcon={INFINITE_AS_ICON} />
 
-          {!dataStream.isNextGenIlm &&
+          {!dataStream.isIlmLifecyclePreferred &&
+            !isLookupDslNotApplicable(dataStream) &&
             dataStream.lifecycle?.retention_determined_by === MAX_DATA_RETENTION && (
               <>
                 {' '}
@@ -339,7 +344,9 @@ export const DataStreamTable: React.FunctionComponent<Props> = ({
   if (
     selection.every(
       (dataStream: DataStream) =>
-        dataStream.privileges.manage_data_stream_lifecycle && !isNextGenIlm(dataStream)
+        dataStream.privileges.manage_data_stream_lifecycle &&
+        (!isIlmLifecyclePreferred(dataStream) || isLookupIndexMode(dataStream)) &&
+        !isLookupDslNotApplicable(dataStream)
     )
   ) {
     dataStreamActions.push({

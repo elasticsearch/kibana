@@ -7,6 +7,7 @@
 
 import type {
   EnrichPolicyType,
+  IndicesDataStreamLifecycle,
   IndicesSimulateTemplateResponse,
 } from '@elastic/elasticsearch/lib/api/types';
 import type { SendRequestResponse } from '../types';
@@ -21,7 +22,11 @@ export interface SerializedEnrichPolicy {
   query?: Record<string, any>;
 }
 
-export type SimulateIndexTemplateResponse = IndicesSimulateTemplateResponse;
+export type SimulateIndexTemplateResponse = Omit<IndicesSimulateTemplateResponse, 'template'> & {
+  template: IndicesSimulateTemplateResponse['template'] & {
+    lifecycle?: IndicesDataStreamLifecycle;
+  };
+};
 
 export interface PublicApiServiceSetup {
   getAllEnrichPolicies(): Promise<SendRequestResponse<SerializedEnrichPolicy[]>>;

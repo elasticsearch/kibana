@@ -7,6 +7,7 @@
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { i18n } from '@kbn/i18n';
+import { FormattedMessage } from '@kbn/i18n-react';
 import type { EuiContextMenuPanelDescriptor } from '@elastic/eui';
 import {
   EuiButton,
@@ -30,6 +31,7 @@ import { APP_MAIN_SCROLL_CONTAINER_ID } from '@kbn/core-chrome-layout-constants'
 import { Streams, isIlmLifecycle as isStreamsIlmLifecycle } from '@kbn/streams-schema';
 import { SectionLoading } from '../../../../../shared_imports';
 import { SectionError } from '../../../../components';
+import { LookupLifecycleWarningCallout } from '../../../../components/shared';
 import { useLoadDataStream } from '../../../../services/api';
 import { sendRequest } from '../../../../services/use_request';
 import { DeleteDataStreamConfirmationModal } from '../delete_data_stream_confirmation_modal';
@@ -42,6 +44,11 @@ import { INDEX_MANAGEMENT_LOCATOR_ID } from '../../../../../locator';
 import { EditDataLifecycleFlyout } from '../../../../components/data_lifecycle/edit_data_lifecycle_flyout';
 import { useResolvedDataStreamLifecycle, useEditDataLifecycle } from './lifecycle';
 import { DataStreamDetailSummary } from './data_stream_detail_summary';
+import {
+  getIlmPolicyNameForSummary,
+  isLookupLifecycleEditingNotApplicable,
+  isLookupIndexMode,
+} from '../../../../lib/data_streams';
 
 interface Props {
   dataStreamName: string;
@@ -88,9 +95,11 @@ export const DataStreamDetailPanel: React.FunctionComponent<Props> = ({
   const { url, config, core } = useAppContext();
   const locator = url.locators.get<IndexManagementLocatorParams>(INDEX_MANAGEMENT_LOCATOR_ID);
   const summaryIlmPolicyName =
-    streamsGetResponse && isStreamsIlmLifecycle(streamsGetResponse.effective_lifecycle)
+    !isLookupIndexMode(dataStream) &&
+    streamsGetResponse &&
+    isStreamsIlmLifecycle(streamsGetResponse.effective_lifecycle)
       ? streamsGetResponse.effective_lifecycle.ilm.policy
-      : dataStream?.ilmPolicyName;
+      : getIlmPolicyNameForSummary(dataStream);
 
   const ilmPolicyLink = useIlmLocator(ILM_PAGES_POLICY_EDIT, summaryIlmPolicyName);
   const inspectedIlmPolicyLink = useIlmLocator(ILM_PAGES_POLICY_EDIT, inspectedIlmPolicyName);
@@ -173,6 +182,8 @@ export const DataStreamDetailPanel: React.FunctionComponent<Props> = ({
   const closePopover = () => {
     setActionsPopOverOpen(false);
   };
+
+  const isSuccessfulDataLifecycleNotApplicable = isLookupLifecycleEditingNotApplicable(dataStream);
 
   const panels: EuiContextMenuPanelDescriptor[] = useMemo(() => {
     const items: NonNullable<EuiContextMenuPanelDescriptor['items']> = [];
@@ -377,7 +388,19 @@ export const DataStreamDetailPanel: React.FunctionComponent<Props> = ({
           onClose={closeEditFlyout}
           onApply={applyDataLifecycle}
           isServerless={config.isServerless}
-          successfulData={flyoutSuccessfulData}
+          successfulData={{
+            ...flyoutSuccessfulData,
+            notice: isSuccessfulDataLifecycleNotApplicable ? (
+              <LookupLifecycleWarningCallout
+                description={
+                  <FormattedMessage
+                    id="xpack.idxMgmt.dataStreamDetailPanel.lookupLifecycleWarningDescription"
+                    defaultMessage="Elasticsearch skips indices with the lookup index mode when running the data stream lifecycle, so these settings are not applied to this data stream's data. The failed data lifecycle still applies."
+                  />
+                }
+              />
+            ) : undefined,
+          }}
           failedData={flyoutFailedData}
           container={flyoutContainer}
         />

@@ -35,6 +35,7 @@ async function fetchIndicesCall(
       '*.settings.index.frozen',
       '*.settings.index.hidden',
       '*.settings.index.mode',
+      '*.settings.index.lifecycle.name',
       '*.data_stream',
     ],
     // for better performance only compute aliases and settings of indices but not mappings
@@ -67,6 +68,7 @@ async function fetchIndicesCall(
         hidden: indexData.settings?.index?.hidden === 'true',
         data_stream: indexData.data_stream,
         mode: indexData.settings?.index?.mode,
+        ilmPolicyName: indexData.settings?.index?.lifecycle?.name,
       };
 
       if (indicesStats) {
@@ -107,6 +109,7 @@ async function fetchIndicesCall(
         hidden: indexData.settings?.index?.hidden === 'true',
         data_stream: indexData.data_stream,
         mode: indexData.settings?.index?.mode,
+        ilmPolicyName: indexData.settings?.index?.lifecycle?.name,
       };
 
       if (indicesStats) {
@@ -138,6 +141,7 @@ async function fetchIndicesCall(
       hidden: indexData.settings?.index?.hidden === 'true',
       data_stream: indexData.data_stream,
       mode: indexData.settings?.index?.mode,
+      ilmPolicyName: indexData.settings?.index?.lifecycle?.name,
     };
   });
 }

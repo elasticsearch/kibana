@@ -63,12 +63,14 @@ export const expectedDataStream = ({
   uuid,
   health,
   lifecycle,
+  indexMode = 'standard',
 }: {
   name: string;
   indexName: string;
   uuid: string;
   health: string;
   lifecycle: object;
+  indexMode?: string;
 }) => ({
   name,
   lifecycle,
@@ -79,7 +81,9 @@ export const expectedDataStream = ({
     manage: true,
   },
   timeStampField: { name: '@timestamp' },
-  indices: [{ name: indexName, uuid, preferILM: true, managedBy: 'Data stream lifecycle' }],
+  indices: [
+    { name: indexName, uuid, preferILM: true, managedBy: 'Data stream lifecycle', indexMode },
+  ],
   nextGenerationManagedBy: 'Data stream lifecycle',
   generation: 1,
   health,
@@ -88,7 +92,7 @@ export const expectedDataStream = ({
   failureStoreEnabled: false,
   matchesFailureStoreClusterPattern: false,
   failureStoreRetention: { defaultRetentionPeriod: '30d', retentionDisabled: false },
-  indexMode: 'standard',
+  indexMode,
 });
 
 // The delete route only removes the data stream, so the template goes separately.

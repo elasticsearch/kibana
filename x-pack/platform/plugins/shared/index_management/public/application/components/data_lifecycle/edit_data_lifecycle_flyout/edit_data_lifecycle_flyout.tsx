@@ -6,6 +6,7 @@
  */
 
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+import type { ReactNode } from 'react';
 import {
   EuiButton,
   EuiButtonEmpty,
@@ -70,6 +71,8 @@ export interface EditDataLifecycleFlyoutProps {
 
   // ---- Successful data ----
   successfulData: {
+    /** Rendered above the successful data editor, e.g. a warning that the lifecycle is not applied. */
+    notice?: ReactNode;
     inheritLifecycle: boolean;
     onInheritLifecycleChange?: (next: boolean) => void;
     inheritLabel?: string;
@@ -137,10 +140,12 @@ export const EditDataLifecycleFlyout = ({
   const dlmSerializedRef = useRef<SerializedDlmPhases>({});
   const [dlmValue, setDlmValue] = useState<DlmPhasesSelectorValue | undefined>(undefined);
   const hasUserModifiedDlmRef = useRef(false);
+  const hasUserModifiedSuccessfulDataRef = useRef(false);
   const [failedDeletePhase, setFailedDeletePhase] = useState<DlmPhaseDuration>(
     () => failedData.deletePhaseDefaultValue ?? { enabled: false, value: '60', unit: 'd' }
   );
   const hasUserModifiedFailedDeletePhaseRef = useRef(false);
+  const hasUserModifiedFailedDataRef = useRef(false);
 
   const dlmDefaultValueKey = useMemo(
     () => JSON.stringify(successfulData.dlm?.defaultValue ?? null),
@@ -185,15 +190,19 @@ export const EditDataLifecycleFlyout = ({
     setFailedDeletePhase((prev) => (prev.enabled ? prev : { ...prev, enabled: true }));
   }, [failedData.inheritLifecycle, forceFailedDeletePhaseEnabled]);
 
-  const handleApply = () => {
+  const handleApply = (selectedTabId: TabId) => {
     const { frozen_after: frozenAfter, data_retention: dataRetention } = dlmSerializedRef.current;
-    const successfulPayload = buildDataLifecycleApplyPayload({
-      inheritLifecycle: successfulData.inheritLifecycle,
-      method: effectiveMethod,
-      ilmPolicyName: ilm?.selectedPolicyName,
-      frozenAfter,
-      dataRetention,
-    });
+    const shouldApplySuccessfulData =
+      selectedTabId === 'successful_data' || hasUserModifiedSuccessfulDataRef.current;
+    const successfulPayload = shouldApplySuccessfulData
+      ? buildDataLifecycleApplyPayload({
+          inheritLifecycle: successfulData.inheritLifecycle,
+          method: effectiveMethod,
+          ilmPolicyName: ilm?.selectedPolicyName,
+          frozenAfter,
+          dataRetention,
+        })
+      : undefined;
 
     const { enabled, value, unit } = failedDeletePhase;
     const effectiveFailedDeletePhaseEnabled = forceFailedDeletePhaseEnabled ? true : enabled;
@@ -202,27 +211,42 @@ export const EditDataLifecycleFlyout = ({
     // resolve it from the template (`default_failures_retention`) and the saved configuration
     // would be (incorrectly) interpreted as inherited.
     const shouldPersistFailedRetentionOverride = failedData.failureStoreEnabled === true;
-    const failedPayload = buildFailedDataLifecycleApplyPayload({
-      inheritLifecycle: failedData.inheritLifecycle,
-      failureStoreEnabled: failedData.failureStoreEnabled,
-      retention:
-        shouldPersistFailedRetentionOverride && effectiveFailedDeletePhaseEnabled
-          ? `${value}${unit}`
-          : undefined,
-      // In stateful, an unchecked Delete phase means "disable retention" (keep indefinitely).
-      // Serverless does not support this, so we only set it when explicitly allowed.
-      retentionDisabled:
-        !isServerless && shouldPersistFailedRetentionOverride && !effectiveFailedDeletePhaseEnabled
-          ? true
-          : undefined,
-    });
+    const shouldApplyFailedData =
+      selectedTabId === 'failed_data' || hasUserModifiedFailedDataRef.current;
+    const failedPayload = shouldApplyFailedData
+      ? buildFailedDataLifecycleApplyPayload({
+          inheritLifecycle: failedData.inheritLifecycle,
+          failureStoreEnabled: failedData.failureStoreEnabled,
+          retention:
+            shouldPersistFailedRetentionOverride && effectiveFailedDeletePhaseEnabled
+              ? `${value}${unit}`
+              : undefined,
+          // In stateful, an unchecked Delete phase means "disable retention" (keep indefinitely).
+          // Serverless does not support this, so we only set it when explicitly allowed.
+          retentionDisabled:
+            !isServerless &&
+            shouldPersistFailedRetentionOverride &&
+            !effectiveFailedDeletePhaseEnabled
+              ? true
+              : undefined,
+        })
+      : undefined;
 
     onApply({ successfulData: successfulPayload, failedData: failedPayload });
   };
 
-  const isApplyDisabled =
-    (!successfulData.inheritLifecycle && effectiveMethod === 'ilm' && !ilm?.selectedPolicyName) ||
-    (!successfulData.inheritLifecycle && effectiveMethod === 'dlm' && !isDlmValid);
+  const isApplyDisabled = (selectedTabId: TabId) => {
+    const appliesSuccessfulData =
+      selectedTabId === 'successful_data' || hasUserModifiedSuccessfulDataRef.current;
+
+    return (
+      appliesSuccessfulData &&
+      ((!successfulData.inheritLifecycle &&
+        effectiveMethod === 'ilm' &&
+        !ilm?.selectedPolicyName) ||
+        (!successfulData.inheritLifecycle && effectiveMethod === 'dlm' && !isDlmValid))
+    );
+  };
 
   const footerStyles = useMemo(
     () => css`
@@ -231,7 +255,7 @@ export const EditDataLifecycleFlyout = ({
     [euiTheme.size.m, euiTheme.size.l]
   );
 
-  const footer = (
+  const getFooter = (selectedTabId: TabId) => (
     <EuiFlyoutFooter>
       <EuiFlexGroup
         justifyContent="spaceBetween"
@@ -249,8 +273,8 @@ export const EditDataLifecycleFlyout = ({
           <EuiButton
             fill
             size="s"
-            onClick={handleApply}
-            disabled={isApplyDisabled}
+            onClick={() => handleApply(selectedTabId)}
+            disabled={isApplyDisabled(selectedTabId)}
             data-test-subj="editDataLifecycleFlyoutApplyButton"
           >
             {strings.applyButton}
@@ -280,6 +304,7 @@ export const EditDataLifecycleFlyout = ({
           serverless={isServerless}
           onChange={(value, serialized, isValid) => {
             hasUserModifiedDlmRef.current = true;
+            hasUserModifiedSuccessfulDataRef.current = true;
             setDlmValue(value);
             dlmSerializedRef.current = serialized;
             setIsDlmValid(isValid);
@@ -315,6 +340,7 @@ export const EditDataLifecycleFlyout = ({
             return;
           }
           hasUserModifiedFailedDeletePhaseRef.current = true;
+          hasUserModifiedFailedDataRef.current = true;
           setFailedDeletePhase(next);
         }}
       />
@@ -344,25 +370,42 @@ export const EditDataLifecycleFlyout = ({
     >
       {(selectedTabId) => (
         <>
+          {selectedTabId === 'successful_data' && successfulData.notice}
           {selectedTabId === 'successful_data' && (
             <EditDataLifecycleFlyoutBody
               inherit={
                 inheritLink !== undefined || successfulData.onInheritLifecycleChange !== undefined
                   ? {
                       value: successfulData.inheritLifecycle,
-                      onChange: successfulData.onInheritLifecycleChange ?? (() => {}),
+                      onChange: (next) => {
+                        hasUserModifiedSuccessfulDataRef.current = true;
+                        successfulData.onInheritLifecycleChange?.(next);
+                      },
                       label: successfulData.inheritLabel ?? strings.inheritLabel,
                       link: inheritLink,
                     }
                   : undefined
               }
-              method={ilm ? { value: ilm.method, onChange: ilm.onMethodChange } : undefined}
+              method={
+                ilm
+                  ? {
+                      value: ilm.method,
+                      onChange: (next) => {
+                        hasUserModifiedSuccessfulDataRef.current = true;
+                        ilm.onMethodChange(next);
+                      },
+                    }
+                  : undefined
+              }
               ilm={
                 ilm
                   ? {
                       policies: ilm.policies,
                       selectedPolicyName: ilm.selectedPolicyName,
-                      onSelect: ilm.onPolicySelect,
+                      onSelect: (policyName) => {
+                        hasUserModifiedSuccessfulDataRef.current = true;
+                        ilm.onPolicySelect(policyName);
+                      },
                       onInspect: ilm.onPolicyInspect,
                       canManage: ilm.canManageIlm,
                       hasExistingPolicy: ilm.hasExistingIlmPolicy,
@@ -378,7 +421,10 @@ export const EditDataLifecycleFlyout = ({
                 failedInheritLink !== undefined || failedData.onInheritLifecycleChange !== undefined
                   ? {
                       value: failedData.inheritLifecycle,
-                      onChange: failedData.onInheritLifecycleChange ?? (() => {}),
+                      onChange: (next) => {
+                        hasUserModifiedFailedDataRef.current = true;
+                        failedData.onInheritLifecycleChange?.(next);
+                      },
                       label: failedData.inheritLabel ?? strings.inheritLabel,
                       link: failedInheritLink,
                     }
@@ -386,12 +432,15 @@ export const EditDataLifecycleFlyout = ({
               }
               failureStore={{
                 value: failedData.failureStoreEnabled,
-                onChange: failedData.onFailureStoreChange,
+                onChange: (next) => {
+                  hasUserModifiedFailedDataRef.current = true;
+                  failedData.onFailureStoreChange(next);
+                },
               }}
               retentionContent={failedDeletePhaseContent}
             />
           )}
-          {footer}
+          {getFooter(selectedTabId)}
         </>
       )}
     </FlyoutWithTabs>

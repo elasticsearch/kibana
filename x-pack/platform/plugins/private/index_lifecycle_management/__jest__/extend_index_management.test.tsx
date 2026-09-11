@@ -235,6 +235,39 @@ const indexWithNonExistentPolicyError: Index = {
   },
 };
 
+// ES 9.6+ reports lookup indices as unmanaged even when `index.lifecycle.name` is set.
+const lookupIndexWithoutPolicyName: Index = {
+  health: 'green',
+  status: 'open',
+  name: 'lookupNoPolicy',
+  uuid: 'lookupNoPolicyUuid',
+  primary: 1,
+  replica: 0,
+  documents: 1,
+  documents_deleted: 0,
+  size: 3480,
+  primary_size: 3480,
+  aliases: 'none',
+  isFrozen: false,
+  hidden: false,
+  mode: 'lookup',
+  ilm: {
+    index: 'lookupNoPolicy',
+    managed: false,
+  },
+};
+
+const lookupIndexWithPolicyName: Index = {
+  ...lookupIndexWithoutPolicyName,
+  name: 'lookupStalePolicy',
+  uuid: 'lookupStalePolicyUuid',
+  ilmPolicyName: 'testy',
+  ilm: {
+    index: 'lookupStalePolicy',
+    managed: false,
+  },
+};
+
 moment.tz.setDefault('utc');
 
 const getUrlForApp = (appId: string, options: any) => {
@@ -303,6 +336,42 @@ describe('extend index management', () => {
       expect(extension).toBeDefined();
       expect(extension).toMatchSnapshot();
     });
+
+    test('should return extension when lookup index has a configured lifecycle policy name', () => {
+      const extension = removeLifecyclePolicyActionExtension({
+        indices: [lookupIndexWithPolicyName],
+        reloadIndices,
+      });
+      expect(extension).not.toBeNull();
+      expect(extension?.indexNames).toEqual([[lookupIndexWithPolicyName.name]]);
+    });
+
+    test('should return extension when mixing managed and lookup indices with a policy name', () => {
+      const extension = removeLifecyclePolicyActionExtension({
+        indices: [indexWithLifecyclePolicy, lookupIndexWithPolicyName],
+        reloadIndices,
+      });
+      expect(extension).not.toBeNull();
+      expect(extension?.indexNames).toEqual([
+        [indexWithLifecyclePolicy.name, lookupIndexWithPolicyName.name],
+      ]);
+    });
+
+    test('should return null when lookup index has no configured lifecycle policy name', () => {
+      const extension = removeLifecyclePolicyActionExtension({
+        indices: [lookupIndexWithoutPolicyName],
+        reloadIndices,
+      });
+      expect(extension).toBeNull();
+    });
+
+    test('should return null when a non-lookup unmanaged index has a configured lifecycle policy name', () => {
+      const extension = removeLifecyclePolicyActionExtension({
+        indices: [{ ...indexWithoutLifecyclePolicy, ilmPolicyName: 'inactive-policy' }],
+        reloadIndices,
+      });
+      expect(extension).toBeNull();
+    });
   });
 
   describe('add lifecycle policy action extension', () => {
@@ -318,6 +387,24 @@ describe('extend index management', () => {
     test('should return null when more than one index is passed', () => {
       const extension = addLifecyclePolicyActionExtension({
         indices: [indexWithoutLifecyclePolicy, indexWithoutLifecyclePolicy],
+        reloadIndices,
+        getUrlForApp,
+      });
+      expect(extension).toBeNull();
+    });
+
+    test('should return null when index is a lookup index', () => {
+      const extension = addLifecyclePolicyActionExtension({
+        indices: [lookupIndexWithoutPolicyName],
+        reloadIndices,
+        getUrlForApp,
+      });
+      expect(extension).toBeNull();
+    });
+
+    test('should return null when lookup index still has a configured lifecycle policy name', () => {
+      const extension = addLifecyclePolicyActionExtension({
+        indices: [lookupIndexWithPolicyName],
         reloadIndices,
         getUrlForApp,
       });

@@ -6,9 +6,18 @@
  */
 
 import { ByteSizeValue } from '@kbn/config-schema';
-import { LOGSDB_INDEX_MODE, STANDARD_INDEX_MODE } from '../../common/constants';
+import {
+  IndexMode as IndexModeValues,
+  LOGSDB_INDEX_MODE,
+  STANDARD_INDEX_MODE,
+} from '../../common/constants';
 import type { IndexMode } from '../../common/types/data_streams';
 import type { DataStream, EnhancedDataStreamFromEs, EsDataRetention, Health } from '../../common';
+
+const KNOWN_INDEX_MODES = new Set<string>(Object.values(IndexModeValues));
+
+const isKnownIndexMode = (value?: string): value is IndexMode =>
+  value !== undefined && KNOWN_INDEX_MODES.has(value);
 
 const toLowercaseHealth = (status: EnhancedDataStreamFromEs['status']): Health => {
   switch (status) {
@@ -154,12 +163,11 @@ export function deserializeDataStream(
   }
   const failureStoreLifecycle = failureStore?.lifecycle;
 
-  const resolvedIndexMode: IndexMode =
-    indexMode === LOGSDB_INDEX_MODE || indexMode === STANDARD_INDEX_MODE
-      ? indexMode
-      : isLogsdbEnabled && /^logs-[^-]+-[^-]+$/.test(name)
-      ? LOGSDB_INDEX_MODE
-      : STANDARD_INDEX_MODE;
+  const resolvedIndexMode: IndexMode = isKnownIndexMode(indexMode)
+    ? indexMode
+    : isLogsdbEnabled && /^logs-[^-]+-[^-]+$/.test(name)
+    ? LOGSDB_INDEX_MODE
+    : STANDARD_INDEX_MODE;
 
   const resolvedFailureStoreDefaultRetentionPeriod =
     failureStoreLifecycle?.retention_determined_by === 'default_failures_retention' &&
@@ -176,16 +184,24 @@ export function deserializeDataStream(
         index_uuid: indexUuid,
         prefer_ilm: preferILM = false,
         managed_by: managedBy,
+        ilm_policy: backingIndexIlmPolicyName,
+        index_mode: backingIndexMode,
       }: {
         index_name: string;
         index_uuid: string;
         prefer_ilm?: boolean;
         managed_by?: string;
+        ilm_policy?: string;
+        index_mode?: string;
       }) => ({
         name: indexName,
         uuid: indexUuid,
         preferILM,
         managedBy,
+        ...(backingIndexIlmPolicyName !== undefined
+          ? { ilmPolicyName: backingIndexIlmPolicyName }
+          : {}),
+        ...(backingIndexMode !== undefined ? { indexMode: backingIndexMode } : {}),
       })
     ),
     generation,

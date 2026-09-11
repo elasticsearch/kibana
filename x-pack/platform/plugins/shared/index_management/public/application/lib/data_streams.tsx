@@ -11,6 +11,7 @@ import { EuiIconTip } from '@elastic/eui';
 
 import type { DataStream } from '../../../common';
 import { splitSizeAndUnits } from '../../../common';
+import { LOOKUP_INDEX_MODE } from '../../../common/constants';
 import { timeUnits, extraTimeUnits } from '../constants/time_units';
 import { getInfiniteRetentionLabel } from './infinite_retention_label';
 
@@ -113,6 +114,91 @@ export const getLifecycleValue = (lifecycle?: EsLifecycle, infiniteAsIcon?: bool
 
 export const isNextGenIlm = (dataStream?: DataStream | null): boolean => {
   return dataStream?.nextGenerationManagedBy?.toLowerCase() === 'index lifecycle management';
+};
+
+// Since ES 9.6 both ILM and data stream lifecycle skip `index.mode: lookup` indices.
+export const isLookupIndexMode = (dataStream?: DataStream | null): boolean => {
+  return dataStream?.indexMode === LOOKUP_INDEX_MODE;
+};
+
+export const hasIlmManagedBackingIndex = (dataStream?: DataStream | null): boolean => {
+  return Boolean(
+    dataStream?.indices.some(
+      ({ managedBy }) => managedBy?.toLowerCase() === 'index lifecycle management'
+    )
+  );
+};
+
+export const hasDslManagedBackingIndex = (dataStream?: DataStream | null): boolean => {
+  return Boolean(
+    dataStream?.indices.some(
+      ({ managedBy }) => managedBy?.toLowerCase() === 'data stream lifecycle'
+    )
+  );
+};
+
+export const isIlmLifecyclePreferred = (dataStream?: DataStream | null): boolean => {
+  if (!isLookupIndexMode(dataStream)) {
+    return isNextGenIlm(dataStream);
+  }
+
+  return hasIlmManagedBackingIndex(dataStream) && !hasDslManagedBackingIndex(dataStream);
+};
+
+export const getIlmPolicyNameForSummary = (dataStream?: DataStream | null): string | undefined => {
+  if (!isLookupIndexMode(dataStream)) {
+    return dataStream?.ilmPolicyName;
+  }
+
+  const policyNames = [
+    ...new Set(
+      dataStream?.indices
+        .filter(({ managedBy }) => managedBy?.toLowerCase() === 'index lifecycle management')
+        .map(({ ilmPolicyName }) => ilmPolicyName)
+        .filter((policyName): policyName is string => Boolean(policyName))
+    ),
+  ];
+
+  return policyNames.length === 1 ? policyNames[0] : undefined;
+};
+
+// A lookup-mode stream can still contain older lifecycle-managed backing indices with another mode.
+// The failure store lifecycle also remains applicable because failure indices do not inherit lookup mode.
+export const isLookupLifecycleNotApplicable = (dataStream?: DataStream | null): boolean => {
+  return (
+    isLookupIndexMode(dataStream) &&
+    !hasIlmManagedBackingIndex(dataStream) &&
+    !hasDslManagedBackingIndex(dataStream)
+  );
+};
+
+const hasDslEligibleUnmanagedBackingIndex = (dataStream?: DataStream | null): boolean => {
+  return Boolean(
+    dataStream?.indices.some(
+      ({ indexMode, managedBy, ilmPolicyName, preferILM }) =>
+        indexMode !== undefined &&
+        indexMode !== LOOKUP_INDEX_MODE &&
+        managedBy?.toLowerCase() === 'unmanaged' &&
+        (ilmPolicyName === undefined || !preferILM)
+    )
+  );
+};
+
+export const isLookupLifecycleEditingNotApplicable = (dataStream?: DataStream | null): boolean => {
+  return (
+    isLookupIndexMode(dataStream) &&
+    !hasIlmManagedBackingIndex(dataStream) &&
+    !hasDslManagedBackingIndex(dataStream) &&
+    !hasDslEligibleUnmanagedBackingIndex(dataStream)
+  );
+};
+
+export const isLookupDslNotApplicable = (dataStream?: DataStream | null): boolean => {
+  return (
+    isLookupIndexMode(dataStream) &&
+    !hasDslManagedBackingIndex(dataStream) &&
+    !hasDslEligibleUnmanagedBackingIndex(dataStream)
+  );
 };
 
 export const isNextGenDsl = (dataStream?: DataStream | null): boolean => {

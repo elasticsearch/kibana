@@ -23,6 +23,17 @@ import { RemoveLifecyclePolicyConfirmModal } from './components/remove_lifecycle
 
 const stepPath = 'ilm.step';
 
+const isLookupIndex = (index: Index) => index.mode === 'lookup';
+
+// ILM reports lookup indices as unmanaged even when `index.lifecycle.name` is configured, so the
+// configured policy name is the only signal that a stale lifecycle setting can be removed.
+const hasRemovableLifecyclePolicy = (index: Index) => {
+  if (index.ilm?.managed) {
+    return true;
+  }
+  return isLookupIndex(index) && Boolean(index.ilmPolicyName);
+};
+
 export const retryLifecycleActionExtension = ({ indices }: { indices: Index[] }) => {
   const indicesWithFailedStep = indices.filter((index) => {
     return index.ilm?.managed && index.ilm.failed_step;
@@ -55,9 +66,7 @@ export const removeLifecyclePolicyActionExtension = ({
   indices: Index[];
   reloadIndices: () => void;
 }) => {
-  const allHaveIlm = every(indices, (index) => {
-    return index.ilm && index.ilm.managed;
-  });
+  const allHaveIlm = every(indices, hasRemovableLifecyclePolicy);
   if (!allHaveIlm) {
     return null;
   }
@@ -95,7 +104,9 @@ export const addLifecyclePolicyActionExtension = ({
   const index = indices[0];
   const hasIlm = index.ilm && index.ilm.managed;
 
-  if (hasIlm) {
+  // ILM does not run policies on lookup indices; adding one only writes `index.lifecycle.*` settings that
+  // ILM never executes (though the policy still counts as in use).
+  if (hasIlm || isLookupIndex(index)) {
     return null;
   }
   const indexName = index.name;

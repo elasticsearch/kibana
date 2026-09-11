@@ -406,6 +406,47 @@ describe('DataStreamDetailPanel', () => {
       expect(queryByTestId('editDataLifecycleButton')).not.toBeInTheDocument();
     });
 
+    it('does not warn when a lookup stream has DSL-eligible historical data', async () => {
+      const dataStream = createMockDataStream({
+        indexMode: 'lookup',
+        indices: [
+          {
+            name: 'historical-index',
+            uuid: 'historical-index-id',
+            preferILM: false,
+            managedBy: 'Unmanaged',
+            indexMode: 'standard',
+          },
+        ],
+        privileges: {
+          delete_index: true,
+          manage_data_stream_lifecycle: true,
+          read_failure_store: true,
+          manage: true,
+        },
+      });
+
+      mockUseLoadDataStream.mockReturnValue({
+        data: dataStream,
+        isLoading: false,
+        error: null,
+        resendRequest: jest.fn(),
+        isInitialRequest: false,
+      } as unknown as ReturnType<typeof useLoadDataStream>);
+      mockSendRequest.mockResolvedValue({ data: undefined } as any);
+
+      const { getByTestId, queryByTestId } = renderWithI18n(
+        <DataStreamDetailPanel dataStreamName="test-data-stream" onClose={onCloseMock} />
+      );
+
+      await waitFor(() => expect(getByTestId('manageDataStreamButton')).toBeInTheDocument());
+      await userEvent.click(getByTestId('manageDataStreamButton'));
+      await waitFor(() => expect(getByTestId('editDataLifecycleButton')).toBeInTheDocument());
+      await userEvent.click(getByTestId('editDataLifecycleButton'));
+
+      expect(queryByTestId('lookupLifecycleWarning')).not.toBeInTheDocument();
+    });
+
     it('does not render actions button when user has no actions', async () => {
       const dataStream = createMockDataStream({
         failureStoreEnabled: true,
@@ -458,7 +499,7 @@ describe('DataStreamDetailPanel', () => {
       // Template load isn't the focus here; just return a minimal response.
       mockSendRequest.mockResolvedValue({ data: undefined } as any);
 
-      const { getByTestId } = renderWithI18n(
+      const { getByTestId, queryByTestId } = renderWithI18n(
         <DataStreamDetailPanel dataStreamName="test-data-stream" onClose={onCloseMock} />
       );
 
@@ -470,6 +511,8 @@ describe('DataStreamDetailPanel', () => {
       await userEvent.click(getByTestId('manageDataStreamButton'));
       await waitFor(() => expect(getByTestId('editDataLifecycleButton')).toBeInTheDocument());
       await userEvent.click(getByTestId('editDataLifecycleButton'));
+      // Standard data stream: no lookup notice in the flyout
+      expect(queryByTestId('lookupLifecycleWarning')).not.toBeInTheDocument();
 
       // Go to Failed data tab
       await userEvent.click(getByTestId('flyoutTab-failed_data'));
@@ -489,6 +532,82 @@ describe('DataStreamDetailPanel', () => {
       await userEvent.click(inheritCheckbox);
 
       expect(getByTestId('editFailedDataLifecycle-enableFailureStoreCheckbox')).not.toBeChecked();
+    });
+
+    it('preserves historical ILM when only failed data is edited on a lookup stream', async () => {
+      const dataStream = createMockDataStream({
+        indexMode: 'lookup',
+        indices: [
+          {
+            name: 'historical-index',
+            uuid: 'historical-index-id',
+            preferILM: true,
+            managedBy: 'Index Lifecycle Management',
+            ilmPolicyName: 'historical-policy',
+            indexMode: 'standard',
+          },
+          {
+            name: 'lookup-index',
+            uuid: 'lookup-index-id',
+            preferILM: false,
+            managedBy: 'Unmanaged',
+            indexMode: 'lookup',
+          },
+        ],
+        nextGenerationManagedBy: 'Data stream lifecycle',
+        lifecycle: {
+          enabled: true,
+          data_retention: '7d',
+          retention_determined_by: 'data_stream_configuration',
+        },
+        lifecycleSettings: { preferIlm: false },
+        failureStoreEnabled: false,
+        failureStoreSettings: { enabled: false },
+        privileges: {
+          delete_index: true,
+          manage_data_stream_lifecycle: true,
+          read_failure_store: true,
+          manage: true,
+        },
+      });
+
+      mockUseLoadDataStream.mockReturnValue({
+        data: dataStream,
+        isLoading: false,
+        error: null,
+        resendRequest: jest.fn(),
+        isInitialRequest: false,
+      } as unknown as ReturnType<typeof useLoadDataStream>);
+      mockSendRequest.mockImplementation(async ({ path }: any) => {
+        if (typeof path === 'string' && path.includes('/index_templates/')) {
+          return {
+            data: {
+              name: 'indexTemplate',
+              template: { lifecycle: { enabled: true, data_retention: '30d' } },
+              _kbnMeta: { hasDatastream: true },
+            },
+          } as any;
+        }
+        return { data: undefined } as any;
+      });
+
+      const { getByTestId } = renderWithI18n(
+        <DataStreamDetailPanel dataStreamName="test-data-stream" onClose={onCloseMock} />
+      );
+
+      await waitFor(() => expect(getByTestId('manageDataStreamButton')).toBeInTheDocument());
+      await userEvent.click(getByTestId('manageDataStreamButton'));
+      await waitFor(() => expect(getByTestId('editDataLifecycleButton')).toBeInTheDocument());
+      await userEvent.click(getByTestId('editDataLifecycleButton'));
+      await userEvent.click(getByTestId('flyoutTab-failed_data'));
+      await userEvent.click(getByTestId('editFailedDataLifecycle-enableFailureStoreCheckbox'));
+      await userEvent.click(getByTestId('editDataLifecycleFlyoutApplyButton'));
+
+      await waitFor(() => expect(onCloseMock).toHaveBeenCalledWith(true));
+      expect(mockUpdateDSFailureStore).toHaveBeenCalledTimes(1);
+      expect(mockUpdateDataLifecycle).not.toHaveBeenCalled();
+      expect(mockUpdateDataStreamSettings).not.toHaveBeenCalled();
+      expect(mockUpdateIndexSettings).not.toHaveBeenCalled();
     });
 
     it('uses cluster default failure store retention when inheriting and template does not set one', async () => {
@@ -890,6 +1009,12 @@ describe('DataStreamDetailPanel', () => {
       await userEvent.click(getByTestId('manageDataStreamButton'));
       await waitFor(() => expect(getByTestId('editDataLifecycleButton')).toBeInTheDocument());
       await userEvent.click(getByTestId('editDataLifecycleButton'));
+      // Edit successful data, then apply from Failed data so both independent requests run.
+      // The lifecycle starts out inherited, which disables the phase selector, so stop
+      // inheriting first: otherwise the successful half is never attempted.
+      await userEvent.click(getByTestId('dataLifecycleInheritCheckbox'));
+      await userEvent.click(getByTestId('dlmPhasesSelectorDeletePhaseCard'));
+      await userEvent.click(getByTestId('flyoutTab-failed_data'));
       await userEvent.click(getByTestId('editDataLifecycleFlyoutApplyButton'));
 
       await waitFor(() => expect(onCloseMock).toHaveBeenCalledWith(true));
@@ -897,6 +1022,70 @@ describe('DataStreamDetailPanel', () => {
       expect(mockAppContext.services.notificationService.showDangerToast).toHaveBeenCalledWith(
         'The successful data lifecycle was saved, but the failed data lifecycle could not be saved',
         'Failed to inherit failure store configuration: boom'
+      );
+    });
+
+    it('shows a generic error toast when only the failed data tab was edited and it fails', async () => {
+      mockAppContext = createMockAppContext();
+      mockAppContext.config.isServerless = true;
+      mockUseAppContext.mockReturnValue(mockAppContext);
+
+      const dataStream = createMockDataStream({
+        lifecycle: {
+          enabled: true,
+          data_retention: '10d',
+          retention_determined_by: 'index_template',
+        } as any,
+        nextGenerationManagedBy: 'Data stream lifecycle',
+        privileges: {
+          delete_index: true,
+          manage_data_stream_lifecycle: true,
+          read_failure_store: true,
+          manage: true,
+        },
+      });
+
+      mockUseLoadDataStream.mockReturnValue({
+        data: dataStream,
+        isLoading: false,
+        error: null,
+        resendRequest: jest.fn(),
+        isInitialRequest: false,
+      } as unknown as ReturnType<typeof useLoadDataStream>);
+
+      mockSendRequest.mockResolvedValue({
+        data: {
+          name: 'indexTemplate',
+          template: { lifecycle: { enabled: true, data_retention: '80d' } },
+          _kbnMeta: { hasDatastream: true },
+        },
+      } as any);
+
+      mockUpdateDSFailureStore.mockResolvedValue({ error: { message: 'boom' } } as any);
+
+      const { getByTestId } = renderWithI18n(
+        <DataStreamDetailPanel dataStreamName="test-data-stream" onClose={onCloseMock} />
+      );
+
+      await waitFor(() => expect(getByTestId('manageDataStreamButton')).toBeInTheDocument());
+      await userEvent.click(getByTestId('manageDataStreamButton'));
+      await waitFor(() => expect(getByTestId('editDataLifecycleButton')).toBeInTheDocument());
+      await userEvent.click(getByTestId('editDataLifecycleButton'));
+      // Only the failed data tab is applied, so the successful half is never attempted and must
+      // not be reported as saved.
+      await userEvent.click(getByTestId('flyoutTab-failed_data'));
+      await userEvent.click(getByTestId('editDataLifecycleFlyoutApplyButton'));
+
+      await waitFor(() => expect(onCloseMock).toHaveBeenCalledWith(true));
+      expect(mockUpdateDataLifecycle).not.toHaveBeenCalled();
+      expect(mockAppContext.services.notificationService.showSuccessToast).not.toHaveBeenCalled();
+      expect(mockAppContext.services.notificationService.showDangerToast).toHaveBeenCalledWith(
+        'Could not save changes',
+        'Failed to inherit failure store configuration: boom'
+      );
+      expect(mockAppContext.services.notificationService.showDangerToast).not.toHaveBeenCalledWith(
+        'The successful data lifecycle was saved, but the failed data lifecycle could not be saved',
+        expect.anything()
       );
     });
 
@@ -958,6 +1147,87 @@ describe('DataStreamDetailPanel', () => {
     });
   });
 
+  it('keeps the inherited marker for classic lookup streams with DSL-managed history', async () => {
+    const dataStream = createMockDataStream({
+      indexMode: 'lookup',
+      indices: [
+        {
+          name: 'indexName',
+          uuid: 'indexId',
+          preferILM: false,
+          managedBy: 'Data stream lifecycle',
+          indexMode: 'standard',
+        },
+      ],
+      lifecycle: { enabled: true, data_retention: '7d' },
+    });
+    mockUseLoadDataStream.mockReturnValue({
+      data: dataStream,
+      isLoading: false,
+      error: null,
+      resendRequest: jest.fn(),
+      isInitialRequest: false,
+    } as unknown as ReturnType<typeof useLoadDataStream>);
+    mockSendRequest.mockResolvedValue({
+      data: {
+        name: 'indexTemplate',
+        template: { lifecycle: { enabled: true, data_retention: '7d' } },
+        _kbnMeta: { hasDatastream: true },
+      },
+    } as any);
+
+    const { getByTestId } = renderWithI18n(
+      <DataStreamDetailPanel dataStreamName="test-data-stream" onClose={onCloseMock} />
+    );
+
+    await waitFor(() => {
+      expect(getByTestId('successfulIngestLifecycleDetail')).toHaveTextContent('7 days');
+    });
+    expect(getByTestId('successfulIngestLifecycleDetail')).toHaveTextContent('Inherited');
+  });
+
+  it('does not mark historical ILM as inherited for classic lookup streams', async () => {
+    const dataStream = createMockDataStream({
+      indexMode: 'lookup',
+      indices: [
+        {
+          name: 'indexName',
+          uuid: 'indexId',
+          preferILM: true,
+          managedBy: 'Index Lifecycle Management',
+          ilmPolicyName: 'lookup-history-policy',
+          indexMode: 'standard',
+        },
+      ],
+      lifecycle: { enabled: true, data_retention: '7d' },
+    });
+    mockUseLoadDataStream.mockReturnValue({
+      data: dataStream,
+      isLoading: false,
+      error: null,
+      resendRequest: jest.fn(),
+      isInitialRequest: false,
+    } as unknown as ReturnType<typeof useLoadDataStream>);
+    mockSendRequest.mockResolvedValue({
+      data: {
+        name: 'indexTemplate',
+        template: { lifecycle: { enabled: true, data_retention: '7d' } },
+        _kbnMeta: { hasDatastream: true },
+      },
+    } as any);
+
+    const { getByTestId } = renderWithI18n(
+      <DataStreamDetailPanel dataStreamName="test-data-stream" onClose={onCloseMock} />
+    );
+
+    await waitFor(() => {
+      expect(getByTestId('successfulIngestLifecycleDetail')).toHaveTextContent(
+        'lookup-history-policy'
+      );
+    });
+    expect(getByTestId('successfulIngestLifecycleDetail')).not.toHaveTextContent('Inherited');
+  });
+
   describe('wired streams', () => {
     const WIRED_STREAM_NAME = 'logs.otel.child';
 
@@ -1016,6 +1286,382 @@ describe('DataStreamDetailPanel', () => {
           manage: true,
         },
       });
+
+    it.each([
+      ['DSL', { dsl: { data_retention: '7d' }, from: WIRED_STREAM_NAME }],
+      ['ILM', { ilm: { policy: 'current-template-policy' }, from: WIRED_STREAM_NAME }],
+    ])(
+      'uses backing-index lifecycle for a lookup stream instead of Streams %s lifecycle',
+      async (_, effectiveLifecycle) => {
+        const dataStream = createMockDataStream({
+          name: WIRED_STREAM_NAME,
+          indexMode: 'lookup',
+          indices: [
+            {
+              name: 'indexName',
+              uuid: 'indexId',
+              preferILM: true,
+              managedBy: 'Index Lifecycle Management',
+              ilmPolicyName: 'historical-policy',
+              indexMode: 'standard',
+            },
+          ],
+          nextGenerationManagedBy: 'Unmanaged',
+          ilmPolicyName: 'current-template-policy',
+          lifecycle: undefined,
+          _meta: { managed_by: 'streams', managed: true } as any,
+        });
+        mockUseLoadDataStream.mockReturnValue({
+          data: dataStream,
+          isLoading: false,
+          error: null,
+          resendRequest: jest.fn(),
+          isInitialRequest: false,
+        } as unknown as ReturnType<typeof useLoadDataStream>);
+        const streamsGetResponse = createWiredStreamsGetResponse({
+          lifecycle: { dsl: { data_retention: '7d' } },
+          failureStore: { inherit: {} },
+          effectiveLifecycle,
+          effectiveFailureStore: { lifecycle: { disabled: {} }, from: WIRED_STREAM_NAME },
+        });
+        mockSendRequest.mockImplementation(async ({ path, method }: any) => {
+          if (path === `/api/streams/${WIRED_STREAM_NAME}` && method === 'get') {
+            return { data: streamsGetResponse } as any;
+          }
+          return { data: undefined } as any;
+        });
+
+        const { getByTestId } = renderWithI18n(
+          <DataStreamDetailPanel dataStreamName={WIRED_STREAM_NAME} onClose={onCloseMock} />
+        );
+
+        await waitFor(() => {
+          expect(getByTestId('successfulIngestLifecycleDetail')).toHaveTextContent(
+            'ILM: historical-policy'
+          );
+        });
+        expect(getByTestId('successfulIngestLifecycleDetail')).not.toHaveTextContent(
+          'current-template-policy'
+        );
+        expect(getByTestId('successfulIngestLifecycleDetail')).not.toHaveTextContent(
+          'Data stream lifecycle'
+        );
+        expect(getByTestId('successfulIngestLifecycleDetail')).not.toHaveTextContent('Inherited');
+      }
+    );
+
+    it('uses backing-index DSL retention for a wired lookup stream', async () => {
+      const dataStream = createMockDataStream({
+        name: WIRED_STREAM_NAME,
+        indexMode: 'lookup',
+        indices: [
+          {
+            name: 'indexName',
+            uuid: 'indexId',
+            preferILM: false,
+            managedBy: 'Data stream lifecycle',
+            indexMode: 'standard',
+          },
+        ],
+        lifecycle: { enabled: true, data_retention: '30d' },
+        _meta: { managed_by: 'streams', managed: true } as any,
+      });
+      mockUseLoadDataStream.mockReturnValue({
+        data: dataStream,
+        isLoading: false,
+        error: null,
+        resendRequest: jest.fn(),
+        isInitialRequest: false,
+      } as unknown as ReturnType<typeof useLoadDataStream>);
+      const streamsGetResponse = createWiredStreamsGetResponse({
+        lifecycle: { inherit: {} },
+        failureStore: { inherit: {} },
+        effectiveLifecycle: { dsl: { data_retention: '7d' }, from: 'logs.otel' },
+        effectiveFailureStore: { lifecycle: { disabled: {} }, from: WIRED_STREAM_NAME },
+      });
+      mockSendRequest.mockImplementation(async ({ path, method }: any) => {
+        if (path === `/api/streams/${WIRED_STREAM_NAME}` && method === 'get') {
+          return { data: streamsGetResponse } as any;
+        }
+        return { data: undefined } as any;
+      });
+
+      const { getByTestId } = renderWithI18n(
+        <DataStreamDetailPanel dataStreamName={WIRED_STREAM_NAME} onClose={onCloseMock} />
+      );
+
+      await waitFor(() => {
+        expect(getByTestId('successfulIngestLifecycleDetail')).toHaveTextContent('30 days');
+      });
+      expect(getByTestId('successfulIngestLifecycleDetail')).not.toHaveTextContent('7 days');
+      expect(getByTestId('successfulIngestLifecycleDetail')).not.toHaveTextContent('Inherited');
+    });
+
+    it('keeps the inherited marker when wired lookup DSL retention matches Streams', async () => {
+      const dataStream = createMockDataStream({
+        name: WIRED_STREAM_NAME,
+        indexMode: 'lookup',
+        indices: [
+          {
+            name: 'indexName',
+            uuid: 'indexId',
+            preferILM: false,
+            managedBy: 'Data stream lifecycle',
+            indexMode: 'standard',
+          },
+        ],
+        lifecycle: { enabled: true, data_retention: '7d' },
+        _meta: { managed_by: 'streams', managed: true } as any,
+      });
+      mockUseLoadDataStream.mockReturnValue({
+        data: dataStream,
+        isLoading: false,
+        error: null,
+        resendRequest: jest.fn(),
+        isInitialRequest: false,
+      } as unknown as ReturnType<typeof useLoadDataStream>);
+      const streamsGetResponse = createWiredStreamsGetResponse({
+        lifecycle: { inherit: {} },
+        failureStore: { inherit: {} },
+        effectiveLifecycle: { dsl: { data_retention: '7d' }, from: 'logs.otel' },
+        effectiveFailureStore: { lifecycle: { disabled: {} }, from: WIRED_STREAM_NAME },
+      });
+      mockSendRequest.mockImplementation(async ({ path, method }: any) => {
+        if (path === `/api/streams/${WIRED_STREAM_NAME}` && method === 'get') {
+          return { data: streamsGetResponse } as any;
+        }
+        return { data: undefined } as any;
+      });
+
+      const { getByTestId } = renderWithI18n(
+        <DataStreamDetailPanel dataStreamName={WIRED_STREAM_NAME} onClose={onCloseMock} />
+      );
+
+      await waitFor(() => {
+        expect(getByTestId('successfulIngestLifecycleDetail')).toHaveTextContent('7 days');
+      });
+      expect(getByTestId('successfulIngestLifecycleDetail')).toHaveTextContent('Inherited');
+    });
+
+    it('keeps the inherited marker when wired lookup DSL details match Streams', async () => {
+      const dataStream = createMockDataStream({
+        name: WIRED_STREAM_NAME,
+        indexMode: 'lookup',
+        indices: [
+          {
+            name: 'indexName',
+            uuid: 'indexId',
+            preferILM: false,
+            managedBy: 'Data stream lifecycle',
+            indexMode: 'standard',
+          },
+        ],
+        lifecycle: {
+          enabled: true,
+          data_retention: '7d',
+          frozen_after: '30d',
+          downsampling: [{ after: '1d', fixed_interval: '1h' }],
+        },
+        _meta: { managed_by: 'streams', managed: true } as any,
+      });
+      mockUseLoadDataStream.mockReturnValue({
+        data: dataStream,
+        isLoading: false,
+        error: null,
+        resendRequest: jest.fn(),
+        isInitialRequest: false,
+      } as unknown as ReturnType<typeof useLoadDataStream>);
+      const streamsGetResponse = createWiredStreamsGetResponse({
+        lifecycle: { inherit: {} },
+        failureStore: { inherit: {} },
+        effectiveLifecycle: {
+          dsl: {
+            data_retention: '7d',
+            frozen_after: '30d',
+            downsample: [{ after: '1d', fixed_interval: '1h' }],
+          },
+          from: 'logs.otel',
+        },
+        effectiveFailureStore: { lifecycle: { disabled: {} }, from: WIRED_STREAM_NAME },
+      });
+      mockSendRequest.mockImplementation(async ({ path, method }: any) => {
+        if (path === `/api/streams/${WIRED_STREAM_NAME}` && method === 'get') {
+          return { data: streamsGetResponse } as any;
+        }
+        return { data: undefined } as any;
+      });
+
+      const { getByTestId } = renderWithI18n(
+        <DataStreamDetailPanel dataStreamName={WIRED_STREAM_NAME} onClose={onCloseMock} />
+      );
+
+      await waitFor(() => {
+        expect(getByTestId('successfulIngestLifecycleDetail')).toHaveTextContent('7 days');
+      });
+      expect(getByTestId('successfulIngestLifecycleDetail')).toHaveTextContent('Inherited');
+    });
+
+    it('does not inherit when wired lookup DSL has different frozen retention', async () => {
+      const dataStream = createMockDataStream({
+        name: WIRED_STREAM_NAME,
+        indexMode: 'lookup',
+        indices: [
+          {
+            name: 'indexName',
+            uuid: 'indexId',
+            preferILM: false,
+            managedBy: 'Data stream lifecycle',
+            indexMode: 'standard',
+          },
+        ],
+        lifecycle: { enabled: true, data_retention: '7d', frozen_after: '30d' },
+        _meta: { managed_by: 'streams', managed: true } as any,
+      });
+      mockUseLoadDataStream.mockReturnValue({
+        data: dataStream,
+        isLoading: false,
+        error: null,
+        resendRequest: jest.fn(),
+        isInitialRequest: false,
+      } as unknown as ReturnType<typeof useLoadDataStream>);
+      const streamsGetResponse = createWiredStreamsGetResponse({
+        lifecycle: { inherit: {} },
+        failureStore: { inherit: {} },
+        effectiveLifecycle: {
+          dsl: { data_retention: '7d', frozen_after: '60d' },
+          from: 'logs.otel',
+        },
+        effectiveFailureStore: { lifecycle: { disabled: {} }, from: WIRED_STREAM_NAME },
+      });
+      mockSendRequest.mockImplementation(async ({ path, method }: any) => {
+        if (path === `/api/streams/${WIRED_STREAM_NAME}` && method === 'get') {
+          return { data: streamsGetResponse } as any;
+        }
+        return { data: undefined } as any;
+      });
+
+      const { getByTestId } = renderWithI18n(
+        <DataStreamDetailPanel dataStreamName={WIRED_STREAM_NAME} onClose={onCloseMock} />
+      );
+
+      await waitFor(() => {
+        expect(getByTestId('successfulIngestLifecycleDetail')).toHaveTextContent('7 days');
+      });
+      expect(getByTestId('successfulIngestLifecycleDetail')).not.toHaveTextContent('Inherited');
+    });
+
+    it('does not inherit when wired lookup DSL has different downsampling', async () => {
+      const dataStream = createMockDataStream({
+        name: WIRED_STREAM_NAME,
+        indexMode: 'lookup',
+        indices: [
+          {
+            name: 'indexName',
+            uuid: 'indexId',
+            preferILM: false,
+            managedBy: 'Data stream lifecycle',
+            indexMode: 'standard',
+          },
+        ],
+        lifecycle: {
+          enabled: true,
+          data_retention: '7d',
+          downsampling: [{ after: '1d', fixed_interval: '1h' }],
+        },
+        _meta: { managed_by: 'streams', managed: true } as any,
+      });
+      mockUseLoadDataStream.mockReturnValue({
+        data: dataStream,
+        isLoading: false,
+        error: null,
+        resendRequest: jest.fn(),
+        isInitialRequest: false,
+      } as unknown as ReturnType<typeof useLoadDataStream>);
+      const streamsGetResponse = createWiredStreamsGetResponse({
+        lifecycle: { inherit: {} },
+        failureStore: { inherit: {} },
+        effectiveLifecycle: {
+          dsl: {
+            data_retention: '7d',
+            downsample: [{ after: '1d', fixed_interval: '2h' }],
+          },
+          from: 'logs.otel',
+        },
+        effectiveFailureStore: { lifecycle: { disabled: {} }, from: WIRED_STREAM_NAME },
+      });
+      mockSendRequest.mockImplementation(async ({ path, method }: any) => {
+        if (path === `/api/streams/${WIRED_STREAM_NAME}` && method === 'get') {
+          return { data: streamsGetResponse } as any;
+        }
+        return { data: undefined } as any;
+      });
+
+      const { getByTestId } = renderWithI18n(
+        <DataStreamDetailPanel dataStreamName={WIRED_STREAM_NAME} onClose={onCloseMock} />
+      );
+
+      await waitFor(() => {
+        expect(getByTestId('successfulIngestLifecycleDetail')).toHaveTextContent('7 days');
+      });
+      expect(getByTestId('successfulIngestLifecycleDetail')).not.toHaveTextContent('Inherited');
+    });
+
+    it('does not inherit when wired lookup DSL has a different downsampling method', async () => {
+      const dataStream = createMockDataStream({
+        name: WIRED_STREAM_NAME,
+        indexMode: 'lookup',
+        indices: [
+          {
+            name: 'indexName',
+            uuid: 'indexId',
+            preferILM: false,
+            managedBy: 'Data stream lifecycle',
+            indexMode: 'standard',
+          },
+        ],
+        lifecycle: {
+          enabled: true,
+          data_retention: '7d',
+          downsampling: [{ after: '1d', fixed_interval: '1h' }],
+          downsampling_method: 'last_value',
+        },
+        _meta: { managed_by: 'streams', managed: true } as any,
+      });
+      mockUseLoadDataStream.mockReturnValue({
+        data: dataStream,
+        isLoading: false,
+        error: null,
+        resendRequest: jest.fn(),
+        isInitialRequest: false,
+      } as unknown as ReturnType<typeof useLoadDataStream>);
+      const streamsGetResponse = createWiredStreamsGetResponse({
+        lifecycle: { inherit: {} },
+        failureStore: { inherit: {} },
+        effectiveLifecycle: {
+          dsl: {
+            data_retention: '7d',
+            downsample: [{ after: '1d', fixed_interval: '1h' }],
+          },
+          from: 'logs.otel',
+        },
+        effectiveFailureStore: { lifecycle: { disabled: {} }, from: WIRED_STREAM_NAME },
+      });
+      mockSendRequest.mockImplementation(async ({ path, method }: any) => {
+        if (path === `/api/streams/${WIRED_STREAM_NAME}` && method === 'get') {
+          return { data: streamsGetResponse } as any;
+        }
+        return { data: undefined } as any;
+      });
+
+      const { getByTestId } = renderWithI18n(
+        <DataStreamDetailPanel dataStreamName={WIRED_STREAM_NAME} onClose={onCloseMock} />
+      );
+
+      await waitFor(() => {
+        expect(getByTestId('successfulIngestLifecycleDetail')).toHaveTextContent('7 days');
+      });
+      expect(getByTestId('successfulIngestLifecycleDetail')).not.toHaveTextContent('Inherited');
+    });
 
     it('seeds the flyout from the Streams ingest API', async () => {
       const dataStream = createWiredDataStream();
@@ -1133,6 +1779,52 @@ describe('DataStreamDetailPanel', () => {
       expect(mockUpdateDSFailureStore).not.toHaveBeenCalled();
       expect(mockUpdateDataStreamSettings).not.toHaveBeenCalled();
       expect(mockUpdateIndexSettings).not.toHaveBeenCalled();
+    });
+
+    it('preserves the wired lifecycle when only failed data is edited', async () => {
+      const dataStream = createWiredDataStream();
+      const lifecycle = { ilm: { policy: 'historical-policy' } } as const;
+
+      mockUseLoadDataStream.mockReturnValue({
+        data: dataStream,
+        isLoading: false,
+        error: null,
+        resendRequest: jest.fn(),
+        isInitialRequest: false,
+      } as unknown as ReturnType<typeof useLoadDataStream>);
+
+      const streamsGetResponse = createWiredStreamsGetResponse({
+        lifecycle,
+        failureStore: { disabled: {} },
+        effectiveLifecycle: { ...lifecycle, from: WIRED_STREAM_NAME },
+        effectiveFailureStore: { lifecycle: { disabled: {} }, from: WIRED_STREAM_NAME },
+      });
+      const putCalls: any[] = [];
+      mockSendRequest.mockImplementation(async ({ path, method, body }: any) => {
+        if (path === `/api/streams/${WIRED_STREAM_NAME}` && method === 'get') {
+          return { data: streamsGetResponse } as any;
+        }
+        if (path === `/api/streams/${WIRED_STREAM_NAME}/_ingest` && method === 'put') {
+          putCalls.push(body);
+          return { data: {} } as any;
+        }
+        return { data: undefined } as any;
+      });
+
+      const { getByTestId } = renderWithI18n(
+        <DataStreamDetailPanel dataStreamName={WIRED_STREAM_NAME} onClose={onCloseMock} />
+      );
+
+      await waitFor(() => expect(getByTestId('manageDataStreamButton')).toBeInTheDocument());
+      await userEvent.click(getByTestId('manageDataStreamButton'));
+      await waitFor(() => expect(getByTestId('editDataLifecycleButton')).toBeInTheDocument());
+      await userEvent.click(getByTestId('editDataLifecycleButton'));
+      await userEvent.click(getByTestId('flyoutTab-failed_data'));
+      await userEvent.click(getByTestId('editFailedDataLifecycle-enableFailureStoreCheckbox'));
+      await userEvent.click(getByTestId('editDataLifecycleFlyoutApplyButton'));
+
+      await waitFor(() => expect(putCalls).toHaveLength(1));
+      expect(putCalls[0].ingest.lifecycle).toEqual(lifecycle);
     });
 
     it('preserves the failure store when applying via the inspect-policy shortcut (no failedData)', async () => {
@@ -1272,6 +1964,274 @@ describe('DataStreamDetailPanel', () => {
         expect(getByTestId('flyoutTab-failed_data')).toBeInTheDocument();
       });
       expect(queryByTestId('dataLifecycleInheritCheckbox')).not.toBeInTheDocument();
+    });
+  });
+
+  describe('lookup data stream', () => {
+    const loadLookupDataStream = () => {
+      mockUseLoadDataStream.mockReturnValue({
+        data: createMockDataStream({
+          indexMode: 'lookup',
+          indices: [
+            { name: 'indexName', uuid: 'indexId', preferILM: false, managedBy: 'Unmanaged' },
+          ],
+        }),
+        isLoading: false,
+        error: null,
+        resendRequest: jest.fn(),
+        isInitialRequest: false,
+      } as unknown as ReturnType<typeof useLoadDataStream>);
+    };
+
+    it('shows "Not applicable" for the successful ingest lifecycle instead of retention', async () => {
+      loadLookupDataStream();
+
+      const { getByTestId } = renderWithI18n(
+        <DataStreamDetailPanel dataStreamName="test-data-stream" onClose={onCloseMock} />
+      );
+
+      await waitFor(() => {
+        expect(
+          within(getByTestId('successfulIngestLifecycleDetail')).getByTestId(
+            'lookupLifecycleNotApplicable'
+          )
+        ).toBeInTheDocument();
+      });
+      expect(getByTestId('successfulIngestLifecycleDetail')).not.toHaveTextContent(/7 days/);
+      expect(getByTestId('successfulIngestLifecycleDetail')).not.toHaveTextContent(
+        'Data stream lifecycle'
+      );
+      expect(getByTestId('indexModeDetail')).toHaveTextContent('Lookup');
+    });
+
+    it('keeps lifecycle applicable when a lookup stream has a managed backing index', async () => {
+      mockUseLoadDataStream.mockReturnValue({
+        data: createMockDataStream({ indexMode: 'lookup' }),
+        isLoading: false,
+        error: null,
+        resendRequest: jest.fn(),
+        isInitialRequest: false,
+      } as unknown as ReturnType<typeof useLoadDataStream>);
+
+      const { getByTestId } = renderWithI18n(
+        <DataStreamDetailPanel dataStreamName="test-data-stream" onClose={onCloseMock} />
+      );
+
+      await waitFor(() => {
+        expect(getByTestId('successfulIngestLifecycleDetail')).not.toHaveTextContent(
+          'Not applicable'
+        );
+      });
+      expect(getByTestId('successfulIngestLifecycleDetail')).toHaveTextContent(
+        'Data stream lifecycle'
+      );
+    });
+
+    it('shows ILM when a lookup stream only has an ILM-managed backing index', async () => {
+      mockUseLoadDataStream.mockReturnValue({
+        data: createMockDataStream({
+          indexMode: 'lookup',
+          indices: [
+            {
+              name: 'indexName',
+              uuid: 'indexId',
+              preferILM: true,
+              managedBy: 'Index Lifecycle Management',
+              ilmPolicyName: 'historical-policy',
+            },
+          ],
+          nextGenerationManagedBy: 'Unmanaged',
+          ilmPolicyName: 'current-template-policy',
+          lifecycle: undefined,
+        }),
+        isLoading: false,
+        error: null,
+        resendRequest: jest.fn(),
+        isInitialRequest: false,
+      } as unknown as ReturnType<typeof useLoadDataStream>);
+      mockSendRequest.mockImplementation(async ({ path }: any) => {
+        if (typeof path === 'string' && path.endsWith('/data_streams/ilm_policies')) {
+          return {
+            data: {
+              hasManageIlm: true,
+              policies: [
+                {
+                  name: 'historical-policy',
+                  phases: {
+                    hot: { actions: {} },
+                    delete: { min_age: '30d', actions: { delete: {} } },
+                  },
+                  serializedPolicy: {
+                    name: 'historical-policy',
+                    phases: {
+                      hot: { actions: {} },
+                      delete: { min_age: '30d', actions: { delete: {} } },
+                    },
+                  },
+                },
+              ],
+            },
+          } as any;
+        }
+        return { data: undefined } as any;
+      });
+
+      const { getByTestId } = renderWithI18n(
+        <DataStreamDetailPanel dataStreamName="test-data-stream" onClose={onCloseMock} />
+      );
+
+      await waitFor(() => {
+        expect(getByTestId('successfulIngestLifecycleDetail')).not.toHaveTextContent(
+          'Not applicable'
+        );
+      });
+      expect(getByTestId('successfulIngestLifecycleDetail')).toHaveTextContent(
+        'ILM: historical-policy'
+      );
+      expect(getByTestId('successfulIngestLifecycleDetail')).not.toHaveTextContent(
+        'current-template-policy'
+      );
+      await waitFor(() => {
+        expect(getByTestId('successfulIngestLifecycleDetail')).toHaveTextContent('30 days');
+      });
+    });
+
+    it('prefers DSL when a lookup stream has DSL and ILM-managed historical indices', async () => {
+      mockUseLoadDataStream.mockReturnValue({
+        data: createMockDataStream({
+          indexMode: 'lookup',
+          indices: [
+            {
+              name: 'indexName1',
+              uuid: 'indexId1',
+              preferILM: true,
+              managedBy: 'Index Lifecycle Management',
+            },
+            {
+              name: 'indexName2',
+              uuid: 'indexId2',
+              preferILM: false,
+              managedBy: 'Data stream lifecycle',
+            },
+          ],
+          nextGenerationManagedBy: 'Index Lifecycle Management',
+        }),
+        isLoading: false,
+        error: null,
+        resendRequest: jest.fn(),
+        isInitialRequest: false,
+      } as unknown as ReturnType<typeof useLoadDataStream>);
+
+      const { getByTestId } = renderWithI18n(
+        <DataStreamDetailPanel dataStreamName="test-data-stream" onClose={onCloseMock} />
+      );
+
+      await waitFor(() => {
+        expect(getByTestId('successfulIngestLifecycleDetail')).toHaveTextContent(
+          'Data stream lifecycle'
+        );
+      });
+      expect(getByTestId('successfulIngestLifecycleDetail')).toHaveTextContent('7 days');
+      expect(getByTestId('successfulIngestLifecycleDetail')).not.toHaveTextContent('ILM:');
+    });
+
+    it('keeps the successful ingest lifecycle applicable for a standard data stream', async () => {
+      mockUseLoadDataStream.mockReturnValue({
+        data: createMockDataStream({ indexMode: 'standard' }),
+        isLoading: false,
+        error: null,
+        resendRequest: jest.fn(),
+        isInitialRequest: false,
+      } as unknown as ReturnType<typeof useLoadDataStream>);
+
+      const { getByTestId } = renderWithI18n(
+        <DataStreamDetailPanel dataStreamName="test-data-stream" onClose={onCloseMock} />
+      );
+
+      await waitFor(() => {
+        expect(getByTestId('successfulIngestLifecycleDetail')).not.toHaveTextContent(
+          'Not applicable'
+        );
+      });
+      expect(getByTestId('successfulIngestLifecycleDetail')).toHaveTextContent(
+        'Data stream lifecycle'
+      );
+    });
+
+    it('keeps "Edit data lifecycle" available (failure store lifecycle still applies) and shows the lookup notice in the flyout', async () => {
+      loadLookupDataStream();
+
+      const { getByTestId } = renderWithI18n(
+        <DataStreamDetailPanel dataStreamName="test-data-stream" onClose={onCloseMock} />
+      );
+
+      await waitFor(() => {
+        expect(getByTestId('manageDataStreamButton')).toBeInTheDocument();
+      });
+      await userEvent.click(getByTestId('manageDataStreamButton'));
+      await waitFor(() => expect(getByTestId('editDataLifecycleButton')).toBeInTheDocument());
+      await userEvent.click(getByTestId('editDataLifecycleButton'));
+
+      await waitFor(() => {
+        expect(getByTestId('lookupLifecycleWarning')).toBeInTheDocument();
+      });
+    });
+
+    it('does not show the lookup notice when a backing index is lifecycle-managed', async () => {
+      mockUseLoadDataStream.mockReturnValue({
+        data: createMockDataStream({ indexMode: 'lookup' }),
+        isLoading: false,
+        error: null,
+        resendRequest: jest.fn(),
+        isInitialRequest: false,
+      } as unknown as ReturnType<typeof useLoadDataStream>);
+
+      const { getByTestId, queryByTestId } = renderWithI18n(
+        <DataStreamDetailPanel dataStreamName="test-data-stream" onClose={onCloseMock} />
+      );
+
+      await waitFor(() => {
+        expect(getByTestId('manageDataStreamButton')).toBeInTheDocument();
+      });
+      await userEvent.click(getByTestId('manageDataStreamButton'));
+      await waitFor(() => expect(getByTestId('editDataLifecycleButton')).toBeInTheDocument());
+      await userEvent.click(getByTestId('editDataLifecycleButton'));
+
+      expect(queryByTestId('lookupLifecycleWarning')).not.toBeInTheDocument();
+    });
+
+    it('does not show the DSL notice for an ILM-managed historical standard index', async () => {
+      mockUseLoadDataStream.mockReturnValue({
+        data: createMockDataStream({
+          indexMode: 'lookup',
+          indices: [
+            {
+              name: 'indexName',
+              uuid: 'indexId',
+              preferILM: true,
+              managedBy: 'Index Lifecycle Management',
+              indexMode: 'standard',
+            },
+          ],
+        }),
+        isLoading: false,
+        error: null,
+        resendRequest: jest.fn(),
+        isInitialRequest: false,
+      } as unknown as ReturnType<typeof useLoadDataStream>);
+
+      const { getByTestId, queryByTestId } = renderWithI18n(
+        <DataStreamDetailPanel dataStreamName="test-data-stream" onClose={onCloseMock} />
+      );
+
+      await waitFor(() => {
+        expect(getByTestId('manageDataStreamButton')).toBeInTheDocument();
+      });
+      await userEvent.click(getByTestId('manageDataStreamButton'));
+      await waitFor(() => expect(getByTestId('editDataLifecycleButton')).toBeInTheDocument());
+      await userEvent.click(getByTestId('editDataLifecycleButton'));
+
+      expect(queryByTestId('lookupLifecycleWarning')).not.toBeInTheDocument();
     });
   });
 

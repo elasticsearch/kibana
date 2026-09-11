@@ -14,6 +14,7 @@ import {
   deleteDataStream,
   describeStorage,
   expectedDataStream,
+  getDataStream,
   testData,
 } from '../../fixtures';
 import { SERVERLESS_EXCEPT_MKI_SECURITY } from '../../tags';
@@ -38,6 +39,7 @@ apiTest.describe(
   { tag: SERVERLESS_EXCEPT_MKI_SECURITY },
   () => {
     let credentials: RoleApiCredentials;
+    let expectedIndexMode: string | undefined;
 
     apiTest.beforeAll(async ({ requestAuth }) => {
       credentials = await requestAuth.getApiKey('admin');
@@ -46,6 +48,8 @@ apiTest.describe(
     apiTest.beforeEach(async ({ esClient }) => {
       await deleteDataStream(esClient, DATA_STREAM_NAME);
       await createDataStream(esClient, DATA_STREAM_NAME);
+      const dataStream = await getDataStream(esClient, DATA_STREAM_NAME);
+      expectedIndexMode = dataStream.index_mode;
     });
 
     apiTest.afterEach(async ({ esClient }) => {
@@ -72,6 +76,7 @@ apiTest.describe(
           uuid,
           health: expectedHealth,
           lifecycle: expectedLifecycle,
+          indexMode: expectedIndexMode,
         })
       );
     });
@@ -99,6 +104,7 @@ apiTest.describe(
           uuid,
           health: expectedHealth,
           lifecycle: expectedLifecycle,
+          indexMode: expectedIndexMode,
         }),
         ...expectedStats,
       });
@@ -122,6 +128,7 @@ apiTest.describe(
           uuid,
           health: expectedHealth,
           lifecycle: expectedLifecycle,
+          indexMode: expectedIndexMode,
         }),
         ...expectedStats,
       });

@@ -12,9 +12,61 @@ import {
   formatDlmLifecycleSummary,
   countDlmDataPhases,
   resolveLifecycleForSummary,
+  getIlmPolicyNameForSummary,
+  isLookupLifecycleEditingNotApplicable,
 } from './data_streams';
+import { createMockDataStream } from '../sections/home/data_stream_list/data_stream_detail_panel/data_stream_detail_panel.test_helpers';
 
 describe('Data stream helpers', () => {
+  describe('lookup lifecycle history', () => {
+    it('returns one shared ILM policy name from multiple historical indices', () => {
+      expect(
+        getIlmPolicyNameForSummary(
+          createMockDataStream({
+            indexMode: 'lookup',
+            indices: [
+              {
+                name: 'historical-index-1',
+                uuid: 'historical-index-1-id',
+                preferILM: true,
+                managedBy: 'Index Lifecycle Management',
+                ilmPolicyName: 'historical-policy',
+                indexMode: 'standard',
+              },
+              {
+                name: 'historical-index-2',
+                uuid: 'historical-index-2-id',
+                preferILM: true,
+                managedBy: 'Index Lifecycle Management',
+                ilmPolicyName: 'historical-policy',
+                indexMode: 'standard',
+              },
+            ],
+          })
+        )
+      ).toBe('historical-policy');
+    });
+
+    it('keeps lifecycle editing applicable for an unmanaged DSL-eligible historical index', () => {
+      expect(
+        isLookupLifecycleEditingNotApplicable(
+          createMockDataStream({
+            indexMode: 'lookup',
+            indices: [
+              {
+                name: 'historical-index',
+                uuid: 'historical-index-id',
+                preferILM: false,
+                managedBy: 'Unmanaged',
+                indexMode: 'standard',
+              },
+            ],
+          })
+        )
+      ).toBe(false);
+    });
+  });
+
   describe('getLifecycleValue', () => {
     it('Knows when it should be marked as disabled', () => {
       expect(

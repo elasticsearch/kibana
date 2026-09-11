@@ -5,7 +5,7 @@
  * 2.0.
  */
 
-import React, { useCallback } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import { i18n } from '@kbn/i18n';
 import {
   EuiFlexGroup,
@@ -27,6 +27,8 @@ import { Forms, isJSON } from '../../../../../shared_imports';
 import { useJsonStep } from './use_json_step';
 import { documentationService } from '../../../mappings_editor/shared_imports';
 import { indexModeLabels } from '../../../../lib/index_mode_labels';
+import { hasIlmPolicySetting } from '../../../../lib/has_ilm_policy_setting';
+import { LookupLifecycleWarningCallout } from '../lookup_lifecycle_warning_callout';
 import type { IndexMode } from '../../../../../../common/types';
 
 interface Props {
@@ -36,8 +38,22 @@ interface Props {
   indexMode?: IndexMode;
 }
 
+interface ParsedIndexSettings {
+  index?: {
+    mode?: IndexMode;
+  };
+  'index.mode'?: IndexMode;
+  mode?: IndexMode;
+}
+
 // The value of the number_of_shards setting that is allowed for lookup index mode
 const NUMBER_OF_SHARDS_LOOKUP_MODE = 1;
+
+const getEffectiveIndexMode = (
+  settings: ParsedIndexSettings | undefined,
+  indexMode: IndexMode | undefined
+): IndexMode | undefined =>
+  indexMode ?? settings?.index?.mode ?? settings?.['index.mode'] ?? settings?.mode;
 
 export const StepSettings: React.FunctionComponent<Props> = React.memo(
   ({ defaultValue = {}, onChange, esDocsBase, indexMode }) => {
@@ -69,6 +85,17 @@ export const StepSettings: React.FunctionComponent<Props> = React.memo(
       onChange,
       customValidate,
     });
+    const parsedSettings = useMemo(
+      () => (isJSON(jsonContent) ? (JSON.parse(jsonContent) as ParsedIndexSettings) : undefined),
+      [jsonContent]
+    );
+    const effectiveIndexMode = getEffectiveIndexMode(parsedSettings, indexMode);
+
+    // ES accepts an ILM policy on lookup index templates but never applies it, so we warn without blocking.
+    const showLookupLifecycleWarning = useMemo(
+      () => effectiveIndexMode === LOOKUP_INDEX_MODE && hasIlmPolicySetting(parsedSettings),
+      [effectiveIndexMode, parsedSettings]
+    );
 
     return (
       <div data-test-subj="stepSettings">
@@ -147,6 +174,22 @@ export const StepSettings: React.FunctionComponent<Props> = React.memo(
                 />
               }
               data-test-subj="indexModeCallout"
+            />
+
+            <EuiSpacer size="l" />
+          </>
+        )}
+
+        {showLookupLifecycleWarning && (
+          <>
+            <LookupLifecycleWarningCallout
+              description={
+                <FormattedMessage
+                  id="xpack.idxMgmt.formWizard.stepSettings.lookupLifecycleWarning.description"
+                  defaultMessage="Elasticsearch does not apply index lifecycle management (ILM) policies to indices with the lookup index mode. The {settingName} setting is not applied to these indices."
+                  values={{ settingName: <EuiCode>index.lifecycle.name</EuiCode> }}
+                />
+              }
             />
 
             <EuiSpacer size="l" />

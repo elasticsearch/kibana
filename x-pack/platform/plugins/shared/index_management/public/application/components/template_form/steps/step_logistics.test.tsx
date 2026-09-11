@@ -10,7 +10,11 @@ import { render, screen, within, fireEvent, waitFor } from '@testing-library/rea
 import { I18nProvider } from '@kbn/i18n-react';
 import { EuiComboBoxTestHarness } from '@kbn/test-eui-helpers';
 
-import { LOGSDB_INDEX_MODE } from '../../../../../common/constants';
+import {
+  LOGSDB_INDEX_MODE,
+  LOOKUP_INDEX_MODE,
+  STANDARD_INDEX_MODE,
+} from '../../../../../common/constants';
 import { StepLogistics } from './step_logistics';
 
 let mockIsServerless = false;
@@ -187,6 +191,89 @@ describe('StepLogistics', () => {
 
       await screen.findByTestId('dlmPhasesSelectorDeletePhaseCard');
       expect(mockUseLoadSnapshotRepositories).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('WHEN the index mode is lookup', () => {
+    const renderStep = (defaultValue: object) => {
+      const onChange = jest.fn();
+      render(
+        <I18nProvider>
+          <StepLogistics defaultValue={defaultValue} onChange={onChange} isLegacy={false} />
+        </I18nProvider>
+      );
+      return onChange;
+    };
+
+    it('SHOULD warn that the data lifecycle is not applied without blocking the step', async () => {
+      const onChange = renderStep({
+        ...baseDefaultValue,
+        indexMode: LOOKUP_INDEX_MODE,
+        lifecycle: { enabled: true, value: 30, unit: 'd' },
+      });
+
+      expect(await screen.findByTestId('lookupLifecycleWarning')).toBeInTheDocument();
+      await waitFor(() => expect(onChange).toHaveBeenCalled());
+      const lastCall = onChange.mock.calls.at(-1)?.[0];
+      expect(await lastCall.validate()).toBe(true);
+    });
+
+    it('SHOULD warn even when the lifecycle form state is disabled, because data stream templates always resolve to a data lifecycle', async () => {
+      renderStep({
+        ...baseDefaultValue,
+        indexMode: LOOKUP_INDEX_MODE,
+        lifecycle: { enabled: false },
+      });
+
+      expect(await screen.findByTestId('lookupLifecycleWarning')).toBeInTheDocument();
+    });
+
+    it('SHOULD remove the warning when setting the lookup index mode is disabled', async () => {
+      renderStep({
+        ...baseDefaultValue,
+        indexMode: LOOKUP_INDEX_MODE,
+        lifecycle: { enabled: true, value: 30, unit: 'd' },
+      });
+
+      expect(await screen.findByTestId('lookupLifecycleWarning')).toBeInTheDocument();
+      fireEvent.click(within(screen.getByTestId('toggleIndexMode')).getByRole('switch'));
+
+      await waitFor(() => {
+        expect(screen.queryByTestId('lookupLifecycleWarning')).not.toBeInTheDocument();
+      });
+    });
+
+    it('SHOULD NOT warn when the template does not create a data stream', async () => {
+      renderStep({
+        ...baseDefaultValue,
+        indexMode: LOOKUP_INDEX_MODE,
+        dataStream: undefined,
+        lifecycle: { enabled: true, value: 30, unit: 'd' },
+      });
+
+      await screen.findByTestId('indexModeField');
+      expect(screen.queryByTestId('lookupLifecycleWarning')).not.toBeInTheDocument();
+    });
+  });
+
+  describe('WHEN the index mode is standard', () => {
+    it('SHOULD NOT warn about the data lifecycle', async () => {
+      render(
+        <I18nProvider>
+          <StepLogistics
+            defaultValue={{
+              ...baseDefaultValue,
+              indexMode: STANDARD_INDEX_MODE,
+              lifecycle: { enabled: true, value: 30, unit: 'd' },
+            }}
+            onChange={jest.fn()}
+            isLegacy={false}
+          />
+        </I18nProvider>
+      );
+
+      await screen.findByTestId('indexModeField');
+      expect(screen.queryByTestId('lookupLifecycleWarning')).not.toBeInTheDocument();
     });
   });
 });

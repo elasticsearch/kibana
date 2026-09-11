@@ -137,6 +137,7 @@ export default function ({ getService }: FtrProviderContext) {
               name: expect.any(String),
               uuid: expect.any(String),
               managedBy: 'Data stream lifecycle',
+              indexMode: 'standard',
               preferILM: true,
             },
           ],

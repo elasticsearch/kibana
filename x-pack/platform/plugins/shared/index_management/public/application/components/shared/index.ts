@@ -15,6 +15,7 @@ export {
   StepMappingsContainer,
   StepSettingsContainer,
   TemplateContentIndicator,
+  LookupLifecycleWarningCallout,
 } from './components';
 
 export { UnitField } from './fields/unit_field';

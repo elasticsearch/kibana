@@ -37,7 +37,9 @@ import { indexModeLabels } from '../../../../lib/index_mode_labels';
 import {
   getRetentionPeriod,
   resolveLifecycleForSummary,
-  isNextGenIlm,
+  isIlmLifecyclePreferred,
+  isLookupLifecycleNotApplicable,
+  isLookupIndexMode,
   formatDlmLifecycleSummary,
   getDlmDataPhasesLabel,
   getDlmDownsamplingStepsLabel,
@@ -48,8 +50,9 @@ import { DataHealth } from '../../../../components';
 import { humanizeTimeStamp } from '../humanize_time_stamp';
 import { formatByteSizeString } from '../../../../lib/format_bytes';
 import type { DataStream } from '../../../../../../common';
-import { streamsDslToEsLifecycle } from './lifecycle';
+import { isWiredStreamDataStream, streamsDslToEsLifecycle } from './lifecycle';
 import type { ResolvedDataStreamLifecycle } from './lifecycle';
+import { LookupLifecycleNotApplicable } from '../data_retention_value';
 
 interface Detail {
   name: string;
@@ -304,7 +307,7 @@ export const DataStreamDetailSummary: React.FunctionComponent<DataStreamDetailSu
             }),
             toolTip: i18n.translate('xpack.idxMgmt.dataStreamDetailPanel.indexModeToolTip', {
               defaultMessage:
-                "The index mode applied to the data stream's backing indices, as defined in its associated index template.",
+                'The index mode reported for the data stream. Backing indices can retain modes from earlier configurations.',
             }),
             content: indexModeLabels[indexMode],
             dataTestSubj: 'indexModeDetail',
@@ -323,11 +326,17 @@ export const DataStreamDetailSummary: React.FunctionComponent<DataStreamDetailSu
         }
       ),
       content: (() => {
+        if (isLookupLifecycleNotApplicable(dataStream)) {
+          return <LookupLifecycleNotApplicable />;
+        }
+
         const effectiveLifecycle = streamsGetResponse?.effective_lifecycle;
+        const isLookup = isLookupIndexMode(dataStream);
+        const isWired = isWiredStreamDataStream(dataStream);
         const isIlm =
-          effectiveLifecycle != null
+          effectiveLifecycle != null && !isLookup
             ? isStreamsIlmLifecycle(effectiveLifecycle)
-            : isNextGenIlm(dataStream);
+            : isIlmLifecyclePreferred(dataStream);
 
         const methodLabel = isIlm ? (
           (() => {
@@ -379,7 +388,10 @@ export const DataStreamDetailSummary: React.FunctionComponent<DataStreamDetailSu
           </EuiText>
         );
 
-        const isInherited = resolvedLifecycle.inheritSuccessful;
+        const streamsDlmLifecycle =
+          effectiveLifecycle != null && isStreamsDslLifecycle(effectiveLifecycle)
+            ? streamsDslToEsLifecycle(effectiveLifecycle.dsl)
+            : undefined;
 
         const summary = (() => {
           if (isIlm) {
@@ -415,19 +427,38 @@ export const DataStreamDetailSummary: React.FunctionComponent<DataStreamDetailSu
             return [retentionLabel, phasesLabel, downsampleLabel].filter(Boolean).join(' · ');
           }
 
-          const streamsDlmLifecycle =
-            effectiveLifecycle != null && isStreamsDslLifecycle(effectiveLifecycle)
-              ? streamsDslToEsLifecycle(effectiveLifecycle.dsl)
-              : undefined;
-
           const lifecycleForSummary = resolveLifecycleForSummary(
-            streamsDlmLifecycle ?? dataStream.lifecycle,
+            (!isLookup ? streamsDlmLifecycle : undefined) ?? dataStream.lifecycle,
             {
               hasDataStream: true,
             }
           );
           return formatDlmLifecycleSummaryForDetails(lifecycleForSummary);
         })();
+
+        const dataStreamDownsampling = dataStream.lifecycle?.downsampling ?? [];
+        const streamsDownsampling =
+          effectiveLifecycle != null && isStreamsDslLifecycle(effectiveLifecycle)
+            ? effectiveLifecycle.dsl.downsample ?? []
+            : [];
+        const lookupDownsamplingMatches =
+          dataStreamDownsampling.length === streamsDownsampling.length &&
+          dataStreamDownsampling.every(
+            (round, index) =>
+              round.after === streamsDownsampling[index]?.after &&
+              round.fixed_interval === streamsDownsampling[index]?.fixed_interval
+          ) &&
+          (dataStream.lifecycle?.downsampling_method === undefined ||
+            dataStream.lifecycle.downsampling_method === 'aggregate');
+        const lookupLifecycleMatchesStreams =
+          streamsDlmLifecycle !== undefined &&
+          dataStream.lifecycle?.enabled === streamsDlmLifecycle.enabled &&
+          dataStream.lifecycle?.data_retention === streamsDlmLifecycle.data_retention &&
+          dataStream.lifecycle?.frozen_after === streamsDlmLifecycle.frozen_after &&
+          lookupDownsamplingMatches;
+        const isInherited =
+          resolvedLifecycle.inheritSuccessful &&
+          (!isLookup || (!isIlm && (!isWired || lookupLifecycleMatchesStreams)));
 
         return (
           <EuiFlexGroup direction="column" gutterSize="xs" responsive={false}>

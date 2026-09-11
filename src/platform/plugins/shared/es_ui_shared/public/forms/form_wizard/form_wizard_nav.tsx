@@ -17,6 +17,7 @@ interface Props {
   onBack: () => void;
   onNext: () => void;
   isSaving?: boolean;
+  isNextButtonDisabled?: boolean;
   isStepValid?: boolean;
   texts?: Partial<NavTexts>;
   getRightContent?: () => JSX.Element | null | undefined;
@@ -41,6 +42,7 @@ export const FormWizardNav = ({
   lastStep,
   isStepValid,
   isSaving,
+  isNextButtonDisabled,
   onBack,
   onNext,
   texts,
@@ -85,7 +87,7 @@ export const FormWizardNav = ({
               iconType={isLastStep ? 'check' : 'chevronSingleRight'}
               onClick={onNext}
               iconSide={isLastStep ? 'left' : 'right'}
-              disabled={isStepValid === false}
+              disabled={isStepValid === false || isNextButtonDisabled}
               data-test-subj="nextButton"
               isLoading={isSaving}
             >

@@ -27,6 +27,7 @@ import {
 } from '@kbn/data-lifecycle-phases';
 
 import { DlmPhasesSelector } from '../../data_lifecycle';
+import { LookupLifecycleWarningCallout } from '../../shared';
 import type { DlmPhasesSelectorProps, SerializedDlmPhases } from '../../data_lifecycle';
 import { resolveLogisticsLifecycle } from '../../../../../common/lib';
 import { buildDataRetentionFromSerializedDlmPhases } from '../../data_lifecycle/dlm_phases_selector/utils/build_data_retention';
@@ -396,17 +397,24 @@ export const StepLogistics: React.FunctionComponent<Props> = React.memo(
       updateFieldValues,
     } = form;
 
-    const [{ addMeta, doCreateDataStream, indexPatterns: indexPatternsField, setIndexMode }] =
-      useFormData<{
-        addMeta: boolean;
-        doCreateDataStream: boolean;
-        indexPatterns: string[];
-        indexMode: string;
-        setIndexMode: boolean;
-      }>({
-        form,
-        watch: ['addMeta', 'doCreateDataStream', 'indexPatterns', 'indexMode', 'setIndexMode'],
-      });
+    const [
+      {
+        addMeta,
+        doCreateDataStream,
+        indexPatterns: indexPatternsField,
+        indexMode: indexModeValue,
+        setIndexMode,
+      },
+    ] = useFormData<{
+      addMeta: boolean;
+      doCreateDataStream: boolean;
+      indexPatterns: string[];
+      indexMode: string;
+      setIndexMode: boolean;
+    }>({
+      form,
+      watch: ['addMeta', 'doCreateDataStream', 'indexPatterns', 'indexMode', 'setIndexMode'],
+    });
 
     const {
       config: { isServerless: isDlmPhasesSelectorServerless },
@@ -436,6 +444,12 @@ export const StepLogistics: React.FunctionComponent<Props> = React.memo(
     }, [lifecycle]);
 
     const isStepValid = isFormValid && (!doCreateDataStream || isDlmValid);
+
+    // Data stream templates always serialize a data lifecycle (see `resolveLogisticsLifecycle`),
+    // which ES ignores for lookup index mode, so warn without blocking.
+    const showLookupLifecycleWarning = Boolean(
+      setIndexMode && indexModeValue === LOOKUP_INDEX_MODE && doCreateDataStream
+    );
 
     const getData = useCallback(() => {
       const data = getFormData();
@@ -614,6 +628,19 @@ export const StepLogistics: React.FunctionComponent<Props> = React.memo(
                 'data-test-subj': 'dataLifecyclePhasesSelector',
               }}
             >
+              {showLookupLifecycleWarning && (
+                <>
+                  <LookupLifecycleWarningCallout
+                    description={
+                      <FormattedMessage
+                        id="xpack.idxMgmt.templateForm.stepLogistics.lookupLifecycleWarningDescription"
+                        defaultMessage="Elasticsearch skips indices with the lookup index mode when running the data stream lifecycle. The data lifecycle configured here is not applied to the data of data streams created from this template."
+                      />
+                    }
+                  />
+                  <EuiSpacer size="m" />
+                </>
+              )}
               {isDlmPhasesSelectorServerless ? (
                 <ServerlessDlmPhasesSelector
                   defaultValue={dlmDefaultValue}

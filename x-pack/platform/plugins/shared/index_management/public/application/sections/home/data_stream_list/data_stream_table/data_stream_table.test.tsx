@@ -238,6 +238,333 @@ describe('DataStreamTable', () => {
     expect(screen.queryByTestId('bulkEditDataRetentionButton')).not.toBeInTheDocument();
   });
 
+  it('does not show bulk edit data retention action when a selected stream is lookup mode', () => {
+    const lookupDataStream = createDataStream({
+      name: 'ds-lookup',
+      indexMode: 'lookup',
+      indices: [
+        {
+          name: 'index-000001',
+          uuid: 'uuid-1',
+          preferILM: false,
+          managedBy: 'Unmanaged',
+          indexMode: 'lookup',
+        },
+      ],
+    });
+    const standardDataStream = createDataStream({ name: 'ds-std', indexMode: 'standard' });
+
+    renderWithIntl(
+      <DataStreamTable
+        dataStreams={[lookupDataStream, standardDataStream]}
+        reload={jest.fn()}
+        history={createHistory()}
+        includeStats={false}
+        filters=""
+        viewFilters={{ hidden: true, managed: true } as any}
+        onViewFilterChange={jest.fn()}
+        setIncludeStats={jest.fn()}
+      />
+    );
+
+    fireEvent.click(screen.getByTestId('toggleSelect-ds-std'));
+    expect(screen.getByTestId('bulkEditDataRetentionButton')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByTestId('toggleSelect-ds-lookup'));
+    expect(screen.queryByTestId('bulkEditDataRetentionButton')).not.toBeInTheDocument();
+  });
+
+  it('shows bulk edit data retention when a lookup stream has a managed backing index', () => {
+    const dataStream = createDataStream({ name: 'ds-lookup', indexMode: 'lookup' });
+
+    renderWithIntl(
+      <DataStreamTable
+        dataStreams={[dataStream]}
+        reload={jest.fn()}
+        history={createHistory()}
+        includeStats={false}
+        filters=""
+        viewFilters={{ hidden: true, managed: true } as any}
+        onViewFilterChange={jest.fn()}
+        setIncludeStats={jest.fn()}
+      />
+    );
+
+    fireEvent.click(screen.getByTestId('toggleSelect-ds-lookup'));
+
+    expect(screen.getByTestId('bulkEditDataRetentionButton')).toBeInTheDocument();
+  });
+
+  it('shows bulk edit data retention for an unmanaged historical standard index', () => {
+    const dataStream = createDataStream({
+      name: 'ds-lookup',
+      indexMode: 'lookup',
+      indices: [
+        {
+          name: 'index-000001',
+          uuid: 'uuid-1',
+          preferILM: false,
+          managedBy: 'Unmanaged',
+          indexMode: 'standard',
+        },
+        {
+          name: 'index-000002',
+          uuid: 'uuid-2',
+          preferILM: false,
+          managedBy: 'Unmanaged',
+          indexMode: 'lookup',
+        },
+      ],
+    });
+
+    renderWithIntl(
+      <DataStreamTable
+        dataStreams={[dataStream]}
+        reload={jest.fn()}
+        history={createHistory()}
+        includeStats={false}
+        filters=""
+        viewFilters={{ hidden: true, managed: true } as any}
+        onViewFilterChange={jest.fn()}
+        setIncludeStats={jest.fn()}
+      />
+    );
+
+    fireEvent.click(screen.getByTestId('toggleSelect-ds-lookup'));
+
+    expect(screen.getByTestId('bulkEditDataRetentionButton')).toBeInTheDocument();
+  });
+
+  it('hides bulk edit when unmanaged history explicitly prefers an empty ILM policy', () => {
+    const dataStream = createDataStream({
+      name: 'ds-lookup',
+      indexMode: 'lookup',
+      indices: [
+        {
+          name: 'index-000001',
+          uuid: 'uuid-1',
+          preferILM: true,
+          managedBy: 'Unmanaged',
+          ilmPolicyName: '',
+          indexMode: 'standard',
+        },
+        {
+          name: 'index-000002',
+          uuid: 'uuid-2',
+          preferILM: false,
+          managedBy: 'Unmanaged',
+          indexMode: 'lookup',
+        },
+      ],
+    });
+
+    renderWithIntl(
+      <DataStreamTable
+        dataStreams={[dataStream]}
+        reload={jest.fn()}
+        history={createHistory()}
+        includeStats={false}
+        filters=""
+        viewFilters={{ hidden: true, managed: true } as any}
+        onViewFilterChange={jest.fn()}
+        setIncludeStats={jest.fn()}
+      />
+    );
+
+    fireEvent.click(screen.getByTestId('toggleSelect-ds-lookup'));
+
+    expect(screen.queryByTestId('bulkEditDataRetentionButton')).not.toBeInTheDocument();
+  });
+
+  it('shows bulk edit when lookup history has ILM-managed and unmanaged standard indices', () => {
+    const dataStream = createDataStream({
+      name: 'ds-lookup',
+      indexMode: 'lookup',
+      indices: [
+        {
+          name: 'index-000001',
+          uuid: 'uuid-1',
+          preferILM: true,
+          managedBy: 'Index Lifecycle Management',
+          indexMode: 'standard',
+        },
+        {
+          name: 'index-000002',
+          uuid: 'uuid-2',
+          preferILM: false,
+          managedBy: 'Unmanaged',
+          indexMode: 'standard',
+        },
+        {
+          name: 'index-000003',
+          uuid: 'uuid-3',
+          preferILM: false,
+          managedBy: 'Unmanaged',
+          indexMode: 'lookup',
+        },
+      ],
+    });
+
+    renderWithIntl(
+      <DataStreamTable
+        dataStreams={[dataStream]}
+        reload={jest.fn()}
+        history={createHistory()}
+        includeStats={false}
+        filters=""
+        viewFilters={{ hidden: true, managed: true } as any}
+        onViewFilterChange={jest.fn()}
+        setIncludeStats={jest.fn()}
+      />
+    );
+
+    fireEvent.click(screen.getByTestId('toggleSelect-ds-lookup'));
+
+    expect(screen.getByTestId('bulkEditDataRetentionButton')).toBeInTheDocument();
+  });
+
+  it('shows DSL controls for a lookup stream with DSL and ILM-managed historical indices', () => {
+    const dataStream = createDataStream({
+      name: 'ds-lookup',
+      indexMode: 'lookup',
+      indices: [
+        {
+          name: 'index-000001',
+          uuid: 'uuid-1',
+          preferILM: true,
+          managedBy: 'Index Lifecycle Management',
+        },
+        {
+          name: 'index-000002',
+          uuid: 'uuid-2',
+          preferILM: false,
+          managedBy: 'Data stream lifecycle',
+        },
+      ],
+      nextGenerationManagedBy: 'Index Lifecycle Management',
+      lifecycle: {
+        enabled: true,
+        data_retention: '7d',
+        effective_retention: '7d',
+        retention_determined_by: MAX_DATA_RETENTION,
+      } as DataStream['lifecycle'],
+    });
+
+    renderWithIntl(
+      <DataStreamTable
+        dataStreams={[dataStream]}
+        reload={jest.fn()}
+        history={createHistory()}
+        includeStats={false}
+        filters=""
+        viewFilters={{ hidden: true, managed: true } as any}
+        onViewFilterChange={jest.fn()}
+        setIncludeStats={jest.fn()}
+      />
+    );
+
+    fireEvent.click(screen.getByTestId('toggleSelect-ds-lookup'));
+
+    expect(screen.getByTestId('bulkEditDataRetentionButton')).toBeInTheDocument();
+    expect(screen.getByTestId('usingMaxRetention')).toBeInTheDocument();
+  });
+
+  it('does not show DSL controls when a lookup stream only has an ILM-managed backing index', () => {
+    const dataStream = createDataStream({
+      name: 'ds-lookup',
+      indexMode: 'lookup',
+      indices: [
+        {
+          name: 'index-000001',
+          uuid: 'uuid-1',
+          preferILM: true,
+          managedBy: 'Index Lifecycle Management',
+        },
+      ],
+      lifecycle: {
+        enabled: true,
+        data_retention: '7d',
+        effective_retention: '7d',
+        retention_determined_by: MAX_DATA_RETENTION,
+      } as DataStream['lifecycle'],
+    });
+
+    renderWithIntl(
+      <DataStreamTable
+        dataStreams={[dataStream]}
+        reload={jest.fn()}
+        history={createHistory()}
+        includeStats={false}
+        filters=""
+        viewFilters={{ hidden: true, managed: true } as any}
+        onViewFilterChange={jest.fn()}
+        setIncludeStats={jest.fn()}
+      />
+    );
+
+    fireEvent.click(screen.getByTestId('toggleSelect-ds-lookup'));
+
+    expect(screen.queryByTestId('bulkEditDataRetentionButton')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('usingMaxRetention')).not.toBeInTheDocument();
+  });
+
+  it('does not render the max retention indicator for a lookup data stream', () => {
+    const dataStream = createDataStream({
+      name: 'ds-lookup',
+      indexMode: 'lookup',
+      indices: [{ name: 'index-000001', uuid: 'uuid-1', preferILM: false, managedBy: 'Unmanaged' }],
+      lifecycle: {
+        enabled: true,
+        data_retention: '7d',
+        effective_retention: '7d',
+        retention_determined_by: MAX_DATA_RETENTION,
+      } as DataStream['lifecycle'],
+    });
+
+    renderWithIntl(
+      <DataStreamTable
+        dataStreams={[dataStream]}
+        reload={jest.fn()}
+        history={createHistory()}
+        includeStats={false}
+        filters=""
+        viewFilters={{ hidden: true, managed: true } as any}
+        onViewFilterChange={jest.fn()}
+        setIncludeStats={jest.fn()}
+      />
+    );
+
+    expect(screen.queryByTestId('usingMaxRetention')).not.toBeInTheDocument();
+  });
+
+  it('renders the max retention indicator for a lookup stream with a managed backing index', () => {
+    const dataStream = createDataStream({
+      name: 'ds-lookup',
+      indexMode: 'lookup',
+      lifecycle: {
+        enabled: true,
+        data_retention: '7d',
+        effective_retention: '7d',
+        retention_determined_by: MAX_DATA_RETENTION,
+      } as DataStream['lifecycle'],
+    });
+
+    renderWithIntl(
+      <DataStreamTable
+        dataStreams={[dataStream]}
+        reload={jest.fn()}
+        history={createHistory()}
+        includeStats={false}
+        filters=""
+        viewFilters={{ hidden: true, managed: true } as any}
+        onViewFilterChange={jest.fn()}
+        setIncludeStats={jest.fn()}
+      />
+    );
+
+    expect(screen.getByTestId('usingMaxRetention')).toBeInTheDocument();
+  });
+
   it('renders the max retention indicator when using MAX_DATA_RETENTION', () => {
     const dataStream = createDataStream({
       name: 'ds1',

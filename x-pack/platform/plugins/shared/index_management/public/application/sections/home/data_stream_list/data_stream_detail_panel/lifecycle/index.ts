@@ -11,4 +11,4 @@ export type {
   ResolvedFailureStore,
 } from './use_resolved_data_stream_lifecycle';
 export { useEditDataLifecycle } from './use_edit_data_lifecycle';
-export { streamsDslToEsLifecycle } from './lifecycle_utils';
+export { isWiredStreamDataStream, streamsDslToEsLifecycle } from './lifecycle_utils';

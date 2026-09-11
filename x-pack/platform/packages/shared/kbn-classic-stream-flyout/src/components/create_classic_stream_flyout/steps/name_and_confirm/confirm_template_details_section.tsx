@@ -26,9 +26,10 @@ import { FormattedMessage } from '@kbn/i18n-react';
 import { i18n } from '@kbn/i18n';
 import { css } from '@emotion/react';
 import type { PolicyFromES } from '@kbn/index-lifecycle-management-common-shared';
-import type {
-  TemplateListItem as IndexTemplate,
-  SimulateIndexTemplateResponse,
+import {
+  IndexMode,
+  type TemplateListItem as IndexTemplate,
+  type SimulateIndexTemplateResponse,
 } from '@kbn/index-management-shared-types';
 
 import {
@@ -93,6 +94,30 @@ const PhasesInfo = ({
 
   return null;
 };
+
+const LookupRetentionNotApplied = () => (
+  <EuiFlexGroup direction="column" gutterSize="xs" data-test-subj="lookupRetentionNotApplied">
+    <EuiFlexItem grow={false}>
+      {i18n.translate(
+        'xpack.createClassicStreamFlyout.nameAndConfirmStep.lookupRetentionNotAppliedLabel',
+        {
+          defaultMessage: 'Not applied to lookup index mode',
+        }
+      )}
+    </EuiFlexItem>
+    <EuiFlexItem grow={false}>
+      <EuiTextColor color="subdued">
+        {i18n.translate(
+          'xpack.createClassicStreamFlyout.nameAndConfirmStep.lookupRetentionNotAppliedDescription',
+          {
+            defaultMessage:
+              'Index lifecycle management and data stream lifecycle skip indices with the lookup index mode.',
+          }
+        )}
+      </EuiTextColor>
+    </EuiFlexItem>
+  </EuiFlexGroup>
+);
 
 interface RetentionDetailsProps {
   ilmPolicyName: string;
@@ -170,6 +195,9 @@ export const ConfirmTemplateDetailsSection = ({
 
   // Derive ILM policy name from simulated template settings
   const ilmPolicyName = simulatedTemplate?.template?.settings?.index?.lifecycle?.name;
+  // ILM and data stream lifecycle are both skipped for lookup indices, so the policy is never applied
+  const isLookupMode = simulatedTemplate?.template?.settings?.index?.mode === IndexMode.lookup;
+  const hasDataStreamLifecycle = simulatedTemplate?.template?.lifecycle?.enabled === true;
 
   const phaseColors = useMemo(
     () => ({
@@ -215,9 +243,9 @@ export const ConfirmTemplateDetailsSection = ({
     };
   }, [getSimulatedTemplate, template.name]);
 
-  // Fetch ILM policy details when policy name is available
+  // Fetch ILM policy details when policy name is available (skipped for lookup mode, where it is not applied)
   useEffect(() => {
-    if (!ilmPolicyName || !getIlmPolicy) {
+    if (!ilmPolicyName || !getIlmPolicy || isLookupMode) {
       setIlmPolicy(null);
       return;
     }
@@ -247,7 +275,7 @@ export const ConfirmTemplateDetailsSection = ({
     return () => {
       abortController.abort();
     };
-  }, [ilmPolicyName, getIlmPolicy]);
+  }, [ilmPolicyName, getIlmPolicy, isLookupMode]);
 
   const ilmPhases = useMemo(() => {
     if (!ilmPolicy) {
@@ -297,7 +325,20 @@ export const ConfirmTemplateDetailsSection = ({
       });
 
       // Retention - ILM policy or data stream lifecycle from original template
-      if (ilmPolicyName) {
+      if (isLookupMode) {
+        // Lifecycle is configured but never applied to lookup indices
+        if (ilmPolicyName || hasDataStreamLifecycle || formatDataRetention(template)) {
+          items.push({
+            title: i18n.translate(
+              'xpack.createClassicStreamFlyout.nameAndConfirmStep.retentionLabel',
+              {
+                defaultMessage: 'Retention',
+              }
+            ),
+            description: <LookupRetentionNotApplied />,
+          });
+        }
+      } else if (ilmPolicyName) {
         // Show ILM policy retention with phases
         items.push({
           title: i18n.translate(
@@ -356,6 +397,8 @@ export const ConfirmTemplateDetailsSection = ({
     simulatedTemplate,
     isLoadingSimulatedTemplate,
     ilmPolicyName,
+    isLookupMode,
+    hasDataStreamLifecycle,
     ilmPhases,
     isLoadingIlmPolicy,
     hasErrorLoadingIlmPolicy,
