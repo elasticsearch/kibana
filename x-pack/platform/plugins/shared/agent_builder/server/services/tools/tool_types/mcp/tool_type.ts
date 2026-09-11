@@ -18,6 +18,25 @@ import { configurationSchema, configurationUpdateSchema } from './schemas';
 import { validateConfig } from './validate_configuration';
 
 /**
+ * Builds the actionsClient.execute() params for calling an MCP tool via the connector's
+ * callTool sub-action. Shared by executeMcpTool (static ToolType.mcp path) and
+ * execute_connector_sub_action (dynamic connector-discovery path) so the two independent
+ * MCP execution paths can't drift apart on this mapping.
+ */
+export function buildMcpCallToolExecuteParams(
+  toolName: string,
+  toolArguments: Record<string, unknown>
+): { subAction: string; subActionParams: Record<string, unknown> } {
+  return {
+    subAction: 'callTool',
+    subActionParams: {
+      name: toolName,
+      arguments: toolArguments,
+    },
+  };
+}
+
+/**
  * Lists available tools from an MCP connector by calling the listTools subAction.
  */
 export async function listMcpTools({
@@ -108,13 +127,7 @@ async function executeMcpTool({
 
   const result = await actionsClient.execute({
     actionId: connectorId,
-    params: {
-      subAction: 'callTool',
-      subActionParams: {
-        name: toolName,
-        arguments: toolArguments,
-      },
-    },
+    params: buildMcpCallToolExecuteParams(toolName, toolArguments),
   });
 
   if (result.status === 'error') {

@@ -152,9 +152,9 @@ describe('createExecuteConnectorSubActionTool', () => {
       });
       expect(emptyConnectorId.success).toBe(false);
       if (!emptyConnectorId.success) {
-        expect(
-          emptyConnectorId.error.issues.some((i) => i.message.includes('connector attachment'))
-        ).toBe(true);
+        expect(emptyConnectorId.error.issues.some((i) => i.message.includes('get_connector'))).toBe(
+          true
+        );
       }
 
       const emptySubAction = executeConnectorSubActionArgsSchema.safeParse({
@@ -283,6 +283,142 @@ describe('createExecuteConnectorSubActionTool', () => {
       ((result as ToolHandlerStandardReturn).results[0] as ErrorResult).data.message
     ).toContain("No connector spec found for type '.unknown'");
     expect(mockExecute).not.toHaveBeenCalled();
+  });
+
+  describe('agent connector scoping', () => {
+    it('rejects a connectorId not in agentConfiguration.connector_ids without resolving it', async () => {
+      const tool = createExecuteConnectorSubActionTool({ getActions, getInference });
+      const result = await tool.handler(
+        { connectorId: 'conn-123', subAction: 'searchMessages', params: {} },
+        { ...mockContext, agentConfiguration: { connector_ids: ['conn-999'], tools: [] } }
+      );
+
+      expect((result as ToolHandlerStandardReturn).results).toHaveLength(1);
+      const errorResult = (result as ToolHandlerStandardReturn).results[0] as ErrorResult;
+      expect(errorResult.type).toBe(ToolResultType.error);
+      expect(errorResult.data.message).toContain("Connector 'conn-123' is not available");
+      expect(mockGet).not.toHaveBeenCalled();
+      expect(mockExecute).not.toHaveBeenCalled();
+    });
+
+    it('allows a connectorId that is in agentConfiguration.connector_ids', async () => {
+      mockExecute.mockResolvedValue({ status: 'ok', data: { ok: true } });
+      const tool = createExecuteConnectorSubActionTool({ getActions, getInference });
+      const result = await tool.handler(
+        { connectorId: 'conn-123', subAction: 'searchMessages', params: {} },
+        { ...mockContext, agentConfiguration: { connector_ids: ['conn-123'], tools: [] } }
+      );
+
+      expect((result as ToolHandlerStandardReturn).results[0].type).toBe(ToolResultType.other);
+      expect(mockExecute).toHaveBeenCalled();
+    });
+
+    it('is unrestricted when agentConfiguration has no connector_ids', async () => {
+      mockExecute.mockResolvedValue({ status: 'ok', data: { ok: true } });
+      const tool = createExecuteConnectorSubActionTool({ getActions, getInference });
+      const result = await tool.handler(
+        { connectorId: 'conn-123', subAction: 'searchMessages', params: {} },
+        { ...mockContext, agentConfiguration: { tools: [] } }
+      );
+
+      expect((result as ToolHandlerStandardReturn).results[0].type).toBe(ToolResultType.other);
+      expect(mockExecute).toHaveBeenCalled();
+    });
+
+    it('is unrestricted when agentConfiguration is absent', async () => {
+      mockExecute.mockResolvedValue({ status: 'ok', data: { ok: true } });
+      const tool = createExecuteConnectorSubActionTool({ getActions, getInference });
+      const result = await tool.handler(
+        { connectorId: 'conn-123', subAction: 'searchMessages', params: {} },
+        mockContext
+      );
+
+      expect((result as ToolHandlerStandardReturn).results[0].type).toBe(ToolResultType.other);
+      expect(mockExecute).toHaveBeenCalled();
+    });
+  });
+
+  describe('MCP connectors', () => {
+    beforeEach(() => {
+      mockGet.mockResolvedValue({ id: 'conn-mcp', actionTypeId: '.mcp' });
+    });
+
+    it('translates subAction/params into a callTool sub-action call', async () => {
+      mockExecute.mockResolvedValue({
+        status: 'ok',
+        data: { content: [{ type: 'text', text: 'ok' }] },
+      });
+
+      const tool = createExecuteConnectorSubActionTool({ getActions, getInference });
+      const result = await tool.handler(
+        { connectorId: 'conn-mcp', subAction: 'search_issues', params: { query: 'foo' } },
+        mockContext
+      );
+
+      expect(mockExecute).toHaveBeenCalledWith({
+        actionId: 'conn-mcp',
+        params: {
+          subAction: 'callTool',
+          subActionParams: { name: 'search_issues', arguments: { query: 'foo' } },
+        },
+      });
+      expect((result as ToolHandlerStandardReturn).results[0].type).toBe(ToolResultType.other);
+    });
+
+    it('does not call getConnectorSpec or isToolAction', async () => {
+      mockExecute.mockResolvedValue({ status: 'ok', data: { content: [] } });
+
+      const tool = createExecuteConnectorSubActionTool({ getActions, getInference });
+      await tool.handler(
+        { connectorId: 'conn-mcp', subAction: 'search_issues', params: {} },
+        mockContext
+      );
+
+      expect(getConnectorSpecMock).not.toHaveBeenCalled();
+      expect(isToolActionMock).not.toHaveBeenCalled();
+    });
+
+    it('surfaces a callTool error via the existing generic error result', async () => {
+      mockExecute.mockResolvedValue({ status: 'error', message: 'Unknown tool: bogus_tool' });
+
+      const tool = createExecuteConnectorSubActionTool({ getActions, getInference });
+      const result = await tool.handler(
+        { connectorId: 'conn-mcp', subAction: 'bogus_tool', params: {} },
+        mockContext
+      );
+
+      const errorResult = (result as ToolHandlerStandardReturn).results[0] as ErrorResult;
+      expect(errorResult.type).toBe(ToolResultType.error);
+      expect(errorResult.data.message).toContain('Unknown tool: bogus_tool');
+    });
+
+    it('still honors ConnectorAuthorizationError authorization prompting', async () => {
+      mockExecute.mockResolvedValue({
+        status: 'error',
+        message: 'an error occurred while running the action',
+        serviceMessage: 'No access token found.',
+        errorName: 'ConnectorAuthorizationError',
+        errorMeta: {
+          connectorName: 'My MCP',
+          authMethod: OAUTH_AUTHORIZATION_CODE_AUTH_ID,
+          reason: 'no_token',
+        },
+      });
+
+      const tool = createExecuteConnectorSubActionTool({ getActions, getInference });
+      const result = await tool.handler(
+        { connectorId: 'conn-mcp', subAction: 'search_issues', params: {} },
+        mockContext
+      );
+
+      expect(mockAskForAuthorization).toHaveBeenCalledTimes(1);
+      expect((result as ToolHandlerPromptReturn).prompt).toMatchObject({
+        connector_id: 'conn-mcp',
+        connector_name: 'My MCP',
+        connector_type: '.mcp',
+        auth_method: OAUTH_AUTHORIZATION_CODE_AUTH_ID,
+      });
+    });
   });
 
   it('returns error when connector resolution fails', async () => {

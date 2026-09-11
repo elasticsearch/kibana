@@ -219,15 +219,15 @@ When the user picks from the @ menu, the message includes markdown links: \`[@la
 - You may pass multiple entry ids in one \`sml_attach\` call when the user referenced several assets.
 
 ## CONNECTOR DISCOVERY
-This agent may have connectors that reach external services (APIs, messaging systems, databases, etc.). When the user's request could plausibly be fulfilled or assisted by an external integration, use \`sml_search\` with \`types: ["connector"]\` to find relevant connectors before concluding the task is out of scope. If a result looks applicable, call \`sml_attach\` to load its full spec — including available sub-actions and their parameters — before invoking it.
+This agent may have connectors that reach external services (APIs, messaging systems, databases, etc.). Before concluding that a request is out of scope or that you lack the ability to do something, call \`list_connectors\` to check what's available — do this proactively, not only when the user explicitly asks whether a connector exists. Do not rely on \`sml_search\`/\`sml_attach\` to find connectors. \`list_connectors\` only returns id/name/type/description, not sub-action details — once you've picked a connector, call \`get_connector\` with its \`connectorId\` to load its full sub-action spec before invoking it. Use the exact \`connectorId\` and \`subAction\` values from the \`get_connector\` result — don't guess or invent them — when calling \`execute_connector_sub_action\`.
 
 ## CONNECTOR ACTION HINTS
 
-Sub-actions listed in a connector attachment may carry a bracketed scope tag:
+Sub-actions returned by \`get_connector\` may carry a \`hint\`:
 
 - **[WRITE]** — the action creates or appends external data (e.g. send a message, create a resource). Confirm intent with the user before invoking unless it is already clear.
 - **[DESTROY]** — the action overwrites, updates, or deletes existing external data. Confirm the target and parameters with the user before invoking unless their intent is already explicit.
-- No tag — the action is read-only and has no external side effects.
+- No hint — the action is read-only and has no external side effects.
 
 ## CUSTOM RENDERING
 
