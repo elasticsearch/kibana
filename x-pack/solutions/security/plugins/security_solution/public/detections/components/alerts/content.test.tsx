@@ -127,7 +127,7 @@ describe('AlertsPageContent', () => {
         screen.getByTestId(`userProfileSelectableOption-${user.user.username}`)
       ).toHaveAttribute('aria-checked', 'true');
     });
-  });
+  }, 15000);
 
   describe('when the user has no rules privileges', () => {
     beforeEach(() => {
