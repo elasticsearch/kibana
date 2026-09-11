@@ -404,6 +404,7 @@ export class AIAssistantService {
       if (this.productDocManager) {
         // install product documentation without blocking other resources
         void ensureProductDocumentationInstalled({
+          esClient,
           productDocManager: this.productDocManager,
           logger: this.options.logger,
           setIsProductDocumentationInProgress: this.setIsProductDocumentationInProgress.bind(this),

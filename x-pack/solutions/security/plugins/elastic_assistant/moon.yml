@@ -57,6 +57,7 @@ dependsOn:
   - '@kbn/core-analytics-server'
   - '@kbn/llm-tasks-plugin'
   - '@kbn/product-doc-base-plugin'
+  - '@kbn/product-doc-common'
   - '@kbn/core-saved-objects-api-server-mocks'
   - '@kbn/security-ai-prompts'
   - '@kbn/datemath'

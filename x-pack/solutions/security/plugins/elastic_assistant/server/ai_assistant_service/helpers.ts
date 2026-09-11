@@ -13,7 +13,7 @@ import type { DeleteByQueryRequest } from '@elastic/elasticsearch/lib/api/types'
 import { i18n } from '@kbn/i18n';
 import type { ProductDocBaseStartContract } from '@kbn/product-doc-base-plugin/server';
 import type { Logger } from '@kbn/logging';
-import { defaultInferenceEndpoints } from '@kbn/inference-common';
+import { resolveDefaultInferenceIdFromInferenceGet } from '@kbn/product-doc-common';
 import { getResourceName } from '.';
 import { knowledgeBaseIngestPipeline } from '../ai_assistant_data_clients/knowledge_base/ingest_pipeline';
 import type { GetElser } from '../types';
@@ -150,17 +150,22 @@ const ESQL_QUERY_GENERATION_TITLE = i18n.translate(
 );
 
 export const ensureProductDocumentationInstalled = async ({
+  esClient,
   productDocManager,
   setIsProductDocumentationInProgress,
   logger,
 }: {
+  esClient: ElasticsearchClient;
   productDocManager: ProductDocBaseStartContract['management'];
   setIsProductDocumentationInProgress: (value: boolean) => void;
   logger: Logger;
 }) => {
   try {
+    const inferenceId = await resolveDefaultInferenceIdFromInferenceGet(() =>
+      esClient.inference.get({})
+    );
     const { status } = await productDocManager.getStatus({
-      inferenceId: defaultInferenceEndpoints.ELSER,
+      inferenceId,
     });
     if (status !== 'installed') {
       logger.debug(`Installing product documentation for AIAssistantService`);
@@ -168,7 +173,7 @@ export const ensureProductDocumentationInstalled = async ({
       try {
         await productDocManager.install({
           wait: true,
-          inferenceId: defaultInferenceEndpoints.ELSER,
+          inferenceId,
         });
         logger.debug(`Successfully installed product documentation for AIAssistantService`);
       } catch (e) {
