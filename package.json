@@ -1562,7 +1562,7 @@
     "node-diff3": "3.1.2",
     "node-fetch": "2.7.0",
     "node-forge": "1.4.0",
-    "nodemailer": "9.0.4",
+    "nodemailer": "9.0.6",
     "normalize-path": "3.0.0",
     "object-hash": "3.0.0",
     "oniguruma-to-es": "4.3.4",
