@@ -1334,6 +1334,7 @@ packages:
   - 'x-pack/platform/packages/shared/response-ops/alerting-v2-common-queries'
   - 'x-pack/platform/packages/shared/response-ops/alerting-v2-constants'
   - 'x-pack/platform/packages/shared/response-ops/alerting-v2-episodes-ui'
+  - 'x-pack/platform/packages/shared/response-ops/alerting-v2-rule-builders'
   - 'x-pack/platform/packages/shared/response-ops/alerting-v2-rule-form'
   - 'x-pack/platform/packages/shared/response-ops/alerting-v2-schemas'
   - 'x-pack/platform/packages/shared/response-ops/alerting-v2-utils'

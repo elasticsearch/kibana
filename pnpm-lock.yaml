@@ -485,6 +485,9 @@ importers:
       '@kbn/alerting-v2-plugin':
         specifier: workspace:*
         version: link:x-pack/platform/plugins/shared/alerting_v2
+      '@kbn/alerting-v2-rule-builders':
+        specifier: workspace:*
+        version: link:x-pack/platform/packages/shared/response-ops/alerting-v2-rule-builders
       '@kbn/alerting-v2-rule-form':
         specifier: workspace:*
         version: link:x-pack/platform/packages/shared/response-ops/alerting-v2-rule-form
@@ -8872,6 +8875,8 @@ importers:
   x-pack/platform/packages/shared/response-ops/alerting-v2-constants: {}
 
   x-pack/platform/packages/shared/response-ops/alerting-v2-episodes-ui: {}
+
+  x-pack/platform/packages/shared/response-ops/alerting-v2-rule-builders: {}
 
   x-pack/platform/packages/shared/response-ops/alerting-v2-rule-form: {}
 
