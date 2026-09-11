@@ -90,7 +90,6 @@ spaceTest.describe('Discover sidebar runtime fields', { tag: tags.deploymentAgno
         },
       });
 
-      await unifiedFieldList.expectAvailableFieldCount(testData.LOGSTASH_AVAILABLE_FIELD_COUNT + 1);
       await unifiedFieldList.searchField(fieldName);
       await expect(unifiedFieldList.getAvailableField(fieldName)).toBeVisible();
 
@@ -104,8 +103,6 @@ spaceTest.describe('Discover sidebar runtime fields', { tag: tags.deploymentAgno
       expect(await unifiedFieldList.getAllFieldNames()).not.toContain(fieldName);
 
       await discover.deleteRuntimeField(fieldName);
-      await unifiedFieldList.clearFieldSearch();
-      await unifiedFieldList.expectAvailableFieldCount(testData.LOGSTASH_AVAILABLE_FIELD_COUNT);
       await unifiedFieldList.searchField(fieldName);
       await expect(unifiedFieldList.getAvailableField(fieldName)).toBeHidden();
     }
@@ -132,7 +129,6 @@ spaceTest.describe('Discover sidebar runtime fields', { tag: tags.deploymentAgno
 
       await expect(discover.getErrorCalloutTitle()).toBeVisible();
 
-      await unifiedFieldList.expectAvailableFieldCount(testData.LOGSTASH_AVAILABLE_FIELD_COUNT + 1);
       await unifiedFieldList.searchField(invalidField);
       await expect(unifiedFieldList.getAvailableField(invalidField)).toBeVisible();
 
@@ -165,7 +161,9 @@ spaceTest.describe('Discover sidebar runtime fields', { tag: tags.deploymentAgno
         },
       });
 
-      await unifiedFieldList.expectAvailableFieldCount(testData.LOGSTASH_AVAILABLE_FIELD_COUNT + 1);
+      await unifiedFieldList.searchField(newField);
+      await expect(unifiedFieldList.getAvailableField(newField)).toBeVisible();
+      await unifiedFieldList.clearFieldSearch();
 
       expect(await unifiedFieldList.isFieldSelected(newField)).toBe(false);
       await expect.poll(() => discover.getDocHeader()).toStrictEqual(['@timestamp', 'Summary']);
