@@ -2825,7 +2825,10 @@ describe('bulkEdit()', () => {
           },
         ],
       });
-      expect(rulesClientParams.createAPIKey).toHaveBeenCalledWith('Alerting: myType/my rule name');
+      expect(rulesClientParams.createAPIKey).toHaveBeenCalledWith(
+        'Alerting: myType/my rule name',
+        false
+      );
     });
 
     describe('set by the user when authenticated using api keys', () => {

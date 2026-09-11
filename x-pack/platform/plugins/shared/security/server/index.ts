@@ -36,6 +36,7 @@ export type {
   NativeAPIKeysType,
   AuthenticationServiceStart,
   InvalidateAPIKeyResult,
+  GrantAPIKeyOptions,
   GrantAPIKeyResult,
   CloneAPIKeyParams,
   CloneAPIKeyResult,

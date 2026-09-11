@@ -70,7 +70,7 @@ describe('resolveRuleAPIKey', () => {
       const result = await resolveRuleAPIKey(context, 'test-rule', true, existing);
 
       expect(result).toEqual({ createdAPIKey: grantedKey, isAuthTypeApiKey: false });
-      expect(context.createAPIKey).toHaveBeenCalledWith('test-rule');
+      expect(context.createAPIKey).toHaveBeenCalledWith('test-rule', undefined);
       expect(context.cloneAPIKey).not.toHaveBeenCalled();
       expect(context.getAuthenticationAPIKey).not.toHaveBeenCalled();
     });
@@ -135,8 +135,16 @@ describe('resolveRuleAPIKey', () => {
       const result = await resolveRuleAPIKey(context, 'test-rule', true);
 
       expect(result).toEqual({ createdAPIKey: grantedKey, isAuthTypeApiKey: false });
-      expect(context.createAPIKey).toHaveBeenCalledWith('test-rule');
+      expect(context.createAPIKey).toHaveBeenCalledWith('test-rule', undefined);
       expect(context.cloneAPIKey).not.toHaveBeenCalled();
+    });
+
+    test('forwards refresh to createAPIKey when granting', async () => {
+      const context = createMockContext();
+
+      await resolveRuleAPIKey(context, 'test-rule', true, { refresh: false });
+
+      expect(context.createAPIKey).toHaveBeenCalledWith('test-rule', false);
     });
   });
 
@@ -159,7 +167,7 @@ describe('resolveRuleAPIKey', () => {
       const result = await resolveRuleAPIKey(context, 'test-rule', true, { cloneApiKey: true });
 
       expect(result).toEqual({ createdAPIKey: grantedKey, isAuthTypeApiKey: false });
-      expect(context.createAPIKey).toHaveBeenCalledWith('test-rule');
+      expect(context.createAPIKey).toHaveBeenCalledWith('test-rule', undefined);
       expect(context.cloneAPIKey).not.toHaveBeenCalled();
     });
 
@@ -212,7 +220,7 @@ describe('resolveRuleAPIKey', () => {
       const result = await resolveRuleAPIKey(context, 'test-rule', true, existing);
 
       expect(result).toEqual({ createdAPIKey: grantedKey, isAuthTypeApiKey: false });
-      expect(context.createAPIKey).toHaveBeenCalledWith('test-rule');
+      expect(context.createAPIKey).toHaveBeenCalledWith('test-rule', undefined);
     });
   });
 

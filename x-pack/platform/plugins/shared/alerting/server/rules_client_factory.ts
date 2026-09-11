@@ -432,7 +432,7 @@ export class RulesClientFactory {
         const user = securityService.authc.getCurrentUser(request);
         return user?.username ?? null;
       },
-      async createAPIKey(name: string) {
+      async createAPIKey(name: string, refresh?: boolean | 'wait_for') {
         if (!securityPluginStart) {
           return { apiKeysEnabled: false };
         }
@@ -443,11 +443,15 @@ export class RulesClientFactory {
 
         let createEsAPIKeyResult;
         try {
-          createEsAPIKeyResult = await securityService.authc.apiKeys.grantAsInternalUser(request, {
-            name,
-            role_descriptors: {},
-            metadata: { managed: true, kibana: { type: 'alerting_rule' } },
-          });
+          createEsAPIKeyResult = await securityService.authc.apiKeys.grantAsInternalUser(
+            request,
+            {
+              name,
+              role_descriptors: {},
+              metadata: { managed: true, kibana: { type: 'alerting_rule' } },
+            },
+            { refresh }
+          );
         } catch (err) {
           // if the ES API key creation failed, we need to invalidate the UIAM API key
           if (createUiamApiKeyResult?.id) {

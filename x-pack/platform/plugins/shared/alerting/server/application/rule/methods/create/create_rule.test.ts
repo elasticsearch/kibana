@@ -2058,7 +2058,10 @@ describe('create()', () => {
     });
 
     await rulesClient.create({ data });
-    expect(rulesClientParams.createAPIKey).toHaveBeenCalledWith('Alerting: 123/my rule name');
+    expect(rulesClientParams.createAPIKey).toHaveBeenCalledWith(
+      'Alerting: 123/my rule name',
+      undefined
+    );
   });
 
   test('should create rule with given notifyWhen value if notifyWhen is not null', async () => {
@@ -4288,7 +4291,7 @@ describe('create()', () => {
     await rulesClient.create({ data, options: { cloneApiKey: true } });
 
     expect(rulesClientParams.cloneAPIKey).not.toHaveBeenCalled();
-    expect(rulesClientParams.createAPIKey).toHaveBeenCalledWith('Alerting: 123/abc');
+    expect(rulesClientParams.createAPIKey).toHaveBeenCalledWith('Alerting: 123/abc', undefined);
   });
 
   test('throws error and does not add API key to invalidatePendingApiKey SO when create saved object fails if the user is authenticated using an api key', async () => {

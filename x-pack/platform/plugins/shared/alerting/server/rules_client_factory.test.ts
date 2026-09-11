@@ -623,7 +623,36 @@ describe('RulesClientFactory', () => {
         metadata: { managed: true, kibana: { type: 'alerting_rule' } },
         name: 'test',
         role_descriptors: {},
-      }
+      },
+      { refresh: undefined }
+    );
+  });
+
+  test('createAPIKey() forwards refresh to grantAsInternalUser', async () => {
+    const factory = new RulesClientFactory();
+    factory.initialize({
+      ...rulesClientFactoryParams,
+      securityService,
+      securityPluginSetup,
+      securityPluginStart,
+    });
+    await factory.create(mockRouter.createKibanaRequest(), savedObjectsService);
+    const constructorCall = jest.requireMock('./rules_client').RulesClient.mock.calls[0][0];
+
+    securityService.authc.apiKeys.grantAsInternalUser.mockResolvedValueOnce({
+      api_key: '123',
+      id: 'abc',
+      name: '',
+    });
+    await constructorCall.createAPIKey('test', false);
+    expect(securityService.authc.apiKeys.grantAsInternalUser).toHaveBeenCalledWith(
+      expect.any(Object),
+      {
+        metadata: { managed: true, kibana: { type: 'alerting_rule' } },
+        name: 'test',
+        role_descriptors: {},
+      },
+      { refresh: false }
     );
   });
 

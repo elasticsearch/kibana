@@ -78,6 +78,7 @@ export const prepareRule = async <Params extends RuleParams>({
         username,
         shouldUpdateApiKey: true,
         errorMessage: 'Error creating rule: could not create API key',
+        refresh: false,
       });
       apiKeys.set(id, {
         apiKey: apiKeyProps.apiKey ?? null,

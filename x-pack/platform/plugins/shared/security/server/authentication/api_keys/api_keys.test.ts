@@ -579,6 +579,33 @@ describe('API Keys', () => {
       });
     });
 
+    it('forwards refresh when provided and omits it otherwise', async () => {
+      mockLicense.isEnabled.mockReturnValue(true);
+      mockClusterClient.asInternalUser.security.grantApiKey.mockResponse({
+        id: '123',
+        name: 'key-name',
+        api_key: 'abc123',
+        encoded: 'utf8',
+      });
+      const request = httpServerMock.createKibanaRequest({
+        headers: { authorization: `Basic ${encodeToBase64('foo:bar')}` },
+      });
+      const createParams = {
+        name: 'test_api_key',
+        role_descriptors: roleDescriptors,
+      };
+
+      await apiKeys.grantAsInternalUser(request, createParams);
+      expect(mockClusterClient.asInternalUser.security.grantApiKey).toHaveBeenLastCalledWith(
+        expect.not.objectContaining({ refresh: expect.anything() })
+      );
+
+      await apiKeys.grantAsInternalUser(request, createParams, { refresh: false });
+      expect(mockClusterClient.asInternalUser.security.grantApiKey).toHaveBeenLastCalledWith(
+        expect.objectContaining({ refresh: false })
+      );
+    });
+
     it('calls `grantApiKey` with proper parameters for the Bearer scheme', async () => {
       mockLicense.isEnabled.mockReturnValue(true);
       mockClusterClient.asInternalUser.security.grantApiKey.mockResponseOnce({

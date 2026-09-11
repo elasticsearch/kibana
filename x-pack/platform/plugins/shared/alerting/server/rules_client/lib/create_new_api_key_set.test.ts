@@ -121,6 +121,25 @@ describe('createNewAPIKeySet', () => {
       apiKeyOwner: 'test',
     });
     expect(rulesClientParams.createAPIKey).toHaveBeenCalledTimes(1);
+    expect(rulesClientParams.createAPIKey).toHaveBeenCalledWith(
+      'Alerting: 123/rule-name',
+      undefined
+    );
+  });
+
+  test('forwards refresh to createAPIKey when provided', async () => {
+    rulesClientParams.createAPIKey.mockResolvedValueOnce({
+      apiKeysEnabled: true,
+      result: { id: '123', name: '123', api_key: 'abc' },
+    });
+    await createNewAPIKeySet(rulesClientParams, {
+      id: attributes.alertTypeId,
+      ruleName: attributes.name,
+      username,
+      shouldUpdateApiKey: true,
+      refresh: false,
+    });
+    expect(rulesClientParams.createAPIKey).toHaveBeenCalledWith('Alerting: 123/rule-name', false);
   });
 
   test('should get api key from the request if the user is authenticated using api keys', async () => {
