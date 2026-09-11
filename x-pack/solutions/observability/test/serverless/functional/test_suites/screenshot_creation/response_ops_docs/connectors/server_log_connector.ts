@@ -12,9 +12,25 @@ export default function ({ getService, getPageObjects }: FtrProviderContext) {
   const screenshotDirectories = ['response_ops_docs', 'observability_connectors'];
   const pageObjects = getPageObjects(['common', 'header', 'svlCommonPage']);
   const testSubjects = getService('testSubjects');
+  const retry = getService('retry');
 
-  // Failing: See https://github.com/elastic/kibana/issues/283730
-  describe.skip('server log connector', function () {
+  // The card grid reflows as action types resolve; a click on a still-moving card is silently dropped, so wait for its position to settle first (FTR lacks Playwright's actionability wait).
+  const clickCardWhenSettled = async (cardSubj: string): Promise<void> => {
+    let previous: { x: number; y: number; height: number; width: number } | undefined;
+    await retry.waitFor(`${cardSubj} to stop moving`, async () => {
+      const { x, y, height, width } = await (await testSubjects.find(cardSubj)).getPosition();
+      const settled =
+        previous?.x === x &&
+        previous?.y === y &&
+        previous?.height === height &&
+        previous?.width === width;
+      previous = { x, y, height, width };
+      return settled;
+    });
+    await testSubjects.click(cardSubj);
+  };
+
+  describe('server log connector', function () {
     beforeEach(async () => {
       await pageObjects.svlCommonPage.loginWithPrivilegedRole();
     });
@@ -23,7 +39,7 @@ export default function ({ getService, getPageObjects }: FtrProviderContext) {
       await pageObjects.common.navigateToApp('connectors');
       await pageObjects.header.waitUntilLoadingHasFinished();
       await testSubjects.click('createConnectorButton');
-      await testSubjects.click(`.server-log-card`);
+      await clickCardWhenSettled('.server-log-card');
       await testSubjects.setValue('nameInput', 'Server log test connector');
       await svlCommonScreenshots.takeScreenshot('serverlog-connector', screenshotDirectories);
       const saveTestButton = await testSubjects.find('create-connector-flyout-save-test-btn');
