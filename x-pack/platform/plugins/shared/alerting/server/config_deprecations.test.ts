@@ -33,6 +33,23 @@ const applyConfigDeprecations = (settings = {}) => {
 };
 
 describe('config deprecations', () => {
+  it('removes xpack.alerting.ruleChangeTracking.enabled', async () => {
+    const config = {
+      ruleChangeTracking: {
+        enabled: false,
+        scope: ['security'],
+      },
+    };
+    const { messages, migrated } = applyConfigDeprecations(cloneDeep(config));
+    expect(migrated.ruleChangeTracking?.enabled).not.toBeDefined();
+    expect(migrated.ruleChangeTracking?.scope).toEqual(['security']);
+    expect(messages).toMatchInlineSnapshot(`
+      Array [
+        "You no longer need to configure \\"ruleChangeTracking.enabled\\".",
+      ]
+    `);
+  });
+
   it('renames xpack.alerting.maintenanceWindow.enabled to xpack.maintenanceWindows.enabled', async () => {
     const config = {
       xpack: {

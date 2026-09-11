@@ -13,7 +13,7 @@ export default createTestConfig('spaces_only', {
   enableActionsProxy: false,
   verificationMode: 'none',
   useDedicatedTaskRunner: false,
-  ruleChangeTrackingEnabled: true,
+  ruleChangeTrackingScope: ['stack'],
   testFiles: [require.resolve('./change_tracking/enabled.ts')],
   reportName: 'X-Pack Alerting API Integration Tests - Change Tracking Enabled',
 });

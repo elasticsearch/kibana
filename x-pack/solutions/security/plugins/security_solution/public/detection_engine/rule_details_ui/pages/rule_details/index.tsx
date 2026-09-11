@@ -152,7 +152,6 @@ import { useManualRuleRunConfirmation } from '../../../rule_gaps/components/manu
 // eslint-disable-next-line no-restricted-imports
 import { useLegacyUrlRedirect } from './use_redirect_legacy_url';
 import { RuleDetailTabs, useRuleDetailsTabs } from './use_rule_details_tabs';
-import { useIsExperimentalFeatureEnabled } from '../../../../common/hooks/use_experimental_features';
 import { useRuleUpdateCallout } from '../../../rule_management/hooks/use_rule_update_callout';
 import { useDeprecatedRuleDetailsCallout } from '../../../rule_management/components/rule_deprecation';
 import { useUserPrivileges } from '../../../../common/components/user_privileges';
@@ -235,14 +234,9 @@ export const RuleDetailsPage = connector(
     clearEventsLoading,
     clearSelected,
   }: DetectionEngineComponentProps) {
-    const ruleChangesHistoryFFEnabled = useIsExperimentalFeatureEnabled(
-      'ruleChangesHistoryEnabled'
-    );
-    const [ruleChangesHistoryAdvancedSetting] = useUiSetting$<boolean>(
+    const [isRuleChangesHistoryEnabled] = useUiSetting$<boolean>(
       ENABLE_RULE_CHANGES_HISTORY_SETTING
     );
-    const isRuleChangesHistoryEnabled =
-      ruleChangesHistoryFFEnabled && ruleChangesHistoryAdvancedSetting;
 
     const {
       application,

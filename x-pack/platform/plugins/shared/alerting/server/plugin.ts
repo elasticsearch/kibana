@@ -281,9 +281,7 @@ export class AlertingPlugin {
     this.disabledRuleTypes = new Set(this.config.disabledRuleTypes || []);
     this.enabledRuleTypes =
       this.config.enabledRuleTypes != null ? new Set(this.config.enabledRuleTypes) : null;
-    if (this.config.ruleChangeTracking.enabled) {
-      this.changeTrackingService = new ChangeTrackingService(this.logger, this.kibanaVersion);
-    }
+    this.changeTrackingService = new ChangeTrackingService(this.logger, this.kibanaVersion);
   }
 
   public setup(

@@ -322,16 +322,6 @@ export const allowedExperimentalValues = Object.freeze({
   prebuiltRulesDeprecationUIEnabled: true,
 
   /**
-   * Enables the Detection Rule Changes History API endpoint
-   * (`GET /api/detection_engine/rules/_history`).
-   *
-   * Independent of the alerting framework's `xpack.alerting.ruleChangeTracking.enabled`
-   * config flag, which gates the underlying primitive that produces the history
-   * records. Both must be enabled for the API to return non-empty results.
-   */
-  ruleChangesHistoryEnabled: true,
-
-  /**
    * Enables the agent builder `run_rule_preview` tool and the `security.rule.preview`
    * attachment (server type + client renderer). Gates registration so the feature can
    * ship dark and be enabled per environment.

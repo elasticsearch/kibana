@@ -26,7 +26,6 @@ describe('config validation', () => {
           "removalDelay": "1h",
         },
         "ruleChangeTracking": Object {
-          "enabled": true,
           "scope": Array [
             "security",
           ],

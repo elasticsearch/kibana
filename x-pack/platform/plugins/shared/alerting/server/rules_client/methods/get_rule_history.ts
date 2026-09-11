@@ -22,8 +22,7 @@ import type { RuleChangeHistorySnapshot } from '../lib/change_tracking';
 import { getRuleSo } from '../../data/rule';
 
 /**
- * Thrown by {@link RulesClient.getHistory} when rule change tracking is
- * disabled at the framework level (`xpack.alerting.ruleChangeTracking.enabled = false`).
+ * Thrown by {@link RulesClient.getHistory} when the change tracking service is unavailable.
  */
 export class RuleChangeTrackingDisabledError extends Error {
   constructor(message = 'Rule change tracking is disabled.') {

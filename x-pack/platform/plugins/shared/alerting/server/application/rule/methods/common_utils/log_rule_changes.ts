@@ -105,18 +105,15 @@ export async function logRuleChanges({
 
     const ruleType = getRuleType(ruleTypeRegistry, ruleSO.attributes.alertTypeId, logger);
 
-    // "ruleType.trackChanges" is activated at Alerting plugin's "plugin.ts".
-    //
-    // The activation is gated by the feature flag "xpack.alerting.ruleChangeTracking.enabled".
-    // On top of that "xpack.alerting.ruleChangeTracking.scope" controls what solution rule
-    // types will be activated, e.g. "security" or "observability".
-    //
+    // "ruleType.trackChanges" is activated at Alerting plugin's "plugin.ts", based on
+    // "xpack.alerting.ruleChangeTracking.scope", which controls what solution rule
+    // types are activated, e.g. "security" or "observability".
     if (!ruleType?.trackChanges) {
       continue;
     }
 
     // Security Solution additionally gates rule changes history per-space via its
-    // "Enable rule changes history" advanced setting, on top of the static config flag above.
+    // "Enable rule changes history" advanced setting.
     if (ruleType.solution === 'security') {
       if (securityRuleChangesHistoryEnabled === undefined) {
         try {

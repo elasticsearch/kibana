@@ -60,9 +60,7 @@ export function createTestConfig(options: CreateTestConfigOptions) {
           `--xpack.fleet.internal.skipUploadPackageValidation=true`,
           `--xpack.securitySolution.enableExperimental=${JSON.stringify([
             'endpointExceptionsMovedUnderManagement',
-            'ruleChangesHistoryEnabled',
           ])}`,
-          '--xpack.alerting.ruleChangeTracking.enabled=true',
           ...(options.kbnTestServerArgs || []),
           `--plugin-path=${path.resolve(
             __dirname,

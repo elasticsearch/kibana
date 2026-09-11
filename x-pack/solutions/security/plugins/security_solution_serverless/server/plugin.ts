@@ -128,11 +128,7 @@ export class SecuritySolutionServerlessPlugin
       projectSettings.push(ENABLE_ALERTS_AND_ATTACKS_ALIGNMENT_SETTING);
     }
 
-    // TODO(rule-changes-history GA): remove this block when the feature is GA
-    // This setting is only registered when `ruleChangesHistoryEnabled` is enabled
-    if (this.config.experimentalFeatures.ruleChangesHistoryEnabled) {
-      projectSettings.push('securitySolution:enableRuleChangesHistory');
-    }
+    projectSettings.push('securitySolution:enableRuleChangesHistory');
 
     // Workflows is enabled by default since 9.4.0. The setting is retained so admins can opt out.
     // It is only registered in complete and EASE tiers; adding it while in the essentials tier causes an error.

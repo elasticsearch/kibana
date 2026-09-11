@@ -10,7 +10,9 @@ import type { ConfigDeprecationProvider } from '@kbn/core/server';
 export const autocompleteConfigDeprecationProvider: ConfigDeprecationProvider = ({
   renameFromRoot,
   deprecate,
+  unused,
 }) => [
+  unused('ruleChangeTracking.enabled', { level: 'warning' }),
   deprecate('maxEphemeralActionsPerAlert', '9.0.0', {
     level: 'warning',
     message: `The setting "xpack.alerting.maxEphemeralActionsPerAlert" is deprecated and currently ignored by the system. Please remove this setting.`,

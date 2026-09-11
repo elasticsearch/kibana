@@ -26,11 +26,3 @@ export const DEFAULT_RESULT_SIZE = 100;
  * Default maximum number of buckets returned per field by {@link ChangeHistoryClient.getHistoryByFields}.
  */
 export const DEFAULT_FIELD_AGGREGATION_SIZE = 100;
-
-/**
- * Acts like a feature flag for this package as it prevents initialization.
- * Remove this after General Availability
- * */
-export const FLAGS = {
-  FEATURE_ENABLED: true,
-};

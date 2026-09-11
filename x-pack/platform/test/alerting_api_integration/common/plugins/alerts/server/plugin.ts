@@ -30,7 +30,6 @@ import type { IEventLogClientService, IEventLogService } from '@kbn/event-log-pl
 import type { NotificationsPluginStart } from '@kbn/notifications-plugin/server';
 import { RULE_SAVED_OBJECT_TYPE } from '@kbn/alerting-plugin/server';
 import { ALERTING_FEATURE_ID } from '@kbn/alerting-plugin/common';
-import { FLAGS as CHANGE_HISTORY_FLAGS } from '@kbn/change-history';
 import { defineRoutes } from './routes';
 import { defineActionTypes } from './action_types';
 import { defineRuleTypes } from './rule_types';
@@ -112,7 +111,6 @@ export class FixturePlugin implements Plugin<void, void, FixtureSetupDeps, Fixtu
     core: CoreSetup<FixtureStartDeps>,
     { features, actions, alerting, taskManager, ruleRegistry, eventLog }: FixtureSetupDeps
   ) {
-    CHANGE_HISTORY_FLAGS.FEATURE_ENABLED = true;
     features.registerKibanaFeature({
       id: 'alertsFixture',
       name: 'Alerts',
@@ -227,8 +225,5 @@ export class FixturePlugin implements Plugin<void, void, FixtureSetupDeps, Fixtu
 
     this.notificationsStart$.next(notifications);
     this.notificationsStart$.complete();
-  }
-  public stop() {
-    CHANGE_HISTORY_FLAGS.FEATURE_ENABLED = false;
   }
 }

@@ -28,7 +28,6 @@ import {
   getRuleChangesHistoryUrl,
 } from '../../../../../common/components/link_to/redirect_to_detection_engine';
 import { useBoolState } from '../../../../../common/hooks/use_bool_state';
-import { useIsExperimentalFeatureEnabled } from '../../../../../common/hooks/use_experimental_features';
 import { SINGLE_RULE_ACTIONS } from '../../../../../common/lib/apm/user_actions';
 import { useStartTransaction } from '../../../../../common/lib/apm/use_start_transaction';
 import { useKibana, useUiSetting$ } from '../../../../../common/lib/kibana';
@@ -106,12 +105,7 @@ const RuleActionsOverflowComponent = ({
     state: { doesBaseVersionExist },
   } = useRuleCustomizationsContext();
 
-  const ruleChangesHistoryFFEnabled = useIsExperimentalFeatureEnabled('ruleChangesHistoryEnabled');
-  const [ruleChangesHistoryAdvancedSetting] = useUiSetting$<boolean>(
-    ENABLE_RULE_CHANGES_HISTORY_SETTING
-  );
-  const isRuleChangesHistoryEnabled =
-    ruleChangesHistoryFFEnabled && ruleChangesHistoryAdvancedSetting;
+  const [isRuleChangesHistoryEnabled] = useUiSetting$<boolean>(ENABLE_RULE_CHANGES_HISTORY_SETTING);
 
   const actions = useMemo(
     () => [

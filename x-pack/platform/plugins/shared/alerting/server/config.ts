@@ -97,7 +97,6 @@ export const configSchema = schema.object({
     coordinateInstallation: schema.boolean({ defaultValue: true }),
   }),
   ruleChangeTracking: schema.object({
-    enabled: schema.boolean({ defaultValue: true }),
     scope: schema.arrayOf(ruleChangeTrackingSolutions, { defaultValue: ['security'] }),
   }),
   cancelAlertsOnRuleTimeout: schema.boolean({ defaultValue: true }),

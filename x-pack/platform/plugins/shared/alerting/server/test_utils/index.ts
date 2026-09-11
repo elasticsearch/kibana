@@ -63,7 +63,6 @@ export function generateAlertingConfig(overwrites: Partial<AlertingConfig> = {})
       coordinateInstallation: true,
     },
     ruleChangeTracking: {
-      enabled: false,
       scope: ['security'],
     },
     invalidateApiKeysTask: {

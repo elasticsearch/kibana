@@ -59,11 +59,7 @@ export const registerRuleManagementRoutes = (
   // Rules coverage overview
   getCoverageOverviewRoute(router);
 
-  // Rule changes history (gated by experimental flag; the feature also
-  // requires `xpack.alerting.ruleChangeTracking.enabled` to be on for the
-  // alerting framework to actually produce history records).
-  if (config.experimentalFeatures.ruleChangesHistoryEnabled) {
-    ruleHistoryRoute(router);
-    restoreRuleFromHistoryRoute(router);
-  }
+  // Rule changes history
+  ruleHistoryRoute(router);
+  restoreRuleFromHistoryRoute(router);
 };

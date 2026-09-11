@@ -109,10 +109,7 @@ export function createTestConfig(options: CreateTestConfigOptions, testFiles?: s
           `--xpack.securitySolution.enableExperimental=${JSON.stringify([
             'previewTelemetryUrlEnabled',
             'endpointExceptionsMovedUnderManagement',
-            'ruleChangesHistoryEnabled',
           ])}`,
-          '--xpack.alerting.ruleChangeTracking.enabled=true',
-          '--uiSettings.overrides.securitySolution:enableRuleChangesHistory=true',
           `--plugin-path=${path.resolve(
             __dirname,
             '../../../../../../../src/platform/test/analytics/plugins/analytics_ftr_helpers'

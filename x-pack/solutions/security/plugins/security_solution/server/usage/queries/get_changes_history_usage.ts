@@ -44,9 +44,8 @@ interface ChangesHistoryUsageAggs {
  * window, aggregated from the `.kibana_change_history` data stream.
  *
  * Degrades to `{ revision_saved: 0, rule_restored: 0 }` (never throws) on
- * any ES error, including `index_not_found_exception` when
- * `xpack.alerting.ruleChangeTracking.enabled` is disabled (the default) and
- * the data stream does not exist. The catch is local so a missing index
+ * any ES error, including `index_not_found_exception` when the
+ * `.kibana_change_history` data stream does not exist yet. The catch is local so a missing index
  * only zeros these two fields, never the whole `detection_rules` metrics
  * group.
  * @param esClient the elastic client which should be a system based client

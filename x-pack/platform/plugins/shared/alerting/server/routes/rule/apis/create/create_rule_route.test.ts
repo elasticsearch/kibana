@@ -52,7 +52,6 @@ describe('createRuleRoute', () => {
     },
     cancelAlertsOnRuleTimeout: true,
     ruleChangeTracking: {
-      enabled: false,
       scope: ['security'] as string[],
     },
     rules: {

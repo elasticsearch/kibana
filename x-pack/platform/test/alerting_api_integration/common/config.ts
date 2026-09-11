@@ -42,7 +42,7 @@ interface CreateTestConfigOptions {
   maxAlerts?: number;
   emailMaximumBodyLength?: number;
   indexRefreshInterval?: string | false;
-  ruleChangeTrackingEnabled?: boolean;
+  ruleChangeTrackingScope?: string[];
 }
 
 // test.not-enabled is specifically not enabled
@@ -236,7 +236,7 @@ export function createTestConfig(name: string, options: CreateTestConfigOptions)
     experimentalFeatures = [],
     maxAlerts = 20,
     indexRefreshInterval,
-    ruleChangeTrackingEnabled = false,
+    ruleChangeTrackingScope,
   } = options;
 
   return async ({ readConfigFile }: FtrConfigProviderContext) => {
@@ -332,11 +332,8 @@ export function createTestConfig(name: string, options: CreateTestConfigOptions)
         ? []
         : [`--xpack.actions.email.maximum_body_length=${options.emailMaximumBodyLength}`];
 
-    const ruleChangeTrackingSettings = ruleChangeTrackingEnabled
-      ? [
-          '--xpack.alerting.ruleChangeTracking.enabled=true',
-          `--xpack.alerting.ruleChangeTracking.scope=${JSON.stringify(['stack'])}`,
-        ]
+    const ruleChangeTrackingSettings = ruleChangeTrackingScope
+      ? [`--xpack.alerting.ruleChangeTracking.scope=${JSON.stringify(ruleChangeTrackingScope)}`]
       : [];
 
     return {

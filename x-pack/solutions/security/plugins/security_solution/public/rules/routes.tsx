@@ -202,12 +202,7 @@ const RulesContainerComponent: React.FC = () => {
   const isEndpointExceptionsMovedFFEnabled = useIsExperimentalFeatureEnabled(
     'endpointExceptionsMovedUnderManagement'
   );
-  const ruleChangesHistoryFFEnabled = useIsExperimentalFeatureEnabled('ruleChangesHistoryEnabled');
-  const [ruleChangesHistoryAdvancedSetting] = useUiSetting$<boolean>(
-    ENABLE_RULE_CHANGES_HISTORY_SETTING
-  );
-  const isRuleChangesHistoryEnabled =
-    ruleChangesHistoryFFEnabled && ruleChangesHistoryAdvancedSetting;
+  const [isRuleChangesHistoryEnabled] = useUiSetting$<boolean>(ENABLE_RULE_CHANGES_HISTORY_SETTING);
 
   const subRoutes = useMemo(() => {
     return getRulesSubRoutes(capabilities, {
