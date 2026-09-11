@@ -156,10 +156,9 @@ export function SearchIndexDetailPageProvider({ getService, getPageObjects }: Ft
     },
     async expectEditSettingsToBeEnabled() {
       await testSubjects.existOrFail('indexDetailsSettingsEditModeSwitch', { timeout: 2000 });
-      const isEditSettingsButtonDisabled = await testSubjects.isEnabled(
-        'indexDetailsSettingsEditModeSwitch'
-      );
-      expect(isEditSettingsButtonDisabled).to.be(true);
+      await retry.waitFor('edit settings switch to be enabled', async () => {
+        return (await testSubjects.isEnabled('indexDetailsSettingsEditModeSwitch')) === true;
+      });
     },
 
     async openIndicesDetailFromIndexManagementIndicesListTable(indexOfRow: number) {
@@ -182,6 +181,20 @@ export function SearchIndexDetailPageProvider({ getService, getPageObjects }: Ft
     },
 
     async clickOnBreadcrumb(breadcrumbsName: string) {
+      // Breadcrumbs are set asynchronously once the embedded Index Management app
+      // finishes rendering. Wait for the crumb to be present before clicking,
+      // otherwise this used to silently no-op and the expected navigation never
+      // happened.
+      await retry.waitFor(`breadcrumb "${breadcrumbsName}" to be present`, async () => {
+        const breadcrumbs = await testSubjects.findAll('euiBreadcrumb');
+        for (const breadcrumb of breadcrumbs) {
+          if ((await breadcrumb.getVisibleText()) === breadcrumbsName) {
+            return true;
+          }
+        }
+        return false;
+      });
+
       const breadcrumbs = await testSubjects.findAll('euiBreadcrumb');
       for (const breadcrumb of breadcrumbs) {
         if ((await breadcrumb.getVisibleText()) === breadcrumbsName) {
@@ -189,6 +202,7 @@ export function SearchIndexDetailPageProvider({ getService, getPageObjects }: Ft
           return;
         }
       }
+      throw new Error(`Breadcrumb "${breadcrumbsName}" was not found`);
     },
 
     async expectAddFieldToBeDisabled() {
@@ -201,8 +215,9 @@ export function SearchIndexDetailPageProvider({ getService, getPageObjects }: Ft
 
     async expectAddFieldToBeEnabled() {
       await testSubjects.existOrFail('indexDetailsMappingsAddField');
-      const isMappingsFieldEnabled = await testSubjects.isEnabled('indexDetailsMappingsAddField');
-      expect(isMappingsFieldEnabled).to.be(true);
+      await retry.waitFor('mappings add field button to be enabled', async () => {
+        return (await testSubjects.isEnabled('indexDetailsMappingsAddField')) === true;
+      });
     },
 
     async expectDiscoverLinkExists() {
