@@ -381,6 +381,20 @@ const version8: SavedObjectsFullModelVersion = {
   },
 };
 
+const engineDescriptorSchemaV9 = engineDescriptorSchemaV8.extends({
+  nonPriorityLogExtractionState: schema.nullable(logExtractionRuntimeStateSchemaV7),
+});
+
+// Adds the non-priority process cursor. schema.nullable defaults absent keys to null, so no
+// backfill is needed for version 8 descriptors. Not queried, so no mappings addition.
+const version9: SavedObjectsFullModelVersion = {
+  changes: [],
+  schemas: {
+    create: engineDescriptorSchemaV9,
+    forwardCompatibility: engineDescriptorSchemaV9.extends({}, { unknowns: 'ignore' }),
+  },
+};
+
 export const EngineDescriptorType: SavedObjectsType = {
   name: EngineDescriptorTypeName,
   hidden: false,
@@ -395,6 +409,7 @@ export const EngineDescriptorType: SavedObjectsType = {
     6: version6,
     7: version7,
     8: version8,
+    9: version9,
   },
   hiddenFromHttpApis: true,
 };

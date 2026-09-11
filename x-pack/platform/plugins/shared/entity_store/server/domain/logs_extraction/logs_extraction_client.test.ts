@@ -94,6 +94,12 @@ function createMockEngineDescriptor(
     paginationId: string;
     lastExecutionTimestamp: string;
     sliceEndTimestamp: string;
+    nonPriorityLogExtractionState: {
+      checkpointTimestamp: string | null;
+      paginationId: string | null;
+      lastExecutionTimestamp: string | null;
+      sliceEndTimestamp: string | null;
+    } | null;
   }>
 ) {
   const logExtractionState = {
@@ -106,6 +112,7 @@ function createMockEngineDescriptor(
     type,
     status: ENGINE_STATUS.STARTED,
     logExtractionState,
+    nonPriorityLogExtractionState: overrides?.nonPriorityLogExtractionState ?? null,
     versionState: { version: 2, state: 'running' as const, isMigratedFromV1: false },
   };
 }
@@ -2025,4 +2032,146 @@ describe('LogsExtractionClient mid-slice resume', () => {
       expect(ingestedIds).toEqual(['entity1', 'entity2', 'entity3']);
     }
   );
+});
+
+describe('LogsExtractionClient extraction mode cursor routing', () => {
+  const fixedNow = new Date('2025-01-15T12:00:00.000Z');
+
+  const extractionColumns: ESQLSearchResponse['columns'] = [
+    { name: '@timestamp', type: 'date' },
+    { name: HASHED_ID_FIELD, type: 'keyword' },
+    { name: ENGINE_METADATA_UNTYPED_ID_FIELD, type: 'keyword' },
+  ];
+
+  function createContextWithMode(mode: 'single' | 'priority' | 'nonPriority') {
+    jest.clearAllMocks();
+    mockExecuteEsqlQuery.mockReset();
+    mockIngestEntities.mockReset();
+
+    const mockLogger = loggerMock.create();
+    const mockEsClient = {
+      indices: {
+        resolveIndex: jest.fn().mockResolvedValue({ indices: [], aliases: [], data_streams: [] }),
+      },
+    } as unknown as jest.Mocked<ElasticsearchClient>;
+    const mockDataViewsService = {
+      get: jest.fn().mockResolvedValue({ getIndexPattern: jest.fn().mockReturnValue('logs-*') }),
+    } as unknown as jest.Mocked<DataViewsService>;
+    const mockEngineDescriptorClient: jest.Mocked<
+      Pick<EngineDescriptorClient, 'findOrThrow' | 'update'>
+    > = {
+      findOrThrow: jest.fn(),
+      update: jest.fn().mockResolvedValue({}),
+    };
+    const mockGlobalStateClient = createMockGlobalStateClient();
+
+    const client = new LogsExtractionClient({
+      logger: mockLogger,
+      namespace: 'default',
+      esClient: mockEsClient,
+      dataViewsService: mockDataViewsService,
+      engineDescriptorClient: mockEngineDescriptorClient as unknown as EngineDescriptorClient,
+      globalStateClient: mockGlobalStateClient as unknown as EntityStoreGlobalStateClient,
+      extractionMode: mode,
+    });
+
+    return { client, mockEngineDescriptorClient, mockDataViewsService };
+  }
+
+  beforeEach(() => {
+    jest.useFakeTimers({ now: fixedNow.getTime() });
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
+  it('nonPriority mode writes nonPriorityLogExtractionState on mid-run and end-of-run persists', async () => {
+    const { client, mockEngineDescriptorClient } = createContextWithMode('nonPriority');
+    mockEngineDescriptorClient.findOrThrow.mockResolvedValue(
+      createMockEngineDescriptor('user') as Awaited<
+        ReturnType<EngineDescriptorClient['findOrThrow']>
+      >
+    );
+    mockIngestEntities.mockResolvedValue(undefined);
+    // probe → extraction (1 row, non-final) → empty probe (end of window) → sweep
+    mockExecuteEsqlQuery
+      .mockResolvedValueOnce(mockLogPaginationCursorProbeRow('2025-01-15T11:00:00.000Z'))
+      .mockResolvedValueOnce({
+        columns: extractionColumns,
+        values: [['2025-01-15T10:30:00.000Z', 'hash1', 'entity1']],
+      })
+      .mockResolvedValueOnce(mockLogPaginationCursorProbeEmpty())
+      .mockResolvedValueOnce({ columns: extractionColumns, values: [] });
+
+    await client.extractLogs('user');
+
+    const updateCalls = mockEngineDescriptorClient.update.mock.calls.map(([, update]) => update);
+    // Every update must use nonPriorityLogExtractionState, never logExtractionState.
+    expect(updateCalls.every((u) => !('logExtractionState' in u))).toBe(true);
+    expect(updateCalls.some((u) => 'nonPriorityLogExtractionState' in u)).toBe(true);
+  });
+
+  it('single mode writes logExtractionState — regression guard for the default path', async () => {
+    const { client, mockEngineDescriptorClient } = createContextWithMode('single');
+    mockEngineDescriptorClient.findOrThrow.mockResolvedValue(
+      createMockEngineDescriptor('user') as Awaited<
+        ReturnType<EngineDescriptorClient['findOrThrow']>
+      >
+    );
+    mockIngestEntities.mockResolvedValue(undefined);
+    mockExtractSuccessSequence({ columns: extractionColumns, values: [] });
+
+    await client.extractLogs('user');
+
+    const updateCalls = mockEngineDescriptorClient.update.mock.calls.map(([, update]) => update);
+    expect(updateCalls.every((u) => !('nonPriorityLogExtractionState' in u))).toBe(true);
+  });
+
+  it('priority mode writes logExtractionState and resumes from the existing checkpoint', async () => {
+    const { client, mockEngineDescriptorClient } = createContextWithMode('priority');
+    const existingCheckpoint = '2025-01-15T11:30:00.000Z';
+    mockEngineDescriptorClient.findOrThrow.mockResolvedValue(
+      createMockEngineDescriptor('user', {
+        checkpointTimestamp: existingCheckpoint,
+        lastExecutionTimestamp: existingCheckpoint,
+      }) as Awaited<ReturnType<EngineDescriptorClient['findOrThrow']>>
+    );
+    mockIngestEntities.mockResolvedValue(undefined);
+    mockExtractSuccessSequence({ columns: extractionColumns, values: [] });
+
+    await client.extractLogs('user');
+
+    const updateCalls = mockEngineDescriptorClient.update.mock.calls.map(([, update]) => update);
+    // priority shares logExtractionState with single — never touches nonPriorityLogExtractionState.
+    expect(updateCalls.every((u) => !('nonPriorityLogExtractionState' in u))).toBe(true);
+    expect(updateCalls.some((u) => 'logExtractionState' in u)).toBe(true);
+    // The first ES|QL query starts from the existing checkpoint, not from lookbackPeriod.
+    const firstQuery = mockExecuteEsqlQuery.mock.calls[0][0].query;
+    expect(firstQuery).toContain(existingCheckpoint);
+  });
+
+  it('nonPriority with a live logExtractionState checkpoint starts from lookbackPeriod, not from the priority cursor', async () => {
+    // The priority process has a live checkpoint; the non-priority cursor is absent (null).
+    // The non-priority client must not read the priority cursor — it starts fresh.
+    const { client, mockEngineDescriptorClient } = createContextWithMode('nonPriority');
+    const priorityCheckpoint = '2025-01-14T00:00:00.000Z'; // 36 hours ago — outside lookback
+    mockEngineDescriptorClient.findOrThrow.mockResolvedValue(
+      createMockEngineDescriptor('user', {
+        checkpointTimestamp: priorityCheckpoint,
+        lastExecutionTimestamp: priorityCheckpoint,
+        // nonPriorityLogExtractionState absent → null default → fresh start
+      }) as Awaited<ReturnType<EngineDescriptorClient['findOrThrow']>>
+    );
+    mockIngestEntities.mockResolvedValue(undefined);
+    mockExtractSuccessSequence({ columns: extractionColumns, values: [] });
+
+    await client.extractLogs('user');
+
+    // The first query should probe from lookbackPeriod (3h back from fixedNow = 09:00),
+    // not from the priority cursor 36 hours ago.
+    const firstQuery = mockExecuteEsqlQuery.mock.calls[0][0].query;
+    expect(firstQuery).not.toContain(priorityCheckpoint);
+    expect(firstQuery).toContain('2025-01-15T09:00:00.000Z');
+  });
 });

@@ -52,6 +52,7 @@ import {
 } from '../asset_manager/external_indices_contants';
 import { type LogExtractionConfig } from '../saved_objects';
 import {
+  type EngineDescriptor,
   type EngineDescriptorClient,
   type EngineLogExtractionState,
   type EntityStoreGlobalStateClient,
@@ -132,6 +133,20 @@ export class LogsExtractionClient {
     this.extractionMode = extractionMode ?? 'single';
   }
 
+  /** Maps each extraction mode to its cursor field. single and priority share logExtractionState;
+   * nonPriority has its own field so the two processes do not overwrite each other's position. */
+  private static readonly CURSOR_FIELD: Record<ExtractionMode, keyof EngineDescriptor> = {
+    single: 'logExtractionState',
+    priority: 'logExtractionState',
+    nonPriority: 'nonPriorityLogExtractionState',
+  };
+
+  private cursorPatch(state: EngineLogExtractionState): Partial<EngineDescriptor> {
+    return {
+      [LogsExtractionClient.CURSOR_FIELD[this.extractionMode]]: state,
+    } as Partial<EngineDescriptor>;
+  }
+
   private async getLogExtractionConfigAndState(
     type: EntityType
   ): Promise<{ config: LogExtractionConfig; engineState: EngineLogExtractionState }> {
@@ -140,9 +155,13 @@ export class LogsExtractionClient {
       throw new EntityStoreNotRunningError();
     }
     const globalOverrides = await this.globalStateClient.findLogExtractionOverrides();
+    const engineState =
+      this.extractionMode === 'nonPriority'
+        ? engineDescriptor.nonPriorityLogExtractionState ?? FRESH_ENGINE_LOG_EXTRACTION_STATE
+        : engineDescriptor.logExtractionState;
     return {
       config: getMergedConfig(type, globalOverrides, engineDescriptor.logExtractionConfig),
-      engineState: engineDescriptor.logExtractionState,
+      engineState,
     };
   }
 
@@ -206,12 +225,12 @@ export class LogsExtractionClient {
         await this.engineDescriptorClient.update(type, { error: null });
       } else {
         await this.engineDescriptorClient.update(type, {
-          logExtractionState: {
+          ...this.cursorPatch({
             checkpointTimestamp: null,
             paginationId: null,
             lastExecutionTimestamp: lastSearchTimestamp || moment().utc().toISOString(),
             sliceEndTimestamp: null,
-          },
+          }),
           error: null,
         });
       }
@@ -957,9 +976,10 @@ export class LogsExtractionClient {
     if (opts?.specificWindow) {
       return;
     }
-    await this.engineDescriptorClient.update(type, {
-      logExtractionState: logExtractionState as EngineLogExtractionState,
-    });
+    await this.engineDescriptorClient.update(
+      type,
+      this.cursorPatch(logExtractionState as EngineLogExtractionState)
+    );
   }
 
   private async handleError(

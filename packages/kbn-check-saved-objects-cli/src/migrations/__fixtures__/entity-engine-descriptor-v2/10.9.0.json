@@ -1,0 +1,102 @@
+{
+  "10.8.0": [
+    {
+      "type": "user",
+      "status": "started",
+      "logExtractionState": {
+        "checkpointTimestamp": "2026-03-04T18:00:00.000Z",
+        "paginationId": null,
+        "lastExecutionTimestamp": "2026-03-04T17:37:20.000Z",
+        "sliceEndTimestamp": null
+      },
+      "error": null,
+      "versionState": {
+        "version": "2",
+        "state": "running",
+        "isMigratedFromV1": true
+      }
+    },
+    {
+      "type": "service",
+      "status": "stopped",
+      "logExtractionState": {
+        "checkpointTimestamp": null,
+        "paginationId": null,
+        "lastExecutionTimestamp": null,
+        "sliceEndTimestamp": null
+      },
+      "error": null,
+      "versionState": {
+        "version": "2",
+        "state": "running",
+        "isMigratedFromV1": false
+      }
+    },
+    {
+      "type": "host",
+      "status": "started",
+      "logExtractionState": {
+        "checkpointTimestamp": "2026-03-04T17:00:00.000Z",
+        "paginationId": "some-pagination-id",
+        "lastExecutionTimestamp": "2026-03-04T16:37:20.000Z",
+        "sliceEndTimestamp": "2026-03-04T17:30:00.000Z"
+      },
+      "error": null,
+      "versionState": {
+        "version": "2",
+        "state": "running",
+        "isMigratedFromV1": false
+      }
+    }
+  ],
+  "10.9.0": [
+    {
+      "type": "user",
+      "status": "started",
+      "logExtractionState": {
+        "checkpointTimestamp": "2026-03-04T18:00:00.000Z",
+        "paginationId": null,
+        "lastExecutionTimestamp": "2026-03-04T17:37:20.000Z",
+        "sliceEndTimestamp": null
+      },
+      "error": null,
+      "versionState": {
+        "version": "2",
+        "state": "running",
+        "isMigratedFromV1": true
+      }
+    },
+    {
+      "type": "service",
+      "status": "stopped",
+      "logExtractionState": {
+        "checkpointTimestamp": null,
+        "paginationId": null,
+        "lastExecutionTimestamp": null,
+        "sliceEndTimestamp": null
+      },
+      "error": null,
+      "versionState": {
+        "version": "2",
+        "state": "running",
+        "isMigratedFromV1": false
+      }
+    },
+    {
+      "type": "host",
+      "status": "started",
+      "logExtractionState": {
+        "checkpointTimestamp": "2026-03-04T17:00:00.000Z",
+        "paginationId": "some-pagination-id",
+        "lastExecutionTimestamp": "2026-03-04T16:37:20.000Z",
+        "sliceEndTimestamp": "2026-03-04T17:30:00.000Z"
+      },
+      "error": null,
+      "versionState": {
+        "version": "2",
+        "state": "running",
+        "isMigratedFromV1": false
+      }
+    }
+  ]
+}
