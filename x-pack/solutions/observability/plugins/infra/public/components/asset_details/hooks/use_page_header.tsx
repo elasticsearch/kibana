@@ -11,6 +11,7 @@ import {
   type EuiBreadcrumbsProps,
   type EuiPageHeaderProps,
 } from '@elastic/eui';
+import type { AppHeaderTab } from '@kbn/app-header';
 import { i18n } from '@kbn/i18n';
 import { FormattedMessage } from '@kbn/i18n-react';
 import { useUiSetting } from '@kbn/kibana-react-plugin/public';
@@ -33,10 +34,10 @@ type TabItem = NonNullable<Pick<EuiPageHeaderProps, 'tabs'>['tabs']>[number];
 
 export const usePageHeader = (tabs: Tab[] = [], links: LinkOptions[] = []) => {
   const { rightSideItems } = useRightSideItems(links);
-  const { tabEntries } = useTabs(tabs);
+  const { tabEntries, appHeaderTabs } = useTabs(tabs);
   const { breadcrumbs } = useTemplateHeaderBreadcrumbs();
 
-  return { rightSideItems, tabEntries, breadcrumbs };
+  return { rightSideItems, tabEntries, appHeaderTabs, breadcrumbs };
 };
 
 export const useTemplateHeaderBreadcrumbs = () => {
@@ -184,5 +185,17 @@ const useTabs = (tabs: Tab[]) => {
     [activeTabId, isTabEnabled, onTabClick, tabs]
   );
 
-  return { tabEntries };
+  const appHeaderTabs: AppHeaderTab[] = useMemo(
+    () =>
+      tabs.filter(isTabEnabled).map(({ name, id }) => ({
+        id,
+        label: name,
+        isSelected: id === activeTabId,
+        onClick: () => onTabClick(id),
+        'data-test-subj': `infraAssetDetails${capitalize(id)}Tab`,
+      })),
+    [activeTabId, isTabEnabled, onTabClick, tabs]
+  );
+
+  return { tabEntries, appHeaderTabs };
 };

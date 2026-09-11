@@ -6,9 +6,11 @@
  */
 
 import React, { useCallback, useEffect } from 'react';
-import type { EuiPageHeaderProps } from '@elastic/eui';
-import { EuiLoadingSpinner, EuiSpacer } from '@elastic/eui';
-import { EmbeddableProfilingSearchBar } from '@kbn/observability-shared-plugin/public';
+import { EuiFlexGroup, EuiFlexItem, EuiPageSection, EuiSpacer } from '@elastic/eui';
+import {
+  EmbeddableProfilingSearchBar,
+  type EmbeddableProfilingSearchBarProps,
+} from '@kbn/observability-shared-plugin/public';
 import { capitalize } from 'lodash';
 import { useMetricsBreadcrumbs } from '../../../hooks/use_metrics_breadcrumbs';
 import { useParentBreadcrumbResolver } from '../../../hooks/use_parent_breadcrumb_resolver';
@@ -30,20 +32,20 @@ import { ProcessesSearchBarHeader } from '../tabs/processes/processes_search_bar
 import { getIntegrationsAvailable } from '../utils';
 import { DEFAULT_SCHEMA } from '../../../../common/constants';
 import { InfraPageTemplate } from '../../shared/templates/infra_page_template';
-import { OnboardingFlow } from '../../shared/templates/no_data_config';
-import { HostHeaderTitle } from '../header/host_header_title';
+import { getHostHeaderBadges } from '../header/host_header_title';
+import { MetricsDetailAppHeader } from '../../../pages/metrics/header/metrics_detail_app_header';
 
 export const Page = ({ tabs = [], links = [] }: ContentTemplateProps) => {
   const { metadata, loading: metadataLoading } = useMetadataStateContext();
-  const { rightSideItems, tabEntries, breadcrumbs: headerBreadcrumbs } = usePageHeader(tabs, links);
-  const { entity, loading, schema } = useAssetDetailsRenderPropsContext();
+  const { rightSideItems, appHeaderTabs } = usePageHeader(tabs, links);
+  const { entity, schema } = useAssetDetailsRenderPropsContext();
   const trackOnlyOnce = React.useRef(false);
   const { activeTabId } = useTabSwitcherContext();
   const isProfilingTab = activeTabId === ContentTabIds.PROFILING;
   const isLogsTab = activeTabId === ContentTabIds.LOGS;
   const isMetadataTab = activeTabId === ContentTabIds.METADATA;
   const isProcessesTab = activeTabId === ContentTabIds.PROCESSES;
-  const showDatePicker = DATE_PICKER_VISIBLE_TABS.includes(activeTabId as ContentTabIds);
+  const showDatePicker = DATE_PICKER_VISIBLE_TABS.some((tabId) => tabId === activeTabId);
   const {
     services: { telemetry },
   } = useKibanaContextForPlugin();
@@ -94,39 +96,60 @@ export const Page = ({ tabs = [], links = [] }: ContentTemplateProps) => {
     }
   }, [activeTabId, entity.type, metadata, metadataLoading, telemetry, schema]);
 
+  const tabControls = isProfilingTab ? (
+    <ProfilingSearchBarHeader />
+  ) : isLogsTab ? (
+    <SearchBarWithDatePicker searchBar={<LogsSearchBarHeader />} />
+  ) : isMetadataTab ? (
+    <SearchBarWithDatePicker searchBar={<MetadataSearchBarHeader />} />
+  ) : isProcessesTab ? (
+    <SearchBarWithDatePicker searchBar={<ProcessesSearchBarHeader />} />
+  ) : showDatePicker ? (
+    <DatePicker />
+  ) : null;
+
+  const hostHeaderBadges =
+    entity.type === 'host' ? getHostHeaderBadges({ title: entity.name, schema }) : undefined;
+
   return (
     <InfraPageTemplate
-      onboardingFlow={entity.type === 'host' ? OnboardingFlow.Hosts : OnboardingFlow.Infra}
-      dataSourceAvailability={entity.type === 'host' ? 'host' : undefined}
-      pageHeader={{
-        pageTitle: loading ? (
-          <EuiLoadingSpinner size="m" />
-        ) : entity.type === 'host' ? (
-          <HostHeaderTitle title={entity.name} schema={schema} />
-        ) : (
-          entity.name
-        ),
-        tabs: tabEntries,
-        rightSideItems,
-        breadcrumbs: headerBreadcrumbs,
-        color: 'subdued' as unknown as EuiPageHeaderProps['color'],
-        children: isProfilingTab ? (
-          <ProfilingSearchBarHeader />
-        ) : isLogsTab ? (
-          <SearchBarWithDatePicker searchBar={<LogsSearchBarHeader />} />
-        ) : isMetadataTab ? (
-          <SearchBarWithDatePicker searchBar={<MetadataSearchBarHeader />} />
-        ) : isProcessesTab ? (
-          <SearchBarWithDatePicker searchBar={<ProcessesSearchBarHeader />} />
-        ) : showDatePicker ? (
-          <DatePicker />
-        ) : undefined,
+      header={
+        <MetricsDetailAppHeader
+          title={entity.name}
+          tabs={appHeaderTabs}
+          badges={hostHeaderBadges}
+        />
+      }
+      pageSectionProps={{
+        paddingSize: 'none',
       }}
       data-component-name={ASSET_DETAILS_PAGE_COMPONENT_NAME}
       data-asset-type={entity.type}
       data-schema-selected={schema}
     >
-      <Content showDatePicker={false} showProfilingSearchBar={false} showTabSearchBar={false} />
+      <EuiPageSection paddingSize="m" restrictWidth={false}>
+        {rightSideItems && rightSideItems.length > 0 ? (
+          <EuiFlexGroup
+            justifyContent="flexEnd"
+            alignItems="center"
+            gutterSize="m"
+            responsive={false}
+          >
+            {rightSideItems.map((item, index) => (
+              <EuiFlexItem key={index} grow={false}>
+                {item}
+              </EuiFlexItem>
+            ))}
+          </EuiFlexGroup>
+        ) : null}
+        {tabControls ? (
+          <>
+            {tabControls}
+            <EuiSpacer size="m" />
+          </>
+        ) : null}
+        <Content showDatePicker={false} showProfilingSearchBar={false} showTabSearchBar={false} />
+      </EuiPageSection>
     </InfraPageTemplate>
   );
 };
@@ -143,8 +166,8 @@ const ProfilingSearchBarHeader = () => {
   const { dateRange, setDateRange } = useDatePickerContext();
   const { customKuery, setCustomKuery } = useProfilingKuery();
 
-  const onSearchSubmit = useCallback(
-    ({ dateRange: range, query }: any) => {
+  const onSearchSubmit = useCallback<EmbeddableProfilingSearchBarProps['onQuerySubmit']>(
+    ({ dateRange: range, query }) => {
       setDateRange(range);
       setCustomKuery(query);
     },

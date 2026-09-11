@@ -13,16 +13,27 @@ import { APM_HOST_TROUBLESHOOTING_LINK } from '../constants';
 import { Popover } from '../tabs/common/popover';
 import { useMetadataStateContext } from '../hooks/use_metadata_state';
 
-export const PageTitleWithPopover = ({ name }: { name: string }) => {
+export const PageTitleWithPopover = ({
+  name,
+  includeTitle = true,
+}: {
+  name: string;
+  includeTitle?: boolean;
+}) => {
   const { metadata, loading } = useMetadataStateContext();
+  const showApmPopover = !loading && !metadata?.hasSystemIntegration;
+
+  if (!includeTitle && !loading && !showApmPopover) {
+    return null;
+  }
 
   return (
     <EuiFlexGroup gutterSize="xs" alignItems="center" responsive={false}>
-      <EuiFlexItem grow={false}>{name}</EuiFlexItem>
+      {includeTitle ? <EuiFlexItem grow={false}>{name}</EuiFlexItem> : null}
       {loading ? (
         <EuiLoadingSpinner size="m" />
       ) : (
-        !metadata?.hasSystemIntegration && (
+        showApmPopover && (
           <EuiFlexItem grow={false}>
             <Popover
               icon="question"
