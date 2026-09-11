@@ -1901,8 +1901,7 @@ describe('Authenticator', () => {
               ? AuthenticationResult.notHandled()
               : AuthenticationResult.failed(failureReason)
           );
-          // TODO: Add check for expected audit log
-          // expect(auditLogger.log).not.toHaveBeenCalled();
+          expect(auditLogger.log).not.toHaveBeenCalled();
         });
 
         it('fails as expected for non-redirectable requests', async () => {
@@ -1920,8 +1919,7 @@ describe('Authenticator', () => {
                   },
                 })
           );
-          // TODO: Add check for expected audit log
-          // expect(auditLogger.log).not.toHaveBeenCalled();
+          expect(auditLogger.log).not.toHaveBeenCalled();
         });
 
         it('should get expected reponse headers for non-redirectable requests where the authentication succeeds', async () => {
@@ -1945,8 +1943,7 @@ describe('Authenticator', () => {
                 })
               : AuthenticationResult.succeeded(user);
           expect(authenticationResult).toEqual(expectedResult);
-          // TODO: Add check for expected audit log
-          // expect(auditLogger.log).not.toHaveBeenCalled();
+          expect(auditLogger.log).not.toHaveBeenCalled();
         });
 
         it('should get expected reponse headers for non-redirectable requests where the authentication fails', async () => {
@@ -1970,8 +1967,7 @@ describe('Authenticator', () => {
                 })
               : AuthenticationResult.failed(authError);
           expect(authenticationResult).toEqual(expectedResult);
-          // TODO: Add check for expected audit log
-          // expectAuditEvents({ action: 'user_login', outcome: 'failure' });
+          expectAuditEvents({ action: 'user_login', outcome: 'failure' });
         });
 
         it('expected message is attached to the URL when authentication provider redirects to login page', async () => {
@@ -1997,8 +1993,7 @@ describe('Authenticator', () => {
           } else {
             expect(authenticationResult.redirectURL).toBe(redirectUrl);
           }
-          // TODO: Add check for expected audit log
-          // expect(auditLogger.log).not.toHaveBeenCalled();
+          expect(auditLogger.log).not.toHaveBeenCalled();
         });
 
         it('should not get a message attached to the redirect URL when authentication provider redirects to something that is not the login page', async () => {
@@ -2015,8 +2010,7 @@ describe('Authenticator', () => {
           const authenticationResult = await authenticator.authenticate(request);
           expect(authenticationResult.redirected()).toBe(true);
           expect(authenticationResult.redirectURL).toBe(redirectUrl);
-          // TODO: Add check for expected audit log
-          // expect(auditLogger.log).not.toHaveBeenCalled();
+          expect(auditLogger.log).not.toHaveBeenCalled();
         });
       });
     }
