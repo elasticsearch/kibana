@@ -6,11 +6,11 @@
  */
 
 import React, { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { SearchBar } from '@kbn/unified-search-plugin/public';
+import { SearchBar, FilterItems } from '@kbn/unified-search-plugin/public';
 import { useKibana } from '@kbn/kibana-react-plugin/public';
 import { i18n } from '@kbn/i18n';
 import type { DataView } from '@kbn/data-views-plugin/public';
-import { buildEsQuery, isCombinedFilter } from '@kbn/es-query';
+import { buildEsQuery, isCombinedFilter, FilterStateStore } from '@kbn/es-query';
 import type { Filter, Query, TimeRange } from '@kbn/es-query';
 import type { ProjectRouting } from '@kbn/cloud-security-posture-common/schema/graph/v1';
 import { css } from '@emotion/react';
@@ -27,10 +27,14 @@ import { useCountryFlagsPopover } from '../node/country_flags/country_flags';
 import { useEventDetailsPopover } from '../popovers/details/use_event_details_popover';
 import type { DocumentAnalysisOutput } from '../node/label_node/analyze_documents';
 import { analyzeDocuments } from '../node/label_node/analyze_documents';
-import { EVENT_ID, GRAPH_NODES_LIMIT, TOGGLE_SEARCH_BAR_STORAGE_KEY } from '../../common/constants';
+import { ENTITY_ID, EVENT_ID, GRAPH_NODES_LIMIT, TOGGLE_SEARCH_BAR_STORAGE_KEY } from '../../common/constants';
 import { Actions } from '../controls/actions';
 import { AnimatedSearchBarContainer, useBorder } from './styles';
-import { CONTROLLED_BY_GRAPH_INVESTIGATION_FILTER, addFilter } from '../filters/search_filters';
+import {
+  CONTROLLED_BY_GRAPH_INVESTIGATION_FILTER,
+  CONTROLLED_BY_GRAPH_INVESTIGATION_DEFAULT_FILTER,
+  addFilter,
+} from '../filters/search_filters';
 import { useEntityNodeExpandPopover } from '../popovers/node_expand/use_entity_node_expand_popover';
 import { useLabelNodeExpandPopover } from '../popovers/node_expand/use_label_node_expand_popover';
 import type { NodeViewModel } from '../types';
@@ -263,6 +267,91 @@ export const GraphInvestigation = memo<GraphInvestigationProps>(
       entityIds ?? emptyEntityIds,
       dataView?.id ?? ''
     );
+    const defaultFilters = useMemo<Filter[]>(() => {
+      if (!dataView?.id) return [];
+
+      // Event mode: show origin event/alert IDs as non-interactive filter pills.
+      if (originEventIds && originEventIds.length > 0) {
+        const eventIds = originEventIds.map(({ id }) => id);
+
+        if (eventIds.length === 1) {
+          return [
+            {
+              $state: { store: FilterStateStore.APP_STATE },
+              meta: {
+                key: EVENT_ID,
+                index: dataView.id,
+                negate: false,
+                disabled: false,
+                type: 'phrase' as const,
+                field: EVENT_ID,
+                controlledBy: CONTROLLED_BY_GRAPH_INVESTIGATION_DEFAULT_FILTER,
+                params: { query: eventIds[0] },
+              },
+              query: { match_phrase: { [EVENT_ID]: eventIds[0] } },
+            },
+          ];
+        }
+
+        return [
+          {
+            $state: { store: FilterStateStore.APP_STATE },
+            meta: {
+              key: EVENT_ID,
+              index: dataView.id,
+              negate: false,
+              disabled: false,
+              type: 'phrases' as const,
+              field: EVENT_ID,
+              controlledBy: CONTROLLED_BY_GRAPH_INVESTIGATION_DEFAULT_FILTER,
+              params: eventIds,
+            },
+            query: { terms: { [EVENT_ID]: eventIds } },
+          },
+        ];
+      }
+
+      // Entity mode: show origin entity IDs as non-interactive filter pills.
+      const originEntityIds = entityIds?.filter(({ isOrigin }) => isOrigin).map(({ id }) => id) ?? [];
+      if (originEntityIds.length === 0) return [];
+
+      if (originEntityIds.length === 1) {
+        return [
+          {
+            $state: { store: FilterStateStore.APP_STATE },
+            meta: {
+              key: ENTITY_ID,
+              index: dataView.id,
+              negate: false,
+              disabled: false,
+              type: 'phrase' as const,
+              field: ENTITY_ID,
+              controlledBy: CONTROLLED_BY_GRAPH_INVESTIGATION_DEFAULT_FILTER,
+              params: { query: originEntityIds[0] },
+            },
+            query: { match_phrase: { [ENTITY_ID]: originEntityIds[0] } },
+          },
+        ];
+      }
+
+      return [
+        {
+          $state: { store: FilterStateStore.APP_STATE },
+          meta: {
+            key: ENTITY_ID,
+            index: dataView.id,
+            negate: false,
+            disabled: false,
+            type: 'phrases' as const,
+            field: ENTITY_ID,
+            controlledBy: CONTROLLED_BY_GRAPH_INVESTIGATION_DEFAULT_FILTER,
+            params: originEntityIds,
+          },
+          query: { terms: { [ENTITY_ID]: originEntityIds } },
+        },
+      ];
+    }, [originEventIds, entityIds, dataView?.id]);
+
     const [timeRange, setTimeRange] = useState<TimeRange>(initialTimeRange);
     const [searchToggled, setSearchToggled] = useSessionStorage(
       TOGGLE_SEARCH_BAR_STORAGE_KEY,
@@ -566,33 +655,59 @@ export const GraphInvestigation = memo<GraphInvestigationProps>(
               <AnimatedSearchBarContainer
                 className={!searchToggled && showToggleSearch ? 'toggled-off' : undefined}
               >
-                <SearchBar<Query>
-                  showFilterBar={true}
-                  showDatePicker={true}
-                  showAutoRefreshOnly={false}
-                  showSaveQuery={false}
-                  showQueryInput={true}
-                  disableQueryLanguageSwitcher={true}
-                  isLoading={isFetching}
-                  isAutoRefreshDisabled={true}
-                  dateRangeFrom={timeRange.from}
-                  dateRangeTo={timeRange.to}
-                  query={kquery}
-                  indexPatterns={[dataView]}
-                  filters={searchFilters}
-                  submitButtonStyle={'iconOnly'}
-                  onFiltersUpdated={(newFilters) => {
-                    setSearchFilters(newFilters);
-                  }}
-                  onQuerySubmit={(payload, isUpdate) => {
-                    if (isUpdate) {
-                      setTimeRange({ ...payload.dateRange });
-                      setKQuery(payload.query || EMPTY_QUERY);
-                    } else {
-                      refresh();
+                <div>
+                  <SearchBar<Query>
+                    showFilterBar={true}
+                    showDatePicker={true}
+                    showAutoRefreshOnly={false}
+                    showSaveQuery={false}
+                    showQueryInput={true}
+                    disableQueryLanguageSwitcher={true}
+                    isLoading={isFetching}
+                    isAutoRefreshDisabled={true}
+                    dateRangeFrom={timeRange.from}
+                    dateRangeTo={timeRange.to}
+                    query={kquery}
+                    indexPatterns={[dataView]}
+                    filters={searchFilters}
+                    prependFilterBar={
+                      defaultFilters.length > 0 ? (
+                        <FilterItems
+                          filters={defaultFilters}
+                          indexPatterns={[dataView]}
+                          readOnly={true}
+                        />
+                      ) : undefined
                     }
-                  }}
-                />
+                    submitButtonStyle={'iconOnly'}
+                    onFiltersUpdated={setSearchFilters}
+                    onQuerySubmit={(payload, isUpdate) => {
+                      if (isUpdate) {
+                        setTimeRange({ ...payload.dateRange });
+                        setKQuery(payload.query || EMPTY_QUERY);
+                      } else {
+                        refresh();
+                      }
+                    }}
+                  />
+                  {defaultFilters.length > 0 && searchFilters.length === 0 && (
+                    <EuiFlexGroup
+                      gutterSize="xs"
+                      wrap={true}
+                      responsive={false}
+                      alignItems="center"
+                      css={css`
+                        padding-top: 4px;
+                      `}
+                    >
+                      <FilterItems
+                        filters={defaultFilters}
+                        indexPatterns={[dataView]}
+                        readOnly={true}
+                      />
+                    </EuiFlexGroup>
+                  )}
+                </div>
               </AnimatedSearchBarContainer>
             </EuiFlexItem>
           )}

@@ -138,6 +138,7 @@ export const useEntityNodeExpandPopover = (
           showEntityDetails:
             (isSingleEntity || isGroupedEntities) && onOpenEventPreview !== undefined,
         },
+        isGrouped: isGroupedEntities,
         isEntityRelationshipsExpanded: isEntityRelationshipExpandedForScope(scopeId, node.id),
         isInitialEntity,
         toggleEntityRelationships: (action) => {

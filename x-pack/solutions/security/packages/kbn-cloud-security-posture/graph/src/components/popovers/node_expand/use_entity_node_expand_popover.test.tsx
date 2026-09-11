@@ -17,6 +17,7 @@ import {
   GRAPH_NODE_POPOVER_SHOW_ACTIONS_ON_ITEM_ID,
   GRAPH_NODE_POPOVER_SHOW_RELATED_ITEM_ID,
   GRAPH_NODE_POPOVER_SHOW_ENTITY_DETAILS_ITEM_ID,
+  GRAPH_NODE_POPOVER_SHOW_GROUPED_ENTITIES_ITEM_ID,
   GRAPH_NODE_POPOVER_SHOW_ENTITY_RELATIONSHIPS_ITEM_ID,
   GRAPH_NODE_POPOVER_SHOW_ENTITY_RELATIONSHIPS_TOOLTIP_ID,
 } from '../../test_ids';
@@ -219,6 +220,7 @@ describe('useEntityNodeExpandPopover', () => {
       expect(items[5]).toMatchObject({
         type: 'item',
         testSubject: GRAPH_NODE_POPOVER_SHOW_ENTITY_DETAILS_ITEM_ID,
+        label: 'Show entity details',
         disabled: false,
       });
     });
@@ -259,7 +261,8 @@ describe('useEntityNodeExpandPopover', () => {
       expect(items).toHaveLength(1);
       expect(items[0]).toMatchObject({
         type: 'item',
-        testSubject: GRAPH_NODE_POPOVER_SHOW_ENTITY_DETAILS_ITEM_ID,
+        testSubject: GRAPH_NODE_POPOVER_SHOW_GROUPED_ENTITIES_ITEM_ID,
+        label: 'Show grouped entities',
         disabled: false,
       });
     });
@@ -367,7 +370,7 @@ describe('useEntityNodeExpandPopover', () => {
       expect(items).toHaveLength(1);
       expect(items[0]).toMatchObject({
         type: 'item',
-        testSubject: GRAPH_NODE_POPOVER_SHOW_ENTITY_DETAILS_ITEM_ID,
+        testSubject: GRAPH_NODE_POPOVER_SHOW_GROUPED_ENTITIES_ITEM_ID,
         disabled: false, // Not disabled - grouped mode doesn't check enrichment
       });
     });

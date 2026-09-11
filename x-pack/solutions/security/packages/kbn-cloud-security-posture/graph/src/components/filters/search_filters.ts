@@ -22,6 +22,7 @@ import type {
 } from '@kbn/es-query/src/filters/build_filters';
 
 export const CONTROLLED_BY_GRAPH_INVESTIGATION_FILTER = 'graph-investigation';
+export const CONTROLLED_BY_GRAPH_INVESTIGATION_DEFAULT_FILTER = 'graph-investigation-default';
 
 const buildSinglePhraseFilter = (
   field: string,

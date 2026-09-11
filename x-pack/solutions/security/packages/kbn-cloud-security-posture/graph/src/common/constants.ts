@@ -12,6 +12,7 @@ export const RELATED_USER = 'related.user' as const;
 export const RELATED_HOST = 'related.hosts' as const;
 export const EVENT_ACTION = 'event.action' as const;
 export const EVENT_ID = 'event.id' as const;
+export const ENTITY_ID = 'entity.id' as const;
 
 export const SHOW_SEARCH_BAR_BUTTON_TOUR_STORAGE_KEY =
   'securitySolution.graphInvestigation:showSearchBarButtonTour' as const;
