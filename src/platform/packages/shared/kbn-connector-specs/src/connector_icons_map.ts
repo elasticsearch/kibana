@@ -33,6 +33,13 @@ export const ConnectorIconsMap: Map<
         import(/* webpackChunkName: "connectorIconAlienvaultOtx" */ './specs/alienvault_otx/icon')
     ),
   ],
+  [
+    '.anyrun-sandbox',
+    lazy(
+      () =>
+        import(/* webpackChunkName: "connectorIconAnyRunSandbox" */ './specs/anyrun_sandbox/icon')
+    ),
+  ],
   ['.notion', lazy(() => import(/* webpackChunkName: "connectorNotion" */ './specs/notion/icon'))],
   [
     '.pagerduty_mcp',

@@ -80,6 +80,7 @@ toc:
           - file: connectors-kibana/alienvault-otx-action-type.md
           - file: connectors-kibana/amazon-s3-action-type.md
           - file: connectors-kibana/ansible-controller-action-type.md
+          - file: connectors-kibana/anyrun-sandbox-action-type.md
           - file: connectors-kibana/argocd-action-type.md
           - file: connectors-kibana/aws-cloudwatch-action-type.md
           - file: connectors-kibana/aws-x-ray-action-type.md
