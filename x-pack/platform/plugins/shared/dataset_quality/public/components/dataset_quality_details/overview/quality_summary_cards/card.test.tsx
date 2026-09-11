@@ -39,6 +39,7 @@ describe('Card', () => {
 
     const card = screen.getByTestId('datasetQualityDetailsSummaryKpiCard-Test Card Title');
     expect(card.getAttribute('aria-label')).toBe('Test Card Title');
+    expect(card).toHaveAttribute('role', 'button');
   });
 
   it('calls onClick when card is clicked', () => {
@@ -49,6 +50,14 @@ describe('Card', () => {
     fireEvent.click(card);
 
     expect(onClick).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not set aria-pressed when card is non-interactive', () => {
+    render(<Card {...defaultProps} onClick={jest.fn()} isSelected />);
+
+    const card = screen.getByTestId('datasetQualityDetailsSummaryKpiCard-Test Card Title');
+    expect(card).not.toHaveAttribute('aria-pressed');
+    expect(card).not.toHaveAttribute('role');
   });
 
   it('does not call onClick when isDisabled is true', () => {
