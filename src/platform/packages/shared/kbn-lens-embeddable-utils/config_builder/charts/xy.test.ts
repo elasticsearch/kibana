@@ -199,6 +199,49 @@ test('generates xy chart config with legend stats', async () => {
   });
 });
 
+test('it generates xy chart with a points layer', async () => {
+  const result = await buildXY(
+    {
+      chartType: 'xy',
+      title: 'test',
+      dataset: {
+        esql: 'from metrics | stats cpu=avg(system.cpu.total.norm.pct) by @timestamp',
+      },
+      layers: [
+        {
+          type: 'series',
+          seriesType: 'line',
+          xAxis: '@timestamp',
+          yAxis: [{ label: 'CPU', value: 'cpu' }],
+        },
+        {
+          type: 'points',
+          query: 'FROM metrics.exemplars-* | SORT @timestamp ASC | LIMIT 100',
+          yAccessor: 'system.cpu.total.norm.pct',
+        },
+      ],
+    },
+    {
+      dataViewsAPI: mockDataViewsService() as any,
+    }
+  );
+
+  const xyState = result.state.visualization as XYVisualizationState;
+
+  // Points layer appears in the visualization state with the correct shape.
+  const pointsLayer = xyState.layers[1];
+  expect(pointsLayer).toEqual({
+    layerId: 'layer_1',
+    layerType: 'points',
+    query: 'FROM metrics.exemplars-* | SORT @timestamp ASC | LIMIT 100',
+    yAccessor: 'system.cpu.total.norm.pct',
+  });
+
+  // Points layer does NOT appear in the datasource state — it fetches client-side.
+  const datasourceLayers = result.state.datasourceStates.textBased?.layers ?? {};
+  expect(Object.keys(datasourceLayers)).not.toContain('layer_1');
+});
+
 test('it generates xy chart with multiple reference lines', async () => {
   const result = await buildXY(
     {

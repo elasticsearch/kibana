@@ -20,3 +20,4 @@ export * from './extended_data_layer';
 export * from './axis_extent_config';
 export * from './reference_line';
 export * from './reference_line_layer';
+export * from './points_layer';

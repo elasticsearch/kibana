@@ -300,9 +300,15 @@ export type LensSeriesLayer = Identity<
   }
 >;
 
+export interface LensPointsLayer {
+  type: 'points';
+  query: string;
+  yAccessor: string;
+}
+
 export interface LensXYConfigBase {
   chartType: 'xy';
-  layers: Array<LensSeriesLayer | LensAnnotationLayer | LensReferenceLineLayer>;
+  layers: Array<LensSeriesLayer | LensAnnotationLayer | LensReferenceLineLayer | LensPointsLayer>;
   legend?: Identity<LensLegendConfig>;
   axisTitleVisibility?: Identity<LensAxisTitleVisibilityConfig>;
   xTitle?: string;

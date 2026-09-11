@@ -23,11 +23,13 @@ export const EXTENDED_ANNOTATION_LAYER = 'extendedAnnotationLayer';
 export const AXIS_EXTENT_CONFIG = 'axisExtentConfig';
 export const REFERENCE_LINE = 'referenceLine';
 export const REFERENCE_LINE_LAYER = 'referenceLineLayer';
+export const POINTS_LAYER = 'pointsLayer';
 
 export const LayerTypes = {
   DATA: 'data',
   REFERENCELINE: 'referenceLine',
   ANNOTATIONS: 'annotations',
+  POINTS: 'points',
 } as const;
 
 export const FittingFunctions = {

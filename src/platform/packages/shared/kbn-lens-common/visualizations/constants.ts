@@ -32,6 +32,7 @@ export const LENS_LAYER_TYPES = {
   REFERENCELINE: 'referenceLine',
   ANNOTATIONS: 'annotations',
   METRIC_TRENDLINE: 'metricTrendline',
+  POINTS: 'points',
 } as const;
 
 export const LEGEND_SIZE = {

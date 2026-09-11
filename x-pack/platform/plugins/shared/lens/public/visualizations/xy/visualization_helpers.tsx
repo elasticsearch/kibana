@@ -23,6 +23,7 @@ import type {
   XYAnnotationLayerConfig,
   XYLayerConfig,
   XYDataLayerConfig,
+  XYPointsLayerConfig,
   XYReferenceLineLayerConfig,
   SeriesType,
   XYByReferenceAnnotationLayerConfig,
@@ -209,6 +210,13 @@ export const isByReferenceAnnotationsLayer = (
 export const getAnnotationsLayers = (layers: Array<Pick<XYLayerConfig, 'layerType'>>) =>
   (layers || []).filter((layer): layer is XYAnnotationLayerConfig => isAnnotationsLayer(layer));
 
+export const isPointsLayer = (
+  layer: Pick<XYLayerConfig, 'layerType'>
+): layer is XYPointsLayerConfig => layer.layerType === layerTypes.POINTS;
+
+export const getPointsLayers = (layers: Array<Pick<XYLayerConfig, 'layerType'>>) =>
+  (layers || []).filter((layer): layer is XYPointsLayerConfig => isPointsLayer(layer));
+
 export const getGroupMetadataFromAnnotationLayer = (
   layer: XYAnnotationLayerConfig
 ): { title: string; description: string; tags: string[] } => {
@@ -230,6 +238,7 @@ export interface LayerTypeToLayer {
   [layerTypes.DATA]: (layer: XYDataLayerConfig) => XYDataLayerConfig;
   [layerTypes.REFERENCELINE]: (layer: XYReferenceLineLayerConfig) => XYReferenceLineLayerConfig;
   [layerTypes.ANNOTATIONS]: (layer: XYAnnotationLayerConfig) => XYAnnotationLayerConfig;
+  [layerTypes.POINTS]?: (layer: XYPointsLayerConfig) => XYPointsLayerConfig;
 }
 
 export const getLayerTypeOptions = (layer: XYLayerConfig, options: LayerTypeToLayer) => {
@@ -237,6 +246,8 @@ export const getLayerTypeOptions = (layer: XYLayerConfig, options: LayerTypeToLa
     return options[layerTypes.DATA](layer);
   } else if (isReferenceLayer(layer)) {
     return options[layerTypes.REFERENCELINE](layer);
+  } else if (isPointsLayer(layer)) {
+    return options[layerTypes.POINTS]?.(layer) ?? layer;
   }
   return options[layerTypes.ANNOTATIONS](layer);
 };

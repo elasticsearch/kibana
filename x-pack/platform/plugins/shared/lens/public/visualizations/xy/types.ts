@@ -26,6 +26,7 @@ export type {
   XYByReferenceAnnotationLayerConfig,
   XYAnnotationLayerConfig,
   XYDataLayerConfig,
+  XYPointsLayerConfig,
   XYReferenceLineLayerConfig,
   SeriesType,
   YConfig,

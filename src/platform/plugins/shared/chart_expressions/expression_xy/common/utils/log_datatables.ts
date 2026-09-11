@@ -42,7 +42,11 @@ export const logDatatables = (
   handlers.inspectorAdapters.tables.allowCsvExport = true;
 
   layers.forEach((layer) => {
-    if (layer.layerType === LayerTypes.ANNOTATIONS || layer.type === REFERENCE_LINE) {
+    if (
+      layer.layerType === LayerTypes.ANNOTATIONS ||
+      layer.layerType === LayerTypes.POINTS ||
+      layer.type === REFERENCE_LINE
+    ) {
       return;
     }
 
@@ -105,7 +109,11 @@ export const logDatatable = (
     handlers.inspectorAdapters.tables.allowCsvExport = true;
 
     const layerDimensions = layers.reduce<LayerDimension[]>((dimensions, layer) => {
-      if (layer.layerType === LayerTypes.ANNOTATIONS || layer.type === REFERENCE_LINE) {
+      if (
+        layer.layerType === LayerTypes.ANNOTATIONS ||
+        layer.layerType === LayerTypes.POINTS ||
+        layer.type === REFERENCE_LINE
+      ) {
         return dimensions;
       }
 

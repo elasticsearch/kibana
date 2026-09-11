@@ -26,6 +26,7 @@ import {
   axisExtentConfigFunction,
   referenceLineFunction,
   referenceLineLayerFunction,
+  pointsLayerFunction,
   annotationLayerFunction,
   extendedAnnotationLayerFunction,
   referenceLineDecorationConfigFunction,
@@ -68,6 +69,7 @@ export class ExpressionXyPlugin {
     expressions.registerFunction(eventAnnotationsResult);
     expressions.registerFunction(referenceLineFunction);
     expressions.registerFunction(referenceLineLayerFunction);
+    expressions.registerFunction(pointsLayerFunction);
     expressions.registerFunction(xyVisFunction);
     expressions.registerFunction(layeredXyVisFunction);
 

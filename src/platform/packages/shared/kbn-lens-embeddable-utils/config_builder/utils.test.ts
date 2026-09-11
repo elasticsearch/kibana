@@ -241,6 +241,35 @@ describe('buildDatasourceStates', () => {
     `);
   });
 
+  test('skips points layers so only the data layer gets a text-based datasource', async () => {
+    const results = await buildDatasourceStates(
+      {
+        title: 'test',
+        layers: [
+          {
+            dataset: {
+              esql: 'from metrics | stats cpu=avg(system.cpu.total.norm.pct) by @timestamp',
+            },
+            yAxis: [{ label: 'CPU', value: 'cpu' }],
+          },
+          {
+            type: 'points' as const,
+            query: 'FROM metrics.exemplars-* | SORT @timestamp ASC | LIMIT 100',
+            yAccessor: 'system.cpu.total.norm.pct',
+          },
+        ],
+      },
+      {},
+      () => undefined,
+      () => [],
+      {
+        get: async () => ({ id: 'test' }),
+        create: async () => ({ id: 'test' }),
+      } as any
+    );
+    expect(Object.keys(results.textBased?.layers ?? {})).toEqual(['layer_0']);
+  });
+
   test('skips annotation layers so only the data layer gets a text-based datasource', async () => {
     const results = await buildDatasourceStates(
       {

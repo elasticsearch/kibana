@@ -111,10 +111,18 @@ export type XYAnnotationLayerConfig =
   | XYByReferenceAnnotationLayerConfig
   | XYByValueAnnotationLayerConfig;
 
+export interface XYPointsLayerConfig {
+  layerId: string;
+  layerType: 'points';
+  query: string;
+  yAccessor: string;
+}
+
 export type XYLayerConfig =
   | XYDataLayerConfig
   | XYReferenceLineLayerConfig
-  | XYAnnotationLayerConfig;
+  | XYAnnotationLayerConfig
+  | XYPointsLayerConfig;
 
 export interface ValidXYDataLayerConfig extends XYDataLayerConfig {
   xAccessor: NonNullable<XYDataLayerConfig['xAccessor']>;

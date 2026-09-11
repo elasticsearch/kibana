@@ -22,6 +22,7 @@ import {
   AreaSeries,
   Axis,
   BarSeries,
+  BubbleSeries,
   ColorVariant,
   Fit,
   GroupBy,
@@ -29,6 +30,7 @@ import {
   LayoutDirection,
   LineAnnotation,
   LineSeries,
+  PointShape,
   Position,
   RectAnnotation,
   ScaleType,
@@ -69,6 +71,7 @@ import type {
   XYProps,
   AnnotationLayerConfigResult,
   PointVisibility,
+  PointsLayerConfigResult,
 } from '../../common/types';
 import { DataLayers } from './data_layers';
 import { SplitChart } from './split_chart';
@@ -3730,5 +3733,69 @@ describe('XYChart component', () => {
     });
     test('should call onClickMultiValue with a correct data for multiple series selected', () => {});
     test('should call onClickMultiValue with a correct data for time selected', () => {});
+  });
+
+  describe('points layer', () => {
+    const pointsTable: Datatable = {
+      type: 'datatable',
+      columns: [
+        { id: '@timestamp', name: '@timestamp', meta: { type: 'date' } },
+        {
+          id: 'system.cpu.total.norm.pct',
+          name: 'system.cpu.total.norm.pct',
+          meta: { type: 'number' },
+        },
+      ],
+      rows: [
+        { '@timestamp': 1652034840000, 'system.cpu.total.norm.pct': 0.42 },
+        { '@timestamp': 1652122440000, 'system.cpu.total.norm.pct': 0.67 },
+      ],
+    };
+
+    const pointsLayer: PointsLayerConfigResult = {
+      type: 'pointsLayer',
+      layerId: 'points-1',
+      layerType: LayerTypes.POINTS,
+      query: 'FROM metrics.exemplars-* | LIMIT 100',
+      yAccessor: 'system.cpu.total.norm.pct',
+      table: pointsTable,
+    };
+
+    test('renders a BubbleSeries with diamond markers for a points layer', () => {
+      const { args } = sampleArgs();
+      const component = shallow(
+        <XYChart
+          {...defaultProps}
+          args={{
+            ...args,
+            layers: [...args.layers, pointsLayer],
+          }}
+        />
+      );
+
+      const bubble = component.find(BubbleSeries);
+      expect(bubble).toHaveLength(1);
+      expect(bubble.prop('xAccessor')).toBe('x');
+      expect(bubble.prop('yAccessors')).toEqual(['y']);
+      expect(bubble.prop('bubbleSeriesStyle')).toMatchObject({
+        point: expect.objectContaining({ shape: PointShape.Diamond }),
+      });
+    });
+
+    test('does not render BubbleSeries when the points layer has no table', () => {
+      const { args } = sampleArgs();
+      const layerWithoutTable: PointsLayerConfigResult = { ...pointsLayer, table: undefined };
+      const component = shallow(
+        <XYChart
+          {...defaultProps}
+          args={{
+            ...args,
+            layers: [...args.layers, layerWithoutTable],
+          }}
+        />
+      );
+
+      expect(component.find(BubbleSeries)).toHaveLength(0);
+    });
   });
 });

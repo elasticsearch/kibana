@@ -15,6 +15,7 @@ import type {
   TextBasedLayerColumn,
   XYByValueAnnotationLayerConfig,
   XYDataLayerConfig,
+  XYPointsLayerConfig,
   XYReferenceLineLayerConfig,
   XYVisualizationState,
 } from '@kbn/lens-common';
@@ -24,6 +25,7 @@ import type {
   BuildDependencies,
   LensAttributes,
   LensBreakdownConfig,
+  LensPointsLayer,
   LensReferenceLineLayer,
   LensSeriesLayer,
   LensXYConfig,
@@ -129,6 +131,13 @@ function buildVisualizationState(config: LensXYConfig): XYVisualizationState {
               ...(yAxis.lineThickness ? { lineWidth: yAxis.lineThickness } : {}),
             })),
           } satisfies XYReferenceLineLayerConfig;
+        case 'points':
+          return {
+            layerId: `layer_${i}`,
+            layerType: 'points',
+            query: (layer as LensPointsLayer).query,
+            yAccessor: (layer as LensPointsLayer).yAccessor,
+          } satisfies XYPointsLayerConfig;
         case 'series': {
           const layerBreakdown = normalizeBreakdown(layer.breakdown);
           return {

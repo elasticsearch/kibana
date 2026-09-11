@@ -28,6 +28,8 @@ import {
   Chart,
   Settings,
   Axis,
+  BubbleSeries,
+  PointShape,
   Position,
   VerticalAlignment,
   HorizontalAlignment,
@@ -39,7 +41,7 @@ import {
   LEGACY_LIGHT_THEME,
 } from '@elastic/charts';
 import { partition } from 'lodash';
-import { type IconType } from '@elastic/eui';
+import { type IconType, useEuiTheme } from '@elastic/eui';
 import { i18n } from '@kbn/i18n';
 import { isOfAggregateQueryType } from '@kbn/es-query';
 import type { PaletteRegistry } from '@kbn/coloring';
@@ -118,7 +120,13 @@ import {
   OUTSIDE_RECT_ANNOTATION_WIDTH,
   OUTSIDE_RECT_ANNOTATION_WIDTH_SUGGESTION,
 } from './annotations';
-import { AxisExtentModes, SeriesTypes, ValueLabelModes, XScaleTypes } from '../../common/constants';
+import {
+  AxisExtentModes,
+  LayerTypes,
+  SeriesTypes,
+  ValueLabelModes,
+  XScaleTypes,
+} from '../../common/constants';
 import { DataLayers } from './data_layers';
 import { Tooltip as CustomTooltip } from './tooltip';
 import { XYCurrentTime } from './xy_current_time';
@@ -127,6 +135,8 @@ import { LegendColorPickerWrapperContext, LegendColorPickerWrapper } from './leg
 import { createSplitPoint, getTooltipActions, getXSeriesPoint } from './tooltip/tooltip_actions';
 import { getComputedColumnWarning } from './tooltip/computed_column_warning';
 import { GlobalXYChartStyles } from './xy_chart.styles';
+import { mapPointsFromDatatable } from '../helpers/metric_points';
+import type { PointsLayerConfigResult } from '../../common/types';
 
 declare global {
   interface Window {
@@ -248,6 +258,7 @@ export function XYChart({
   const chartRef = useRef<Chart>(null);
   const chartBaseTheme = chartsThemeService.useChartsBaseTheme();
   const darkMode = useKibanaIsDarkMode();
+  const { euiTheme } = useEuiTheme();
   const palettes = useKbnPalettes();
   const appFixedViewport = useAppFixedViewport();
   const filteredLayers = useMemo(() => getFilteredLayers(layers), [layers]);
@@ -1142,6 +1153,44 @@ export function XYChart({
                 }
               />
             ) : null}
+            {layers
+              .filter(
+                (layer): layer is PointsLayerConfigResult =>
+                  layer.layerType === LayerTypes.POINTS && layer.table != null
+              )
+              .flatMap((layer) => {
+                const pointFill = darkMode ? euiTheme.colors.plainLight : euiTheme.colors.plainDark;
+                const pointStroke = darkMode
+                  ? euiTheme.colors.plainDark
+                  : euiTheme.colors.plainLight;
+                const points = mapPointsFromDatatable(layer.table!, layer.yAccessor);
+                return points.length > 0
+                  ? [
+                      <BubbleSeries
+                        key={layer.layerId}
+                        id={`xy-points-overlay-${layer.layerId}`}
+                        name={layer.yAccessor}
+                        xAccessor="x"
+                        yAccessors={['y']}
+                        data={points}
+                        color={pointFill}
+                        groupId="left"
+                        bubbleSeriesStyle={{
+                          point: {
+                            shape: PointShape.Diamond,
+                            strokeWidth: 1,
+                            stroke: pointStroke,
+                            fill: pointFill,
+                            radius: 4,
+                            opacity: 0.6,
+                          },
+                        }}
+                        xScaleType="time"
+                        yScaleType="linear"
+                      />,
+                    ]
+                  : [];
+              })}
           </Chart>
         </LegendColorPickerWrapperContext.Provider>
       </div>

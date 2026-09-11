@@ -12,6 +12,7 @@ import type { LayeredXyVisFn } from '../types';
 import {
   EXTENDED_DATA_LAYER,
   REFERENCE_LINE_LAYER,
+  POINTS_LAYER,
   LAYERED_XY_VIS,
   REFERENCE_LINE,
   PointVisibilityOptions,
@@ -27,7 +28,7 @@ export const layeredXyVisFunction: LayeredXyVisFn = {
   args: {
     ...commonXYArgs,
     layers: {
-      types: [EXTENDED_DATA_LAYER, REFERENCE_LINE_LAYER, REFERENCE_LINE],
+      types: [EXTENDED_DATA_LAYER, REFERENCE_LINE_LAYER, REFERENCE_LINE, POINTS_LAYER],
       help: i18n.translate('expressionXY.layeredXyVis.layers.help', {
         defaultMessage: 'Layers of visual series',
       }),

@@ -49,6 +49,7 @@ import type {
   AXIS_EXTENT_CONFIG,
   EXTENDED_DATA_LAYER,
   REFERENCE_LINE_LAYER,
+  POINTS_LAYER,
   ANNOTATION_LAYER,
   EndValues,
   X_AXIS_CONFIG,
@@ -377,18 +378,41 @@ export interface ReferenceLineLayerArgs {
   table?: Datatable;
 }
 
+export interface PointsLayerArgs {
+  layerId: string;
+  query: string;
+  yAccessor: string;
+}
+
+export type PointsLayerConfigResult = PointsLayerArgs & {
+  type: typeof POINTS_LAYER;
+  layerType: typeof LayerTypes.POINTS;
+  table?: Datatable;
+};
+
+export type PointsLayerConfig = PointsLayerConfigResult & WithLayerId;
+
+export type PointsLayerFn = ExpressionFunctionDefinition<
+  typeof POINTS_LAYER,
+  Datatable | null,
+  PointsLayerArgs,
+  PointsLayerConfigResult
+>;
+
 export type XYLayerArgs = DataLayerArgs | ReferenceLineArgs | AnnotationLayerArgs;
 export type XYLayerConfig = DataLayerConfig | ReferenceLineConfig | AnnotationLayerConfig;
 export type XYExtendedLayerConfig =
   | ExtendedDataLayerConfig
   | ReferenceLineLayerConfig
   | ExtendedAnnotationLayerConfig
-  | ReferenceLineConfig;
+  | ReferenceLineConfig
+  | PointsLayerConfig;
 
 export type XYExtendedLayerConfigResult =
   | ExtendedDataLayerConfigResult
   | ReferenceLineLayerConfigResult
-  | ReferenceLineConfigResult;
+  | ReferenceLineConfigResult
+  | PointsLayerConfigResult;
 
 export interface ExtendedReferenceLineDecorationConfig extends ReferenceLineArgs {
   type: typeof EXTENDED_REFERENCE_LINE_DECORATION_CONFIG;

@@ -267,6 +267,10 @@ export const buildDatasourceStates = async (
       continue; // manual annotations need no data view
     }
 
+    if ('type' in layer && layer.type === 'points') {
+      continue; // points layers fetch their own data client-side, no datasource state needed
+    }
+
     const dataset = layer.dataset ?? mainDataset;
 
     if (!dataset) {
