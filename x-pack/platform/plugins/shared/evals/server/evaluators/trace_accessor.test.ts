@@ -27,7 +27,10 @@ describe('createTraceAccessor', () => {
       await accessor.runSearch('traces', {
         filter: [{ type: 'term', field: 'attributes.elastic.inference.span.kind', value: 'TOOL' }],
         fields: ['@timestamp', 'attributes.gen_ai.tool.name'],
-        sort: { field: '@timestamp', order: 'asc' },
+        sort: [
+          { field: '@timestamp', order: 'asc' },
+          { field: 'span_id', order: 'asc', unmappedType: 'keyword' },
+        ],
         size: 10,
       });
 
@@ -38,7 +41,10 @@ describe('createTraceAccessor', () => {
         _source: ['@timestamp', 'attributes.gen_ai.tool.name'],
         size: 10,
         aggs: undefined,
-        sort: [{ '@timestamp': { order: 'asc' } }],
+        sort: [
+          { '@timestamp': { order: 'asc' } },
+          { span_id: { order: 'asc', unmapped_type: 'keyword' } },
+        ],
         query: {
           bool: {
             filter: [

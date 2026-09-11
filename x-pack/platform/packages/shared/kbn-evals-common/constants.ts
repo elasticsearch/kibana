@@ -29,6 +29,7 @@ export const EVALS_EXAMPLE_SCORES_URL =
   `${EVALS_INTERNAL_URL}/examples/{exampleId}/scores` as const;
 export const EVALS_ONLINE_SCORES_URL = `${EVALS_INTERNAL_URL}/online_scores` as const;
 export const EVALS_TRACE_URL = `${EVALS_INTERNAL_URL}/traces/{traceId}` as const;
+export const EVALS_TRACE_EVIDENCE_URL = `${EVALS_TRACE_URL}/evidence` as const;
 export const EVALS_RESOLVE_INSTRUMENTATION_URL =
   `${EVALS_INTERNAL_URL}/traces/_resolve_instrumentation` as const;
 export const EVALS_EVALUATORS_URL = `${EVALS_INTERNAL_URL}/evaluators` as const;

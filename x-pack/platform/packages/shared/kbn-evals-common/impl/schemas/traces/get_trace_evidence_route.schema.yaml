@@ -1,0 +1,212 @@
+openapi: 3.0.0
+info:
+  title: Get normalized trace evidence API endpoint
+  version: '1'
+paths:
+  /internal/evals/traces/{traceId}/evidence:
+    get:
+      x-codegen-enabled: true
+      x-labels: [ess, serverless]
+      operationId: GetTraceEvidence
+      description: Reconstruct normalized single-turn evaluator evidence from trace telemetry
+      summary: Get normalized trace evidence
+      tags:
+        - Evals API
+      parameters:
+        - name: traceId
+          in: path
+          required: true
+          schema:
+            type: string
+            maxLength: 32
+        - name: profile
+          in: query
+          required: false
+          description: Instrumentation profile. When omitted, the profile is detected from evidence.
+          schema:
+            $ref: '../common_attributes.schema.yaml#/components/schemas/InstrumentationProfile'
+        - name: wait
+          in: query
+          required: false
+          description: Read immediately, wait for stable evidence, or wait for profile-aware completion.
+          schema:
+            type: string
+            enum:
+              - none
+              - stable
+              - complete
+            default: none
+      responses:
+        '200':
+          description: Resolved evidence or structured diagnostics for visible but unnormalizable telemetry
+          content:
+            application/json:
+              schema:
+                discriminator:
+                  propertyName: status
+                  mapping:
+                    resolved: '#/components/schemas/ResolvedTraceEvidenceResponse'
+                    unresolved: '#/components/schemas/UnresolvedTraceEvidenceResponse'
+                oneOf:
+                  - $ref: '#/components/schemas/ResolvedTraceEvidenceResponse'
+                  - $ref: '#/components/schemas/UnresolvedTraceEvidenceResponse'
+components:
+  schemas:
+    EvidenceProbeStatus:
+      type: string
+      enum:
+        - found
+        - not_found
+        - content_redacted
+
+    EvidenceItemStatus:
+      type: object
+      required:
+        - status
+      properties:
+        status:
+          $ref: '#/components/schemas/EvidenceProbeStatus'
+        field:
+          type: string
+          maxLength: 1024
+        sample:
+          type: string
+          maxLength: 123
+
+    EvidenceStatus:
+      type: object
+      required:
+        - user_query
+        - agent_response
+        - tool_calls
+      properties:
+        user_query:
+          $ref: '#/components/schemas/EvidenceItemStatus'
+        agent_response:
+          $ref: '#/components/schemas/EvidenceItemStatus'
+        tool_calls:
+          $ref: '#/components/schemas/EvidenceItemStatus'
+
+    EvidenceToolCall:
+      type: object
+      properties:
+        tool_call_id:
+          type: string
+        tool_id:
+          type: string
+        # Wrap unknown schemas so the generator preserves OpenAPI optionality.
+        arguments:
+          anyOf:
+            - {}
+        result:
+          anyOf:
+            - {}
+
+    EvidenceMessage:
+      type: object
+      required:
+        - message
+      properties:
+        message:
+          type: string
+          description: Full reconstructed message content; deliberately unbounded in this response schema.
+
+    EvidenceRound:
+      type: object
+      required:
+        - input
+        - response
+        - steps
+      properties:
+        input:
+          $ref: '#/components/schemas/EvidenceMessage'
+        response:
+          $ref: '#/components/schemas/EvidenceMessage'
+        steps:
+          type: array
+          maxItems: 200
+          items:
+            $ref: '#/components/schemas/EvidenceToolCall'
+
+    ProfileDiagnostic:
+      type: object
+      required:
+        - profile
+        - evidence
+      properties:
+        profile:
+          $ref: '../common_attributes.schema.yaml#/components/schemas/InstrumentationProfile'
+        evidence:
+          $ref: '#/components/schemas/EvidenceStatus'
+
+    ResolvedTraceEvidenceResponse:
+      type: object
+      required:
+        - status
+        - readiness
+        - trace_id
+        - profile_selection
+        - profile
+        - evidence
+        - evidence_status
+      properties:
+        status:
+          type: string
+          enum:
+            - resolved
+        readiness:
+          type: string
+          enum:
+            - immediate
+            - stable
+            - complete
+            - best_effort
+        trace_id:
+          type: string
+          maxLength: 32
+        profile_selection:
+          type: string
+          enum:
+            - explicit
+            - auto
+        profile:
+          $ref: '../common_attributes.schema.yaml#/components/schemas/InstrumentationProfile'
+        evidence:
+          $ref: '#/components/schemas/EvidenceRound'
+        evidence_status:
+          $ref: '#/components/schemas/EvidenceStatus'
+
+    UnresolvedTraceEvidenceResponse:
+      type: object
+      required:
+        - status
+        - readiness
+        - trace_id
+        - profile_selection
+        - profile
+        - profile_diagnostics
+      properties:
+        status:
+          type: string
+          enum:
+            - unresolved
+        readiness:
+          type: string
+          enum:
+            - immediate
+            - best_effort
+        trace_id:
+          type: string
+          maxLength: 32
+        profile_selection:
+          type: string
+          enum:
+            - explicit
+            - auto
+        profile:
+          $ref: '../common_attributes.schema.yaml#/components/schemas/InstrumentationProfile'
+          nullable: true
+        profile_diagnostics:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProfileDiagnostic'

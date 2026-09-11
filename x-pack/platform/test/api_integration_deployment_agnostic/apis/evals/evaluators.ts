@@ -9,10 +9,12 @@ import expect from '@kbn/expect';
 import {
   EVALS_EVALUATORS_URL,
   EVALS_EVALUATOR_URL,
+  EVALS_TRACE_EVIDENCE_URL,
   EVALS_VALIDATE_URL,
   type CreateEvaluatorResponse,
   type DeleteEvaluatorResponse,
   type GetEvaluatorResponse,
+  type GetTraceEvidenceResponse,
   type ListEvaluatorsResponse,
   type LlmJudgeConfig,
   type UpdateEvaluatorResponse,
@@ -20,10 +22,11 @@ import {
 import type { DeploymentAgnosticFtrProviderContext } from '../../ftr_provider_context';
 import type { SupertestWithRoleScopeType } from '../../services';
 import { getEvalsApiClientForRole } from './helpers/api_client';
-import { uniqueSuffix } from './helpers/fixtures';
+import { seedTrace, uniqueSuffix, uniqueTraceId } from './helpers/fixtures';
 
 export default function ({ getService }: DeploymentAgnosticFtrProviderContext) {
   const roleScopedSupertest = getService('roleScopedSupertest');
+  const es = getService('es');
   const spaces = getService('spaces');
 
   let adminClient: SupertestWithRoleScopeType;
@@ -31,6 +34,8 @@ export default function ({ getService }: DeploymentAgnosticFtrProviderContext) {
 
   const evaluatorPath = (name: string) =>
     EVALS_EVALUATOR_URL.replace('{name}', encodeURIComponent(name));
+  const traceEvidencePath = (traceId: string) =>
+    EVALS_TRACE_EVIDENCE_URL.replace('{traceId}', encodeURIComponent(traceId));
 
   const judge: LlmJudgeConfig = {
     prompt: 'Response: {{{agent_response}}}\nRate its professional tone.',
@@ -64,6 +69,100 @@ export default function ({ getService }: DeploymentAgnosticFtrProviderContext) {
 
     it('allows listing evaluators with read_evals (viewer)', async () => {
       await viewerClient.get(EVALS_EVALUATORS_URL).expect(200);
+    });
+
+    describe('trace evidence', () => {
+      const traceId = uniqueTraceId();
+      const traceIndex = `traces-evals-evidence-ftr-${suffix}`;
+
+      before(async () => {
+        await seedTrace(es, traceIndex, traceId, [
+          {
+            spanId: 'span-1',
+            name: 'root span',
+            timestamp: '2024-01-01T00:00:00.000Z',
+            durationNanos: 5_000_000,
+            attributes: {
+              'elastic.inference.span.kind': 'LLM',
+              'gen_ai.input.messages': JSON.stringify([
+                {
+                  role: 'user',
+                  parts: [{ type: 'text', content: 'What is the service status?' }],
+                },
+              ]),
+              'gen_ai.output.messages': JSON.stringify([
+                {
+                  role: 'assistant',
+                  parts: [{ type: 'text', content: 'The service is healthy.' }],
+                },
+              ]),
+            },
+          },
+          {
+            spanId: 'span-2',
+            parentSpanId: 'span-1',
+            name: 'tool span',
+            timestamp: '2024-01-01T00:00:00.002Z',
+            durationNanos: 1_000_000,
+            attributes: {
+              'elastic.inference.span.kind': 'TOOL',
+              'gen_ai.tool.call.id': 'call-1',
+              'gen_ai.tool.name': 'health_check',
+              'gen_ai.tool.call.arguments': '{"service":"evals-ftr"}',
+              'gen_ai.tool.call.result': '{"status":"healthy"}',
+            },
+          },
+        ]);
+      });
+
+      after(async () => {
+        await es.indices.delete({ index: traceIndex }).catch(() => {
+          // best-effort cleanup
+        });
+      });
+
+      it('returns normalized evidence using automatic profile detection', async () => {
+        const { body } = await adminClient.get(traceEvidencePath(traceId)).expect(200);
+
+        const result = body as GetTraceEvidenceResponse;
+        expect(result.status).to.be('resolved');
+        if (result.status !== 'resolved') {
+          throw new Error(`Expected resolved evidence, received ${result.status}`);
+        }
+
+        expect(result.readiness).to.be('immediate');
+        expect(result.profile_selection).to.be('auto');
+        expect(result.profile).to.be('elastic-inference');
+        expect(result.evidence).to.eql({
+          input: { message: 'What is the service status?' },
+          response: { message: 'The service is healthy.' },
+          steps: [
+            {
+              tool_call_id: 'call-1',
+              tool_id: 'health_check',
+              arguments: { service: 'evals-ftr' },
+              result: { status: 'healthy' },
+            },
+          ],
+        });
+      });
+
+      it('allows a viewer to wait for complete normalized evidence', async () => {
+        const { body } = await viewerClient
+          .get(traceEvidencePath(traceId))
+          .query({ profile: 'elastic-inference', wait: 'complete' })
+          .expect(200);
+
+        const result = body as GetTraceEvidenceResponse;
+        expect(result.status).to.be('resolved');
+        if (result.status !== 'resolved') {
+          throw new Error(`Expected resolved evidence, received ${result.status}`);
+        }
+
+        expect(result.readiness).to.be('complete');
+        expect(result.profile_selection).to.be('explicit');
+        expect(result.profile).to.be('elastic-inference');
+      });
     });
 
     describe('CRUD', () => {

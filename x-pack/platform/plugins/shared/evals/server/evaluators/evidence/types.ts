@@ -5,6 +5,8 @@
  * 2.0.
  */
 
+import type { InstrumentationProfile as GeneratedInstrumentationProfile } from '@kbn/evals-common';
+
 export interface ToolCallEvidence {
   tool_call_id?: string;
   tool_id?: string;
@@ -27,11 +29,7 @@ export const EVIDENCE_ITEM_KEYS = {
   toolCalls: 'tool_calls',
 } as const;
 export type EvidenceItemKey = (typeof EVIDENCE_ITEM_KEYS)[keyof typeof EVIDENCE_ITEM_KEYS];
-export type InstrumentationProfile =
-  | 'otel-genai-events'
-  | 'elastic-inference'
-  | 'otel-genai-attributes'
-  | 'claude-code';
+export type InstrumentationProfile = GeneratedInstrumentationProfile;
 
 export interface EvidenceFilterTerm {
   field: string;

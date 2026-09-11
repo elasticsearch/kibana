@@ -41,6 +41,16 @@ export type DirectionEnum = typeof Direction.enum;
 export const DirectionEnum = Direction.enum;
 
 /**
+ * Telemetry convention used to reconstruct normalized evaluator evidence.
+ */
+export const InstrumentationProfile = lazySchema(() =>
+  z.enum(['elastic-inference', 'otel-genai-events', 'otel-genai-attributes', 'claude-code'])
+);
+export type InstrumentationProfile = z.infer<typeof InstrumentationProfile>;
+export type InstrumentationProfileEnum = typeof InstrumentationProfile.enum;
+export const InstrumentationProfileEnum = InstrumentationProfile.enum;
+
+/**
  * How curated the dataset is, from raw captures through cleaned data to "golden" reference datasets. Absent when a dataset has no maturity set.
  */
 export const DatasetMaturity = lazySchema(() => z.enum(['raw', 'cleaned', 'golden']));

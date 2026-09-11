@@ -5,25 +5,60 @@
  * 2.0.
  */
 
+import { errors as EsErrors } from '@elastic/elasticsearch';
+import { isResponseError } from '@kbn/es-errors';
 import type { Logger } from '@kbn/logging';
+import { isEqual } from 'lodash';
 import pRetry from 'p-retry';
-import type { TraceAccessorWithSearch } from './trace_accessor';
 import {
+  extractProfilesEvidence,
+  extractSelectedEvidence,
+  hasResolvedEvidence,
   hasRootSpan,
   hasTraceDocuments,
-  normalizeEvidence,
-  probeProfiles,
+  toInstrumentationProfileProbes,
+  type EvidenceExtractionResult,
+  type InstrumentationProfileEvidenceResult,
+  type InstrumentationProfileProbeResult,
 } from './evidence/evidence_service';
-import type {
-  InstrumentationProfile,
-  InstrumentationProfileSpec,
-  EvidenceRound,
-} from './evidence/types';
-import { TraceReadinessError } from './trace_readiness_errors';
+import { INSTRUMENTATION_PROFILES } from './evidence/profiles';
+import type { EvidenceRound, InstrumentationProfile } from './evidence/types';
+import type { TraceAccessorWithSearch } from './trace_accessor';
+import { getNoTraceDocumentsMessage, TraceReadinessError } from './trace_readiness_errors';
 
-const summarizeProfiles = async (traceAccessor: TraceAccessorWithSearch): Promise<string> => {
-  const probes = await probeProfiles(traceAccessor);
-  return probes
+export { TraceReadinessError } from './trace_readiness_errors';
+
+export const STABILITY_WINDOW_MS = 5000;
+
+export type TraceWaitMode = 'stable' | 'complete';
+export type AchievedTraceReadiness = TraceWaitMode | 'best_effort';
+
+export interface AwaitTraceReadyOptions {
+  retries?: number;
+  minTimeout?: number;
+  maxTimeout?: number;
+  factor?: number;
+  stabilityWindowMs?: number;
+}
+
+export interface AwaitTraceReadyRequest {
+  mode: TraceWaitMode;
+  profile?: InstrumentationProfile;
+}
+
+export interface AwaitTraceReadyResult extends EvidenceExtractionResult {
+  profile: InstrumentationProfile;
+  readiness: AchievedTraceReadiness;
+}
+
+interface ReadinessBaseline {
+  profile: InstrumentationProfile;
+  round: EvidenceRound;
+  timestamp: number;
+}
+
+const summarizeProfiles = (profiles: InstrumentationProfileProbeResult[]): string =>
+  profiles
     .map(({ profile, evidence }) => {
       const statuses = [
         `user_query=${evidence.user_query.status}`,
@@ -33,119 +68,156 @@ const summarizeProfiles = async (traceAccessor: TraceAccessorWithSearch): Promis
       return `${profile}(${statuses})`;
     })
     .join('; ');
+
+const profileRequiresStabilityWindow = (profile: InstrumentationProfile): boolean =>
+  Object.values(INSTRUMENTATION_PROFILES[profile]).some(({ source }) => source === 'logs');
+
+const isRetryableSearchError = (error: unknown): error is Error => {
+  if (isResponseError(error)) {
+    const { statusCode } = error;
+    return statusCode === 429 || (statusCode !== undefined && statusCode >= 500);
+  }
+
+  return error instanceof EsErrors.ConnectionError || error instanceof EsErrors.TimeoutError;
 };
 
-export { TraceReadinessError } from './trace_readiness_errors';
+const abortRetryOnUnexpectedError = async <T>(operation: () => Promise<T>): Promise<T> => {
+  try {
+    return await operation();
+  } catch (error) {
+    if (error instanceof TraceReadinessError || isRetryableSearchError(error)) {
+      throw error;
+    }
+    throw new pRetry.AbortError(error instanceof Error ? error : new Error(String(error)));
+  }
+};
 
-export interface AwaitTraceReadyOptions {
-  retries?: number;
-  minTimeout?: number;
-  maxTimeout?: number;
-  factor?: number;
-}
-
-const hasResolvedEvidence = (round: EvidenceRound): boolean =>
-  Boolean(round.input.message.trim()) ||
-  Boolean(round.response.message.trim()) ||
-  round.steps.length > 0;
-
-/**
- * Blocks until a trace is safe to grade, then returns its normalized evidence round.
- *
- * Readiness requires two signals so an intermediate agent turn isn't graded as the final
- * answer: the root span is indexed (the task actually finished) and the response is
- * non-empty and unchanged across two polls (absorbing export skew, where the root can
- * index before the final span's content).
- *
- */
+/** Blocks until normalized trace evidence reaches the requested readiness level. */
 export const awaitTraceReady = async (
   traceAccessor: TraceAccessorWithSearch,
-  mapping: InstrumentationProfileSpec,
-  profile: InstrumentationProfile,
+  request: AwaitTraceReadyRequest,
   log: Logger,
   options: AwaitTraceReadyOptions = {}
-): Promise<EvidenceRound> => {
-  const { retries = 8, minTimeout = 500, maxTimeout = 5000, factor = 2 } = options;
+): Promise<AwaitTraceReadyResult> => {
+  const {
+    retries = 8,
+    minTimeout = 500,
+    maxTimeout = 5000,
+    factor = 2,
+    stabilityWindowMs = STABILITY_WINDOW_MS,
+  } = options;
 
-  let lastRound: EvidenceRound | undefined;
-  let previousResponseMessage: string | undefined;
+  let baseline: ReadinessBaseline | undefined;
+  let lastEvidence: AwaitTraceReadyResult | undefined;
+  let latestProfiles: InstrumentationProfileEvidenceResult[] | undefined;
+  let sawDocuments = false;
 
-  try {
-    return await pRetry(
-      async () => {
-        if (!(await hasTraceDocuments(traceAccessor))) {
-          throw new TraceReadinessError(
-            `Trace ${traceAccessor.traceId} is not ready: no documents indexed in traces-* or logs-* yet`,
-            'not_ready'
-          );
-        }
+  const attemptReadiness = async (): Promise<AwaitTraceReadyResult> => {
+    if (!sawDocuments && !(await hasTraceDocuments(traceAccessor))) {
+      throw new TraceReadinessError(getNoTraceDocumentsMessage(traceAccessor.traceId), 'not_ready');
+    }
+    sawDocuments = true;
 
-        const round = await normalizeEvidence(traceAccessor, mapping);
-        lastRound = round;
+    const selection = await extractSelectedEvidence(traceAccessor, request.profile);
+    latestProfiles = selection.profiles ?? latestProfiles;
+    const { selected } = selection;
 
-        if (!hasResolvedEvidence(round)) {
-          throw new TraceReadinessError(
-            `Trace ${traceAccessor.traceId} is not ready: documents indexed but no gradable evidence yet for profile "${profile}"`,
-            'not_ready'
-          );
-        }
+    if (!selected || !hasResolvedEvidence(selected.round)) {
+      baseline = undefined;
+      lastEvidence = undefined;
+      throw new TraceReadinessError(
+        `Trace ${
+          traceAccessor.traceId
+        } is not ready: documents indexed but no gradable evidence yet${
+          request.profile ? ` for profile "${request.profile}"` : ''
+        }`,
+        'not_ready'
+      );
+    }
 
-        const responseMessage = round.response.message.trim();
-        // Compare against the previous poll *before* overwriting, so we only accept a
-        // response that has stopped changing across consecutive polls.
-        const responseStable =
-          responseMessage.length > 0 && responseMessage === previousResponseMessage;
-        previousResponseMessage = responseMessage;
+    lastEvidence = {
+      ...selected,
+      readiness: 'best_effort',
+    };
 
-        // Gate on the root span only once the response looks stable (cheap short-circuit).
-        // Both signals must hold in the same poll: a stable *intermediate* response while
-        // the task is still running is rejected because the root has not been indexed yet.
-        if (responseStable && (await hasRootSpan(traceAccessor))) {
-          return round;
-        }
+    const now = Date.now();
+    if (
+      !baseline ||
+      baseline.profile !== selected.profile ||
+      !isEqual(baseline.round, selected.round)
+    ) {
+      baseline = { profile: selected.profile, round: selected.round, timestamp: now };
+      throw new TraceReadinessError(
+        `Trace ${traceAccessor.traceId} is not ready: awaiting stable evidence for profile "${selected.profile}"`,
+        'not_ready'
+      );
+    }
 
+    const requiredWindowMs =
+      request.mode === 'stable' || profileRequiresStabilityWindow(selected.profile)
+        ? stabilityWindowMs
+        : 0;
+    if (now - baseline.timestamp < requiredWindowMs) {
+      throw new TraceReadinessError(
+        `Trace ${traceAccessor.traceId} is not ready: evidence has not remained stable for ${requiredWindowMs}ms`,
+        'not_ready'
+      );
+    }
+
+    if (request.mode === 'complete') {
+      if (!selected.round.response.message.trim() || !(await hasRootSpan(traceAccessor))) {
         throw new TraceReadinessError(
-          `Trace ${traceAccessor.traceId} is not ready: awaiting a completed, stable response for profile "${profile}"`,
+          `Trace ${traceAccessor.traceId} is not ready: awaiting a root span and completed response for profile "${selected.profile}"`,
           'not_ready'
         );
-      },
-      {
-        retries,
-        factor,
-        minTimeout,
-        maxTimeout,
-        onFailedAttempt: (error) => {
-          // Retries are the normal path now (stability needs at least two polls), so this
-          // is debug-level; the loud signal is the best-effort warn on budget exhaustion.
-          log.debug(
-            `Trace ${traceAccessor.traceId} not ready on attempt ${error.attemptNumber}; retrying`
-          );
-        },
       }
-    );
+    }
+
+    return {
+      ...selected,
+      readiness: request.mode,
+    };
+  };
+
+  try {
+    return await pRetry(() => abortRetryOnUnexpectedError(attemptReadiness), {
+      retries,
+      factor,
+      minTimeout,
+      maxTimeout,
+      onFailedAttempt: (error) => {
+        log.debug(
+          `Trace ${traceAccessor.traceId} not ready on attempt ${error.attemptNumber}; retrying`
+        );
+      },
+    });
   } catch (error) {
-    // Best-effort: some evidence resolved but the trace never fully converged (no root
-    // for a partial/external trace, or a response that kept changing within budget).
-    // Grade what we have, but log loudly so the degradation is observable.
-    if (lastRound && hasResolvedEvidence(lastRound)) {
+    if (!(error instanceof TraceReadinessError)) {
+      throw error;
+    }
+
+    if (lastEvidence) {
       log.warn(
-        `Trace ${traceAccessor.traceId} did not reach a completed, stable state within the readiness budget; grading best-effort evidence for profile "${profile}"`
+        `Trace ${traceAccessor.traceId} did not reach ${request.mode} readiness within the budget; returning best-effort evidence for profile "${lastEvidence.profile}"`
       );
-      return lastRound;
+      return lastEvidence;
     }
 
-    // Documents were present but no gradable evidence ever resolved within the budget: now
-    // conclude "unresolvable" and attach the per-profile probe so misconfigured instrumentation
-    // (or a truly empty trace) is easy to diagnose.
-    if (lastRound) {
-      const profileSummary = await summarizeProfiles(traceAccessor);
+    if (sawDocuments) {
+      const profiles = latestProfiles ?? (await extractProfilesEvidence(traceAccessor));
+      const probes = toInstrumentationProfileProbes(profiles);
+      const requestedProfile = request.profile ? ` for profile "${request.profile}"` : '';
       throw new TraceReadinessError(
-        `Trace ${traceAccessor.traceId} has documents but evidence is unresolvable for profile "${profile}". Probed profiles: ${profileSummary}`,
-        'unresolvable'
+        `Trace ${
+          traceAccessor.traceId
+        } has documents but evidence is unresolvable${requestedProfile}. Probed profiles: ${summarizeProfiles(
+          probes
+        )}`,
+        'unresolvable',
+        probes
       );
     }
 
-    // Never saw any documents within the budget — surface the not_ready error as-is.
     throw error;
   }
 };

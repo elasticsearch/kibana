@@ -18,7 +18,9 @@ import {
   API_VERSIONS,
   EVALS_EVALUATE_URL,
   EVALS_RESOLVE_INSTRUMENTATION_URL,
+  EVALS_TRACE_EVIDENCE_URL,
   EVALS_VALIDATE_URL,
+  type GetTraceEvidenceResponse,
   type ResolveInstrumentationResponse,
   type ValidateResponse,
   type EvaluateResponse,
@@ -32,9 +34,11 @@ import { normalizeEvidence } from '../evaluators/evidence/evidence_service';
 import { getInstrumentationProfile } from '../evaluators/evidence/resolve_instrumentation';
 import type { GroundednessAnalysis } from '../evaluators/groundedness/types';
 import { createTraceAccessor } from '../evaluators/trace_accessor';
+import { awaitTraceReady } from '../evaluators/trace_readiness';
 import { registerEvaluateRoute } from '../routes/evaluators/evaluate';
 import { registerResolveInstrumentationRoute } from '../routes/evaluators/resolve_instrumentation';
 import { registerValidateRoute } from '../routes/evaluators/validate';
+import { registerGetTraceEvidenceRoute } from '../routes/traces/get_trace_evidence';
 
 const logger = loggingSystemMock.createLogger();
 const LOGS_INDEX = 'logs-evals-evidence-reconstruction-it';
@@ -377,6 +381,7 @@ describe('trace evidence reconstruction integration', () => {
     registerResolveInstrumentationRoute(routeDependencies);
     registerValidateRoute(routeDependencies);
     registerEvaluateRoute(routeDependencies);
+    registerGetTraceEvidenceRoute(routeDependencies);
 
     return {
       resolveMappingsHandler: versionedRouter.getRoute('post', EVALS_RESOLVE_INSTRUMENTATION_URL)
@@ -385,6 +390,9 @@ describe('trace evidence reconstruction integration', () => {
         API_VERSIONS.internal.v1
       ].handler,
       evaluateHandler: versionedRouter.getRoute('post', EVALS_EVALUATE_URL).versions[
+        API_VERSIONS.internal.v1
+      ].handler,
+      evidenceHandler: versionedRouter.getRoute('get', EVALS_TRACE_EVIDENCE_URL).versions[
         API_VERSIONS.internal.v1
       ].handler,
     };
@@ -396,6 +404,7 @@ describe('trace evidence reconstruction integration', () => {
         elasticsearch: {
           client: {
             asInternalUser: esClient,
+            asCurrentUser: esClient,
           },
         },
       }),
@@ -598,6 +607,69 @@ describe('trace evidence reconstruction integration', () => {
         },
       ],
     });
+  });
+
+  it('returns immediate Claude Code and explicit OTel evidence through the route', async () => {
+    const { evidenceHandler } = setupRoutes();
+    const context = buildContext() as unknown as Parameters<typeof evidenceHandler>[0];
+
+    const claudeResponse = await evidenceHandler(
+      context,
+      {
+        params: { traceId: CLAUDE_CODE_TRACE_ID },
+        query: { wait: 'none' },
+      } as unknown as Parameters<typeof evidenceHandler>[1],
+      kibanaResponseFactory
+    );
+    const otelResponse = await evidenceHandler(
+      context,
+      {
+        params: { traceId: OTEL_EVENTS_TRACE_ID },
+        query: { wait: 'none', profile: 'otel-genai-events' },
+      } as unknown as Parameters<typeof evidenceHandler>[1],
+      kibanaResponseFactory
+    );
+
+    expect(claudeResponse.status).toBe(200);
+    expect(claudeResponse.payload as GetTraceEvidenceResponse).toEqual(
+      expect.objectContaining({
+        status: 'resolved',
+        readiness: 'immediate',
+        profile_selection: 'auto',
+        profile: 'claude-code',
+        evidence: expect.objectContaining({
+          input: { message: 'Summarize workflow run status.' },
+          response: { message: 'Workflow run summary:\n\n2 succeeded, 1 failed.' },
+        }),
+      })
+    );
+    expect(otelResponse.status).toBe(200);
+    expect(otelResponse.payload as GetTraceEvidenceResponse).toEqual(
+      expect.objectContaining({
+        status: 'resolved',
+        profile_selection: 'explicit',
+        profile: 'otel-genai-events',
+      })
+    );
+  });
+
+  it('stabilizes rootless Claude Code evidence with a shortened test window', async () => {
+    const result = await awaitTraceReady(
+      createTraceAccessor({ esClient, traceId: CLAUDE_CODE_TRACE_ID }),
+      { mode: 'stable', profile: 'claude-code' },
+      logger,
+      { stabilityWindowMs: 1 }
+    );
+
+    expect(result).toEqual(
+      expect.objectContaining({
+        readiness: 'stable',
+        profile: 'claude-code',
+        round: expect.objectContaining({
+          response: { message: 'Workflow run summary:\n\n2 succeeded, 1 failed.' },
+        }),
+      })
+    );
   });
 
   it('evaluates groundedness and code evaluators without unmapped-field search failures', async () => {

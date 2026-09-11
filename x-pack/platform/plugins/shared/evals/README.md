@@ -81,6 +81,7 @@ The plugin reads from the following indices:
 | `.evaluation-dataset-examples` | Datasets API          | Dataset examples           |
 | `.evaluation-evaluators`       | Evaluators API        | User-defined evaluators    |
 | `traces-*`                     | OTLP / EDOT collector | OpenTelemetry trace spans  |
+| `logs-*`                       | OTLP / EDOT collector | OpenTelemetry log events   |
 
 Run evaluation suites via the `@kbn/evals` CLI to populate the scores and traces indices. See the [`@kbn/evals` README](../../packages/shared/kbn-evals/README.md) for details.
 
@@ -214,6 +215,16 @@ Evaluator routes reconstruct a normalized evidence round (`input.message`, `resp
 | `claude-code`                 | Log event `user_prompt` (string)                            | Log event `api_response_body` (`anthropic_message`)          | `claude_code.tool` spans (`prefixed_json`) |
 
 Profile definitions live in [`server/evaluators/evidence/profiles.ts`](server/evaluators/evidence/profiles.ts).
+
+### Reading normalized trace evidence
+
+`GET /internal/evals/traces/{traceId}/evidence` returns the normalized single-turn evidence used by evaluators. Omit `profile` to auto-detect the instrumentation or pass one explicitly.
+
+`wait` defaults to `none` for an immediate read. `stable` waits for non-empty evidence to remain unchanged for five seconds. `complete` also requires a response and root span; log-backed profiles normally take at least 7.5 seconds. Waits can run for about 28 seconds, including for a valid but missing trace ID, and return available evidence as `best_effort` on expiry.
+
+`_evaluate` uses the same whole-round `complete` readiness check.
+
+The endpoint requires `read_evals` and current-user read access to `traces-*` and `logs-*`; missing index privileges can appear as `404`. It returns full message and tool content, does not persist it, and supports one turn only.
 
 ## UI pages
 

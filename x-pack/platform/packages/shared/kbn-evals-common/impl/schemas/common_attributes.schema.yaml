@@ -30,6 +30,15 @@ components:
         accuracy). `minimize` means a lower score is better (e.g. latency, token count).
         `neutral` means the metric is informational only and has no improvement direction.
 
+    InstrumentationProfile:
+      type: string
+      enum:
+        - elastic-inference
+        - otel-genai-events
+        - otel-genai-attributes
+        - claude-code
+      description: Telemetry convention used to reconstruct normalized evaluator evidence.
+
     DatasetMaturity:
       type: string
       enum:

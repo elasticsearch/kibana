@@ -12,6 +12,9 @@ let counter = 0;
 
 export const uniqueSuffix = (): string => `${Date.now().toString(36)}-${(counter++).toString(36)}`;
 
+export const uniqueTraceId = (): string =>
+  `${Date.now().toString(16)}${(counter++).toString(16).padStart(8, '0')}`.padEnd(32, '0');
+
 const DEFAULT_MODEL = { id: 'gpt-4o', family: 'gpt-4', provider: 'openai' } as const;
 
 export type SeededScore = IngestScoresRequestBodyInput['scores'][number];
@@ -90,7 +93,7 @@ export interface SeedTraceSpan {
   attributes?: Record<string, unknown>;
 }
 
-// Creates a `traces-*` index (keyword `trace_id` is required for the route's term query) and seeds spans.
+// Creates a `traces-*` index with both legacy `trace_id` and OTel `trace.id` fields and seeds spans.
 // Note: this writes a concrete `traces-*` index, which can clash with data-stream templates on some
 // clusters; fine locally, but revisit if the traces suite is ever enabled on MKI (skipMKI today).
 export const seedTrace = async (
@@ -102,8 +105,17 @@ export const seedTrace = async (
   await esClient.indices.create({
     index,
     mappings: {
+      dynamic_templates: [
+        {
+          strings_as_keywords: {
+            match_mapping_type: 'string',
+            mapping: { type: 'keyword' },
+          },
+        },
+      ],
       properties: {
         trace_id: { type: 'keyword' },
+        trace: { type: 'object', properties: { id: { type: 'keyword' } } },
         span_id: { type: 'keyword' },
         parent_span_id: { type: 'keyword' },
         name: { type: 'keyword' },
@@ -123,6 +135,7 @@ export const seedTrace = async (
       { index: {} },
       {
         trace_id: traceId,
+        trace: { id: traceId },
         span_id: span.spanId,
         ...(span.parentSpanId ? { parent_span_id: span.parentSpanId } : {}),
         name: span.name,

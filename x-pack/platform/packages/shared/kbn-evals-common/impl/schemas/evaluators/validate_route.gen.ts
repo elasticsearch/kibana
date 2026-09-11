@@ -16,6 +16,8 @@
 
 import { z, lazySchema } from '@kbn/zod/v4';
 
+import { InstrumentationProfile } from '../common_attributes.gen';
+
 export const ValidateRequestBody = lazySchema(() =>
   z.object({
     subject: z.object({
@@ -34,14 +36,7 @@ export const ValidateRequestBody = lazySchema(() =>
        */
       instrumentation: z
         .object({
-          profile: z
-            .enum([
-              'elastic-inference',
-              'otel-genai-events',
-              'otel-genai-attributes',
-              'claude-code',
-            ])
-            .default('elastic-inference'),
+          profile: InstrumentationProfile.default('elastic-inference'),
         })
         .optional(),
     }),

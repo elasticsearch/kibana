@@ -37,12 +37,13 @@ export type TraceFilter = TraceFilterTerm | TraceFilterExistence;
 export interface TraceSearchSort {
   field: string;
   order: 'asc' | 'desc';
+  unmappedType?: 'keyword';
 }
 
 export interface TraceSearchParams {
   filter?: TraceFilter[];
   fields?: string[];
-  sort?: TraceSearchSort;
+  sort?: TraceSearchSort | TraceSearchSort[];
   size?: number;
   aggs?: Record<string, AggregationsAggregationContainer>;
 }
@@ -71,6 +72,7 @@ export const createTraceAccessor = (traceAccessor: TraceAccessor): TraceAccessor
 
     const { index, field } = TRACE_SOURCE[source];
     const { filter = [], fields, sort, size, aggs } = params;
+    const sortFields = sort ? (Array.isArray(sort) ? sort : [sort]) : undefined;
 
     const filterClauses: QueryDslQueryContainer[] = [{ term: { [field]: traceAccessor.traceId } }];
     const mustNotClauses: QueryDslQueryContainer[] = [];
@@ -90,7 +92,12 @@ export const createTraceAccessor = (traceAccessor: TraceAccessor): TraceAccessor
       _source: fields,
       size,
       aggs,
-      sort: sort ? [{ [sort.field]: { order: sort.order } }] : undefined,
+      sort: sortFields?.map(({ field: sortField, order, unmappedType }) => ({
+        [sortField]: {
+          order,
+          ...(unmappedType ? { unmapped_type: unmappedType } : {}),
+        },
+      })),
       query: {
         bool: {
           filter: filterClauses,

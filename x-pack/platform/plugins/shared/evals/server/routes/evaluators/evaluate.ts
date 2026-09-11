@@ -24,7 +24,6 @@ import {
   findDuplicateEvaluatorNames,
   getDuplicateEvaluatorNamesMessage,
 } from '../../lib/duplicate_evaluator_names';
-import { getInstrumentationProfile } from '../../evaluators/evidence/resolve_instrumentation';
 import { withEvaluatorNameBaggage } from '../../evaluators/evaluator_tracing_context';
 import { formatEvidenceSchemaIssues } from '../../evaluators/evidence/schema_issues';
 import { createTraceAccessor } from '../../evaluators/trace_accessor';
@@ -141,11 +140,13 @@ export const registerEvaluateRoute = ({
         });
 
         const activeProfile = subject.instrumentation?.profile ?? 'elastic-inference';
-        const resolvedMapping = getInstrumentationProfile(activeProfile);
-
-        let round: Awaited<ReturnType<typeof awaitTraceReady>>;
+        let round: Awaited<ReturnType<typeof awaitTraceReady>>['round'];
         try {
-          round = await awaitTraceReady(traceAccessor, resolvedMapping, activeProfile, logger);
+          ({ round } = await awaitTraceReady(
+            traceAccessor,
+            { mode: 'complete', profile: activeProfile },
+            logger
+          ));
         } catch (error) {
           if (error instanceof TraceReadinessError) {
             return response.notFound({ body: { message: String(error) } });

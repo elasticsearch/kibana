@@ -5,21 +5,77 @@
  * 2.0.
  */
 
+import { errors as EsErrors } from '@elastic/elasticsearch';
 import { loggingSystemMock } from '@kbn/core-logging-server-mocks';
-import { awaitTraceReady, type AwaitTraceReadyOptions } from './trace_readiness';
+import {
+  awaitTraceReady,
+  type AwaitTraceReadyOptions,
+  type AwaitTraceReadyRequest,
+} from './trace_readiness';
 import * as evidenceServiceModule from './evidence/evidence_service';
-import { getInstrumentationProfile } from './evidence/resolve_instrumentation';
+import type {
+  EvidenceExtractionResult,
+  InstrumentationProfileEvidenceResult,
+} from './evidence/evidence_service';
+import type { EvidenceRound, InstrumentationProfile } from './evidence/types';
 import type { TraceAccessorWithSearch } from './trace_accessor';
-import type { EvidenceRound } from './evidence/types';
 
-jest.mock('./evidence/evidence_service');
+jest.mock('./evidence/evidence_service', () => ({
+  ...jest.requireActual('./evidence/evidence_service'),
+  hasTraceDocuments: jest.fn(),
+  hasRootSpan: jest.fn(),
+  extractEvidence: jest.fn(),
+  extractProfilesEvidence: jest.fn(),
+  extractSelectedEvidence: jest.fn(),
+}));
+
+type ResponseErrorArgs = ConstructorParameters<typeof EsErrors.ResponseError>[0];
+
+const buildResponseError = (statusCode: number): EsErrors.ResponseError =>
+  new EsErrors.ResponseError({
+    statusCode,
+    body: {},
+    headers: {},
+    warnings: [],
+    meta: {} as ResponseErrorArgs['meta'],
+  });
 
 const FAST_BUDGET: AwaitTraceReadyOptions = {
-  retries: 6,
+  retries: 5,
   minTimeout: 1,
-  maxTimeout: 5,
+  maxTimeout: 1,
   factor: 1,
+  stabilityWindowMs: 0,
 };
+
+const EMPTY_ROUND: EvidenceRound = {
+  input: { message: '' },
+  response: { message: '' },
+  steps: [],
+};
+
+const READY_ROUND: EvidenceRound = {
+  input: { message: 'hello' },
+  response: { message: 'world' },
+  steps: [],
+};
+
+const buildExtraction = (round: EvidenceRound): EvidenceExtractionResult => ({
+  round,
+  evidence: {
+    user_query: { status: round.input.message ? 'found' : 'not_found' },
+    agent_response: { status: round.response.message ? 'found' : 'not_found' },
+    tool_calls: { status: round.steps.length ? 'found' : 'not_found' },
+  },
+});
+
+const buildProfileExtraction = (
+  profile: InstrumentationProfile,
+  round: EvidenceRound
+): InstrumentationProfileEvidenceResult => ({
+  profile,
+  ...buildExtraction(round),
+});
 
 describe('awaitTraceReady', () => {
   const traceId = '0af7651916cd43dd8448eb211c80319c';
@@ -33,206 +89,301 @@ describe('awaitTraceReady', () => {
   };
   const hasTraceDocumentsMock = evidenceServiceModule.hasTraceDocuments as jest.Mock;
   const hasRootSpanMock = evidenceServiceModule.hasRootSpan as jest.Mock;
-  const normalizeEvidenceMock = evidenceServiceModule.normalizeEvidence as jest.Mock;
-  const probeProfilesMock = evidenceServiceModule.probeProfiles as jest.Mock;
+  const extractEvidenceMock = evidenceServiceModule.extractEvidence as jest.Mock;
+  const extractProfilesEvidenceMock = evidenceServiceModule.extractProfilesEvidence as jest.Mock;
+  const extractSelectedEvidenceMock = evidenceServiceModule.extractSelectedEvidence as jest.Mock;
 
-  const run = (profile: Parameters<typeof getInstrumentationProfile>[0] = 'elastic-inference') =>
-    awaitTraceReady(
-      traceAccessor,
-      getInstrumentationProfile(profile),
-      profile,
-      logger,
-      FAST_BUDGET
-    );
+  const run = (
+    request: AwaitTraceReadyRequest = {
+      mode: 'complete',
+      profile: 'elastic-inference',
+    },
+    options: AwaitTraceReadyOptions = FAST_BUDGET
+  ) => awaitTraceReady(traceAccessor, request, logger, options);
 
   beforeEach(() => {
     jest.clearAllMocks();
     hasTraceDocumentsMock.mockResolvedValue(true);
     hasRootSpanMock.mockResolvedValue(true);
+    extractEvidenceMock.mockResolvedValue(buildExtraction(READY_ROUND));
+    extractSelectedEvidenceMock.mockImplementation(
+      async (_traceAccessor: TraceAccessorWithSearch, profile?: InstrumentationProfile) => {
+        if (profile) {
+          return { selected: { profile, ...(await extractEvidenceMock()) } };
+        }
+        const profiles = await extractProfilesEvidenceMock();
+        const recommendedProfile =
+          evidenceServiceModule.getRecommendedInstrumentationProfile(profiles);
+        return {
+          profiles,
+          selected: profiles.find(
+            ({ profile: candidate }: InstrumentationProfileEvidenceResult) =>
+              candidate === recommendedProfile
+          ),
+        };
+      }
+    );
   });
 
-  it('returns evidence once the response is stable across polls and the root span is indexed', async () => {
-    const readyRound: EvidenceRound = {
-      input: { message: 'hello' },
-      response: { message: 'world' },
-      steps: [],
-    };
-    normalizeEvidenceMock.mockResolvedValue(readyRound);
-
-    await expect(run()).resolves.toEqual(readyRound);
-    // First poll seeds the stability baseline; the second confirms it and gates on root.
-    expect(normalizeEvidenceMock).toHaveBeenCalledTimes(2);
-    expect(hasRootSpanMock).toHaveBeenCalledTimes(1);
-    expect(probeProfilesMock).not.toHaveBeenCalled();
-    expect(logger.warn).not.toHaveBeenCalled();
+  afterEach(() => {
+    jest.restoreAllMocks();
   });
 
-  it('waits for the final answer instead of grading an earlier intermediate turn', async () => {
-    const intermediate: EvidenceRound = {
-      input: { message: 'What element is gold?' },
-      response: { message: 'Let me look that up…' },
-      steps: [],
-    };
-    const final: EvidenceRound = {
-      ...intermediate,
-      response: { message: 'Gold is the element Au.' },
-    };
-    // poll 1 -> intermediate (baseline), poll 2 -> final (changed), poll 3 -> final (stable).
-    normalizeEvidenceMock
-      .mockResolvedValueOnce(intermediate)
-      .mockResolvedValueOnce(final)
-      .mockResolvedValue(final);
-
-    await expect(run()).resolves.toEqual(final);
-    expect(normalizeEvidenceMock).toHaveBeenCalledTimes(3);
-  });
-
-  it('does not grade a stable intermediate response while the root span is still missing', async () => {
-    const intermediate: EvidenceRound = {
-      input: { message: 'What element is gold?' },
-      response: { message: 'Working on it…' },
-      steps: [],
-    };
-    const final: EvidenceRound = {
-      ...intermediate,
-      response: { message: 'Gold is the element Au.' },
-    };
-    // Intermediate is stable across polls 1-2, but the task is still running (no root),
-    // so it must be rejected; only the later stable final answer is accepted.
-    normalizeEvidenceMock
-      .mockResolvedValueOnce(intermediate)
-      .mockResolvedValueOnce(intermediate)
-      .mockResolvedValueOnce(final)
-      .mockResolvedValue(final);
-    hasRootSpanMock.mockResolvedValueOnce(false).mockResolvedValue(true);
-
-    await expect(run()).resolves.toEqual(final);
-    // root checked on the stable-intermediate poll (false) and again on the stable-final poll (true).
-    expect(hasRootSpanMock).toHaveBeenCalledTimes(2);
-    expect(normalizeEvidenceMock).toHaveBeenCalledTimes(4);
-  });
-
-  it('grades best-effort and logs loudly when a partial trace never gets a root span', async () => {
-    const stableRound: EvidenceRound = {
-      input: { message: 'hello' },
-      response: { message: 'world' },
-      steps: [],
-    };
-    normalizeEvidenceMock.mockResolvedValue(stableRound);
-    hasRootSpanMock.mockResolvedValue(false);
-
-    await expect(run()).resolves.toEqual(stableRound);
-    expect(hasRootSpanMock).toHaveBeenCalled();
-    expect(logger.warn).toHaveBeenCalledWith(expect.stringContaining('best-effort'));
-  });
-
-  it('waits out partial indexing (auxiliary spans only) and grades once content resolves', async () => {
-    const empty: EvidenceRound = {
-      input: { message: '' },
-      response: { message: '' },
-      steps: [],
-    };
-    const resolved: EvidenceRound = {
-      input: { message: 'hello' },
-      response: { message: 'world' },
-      steps: [],
-    };
-    // polls 1-2: only auxiliary spans indexed, so evidence is unresolvable; poll 3 seeds the
-    // content baseline; poll 4 confirms it is stable and gates on the root span.
-    normalizeEvidenceMock
-      .mockResolvedValueOnce(empty)
-      .mockResolvedValueOnce(empty)
-      .mockResolvedValue(resolved);
-
-    await expect(run()).resolves.toEqual(resolved);
-    // The unresolvable branch retried instead of aborting, so no probe and no degradation.
-    expect(probeProfilesMock).not.toHaveBeenCalled();
-    expect(logger.warn).not.toHaveBeenCalled();
-  });
-
-  it('concludes "unresolvable" (with a probe) only after exhausting the budget', async () => {
-    normalizeEvidenceMock.mockResolvedValue({
-      input: { message: '' },
-      response: { message: '' },
-      steps: [],
+  it('completes a trace-only profile after consecutive structurally equal rounds', async () => {
+    await expect(run()).resolves.toEqual({
+      profile: 'elastic-inference',
+      ...buildExtraction(READY_ROUND),
+      readiness: 'complete',
     });
-    probeProfilesMock.mockResolvedValue([
-      {
-        profile: 'elastic-inference',
-        evidence: {
-          user_query: { status: 'not_found' },
-          agent_response: { status: 'not_found' },
-          tool_calls: { status: 'not_found' },
-        },
-      },
+    expect(extractEvidenceMock).toHaveBeenCalledTimes(2);
+    expect(hasRootSpanMock).toHaveBeenCalledTimes(1);
+    expect(hasTraceDocumentsMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not complete an intermediate response before the root span arrives', async () => {
+    hasRootSpanMock.mockResolvedValueOnce(false).mockResolvedValueOnce(true);
+
+    await expect(run()).resolves.toEqual(
+      expect.objectContaining({ round: READY_ROUND, readiness: 'complete' })
+    );
+    expect(extractEvidenceMock).toHaveBeenCalledTimes(3);
+    expect(hasRootSpanMock).toHaveBeenCalledTimes(2);
+  });
+
+  it('requires stable evidence to span the configured window', async () => {
+    jest.spyOn(Date, 'now').mockReturnValueOnce(0).mockReturnValueOnce(5).mockReturnValue(10);
+
+    await expect(
+      run(
+        { mode: 'stable', profile: 'elastic-inference' },
+        { ...FAST_BUDGET, stabilityWindowMs: 10 }
+      )
+    ).resolves.toEqual(expect.objectContaining({ readiness: 'stable' }));
+    expect(extractEvidenceMock).toHaveBeenCalledTimes(3);
+    expect(hasRootSpanMock).not.toHaveBeenCalled();
+  });
+
+  it('applies the configured window to log-backed complete profiles', async () => {
+    jest.spyOn(Date, 'now').mockReturnValueOnce(0).mockReturnValueOnce(5).mockReturnValue(10);
+
+    await expect(
+      run({ mode: 'complete', profile: 'claude-code' }, { ...FAST_BUDGET, stabilityWindowMs: 10 })
+    ).resolves.toEqual(expect.objectContaining({ readiness: 'complete' }));
+    expect(extractEvidenceMock).toHaveBeenCalledTimes(3);
+  });
+
+  it('resets the stability baseline when the round changes', async () => {
+    const changedRound: EvidenceRound = {
+      ...READY_ROUND,
+      steps: [{ tool_id: 'search' }],
+    };
+    extractEvidenceMock
+      .mockResolvedValueOnce(buildExtraction(READY_ROUND))
+      .mockResolvedValue(buildExtraction(changedRound));
+    jest
+      .spyOn(Date, 'now')
+      .mockReturnValueOnce(0)
+      .mockReturnValueOnce(10)
+      .mockReturnValueOnce(15)
+      .mockReturnValue(20);
+
+    await expect(
+      run(
+        { mode: 'stable', profile: 'elastic-inference' },
+        { ...FAST_BUDGET, stabilityWindowMs: 10 }
+      )
+    ).resolves.toEqual(expect.objectContaining({ round: changedRound, readiness: 'stable' }));
+    expect(extractEvidenceMock).toHaveBeenCalledTimes(4);
+  });
+
+  it('uses structural equality for arbitrary JSON with reordered keys', async () => {
+    const first: EvidenceRound = {
+      ...READY_ROUND,
+      steps: [{ arguments: { first: 1, second: 2 } }],
+    };
+    const reordered: EvidenceRound = {
+      ...READY_ROUND,
+      steps: [{ arguments: { second: 2, first: 1 } }],
+    };
+    extractEvidenceMock
+      .mockResolvedValueOnce(buildExtraction(first))
+      .mockResolvedValue(buildExtraction(reordered));
+
+    await expect(run()).resolves.toEqual(
+      expect.objectContaining({ round: reordered, readiness: 'complete' })
+    );
+    expect(extractEvidenceMock).toHaveBeenCalledTimes(2);
+  });
+
+  it('resets complete readiness when a tool step arrives between polls', async () => {
+    const withTool: EvidenceRound = {
+      ...READY_ROUND,
+      steps: [{ tool_id: 'search' }],
+    };
+    extractEvidenceMock
+      .mockResolvedValueOnce(buildExtraction(READY_ROUND))
+      .mockResolvedValue(buildExtraction(withTool));
+
+    await expect(run()).resolves.toEqual(
+      expect.objectContaining({ round: withTool, readiness: 'complete' })
+    );
+    expect(extractEvidenceMock).toHaveBeenCalledTimes(3);
+  });
+
+  it.each([
+    {
+      name: 'input-only',
+      round: { input: { message: 'hello' }, response: { message: '' }, steps: [] },
+    },
+    {
+      name: 'response-only',
+      round: { input: { message: '' }, response: { message: 'world' }, steps: [] },
+    },
+    {
+      name: 'tool-only',
+      round: { input: { message: '' }, response: { message: '' }, steps: [{ tool_id: 'search' }] },
+    },
+  ])('allows $name evidence to reach stable readiness', async ({ round }) => {
+    extractEvidenceMock.mockResolvedValue(buildExtraction(round));
+
+    await expect(run({ mode: 'stable', profile: 'elastic-inference' })).resolves.toEqual(
+      expect.objectContaining({ round, readiness: 'stable' })
+    );
+  });
+
+  it('never establishes a baseline for unchanged empty evidence', async () => {
+    extractEvidenceMock.mockResolvedValue(buildExtraction(EMPTY_ROUND));
+    extractProfilesEvidenceMock.mockResolvedValue([
+      buildProfileExtraction('elastic-inference', EMPTY_ROUND),
     ]);
 
-    await expect(run('otel-genai-attributes')).rejects.toEqual(
-      expect.objectContaining({
-        name: 'TraceReadinessError',
-        kind: 'unresolvable',
-        message: expect.stringContaining(
-          `Trace ${traceId} has documents but evidence is unresolvable for profile "otel-genai-attributes"`
-        ),
-      })
+    await expect(run({ mode: 'stable', profile: 'elastic-inference' })).rejects.toEqual(
+      expect.objectContaining({ kind: 'unresolvable', profiles: expect.any(Array) })
     );
-    expect(normalizeEvidenceMock).toHaveBeenCalledTimes((FAST_BUDGET.retries ?? 0) + 1);
-    expect(probeProfilesMock).toHaveBeenCalledTimes(1);
+    expect(extractEvidenceMock).toHaveBeenCalledTimes((FAST_BUDGET.retries ?? 0) + 1);
     expect(hasRootSpanMock).not.toHaveBeenCalled();
-    expect(logger.warn).not.toHaveBeenCalled();
   });
 
-  it('throws TraceReadinessError after retries when documents never appear', async () => {
-    hasTraceDocumentsMock.mockResolvedValue(false);
-
-    await expect(run()).rejects.toEqual(
-      expect.objectContaining({
-        name: 'TraceReadinessError',
-        kind: 'not_ready',
-        message: `Trace ${traceId} is not ready: no documents indexed in traces-* or logs-* yet`,
-      })
-    );
-    expect(normalizeEvidenceMock).not.toHaveBeenCalled();
-    expect(logger.warn).not.toHaveBeenCalled();
-  });
-
-  it('retries only while trace documents are still absent', async () => {
-    hasTraceDocumentsMock.mockResolvedValueOnce(false).mockResolvedValue(true);
-    const readyRound: EvidenceRound = {
-      input: { message: 'hello' },
-      response: { message: 'world' },
-      steps: [],
-    };
-    normalizeEvidenceMock.mockResolvedValue(readyRound);
-
-    await expect(run()).resolves.toEqual(readyRound);
-    expect(logger.warn).not.toHaveBeenCalled();
-  });
-
-  it('returns a partial round best-effort when the response never resolves', async () => {
+  it('requires a non-empty response and a root span for complete readiness', async () => {
     const partialRound: EvidenceRound = {
       input: { message: 'hello' },
       response: { message: '' },
       steps: [{ tool_id: 'search' }],
     };
-    normalizeEvidenceMock.mockResolvedValue(partialRound);
+    extractEvidenceMock.mockResolvedValue(buildExtraction(partialRound));
 
-    await expect(run()).resolves.toEqual(partialRound);
-    // Response is empty, so the root gate is never reached.
+    await expect(run()).resolves.toEqual(
+      expect.objectContaining({ round: partialRound, readiness: 'best_effort' })
+    );
     expect(hasRootSpanMock).not.toHaveBeenCalled();
+  });
+
+  it('returns best-effort evidence when a root span never arrives', async () => {
+    hasRootSpanMock.mockResolvedValue(false);
+
+    await expect(run()).resolves.toEqual(
+      expect.objectContaining({ round: READY_ROUND, readiness: 'best_effort' })
+    );
     expect(logger.warn).toHaveBeenCalledWith(expect.stringContaining('best-effort'));
   });
 
-  it('grades stable, resolvable evidence for non-default profiles', async () => {
-    const readyRound: EvidenceRound = {
-      input: { message: '' },
-      response: { message: 'Found via otel-genai-attributes' },
-      steps: [],
-    };
-    normalizeEvidenceMock.mockResolvedValue(readyRound);
+  it('does not return stale evidence after a later unresolved poll', async () => {
+    extractEvidenceMock
+      .mockResolvedValueOnce(buildExtraction(READY_ROUND))
+      .mockResolvedValue(buildExtraction(EMPTY_ROUND));
+    extractProfilesEvidenceMock.mockResolvedValue([
+      buildProfileExtraction('elastic-inference', EMPTY_ROUND),
+    ]);
 
-    await expect(run('otel-genai-attributes')).resolves.toEqual(readyRound);
-    expect(probeProfilesMock).not.toHaveBeenCalled();
-    expect(logger.warn).not.toHaveBeenCalled();
+    await expect(run()).rejects.toEqual(
+      expect.objectContaining({ kind: 'unresolvable', profiles: expect.any(Array) })
+    );
+  });
+
+  it('does not retry unexpected extraction failures', async () => {
+    const searchFailure = new Error('search failed');
+    extractEvidenceMock.mockRejectedValue(searchFailure);
+
+    await expect(run()).rejects.toBe(searchFailure);
+    expect(extractEvidenceMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not retry deterministic Elasticsearch client errors', async () => {
+    const searchFailure = buildResponseError(400);
+    extractEvidenceMock.mockRejectedValue(searchFailure);
+
+    await expect(run()).rejects.toBe(searchFailure);
+    expect(extractEvidenceMock).toHaveBeenCalledTimes(1);
+  });
+
+  it.each([429, 503])('retries a transient Elasticsearch %s response', async (statusCode) => {
+    extractEvidenceMock
+      .mockRejectedValueOnce(buildResponseError(statusCode))
+      .mockResolvedValue(buildExtraction(READY_ROUND));
+
+    await expect(run()).resolves.toEqual(
+      expect.objectContaining({ round: READY_ROUND, readiness: 'complete' })
+    );
+    expect(extractEvidenceMock).toHaveBeenCalledTimes(3);
+  });
+
+  it('returns best-effort after a late baseline reset', async () => {
+    const changedRound: EvidenceRound = {
+      ...READY_ROUND,
+      steps: [{ tool_id: 'late-tool' }],
+    };
+    extractEvidenceMock
+      .mockResolvedValue(buildExtraction(changedRound))
+      .mockResolvedValueOnce(buildExtraction(READY_ROUND))
+      .mockResolvedValueOnce(buildExtraction(READY_ROUND))
+      .mockResolvedValueOnce(buildExtraction(READY_ROUND))
+      .mockResolvedValueOnce(buildExtraction(READY_ROUND));
+    jest
+      .spyOn(Date, 'now')
+      .mockReturnValueOnce(0)
+      .mockReturnValueOnce(5)
+      .mockReturnValueOnce(10)
+      .mockReturnValueOnce(15)
+      .mockReturnValueOnce(20)
+      .mockReturnValueOnce(25);
+
+    await expect(
+      run(
+        { mode: 'stable', profile: 'elastic-inference' },
+        { ...FAST_BUDGET, stabilityWindowMs: 20 }
+      )
+    ).resolves.toEqual(expect.objectContaining({ round: changedRound, readiness: 'best_effort' }));
+  });
+
+  it('re-probes auto-detection and resets when an earlier profile appears', async () => {
+    const elasticRound = { ...READY_ROUND, response: { message: 'elastic' } };
+    const eventsRound = { ...READY_ROUND, response: { message: 'events' } };
+    const unresolvedEvents = buildProfileExtraction('otel-genai-events', EMPTY_ROUND);
+    const resolvedEvents = buildProfileExtraction('otel-genai-events', eventsRound);
+    const resolvedElastic = buildProfileExtraction('elastic-inference', elasticRound);
+    extractProfilesEvidenceMock
+      .mockResolvedValueOnce([unresolvedEvents, resolvedElastic])
+      .mockResolvedValue([resolvedEvents, resolvedElastic]);
+    jest.spyOn(Date, 'now').mockReturnValueOnce(0).mockReturnValueOnce(10).mockReturnValue(20);
+
+    await expect(
+      run({ mode: 'stable' }, { ...FAST_BUDGET, stabilityWindowMs: 10 })
+    ).resolves.toEqual(
+      expect.objectContaining({ profile: 'otel-genai-events', round: eventsRound })
+    );
+    expect(extractProfilesEvidenceMock).toHaveBeenCalledTimes(3);
+    expect(extractEvidenceMock).not.toHaveBeenCalled();
+  });
+
+  it('throws not_ready after the budget when no documents are visible', async () => {
+    hasTraceDocumentsMock.mockResolvedValue(false);
+
+    await expect(run()).rejects.toEqual(
+      expect.objectContaining({
+        kind: 'not_ready',
+        message: `Trace ${traceId} is not ready: no documents indexed in traces-* or logs-* yet`,
+      })
+    );
+    expect(extractEvidenceMock).not.toHaveBeenCalled();
   });
 });

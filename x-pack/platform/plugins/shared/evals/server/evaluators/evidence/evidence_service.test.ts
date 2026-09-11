@@ -7,11 +7,23 @@
 
 import type { ElasticsearchClient } from '@kbn/core/server';
 import { createTraceAccessor } from '../trace_accessor';
-import { hasRootSpan, normalizeEvidence } from './evidence_service';
+import {
+  extractEvidence,
+  extractSelectedEvidence,
+  getRecommendedInstrumentationProfile,
+  hasResolvedEvidence,
+  hasRootSpan,
+  normalizeEvidence,
+} from './evidence_service';
 import { getInstrumentationProfile } from './resolve_instrumentation';
 
 describe('normalizeEvidence', () => {
   const traceId = '0af7651916cd43dd8448eb211c80319c';
+  const EMPTY_ROUND = {
+    input: { message: '' },
+    response: { message: '' },
+    steps: [],
+  };
 
   const createEsClient = () => {
     const searchMock = jest.fn();
@@ -20,6 +32,139 @@ describe('normalizeEvidence', () => {
     } as unknown as ElasticsearchClient;
     return { esClient, searchMock };
   };
+
+  it('returns normalization and probe statuses from one search pass', async () => {
+    const mapping = getInstrumentationProfile('elastic-inference');
+    const { esClient, searchMock } = createEsClient();
+    const traceAccessor = createTraceAccessor({ traceId, esClient });
+    searchMock
+      .mockResolvedValueOnce({
+        hits: {
+          hits: [
+            {
+              _source: {
+                attributes: {
+                  'gen_ai.input.messages': [
+                    { role: 'user', parts: [{ type: 'text', content: 'hello' }] },
+                  ],
+                },
+              },
+            },
+          ],
+        },
+      })
+      .mockResolvedValueOnce({ hits: { hits: [{ _source: {} }] } })
+      .mockResolvedValueOnce({ hits: { hits: [] } });
+
+    await expect(extractEvidence(traceAccessor, mapping)).resolves.toEqual({
+      round: {
+        input: { message: 'hello' },
+        response: { message: '' },
+        steps: [],
+      },
+      evidence: {
+        user_query: expect.objectContaining({ status: 'found' }),
+        agent_response: expect.objectContaining({ status: 'content_redacted' }),
+        tool_calls: expect.objectContaining({ status: 'not_found' }),
+      },
+    });
+    expect(searchMock).toHaveBeenCalledTimes(3);
+    expect(searchMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        sort: [
+          { '@timestamp': { order: 'asc' } },
+          { span_id: { order: 'asc', unmapped_type: 'keyword' } },
+        ],
+      })
+    );
+    expect(searchMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        sort: [
+          { '@timestamp': { order: 'desc' } },
+          { span_id: { order: 'desc', unmapped_type: 'keyword' } },
+        ],
+      })
+    );
+  });
+
+  it('uses the shared evidence gate and profile recommendation rules', () => {
+    expect(hasResolvedEvidence({ ...EMPTY_ROUND, input: { message: 'hello' } })).toBe(true);
+    expect(hasResolvedEvidence({ ...EMPTY_ROUND, response: { message: 'world' } })).toBe(true);
+    expect(hasResolvedEvidence({ ...EMPTY_ROUND, steps: [{ tool_id: 'search' }] })).toBe(true);
+    expect(hasResolvedEvidence(EMPTY_ROUND)).toBe(false);
+
+    expect(
+      getRecommendedInstrumentationProfile([
+        {
+          profile: 'otel-genai-events',
+          evidence: {
+            user_query: { status: 'found' },
+            agent_response: { status: 'not_found' },
+            tool_calls: { status: 'found' },
+          },
+        },
+        {
+          profile: 'elastic-inference',
+          evidence: {
+            user_query: { status: 'found' },
+            agent_response: { status: 'found' },
+            tool_calls: { status: 'not_found' },
+          },
+        },
+      ])
+    ).toBe('elastic-inference');
+  });
+
+  it('returns the recommended auto-detected round without a normalization re-query', async () => {
+    const { esClient, searchMock } = createEsClient();
+    const traceAccessor = createTraceAccessor({ traceId, esClient });
+    searchMock.mockImplementation(({ index }: { index: string }) =>
+      Promise.resolve(
+        index === 'traces-*'
+          ? {
+              hits: {
+                hits: [
+                  {
+                    _source: {
+                      attributes: {
+                        'gen_ai.input.messages': [
+                          { role: 'user', parts: [{ type: 'text', content: 'hello' }] },
+                        ],
+                        'gen_ai.output.messages': [
+                          { role: 'assistant', parts: [{ type: 'text', content: 'world' }] },
+                        ],
+                      },
+                    },
+                  },
+                ],
+              },
+            }
+          : { hits: { hits: [] } }
+      )
+    );
+
+    const selection = await extractSelectedEvidence(traceAccessor);
+
+    expect(selection.selected).toEqual(
+      expect.objectContaining({
+        profile: 'elastic-inference',
+        round: expect.objectContaining({
+          input: { message: 'hello' },
+          response: { message: 'world' },
+        }),
+      })
+    );
+    expect(searchMock).toHaveBeenCalledTimes(11);
+    const executeToolSearches = searchMock.mock.calls.filter(([request]) =>
+      request.query.bool.filter.some(
+        (filter: Record<string, unknown>) =>
+          (filter.term as Record<string, unknown> | undefined)?.[
+            'attributes.gen_ai.operation.name'
+          ] === 'execute_tool'
+      )
+    );
+    expect(executeToolSearches).toHaveLength(1);
+  });
 
   it('normalizes elastic-inference docs stored with dotted attribute keys', async () => {
     const mapping = getInstrumentationProfile('elastic-inference');

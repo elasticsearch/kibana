@@ -20,6 +20,7 @@ import { registerGetExperimentDatasetExamplesRoute } from './experiments/get_exp
 import { registerCompareExperimentsRoute } from './experiments/compare_experiments';
 import { registerGetExampleScoresRoute } from './examples/get_example_scores';
 import { registerGetTraceRoute } from './traces/get_trace';
+import { registerGetTraceEvidenceRoute } from './traces/get_trace_evidence';
 import { registerListDatasetsRoute } from './datasets/list_datasets';
 import { registerCreateDatasetRoute } from './datasets/create_dataset';
 import { registerGetDatasetRoute } from './datasets/get_dataset';
@@ -75,6 +76,7 @@ export const registerRoutes = (dependencies: RouteDependencies) => {
   registerCompareExperimentsRoute(dependencies);
   registerGetExampleScoresRoute(dependencies);
   registerGetTraceRoute(dependencies);
+  registerGetTraceEvidenceRoute(dependencies);
   registerGetTracingProjectsRoute(dependencies);
   registerGetProjectTracesRoute(dependencies);
   registerIngestScoresRoute(dependencies);

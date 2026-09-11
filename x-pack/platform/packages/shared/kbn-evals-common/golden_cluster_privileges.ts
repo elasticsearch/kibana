@@ -5,7 +5,7 @@
  * 2.0.
  */
 
-import { EvaluationIndices } from './constants';
+import { EvaluationIndices, LOGS_INDEX_PATTERN, TRACES_INDEX_PATTERN } from './constants';
 
 /**
  * Shared privilege descriptors for the golden cluster API key.
@@ -31,7 +31,7 @@ export const goldenClusterPrivileges = {
             ],
           },
           {
-            names: ['traces-*'],
+            names: [TRACES_INDEX_PATTERN],
             privileges: [
               'auto_configure',
               'create_index',
@@ -39,6 +39,10 @@ export const goldenClusterPrivileges = {
               'read',
               'view_index_metadata',
             ],
+          },
+          {
+            names: [LOGS_INDEX_PATTERN],
+            privileges: ['read', 'view_index_metadata'],
           },
           {
             names: [

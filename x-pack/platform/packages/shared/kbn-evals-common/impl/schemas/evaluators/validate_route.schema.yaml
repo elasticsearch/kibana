@@ -57,12 +57,8 @@ paths:
                         - profile
                       properties:
                         profile:
-                          type: string
-                          enum:
-                            - elastic-inference
-                            - otel-genai-events
-                            - otel-genai-attributes
-                            - claude-code
+                          allOf:
+                            - $ref: '../common_attributes.schema.yaml#/components/schemas/InstrumentationProfile'
                           default: elastic-inference
                 evaluators:
                   type: array
