@@ -142,7 +142,7 @@ describe('SecuritySideNav', () => {
             position: 'top',
           }),
         ],
-        categories: getNavCategories(AIChatExperience.Classic, false, false, false),
+        categories: getNavCategories(AIChatExperience.Classic, false, true, false),
         tracker: track,
       })
     );
@@ -347,7 +347,7 @@ describe('SecuritySideNav', () => {
       renderNav();
       expect(mockSolutionSideNav).toHaveBeenCalledWith(
         expect.objectContaining({
-          categories: getNavCategories(AIChatExperience.Classic, true, false, false),
+          categories: getNavCategories(AIChatExperience.Classic, true, true, false),
         })
       );
     });
@@ -357,31 +357,7 @@ describe('SecuritySideNav', () => {
       renderNav();
       expect(mockSolutionSideNav).toHaveBeenCalledWith(
         expect.objectContaining({
-          categories: getNavCategories(AIChatExperience.Classic, false, false, false),
-        })
-      );
-    });
-  });
-
-  describe('isNewEAHomePageEnabled feature flag', () => {
-    it('should call getNavCategories with true when feature flag is enabled', () => {
-      mockUseIsExperimentalFeatureEnabled.mockImplementation(
-        (feature: string) => feature === 'entityAnalyticsNewHomePageEnabled'
-      );
-      renderNav();
-      expect(mockSolutionSideNav).toHaveBeenCalledWith(
-        expect.objectContaining({
           categories: getNavCategories(AIChatExperience.Classic, false, true, false),
-        })
-      );
-    });
-
-    it('should call getNavCategories with false when feature flag is disabled', () => {
-      mockUseIsExperimentalFeatureEnabled.mockImplementation(() => false);
-      renderNav();
-      expect(mockSolutionSideNav).toHaveBeenCalledWith(
-        expect.objectContaining({
-          categories: getNavCategories(AIChatExperience.Classic, false, false, false),
         })
       );
     });
@@ -411,7 +387,7 @@ describe('SecuritySideNav', () => {
             position: 'top',
           }),
         ],
-        categories: getNavCategories(AIChatExperience.Classic, false, false, false),
+        categories: getNavCategories(AIChatExperience.Classic, false, true, false),
       })
     );
   });
@@ -451,7 +427,7 @@ describe('SecuritySideNav', () => {
             position: 'top',
           }),
         ],
-        categories: getNavCategories(AIChatExperience.Agent, false, false, true),
+        categories: getNavCategories(AIChatExperience.Agent, false, true, true),
       })
     );
   });

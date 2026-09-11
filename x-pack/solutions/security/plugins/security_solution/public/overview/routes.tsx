@@ -21,9 +21,7 @@ import { StatefulOverview } from './pages/overview';
 import { DataQuality } from './pages/data_quality';
 import { DetectionResponse } from './pages/detection_response';
 import { PluginTemplateWrapper } from '../common/components/plugin_template_wrapper';
-import { EntityAnalyticsPage } from '../entity_analytics/pages/entity_analytics_dashboard';
 import { withSecurityRoutePageWrapper } from '../common/components/security_route_page_wrapper';
-import { useIsExperimentalFeatureEnabled } from '../common/hooks/use_experimental_features';
 
 const OverviewRoutes = () => (
   <PluginTemplateWrapper>
@@ -37,19 +35,7 @@ const DetectionResponseRoutes = () => (
   </PluginTemplateWrapper>
 );
 
-const EntityAnalyticsRoutes = () => {
-  const isNewHomePageEnabled = useIsExperimentalFeatureEnabled('entityAnalyticsNewHomePageEnabled');
-
-  if (isNewHomePageEnabled) {
-    return <Redirect to={ENTITY_ANALYTICS_HOME_PAGE_PATH} />;
-  }
-
-  return (
-    <PluginTemplateWrapper>
-      <EntityAnalyticsPage />
-    </PluginTemplateWrapper>
-  );
-};
+const EntityAnalyticsRoutes = () => <Redirect to={ENTITY_ANALYTICS_HOME_PAGE_PATH} />;
 
 const DataQualityRoutes = () => (
   <PluginTemplateWrapper>

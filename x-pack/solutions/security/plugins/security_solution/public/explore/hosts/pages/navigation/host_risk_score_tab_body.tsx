@@ -7,18 +7,14 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import { EuiPanel } from '@elastic/eui';
-import { FF_ENABLE_ENTITY_STORE_V2 } from '@kbn/entity-store/public';
 import { noop } from 'lodash/fp';
 import { RiskScoresNoDataDetected } from '../../../../entity_analytics/components/risk_score_no_data_detected';
 import { useUpsellingComponent } from '../../../../common/hooks/use_upselling';
 import { RiskEnginePrivilegesCallOut } from '../../../../entity_analytics/components/risk_engine_privileges_callout';
 import { useMissingRiskEnginePrivileges } from '../../../../entity_analytics/hooks/use_missing_risk_engine_privileges';
 import { HostRiskScoreQueryId } from '../../../../entity_analytics/common/utils';
-import { useRiskScoreKpi } from '../../../../entity_analytics/api/hooks/use_risk_score_kpi';
-import { useRiskScore } from '../../../../entity_analytics/api/hooks/use_risk_score';
 import { useEntityStoreRiskScoreKpi } from '../../../../entity_analytics/api/hooks/use_entity_store_risk_score_kpi';
 import { useEntityStoreRiskScore } from '../../../../entity_analytics/api/hooks/use_entity_store_risk_score';
-import { useUiSetting } from '../../../../common/lib/kibana';
 import { EnableRiskScore } from '../../../../entity_analytics/components/enable_risk_score';
 import { manageQuery } from '../../../../common/components/page/manage_query';
 import { HostRiskScoreTable } from '../../../../entity_analytics/components/host_risk_score_table';
@@ -36,58 +32,37 @@ import type { HostsComponentsQueryProps } from './types';
 const HostRiskScoreTableManage = manageQuery(HostRiskScoreTable);
 
 const useHostRiskScoreTabData = ({
-  entityStoreV2Enabled,
   filterQuery,
   pagination,
   querySkip,
   sort,
   timerange,
 }: {
-  entityStoreV2Enabled: boolean;
   filterQuery?: HostsComponentsQueryProps['filterQuery'];
   pagination: { cursorStart: number; querySize: number };
   querySkip: boolean;
   sort: RiskScoreSortField;
   timerange: { from: string; to: string };
 }) => {
-  const legacyRiskScore = useRiskScore({
-    filterQuery,
-    pagination,
-    riskEntity: EntityType.host,
-    skip: querySkip || entityStoreV2Enabled,
-    sort,
-    timerange,
-  });
-
   const entityStoreRiskScore = useEntityStoreRiskScore({
     filterQuery,
     pagination,
     riskEntity: EntityType.host,
-    skip: querySkip || !entityStoreV2Enabled,
+    skip: querySkip,
     sort,
     timerange,
   });
 
-  const risk = entityStoreV2Enabled ? entityStoreRiskScore : legacyRiskScore;
-
-  const legacyKpi = useRiskScoreKpi({
-    filterQuery,
-    skip: querySkip || entityStoreV2Enabled,
-    riskEntity: EntityType.host,
-  });
-
   const entityStoreKpi = useEntityStoreRiskScoreKpi({
     filterQuery,
-    skip: querySkip || !entityStoreV2Enabled,
+    skip: querySkip,
     riskEntity: EntityType.host,
   });
 
-  const kpi = entityStoreV2Enabled ? entityStoreKpi : legacyKpi;
-
   return {
-    ...risk,
-    isKpiLoading: kpi.loading,
-    severityCount: kpi.severityCount,
+    ...entityStoreRiskScore,
+    isKpiLoading: entityStoreKpi.loading,
+    severityCount: entityStoreKpi.severityCount,
   };
 };
 
@@ -100,7 +75,6 @@ export const HostRiskScoreQueryTabBody = ({
   startDate: from,
   type,
 }: HostsComponentsQueryProps) => {
-  const entityStoreV2Enabled = useUiSetting<boolean>(FF_ENABLE_ENTITY_STORE_V2) === true;
   const getHostRiskScoreSelector = useMemo(() => hostsSelectors.hostRiskScoreSelector(), []);
   const { activePage, limit, sort } = useDeepEqualSelector((state: State) =>
     getHostRiskScoreSelector(state, hostsModel.HostsType.page)
@@ -140,7 +114,6 @@ export const HostRiskScoreQueryTabBody = ({
     severityCount,
     totalCount,
   } = useHostRiskScoreTabData({
-    entityStoreV2Enabled,
     filterQuery,
     pagination,
     querySkip,

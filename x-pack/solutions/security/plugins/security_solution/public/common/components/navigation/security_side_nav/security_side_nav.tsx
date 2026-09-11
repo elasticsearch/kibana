@@ -34,7 +34,6 @@ import { useKibana } from '../../../lib/kibana';
 import { getNavCategories } from './categories';
 import { useParentLinks } from '../../../links/links_hooks';
 import { CLASSIC_LAUNCHPAD_PANEL_LINK_ENTRIES } from '../../../../onboarding/links';
-import { useIsExperimentalFeatureEnabled } from '../../../hooks/use_experimental_features';
 
 export const EUI_HEADER_HEIGHT = '93px';
 
@@ -306,9 +305,6 @@ export const SecuritySideNav: React.FC = () => {
   } = useKibana().services;
 
   const chatExperience = useObservable(client.get$(AI_CHAT_EXPERIENCE_TYPE));
-  const isNewEAHomePageEnabled = useIsExperimentalFeatureEnabled(
-    'entityAnalyticsNewHomePageEnabled'
-  );
   const enableAlertsAndAttacksAlignment = useIsAlertsAndAttacksAlignmentEnabled();
   const isAgentBuilderNavAtTop = getBooleanValue(AGENT_BUILDER_NAV_AT_TOP_FLAG, false);
   const items = useSolutionSideNavItems(chatExperience);
@@ -320,12 +316,11 @@ export const SecuritySideNav: React.FC = () => {
     return getNavCategories(
       chatExperience,
       enableAlertsAndAttacksAlignment,
-      isNewEAHomePageEnabled,
+      true,
       isAgentBuilderNavAtTop
     );
   }, [
     enableAlertsAndAttacksAlignment,
-    isNewEAHomePageEnabled,
     chatExperience,
     isAgentBuilderNavAtTop,
   ]);

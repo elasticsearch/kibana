@@ -62,12 +62,6 @@ jest.mock('../api/hooks/use_risk_engine_status', () => ({
   }),
 }));
 
-jest.mock('../api/hooks/use_schedule_now_risk_engine_mutation', () => ({
-  useScheduleNowRiskEngineMutation: () => ({
-    mutate: () => {},
-  }),
-}));
-
 jest.mock('../../common/lib/kibana', () => ({
   useKibana: () => ({
     services: {

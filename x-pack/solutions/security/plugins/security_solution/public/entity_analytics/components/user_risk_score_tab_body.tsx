@@ -9,17 +9,13 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { noop } from 'lodash/fp';
 
 import { EuiPanel } from '@elastic/eui';
-import { FF_ENABLE_ENTITY_STORE_V2 } from '@kbn/entity-store/public';
 import {
   EMPTY_SEVERITY_COUNT,
   EntityType,
   type RiskScoreSortField,
 } from '../../../common/search_strategy';
-import { useRiskScoreKpi } from '../api/hooks/use_risk_score_kpi';
-import { useRiskScore } from '../api/hooks/use_risk_score';
 import { useEntityStoreRiskScoreKpi } from '../api/hooks/use_entity_store_risk_score_kpi';
 import { useEntityStoreRiskScore } from '../api/hooks/use_entity_store_risk_score';
-import { useUiSetting } from '../../common/lib/kibana';
 import { UserRiskScoreQueryId } from '../common/utils';
 import { EnableRiskScore } from './enable_risk_score';
 import type { UsersComponentsQueryProps } from '../../explore/users/pages/navigation/types';
@@ -37,58 +33,37 @@ import { RiskScoresNoDataDetected } from './risk_score_no_data_detected';
 const UserRiskScoreTableManage = manageQuery(UserRiskScoreTable);
 
 const useUserRiskScoreTabData = ({
-  entityStoreV2Enabled,
   filterQuery,
   pagination,
   querySkip,
   sort,
   timerange,
 }: {
-  entityStoreV2Enabled: boolean;
   filterQuery?: UsersComponentsQueryProps['filterQuery'];
   pagination: { cursorStart: number; querySize: number };
   querySkip: boolean;
   sort: RiskScoreSortField;
   timerange: { from: string; to: string };
 }) => {
-  const legacyRiskScore = useRiskScore({
-    filterQuery,
-    pagination,
-    riskEntity: EntityType.user,
-    skip: querySkip || entityStoreV2Enabled,
-    sort,
-    timerange,
-  });
-
   const entityStoreRiskScore = useEntityStoreRiskScore({
     filterQuery,
     pagination,
     riskEntity: EntityType.user,
-    skip: querySkip || !entityStoreV2Enabled,
+    skip: querySkip,
     sort,
     timerange,
   });
 
-  const risk = entityStoreV2Enabled ? entityStoreRiskScore : legacyRiskScore;
-
-  const legacyKpi = useRiskScoreKpi({
-    filterQuery,
-    skip: querySkip || entityStoreV2Enabled,
-    riskEntity: EntityType.user,
-  });
-
   const entityStoreKpi = useEntityStoreRiskScoreKpi({
     filterQuery,
-    skip: querySkip || !entityStoreV2Enabled,
+    skip: querySkip,
     riskEntity: EntityType.user,
   });
 
-  const kpi = entityStoreV2Enabled ? entityStoreKpi : legacyKpi;
-
   return {
-    ...risk,
-    isKpiLoading: kpi.loading,
-    severityCount: kpi.severityCount,
+    ...entityStoreRiskScore,
+    isKpiLoading: entityStoreKpi.loading,
+    severityCount: entityStoreKpi.severityCount,
   };
 };
 
@@ -101,7 +76,6 @@ export const UserRiskScoreQueryTabBody = ({
   startDate: from,
   type,
 }: UsersComponentsQueryProps) => {
-  const entityStoreV2Enabled = useUiSetting<boolean>(FF_ENABLE_ENTITY_STORE_V2) === true;
   const getUserRiskScoreSelector = useMemo(() => usersSelectors.userRiskScoreSelector(), []);
   const { activePage, limit, sort } = useDeepEqualSelector((state: State) =>
     getUserRiskScoreSelector(state)
@@ -142,7 +116,6 @@ export const UserRiskScoreQueryTabBody = ({
     isKpiLoading,
     severityCount,
   } = useUserRiskScoreTabData({
-    entityStoreV2Enabled,
     filterQuery,
     pagination,
     querySkip,

@@ -7,12 +7,7 @@
 
 import { useCallback, useMemo, useState } from 'react';
 
-import { RiskEngineStatusEnum } from '../../../common/api/entity_analytics/risk_engine/engine_status_route.gen';
 import { StoreStatusEnum } from '../../../common/entity_analytics/entity_store/types';
-import { useRiskEngineStatus } from '../api/hooks/use_risk_engine_status';
-import { useInitRiskEngineMutation } from '../api/hooks/use_init_risk_engine_mutation';
-import { useEnableRiskEngineMutation } from '../api/hooks/use_enable_risk_engine_mutation';
-import { useDisableRiskEngineMutation } from '../api/hooks/use_disable_risk_engine_mutation';
 import {
   useEntityStoreStatus,
   useInstallEntityStoreMutation,
@@ -21,7 +16,6 @@ import {
 } from '../components/entity_store/hooks/use_entity_store';
 import { useAppToasts } from '../../common/hooks/use_app_toasts';
 import * as i18n from '../translations';
-import { useInvalidateRiskEngineSettingsQuery } from '../components/risk_score_management/hooks/use_risk_engine_settings_query';
 import {
   useEntityAnalyticsStatus,
   type EntityAnalyticsStatus,
@@ -70,37 +64,17 @@ export const useToggleEntityAnalytics = ({
   isSavingSettings,
 }: ToggleOptions): UseToggleEntityAnalyticsReturn => {
   const { addSuccess, addError } = useAppToasts();
-  const invalidateRiskEngineSettingsQuery = useInvalidateRiskEngineSettingsQuery();
-
-  const riskEngineStatusQuery = useRiskEngineStatus({
-    refetchInterval: TEN_SECONDS,
-    structuralSharing: false,
-  });
 
   const entityStoreStatusQuery = useEntityStoreStatus({
     refetchInterval: TEN_SECONDS,
     structuralSharing: false,
   });
 
-  const initRiskEngineMutation = useInitRiskEngineMutation({
-    onSuccess: async () => {
-      await invalidateRiskEngineSettingsQuery();
-    },
-  });
-  const enableRiskEngineMutation = useEnableRiskEngineMutation();
-  const disableRiskEngineMutation = useDisableRiskEngineMutation();
-
   const installEntityStoreMutation = useInstallEntityStoreMutation();
   const startEntityStoreMutation = useStartEntityStoreMutation();
   const stopEntityStoreMutation = useStopEntityStoreMutation();
 
   const [isToggling, setIsToggling] = useState(false);
-
-  const riskEngineMutations: OperationStatus[] = [
-    initRiskEngineMutation,
-    enableRiskEngineMutation,
-    disableRiskEngineMutation,
-  ];
 
   const entityStoreMutations: OperationStatus[] = [
     installEntityStoreMutation,
@@ -109,15 +83,11 @@ export const useToggleEntityAnalytics = ({
   ];
 
   const entityStoreStatus = entityStoreStatusQuery.data?.status;
-  const riskEngineState = summarizeOperations(riskEngineMutations);
   const entityStoreState = summarizeOperations(entityStoreMutations);
 
-  const isStatusLoading = entityStoreStatusQuery.isLoading || riskEngineStatusQuery.isLoading;
+  const isStatusLoading = entityStoreStatusQuery.isLoading;
 
-  const isLoading =
-    isToggling || riskEngineState.isPending || entityStoreState.isPending || isSavingSettings;
-
-  const riskEngineStatus = riskEngineStatusQuery.data?.risk_engine_status;
+  const isLoading = isToggling || entityStoreState.isPending || isSavingSettings;
 
   const status = useEntityAnalyticsStatus({
     entityStoreStatus,
@@ -126,10 +96,10 @@ export const useToggleEntityAnalytics = ({
 
   const errors: EntityAnalyticsErrors = useMemo(
     () => ({
-      riskEngine: riskEngineState.errors,
+      riskEngine: [],
       entityStore: entityStoreState.errors,
     }),
-    [riskEngineState.errors, entityStoreState.errors]
+    [entityStoreState.errors]
   );
 
   const stopEntityStore = useCallback(async () => {
@@ -161,16 +131,10 @@ export const useToggleEntityAnalytics = ({
         await stopEntityStore();
         addSuccess(i18n.ENTITY_ANALYTICS_TURNED_OFF, TOAST_OPTIONS);
       } else {
-        await enableEntityStore();
-
-        if (riskEngineStatus === RiskEngineStatusEnum.NOT_INSTALLED || !riskEngineStatus) {
-          if (!selectedSettingsMatchSavedSettings) {
-            await onSaveSettings();
-          }
-          await initRiskEngineMutation.mutateAsync(undefined);
-        } else if (riskEngineStatus === RiskEngineStatusEnum.DISABLED) {
-          await enableRiskEngineMutation.mutateAsync(undefined);
+        if (!selectedSettingsMatchSavedSettings) {
+          await onSaveSettings();
         }
+        await enableEntityStore();
 
         addSuccess(i18n.ENTITY_ANALYTICS_TURNED_ON, TOAST_OPTIONS);
       }
@@ -182,15 +146,12 @@ export const useToggleEntityAnalytics = ({
   }, [
     isLoading,
     isStatusLoading,
-    riskEngineStatus,
     entityStoreStatus,
     addSuccess,
     addError,
     stopEntityStore,
     selectedSettingsMatchSavedSettings,
-    initRiskEngineMutation,
     onSaveSettings,
-    enableRiskEngineMutation,
     enableEntityStore,
   ]);
 
