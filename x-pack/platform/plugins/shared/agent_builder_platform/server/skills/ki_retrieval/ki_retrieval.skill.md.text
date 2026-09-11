@@ -12,20 +12,18 @@ This skill is not about generating these KIs, that is a separate skill.
 AI Indices have three dedicated tools. Use them in this order, and use nothing else to read an
 AI Index:
 
-1. **`list_ai_indices`** — the AI Indices you can use in the current space. Each entry has
+1. **`list_ai_indices`** — the AI Indices you can use. Each entry has
    an `id`, the `esql_target` to put in `FROM`, and a description. An AI Index is left out when
-   you cannot read its backing index, or when every document in it belongs to another space; an
-   empty AI Index is still listed. Skip this when your instructions already name the index.
+   you cannot read its backing index; an empty AI Index is still listed. Skip this when your
+   instructions already name the index.
 2. **`describe_ai_index`** — takes an `id` and returns a context block you can read and copy
    ES|QL from: what the index holds, its fields and which are semantic, KI type and tag counts,
    and example queries. Fields differ between AI Indices, so describe one before filtering on a
    field.
-3. **`query_ai_indices`** — runs your ES|QL and returns the rows. The server applies the space
-   scoping and a row limit; do not add a space condition yourself.
+3. **`query_ai_indices`** — runs your ES|QL and returns the rows. The server applies a row limit.
 
-Do not use `execute_esql` or `list_indices` on AI Indices. Only `query_ai_indices` applies the
-space scoping, and only `list_ai_indices` knows which `ai-index-*` indices are registered AI
-indices.
+Do not use `execute_esql` or `list_indices` on AI Indices: only `list_ai_indices` knows which
+`ai-index-*` indices are registered AI Indices, and `query_ai_indices` is the tool for reading them.
 
 ## What a KI index looks like
 
@@ -71,77 +69,3 @@ When the KI stores an array of queries, the extracted value is multivalued: `IS 
 still filters correctly, but scalar comparisons like `==` skip multivalued rows. Add
 `| MV_EXPAND esql` after the `WHERE esql IS NOT NULL` to get one row per query when you
 need per-query filtering.
-
-### Space scoping
-
-Documents in an AI Index may belong to specific Kibana spaces. `query_ai_indices` applies that
-scoping server-side and returns only documents visible from the current space; the counts in
-`describe_ai_index` are scoped the same way. Never write a space condition in ES|QL: a filter
-you write does not replace the server's scoping, and on most indices it silently matches nothing
-while looking as if it scoped.
-
----
-
-## Querying
-
-Start from the example queries in the `describe_ai_index` context block. They target the index's
-`esql_target` but use the canonical KI fields, so run them as-is on canonical KI indices and adapt
-the field names to the block's field list otherwise. Run every query with `query_ai_indices`.
-
-When you need to write your own, this is the canonical hybrid search. It runs keyword and
-semantic branches in parallel and fuses them with reciprocal rank fusion, so documents matching
-both branches score higher than documents matching only one:
-
-```esql
-FROM <esql_target> METADATA _id, _index, _score
-| FORK
-    ( WHERE content:"<query>" OR title:"<query>" OR description:"<query>"          | SORT _score DESC | LIMIT 20 )
-    ( WHERE content.semantic:"<query>" OR title.semantic:"<query>" OR description.semantic:"<query>" | SORT _score DESC | LIMIT 20 )
-| FUSE
-| SORT _score DESC, _id ASC
-| KEEP title, description, content, type, tags
-| LIMIT <n>
-```
-
-- `KEEP` is not optional: without it every hit also returns `_score`, `_id`, `_index`, `_fork`,
-  `@timestamp`, `attributes` and `references.uri`, which wastes the context the KIs are meant to
-  save. Add fields you need, e.g. an `attributes` key you intend to filter on next.
-- Per-branch `LIMIT 20` gives FUSE enough candidates; the final `LIMIT <n>` is the result count.
-  Start with 5 and adjust to how much context each KI carries.
-- To scope by type or tag, add a `WHERE type == "..."` (or a `tags` condition) before `FORK`.
-- Drop the semantic branch and `FUSE` only when you need purely exact-match results.
-
-`type` and `tags` are set by whichever workflows generated the KIs, so neither is a fixed
-vocabulary. The context block already reports their counts for the current space; when you need
-a different breakdown, aggregate over a result set instead (`| STATS ki_count = COUNT(*) BY tags`
-after the `WHERE`), then re-run the retrieval query with the most relevant tag as a filter.
-
----
-
-## ES|QL syntax notes
-
-- **`METADATA _id, _index, _score`** — exposes the BM25/FUSE relevance score. Required for `SORT _score DESC`
-  whenever you use `:` match operators or `FUSE`. Omitting it causes a missing-field error.
-- **FORK branches** — each branch is an independent sub-query executed in parallel. A generous
-  per-branch `LIMIT` (e.g. 20) ensures FUSE has enough candidates.
-- **FUSE** — merges branches into a single ranked result set (using reciprocal rank fusion - RRF - by default).
-- **Dot notation for semantic sub-fields** — use `content.semantic`, not `content_semantic`.
-
----
-
-## Suggested retrieval flow
-
-1. **Discover** — call `list_ai_indices` to see which AI Indices are available to you and their
-   `esql_target`s. Skip this when your instructions already name the index.
-2. **Orient** — call `describe_ai_index` with the index `id`. Its context block gives you the
-   fields, the type and tag counts, and example queries to start from. Sample a few KIs
-   (`WHERE type == "..." | LIMIT 2`) only if the type names are still ambiguous; that does not
-   come for free.
-3. **Query** — run an example query from the context block, or the canonical hybrid search
-   above, with `query_ai_indices`, using the `esql_target` in `FROM`.
-4. **Return** — the `KEEP` clause already limits results to `title`, `description`, `content`,
-   `type` and `tags`. Seeing `tags` on the results is often enough to narrow a follow-up query
-   without a separate aggregation.
-
----
-

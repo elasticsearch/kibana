@@ -53,22 +53,10 @@ describe('kiRetrievalSkill', () => {
     expect(kiRetrievalSkill.content).not.toContain('query_templates');
   });
 
-  it('prefers the example queries from describe and keeps one canonical fallback', () => {
+  it('does not teach the agent about spaces or space scoping', () => {
     const { content } = kiRetrievalSkill;
 
-    expect(content).toContain(
-      'Start from the example queries in the `describe_ai_index` context block'
-    );
-    expect(content.match(/\| FORK/g)).toHaveLength(1);
-  });
-
-  it('leaves space scoping to the tool and never teaches a spaces field or filter', () => {
-    const { content } = kiRetrievalSkill;
-
-    expect(content).toMatch(/applies that\s+scoping server-side/);
-    expect(content).toMatch(/never\s+write a space condition in ES\|QL/i);
-    expect(content).toContain('does not replace the server');
-    expect(content).not.toMatch(/`spaces`/);
+    expect(content).not.toMatch(/space/i);
     expect(content).not.toContain('"filter"');
     expect(content).not.toContain('verbatim');
   });

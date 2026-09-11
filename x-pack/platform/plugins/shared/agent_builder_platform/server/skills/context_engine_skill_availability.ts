@@ -8,7 +8,7 @@
 import type { AvailabilityConfig } from '@kbn/agent-builder-server';
 import { CONTEXT_ENGINE_ENABLED_SETTING_ID } from '@kbn/management-settings-ids';
 
-/** Hides Context Engine skills where the AI-index tools they bind are unavailable. */
+/** Hides Context Engine skills in spaces where the `contextEngine:enabled` UI setting is off. */
 export const contextEngineSkillAvailability: AvailabilityConfig = {
   cacheMode: 'space',
   handler: async ({ uiSettings }) => {
