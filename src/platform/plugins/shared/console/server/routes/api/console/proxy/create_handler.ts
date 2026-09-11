@@ -10,6 +10,7 @@
 import { STATUS_CODES } from 'http';
 import type { IncomingHttpHeaders } from 'http';
 import type { Readable } from 'stream';
+import { errors } from '@elastic/elasticsearch';
 
 import type {
   ICustomClusterClient,
@@ -179,6 +180,36 @@ export const createHandler =
         },
       });
     } catch (e) {
+      if (e instanceof errors.TimeoutError) {
+        // The client gave up waiting, but Elasticsearch may still be executing the request
+        // (e.g. a snapshot restore), so tell the user instead of reporting a connection failure.
+        const timeoutSeconds = legacyConfig.requestTimeout.asSeconds();
+        // The default client round-robins across all configured hosts, so name the node the
+        // request actually went to; fall back to the configured host if the error carries none.
+        const timedOutNode = e.meta?.meta.connection?.url.toString() ?? host;
+        log.warn(
+          `Request to Elasticsearch node [${stripCredentialsFromUrl(
+            timedOutNode
+          )}] timed out after ${timeoutSeconds} seconds: ${method.toUpperCase()} ${
+            path.split('?')[0]
+          }`
+        );
+
+        await customClient?.close();
+
+        return response.custom({
+          statusCode: 504,
+          body: {
+            message: `Elasticsearch did not respond within ${timeoutSeconds} seconds. Kibana stopped waiting, but Elasticsearch may still be processing the request, so check its status before retrying. On self-managed Kibana, increase elasticsearch.requestTimeout to wait longer.`,
+          },
+          headers: {
+            'x-console-proxy-status-code': '504',
+            'x-console-proxy-status-text': 'Gateway Timeout',
+            'content-type': 'application/json',
+          },
+        });
+      }
+
       log.error(e);
       log.warn(`Could not connect to ES node [${host}]`);
 

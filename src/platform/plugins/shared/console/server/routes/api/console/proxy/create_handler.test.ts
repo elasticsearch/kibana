@@ -10,9 +10,10 @@
 import { duration } from 'moment';
 import { createServer, type IncomingMessage, type ServerResponse } from 'http';
 import { Readable } from 'stream';
-import { Client, HttpConnection } from '@elastic/elasticsearch';
+import { Client, HttpConnection, errors } from '@elastic/elasticsearch';
+import type { DiagnosticResult } from '@elastic/elasticsearch';
 import { kibanaResponseFactory } from '@kbn/core/server';
-import { coreMock, elasticsearchServiceMock } from '@kbn/core/server/mocks';
+import { coreMock, elasticsearchServiceMock, httpServerMock } from '@kbn/core/server/mocks';
 import { getProxyRouteHandlerDeps, getRequestHandlerContext } from './mocks';
 import { createTransportResponseStub } from './stubs';
 import { createHandler } from './create_handler';
@@ -404,6 +405,169 @@ describe('Console Proxy Route - Crete Handler', () => {
 
       expect(response.status).toBe(502);
       expect(customClient.close).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('Elasticsearch request timeout (issue #284095)', () => {
+    afterEach(() => {
+      jest.resetAllMocks();
+    });
+
+    const restoreRequest = {
+      headers: {},
+      query: { method: 'POST', path: '/_snapshot/repo/snap/_restore' },
+    } as any;
+
+    // Non-default timeout so a hard-coded value would be caught; credentials on the first host so
+    // the log must strip them; two hosts so the 502 path would add the host-switch `warning`
+    // header while the timeout path must not.
+    const readTwoHostsESConfig = async () => ({
+      requestTimeout: duration(90000),
+      customHeaders: {},
+      requestHeadersWhitelist: [],
+      hosts: ['http://kibana_system:SECRET@localhost:9200', 'http://localhost:9201'],
+    });
+
+    const timeoutErrorFromNode = (url: string) =>
+      new errors.TimeoutError('Request timed out', {
+        meta: { connection: { url: new URL(url) } },
+      } as unknown as DiagnosticResult);
+
+    it('responds 504 with a message saying Elasticsearch may still be processing the request', async () => {
+      const handler = createHandler(
+        getProxyRouteHandlerDeps({ proxy: { readLegacyESConfig: readTwoHostsESConfig } })
+      );
+      const { core, transportRequest } = getRequestHandlerContext('');
+      transportRequest.mockRejectedValue(new errors.TimeoutError('Request timed out'));
+
+      const response = await handler({ core } as any, restoreRequest, kibanaResponseFactory);
+
+      expect(response.status).toBe(504);
+      expect(response.payload).toEqual({
+        message:
+          'Elasticsearch did not respond within 90 seconds. Kibana stopped waiting, but Elasticsearch may still be processing the request, so check its status before retrying. On self-managed Kibana, increase elasticsearch.requestTimeout to wait longer.',
+      });
+      expect(response.options.headers).toEqual({
+        'x-console-proxy-status-code': '504',
+        'x-console-proxy-status-text': 'Gateway Timeout',
+        'content-type': 'application/json',
+      });
+    });
+
+    it('logs the timeout as a warning naming the node the request went to', async () => {
+      const log = coreMock.createPluginInitializerContext().logger.get();
+      const handler = createHandler(
+        getProxyRouteHandlerDeps({ log, proxy: { readLegacyESConfig: readTwoHostsESConfig } })
+      );
+      const { core, transportRequest } = getRequestHandlerContext('');
+      // The default client may route to any configured host, so the log must take the node from
+      // the error, not from `host` (the first configured one). Using a URL that is not in the hosts
+      // list means the expected value can only come from the error.
+      transportRequest.mockRejectedValue(timeoutErrorFromNode('http://localhost:9202/'));
+
+      await handler({ core } as any, restoreRequest, kibanaResponseFactory);
+
+      expect(log.error).not.toHaveBeenCalled();
+      expect(log.warn).toHaveBeenCalledTimes(1);
+      expect(log.warn).toHaveBeenCalledWith(
+        'Request to Elasticsearch node [http://localhost:9202/] timed out after 90 seconds: POST /_snapshot/repo/snap/_restore'
+      );
+    });
+
+    describe('WHEN a timed-out request contains sensitive query parameters', () => {
+      it.each(['email:private@example.com', 'email%3Aprivate%40example.com'])(
+        'SHOULD omit query parameters from warnings while forwarding them to Elasticsearch (%s)',
+        async (queryValue) => {
+          const log = coreMock.createPluginInitializerContext().logger.get();
+          const handler = createHandler(
+            getProxyRouteHandlerDeps({ log, proxy: { readLegacyESConfig: readTwoHostsESConfig } })
+          );
+          const core = coreMock.createRequestHandlerContext();
+          const transportRequest = core.elasticsearch.client.asCurrentUser.transport.request;
+          transportRequest.mockRejectedValue(new errors.TimeoutError('Request timed out'));
+          const request = httpServerMock.createKibanaRequest({
+            query: { method: 'GET', path: `/_search?q=${queryValue}&pretty=false` },
+          });
+
+          const response = await handler(
+            coreMock.createCustomRequestHandlerContext({ core }),
+            request,
+            kibanaResponseFactory
+          );
+
+          expect(response.status).toBe(504);
+          expect(transportRequest).toHaveBeenCalledWith(
+            expect.objectContaining({ path: `/_search?q=${queryValue}&pretty=false` }),
+            expect.anything()
+          );
+          expect(log.error).not.toHaveBeenCalled();
+          expect(log.warn).toHaveBeenCalledTimes(1);
+          expect(log.warn).toHaveBeenCalledWith(
+            'Request to Elasticsearch node [http://localhost:9200/] timed out after 90 seconds: GET /_search'
+          );
+          expect(log.warn).not.toHaveBeenCalledWith(expect.stringContaining(queryValue));
+        }
+      );
+    });
+
+    it('falls back to the configured host in the timeout log when the error carries no connection', async () => {
+      const log = coreMock.createPluginInitializerContext().logger.get();
+      const handler = createHandler(
+        getProxyRouteHandlerDeps({ log, proxy: { readLegacyESConfig: readTwoHostsESConfig } })
+      );
+      const { core, transportRequest } = getRequestHandlerContext('');
+      transportRequest.mockRejectedValue(new errors.TimeoutError('Request timed out'));
+
+      await handler({ core } as any, restoreRequest, kibanaResponseFactory);
+
+      expect(log.warn).toHaveBeenCalledWith(
+        'Request to Elasticsearch node [http://localhost:9200/] timed out after 90 seconds: POST /_snapshot/repo/snap/_restore'
+      );
+    });
+
+    it('closes a custom Elasticsearch client when the request times out', async () => {
+      const { core, customClient, handler, transportRequest } = getCustomClientRoute();
+      transportRequest.mockRejectedValue(new errors.TimeoutError('Request timed out'));
+
+      const response = await handler(
+        { core } as any,
+        {
+          headers: {},
+          query: { method: 'POST', path: '/_reindex', host: 'http://localhost:9200' },
+        } as any,
+        kibanaResponseFactory
+      );
+
+      expect(response.status).toBe(504);
+      expect(customClient.close).toHaveBeenCalledTimes(1);
+    });
+
+    it('keeps the 502 connection-failure response for other transport errors', async () => {
+      const log = coreMock.createPluginInitializerContext().logger.get();
+      const handler = createHandler(
+        getProxyRouteHandlerDeps({ log, proxy: { readLegacyESConfig: readTwoHostsESConfig } })
+      );
+      const { core, transportRequest } = getRequestHandlerContext('');
+      const connectionError = new errors.ConnectionError('connect ECONNREFUSED');
+      transportRequest.mockRejectedValue(connectionError);
+
+      const response = await handler({ core } as any, restoreRequest, kibanaResponseFactory);
+
+      expect(response.status).toBe(502);
+      expect(response.payload).toEqual({
+        message: 'An internal server error occurred. Check Kibana server logs for details.',
+      });
+      expect(response.options.headers).toEqual({
+        'x-console-proxy-status-code': '502',
+        'x-console-proxy-status-text': 'Bad Gateway',
+        'content-type': 'application/json',
+        warning:
+          'Could not connect to Elasticsearch node. Try selecting a different host from Console > Config > General settings > Elasticsearch host.',
+      });
+      expect(log.error).toHaveBeenCalledWith(connectionError);
+      expect(log.warn).toHaveBeenCalledWith(
+        'Could not connect to ES node [http://kibana_system:SECRET@localhost:9200]'
+      );
     });
   });
 
