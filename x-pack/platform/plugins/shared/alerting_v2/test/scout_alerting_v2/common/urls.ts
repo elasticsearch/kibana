@@ -11,7 +11,8 @@ import type {
   listRuleExecutionsRequestSchema,
 } from '@kbn/alerting-v2-schemas';
 import {
-  ALERT_API_PATH,
+  SERIES_API_PATH,
+  EPISODES_API_PATH,
   ACTION_POLICY_API_PATH,
   RULE_API_PATH,
   EXECUTION_HISTORY_API_PATH,
@@ -94,24 +95,37 @@ export const getFindRuleTemplatesUrl = (
   return qs ? `${RULE_TEMPLATE_API_PATH}?${qs}` : RULE_TEMPLATE_API_PATH;
 };
 
-const getAlertActionUrl = (groupHash: string, suffix: string) =>
-  `${ALERT_API_PATH}/${encodeURIComponent(groupHash)}/${suffix}`;
+const getSeriesActionUrl = (groupHash: string, suffix: string) =>
+  `${SERIES_API_PATH}/${encodeURIComponent(groupHash)}/${suffix}`;
 
-export const getAckAlertActionUrl = (groupHash: string) => getAlertActionUrl(groupHash, '_ack');
-export const getUnackAlertActionUrl = (groupHash: string) => getAlertActionUrl(groupHash, '_unack');
-export const getAssignAlertActionUrl = (groupHash: string) =>
-  getAlertActionUrl(groupHash, '_assign');
-export const getTagAlertActionUrl = (groupHash: string) => getAlertActionUrl(groupHash, '_tag');
-export const getSnoozeAlertActionUrl = (groupHash: string) =>
-  getAlertActionUrl(groupHash, '_snooze');
-export const getUnsnoozeAlertActionUrl = (groupHash: string) =>
-  getAlertActionUrl(groupHash, '_unsnooze');
-export const getActivateAlertActionUrl = (groupHash: string) =>
-  getAlertActionUrl(groupHash, '_activate');
-export const getDeactivateAlertActionUrl = (groupHash: string) =>
-  getAlertActionUrl(groupHash, '_deactivate');
+export const getTagSeriesActionUrl = (groupHash: string) => getSeriesActionUrl(groupHash, '_tag');
+export const getSnoozeSeriesActionUrl = (groupHash: string) =>
+  getSeriesActionUrl(groupHash, '_snooze');
+export const getUnsnoozeSeriesActionUrl = (groupHash: string) =>
+  getSeriesActionUrl(groupHash, '_unsnooze');
 
-export const BULK_ALERT_ACTION_URL = `${ALERT_API_PATH}/_bulk_action`;
+export const BULK_TAG_SERIES_ACTION_URL = `${SERIES_API_PATH}/_bulk_tag`;
+export const BULK_SNOOZE_SERIES_ACTION_URL = `${SERIES_API_PATH}/_bulk_snooze`;
+export const BULK_UNSNOOZE_SERIES_ACTION_URL = `${SERIES_API_PATH}/_bulk_unsnooze`;
+
+const getEpisodeActionUrl = (episodeId: string, suffix: string) =>
+  `${EPISODES_API_PATH}/${encodeURIComponent(episodeId)}/${suffix}`;
+
+export const getAckEpisodeActionUrl = (episodeId: string) => getEpisodeActionUrl(episodeId, '_ack');
+export const getUnackEpisodeActionUrl = (episodeId: string) =>
+  getEpisodeActionUrl(episodeId, '_unack');
+export const getAssignEpisodeActionUrl = (episodeId: string) =>
+  getEpisodeActionUrl(episodeId, '_assign');
+export const getActivateEpisodeActionUrl = (episodeId: string) =>
+  getEpisodeActionUrl(episodeId, '_activate');
+export const getDeactivateEpisodeActionUrl = (episodeId: string) =>
+  getEpisodeActionUrl(episodeId, '_deactivate');
+
+export const BULK_ACK_EPISODE_ACTION_URL = `${EPISODES_API_PATH}/_bulk_ack`;
+export const BULK_UNACK_EPISODE_ACTION_URL = `${EPISODES_API_PATH}/_bulk_unack`;
+export const BULK_ASSIGN_EPISODE_ACTION_URL = `${EPISODES_API_PATH}/_bulk_assign`;
+export const BULK_ACTIVATE_EPISODE_ACTION_URL = `${EPISODES_API_PATH}/_bulk_activate`;
+export const BULK_DEACTIVATE_EPISODE_ACTION_URL = `${EPISODES_API_PATH}/_bulk_deactivate`;
 
 export const getListExecutionHistoryUrl = (query?: ListPolicyExecutionHistoryRequest): string => {
   if (!query) return EXECUTION_HISTORY_API_PATH;

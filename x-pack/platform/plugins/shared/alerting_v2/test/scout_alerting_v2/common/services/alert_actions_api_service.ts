@@ -7,13 +7,13 @@
 
 import type { KbnClient, ScoutLogger } from '@kbn/scout';
 import { measurePerformanceAsync } from '@kbn/scout';
-import type { CreateActivateAlertActionBody } from '@kbn/alerting-v2-schemas';
+import type { CreateActivateEpisodeActionBody } from '@kbn/alerting-v2-schemas';
 import { COMMON_HEADERS } from '../constants';
-import { getActivateAlertActionUrl } from '../urls';
+import { getActivateEpisodeActionUrl } from '../urls';
 
-export interface ActivateAlertActionParams extends CreateActivateAlertActionBody {
-  /** The group hash of the alert episode to activate. */
-  groupHash: string;
+export interface ActivateAlertActionParams extends CreateActivateEpisodeActionBody {
+  /** The id of the alert episode to activate. */
+  episodeId: string;
 }
 
 /**
@@ -27,7 +27,7 @@ export interface ActivateAlertActionParams extends CreateActivateAlertActionBody
  */
 export interface AlertActionsApiService {
   /**
-   * Hits `POST /api/alerting_v2/alerts/{groupHash}/_activate`. The route
+   * Hits `POST /api/alerting/v2/episodes/{episodeId}/_activate`. The route
    * returns 204 on success.
    */
   activate: (params: ActivateAlertActionParams) => Promise<void>;
@@ -40,11 +40,11 @@ export const getAlertActionsApiService = ({
   log: ScoutLogger;
   kbnClient: KbnClient;
 }): AlertActionsApiService => ({
-  activate: ({ groupHash, ...body }) =>
+  activate: ({ episodeId, ...body }) =>
     measurePerformanceAsync(log, 'alertActions.activate', async () => {
       await kbnClient.request({
         method: 'POST',
-        path: getActivateAlertActionUrl(groupHash),
+        path: getActivateEpisodeActionUrl(episodeId),
         headers: COMMON_HEADERS,
         body,
       });

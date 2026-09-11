@@ -14,12 +14,9 @@ import type { UserProfileService } from '@kbn/core-user-profile-browser';
 import type { DocLinksStart } from '@kbn/core-doc-links-browser';
 import type { QueryClient } from '@kbn/react-query';
 import type { AlertEpisode } from '@kbn/alerting-v2-schemas';
-import {
-  ALERT_EPISODE_ACTION_TYPE,
-  type BulkCreateAlertActionBody,
-} from '@kbn/alerting-v2-schemas';
+import type { BulkAssignEpisodeActionItem } from '@kbn/alerting-v2-schemas';
 import type { EpisodeAction, EpisodeActionContext, EpisodeActionMenuItemContext } from './types';
-import { bulkCreateAlertActions } from './bulk_create_alert_actions';
+import { bulkAssignEpisodeActions } from './bulk_create_alert_actions';
 import { successOrPartialToast } from './helpers';
 import * as i18n from './translations';
 import { openAssigneeModal } from '../components/assignee_modal';
@@ -50,16 +47,14 @@ const applyAssignee = async (
   { episodes, onSuccess }: EpisodeActionContext,
   assigneeUid: string | null
 ) => {
-  const items: BulkCreateAlertActionBody = episodes.map((episode) => ({
-    group_hash: episode.group_hash,
-    action_type: ALERT_EPISODE_ACTION_TYPE.ASSIGN,
+  const items: BulkAssignEpisodeActionItem[] = episodes.map((episode) => ({
     episode_id: episode['episode.id'],
     assignee_uid: assigneeUid,
   }));
   if (!items.length) return;
 
   try {
-    const response = await bulkCreateAlertActions(deps.http, items);
+    const response = await bulkAssignEpisodeActions(deps.http, items);
     deps.notifications.toasts.add(successOrPartialToast(response));
     onSuccess?.();
   } catch {

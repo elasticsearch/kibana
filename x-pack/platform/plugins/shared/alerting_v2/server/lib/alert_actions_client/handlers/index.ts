@@ -5,8 +5,12 @@
  * 2.0.
  */
 
-import { ALERT_EPISODE_ACTION_TYPE, type AlertEpisodeActionType } from '@kbn/alerting-v2-schemas';
-import type { ActionHandler, AnyAlertActionBody, HandlerItem, PreparedAction } from '../handler';
+import {
+  ALERT_EPISODE_ACTION_TYPE,
+  type AlertEpisodeActionType,
+  type CreateAlertActionBody,
+} from '@kbn/alerting-v2-schemas';
+import type { ActionHandler, HandlerItem, PreparedAction } from '../handler';
 import { activateHandler } from './activate';
 import { deactivateHandler } from './deactivate';
 
@@ -17,7 +21,7 @@ import { deactivateHandler } from './deactivate';
  * point of the registry approach.
  */
 export type ActionHandlersRegistry = {
-  [T in AlertEpisodeActionType]: ActionHandler<Extract<AnyAlertActionBody, { action_type: T }>>;
+  [T in AlertEpisodeActionType]: ActionHandler<Extract<CreateAlertActionBody, { action_type: T }>>;
 };
 
 /**
@@ -58,9 +62,9 @@ export const ACTION_HANDLERS: Readonly<ActionHandlersRegistry> = {
  * here in one place.
  */
 export const prepareWithHandler = (
-  item: HandlerItem<AnyAlertActionBody>,
+  item: HandlerItem<CreateAlertActionBody>,
   handlers: Readonly<ActionHandlersRegistry>
 ): PreparedAction => {
-  const handler = handlers[item.action.action_type] as ActionHandler<AnyAlertActionBody>;
+  const handler = handlers[item.action.action_type] as ActionHandler<CreateAlertActionBody>;
   return handler.prepare(item);
 };

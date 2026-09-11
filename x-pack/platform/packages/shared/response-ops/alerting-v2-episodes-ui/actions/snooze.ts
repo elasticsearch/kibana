@@ -9,12 +9,9 @@ import type { HttpStart } from '@kbn/core-http-browser';
 import type { CoreStart } from '@kbn/core-lifecycle-browser';
 import type { NotificationsStart } from '@kbn/core-notifications-browser';
 import type { OverlayStart } from '@kbn/core-overlays-browser';
-import {
-  ALERT_EPISODE_ACTION_TYPE,
-  type BulkCreateAlertActionBody,
-} from '@kbn/alerting-v2-schemas';
+import type { BulkSnoozeSeriesActionItem } from '@kbn/alerting-v2-schemas';
 import type { EpisodeAction, EpisodeActionContext } from './types';
-import { bulkCreateAlertActions } from './bulk_create_alert_actions';
+import { bulkSnoozeSeriesActions } from './bulk_create_alert_actions';
 import { uniqueByGroup, successOrPartialToast } from './helpers';
 import * as i18n from './translations';
 import { openSnoozeExpiryModal } from '../components/snooze_expiry_modal';
@@ -39,15 +36,14 @@ export const createSnoozeAction = (deps: SnoozeActionDeps): EpisodeAction => ({
     const expiry = await openSnoozeExpiryModal(deps.overlays, deps.rendering);
     if (expiry === undefined) return;
 
-    const items: BulkCreateAlertActionBody = uniqueByGroup(episodes).map((ep) => ({
+    const items: BulkSnoozeSeriesActionItem[] = uniqueByGroup(episodes).map((ep) => ({
       group_hash: ep.group_hash,
-      action_type: ALERT_EPISODE_ACTION_TYPE.SNOOZE,
       ...(expiry === null ? {} : { expiry }),
     }));
     if (!items.length) return;
 
     try {
-      const response = await bulkCreateAlertActions(deps.http, items);
+      const response = await bulkSnoozeSeriesActions(deps.http, items);
       deps.notifications.toasts.add(successOrPartialToast(response));
       onSuccess?.();
     } catch {

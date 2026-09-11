@@ -5,9 +5,6 @@
  * 2.0.
  */
 
-export const getAlertEventNotFoundMessage = (groupHash: string, episodeId?: string): string =>
-  `Alert event with group_hash [${groupHash}] and episode_id [${episodeId}] not found`;
-
 export const getAlertSeriesNotFoundMessage = (groupHash: string): string =>
   `Alert series with group_hash [${groupHash}] not found`;
 

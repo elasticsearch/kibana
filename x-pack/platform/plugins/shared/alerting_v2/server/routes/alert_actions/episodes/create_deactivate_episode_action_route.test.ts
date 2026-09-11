@@ -1,0 +1,69 @@
+/*
+ * Copyright Elasticsearch B.V. and/or licensed to Elasticsearch B.V. under one
+ * or more contributor license agreements. Licensed under the Elastic License
+ * 2.0; you may not use this file except in compliance with the Elastic License
+ * 2.0.
+ */
+
+import type { KibanaRequest } from '@kbn/core-http-server';
+import { createDeactivateEpisodeActionBodySchema } from '@kbn/alerting-v2-schemas';
+import type { AlertActionsClient } from '../../../lib/alert_actions_client';
+import { createAlertActionsClientMock } from '../../../lib/alert_actions_client/alert_actions_client.mock';
+import { CreateDeactivateEpisodeActionRoute } from './create_deactivate_episode_action_route';
+import { createRouteDependencies } from '../../test_utils';
+
+describe('CreateDeactivateEpisodeActionRoute', () => {
+  const episodeId = 'episode-1';
+
+  it('injects action_type and returns noContent', async () => {
+    const body = { reason: 'manual pause' };
+    const { ctx } = createRouteDependencies();
+    const request = { params: { episode_id: episodeId }, body } as unknown as KibanaRequest;
+    const alertActionsClient = createAlertActionsClientMock();
+    const route = new CreateDeactivateEpisodeActionRoute(
+      ctx,
+      request,
+      alertActionsClient as unknown as AlertActionsClient
+    );
+
+    await route.handle();
+
+    expect(alertActionsClient.createEpisodeAction).toHaveBeenCalledWith({
+      episodeId,
+      action: { action_type: 'deactivate', ...body },
+    });
+    expect(ctx.response.noContent).toHaveBeenCalled();
+  });
+
+  it('returns customError on failure', async () => {
+    const { ctx } = createRouteDependencies();
+    const request = {
+      params: { episode_id: episodeId },
+      body: { reason: 'x' },
+    } as unknown as KibanaRequest;
+    const alertActionsClient = createAlertActionsClientMock();
+    alertActionsClient.createEpisodeAction.mockRejectedValueOnce(new Error('boom'));
+    const route = new CreateDeactivateEpisodeActionRoute(
+      ctx,
+      request,
+      alertActionsClient as unknown as AlertActionsClient
+    );
+
+    await route.handle();
+
+    expect(ctx.response.customError).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('createDeactivateEpisodeActionBodySchema', () => {
+  it('accepts payload without action_type', () => {
+    expect(createDeactivateEpisodeActionBodySchema.safeParse({ reason: 'x' }).success).toBe(true);
+  });
+
+  it('rejects payload with action_type', () => {
+    expect(
+      createDeactivateEpisodeActionBodySchema.safeParse({ action_type: 'deactivate', reason: 'x' })
+        .success
+    ).toBe(false);
+  });
+});

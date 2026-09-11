@@ -5,25 +5,10 @@
  * 2.0.
  */
 
-import type {
-  CreateAlertActionBody,
-  CreateEpisodeAlertActionBody,
-  CreateSeriesAlertActionBody,
-} from '@kbn/alerting-v2-schemas';
+import type { CreateAlertActionBody } from '@kbn/alerting-v2-schemas';
 import type { AlertAction } from '../../resources/datastreams/alert_actions';
 import type { AlertEvent } from '../../resources/datastreams/alert_events';
 import type { AlertEventRecord } from './types';
-
-/**
- * Union of every action body shape the handler layer can receive: the legacy
- * combined union (episode_id in ack/unack/assign bodies) plus the split
- * series/episode unions. Collapses to just the split unions once the legacy
- * routes are removed.
- */
-export type AnyAlertActionBody =
-  | CreateAlertActionBody
-  | CreateSeriesAlertActionBody
-  | CreateEpisodeAlertActionBody;
 
 /**
  * Prepared write payload for one alert action. The audit `.alert-actions`
@@ -54,7 +39,7 @@ export interface PreparedAction {
  *   for audit-only actions, or wrap it alongside a synthetic
  *   `.rule-events` doc for lifecycle actions.
  */
-export interface HandlerItem<TBody extends AnyAlertActionBody> {
+export interface HandlerItem<TBody extends CreateAlertActionBody> {
   action: TBody;
   alertEvent: AlertEventRecord;
   alertActionDoc: AlertAction;
@@ -74,7 +59,7 @@ export interface HandlerItem<TBody extends AnyAlertActionBody> {
  * this action_type (e.g. the `ack` body, not the union), so each
  * handler pulls off the fields it needs without `in` checks.
  */
-export interface ActionHandler<TBody extends AnyAlertActionBody = AnyAlertActionBody> {
+export interface ActionHandler<TBody extends CreateAlertActionBody = CreateAlertActionBody> {
   /**
    * Pure, synchronous precondition check + doc build. Throws Boom 4xx on
    * precondition failure (same error codes routes already surface); the

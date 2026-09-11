@@ -66,10 +66,10 @@ export interface LatestAlertEventState {
  *   the happy path they describe the same episode (activate/deactivate write
  *   the audit doc and the synthetic rule-event doc atomically with the same
  *   `episode_id` and `@timestamp`), but nothing in the raw aggregations
- *   *enforces* that invariant. Two failure modes can make them diverge:
- *     1. Concurrent bulk actions targeting different episodes of the same
- *        group (bulk activate/deactivate accepts an explicit `episode_id`,
- *        so a caller can act on a non-current episode).
+ *   *enforces* that invariant. The routes guard activate/deactivate to the
+ *   latest episode of the group, yet the two streams can still diverge:
+ *     1. Concurrent actions racing the engine (the guard checks the latest
+ *        episode at request time, not at write time).
  *     2. Item-level `_bulk` write failures where the audit doc lands but
  *        the synthetic rule-event doc does not (or vice versa).
  *

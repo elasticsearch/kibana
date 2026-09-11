@@ -30,7 +30,6 @@ const makeAckItem = (): HandlerItem<
 > => ({
   action: {
     action_type: ALERT_EPISODE_ACTION_TYPE.ACK,
-    episode_id: 'episode-1',
   },
   alertEvent: fakeAlertEvent,
   alertActionDoc: fakeAuditDoc,

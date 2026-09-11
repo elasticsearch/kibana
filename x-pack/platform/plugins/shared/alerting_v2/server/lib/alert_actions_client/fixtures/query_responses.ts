@@ -52,10 +52,12 @@ const toAlertEventRow = (record: Partial<RawAlertEventRow>): FieldValue[] => [
  * (`RawAlertEventRow`). One function covers every alert-event loader in
  * the client:
  *
- * - Single-route path (`loadLastAlertEventOrThrow`): pass one record (or
- *   omit the argument to accept defaults).
- * - Batched paths (`loadLatestAlertEvents`, `bulkLoadLatestAlertEvents`):
- *   pass an array — one entry per returned row.
+ * - Single-route paths (`loadLastSeriesAlertEventOrThrow`,
+ *   `loadLastEpisodeAlertEventOrThrow`): pass one record (or omit the
+ *   argument to accept defaults).
+ * - Batched paths (`loadLatestAlertEventsByGroupHash`,
+ *   `loadLatestAlertEventsByEpisodeId`): pass an array — one entry per
+ *   returned row.
  * - "No matches" case: pass an empty array.
  */
 export const getAlertEventESQLResponse = (

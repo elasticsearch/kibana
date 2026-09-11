@@ -348,9 +348,10 @@ apiTest.describe('Director', { tag: tags.stateful.classic }, () => {
         episodeStatus: 'inactive',
       });
 
-      // 3. User reopens the episode.
+      // 3. User reopens the episode. `activeEpisodeId` is asserted defined
+      //    right after capture, so the non-null assertion is safe here.
       await apiServices.alertingV2.alertActions.activate({
-        groupHash,
+        episodeId: activeEpisodeId!,
         reason: 'user-lock: holds active across engine recoveries',
       });
 
