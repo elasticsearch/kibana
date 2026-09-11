@@ -46,7 +46,7 @@ export function useUrlState<
       };
 
       history.replace({
-        search: `?${queryString.stringify(queryParams, { encode: false })}`,
+        search: `?${queryString.stringify(queryParams)}`,
       });
     },
     [history, queryParamsSerializer]
