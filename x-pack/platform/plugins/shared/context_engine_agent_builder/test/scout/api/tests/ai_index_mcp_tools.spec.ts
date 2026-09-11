@@ -115,7 +115,7 @@ const runChain = async (client: Client) => {
   return { entry, block, titles: columnValues(rows, 'title') };
 };
 
-apiTest.describe('AI index tools over MCP', { tag: tags.stateful.classic }, () => {
+apiTest.describe('AI Index tools over MCP', { tag: tags.stateful.classic }, () => {
   let mcpCredentials: RoleApiCredentials;
   let mcpOnlyCredentials: RoleApiCredentials;
   let mcpUrl: (path?: string) => string;
