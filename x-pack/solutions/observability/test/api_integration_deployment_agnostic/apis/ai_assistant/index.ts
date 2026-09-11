@@ -38,6 +38,7 @@ export default function aiAssistantApiIntegrationTests({
 
     // Misc.
     loadTestFile(require.resolve('./chat/chat.spec.ts'));
+    loadTestFile(require.resolve('./elasticsearch_tool/elasticsearch_tool.spec.ts'));
     loadTestFile(require.resolve('./complete/complete.spec.ts'));
     loadTestFile(require.resolve('./complete/public_complete.spec.ts'));
     loadTestFile(require.resolve('./index_assets/index_assets.spec.ts'));
