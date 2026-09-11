@@ -105,11 +105,15 @@ const setupAgent = async (responses: NodeResponse[]) => {
     telemetryClient: mockTelemetryClient,
     tools: getRulesMigrationTools('test-migration', {
       rulesClient: createRuleMigrationsDataClientMock(),
+      ruleMigrationsRetriever: mockRetriever,
     }),
   });
   return graph;
 };
 
+// This tests the v1 one-shot `matchPrebuiltRule` node path, used when the
+// `ruleMigrationGraphv2` experimental feature is disabled (default). See `./graph_v2.test.ts`
+// for the v2 `matchPrebuiltRule` subgraph path (security-team#18589).
 describe('getRuleMigrationAgent', () => {
   beforeEach(() => {
     mockRetriever = new MockRuleMigrationsRetriever();
@@ -125,6 +129,8 @@ describe('getRuleMigrationAgent', () => {
   });
 
   describe('prebuilt rules', () => {
+    // Eval note (security-team#18589): compare prebuilt match rates for Splunk, QRadar, and
+    // Sentinel via kbn-evals-suite-security-automatic-migrations prebuilt_rule_match evaluator.
     it('successful match', async () => {
       mockRetriever.prebuiltRules.search.mockResolvedValue([mockPrebuiltRule]);
       const graph = await setupAgent([
@@ -188,6 +194,35 @@ describe('getRuleMigrationAgent', () => {
       });
       expect(mockRetriever.prebuiltRules.search).toHaveBeenCalledTimes(1);
       expect(response.translation_result).toEqual('untranslatable');
+    });
+
+    it('skipPrebuiltRulesMatching bypasses the match node', async () => {
+      mockEsqlKnowledgeBase.translate.mockResolvedValue(mockPartialNlToEsqlResponse);
+      mockRetriever.integrations.search.mockResolvedValue([]);
+      const graph = await setupAgent([
+        {
+          nodeId: 'createSemanticQuery',
+          response: mockSemanticQueryResponse,
+        },
+        {
+          nodeId: 'retrieveIntegrations',
+          response: mockIntegrationNoMatchResponse,
+        },
+      ]);
+
+      const response = await graph.invoke(
+        {
+          id: 'test',
+          original_rule: mockOriginalRule,
+          resources: {},
+        },
+        { configurable: { skipPrebuiltRulesMatching: true } }
+      );
+
+      expect(fakeLLM.getNodeCallCount('matchPrebuiltRule')).toBe(0);
+      expect(mockRetriever.prebuiltRules.search).not.toHaveBeenCalled();
+      expect(response.elastic_rule?.prebuilt_rule_id).toBeUndefined();
+      expect(response.translation_result).toEqual('partial');
     });
   });
 

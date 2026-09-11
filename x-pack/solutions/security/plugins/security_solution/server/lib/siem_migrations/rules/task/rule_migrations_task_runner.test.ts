@@ -36,9 +36,13 @@ jest.mock('../../common/task/util/actions_client_chat', () => ({
 }));
 
 const mockInvoke = jest.fn().mockResolvedValue({});
+const mockGetRuleMigrationAgent = jest.fn(() => ({ invoke: mockInvoke }));
+const mockInvokeV2 = jest.fn().mockResolvedValue({});
+const mockGetRuleMigrationAgentV2 = jest.fn(() => ({ invoke: mockInvokeV2 }));
 jest.mock('./agent', () => ({
   ...jest.requireActual('./agent'),
-  getRuleMigrationAgent: () => ({ invoke: mockInvoke }),
+  getRuleMigrationAgent: () => mockGetRuleMigrationAgent(),
+  getRuleMigrationAgentV2: () => mockGetRuleMigrationAgentV2(),
 }));
 
 // Mock dependencies
@@ -51,6 +55,7 @@ const mockDependencies: jest.Mocked<SiemMigrationsClientDependencies> = {
   inferenceService,
   actionsClient: {},
   telemetry: {},
+  experimentalFeatures: { ruleMigrationGraphv2: false },
 } as unknown as SiemMigrationsClientDependencies;
 
 const mockRequest = {} as unknown as KibanaRequest;
@@ -107,6 +112,32 @@ describe('RuleMigrationTaskRunner', () => {
       });
 
       await expect(taskRunner.setup('test-connector-id')).rejects.toThrow(errorMessage);
+    });
+
+    it('uses the v1 agent when ruleMigrationGraphv2 is disabled', async () => {
+      await taskRunner.setup('test-connector-id');
+      expect(mockGetRuleMigrationAgent).toHaveBeenCalledTimes(1);
+      expect(mockGetRuleMigrationAgentV2).not.toHaveBeenCalled();
+    });
+
+    it('uses the v2 agent when ruleMigrationGraphv2 is enabled', async () => {
+      const taskRunnerV2 = new RuleMigrationTaskRunner(
+        'test-migration-id',
+        'splunk',
+        mockRequest,
+        mockUser,
+        abortController,
+        mockRuleMigrationsDataClient,
+        mockLogger,
+        {
+          ...mockDependencies,
+          experimentalFeatures: { ruleMigrationGraphv2: true },
+        } as unknown as SiemMigrationsClientDependencies
+      );
+
+      await taskRunnerV2.setup('test-connector-id');
+      expect(mockGetRuleMigrationAgentV2).toHaveBeenCalledTimes(1);
+      expect(mockGetRuleMigrationAgent).not.toHaveBeenCalled();
     });
   });
 

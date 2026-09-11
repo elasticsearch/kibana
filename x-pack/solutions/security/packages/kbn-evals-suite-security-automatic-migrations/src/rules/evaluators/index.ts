@@ -10,6 +10,7 @@ export { createLookupJoinPreservationEvaluator } from './lookup_join_preservatio
 export { createEsqlValidityEvaluator } from './esql_validity';
 export { createIntegrationMatchEvaluator } from './integration_match';
 export { createPrebuiltRuleMatchEvaluator } from './prebuilt_rule_match';
+export { createPrebuiltRuleMatchJustificationEvaluator } from './prebuilt_rule_match_justification';
 export { createUnsupportedPatternDetectionEvaluator } from './unsupported_pattern_detection';
 export { createHallucinationDetectionEvaluator } from './hallucination_detection';
 export { createTranslationResultEvaluator } from './translation_result';

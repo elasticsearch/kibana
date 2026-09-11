@@ -114,7 +114,7 @@ export class SiemMigrationFakeLLM extends FakeLLM {
     return this.defaultResponse;
   }
 
-  async bindTools(): Promise<typeof this> {
+  bindTools(): typeof this {
     return this;
   }
 

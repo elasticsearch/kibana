@@ -56,6 +56,7 @@ async function getSiemRuleMigrationGraph(logger: Logger): Promise<Drawable> {
   const telemetryClient = {} as RuleMigrationTelemetryClient;
   const tools = getRulesMigrationTools('some_migration_id', {
     rulesClient: {} as unknown as RuleMigrationsDataClient,
+    ruleMigrationsRetriever,
   });
   const graph = getRuleMigrationAgent({
     model,

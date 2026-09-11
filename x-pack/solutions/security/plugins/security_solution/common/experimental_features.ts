@@ -160,6 +160,13 @@ export const allowedExperimentalValues = Object.freeze({
   siemMigrationsDisabled: false,
 
   /**
+   * Enables the v2 rule migration agent graph, which runs pre-built rule matching
+   * (security-team#18589) through a dedicated subgraph that generates its own semantic
+   * queries and calls pre-built rules search as a tool, instead of the v1 one-shot node.
+   */
+  ruleMigrationGraphv2: false,
+
+  /**
    * Enables the Defend Insights Policy Response Failure feature
    */
   defendInsightsPolicyResponseFailure: true,

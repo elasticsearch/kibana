@@ -14,9 +14,27 @@ export const createEsqlValidityEvaluator = (): Evaluator<RuleExample, RuleMigrat
   kind: 'CODE',
   direction: 'maximize',
   evaluate: async ({ output }): Promise<EvaluationResult> => {
-    const query = output?.rule?.elastic_rule?.query;
+    const elasticRule = output?.rule?.elastic_rule;
+    const query = elasticRule?.query;
 
     if (!query) {
+      // Matching a prebuilt rule replaces translation, so there is no ESQL to validate.
+      if (elasticRule?.prebuilt_rule_id) {
+        return {
+          score: null,
+          explanation: 'Matched a prebuilt rule — no translated ESQL expected',
+        };
+      }
+
+      // Emitting no query is the correct outcome for a rule the agent deemed untranslatable;
+      // whether that verdict was right is graded by Unsupported Pattern Detection.
+      if (output?.rule?.translation_result === 'untranslatable') {
+        return {
+          score: null,
+          explanation: 'Rule reported as untranslatable — no translated ESQL expected',
+        };
+      }
+
       return { score: 0, label: 'FAIL', explanation: 'No ESQL query produced' };
     }
 

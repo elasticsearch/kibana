@@ -5,7 +5,6 @@
  * 2.0.
  */
 
-import type { PublicMethodsOf } from '@kbn/utility-types';
 import type { RuleMigrationsRetriever } from '..';
 
 export const createRuleMigrationsRetrieverMock = () => {
@@ -31,7 +30,12 @@ export const createRuleMigrationsRetrieverMock = () => {
     initialize: jest.fn().mockResolvedValue(undefined),
   };
 
-  return mockRetriever as jest.Mocked<PublicMethodsOf<RuleMigrationsRetriever>>;
+  // RuleMigrationsRetriever has a private method, so a plain object literal can never structurally
+  // satisfy it — cast through `unknown`, then intersect back with the mock's own literal type so
+  // callers still get `resources`/`integrations`/`prebuiltRules`/`initialize` typed as jest mocks
+  // (e.g. `.mockResolvedValue(...)`) rather than losing that to `RuleMigrationsRetriever`'s real
+  // (unmocked) method signatures.
+  return mockRetriever as unknown as RuleMigrationsRetriever & typeof mockRetriever;
 };
 
 export const MockRuleMigrationsRetriever = jest

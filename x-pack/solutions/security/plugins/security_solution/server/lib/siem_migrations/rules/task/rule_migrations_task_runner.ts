@@ -14,7 +14,7 @@ import type {
 } from '../../../../../common/siem_migrations/model/rule_migration.gen';
 import type { RuleMigrationsDataClient } from '../data/rule_migrations_data_client';
 import type { MigrateRuleConfigSchema, MigrateRuleState } from './agent/types';
-import { getRuleMigrationAgent } from './agent';
+import { getRuleMigrationAgent, getRuleMigrationAgentV2 } from './agent';
 import { RuleMigrationsRetriever } from './retrievers';
 import type { SiemMigrationsClientDependencies } from '../../common/types';
 import type { StoredRuleMigrationRule } from '../types';
@@ -71,6 +71,7 @@ export class RuleMigrationTaskRunner extends SiemMigrationTaskRunner<
 
     const toolMap = getRulesMigrationTools(this.migrationId, {
       rulesClient: this.data,
+      ruleMigrationsRetriever: this.retriever,
     });
 
     const modelName = this.actionsClientChat.getModelName(model);
@@ -90,7 +91,11 @@ export class RuleMigrationTaskRunner extends SiemMigrationTaskRunner<
       this.logger
     );
 
-    const agent = getRuleMigrationAgent({
+    const getAgent = this.dependencies.experimentalFeatures.ruleMigrationGraphv2
+      ? getRuleMigrationAgentV2
+      : getRuleMigrationAgent;
+
+    const agent = getAgent({
       esqlKnowledgeBase,
       model,
       ruleMigrationsRetriever: this.retriever,

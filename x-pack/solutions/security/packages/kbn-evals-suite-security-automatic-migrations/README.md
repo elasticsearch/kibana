@@ -37,6 +37,31 @@ node scripts/evals run --suite security-automatic-migrations
 node scripts/evals start --suite security-automatic-migrations
 ```
 
+### Running against the v2 graph (`ruleMigrationGraphv2`)
+
+The v2 agent graph is enabled via the `evals_rule_migration_v2` server config set. Add
+`"serverConfigSet"` to the suite entry in
+[`.buildkite/pipelines/evals/evals.suites.json`](../../../../.buildkite/pipelines/evals/evals.suites.json)
+**before** starting the run, and revert it afterwards so CI stays on the default (v1) config:
+
+```json
+{
+  "id": "security-automatic-migrations",
+  "configPath": "x-pack/solutions/security/packages/kbn-evals-suite-security-automatic-migrations/playwright.config.ts",
+  "serverConfigSet": "evals_rule_migration_v2",
+  ...
+}
+```
+
+Verify the flag was picked up after `evals start` boots Scout:
+
+```bash
+grep ruleMigrationGraphv2 target/evals/scout.log
+```
+
+It should appear in the Kibana startup args. If absent, the run is on v1 regardless of the config
+set edit.
+
 ## CI
 
 - **On-demand:** Add label `evals:security-automatic-migrations` to a PR

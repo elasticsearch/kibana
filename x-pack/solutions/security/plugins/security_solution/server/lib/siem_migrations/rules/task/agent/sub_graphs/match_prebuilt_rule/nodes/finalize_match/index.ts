@@ -4,6 +4,4 @@
  * 2.0; you may not use this file except in compliance with the Elastic License
  * 2.0.
  */
-
-export { getRuleMigrationAgent } from './graph';
-export { getRuleMigrationAgentV2 } from './graph_v2';
+export { getFinalizeMatchNode } from './finalize_match';

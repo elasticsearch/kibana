@@ -23,6 +23,7 @@ import {
   formatRuleEvalSummary,
 } from './src/rules/evaluate_dataset';
 import type { RuleExample } from './datasets/rules/types';
+import { loadPrebuiltRules } from './src/rules/load_prebuilt_rules';
 
 type EvaluateDatasetFn = (args: { dataset: EvaluationDataset<DashboardExample> }) => Promise<void>;
 
@@ -38,6 +39,8 @@ interface WorkerFixtures {
   evaluateRuleDataset: EvaluateRuleDatasetFn;
   reportDisplayOptions: ReportDisplayOptions;
   reportModelScore: ReturnType<typeof createDefaultTerminalReporter>;
+  /** Not consumed directly — depend on this fixture to ensure the prebuilt rules are loaded once per worker. */
+  prebuiltRulesLoaded: void;
 }
 
 export const evaluate = base.extend<{}, WorkerFixtures>({
@@ -61,8 +64,15 @@ export const evaluate = base.extend<{}, WorkerFixtures>({
     },
     { scope: 'worker' },
   ],
+  prebuiltRulesLoaded: [
+    async ({ esClient, log }, use) => {
+      await loadPrebuiltRules(esClient, log);
+      await use();
+    },
+    { scope: 'worker' },
+  ],
   ruleMigrationClient: [
-    async ({ fetch, log }, use) => {
+    async ({ fetch, log, prebuiltRulesLoaded }, use) => {
       await use(new RuleMigrationClient(fetch, log));
     },
     { scope: 'worker' },
