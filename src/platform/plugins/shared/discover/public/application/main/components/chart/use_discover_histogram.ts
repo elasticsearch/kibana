@@ -27,6 +27,7 @@ import useLatest from 'react-use/lib/useLatest';
 import type { RequestAdapter } from '@kbn/inspector-plugin/common';
 import type { DatatableColumn } from '@kbn/expressions-plugin/common';
 import { ESQL_TABLE_TYPE } from '@kbn/data-plugin/common';
+import type { DataSource, EsqlSource } from '@kbn/data-source';
 import { useProfileAccessor } from '../../../../context_awareness';
 import { useDiscoverCustomization } from '../../../../customizations';
 import { useDiscoverServices } from '../../../../hooks/use_discover_services';
@@ -45,6 +46,7 @@ import { useIsEsqlMode } from '../../hooks/use_is_esql_mode';
 import {
   type InitialUnifiedHistogramLayoutProps,
   internalStateActions,
+  useCurrentDataSource,
   useCurrentDataView,
   useCurrentTabAction,
   useCurrentTabSelector,
@@ -199,6 +201,7 @@ export const useDiscoverHistogram = (
   } = requestParams;
 
   const dataView = useCurrentDataView();
+  const currentDataSource = useCurrentDataSource();
 
   const histogramCustomization = useDiscoverCustomization('unified_histogram');
 
@@ -260,6 +263,7 @@ export const useDiscoverHistogram = (
     (latestFetchDetails: DiscoverLatestFetchDetails | undefined) => {
       const { table, esqlQueryColumns } = getUnifiedHistogramTableForEsql({
         documentsValue: documents$.getValue(),
+        currentDataSource,
         isEsqlMode,
       });
 
@@ -471,9 +475,11 @@ const createTotalHitsObservable = (state$?: Observable<UnifiedHistogramState>) =
 
 function getUnifiedHistogramTableForEsql({
   documentsValue,
+  currentDataSource,
   isEsqlMode,
 }: {
   documentsValue: DataDocumentsMsg | undefined;
+  currentDataSource: DataSource;
   isEsqlMode: boolean;
 }) {
   if (
@@ -487,7 +493,10 @@ function getUnifiedHistogramTableForEsql({
     };
   }
 
-  const esqlQueryColumns = documentsValue?.esqlQueryColumns || EMPTY_ESQL_COLUMNS;
+  const esqlQueryColumns =
+    currentDataSource.kind === 'esql'
+      ? [...(currentDataSource as EsqlSource).resultColumns]
+      : EMPTY_ESQL_COLUMNS;
   return {
     table: {
       type: 'datatable' as const,

@@ -24,7 +24,7 @@ import { i18n } from '@kbn/i18n';
 import { isOfAggregateQueryType } from '@kbn/es-query';
 import { hasTransformationalCommand } from '@kbn/esql-utils';
 import { useDragDropContext } from '@kbn/dom-drag-drop';
-import { DataViewType, type DataView, type DataViewField } from '@kbn/data-views-plugin/public';
+import { type DataView, type DataViewField } from '@kbn/data-views-plugin/public';
 import {
   ErrorCallout,
   SHOW_FIELD_STATISTICS,
@@ -62,6 +62,7 @@ import { useIsEsqlMode } from '../../hooks/use_is_esql_mode';
 import { useRegisterDiscoverEsqlFeedback } from '../../hooks/use_register_discover_esql_feedback';
 import {
   internalStateActions,
+  useCurrentDataSource,
   useCurrentDataView,
   useCurrentTabAction,
   useCurrentTabSelector,
@@ -129,6 +130,7 @@ export function DiscoverLayout() {
     }
     return state.viewMode ?? VIEW_MODE.DOCUMENT_LEVEL;
   });
+  const currentDataSource = useCurrentDataSource();
   const dataView = useCurrentDataView();
   const dataViewLoading = useCurrentTabSelector((state) => state.isDataViewLoading);
   const dataState: DataMainMsg = useDataState(main$);
@@ -146,9 +148,10 @@ export function DiscoverLayout() {
   // in a non time based way using the regular _search API, since the internal
   // representation of those documents does not have the time field that _field_caps
   // reports us.
-  const isTimeBased = useMemo(() => {
-    return dataView.type !== DataViewType.ROLLUP && dataView.isTimeBased();
-  }, [dataView]);
+  const isTimeBased = useMemo(
+    () => !currentDataSource.isRollup() && currentDataSource.isTimeBased(),
+    [currentDataSource]
+  );
 
   const resultState = useMemo(
     () => getResultState(dataState.fetchStatus, dataState.foundDocuments ?? false),
@@ -219,9 +222,9 @@ export function DiscoverLayout() {
   const canSetBreakdownField = useMemo(
     () =>
       isOfAggregateQueryType(query)
-        ? dataView?.isTimeBased() && !hasTransformationalCommand(query.esql)
+        ? currentDataSource.isTimeBased() && !hasTransformationalCommand(query.esql)
         : true,
-    [dataView, query]
+    [currentDataSource, query]
   );
 
   const onAddBreakdownField = useCallback(

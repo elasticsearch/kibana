@@ -9,6 +9,7 @@
 
 import type { DataTableRecord } from '@kbn/discover-utils/types';
 import type { AggregateQuery, Query } from '@kbn/es-query';
+import { createMockEsqlSource } from '@kbn/data-source/src/__mocks__/esql_source.mock';
 import { dataViewMock } from '@kbn/discover-utils/src/__mocks__';
 import { VIEW_MODE } from '@kbn/saved-search-plugin/public';
 import type { EsHitRecord } from '@kbn/discover-utils';
@@ -733,8 +734,10 @@ describe('buildEsqlFetchSubscribe', () => {
     expect(toolkit.getCurrentTab().profileAppStateDefaults.fieldsToReset).toEqual('none');
   });
 
-  const makeEsqlCols = (names: string[]) =>
-    names.map((name) => ({ id: name, name, meta: { type: 'string' as const } }));
+  const makeEsqlSource = (names: string[]) =>
+    createMockEsqlSource(
+      names.map((name) => ({ name, type: 'keyword', source: 'esql-result' as const }))
+    );
 
   test('should clear stale columns from a STATS query to a zero-result query', async () => {
     const { replaceUrlState, dataState, tabId } = await setupTest({});
@@ -745,7 +748,7 @@ describe('buildEsqlFetchSubscribe', () => {
       result: [
         { id: '1', raw: { count: 1, bucket: 'a' }, flattened: {} } as unknown as DataTableRecord,
       ],
-      esqlQueryColumns: makeEsqlCols(['count', 'bucket']),
+      dataSource: makeEsqlSource(['count', 'bucket']),
       query: { esql: 'from the-data-view-title | stats count=count(*) by bucket' },
     });
     expect(replaceUrlState).toHaveBeenCalledWith({
@@ -754,11 +757,11 @@ describe('buildEsqlFetchSubscribe', () => {
     });
     replaceUrlState.mockClear();
 
-    const manyFields = makeEsqlCols(['f1', 'f2', 'f3', 'f4', 'f5', 'f6']);
+    const manyFields = makeEsqlSource(['f1', 'f2', 'f3', 'f4', 'f5', 'f6']);
     documents$.next({
       fetchStatus: FetchStatus.PARTIAL,
       result: [],
-      esqlQueryColumns: manyFields,
+      dataSource: manyFields,
       query: { esql: 'from the-data-view-title | where field1 > 9999999' },
     });
 
@@ -770,13 +773,13 @@ describe('buildEsqlFetchSubscribe', () => {
     const { replaceUrlState, dataState } = await setupTest({});
     const documents$ = dataState.data$.documents$;
 
-    const manyEsqlCols = makeEsqlCols(['f1', 'f2', 'f3', 'f4', 'f5', 'f6']);
+    const manyEsqlCols = makeEsqlSource(['f1', 'f2', 'f3', 'f4', 'f5', 'f6']);
     const manyRaw = { f1: 1, f2: 2, f3: 3, f4: 4, f5: 5, f6: 6 };
 
     documents$.next({
       fetchStatus: FetchStatus.PARTIAL,
       result: [{ id: '1', raw: manyRaw, flattened: manyRaw } as unknown as DataTableRecord],
-      esqlQueryColumns: manyEsqlCols,
+      dataSource: manyEsqlCols,
       query: { esql: 'from the-data-view-title' },
     });
     replaceUrlState.mockClear();
@@ -784,7 +787,7 @@ describe('buildEsqlFetchSubscribe', () => {
     documents$.next({
       fetchStatus: FetchStatus.PARTIAL,
       result: [],
-      esqlQueryColumns: manyEsqlCols,
+      dataSource: manyEsqlCols,
       query: { esql: 'from the-data-view-title' },
     });
 
@@ -800,7 +803,7 @@ describe('buildEsqlFetchSubscribe', () => {
     documents$.next({
       fetchStatus: FetchStatus.PARTIAL,
       result: [],
-      esqlQueryColumns: makeEsqlCols(['field1', 'field2', 'field3', 'field4', 'field5', 'field6']),
+      dataSource: makeEsqlSource(['field1', 'field2', 'field3', 'field4', 'field5', 'field6']),
       query: { esql: 'from the-data-view-title' },
     });
     expect(replaceUrlState).toHaveBeenCalledTimes(0);
@@ -809,7 +812,7 @@ describe('buildEsqlFetchSubscribe', () => {
     documents$.next({
       fetchStatus: FetchStatus.PARTIAL,
       result: [],
-      esqlQueryColumns: makeEsqlCols(['field1', 'field3', 'field4', 'field5', 'field6', 'field7']),
+      dataSource: makeEsqlSource(['field1', 'field3', 'field4', 'field5', 'field6', 'field7']),
       query: { esql: 'from the-data-view-title | where field1 > 0' },
     });
 
@@ -829,7 +832,7 @@ describe('buildEsqlFetchSubscribe', () => {
     documents$.next({
       fetchStatus: FetchStatus.PARTIAL,
       result: [],
-      esqlQueryColumns: makeEsqlCols(['field1', 'field3', 'field4', 'field5', 'field6', 'field7']),
+      dataSource: makeEsqlSource(['field1', 'field3', 'field4', 'field5', 'field6', 'field7']),
       query: { esql: 'from the-data-view-title' },
     });
     expect(replaceUrlState).toHaveBeenCalledTimes(0);
@@ -860,7 +863,7 @@ describe('buildEsqlFetchSubscribe', () => {
     documents$.next({
       fetchStatus: FetchStatus.PARTIAL,
       result: [],
-      esqlQueryColumns: makeEsqlCols(['field1', 'field2', 'field3', 'field4', 'field5', 'field6']),
+      dataSource: makeEsqlSource(['field1', 'field2', 'field3', 'field4', 'field5', 'field6']),
       query: { esql: 'from the-data-view-title' },
     });
     expect(replaceUrlState).toHaveBeenCalledTimes(0);
@@ -869,7 +872,7 @@ describe('buildEsqlFetchSubscribe', () => {
     documents$.next({
       fetchStatus: FetchStatus.PARTIAL,
       result: [],
-      esqlQueryColumns: makeEsqlCols(['field1', 'field3', 'field4', 'field5', 'field6', 'field7']),
+      dataSource: makeEsqlSource(['field1', 'field3', 'field4', 'field5', 'field6', 'field7']),
       query: { esql: 'from the-data-view-title | where field1 > 0' },
     });
 
@@ -889,7 +892,7 @@ describe('buildEsqlFetchSubscribe', () => {
     documents$.next({
       fetchStatus: FetchStatus.PARTIAL,
       result: [],
-      esqlQueryColumns: makeEsqlCols(['field1', 'field2', 'field3', 'field4', 'field5', 'field6']),
+      dataSource: makeEsqlSource(['field1', 'field2', 'field3', 'field4', 'field5', 'field6']),
       query: { esql: 'from the-data-view-title' },
     });
     expect(replaceUrlState).toHaveBeenCalledTimes(0);
@@ -904,7 +907,7 @@ describe('buildEsqlFetchSubscribe', () => {
     documents$.next({
       fetchStatus: FetchStatus.PARTIAL,
       result: [],
-      esqlQueryColumns: makeEsqlCols(['field1', 'field3', 'field4', 'field5', 'field6', 'field7']),
+      dataSource: makeEsqlSource(['field1', 'field3', 'field4', 'field5', 'field6', 'field7']),
       query: { esql: 'from the-data-view-title | where field1 > 0' },
     });
 

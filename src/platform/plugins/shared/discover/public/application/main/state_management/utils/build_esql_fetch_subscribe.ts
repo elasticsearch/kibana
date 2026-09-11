@@ -11,6 +11,9 @@ import { isOfAggregateQueryType } from '@kbn/es-query';
 import { getIndexPatternFromESQLQuery, hasTransformationalCommand } from '@kbn/esql-utils';
 import { SOURCE_COLUMN } from '@kbn/unified-data-table';
 import { isEqual } from 'lodash';
+import type { DataSourceService } from '@kbn/data-source';
+import { registerEsqlSourceInDataViewsCache, unregisterFromDataViewsCache } from '@kbn/data-source';
+import type { DataViewsPublicPluginStart } from '@kbn/data-views-plugin/public';
 import type { DataDocumentsMsg, SavedSearchData } from '../discover_data_state_container';
 import { FetchStatus } from '../../../types';
 import type { InternalStateStore, TabActionInjector, TabState } from '../redux';
@@ -30,11 +33,15 @@ export const buildEsqlFetchSubscribe = ({
   dataSubjects,
   getCurrentTab,
   injectCurrentTab,
+  dataSourceService,
+  dataViews,
 }: {
   internalState: InternalStateStore;
   dataSubjects: SavedSearchData;
   getCurrentTab: () => TabState;
   injectCurrentTab: TabActionInjector;
+  dataSourceService: DataSourceService;
+  dataViews: DataViewsPublicPluginStart;
 }) => {
   let prevEsqlData: {
     initialFetch: boolean;
@@ -48,9 +55,17 @@ export const buildEsqlFetchSubscribe = ({
     defaultColumns: [],
   };
 
+  let registeredEsqlSourceId: string | undefined;
+
   const cleanupEsql = () => {
     if (!prevEsqlData.query) {
       return;
+    }
+
+    if (registeredEsqlSourceId) {
+      dataSourceService.unregisterEsqlSource(registeredEsqlSourceId);
+      unregisterFromDataViewsCache(dataViews, registeredEsqlSourceId);
+      registeredEsqlSourceId = undefined;
     }
 
     // cleanup when it's not an ES|QL query
@@ -119,7 +134,7 @@ export const buildEsqlFetchSubscribe = ({
     let nextDefaultColumns = prevEsqlData.defaultColumns;
 
     const responseColumns =
-      next.esqlQueryColumns?.map((c) => c.name) ??
+      next.dataSource?.getColumns().map((c) => c.name) ??
       (next.result?.length ? Object.keys(next.result[0].raw) : undefined);
 
     if (responseColumns !== undefined) {
@@ -194,6 +209,18 @@ export const buildEsqlFetchSubscribe = ({
           injectCurrentTab(internalStateActions.updateAppStateAndReplaceUrl)({
             appState: nextState,
           })
+        );
+      }
+    }
+
+    if (next.dataSource?.kind === 'esql') {
+      dataSourceService.registerEsqlSource(next.dataSource);
+      // TODO: remove once DSL code no longer looks up DataViews for ES|QL sources
+      const nextDataView = await registerEsqlSourceInDataViewsCache(dataViews, next.dataSource);
+      registeredEsqlSourceId = next.dataSource.id;
+      if (nextDataView) {
+        await internalState.dispatch(
+          injectCurrentTab(internalStateActions.assignNextDataView)({ dataView: nextDataView })
         );
       }
     }

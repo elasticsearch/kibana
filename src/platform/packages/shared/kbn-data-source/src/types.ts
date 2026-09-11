@@ -48,7 +48,7 @@ export interface Column {
  * 3. {@link EsqlSource} must never call `_field_caps`.
  * 4. {@link serialize} returns identity only — columns are runtime, never persisted.
  */
-export interface DataSource extends DataViewBase {
+export interface DataSourceBase extends DataViewBase {
   readonly kind: DataSourceKind;
 
   /** Always present for a constructed `DataSource` (narrowed from `DataViewBase`'s optional id). */
@@ -82,6 +82,9 @@ export interface DataSource extends DataViewBase {
    * result set is irrelevant.
    */
   isTimeBased(): boolean;
+
+  /** `EsqlSource` always returns `false`; `DataViewSource` returns `true` when the underlying `DataView` is a rollup index pattern. */
+  isRollup(): boolean;
 
   /** `EsqlSource` always returns `false`; `DataViewSource` delegates to the underlying `DataView`. */
   isPersisted(): boolean;

@@ -9,6 +9,7 @@
 
 import type { AttachmentInput } from '@kbn/agent-builder-common/attachments';
 import { AttachmentType } from '@kbn/agent-builder-common/attachments';
+import type { Column } from '@kbn/data-source';
 import { ESQL_QUERY_RESULTS_ATTACHMENT_TYPE } from '../../../../../common/agent_builder';
 import {
   toDiscoverQuery,
@@ -89,10 +90,10 @@ describe('buildScreenContext', () => {
 
 describe('buildEsqlResultsAttachment', () => {
   const baseColumns = [
-    { name: '@timestamp', meta: { type: 'date' } },
-    { name: 'status', meta: { type: 'keyword' } },
-    { name: 'bytes' },
-  ];
+    { name: '@timestamp', type: 'date', source: 'esql-result' },
+    { name: 'status', type: 'keyword', source: 'esql-result' },
+    { name: 'bytes', type: 'unknown', source: 'esql-result' },
+  ] as unknown as Column[];
 
   const baseRows = [
     { flattened: { '@timestamp': '2026-04-10T00:00:00Z', status: 'success', bytes: 1024 } },
@@ -133,7 +134,7 @@ describe('buildEsqlResultsAttachment', () => {
 
     const attachment = buildEsqlResultsAttachment(
       'FROM logs-*',
-      [{ name: 'status', meta: { type: 'keyword' } }],
+      [{ name: 'status', type: 'keyword', source: 'esql-result' }] as unknown as Column[],
       manyRows,
       20,
       undefined
@@ -145,10 +146,10 @@ describe('buildEsqlResultsAttachment', () => {
 
   it('filters out .keyword columns when the base field exists', () => {
     const columns = [
-      { name: 'host', meta: { type: 'string' } },
-      { name: 'host.keyword', meta: { type: 'string' } },
-      { name: 'status.keyword', meta: { type: 'keyword' } },
-    ];
+      { name: 'host', type: 'string', source: 'esql-result' },
+      { name: 'host.keyword', type: 'string', source: 'esql-result' },
+      { name: 'status.keyword', type: 'keyword', source: 'esql-result' },
+    ] as unknown as Column[];
 
     const attachment = buildEsqlResultsAttachment('FROM logs-*', columns, [], 0, undefined);
 
@@ -159,8 +160,9 @@ describe('buildEsqlResultsAttachment', () => {
   it('limits columns to 100', () => {
     const manyColumns = Array.from({ length: 150 }, (_, i) => ({
       name: `col_${i}`,
-      meta: { type: 'keyword' },
-    }));
+      type: 'keyword',
+      source: 'esql-result',
+    })) as unknown as Column[];
 
     const attachment = buildEsqlResultsAttachment('FROM logs-*', manyColumns, [], 0, undefined);
 
@@ -174,7 +176,7 @@ describe('buildEsqlResultsAttachment', () => {
 
     const attachment = buildEsqlResultsAttachment(
       'FROM logs-*',
-      [{ name: 'message', meta: { type: 'text' } }],
+      [{ name: 'message', type: 'text', source: 'esql-result' }] as unknown as Column[],
       rows,
       1,
       undefined
@@ -184,17 +186,17 @@ describe('buildEsqlResultsAttachment', () => {
     expect(sampleRows[0].message).toBe('x'.repeat(100) + '...');
   });
 
-  it('defaults column type to unknown when meta is missing', () => {
+  it('uses column type directly', () => {
     const attachment = buildEsqlResultsAttachment(
       'FROM logs-*',
-      [{ name: 'field_no_meta' }],
+      [{ name: 'field_unknown', type: 'unknown', source: 'esql-result' }] as unknown as Column[],
       [],
       0,
       undefined
     );
 
     const { columns } = getEsqlResultsData(attachment);
-    expect(columns[0]).toEqual({ name: 'field_no_meta', type: 'unknown' });
+    expect(columns[0]).toEqual({ name: 'field_unknown', type: 'unknown' });
   });
 
   it('excludes undefined values from sample rows', () => {
@@ -203,9 +205,9 @@ describe('buildEsqlResultsAttachment', () => {
     const attachment = buildEsqlResultsAttachment(
       'FROM logs-*',
       [
-        { name: 'status', meta: { type: 'keyword' } },
-        { name: 'missing_field', meta: { type: 'keyword' } },
-      ],
+        { name: 'status', type: 'keyword', source: 'esql-result' },
+        { name: 'missing_field', type: 'keyword', source: 'esql-result' },
+      ] as unknown as Column[],
       rows,
       1,
       undefined

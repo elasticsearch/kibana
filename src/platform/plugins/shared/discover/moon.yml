@@ -83,6 +83,7 @@ dependsOn:
   - '@kbn/calculate-width-from-char-count'
   - '@kbn/deeplinks-observability'
   - '@kbn/esql-utils'
+  - '@kbn/data-source'
   - '@kbn/managed-content-badge'
   - '@kbn/deeplinks-analytics'
   - '@kbn/shared-ux-markdown'

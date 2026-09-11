@@ -18,6 +18,7 @@ import {
   type ProfileAppStateDefaultFields,
 } from '../redux';
 import { getProfileAppStateDefaults, getFieldsToReset } from './profile_app_state_defaults';
+import type { Column } from '@kbn/data-source';
 
 const emptyDataView = buildDataViewMock({
   name: 'emptyDataView',
@@ -137,8 +138,8 @@ describe('getProfileAppStateDefaults', () => {
       }).getPostFetchState({
         defaultColumns: ['messsage', 'bytes'],
         esqlQueryColumns: [
-          { id: '1', name: 'foo', meta: { type: 'string' } },
-          { id: '2', name: 'bar', meta: { type: 'string' } },
+          { name: 'foo', type: 'string', source: 'esql-result' } as Column,
+          { name: 'bar', type: 'string', source: 'esql-result' } as Column,
         ],
       });
       expect(appStateFromEsqlColumns).toEqual({

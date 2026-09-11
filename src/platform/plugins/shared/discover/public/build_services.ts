@@ -33,6 +33,7 @@ import type {
   DataPublicPluginStart,
 } from '@kbn/data-plugin/public';
 import type { DataViewsContract } from '@kbn/data-views-plugin/public';
+import { DataSourceService } from '@kbn/data-source';
 import type { ExpressionsStart } from '@kbn/expressions-plugin/public';
 import type { Start as InspectorPublicPluginStart } from '@kbn/inspector-plugin/public';
 import type { SharePluginStart } from '@kbn/share-plugin/public';
@@ -127,6 +128,7 @@ export interface DiscoverServices {
   filterManager: FilterManager;
   fieldFormats: FieldFormatsStart;
   dataViews: DataViewsContract;
+  dataSourceService: DataSourceService;
   inspector: InspectorPublicPluginStart;
   metadata: { branch: string; version: string };
   navigation: NavigationPublicPluginStart;
@@ -237,6 +239,7 @@ export const buildServices = ({
     initialTabStateService: new InitialTabStateService(),
     setHeaderActionMenu,
     dataViews: plugins.data.dataViews,
+    dataSourceService: new DataSourceService(plugins.data.dataViews),
     inspector: plugins.inspector,
     metadata: {
       branch: context.env.packageInfo.branch,

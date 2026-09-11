@@ -13,6 +13,7 @@ import type { ISearchSource } from '@kbn/data-plugin/common';
 import type { BehaviorSubject } from 'rxjs';
 import { combineLatest, distinctUntilChanged, filter, firstValueFrom, race, switchMap } from 'rxjs';
 import { isOfAggregateQueryType } from '@kbn/es-query';
+import { DataViewSource } from '@kbn/data-source';
 import { updateVolatileSearchSource } from './update_search_source';
 import {
   checkHitCount,
@@ -31,6 +32,7 @@ import type {
   DataMsg,
   SavedSearchData,
 } from '../state_management/discover_data_state_container';
+import type { RecordsFetchResponse } from '../../types';
 import type { DiscoverServices } from '../../../build_services';
 import { fetchEsql } from './fetch_esql';
 import type { InternalStateStore, TabState } from '../state_management/redux';
@@ -108,7 +110,7 @@ export function fetchAll(
     });
 
     // Start fetching all required requests
-    const response = isEsqlQuery
+    const response: Promise<RecordsFetchResponse> = isEsqlQuery
       ? fetchEsql({
           query,
           dataView,
@@ -132,7 +134,7 @@ export function fetchAll(
 
     // Handle results of the individual queries and forward the results to the corresponding dataSubjects
     response
-      .then(({ records, esqlQueryColumns, interceptedWarnings = [], esqlHeaderWarning }) => {
+      .then(({ records, dataSource: esqlSource, interceptedWarnings = [], esqlHeaderWarning }) => {
         fetchAllRequestsOnlyTracker.reportEvent({ requestAdapter: inspectorAdapters.requests });
 
         if (isEsqlQuery) {
@@ -174,7 +176,7 @@ export function fetchAll(
         dataSubjects.documents$.next({
           fetchStatus,
           result: records,
-          esqlQueryColumns,
+          dataSource: esqlSource ?? (dataView.id ? new DataViewSource(dataView) : undefined),
           esqlHeaderWarning,
           interceptedWarnings,
           query,

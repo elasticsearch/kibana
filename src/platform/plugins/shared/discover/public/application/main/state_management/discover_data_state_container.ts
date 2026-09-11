@@ -21,7 +21,6 @@ import {
 } from 'rxjs';
 import type { AutoRefreshDoneFn } from '@kbn/data-plugin/public';
 import type { IKbnUrlStateStorage } from '@kbn/kibana-utils-plugin/public';
-import type { DatatableColumn } from '@kbn/expressions-plugin/common';
 import { RequestAdapter } from '@kbn/inspector-plugin/common';
 import type { AggregateQuery, Query } from '@kbn/es-query';
 import { isOfAggregateQueryType } from '@kbn/es-query';
@@ -33,8 +32,8 @@ import {
   getChartHidden,
   getTableHidden,
   getSidebarHidden,
-  getEsqlDataView,
 } from '@kbn/discover-utils';
+import type { DataSource } from '@kbn/data-source';
 import { AbortReason } from '@kbn/kibana-utils-plugin/common';
 import { getESQLStatsQueryMeta } from '@kbn/esql-utils';
 import { isEqual, sortBy } from 'lodash';
@@ -79,7 +78,7 @@ export interface DataMainMsg extends DataMsg {
 
 export interface DataDocumentsMsg extends DataMsg {
   result?: DataTableRecord[];
-  esqlQueryColumns?: DatatableColumn[]; // columns from ES|QL request
+  dataSource?: DataSource;
   esqlHeaderWarning?: string;
   interceptedWarnings?: SearchResponseWarning[]; // warnings (like shard failures)
 }
@@ -240,11 +239,22 @@ export function getDataStateContainer({
     dataSubjects,
     getCurrentTab,
     injectCurrentTab,
+    dataSourceService: services.dataSourceService,
+    dataViews: services.dataViews,
   });
 
   // The main subscription to handle state changes
   dataSubjects.documents$.pipe(switchMap(esqlFetchSubscribe)).subscribe();
   // ES|QL state cleanup is handled by Redux listener middleware (resetOnSavedSearchChange action)
+
+  // Forward the post-fetch EsqlSource (with populated resultColumns) into currentDataSource$
+  dataSubjects.documents$
+    .pipe(filter(({ dataSource }) => !!dataSource))
+    .subscribe(({ dataSource }) => {
+      selectTabRuntimeState(runtimeStateManager, getCurrentTab().id).currentDataSource$.next(
+        dataSource!
+      );
+    });
 
   /**
    * handler emitted by `timefilter.getAutoRefreshFetch$()`
@@ -555,11 +565,11 @@ export function getDataStateContainer({
                 return;
               }
 
-              const { esqlQueryColumns } = dataSubjects.documents$.getValue();
+              const { dataSource } = dataSubjects.documents$.getValue();
               const defaultColumns = uiSettings.get<string[]>(DEFAULT_COLUMNS_SETTING, []);
               const postFetchStateUpdate = resolvedProfileAppStateDefaults?.getPostFetchState({
                 defaultColumns,
-                esqlQueryColumns,
+                esqlQueryColumns: dataSource?.getColumns(),
               });
 
               if (postFetchStateUpdate) {
@@ -613,21 +623,7 @@ export function getDataStateContainer({
   }
 
   const fetchQuery = async () => {
-    const query = getCurrentTab().appState.query;
-    const { currentDataView$ } = selectTabRuntimeState(runtimeStateManager, getCurrentTab().id);
-    const currentDataView = currentDataView$.getValue();
-
-    if (isOfAggregateQueryType(query)) {
-      const nextDataView = await getEsqlDataView(query, currentDataView, services);
-      if (nextDataView !== currentDataView) {
-        internalState.dispatch(
-          injectCurrentTab(internalStateActions.assignNextDataView)({ dataView: nextDataView })
-        );
-      }
-    }
-
     refetch$.next(undefined);
-
     return refetch$;
   };
 

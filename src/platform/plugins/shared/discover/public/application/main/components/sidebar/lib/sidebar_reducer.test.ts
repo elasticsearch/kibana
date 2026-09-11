@@ -19,7 +19,8 @@ import {
   getInitialState,
 } from './sidebar_reducer';
 import { DataViewField } from '@kbn/data-views-plugin/common';
-import type { DatatableColumn } from '@kbn/expressions-plugin/common';
+import { DataViewSource } from '@kbn/data-source';
+import { createMockEsqlSource } from '@kbn/data-source/src/__mocks__/esql_source.mock';
 
 describe('sidebar reducer', function () {
   it('should set an initial state', function () {
@@ -76,8 +77,7 @@ describe('sidebar reducer', function () {
     const resultForDocuments = discoverSidebarReducer(state, {
       type: DiscoverSidebarReducerActionType.DOCUMENTS_LOADED,
       payload: {
-        isEsqlMode: false,
-        dataView: stubDataViewWithoutTimeField,
+        dataSource: new DataViewSource(stubDataViewWithoutTimeField),
         fieldCounts,
       },
     });
@@ -100,31 +100,27 @@ describe('sidebar reducer', function () {
     const resultForEsqlQuery = discoverSidebarReducer(state, {
       type: DiscoverSidebarReducerActionType.DOCUMENTS_LOADED,
       payload: {
-        isEsqlMode: true,
-        dataView: stubDataViewWithoutTimeField,
+        dataSource: createMockEsqlSource(
+          [],
+          [
+            {
+              id: '1',
+              name: 'text1',
+              meta: { type: 'number' },
+              isNull: true,
+            },
+            {
+              id: '2',
+              name: 'text2',
+              meta: { type: 'string', esType: 'keyword' },
+            },
+          ]
+        ),
         fieldCounts: {},
-        esqlQueryColumns: [
-          {
-            id: '1',
-            name: 'text1',
-            meta: {
-              type: 'number',
-            },
-            isNull: true,
-          },
-          {
-            id: '2',
-            name: 'text2',
-            meta: {
-              type: 'string',
-              esType: 'keyword',
-            },
-          },
-        ] as DatatableColumn[],
       },
     });
     expect(resultForEsqlQuery).toStrictEqual({
-      dataView: stubDataViewWithoutTimeField,
+      dataView,
       allFields: [
         new DataViewField({
           name: 'text1',
@@ -152,8 +148,7 @@ describe('sidebar reducer', function () {
     const resultWhileLoading = discoverSidebarReducer(state, {
       type: DiscoverSidebarReducerActionType.DOCUMENTS_LOADED,
       payload: {
-        isEsqlMode: false,
-        dataView: stubDataViewWithoutTimeField,
+        dataSource: new DataViewSource(stubDataViewWithoutTimeField),
         fieldCounts: null,
       },
     });

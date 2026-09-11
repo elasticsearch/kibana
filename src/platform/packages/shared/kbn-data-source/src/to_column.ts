@@ -12,6 +12,14 @@ import type { DatatableColumn } from '@kbn/expressions-plugin/common';
 import type { KBN_FIELD_TYPES } from '@kbn/field-types';
 import type { Column } from './types';
 
+export function columnToFieldBase(column: Column): DataViewFieldBase {
+  return {
+    name: column.name,
+    type: column.type,
+    esTypes: column.esType ? [column.esType] : undefined,
+  };
+}
+
 /**
  * Source-specific properties (`searchable`, `aggregatable`, runtime field metadata) are
  * intentionally dropped — consumers that need them should narrow to `DataViewSource.getDataView()`.

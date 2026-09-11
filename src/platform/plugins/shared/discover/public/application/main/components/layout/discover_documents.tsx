@@ -36,7 +36,6 @@ import {
   DataLoadingState,
   useColumns,
   type DataTableColumnsMeta,
-  getTextBasedColumnsMeta,
   getRenderCustomToolbarWithElements,
   getDataGridDensity,
   getRowHeight,
@@ -70,6 +69,7 @@ import {
 import { useFetchMoreRecords } from './use_fetch_more_records';
 import { onResizeGridColumn } from '../../../../utils/on_resize_grid_column';
 import { showTimeFieldColumn } from '../../../../utils/show_time_field_column';
+import { columnsToColumnsMeta } from '../../../../utils/columns_to_columns_meta';
 import { useIsEsqlMode } from '../../hooks/use_is_esql_mode';
 import type {
   CellRenderersExtensionParams,
@@ -79,6 +79,7 @@ import { useAdditionalCellActions, useProfileAccessor } from '../../../../contex
 import {
   DEFAULT_EXPANDED_DOC_OWNER,
   internalStateActions,
+  useCurrentDataSource,
   useCurrentTabAction,
   useCurrentTabSelector,
   useCurrentTabDataStateContainer,
@@ -154,6 +155,7 @@ function DiscoverDocumentsComponent({
   const isEsqlMode = useIsEsqlMode();
   const dataStateContainer = useCurrentTabDataStateContainer();
   const documentState = useDataState(dataStateContainer.data$.documents$);
+  const currentDataSource = useCurrentDataSource();
   const isWarningCalloutDismissed = useCurrentTabSelector(
     (state) => state.isWarningCalloutDismissed
   );
@@ -322,10 +324,10 @@ function DiscoverDocumentsComponent({
 
   const columnsMeta: DataTableColumnsMeta | undefined = useMemo(
     () =>
-      documentState.esqlQueryColumns
-        ? getTextBasedColumnsMeta(documentState.esqlQueryColumns)
+      currentDataSource.kind === 'esql'
+        ? columnsToColumnsMeta(currentDataSource.getColumns())
         : undefined,
-    [documentState.esqlQueryColumns]
+    [currentDataSource]
   );
   const filters = useCurrentTabSelector(selectTabCombinedFilters);
 

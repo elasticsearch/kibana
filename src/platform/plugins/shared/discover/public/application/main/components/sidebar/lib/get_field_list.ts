@@ -63,7 +63,9 @@ export function getDataViewFieldList(
   return [...dataViewFields, ...unknownFields];
 }
 
-export function getEsqlQueryFieldList(esqlQueryColumns?: DatatableColumn[]): DataViewField[] {
+export function getEsqlQueryFieldList(
+  esqlQueryColumns?: readonly DatatableColumn[]
+): DataViewField[] {
   if (!esqlQueryColumns) {
     return [];
   }

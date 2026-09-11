@@ -8,9 +8,10 @@
  */
 
 import type { DataView } from '@kbn/data-views-plugin/common';
-import type { DataSource } from './types';
 import type { EsqlSource } from './sources/esql_source';
 import { DataViewSource } from './sources/data_view_source';
+
+type DataSource = EsqlSource | DataViewSource;
 
 /**
  * Minimal DataView lookup contract used by `DataSourceService`.

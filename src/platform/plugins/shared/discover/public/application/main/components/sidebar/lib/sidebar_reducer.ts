@@ -8,7 +8,7 @@
  */
 
 import { type DataView, type DataViewField } from '@kbn/data-views-plugin/common';
-import type { DatatableColumn } from '@kbn/expressions-plugin/common';
+import type { DataSource } from '@kbn/data-source';
 import { getDataViewFieldList, getEsqlQueryFieldList } from './get_field_list';
 
 export enum DiscoverSidebarReducerActionType {
@@ -40,10 +40,8 @@ type DiscoverSidebarReducerAction =
   | {
       type: DiscoverSidebarReducerActionType.DOCUMENTS_LOADED;
       payload: {
+        dataSource: DataSource | undefined;
         fieldCounts: DiscoverSidebarReducerState['fieldCounts'];
-        esqlQueryColumns?: DatatableColumn[]; // from ES|QL searches
-        isEsqlMode: boolean;
-        dataView: DataView | null | undefined;
       };
     };
 
@@ -96,20 +94,28 @@ export function discoverSidebarReducer(
         allFields: action.payload.isEsqlMode ? null : state.allFields,
         status: DiscoverSidebarReducerStatus.PROCESSING,
       };
-    case DiscoverSidebarReducerActionType.DOCUMENTS_LOADED:
-      const mappedAndUnmappedFields = action.payload.isEsqlMode
-        ? getEsqlQueryFieldList(action.payload.esqlQueryColumns)
-        : getDataViewFieldList(action.payload.dataView, action.payload.fieldCounts);
+    case DiscoverSidebarReducerActionType.DOCUMENTS_LOADED: {
+      const { dataSource, fieldCounts } = action.payload;
+      const mappedAndUnmappedFields =
+        dataSource?.kind === 'esql'
+          ? getEsqlQueryFieldList(dataSource.resultColumns)
+          : getDataViewFieldList(
+              dataSource?.getDataView() ?? state.dataView ?? undefined,
+              fieldCounts
+            );
+      const nextDataView =
+        dataSource?.kind === 'index-pattern' ? dataSource.getDataView() : state.dataView;
       return {
         ...state,
-        dataView: action.payload.dataView,
-        fieldCounts: action.payload.fieldCounts,
+        dataView: nextDataView,
+        fieldCounts,
         allFields: mappedAndUnmappedFields,
         status:
           mappedAndUnmappedFields === null
             ? DiscoverSidebarReducerStatus.PROCESSING
             : DiscoverSidebarReducerStatus.COMPLETED,
       };
+    }
   }
 
   return state;

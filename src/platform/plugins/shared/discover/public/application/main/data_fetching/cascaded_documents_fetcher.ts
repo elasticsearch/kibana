@@ -15,10 +15,10 @@ import { i18n } from '@kbn/i18n';
 import { isEqual } from 'lodash';
 import type { DataTableColumnsMeta, DataTableRecord } from '@kbn/discover-utils';
 import { RequestAdapter } from '@kbn/inspector-plugin/public';
-import { getTextBasedColumnsMeta } from '@kbn/unified-data-table';
 import type { DiscoverServices } from '../../../build_services';
 import { fetchEsql } from './fetch_esql';
 import type { ScopedProfilesManager } from '../../../context_awareness';
+import { columnsToColumnsMeta } from '../../../utils/columns_to_columns_meta';
 
 export interface FetchCascadedDocumentsParams extends CascadeQueryArgs {
   nodeId: string;
@@ -89,7 +89,7 @@ export class CascadedDocumentsFetcher {
         return [];
       }
 
-      const { esqlQueryColumns, records: fetchedRecords } = await fetchEsql({
+      const { dataSource: esqlSource, records: fetchedRecords } = await fetchEsql({
         query: cascadeQuery,
         esqlVariables,
         dataView,
@@ -114,7 +114,7 @@ export class CascadedDocumentsFetcher {
       records = fetchedRecords;
       this.stateManager.setCascadedDocuments(nodeId, records);
 
-      const columnsMeta = esqlQueryColumns ? getTextBasedColumnsMeta(esqlQueryColumns) : {};
+      const columnsMeta = esqlSource ? columnsToColumnsMeta(esqlSource.getColumns()) : {};
       const previousColumnsMeta = this.stateManager.getColumnsMeta();
       if (!isEqual(previousColumnsMeta, columnsMeta)) {
         this.stateManager.setColumnsMeta(columnsMeta);

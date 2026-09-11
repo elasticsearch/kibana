@@ -13,10 +13,12 @@ import { i18n } from '@kbn/i18n';
 import { isOfAggregateQueryType, type AggregateQuery, type Query } from '@kbn/es-query';
 import type { BrowserApiToolDefinition } from '@kbn/agent-builder-browser/tools/browser_api_tool';
 import { AttachmentType, type AttachmentInput } from '@kbn/agent-builder-common/attachments';
+import type { Column } from '@kbn/data-source';
 import { useDiscoverServices } from '../../../../hooks/use_discover_services';
 import {
   internalStateActions,
   useAppStateSelector,
+  useCurrentDataSource,
   useCurrentDataView,
   useCurrentTabDataStateContainer,
   useCurrentTabSelector,
@@ -100,18 +102,18 @@ export const buildScreenContext = (
 
 export const buildEsqlResultsAttachment = (
   esqlQuery: string,
-  esqlQueryColumns: Array<{ name: string; meta?: { type?: string } }>,
+  esqlColumns: readonly Column[],
   result: Array<{ flattened: Record<string, unknown> }>,
   totalHits: number,
   timeRange: { from: string; to: string } | undefined,
   playbookContribution?: DeepAnalysisPlaybookExtension
 ): AttachmentInput => {
   // Build a set of base field names to detect .keyword duplicates
-  const columnNames = new Set(esqlQueryColumns.map((col) => col.name));
+  const columnNames = new Set(esqlColumns.map((col) => col.name));
 
   // Filter out .keyword columns when the base field also exists (e.g. skip "host.keyword" if "host" exists)
   // no need to send columns with the same content twice
-  const filteredColumns = esqlQueryColumns.filter((col) => {
+  const filteredColumns = esqlColumns.filter((col) => {
     if (col.name.endsWith('.keyword')) {
       const baseName = col.name.slice(0, -'.keyword'.length);
       return !columnNames.has(baseName);
@@ -121,7 +123,7 @@ export const buildEsqlResultsAttachment = (
 
   const columns = filteredColumns.slice(0, MAX_COLUMNS).map((col) => ({
     name: col.name,
-    type: col.meta?.type ?? 'unknown',
+    type: col.type,
   }));
 
   const sampleRows = result.slice(0, MAX_SAMPLE_ROWS).map((row) => {
@@ -165,6 +167,7 @@ export const DiscoverAgentBuilderConfig = () => {
 
   const dataStateContainer = useCurrentTabDataStateContainer();
   const documentState = useDataState(dataStateContainer.data$.documents$);
+  const currentDataSource = useCurrentDataSource();
   const { totalHits } = useFetchMoreRecords();
   const getDeepAnalysisPlaybookAccessor = useProfileAccessor('getDeepAnalysisPlaybook');
 
@@ -174,7 +177,7 @@ export const DiscoverAgentBuilderConfig = () => {
     documentState.fetchStatus === FetchStatus.COMPLETE &&
     documentState.result &&
     documentState.result.length > 0 &&
-    Boolean(documentState.esqlQueryColumns);
+    currentDataSource.kind === 'esql';
 
   // Use a ref for query so the tool handler always reads the latest value
   const queryRef = useRef(query);
@@ -217,20 +220,21 @@ export const DiscoverAgentBuilderConfig = () => {
       ),
     ];
 
-    if (hasEsqlResults && documentState.esqlQueryColumns && documentState.result) {
+    if (hasEsqlResults && currentDataSource.kind === 'esql' && documentState.result) {
       const esqlQuery = isOfAggregateQueryType(query) ? query.esql : '';
+      const esqlColumns = currentDataSource.getColumns();
       const playbookContribution = getDeepAnalysisPlaybookAccessor(() => undefined)({
         dataView,
         query,
-        columns: documentState.esqlQueryColumns.map((col) => ({
+        columns: esqlColumns.map((col) => ({
           name: col.name,
-          type: col.meta?.type,
+          type: col.type,
         })),
       });
       attachments.push(
         buildEsqlResultsAttachment(
           esqlQuery,
-          documentState.esqlQueryColumns,
+          esqlColumns,
           documentState.result,
           totalHits ?? documentState.result.length,
           normalizedTimeRange,
@@ -252,9 +256,9 @@ export const DiscoverAgentBuilderConfig = () => {
     agentBuilder,
     browserApiTools,
     columns,
+    currentDataSource,
     dataSource?.type,
     dataView,
-    documentState.esqlQueryColumns,
     documentState.result,
     getDeepAnalysisPlaybookAccessor,
     hasEsqlResults,

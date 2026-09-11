@@ -75,7 +75,7 @@ export const SingleTabView = ({
   const currentCustomizationService = useCurrentTabRuntimeState((tab) => tab.customizationService$);
   const scopedProfilesManager = useCurrentTabRuntimeState((tab) => tab.scopedProfilesManager$);
   const scopedEbtManager = useCurrentTabRuntimeState((tab) => tab.scopedEbtManager$);
-  const currentDataView = useCurrentTabRuntimeState((tab) => tab.currentDataView$);
+  const currentDataSource = useCurrentTabRuntimeState((tab) => tab.currentDataSource$);
   const adHocDataViews = useRuntimeState(runtimeStateManager.adHocDataViews$);
 
   const initializeSingleTab = useCurrentTabAction(internalStateActions.initializeSingleTab);
@@ -175,13 +175,13 @@ export const SingleTabView = ({
     );
   }
 
-  if (!currentDataStateContainer || !currentCustomizationService || !currentDataView) {
+  if (!currentDataStateContainer || !currentCustomizationService || !currentDataSource) {
     return <BrandedLoadingIndicator />;
   }
 
   return (
     <DiscoverCustomizationProvider value={currentCustomizationService}>
-      <RuntimeStateProvider currentDataView={currentDataView} adHocDataViews={adHocDataViews}>
+      <RuntimeStateProvider currentDataSource={currentDataSource} adHocDataViews={adHocDataViews}>
         <ScopedServicesProvider
           scopedProfilesManager={scopedProfilesManager}
           scopedEBTManager={scopedEbtManager}

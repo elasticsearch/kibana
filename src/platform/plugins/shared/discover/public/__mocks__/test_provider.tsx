@@ -66,10 +66,10 @@ export const DiscoverToolkitTestProvider = ({
   const currentTabRuntimeState = selectTabRuntimeState(toolkit.runtimeStateManager, currentTabId);
   const customizationService = useRuntimeState(currentTabRuntimeState.customizationService$);
   const adHocDataViews = useRuntimeState(toolkit.runtimeStateManager.adHocDataViews$);
-  const currentDataView = useRuntimeState(currentTabRuntimeState.currentDataView$);
+  const currentDataSource = useRuntimeState(currentTabRuntimeState.currentDataSource$);
   const runtimeState = useMemo<CombinedRuntimeState | undefined>(
-    () => (currentDataView ? { adHocDataViews, currentDataView } : undefined),
-    [adHocDataViews, currentDataView]
+    () => (currentDataSource ? { adHocDataViews, currentDataSource } : undefined),
+    [adHocDataViews, currentDataSource]
   );
   const scopedProfilesManager = useRuntimeState(currentTabRuntimeState.scopedProfilesManager$);
   const scopedEbtManager = useRuntimeState(currentTabRuntimeState.scopedEbtManager$);

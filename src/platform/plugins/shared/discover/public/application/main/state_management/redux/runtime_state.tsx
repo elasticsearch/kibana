@@ -9,6 +9,7 @@
 
 import React, { type PropsWithChildren, createContext, useContext, useMemo } from 'react';
 import type { DataView } from '@kbn/data-views-plugin/common';
+import type { DataSource } from '@kbn/data-source';
 import useObservable from 'react-use/lib/useObservable';
 import { BehaviorSubject } from 'rxjs';
 import type { UnifiedHistogramPartialLayoutProps } from '@kbn/unified-histogram';
@@ -47,6 +48,7 @@ interface TabRuntimeState {
   scopedEbtManager: ScopedDiscoverEBTManager;
   cascadedDocumentsFetcher: CascadedDocumentsFetcher;
   currentDataView: DataView;
+  currentDataSource: DataSource;
   unsubscribeFn: (() => void) | undefined;
 }
 
@@ -56,7 +58,10 @@ type ReactiveRuntimeState<TState, TNullable extends keyof TState = never> = {
   >;
 };
 
-export type ReactiveTabRuntimeState = ReactiveRuntimeState<TabRuntimeState, 'currentDataView'>;
+export type ReactiveTabRuntimeState = ReactiveRuntimeState<
+  TabRuntimeState,
+  'currentDataView' | 'currentDataSource'
+>;
 
 export type RuntimeStateManager = ReactiveRuntimeState<DiscoverRuntimeState> & {
   tabs: { byId: Record<string, ReactiveTabRuntimeState> };
@@ -116,6 +121,7 @@ export const createTabRuntimeState = ({
     scopedEbtManager$: new BehaviorSubject(scopedEbtManager),
     cascadedDocumentsFetcher$: new BehaviorSubject(cascadedDocumentsFetcher),
     currentDataView$: new BehaviorSubject<DataView | undefined>(undefined),
+    currentDataSource$: new BehaviorSubject<DataSource | undefined>(undefined),
     unsubscribeFn$: new BehaviorSubject<TabRuntimeState['unsubscribeFn']>(undefined),
   };
 };
@@ -333,18 +339,18 @@ export const useCurrentTabDataStateContainer = () => {
   return dataStateContainer;
 };
 
-export type CombinedRuntimeState = DiscoverRuntimeState & Pick<TabRuntimeState, 'currentDataView'>;
+export type CombinedRuntimeState = DiscoverRuntimeState & { currentDataSource: DataSource };
 
 const runtimeStateContext = createContext<CombinedRuntimeState | undefined>(undefined);
 
 export const RuntimeStateProvider = ({
-  currentDataView,
+  currentDataSource,
   adHocDataViews,
   children,
 }: PropsWithChildren<CombinedRuntimeState>) => {
   const runtimeState = useMemo<CombinedRuntimeState>(
-    () => ({ currentDataView, adHocDataViews }),
-    [adHocDataViews, currentDataView]
+    () => ({ currentDataSource, adHocDataViews }),
+    [adHocDataViews, currentDataSource]
   );
 
   return (
@@ -362,7 +368,17 @@ const useRuntimeStateContext = () => {
   return context;
 };
 
-export const useCurrentDataView = () => useRuntimeStateContext().currentDataView;
+export const useCurrentDataSource = () => useRuntimeStateContext().currentDataSource;
+
+/** Returns the underlying DataView for DSL consumers. Use {@link useCurrentDataSource} for rendering. */
+export const useCurrentDataView = (): DataView => {
+  const dataView = useCurrentTabRuntimeState((tab) => tab.currentDataView$);
+  if (!dataView) {
+    throw new Error('currentDataView is not initialized');
+  }
+  return dataView;
+};
+
 export const useAdHocDataViews = () => useRuntimeStateContext().adHocDataViews;
 
 const runtimeStateManagerContext = createContext<RuntimeStateManager | undefined>(undefined);

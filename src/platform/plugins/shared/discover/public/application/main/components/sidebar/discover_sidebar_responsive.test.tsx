@@ -18,6 +18,7 @@ import type { DiscoverServices } from '../../../../build_services';
 import type { SidebarToggleState } from '../../../types';
 import { FetchStatus } from '../../../types';
 import type { DataDocuments$ } from '../../state_management/discover_data_state_container';
+import { createMockEsqlSource } from '@kbn/data-source/src/__mocks__/esql_source.mock';
 import { stubLogstashDataView } from '@kbn/data-plugin/common/stubs';
 import {
   getDiscoverInternalStateMock,
@@ -556,11 +557,14 @@ describe('discover responsive sidebar', function () {
       documents$: new BehaviorSubject({
         fetchStatus: FetchStatus.COMPLETE,
         result: getDataTableRecords(stubLogstashDataView),
-        esqlQueryColumns: [
-          { id: '1', name: 'extension', meta: { type: 'text' } },
-          { id: '2', name: 'bytes', meta: { type: 'number' } },
-          { id: '3', name: '@timestamp', meta: { type: 'date' } },
-        ],
+        dataSource: createMockEsqlSource(
+          [],
+          [
+            { id: '1', name: 'extension', meta: { type: 'string' } },
+            { id: '2', name: 'bytes', meta: { type: 'number' } },
+            { id: '3', name: '@timestamp', meta: { type: 'date' } },
+          ]
+        ),
       }) as DataDocuments$,
     };
     await renderComponent(

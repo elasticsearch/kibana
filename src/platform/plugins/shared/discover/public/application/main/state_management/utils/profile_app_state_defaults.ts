@@ -11,6 +11,7 @@ import type { DataView } from '@kbn/data-views-plugin/common';
 import type { DiscoverGridSettings } from '@kbn/saved-search-plugin/common';
 import { uniqBy } from 'lodash';
 import { SOURCE_COLUMN } from '@kbn/unified-data-table';
+import type { Column } from '@kbn/data-source';
 import {
   type DiscoverAppState,
   PROFILE_APP_STATE_DEFAULT_FIELDS,
@@ -20,7 +21,6 @@ import {
 } from '../redux';
 import type { DefaultAppStateColumn, ScopedProfilesManager } from '../../../../context_awareness';
 import { getMergedAccessor } from '../../../../context_awareness';
-import type { DataDocumentsMsg } from '../discover_data_state_container';
 
 export const getProfileAppStateDefaults = ({
   scopedProfilesManager,
@@ -84,7 +84,7 @@ export const getProfileAppStateDefaults = ({
       esqlQueryColumns,
     }: {
       defaultColumns: string[];
-      esqlQueryColumns: DataDocumentsMsg['esqlQueryColumns'];
+      esqlQueryColumns: readonly Column[] | undefined;
     }) => {
       const stateUpdate: DiscoverAppState = {};
 
@@ -161,7 +161,7 @@ export const shouldResetProfileAppStateDefaultField = (
     profileAppStateDefaults.fieldsToReset.includes(field));
 
 const getIsValidColumn =
-  (dataView: DataView, esqlQueryColumns: DataDocumentsMsg['esqlQueryColumns']) =>
+  (dataView: DataView, esqlQueryColumns: readonly Column[] | undefined) =>
   (column: DefaultAppStateColumn) => {
     // Summary is a synthetic column; allow it even when absent from the data view / ES|QL result
     if (column.name === SOURCE_COLUMN) {

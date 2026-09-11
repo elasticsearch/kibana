@@ -22,7 +22,7 @@ import type { DataView } from '@kbn/data-views-plugin/public';
 import type { DataTableRecord } from '@kbn/discover-utils/types';
 import type { DocViewFilterFn } from '@kbn/unified-doc-viewer/types';
 import type { DocViewerApi, DocViewerRestorableState } from '@kbn/unified-doc-viewer';
-import { getDisplayedColumns, getTextBasedColumnsMeta } from '@kbn/unified-data-table';
+import { getDisplayedColumns } from '@kbn/unified-data-table';
 import type { DataTableColumnsMeta } from '@kbn/unified-data-table';
 import { DiscoverGridFlyout } from '../../../../components/discover_grid_flyout';
 import {
@@ -30,6 +30,7 @@ import {
   internalStateActions,
   useAppStateSelector,
   useCurrentTabAction,
+  useCurrentDataSource,
   useCurrentTabDataStateContainer,
   useCurrentTabSelector,
   useInternalStateDispatch,
@@ -44,6 +45,7 @@ import {
   getExpandedDocLinkDisabledReason,
 } from '../../utils/expanded_doc';
 import { useDiscoverServices } from '../../../../hooks/use_discover_services';
+import { columnsToColumnsMeta } from '../../../../utils/columns_to_columns_meta';
 
 const expandedDocLinkabilityEbtDetails: Record<ExpandedDocLinkability, string> = {
   [ExpandedDocLinkability.Linkable]: 'linkable',
@@ -88,6 +90,7 @@ export const DiscoverDocumentFlyout = memo(
 
     const dataStateContainer = useCurrentTabDataStateContainer();
     const documentState = useDataState(dataStateContainer.data$.documents$);
+    const currentDataSource = useCurrentDataSource();
     const rows = useMemo(() => documentState.result ?? [], [documentState.result]);
 
     const { hasExpandedDoc, requestState, notice, expandedDocRef } = useExpandedDocSync({
@@ -199,10 +202,10 @@ export const DiscoverDocumentFlyout = memo(
 
     const columnsMeta: DataTableColumnsMeta | undefined = useMemo(
       () =>
-        documentState.esqlQueryColumns
-          ? getTextBasedColumnsMeta(documentState.esqlQueryColumns)
+        currentDataSource.kind === 'esql'
+          ? columnsToColumnsMeta(currentDataSource.getColumns())
           : undefined,
-      [documentState.esqlQueryColumns]
+      [currentDataSource]
     );
 
     const flyoutColumnsMeta = useMemo(() => {

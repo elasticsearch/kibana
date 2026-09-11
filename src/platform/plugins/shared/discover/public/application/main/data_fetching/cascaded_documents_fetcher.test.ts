@@ -12,6 +12,7 @@ import {
   type DataTableColumnsMeta,
   type DataTableRecord,
 } from '@kbn/discover-utils';
+import { createMockEsqlSource } from '@kbn/data-source/src/__mocks__/esql_source.mock';
 import type { AggregateQuery } from '@kbn/es-query';
 import { constructCascadeQuery } from '@kbn/esql-utils';
 import { apm } from '@elastic/apm-rum';
@@ -131,7 +132,9 @@ describe('CascadedDocumentsFetcher', () => {
     mockConstructCascadeQuery.mockReturnValueOnce(cascadeQuery);
     mockFetchEsql.mockResolvedValue({
       records,
-      esqlQueryColumns: [{ id: 'extension', name: 'extension', meta: columnsMeta.extension }],
+      dataSource: createMockEsqlSource([
+        { name: 'extension', type: 'string', source: 'esql-result' },
+      ]),
     });
 
     const params = createFetchParams({ nodeId: 'node-2' });
@@ -174,7 +177,7 @@ describe('CascadedDocumentsFetcher', () => {
     const cascadeQuery: AggregateQuery = { esql: 'from logs' };
 
     mockConstructCascadeQuery.mockReturnValueOnce(cascadeQuery);
-    mockFetchEsql.mockResolvedValue({ records: [], esqlQueryColumns: [] });
+    mockFetchEsql.mockResolvedValue({ records: [], dataSource: undefined });
 
     await fetcher.fetchCascadedDocuments(
       createFetchParams({ nodeId: 'node-approx', esqlApproximation: true })
@@ -195,7 +198,9 @@ describe('CascadedDocumentsFetcher', () => {
     mockConstructCascadeQuery.mockReturnValueOnce(cascadeQuery);
     mockFetchEsql.mockResolvedValue({
       records,
-      esqlQueryColumns: [{ id: 'extension', name: 'extension', meta: columnsMeta.extension }],
+      dataSource: createMockEsqlSource([
+        { name: 'extension', type: 'string', source: 'esql-result' },
+      ]),
     });
 
     await fetcher.fetchCascadedDocuments(createFetchParams({ nodeId: 'node-same-meta' }));

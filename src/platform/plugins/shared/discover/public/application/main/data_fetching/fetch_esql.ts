@@ -30,6 +30,7 @@ import type { SearchResponseWarning } from '@kbn/search-response-warnings';
 import moment from 'moment';
 import type { ESQLColumnsWithHighlights } from '@kbn/esql-utils';
 import { getColumnsWithHighlights } from '@kbn/esql-utils';
+import { EsqlSource } from '@kbn/data-source';
 import type { RecordsFetchResponse } from '../../types';
 import type { ScopedProfilesManager } from '../../../context_awareness';
 
@@ -142,7 +143,7 @@ export function fetchEsql({
             });
           }
         });
-        return lastValueFrom(execution).then(() => {
+        return lastValueFrom(execution).then(async () => {
           if (error) {
             throw new Error(error);
           } else {
@@ -154,10 +155,18 @@ export function fetchEsql({
                 return true; // suppress the default behaviour
               });
             }
+            const esqlSource = esqlQueryColumns
+              ? await EsqlSource.create({
+                  query: isOfAggregateQueryType(query) ? query.esql : '',
+                  resultColumns: esqlQueryColumns,
+                  timeFieldName: dataView.timeFieldName,
+                  projectRouting,
+                })
+              : undefined;
             return {
               records: finalData || [],
               interceptedWarnings,
-              esqlQueryColumns,
+              dataSource: esqlSource,
               esqlHeaderWarning,
               approximationApplied,
             };
@@ -167,7 +176,7 @@ export function fetchEsql({
       return {
         records: [],
         interceptedWarnings: [],
-        esqlQueryColumns: [],
+        dataSource: undefined,
         esqlHeaderWarning: undefined,
         approximationApplied: undefined,
       };
