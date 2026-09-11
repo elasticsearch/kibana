@@ -51,6 +51,7 @@ spaceTest.describe('Lens show underlying data', { tag: '@local-stateful-classic'
     async ({ pageObjects, context, kbnUrl }) => {
       const { lens } = pageObjects;
 
+      await lens.workspace.openAppMenuOverflow();
       await expect(lens.workspace.openInDiscoverButton).toBeEnabled();
       const discoverPage = await openDiscoverFromPopup({
         context,
@@ -79,6 +80,7 @@ spaceTest.describe('Lens show underlying data', { tag: '@local-stateful-classic'
       });
 
       await spaceTest.step('open Discover and assert columns are unchanged', async () => {
+        await lens.workspace.openAppMenuOverflow();
         await expect(lens.workspace.openInDiscoverButton).toBeEnabled();
         const discoverPage = await openDiscoverFromPopup({
           context,
@@ -110,6 +112,7 @@ spaceTest.describe('Lens show underlying data', { tag: '@local-stateful-classic'
       });
 
       await spaceTest.step('open Discover and assert columns are unchanged', async () => {
+        await lens.workspace.openAppMenuOverflow();
         await expect(lens.workspace.openInDiscoverButton).toBeEnabled();
         const discoverPage = await openDiscoverFromPopup({
           context,
@@ -149,7 +152,9 @@ spaceTest.describe('Lens show underlying data', { tag: '@local-stateful-classic'
       });
       await lens.waitForVisualization(testData.XY_CHART);
 
+      await lens.workspace.openAppMenuOverflow();
       await expect(lens.workspace.openInDiscoverButton).toBeDisabled();
+      await lens.workspace.closeAppMenuOverflow();
     }
   );
 
@@ -166,6 +171,7 @@ spaceTest.describe('Lens show underlying data', { tag: '@local-stateful-classic'
       });
 
       await spaceTest.step('open Discover with an empty query', async () => {
+        await lens.workspace.openAppMenuOverflow();
         await expect(lens.workspace.openInDiscoverButton).toBeEnabled();
         const discoverPage = await openDiscoverFromPopup({
           context,
@@ -198,6 +204,7 @@ spaceTest.describe('Lens show underlying data', { tag: '@local-stateful-classic'
       });
 
       await spaceTest.step('open Discover and assert query plus Lucene pill', async () => {
+        await lens.workspace.openAppMenuOverflow();
         await expect(lens.workspace.openInDiscoverButton).toBeEnabled();
         const discoverPage = await openDiscoverFromPopup({
           context,
@@ -248,6 +255,7 @@ spaceTest.describe('Lens show underlying data', { tag: '@local-stateful-classic'
       });
 
       await spaceTest.step('open Discover and assert memory column plus combined KQL', async () => {
+        await lens.workspace.openAppMenuOverflow();
         await expect(lens.workspace.openInDiscoverButton).toBeEnabled();
         const discoverPage = await openDiscoverFromPopup({
           context,
@@ -296,6 +304,7 @@ spaceTest.describe('Lens show underlying data', { tag: '@local-stateful-classic'
       });
 
       await spaceTest.step('open Discover and assert combined KQL', async () => {
+        await lens.workspace.openAppMenuOverflow();
         await expect(lens.workspace.openInDiscoverButton).toBeEnabled();
         const discoverPage = await openDiscoverFromPopup({
           context,

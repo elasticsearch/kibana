@@ -66,7 +66,8 @@ spaceTest.describe('Lens inspector pagination', { tag: '@local-stateful-classic'
         field: 'geo.dest',
       });
 
-      await inspector.open('lnsApp_inspectButton');
+      await lens.workspace.clickAppMenuItem('lnsApp_inspectButton');
+      await inspector.panel.waitFor({ state: 'visible' });
       await inspector.setTablePageSize(INSPECTOR_PAGE_SIZE);
 
       // Wait for the resized page to land — getTableData snapshots the DOM immediately.

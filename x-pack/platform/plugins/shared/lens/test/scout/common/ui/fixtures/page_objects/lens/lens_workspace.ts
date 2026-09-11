@@ -8,7 +8,13 @@
 import type { DebugState } from '@elastic/charts';
 import { encode as encodeRison } from '@kbn/rison';
 import type { Locator, ScoutPage } from '@kbn/scout';
+import { expect } from '@kbn/scout/ui';
 import { LOGSTASH_IN_RANGE_DATES } from '../../../../fixtures/constants';
+import {
+  clickLensAppMenuItem,
+  closeLensAppMenuOverflow,
+  openLensAppMenuOverflow,
+} from '../../app_menu';
 import { WAIT_FOR_FUNCTION_TIMEOUT_MS } from './lens_editor_helpers';
 
 /** `LensApp` helpers needed by workspace navigation / formula reading. */
@@ -48,8 +54,6 @@ export class LensWorkspace {
   private readonly goBackToAppButton;
   private readonly confirmModalConfirmButton;
   private readonly messageListTrigger;
-  private readonly settingsButton;
-  private readonly settingsMenu;
   private readonly emptyWorkspacePrompt;
   private readonly applyChangesPrompt;
   private readonly suggestionPanelToggle;
@@ -82,8 +86,6 @@ export class LensWorkspace {
     this.goBackToAppButton = this.page.testSubj.locator('lnsApp_goBackToAppButton');
     this.confirmModalConfirmButton = this.page.testSubj.locator('confirmModalConfirmButton');
     this.messageListTrigger = this.page.testSubj.locator('lens-message-list-trigger');
-    this.settingsButton = this.page.testSubj.locator('lnsApp_settingsButton');
-    this.settingsMenu = this.page.testSubj.locator('lnsApp__settingsMenu');
     this.emptyWorkspacePrompt = this.page.testSubj.locator('workspace-drag-drop-prompt');
     this.applyChangesPrompt = this.page.testSubj.locator('workspace-apply-changes-prompt');
     this.suggestionPanelToggle = this.page.testSubj.locator('lensSuggestionsPanelToggleButton');
@@ -395,29 +397,37 @@ export class LensWorkspace {
       .count();
   }
 
-  /** Opens the Lens settings menu (auto-apply toggle lives here). */
+  /** Ensures the AppMenu auto-apply switch is visible (no settings popover anymore). */
   async openSettingsMenu() {
-    await this.settingsButton.click();
-    await this.settingsMenu.waitFor({ state: 'visible' });
+    await this.autoApplyToggle.waitFor({ state: 'visible' });
+  }
+
+  /** No-op — auto-apply is an inline AppMenu switch, not a settings popover. */
+  async closeSettingsMenu() {}
+  /** Opens the classic AppMenu overflow (Share, Export, Inspect, Open in Discover). */
+  async openAppMenuOverflow(): Promise<void> {
+    await openLensAppMenuOverflow(this.page);
+  }
+
+  /** Closes the AppMenu overflow so the next step starts with a closed menu. */
+  async closeAppMenuOverflow(): Promise<void> {
+    await closeLensAppMenuOverflow(this.page);
+  }
+
+  /** Opens the overflow menu and clicks an overflow AppMenu item. */
+  async clickAppMenuItem(testId: string): Promise<void> {
+    await clickLensAppMenuItem(this.page, testId);
   }
 
   /**
    * Opens the Share modal. Waits until the share button is enabled (can lag after save).
    * Dismisses save toasts first — they sit over the top nav and intercept the click.
+   * Toasts must be closed before opening overflow; closing them afterward dismisses the menu.
    */
   async openShareModal() {
-    await this.page.waitForFunction(
-      () => {
-        const btn = document.querySelector(
-          '[data-test-subj="lnsApp_shareButton"]'
-        ) as HTMLButtonElement | null;
-        return Boolean(btn && !btn.disabled);
-      },
-      undefined,
-      { timeout: WAIT_FOR_FUNCTION_TIMEOUT_MS }
-    );
-
     await this.page.components.toast().closeAll();
+    await this.openAppMenuOverflow();
+    await expect(this.shareButton).toBeEnabled({ timeout: WAIT_FOR_FUNCTION_TIMEOUT_MS });
     await this.shareButton.click();
     await this.shareModal.waitFor({ state: 'visible' });
     await this.copyShareUrlButton.waitFor({ state: 'visible' });
@@ -450,13 +460,7 @@ export class LensWorkspace {
     await this.shareModal.waitFor({ state: 'hidden' });
   }
 
-  /** Closes the Lens settings menu. */
-  async closeSettingsMenu() {
-    await this.settingsButton.click();
-    await this.settingsMenu.waitFor({ state: 'hidden' });
-  }
-
-  /** Toggles the auto-apply setting. Requires the settings menu to be open. */
+  /** Toggles the auto-apply setting. */
   async toggleAutoApply() {
     await this.autoApplyToggle.click();
   }

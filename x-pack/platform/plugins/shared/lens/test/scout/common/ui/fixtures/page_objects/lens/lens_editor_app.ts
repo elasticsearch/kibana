@@ -82,6 +82,7 @@ export class LensEditorApp extends LensApp {
    */
   private async openSaveModalWithTitle(title: string): Promise<void> {
     await this.page.components.toast().closeAll();
+    await this.openSaveOptionsIfNeeded();
     await this.saveButton.click();
     await this.saveModal.waitFor({ state: 'visible' });
     await this.savedObjectTitleInput.fill(title);

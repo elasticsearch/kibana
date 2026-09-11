@@ -24,7 +24,14 @@ import {
   KBN_ARCHIVE_PATHS,
   LOGSTASH_IN_RANGE_DATES,
 } from '../../fixtures/constants';
+import { openLensAppMenuOverflow } from './app_menu';
 import type { ImportedSavedObject } from './saved_object_helpers';
+
+export {
+  clickLensAppMenuItem,
+  closeLensAppMenuOverflow,
+  openLensAppMenuOverflow,
+} from './app_menu';
 
 export type PlaywrightPage = Parameters<typeof extendPlaywrightPage>[0]['page'];
 /**
@@ -101,10 +108,13 @@ export async function createRuntimeFieldFromEditor(
  * Dual-path handling lives here (not in the spec) for `playwright/no-conditional-in-test`.
  */
 export async function completeLensCsvExport(page: ScoutPage): Promise<void> {
-  const exportButton = page.testSubj.locator('lnsApp_exportButton');
   const csvMenuItem = page.testSubj.locator('exportMenuItem-CSV');
+  const exportButton = page.testSubj.locator('lnsApp_exportButton');
 
+  // Toasts sit over the AppMenu; closing them after overflow is open dismisses the menu.
+  await page.components.toast().closeAll();
   // Readiness before click: csvEnabled / shareUrlEnabled both require hasData.
+  await openLensAppMenuOverflow(page);
   await expect(exportButton).toBeEnabled();
   await exportButton.click();
 

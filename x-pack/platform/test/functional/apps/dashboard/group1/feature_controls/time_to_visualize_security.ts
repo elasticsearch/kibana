@@ -131,6 +131,7 @@ export default function ({ getPageObjects, getService }: FtrProviderContext) {
       it('disables save to library button without visualize save permissions', async () => {
         await dashboard.waitForRenderComplete();
         await dashboardPanelActions.navigateToEditorFromFlyout();
+        await lens.openSaveOptionsIfNeeded();
         const saveButton = await testSubjects.find('lnsApp_saveButton');
         expect(await saveButton.getAttribute('disabled')).to.equal('true');
         await lens.saveAndReturn();

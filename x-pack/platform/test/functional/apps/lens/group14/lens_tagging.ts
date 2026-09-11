@@ -58,6 +58,8 @@ export default function ({ getService, getPageObjects }: FtrProviderContext) {
       });
 
       await header.waitUntilLoadingHasFinished();
+      // From a dashboard, Save lives under the Save and return split button.
+      await lens.openSaveOptionsIfNeeded();
       await testSubjects.click('lnsApp_saveButton');
 
       await visualize.setSaveModalValues(lensTitle, {

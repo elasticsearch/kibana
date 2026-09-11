@@ -70,7 +70,6 @@ export type RunSave = (
 
 export interface LensTopNavMenuProps {
   onAppLeave: AppMountParameters['onAppLeave'];
-  setHeaderActionMenu: AppMountParameters['setHeaderActionMenu'];
 
   redirectToOrigin?: (props?: RedirectToOriginProps) => void;
   // The initial input passed in by the container when editing. Can be either by reference or by value.
@@ -117,6 +116,5 @@ type AvailableTopNavActions =
   | 'cancel'
   | 'share'
   | 'export'
-  | 'getUnderlyingDataUrl'
-  | 'openSettings';
+  | 'getUnderlyingDataUrl';
 export type LensTopNavActions = Record<AvailableTopNavActions, TopNavAction>;

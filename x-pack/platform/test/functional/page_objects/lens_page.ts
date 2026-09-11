@@ -842,6 +842,23 @@ export function LensPageProvider({ getService, getPageObjects }: FtrProviderCont
     /**
      * Save the current Lens visualization.
      */
+    async openSaveOptionsIfNeeded() {
+      if (await testSubjects.exists('lnsApp_saveButton')) {
+        return;
+      }
+      const secondarySubjects = [
+        'lnsApp_saveAndReturnButton-secondary-button',
+        'lnsApp_replaceInDashboardButton-secondary-button',
+        'lnsApp_replaceInCanvasButton-secondary-button',
+      ];
+      for (const subject of secondarySubjects) {
+        if (await testSubjects.exists(subject)) {
+          await testSubjects.click(subject);
+          return;
+        }
+      }
+    },
+
     async save(
       title: string,
       saveAsNew?: boolean,
@@ -852,6 +869,7 @@ export function LensPageProvider({ getService, getPageObjects }: FtrProviderCont
       description?: string
     ) {
       await header.waitUntilLoadingHasFinished();
+      await this.openSaveOptionsIfNeeded();
       await testSubjects.click('lnsApp_saveButton');
 
       await this.saveModal(
@@ -2034,37 +2052,15 @@ export function LensPageProvider({ getService, getPageObjects }: FtrProviderCont
       return testSubjects.exists('lnsEmptySizeRatioOption');
     },
 
-    settingsMenuOpen() {
-      return testSubjects.exists('lnsApp__settingsMenu');
-    },
-
-    async openSettingsMenu() {
-      if (await this.settingsMenuOpen()) return;
-
-      await testSubjects.click('lnsApp_settingsButton');
-    },
-
-    async closeSettingsMenu() {
-      if (await this.settingsMenuOpen()) {
-        await testSubjects.click('lnsApp_settingsButton');
-      }
-    },
-
     async enableAutoApply() {
-      await this.openSettingsMenu();
-
       return testSubjects.setEuiSwitch('lnsToggleAutoApply', 'check');
     },
 
     async disableAutoApply() {
-      await this.openSettingsMenu();
-
       return testSubjects.setEuiSwitch('lnsToggleAutoApply', 'uncheck');
     },
 
     async getAutoApplyEnabled() {
-      await this.openSettingsMenu();
-
       return testSubjects.isEuiSwitchChecked('lnsToggleAutoApply');
     },
 
@@ -2161,18 +2157,40 @@ export function LensPageProvider({ getService, getPageObjects }: FtrProviderCont
     },
 
     async clickShareButton() {
+      if (await testSubjects.exists('lnsApp_shareButton')) {
+        return await testSubjects.click('lnsApp_shareButton');
+      }
+      if (await testSubjects.exists('app-menu-overflow-button')) {
+        await testSubjects.click('app-menu-overflow-button');
+      }
       return await testSubjects.click('lnsApp_shareButton');
     },
 
     async clickExportButton() {
+      if (await testSubjects.exists('lnsApp_exportButton')) {
+        return await testSubjects.click('lnsApp_exportButton');
+      }
+      if (await testSubjects.exists('app-menu-overflow-button')) {
+        await testSubjects.click('app-menu-overflow-button');
+      }
       return await testSubjects.click('lnsApp_exportButton');
     },
 
     async isShareable() {
+      if (!(await testSubjects.exists('lnsApp_shareButton'))) {
+        if (await testSubjects.exists('app-menu-overflow-button')) {
+          await testSubjects.click('app-menu-overflow-button');
+        }
+      }
       return await testSubjects.isEnabled('lnsApp_shareButton');
     },
 
-    isExportActionEnabled() {
+    async isExportActionEnabled() {
+      if (!(await testSubjects.exists('lnsApp_exportButton'))) {
+        if (await testSubjects.exists('app-menu-overflow-button')) {
+          await testSubjects.click('app-menu-overflow-button');
+        }
+      }
       return testSubjects.isEnabled('lnsApp_exportButton');
     },
 

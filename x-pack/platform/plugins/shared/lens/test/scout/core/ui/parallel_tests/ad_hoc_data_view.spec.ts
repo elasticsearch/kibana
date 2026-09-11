@@ -8,6 +8,7 @@
 import { expect } from '@kbn/scout/ui';
 import {
   completeLensCsvExport,
+  clickLensAppMenuItem,
   createAdHocDataViewFromLens,
   createRuntimeFieldFromEditor,
   enableElasticChartDebug,
@@ -383,7 +384,7 @@ spaceTest.describe('Lens ad hoc data view', { tag: '@local-stateful-classic' }, 
       await lens.waitForVisualization('mtrVis');
 
       const discoverPagePromise = context.waitForEvent('page');
-      await page.testSubj.click('lnsApp_openInDiscover');
+      await clickLensAppMenuItem(page, 'lnsApp_openInDiscover');
       const discoverPage = await discoverPagePromise;
 
       try {

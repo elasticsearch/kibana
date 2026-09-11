@@ -77,7 +77,6 @@ export function App({
   initialInput,
   incomingState,
   redirectToOrigin,
-  setHeaderActionMenu,
   contextOriginatingApp,
   topNavMenuEntryGenerators,
   initialContext,
@@ -493,7 +492,6 @@ export function App({
           onAppLeave={onAppLeave}
           runSave={runSave}
           setIsSaveModalVisible={setIsSaveModalVisible}
-          setHeaderActionMenu={setHeaderActionMenu}
           indicateNoData={indicateNoData}
           title={persistedDoc?.title}
           lensInspector={lensInspector}

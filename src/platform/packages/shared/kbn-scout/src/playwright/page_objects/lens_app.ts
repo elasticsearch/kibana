@@ -157,6 +157,14 @@ export class LensApp {
     await this.page.testSubj.locator('dshDashboardViewport').waitFor({ state: 'visible' });
   }
 
+  /** Opens the Save and return split menu when Save as lives under it. */
+  async openSaveOptionsIfNeeded() {
+    const saveOptions = this.page.testSubj.locator('lnsApp_saveAndReturnButton-secondary-button');
+    if (await saveOptions.isVisible()) {
+      await saveOptions.click();
+    }
+  }
+
   /**
    * Opens the Lens save modal, fills in the title, optionally selects
    * a dashboard target, and confirms. Waits for the modal to close.
@@ -177,6 +185,7 @@ export class LensApp {
           addToDashboard: 'none';
         }
   ) {
+    await this.openSaveOptionsIfNeeded();
     await this.saveButton.click();
     await this.saveModal.waitFor({ state: 'visible' });
     await this.savedObjectTitleInput.fill(title);
