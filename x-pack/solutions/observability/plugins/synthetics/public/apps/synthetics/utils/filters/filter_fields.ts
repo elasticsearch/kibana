@@ -104,8 +104,9 @@ export const valueToLabelWithEmptyCount = (value?: string | string[]): LabelWith
 };
 
 export const monitorTypeKeyLabelMap: Record<MonitorTypeEnum, string> = {
-  [MonitorTypeEnum.BROWSER]: 'Journey / Page',
+  [MonitorTypeEnum.BROWSER]: 'Browser / Page',
   [MonitorTypeEnum.HTTP]: 'HTTP',
   [MonitorTypeEnum.TCP]: 'TCP',
   [MonitorTypeEnum.ICMP]: 'ICMP',
+  [MonitorTypeEnum.API]: 'API Journey',
 };

@@ -10,7 +10,6 @@ import React, { useState, useRef } from 'react';
 import { i18n } from '@kbn/i18n';
 
 import { EuiFormRow, EuiFilePicker } from '@elastic/eui';
-import type { EuiFilePickerRef } from '@elastic/eui';
 
 interface Props {
   onUpload: ({ scriptText, fileName }: { scriptText: string; fileName: string }) => void;
@@ -19,7 +18,7 @@ interface Props {
 export function Uploader({ onUpload }: Props) {
   const fileReader = useRef<null | FileReader>(null);
   const [error, setError] = useState<string | null>(null);
-  const filePickerRef = useRef<EuiFilePickerRef>(null);
+  const filePickerRef = useRef<React.ComponentRef<typeof EuiFilePicker>>(null);
 
   const handleFileRead = (fileName: string) => {
     const content = fileReader?.current?.result as string;

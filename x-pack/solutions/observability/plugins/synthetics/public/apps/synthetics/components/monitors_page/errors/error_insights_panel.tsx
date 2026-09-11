@@ -146,9 +146,10 @@ export const ErrorInsightsPanel = ({
 
 const TYPE_ICONS: Record<string, string> = {
   http: 'globe',
-  browser: 'videoPlayer',
-  tcp: 'link',
-  icmp: 'heart',
+  browser: 'display',
+  tcp: 'ip',
+  icmp: 'bolt',
+  api: 'inputOutput',
 };
 
 function toStringArray(value: string | string[] | undefined): string[] {

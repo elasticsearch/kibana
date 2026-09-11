@@ -24,9 +24,23 @@ export const formatMillisecond = (ms: number) => {
   return `${(ms / 1000).toFixed(1)} s`;
 };
 
-export const StepMetrics = () => {
+// Web-vital tiles (LCP/FCP/CLS/DCL) are sourced from `browser.experience.*`
+// fields that Heartbeat only emits for browser journeys. API monitors would
+// always render them as `0`, so callers pass `isApiMonitor` to drop them.
+const BROWSER_ONLY_METRIC_TEST_SUBJS = new Set([
+  'synth-step-metric-lcp',
+  'synth-step-metric-fcp',
+  'synth-step-metric-cls',
+  'synth-step-metric-dcl',
+]);
+
+export const StepMetrics = ({ isApiMonitor = false }: { isApiMonitor?: boolean }) => {
   const { metrics: stepMetrics } = useStepMetrics();
   const { metrics: prevMetrics, loading } = useStepPrevMetrics();
+
+  const visibleStepMetrics = isApiMonitor
+    ? stepMetrics.filter(({ dataTestSubj }) => !BROWSER_ONLY_METRIC_TEST_SUBJS.has(dataTestSubj))
+    : stepMetrics;
 
   return (
     <>
@@ -36,14 +50,16 @@ export const StepMetrics = () => {
             <h3>{METRICS_LABEL}</h3>
           </EuiTitle>
         </EuiFlexItem>
-        <EuiFlexItem grow={false}>
-          <DefinitionsPopover />
-        </EuiFlexItem>
+        {!isApiMonitor && (
+          <EuiFlexItem grow={false}>
+            <DefinitionsPopover />
+          </EuiFlexItem>
+        )}
       </EuiFlexGroup>
 
       <EuiSpacer size="s" />
       <EuiFlexGrid data-test-subj="synth-step-metrics" gutterSize="l" columns={3}>
-        {stepMetrics.map(({ label, value, helpText, formatted, dataTestSubj }) => {
+        {visibleStepMetrics.map(({ label, value, helpText, formatted, dataTestSubj }) => {
           const prevVal = prevMetrics.find((prev) => prev.label === label);
 
           if (label)

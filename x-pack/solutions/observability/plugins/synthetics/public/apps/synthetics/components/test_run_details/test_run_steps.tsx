@@ -15,9 +15,11 @@ import { BrowserStepsList, isStepEnd } from '../common/monitor_test_result/brows
 export const TestRunSteps = ({
   isLoading,
   steps,
+  showScreenshots = true,
 }: {
   isLoading: boolean;
   steps: JourneyStep[];
+  showScreenshots?: boolean;
 }) => {
   const totalDuration = steps
     .filter(isStepEnd)
@@ -42,6 +44,7 @@ export const TestRunSteps = ({
         loading={isLoading}
         showStepNumber={true}
         compressed={false}
+        showScreenshots={showScreenshots}
       />
     </EuiPanel>
   );

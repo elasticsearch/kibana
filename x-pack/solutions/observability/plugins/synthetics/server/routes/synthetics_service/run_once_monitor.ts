@@ -26,6 +26,7 @@ export const runOnceSyntheticsMonitorRoute: SyntheticsRestApiRouteFactory = () =
   handler: async ({
     request,
     response,
+    server,
     syntheticsMonitorClient,
     savedObjectsClient,
     spaceId,
@@ -36,7 +37,7 @@ export const runOnceSyntheticsMonitorRoute: SyntheticsRestApiRouteFactory = () =
       return response.badRequest({ body: { message: 'Monitor data is empty.' } });
     }
 
-    const validationResult = validateMonitor(monitor, spaceId);
+    const validationResult = validateMonitor(monitor, spaceId, server.cloud?.isServerlessEnabled);
 
     const decodedMonitor = validationResult.decodedMonitor;
     if (!validationResult.valid || !decodedMonitor) {

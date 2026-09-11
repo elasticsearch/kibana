@@ -51,7 +51,7 @@ export const OverviewErrorsSparklines = ({ from, to }: Props) => {
           time,
           seriesType: 'area',
           reportDefinitions: {
-            'monitor.type': ['http', 'tcp', 'browser', 'icmp'],
+            'monitor.type': ['http', 'tcp', 'browser', 'icmp', 'api'],
           },
           dataType: 'synthetics',
           selectedMetricField: 'monitor_errors',

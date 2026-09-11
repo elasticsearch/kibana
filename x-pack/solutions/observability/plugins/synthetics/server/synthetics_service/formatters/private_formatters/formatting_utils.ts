@@ -103,6 +103,11 @@ export const privateTimeoutFormatter: FormatterFn = (fields) => {
   // Heartbeat adds a 30s overhead to browser monitor timeouts internally,
   // so we subtract it to match the user's expected total timeout.
   // Clamp to 0 to guard against negative values if validation is bypassed.
+  //
+  // API monitors (monitor.type === 'api', elastic/beats#50802) reuse the same
+  // synthexec runtime via browser.NewSourceJob but never launch Chromium, so
+  // they do not need the 30s Chromium-startup overhead. They fall through to
+  // secondsToCronFormatter and forward the user's timeout as-is.
   if (fields[ConfigKey.MONITOR_TYPE] === MonitorTypeEnum.BROWSER) {
     const timeoutSeconds = parseInt(value, 10);
 

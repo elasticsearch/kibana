@@ -35,7 +35,7 @@ export const MonitorTestRunsCount = () => {
           filters,
           time: { from, to },
           reportDefinitions: {
-            'monitor.type': ['http', 'tcp', 'browser', 'icmp'],
+            'monitor.type': ['http', 'tcp', 'browser', 'icmp', 'api'],
           },
           dataType: 'synthetics',
           selectedMetricField: 'monitor_total_runs',

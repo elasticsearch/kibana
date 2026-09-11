@@ -13,13 +13,13 @@ import { MonitorTypeBadge } from './monitor_type_badge';
 describe('MonitorTypeBadge', () => {
   it('renders the visible badge title for a browser monitor', () => {
     render(<MonitorTypeBadge monitorType="browser" />);
-    expect(screen.getByText('Journey')).toBeInTheDocument();
+    expect(screen.getByText('Browser')).toBeInTheDocument();
   });
 
   it('keeps the visible text as the accessible name when not clickable', () => {
     render(<MonitorTypeBadge monitorType="browser" />);
     expect(screen.queryByRole('button')).not.toBeInTheDocument();
-    expect(screen.getByText('Journey')).toBeInTheDocument();
+    expect(screen.getByText('Browser')).toBeInTheDocument();
   });
 
   it('announces the visible badge text before the filter instructions', () => {
@@ -27,7 +27,7 @@ describe('MonitorTypeBadge', () => {
 
     expect(
       screen.getByRole('button', {
-        name: 'Journey. Click to filter monitors for this type',
+        name: 'Browser. Click to filter monitors for this type',
       })
     ).toBeInTheDocument();
   });

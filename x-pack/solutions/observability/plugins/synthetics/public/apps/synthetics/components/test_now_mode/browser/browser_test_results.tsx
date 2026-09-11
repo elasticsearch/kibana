@@ -31,8 +31,17 @@ interface Props {
   testRunId: string;
   expectPings: number;
   onDone: (testRunId: string) => void;
+  // API journeys produce the same step pipeline as browser journeys, so they
+  // also render here — but without screenshots. Default false keeps existing
+  // browser callers unchanged.
+  isApiMonitor?: boolean;
 }
-export const BrowserTestRunResult = ({ expectPings, onDone, testRunId }: Props) => {
+export const BrowserTestRunResult = ({
+  expectPings,
+  onDone,
+  testRunId,
+  isApiMonitor = false,
+}: Props) => {
   const { euiTheme } = useEuiTheme();
   const {
     retriesExceeded,
@@ -127,6 +136,7 @@ export const BrowserTestRunResult = ({ expectPings, onDone, testRunId }: Props) 
                   compressed={true}
                   testNowMode={true}
                   showLastSuccessful={false}
+                  showScreenshots={!isApiMonitor}
                 />
               </>
             )}

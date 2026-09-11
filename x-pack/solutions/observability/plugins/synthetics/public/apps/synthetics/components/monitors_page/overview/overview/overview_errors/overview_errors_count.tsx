@@ -49,7 +49,7 @@ export const OverviewErrorsCount = ({ from, to }: MonitorErrorsCountProps) => {
         {
           time,
           reportDefinitions: {
-            'monitor.type': ['http', 'tcp', 'browser', 'icmp'],
+            'monitor.type': ['http', 'tcp', 'browser', 'icmp', 'api'],
           },
           dataType: 'synthetics',
           selectedMetricField: 'monitor_errors',

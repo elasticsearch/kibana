@@ -32,6 +32,7 @@ test.describe('AddMonitor', { tag: tags.stateful.classic }, () => {
     FormMonitorType.ICMP,
     FormMonitorType.MULTISTEP,
     `${FormMonitorType.MULTISTEP}__recorder` as const,
+    FormMonitorType.API,
   ] as const;
 
   for (const monitorType of monitorTypesToTest) {

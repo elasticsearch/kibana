@@ -55,7 +55,12 @@ export const stringToObjectFormatter: FormatterFn = (fields, key) => {
 };
 
 export const publicTimeoutFormatter: FormatterFn = (fields) => {
-  if (fields[ConfigKey.MONITOR_TYPE] === MonitorTypeEnum.BROWSER) {
+  // Browser and API monitors share the synthexec runtime; timeout is enforced
+  // at the Node level rather than via Heartbeat's per-monitor timeout config.
+  if (
+    fields[ConfigKey.MONITOR_TYPE] === MonitorTypeEnum.BROWSER ||
+    fields[ConfigKey.MONITOR_TYPE] === MonitorTypeEnum.API
+  ) {
     return null;
   }
 

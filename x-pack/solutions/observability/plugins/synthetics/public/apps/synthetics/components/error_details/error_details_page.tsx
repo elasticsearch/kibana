@@ -44,7 +44,14 @@ export function ErrorDetailsPage() {
 
   const stepDetails = useStepDetails({ checkGroup: lastTestRun?.monitor.check_group });
 
-  const isBrowser = data?.details?.journey.monitor.type === 'browser';
+  // Browser AND API journeys both produce step-based runs via synthexec, so
+  // the step details panel and the synthexec error logs apply to either.
+  // Only the StepImage is browser-only — API journeys have no browser
+  // context to screenshot.
+  const monitorType = data?.details?.journey.monitor.type;
+  const isBrowser = monitorType === 'browser';
+  const isApiMonitor = monitorType === 'api';
+  const isStepBased = isBrowser || isApiMonitor;
 
   return (
     <div>
@@ -57,10 +64,10 @@ export function ErrorDetailsPage() {
           <PanelWithTitle title={FAILED_TESTS_LABEL}>
             <FailedTestsList failedTests={failedTests} loading={loading} />
           </PanelWithTitle>
-          {isBrowser && (
+          {isStepBased && (
             <>
               <EuiSpacer size="m" />
-              <StepDetails {...stepDetails} />
+              <StepDetails {...stepDetails} isApiMonitor={isApiMonitor} />
             </>
           )}
           <EuiSpacer size="m" />
@@ -71,7 +78,7 @@ export function ErrorDetailsPage() {
             stepsLoading={stepsLoading}
             isErrorDetails={true}
           />
-          {isBrowser && (
+          {isStepBased && (
             <>
               <EuiSpacer size="m" />
               <EuiPanel hasShadow={false} hasBorder>
@@ -85,7 +92,7 @@ export function ErrorDetailsPage() {
           )}
         </EuiFlexItem>
         <EuiFlexItem grow={1} style={{ height: 'fit-content' }}>
-          {data?.details?.journey && failedStep && (
+          {isBrowser && data?.details?.journey && failedStep && (
             <>
               <PanelWithTitle>
                 <StepImage

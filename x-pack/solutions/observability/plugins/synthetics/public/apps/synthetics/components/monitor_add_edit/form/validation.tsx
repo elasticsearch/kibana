@@ -80,8 +80,9 @@ const validateCommon: ValidationLibrary = {
   }) => {
     const { number, unit } = schedule as MonitorFields[ConfigKey.SCHEDULE];
 
-    // Timeout is not currently supported by browser monitors
-    if (monitorType === MonitorTypeEnum.BROWSER) {
+    // Timeout is not currently supported by browser or API monitors (both use
+    // the synthexec runtime which enforces its own timeout).
+    if (monitorType === MonitorTypeEnum.BROWSER || monitorType === MonitorTypeEnum.API) {
       return false;
     }
 
@@ -156,6 +157,12 @@ const validateBrowser: ValidationLibrary = {
     params ? !validJSONFormat(params) : false,
 };
 
+// API monitors share validation with browser monitors except for throttling,
+// which the API form does not expose (Heartbeat's api plugin strips
+// `--throttling` per elastic/beats#50802). Validating it here would
+// surface stale errors on an invisible field.
+const { [ConfigKey.THROTTLING_CONFIG]: _omitThrottling, ...validateAPI } = validateBrowser;
+
 export type ValidateDictionary = Record<MonitorTypeEnum, Validation>;
 
 export const validate: ValidateDictionary = {
@@ -163,4 +170,5 @@ export const validate: ValidateDictionary = {
   [MonitorTypeEnum.TCP]: validateTCP,
   [MonitorTypeEnum.ICMP]: validateICMP,
   [MonitorTypeEnum.BROWSER]: validateBrowser,
+  [MonitorTypeEnum.API]: validateAPI,
 };

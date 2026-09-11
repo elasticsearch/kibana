@@ -457,6 +457,89 @@ describe('formatSyntheticsPolicy', () => {
     // response.include_headers (bool default true) is intentionally still sent.
     expect(vars?.['response.include_headers'].value).toBe(true);
   });
+
+  // API monitors emit a companion `synthetics.api.network` document per request
+  // via Heartbeat. Without enabling the `api.network` companion stream here,
+  // Fleet generates an agent API key that lacks write privileges on
+  // `synthetics-synthetics.api.network-default`, and ES rejects every network
+  // event with a 403 — silently emptying the data stream while summary docs
+  // continue to land. Mirror the long-standing browser → browser.network /
+  // browser.screenshot wiring so the API key permissions match what
+  // Heartbeat will actually publish.
+  it('enables the api.network companion stream for api monitors', () => {
+    const { formattedPolicy } = formatSyntheticsPolicy(
+      makeApiPolicyV110(),
+      MonitorTypeEnum.API,
+      {
+        type: 'api',
+        enabled: true,
+        name: 'API monitor',
+        schedule: { number: '1', unit: 'm' },
+        config_id: 'abc',
+        location_name: 'Private',
+      } as any,
+      gParams,
+      testMW
+    );
+
+    const apiInput = formattedPolicy.inputs.find((i) => i.type === 'synthetics/api');
+    expect(apiInput?.enabled).toBe(true);
+    const streams = apiInput?.streams ?? [];
+    const apiStream = streams.find((s) => s.data_stream.dataset === 'api');
+    const apiNetworkStream = streams.find((s) => s.data_stream.dataset === 'api.network');
+    expect(apiStream?.enabled).toBe(true);
+    expect(apiNetworkStream?.enabled).toBe(true);
+  });
+
+  it('base64-encodes inline API scripts using the 1.10.0 source.inline.encoding var', () => {
+    const script =
+      'apiJourney("health", async ({ request }) => { await request.get("https://example.com"); });';
+
+    const { formattedPolicy, hasInput } = formatSyntheticsPolicy(
+      makeApiPolicyV110(),
+      MonitorTypeEnum.API,
+      {
+        type: 'api',
+        enabled: true,
+        name: 'API monitor',
+        schedule: { number: '1', unit: 'm' },
+        location_name: 'Private',
+        'source.inline.script': script,
+      } as any,
+      gParams,
+      testMW
+    );
+
+    expect(hasInput).toBe(true);
+    const apiStream = formattedPolicy.inputs
+      .find((i) => i.type === 'synthetics/api')
+      ?.streams.find((s) => s.data_stream.dataset === 'api');
+    expect(apiStream?.vars?.['source.inline.encoding']?.value).toBe('base64');
+    expect(apiStream?.vars?.['source.inline.script']?.value).toBe(
+      Buffer.from(script).toString('base64')
+    );
+  });
+
+  it('reports hasInput false when the installed package has no synthetics/api input', () => {
+    const { hasInput, hasDataStream } = formatSyntheticsPolicy(
+      {
+        ...testNewPolicy,
+        package: { ...testNewPolicy.package, version: '1.9.0' },
+      },
+      MonitorTypeEnum.API,
+      {
+        type: 'api',
+        enabled: true,
+        name: 'API monitor',
+        schedule: { number: '1', unit: 'm' },
+      } as any,
+      gParams,
+      testMW
+    );
+
+    expect(hasInput).toBe(false);
+    expect(hasDataStream).toBe(false);
+  });
 });
 
 const testNewPolicy = {
@@ -747,3 +830,51 @@ const httpPolicy: any = {
   params: '{"proxyUrl":"https://proxy.com"}',
   location_name: 'Test private location 0',
 };
+
+/** Package-policy shape from synthetics 1.10.0 (`synthetics/api` + `api.network`). */
+const makeApiPolicyV110 = () => ({
+  name: 'api-private-default',
+  namespace: 'default',
+  package: { name: 'synthetics', title: 'Elastic Synthetics', version: '1.10.0' },
+  enabled: true,
+  policy_ids: ['loc-1'],
+  inputs: [
+    {
+      type: 'synthetics/api',
+      policy_template: 'synthetics',
+      enabled: false,
+      streams: [
+        {
+          enabled: false,
+          data_stream: { type: 'synthetics', dataset: 'api' },
+          vars: {
+            __ui: { type: 'yaml' },
+            enabled: { value: true, type: 'bool' },
+            type: { value: 'api', type: 'text' },
+            name: { type: 'text' },
+            schedule: { value: '"@every 3m"', type: 'text' },
+            'service.name': { type: 'text' },
+            timeout: { type: 'text' },
+            tags: { type: 'yaml' },
+            'source.inline.script': { type: 'yaml' },
+            'source.inline.encoding': { type: 'text' },
+            'source.project.content': { type: 'text' },
+            params: { type: 'yaml' },
+            playwright_options: { type: 'yaml' },
+            ignore_https_errors: { type: 'bool' },
+            'filter_journeys.tags': { type: 'yaml' },
+            'filter_journeys.match': { type: 'text' },
+            location_name: { value: 'Fleet managed', type: 'text' },
+            location_id: { value: 'fleet_managed', type: 'text' },
+            id: { type: 'text' },
+            origin: { type: 'text' },
+            processors: { type: 'yaml' },
+            max_attempts: { type: 'integer' },
+            maintenance_windows: { type: 'yaml' },
+          },
+        },
+        { enabled: false, data_stream: { type: 'synthetics', dataset: 'api.network' } },
+      ],
+    },
+  ],
+});

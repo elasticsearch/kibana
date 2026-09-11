@@ -424,6 +424,69 @@ describe('ProjectMonitorFormatter', () => {
       failedMonitors: [],
     });
   });
+
+  describe('API Journey monitors on Serverless', () => {
+    const apiMonitor = {
+      type: MonitorTypeEnum.API,
+      id: 'orders-api-health',
+      name: 'Orders API health',
+      schedule: 1,
+      content: 'apiJourney("orders", () => {})',
+      privateLocations: ['Test private location'],
+    };
+
+    const serverlessRouteContext = {
+      ...routeContext,
+      server: { ...serverMock, cloud: { isServerlessEnabled: true } },
+    };
+
+    it('rejects a brand-new API Journey project monitor', async () => {
+      const pushMonitorFormatter = new ProjectMonitorFormatter({
+        projectId: 'test-project',
+        spaceId: 'default-space',
+        monitors: [],
+        routeContext: serverlessRouteContext,
+      });
+      pushMonitorFormatter.getProjectMonitorsForProject = jest.fn().mockResolvedValue([]);
+      await pushMonitorFormatter.init();
+
+      const result = pushMonitorFormatter.validateProjectMonitor({
+        monitor: apiMonitor,
+        publicLocations,
+        privateLocations,
+        isNewMonitor: true,
+      });
+
+      expect(result).toBeNull();
+      expect(pushMonitorFormatter.failedMonitors).toEqual([
+        expect.objectContaining({
+          id: 'orders-api-health',
+          reason: 'API Journey monitors are not yet supported on Serverless',
+        }),
+      ]);
+    });
+
+    it('allows re-pushing an already-existing API Journey project monitor unchanged', async () => {
+      const pushMonitorFormatter = new ProjectMonitorFormatter({
+        projectId: 'test-project',
+        spaceId: 'default-space',
+        monitors: [],
+        routeContext: serverlessRouteContext,
+      });
+      pushMonitorFormatter.getProjectMonitorsForProject = jest.fn().mockResolvedValue([]);
+      await pushMonitorFormatter.init();
+
+      const result = pushMonitorFormatter.validateProjectMonitor({
+        monitor: apiMonitor,
+        publicLocations,
+        privateLocations,
+        isNewMonitor: false,
+      });
+
+      expect(result).not.toBeNull();
+      expect(pushMonitorFormatter.failedMonitors).toEqual([]);
+    });
+  });
 });
 
 const payloadData = [

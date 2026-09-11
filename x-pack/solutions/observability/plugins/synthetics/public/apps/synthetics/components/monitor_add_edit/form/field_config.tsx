@@ -95,10 +95,32 @@ import {
   ALLOWED_SCHEDULES_IN_MINUTES,
   ALLOWED_SCHEDULES_IN_SECONDS,
 } from '../constants';
+import { monitorTypeRequiresPrivateLocations } from '../../../../../../common/utils/monitor_location_support';
 import { getDefaultFormFields } from './defaults';
 import { parsePemCertificateEntries } from './parse_pem_certificate_entries';
 import { validate, validateHeaders, WHOLE_NUMBERS_ONLY, FLOATS_ONLY } from './validation';
 import type { KeyValuePairsFieldProps } from '../fields/key_value_field';
+
+export const API_PRIVATE_LOCATIONS_ONLY = i18n.translate(
+  'xpack.synthetics.monitorConfig.locations.apiPrivateOnlyErrorMessage',
+  {
+    defaultMessage: 'API Journey monitors can only run on private locations.',
+  }
+);
+
+const API_PRIVATE_LOCATION_REQUIRED = i18n.translate(
+  'xpack.synthetics.monitorConfig.monitorType.api.privateLocationRequiredTooltip',
+  {
+    defaultMessage: 'API Journey requires a private location.',
+  }
+);
+
+const API_NOT_SUPPORTED_ON_SERVERLESS = i18n.translate(
+  'xpack.synthetics.monitorConfig.monitorType.api.notSupportedOnServerlessTooltip',
+  {
+    defaultMessage: 'API Journey monitors are not yet supported on Serverless.',
+  }
+);
 
 const getScheduleContent = (value: number, seconds?: boolean) => {
   if (seconds) {
@@ -147,15 +169,32 @@ const getSchedules = (monitorType?: MonitorTypeEnum) => {
 };
 
 export const MONITOR_TYPE_CONFIG = {
+  [FormMonitorType.API]: {
+    id: 'syntheticsMonitorTypeAPI',
+    'data-test-subj': 'syntheticsMonitorTypeAPI',
+    label: i18n.translate('xpack.synthetics.monitorConfig.monitorType.api.label', {
+      defaultMessage: 'API Journey',
+    }),
+    value: FormMonitorType.API,
+    descriptionTitle: i18n.translate('xpack.synthetics.monitorConfig.monitorType.api.title', {
+      defaultMessage: 'API Journey',
+    }),
+    description: i18n.translate('xpack.synthetics.monitorConfig.monitorType.api.description', {
+      defaultMessage: 'Run a sequence of HTTP requests without launching a browser.',
+    }),
+    link: 'https://www.elastic.co/guide/en/observability/current/synthetics-journeys.html',
+    icon: 'inputOutput',
+    beta: true,
+  },
   [FormMonitorType.MULTISTEP]: {
     id: 'syntheticsMonitorTypeMultistep',
     'data-test-subj': 'syntheticsMonitorTypeMultistep',
     label: i18n.translate('xpack.synthetics.monitorConfig.monitorType.multiStep.label', {
-      defaultMessage: 'Multistep',
+      defaultMessage: 'Browser Journey',
     }),
     value: FormMonitorType.MULTISTEP,
     descriptionTitle: i18n.translate('xpack.synthetics.monitorConfig.monitorType.multiStep.title', {
-      defaultMessage: 'Multistep Browser Journey',
+      defaultMessage: 'Browser Journey',
     }),
     description: i18n.translate(
       'xpack.synthetics.monitorConfig.monitorType.multiStep.description',
@@ -165,7 +204,7 @@ export const MONITOR_TYPE_CONFIG = {
       }
     ),
     link: 'https://www.elastic.co/guide/en/observability/current/synthetics-journeys.html',
-    icon: 'videoPlayer',
+    icon: 'display',
     beta: false,
   },
   [FormMonitorType.SINGLE]: {
@@ -178,7 +217,7 @@ export const MONITOR_TYPE_CONFIG = {
     descriptionTitle: i18n.translate(
       'xpack.synthetics.monitorConfig.monitorType.singlePage.title',
       {
-        defaultMessage: 'Single Page Browser Test',
+        defaultMessage: 'Page load',
       }
     ),
     description: i18n.translate(
@@ -189,61 +228,58 @@ export const MONITOR_TYPE_CONFIG = {
       }
     ),
     link: 'https://www.elastic.co/guide/en/observability/current/synthetics-journeys.html',
-    icon: 'videoPlayer',
+    icon: 'inspect',
     beta: false,
   },
   [FormMonitorType.HTTP]: {
     id: 'syntheticsMonitorTypeHTTP',
     'data-test-subj': 'syntheticsMonitorTypeHTTP',
     label: i18n.translate('xpack.synthetics.monitorConfig.monitorType.http.label', {
-      defaultMessage: 'HTTP Ping',
+      defaultMessage: 'HTTP',
     }),
     value: FormMonitorType.HTTP,
     descriptionTitle: i18n.translate('xpack.synthetics.monitorConfig.monitorType.http.title', {
       defaultMessage: 'HTTP Ping',
     }),
     description: i18n.translate('xpack.synthetics.monitorConfig.monitorType.http.description', {
-      defaultMessage:
-        'A lightweight API check to validate the availability of a web service or endpoint.',
+      defaultMessage: 'A lightweight check of a URL without a browser or script.',
     }),
     link: 'https://elastic.co/guide/en/observability/current/synthetics-lightweight.html',
-    icon: 'wifi',
+    icon: 'globe',
     beta: false,
   },
   [FormMonitorType.TCP]: {
     id: 'syntheticsMonitorTypeTCP',
     'data-test-subj': 'syntheticsMonitorTypeTCP',
     label: i18n.translate('xpack.synthetics.monitorConfig.monitorType.tcp.label', {
-      defaultMessage: 'TCP Ping',
+      defaultMessage: 'TCP',
     }),
     value: FormMonitorType.TCP,
     descriptionTitle: i18n.translate('xpack.synthetics.monitorConfig.monitorType.tcp.title', {
       defaultMessage: 'TCP Ping',
     }),
     description: i18n.translate('xpack.synthetics.monitorConfig.monitorType.tcp.description', {
-      defaultMessage:
-        'A lightweight API check to validate the availability of a web service or endpoint.',
+      defaultMessage: 'Check that a host and port accept TCP connections.',
     }),
     link: 'https://www.elastic.co/guide/en/observability/current/synthetics-lightweight.html',
-    icon: 'wifi',
+    icon: 'ip',
     beta: false,
   },
   [FormMonitorType.ICMP]: {
     id: 'syntheticsMonitorTypeICMP',
     'data-test-subj': 'syntheticsMonitorTypeICMP',
     label: i18n.translate('xpack.synthetics.monitorConfig.monitorType.icmp.label', {
-      defaultMessage: 'ICMP Ping',
+      defaultMessage: 'ICMP',
     }),
     value: FormMonitorType.ICMP,
     descriptionTitle: i18n.translate('xpack.synthetics.monitorConfig.monitorType.icmp.title', {
       defaultMessage: 'ICMP Ping',
     }),
     description: i18n.translate('xpack.synthetics.monitorConfig.monitorType.icmp.description', {
-      defaultMessage:
-        'A lightweight API check to validate the availability of a web service or endpoint.',
+      defaultMessage: 'Check that a host responds to ICMP ping.',
     }),
     link: 'https://www.elastic.co/guide/en/observability/current/synthetics-lightweight.html',
-    icon: 'wifi',
+    icon: 'bolt',
     beta: false,
   },
 };
@@ -257,14 +293,48 @@ export const FIELD = (readOnly?: boolean): FieldMap => ({
       defaultMessage: 'Monitor type',
     }),
     controlled: true,
-    props: ({ field, reset, space }) => ({
-      onChange: (_: string, monitorType: FormMonitorType) => {
-        const defaultFields = getDefaultFormFields(space)[monitorType];
-        reset(defaultFields);
-      },
-      selectedOption: field?.value,
-      options: Object.values(MONITOR_TYPE_CONFIG),
-    }),
+    props: ({ field, reset, space, locations }) => {
+      const hasUsableApiJourneyLocation = locations.some(
+        (location) => !location.isInvalid && !location.isServiceManaged
+      );
+      const isExistingApiJourney = field?.value === FormMonitorType.API;
+      return {
+        onChange: (_: string, monitorType: FormMonitorType) => {
+          const defaultFields = getDefaultFormFields(space)[monitorType];
+          reset(defaultFields);
+        },
+        selectedOption: field?.value,
+        // API Journey isn't supported on Serverless yet; disable choosing it
+        // there until it ships in a stack release, but keep it visible (and
+        // selected) when editing a monitor that already has this type, so the
+        // selector still reflects its current type. Remove this special-casing
+        // once it's enabled on Serverless.
+        options: Object.values(MONITOR_TYPE_CONFIG)
+          .filter(
+            (option) =>
+              option.value !== FormMonitorType.API ||
+              !kibanaService.isServerless ||
+              isExistingApiJourney
+          )
+          .map((option) => {
+            if (option.value !== FormMonitorType.API) {
+              return option;
+            }
+            if (kibanaService.isServerless) {
+              return {
+                ...option,
+                isDisabled: !isExistingApiJourney,
+                disabledReason: API_NOT_SUPPORTED_ON_SERVERLESS,
+              };
+            }
+            return {
+              ...option,
+              isDisabled: !hasUsableApiJourneyLocation,
+              disabledReason: API_PRIVATE_LOCATION_REQUIRED,
+            };
+          }),
+      };
+    },
     validation: () => ({
       required: true,
     }),
@@ -438,18 +508,39 @@ export const FIELD = (readOnly?: boolean): FieldMap => ({
       defaultMessage:
         'Where do you want to run this test from? Additional locations will increase your total cost.',
     }),
-    props: ({ field, setValue, locations, trigger }) => {
+    dependencies: [ConfigKey.MONITOR_TYPE],
+    validation: ([monitorType]) => ({
+      validate: {
+        privateLocationsOnly: (value: FormLocation[]) => {
+          if (!monitorTypeRequiresPrivateLocations(monitorType as string)) {
+            return true;
+          }
+          return value?.some((location) => location.isServiceManaged)
+            ? API_PRIVATE_LOCATIONS_ONLY
+            : true;
+        },
+      },
+    }),
+    props: ({ field, setValue, locations, trigger, formState }) => {
+      const isPrivateLocationsOnly = monitorTypeRequiresPrivateLocations(
+        formState.defaultValues?.[ConfigKey.MONITOR_TYPE]
+      );
       return {
-        options: Object.values(locations).map((location) => ({
-          label: location.label,
-          id: location.id,
-          isServiceManaged: location.isServiceManaged || false,
-          isInvalid: location.isInvalid,
-          disabled: location.isInvalid,
-        })),
+        options: Object.values(locations).map((location) => {
+          const isPublic = location.isServiceManaged || false;
+          return {
+            label: location.label,
+            id: location.id,
+            isServiceManaged: isPublic,
+            isInvalid: location.isInvalid,
+            disabled: location.isInvalid || (isPrivateLocationsOnly && isPublic),
+          };
+        }),
         selectedOptions: Object.values(field?.value || {}).map((location) => ({
           color:
-            location.isInvalid || !locations.some((s) => s.id === location.id)
+            location.isInvalid ||
+            !locations.some((s) => s.id === location.id) ||
+            (isPrivateLocationsOnly && location.isServiceManaged)
               ? 'danger'
               : location.isServiceManaged
               ? 'default'
@@ -471,7 +562,8 @@ export const FIELD = (readOnly?: boolean): FieldMap => ({
           await trigger(ConfigKey.LOCATIONS);
         },
         isDisabled: readOnly,
-        renderOption: (option: FormLocation, searchValue: string) => {
+        renderOption: (option: FormLocation & { disabled?: boolean }, searchValue: string) => {
+          const disabledForApi = isPrivateLocationsOnly && option.isServiceManaged;
           return (
             <EuiToolTip
               anchorProps={{
@@ -483,6 +575,8 @@ export const FIELD = (readOnly?: boolean): FieldMap => ({
                       defaultMessage:
                         'The attached agent policy for this location has been deleted.',
                     })
+                  : disabledForApi
+                  ? API_PRIVATE_LOCATIONS_ONLY
                   : ''
               }
             >

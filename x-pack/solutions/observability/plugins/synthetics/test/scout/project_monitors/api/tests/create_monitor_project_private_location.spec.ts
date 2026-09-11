@@ -477,8 +477,8 @@ apiTest.describe(
         expect(editedError.body.createdMonitors).toHaveLength(0);
         expect(editedError.body.updatedMonitors).toHaveLength(1);
         expect(editedError.body.failedMonitors).toHaveLength(1);
-        expect(editedError.body.failedMonitors[0].details).toBe(
-          `Invalid locations specified. Private Location(s) 'Test private location 8' not found. Available private locations are '${testPrivateLocationName}'`
+        expect(editedError.body.failedMonitors[0].details).toContain(
+          "Invalid locations specified. Private Location(s) 'Test private location 8' not found."
         );
         expect(editedError.body.failedMonitors[0].reason).toBe(
           "Couldn't save or update monitor because of an invalid configuration."

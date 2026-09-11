@@ -17,7 +17,11 @@ export const FailedTestsByStep = ({ time }: { time: { to: string; from: string }
 
   const { monitor } = useSelectedMonitor();
 
-  if (monitor?.type !== 'browser') {
+  // Both browser and API journeys emit synthexec `step/end` events with
+  // `synthetics.step.name` — the underlying aggregation in
+  // `useFailedTestByStep` works for either. HTTP/TCP/ICMP monitors have no
+  // step concept so the panel stays hidden for them.
+  if (monitor?.type !== 'browser' && monitor?.type !== 'api') {
     return null;
   }
 

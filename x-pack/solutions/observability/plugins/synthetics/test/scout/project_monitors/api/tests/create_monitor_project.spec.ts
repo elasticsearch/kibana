@@ -9,7 +9,7 @@
  * Migrated from the FTR suite
  * `apis/synthetics/create_monitor_project.ts` (`CreateProjectMonitors`).
  *
- * Covers pushing project monitors of every type (browser/http/tcp/icmp),
+ * Covers pushing project monitors of every type (api/browser/http/tcp/icmp),
  * decryption-after-hydration, public/private location formatting, invalid
  * location handling, and the legacy (`synthetics-monitor`) project CRUD flow.
  */
@@ -33,6 +33,7 @@ import {
 import { deleteMonitors, getMonitor, listMonitors } from '../../../common/fixtures/monitors';
 import { pushProjectMonitors } from '../../../common/fixtures/project';
 import { projectBrowserMonitorFixture } from '../fixtures/data/project_browser_monitor';
+import { projectApiMonitorFixture } from '../fixtures/data/project_api_monitor';
 import { projectHttpMonitorFixture } from '../fixtures/data/project_http_monitor';
 import { projectTcpMonitorFixture } from '../fixtures/data/project_tcp_monitor';
 import { projectIcmpMonitorFixture } from '../../../common/fixtures/data/project_icmp_monitor';
@@ -206,6 +207,155 @@ apiTest.describe(
         });
       }
     });
+
+    apiTest('project monitors - handles api monitors', async ({ apiClient, config }) => {
+      apiTest.skip(
+        config.serverless,
+        'API Journey monitors are not yet supported on Serverless (see the dedicated Serverless test below)'
+      );
+
+      const monitors = withUniqueIds(projectApiMonitorFixture.monitors);
+      monitors[0] = {
+        ...monitors[0],
+        locations: [],
+        privateLocations: [privateLocations[0].label],
+      };
+      const successfulMonitors = [monitors[0]];
+      const project = `test-project-${uuidv4()}`;
+
+      try {
+        const res = await pushProjectMonitors(apiClient, editorHeaders, project, monitors);
+
+        expect(res.body).toStrictEqual({
+          updatedMonitors: [],
+          createdMonitors: successfulMonitors.map((monitor) => monitor.id),
+          failedMonitors: [],
+        });
+
+        for (const monitor of successfulMonitors) {
+          const journeyId = monitor.id;
+          const found = await findByJourneyId(apiClient, journeyId);
+          const { rawBody: decrypted } = await getMonitor(
+            apiClient,
+            editorHeaders,
+            found[0].config_id,
+            { internal: true }
+          );
+
+          expect(decrypted).toStrictEqual({
+            __ui: {
+              script_source: {
+                file_name: '',
+                is_generated_script: false,
+              },
+            },
+            config_id: decrypted.config_id,
+            custom_heartbeat_id: `${journeyId}-${project}-default`,
+            enabled: true,
+            alert: {
+              status: { enabled: true },
+              tls: { enabled: true },
+            },
+            'filter_journeys.match': 'orders api health',
+            'filter_journeys.tags': [],
+            form_monitor_type: 'api',
+            ignore_https_errors: true,
+            certificate_error_spki_allowlist: [],
+            journey_id: journeyId,
+            locations: [
+              {
+                label: privateLocations[0].label,
+                isServiceManaged: false,
+                agentPolicyId: privateLocations[0].agentPolicyId,
+                id: privateLocations[0].id,
+                geo: {
+                  lat: 0,
+                  lon: 0,
+                },
+              },
+            ],
+            name: 'orders api health',
+            namespace: 'default',
+            origin: 'project',
+            original_space: 'default',
+            playwright_options: '{"extraHTTPHeaders":{"x-test":"1"}}',
+            playwright_text_assertion: '',
+            project_id: project,
+            params: '',
+            revision: 1,
+            schedule: {
+              number: '10',
+              unit: 'm',
+            },
+            screenshots: 'off',
+            'service.name': '',
+            synthetics_args: [],
+            tags: ['api'],
+            throttling: PROFILES_MAP[PROFILE_VALUES_ENUM.NO_THROTTLING],
+            'ssl.certificate': '',
+            'ssl.certificate_authorities': '',
+            'ssl.supported_protocols': ['TLSv1.1', 'TLSv1.2', 'TLSv1.3'],
+            'ssl.verification_mode': 'full',
+            'ssl.key': '',
+            'ssl.key_passphrase': '',
+            'source.inline.script': '',
+            'source.project.content': projectApiMonitorFixture.monitors[0].content,
+            timeout: null,
+            type: 'api',
+            'url.port': null,
+            urls: '',
+            id: `${journeyId}-${project}-default`,
+            hash: 'ekrjelkjrelkjre',
+            max_attempts: 2,
+            updated_at: decrypted.updated_at,
+            created_at: decrypted.created_at,
+            labels: {},
+            maintenance_windows: [],
+            spaces: ['default'],
+          });
+        }
+      } finally {
+        await Promise.all(
+          successfulMonitors.map((monitor) => deleteByJourneyId(apiClient, monitor.id))
+        );
+      }
+    });
+
+    apiTest(
+      'project monitors - rejects api monitors on Serverless',
+      async ({ apiClient, config }) => {
+        apiTest.skip(!config.serverless, 'only relevant on Serverless');
+
+        const monitors = withUniqueIds(projectApiMonitorFixture.monitors);
+        monitors[0] = {
+          ...monitors[0],
+          locations: [],
+          privateLocations: [privateLocations[0].label],
+        };
+        const project = `test-project-${uuidv4()}`;
+
+        try {
+          const res = await pushProjectMonitors(apiClient, editorHeaders, project, monitors);
+
+          // API Journey monitors aren't supported on Serverless yet; the push
+          // is rejected rather than creating the monitor.
+          expect(res.body).toStrictEqual({
+            updatedMonitors: [],
+            createdMonitors: [],
+            failedMonitors: [
+              {
+                id: monitors[0].id,
+                details: 'API Journey monitor support is not yet available on Serverless.',
+                reason: 'API Journey monitors are not yet supported on Serverless',
+                payload: monitors[0],
+              },
+            ],
+          });
+        } finally {
+          await deleteByJourneyId(apiClient, monitors[0].id);
+        }
+      }
+    );
 
     apiTest('project monitors - handles http monitors', async ({ apiClient, kbnClient }) => {
       const kibanaVersion = await kbnClient.version.get();

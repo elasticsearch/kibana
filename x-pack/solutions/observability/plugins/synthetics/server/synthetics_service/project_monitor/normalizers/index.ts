@@ -9,6 +9,7 @@ import type { PrivateLocationAttributes } from '../../../runtime_types/private_l
 import type { Locations, ProjectMonitor } from '../../../../common/runtime_types';
 import { MonitorTypeEnum } from '../../../../common/runtime_types';
 import { getNormalizeBrowserFields } from './browser_monitor';
+import { getNormalizeAPIFields } from './api_monitor';
 import { getNormalizeICMPFields } from './icmp_monitor';
 import { getNormalizeTCPFields } from './tcp_monitor';
 import { getNormalizeHTTPFields } from './http_monitor';
@@ -21,6 +22,9 @@ export const normalizeProjectMonitor = (props: NormalizedProjectProps) => {
   switch (type) {
     case MonitorTypeEnum.BROWSER:
       return getNormalizeBrowserFields(props);
+
+    case MonitorTypeEnum.API:
+      return getNormalizeAPIFields(props);
 
     case MonitorTypeEnum.HTTP:
       return getNormalizeHTTPFields(props);

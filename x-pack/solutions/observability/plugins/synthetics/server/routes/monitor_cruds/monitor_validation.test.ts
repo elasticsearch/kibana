@@ -281,6 +281,47 @@ describe('validateMonitor', () => {
       });
     });
 
+    it('when api monitor uses Elastic managed locations', () => {
+      const testMonitor = {
+        ...testBrowserFields,
+        [ConfigKey.MONITOR_TYPE]: MonitorTypeEnum.API,
+        [ConfigKey.FORM_MONITOR_TYPE]: FormMonitorType.API,
+        [ConfigKey.SOURCE_INLINE]: 'step()',
+      } as MonitorFields;
+      const result = validateMonitor(testMonitor, 'default');
+      expect(result).toMatchObject({
+        valid: false,
+        reason: 'API Journey monitors cannot run on Elastic managed locations',
+        details:
+          'API Journey monitors can only run on private locations. Remove Elastic managed locations from this monitor.',
+        payload: testMonitor,
+      });
+    });
+
+    it('when api monitor is created on Serverless', () => {
+      const testMonitor = {
+        ...testBrowserFields,
+        [ConfigKey.MONITOR_TYPE]: MonitorTypeEnum.API,
+        [ConfigKey.FORM_MONITOR_TYPE]: FormMonitorType.API,
+        [ConfigKey.SOURCE_INLINE]: 'step()',
+        [ConfigKey.LOCATIONS]: [
+          {
+            id: 'private-1',
+            label: 'Private Location',
+            geo: { lat: 0, lon: 0 },
+            isServiceManaged: false,
+          },
+        ],
+      } as MonitorFields;
+      const result = validateMonitor(testMonitor, 'default', true);
+      expect(result).toMatchObject({
+        valid: false,
+        reason: 'API Journey monitors are not yet supported on Serverless',
+        details: 'API Journey monitor support is not yet available on Serverless.',
+        payload: testMonitor,
+      });
+    });
+
     it('when browser timeout is less than 30 seconds with private locations', () => {
       const testMonitor = {
         ...testBrowserFields,
@@ -378,6 +419,30 @@ describe('validateMonitor', () => {
         reason: 'Monitor is not a valid monitor of type browser',
         details:
           'source.inline.script: Monitor script is invalid. Inline scripts cannot be full journey scripts, they may only contain step definitions.',
+        payload: testMonitor,
+      });
+    });
+
+    it('when payload is a correct API monitor on a private location', () => {
+      const testMonitor = {
+        ...testBrowserFields,
+        [ConfigKey.MONITOR_TYPE]: MonitorTypeEnum.API,
+        [ConfigKey.FORM_MONITOR_TYPE]: FormMonitorType.API,
+        [ConfigKey.SOURCE_INLINE]: 'step()',
+        [ConfigKey.LOCATIONS]: [
+          {
+            id: 'private-1',
+            label: 'Private Location',
+            geo: { lat: 0, lon: 0 },
+            isServiceManaged: false,
+          },
+        ],
+      } as MonitorFields;
+      const result = validateMonitor(testMonitor, 'default');
+      expect(result).toMatchObject({
+        valid: true,
+        reason: '',
+        details: '',
         payload: testMonitor,
       });
     });
@@ -628,6 +693,92 @@ describe('validateMonitor', () => {
           'Invalid location: "invalid-location". Remove it or replace it with a valid location.',
       });
     });
+
+    it('when api monitor uses public locations', () => {
+      const result = validateProjectMonitor(
+        {
+          type: MonitorTypeEnum.API,
+          id: 'api-1',
+          name: 'API Journey',
+          schedule: 5,
+          locations: ['us_central'],
+          content: 'apiJourney("orders", () => {})',
+        },
+        [
+          {
+            id: 'us_central',
+            label: 'US Central',
+            isServiceManaged: true,
+            geo: { lat: 0, lon: 0 },
+            url: 'https://example.com',
+          },
+        ],
+        []
+      );
+      expect(result).toMatchObject({
+        valid: false,
+        reason: "Couldn't save or update monitor because of an invalid configuration.",
+        details:
+          'API Journey monitors can only run on private locations. Remove "locations" or replace them with "privateLocations".',
+      });
+    });
+
+    it('when api monitor uses only private locations', () => {
+      const result = validateProjectMonitor(
+        {
+          type: MonitorTypeEnum.API,
+          id: 'api-1',
+          name: 'API Journey',
+          schedule: 5,
+          privateLocations: ['My Private'],
+          content: 'apiJourney("orders", () => {})',
+        },
+        [],
+        [
+          {
+            id: 'priv-1',
+            label: 'My Private',
+            agentPolicyId: 'policy-1',
+            isServiceManaged: false,
+            spaces: ['*'],
+          },
+        ]
+      );
+      expect(result).toMatchObject({
+        valid: true,
+        reason: '',
+        details: '',
+      });
+    });
+
+    it('when api project monitor is created on Serverless', () => {
+      const result = validateProjectMonitor(
+        {
+          type: MonitorTypeEnum.API,
+          id: 'api-1',
+          name: 'API Journey',
+          schedule: 5,
+          privateLocations: ['My Private'],
+          content: 'apiJourney("orders", () => {})',
+        },
+        [],
+        [
+          {
+            id: 'priv-1',
+            label: 'My Private',
+            agentPolicyId: 'policy-1',
+            isServiceManaged: false,
+            spaces: ['*'],
+          },
+        ],
+        true
+      );
+      expect(result).toMatchObject({
+        valid: false,
+        reason: 'API Journey monitors are not yet supported on Serverless',
+        details: 'API Journey monitor support is not yet available on Serverless.',
+      });
+    });
   });
 });
 
@@ -676,6 +827,19 @@ describe('normalizeAPIConfig', () => {
       errorMessage: 'Invalid monitor key(s) for browser type:  url',
       formattedConfig: {
         type: 'browser',
+      },
+    });
+
+    expect(normalizeAPIConfig({ type: 'api', urls: '' } as any)).toEqual({
+      formattedConfig: {
+        type: 'api',
+      },
+    });
+
+    expect(normalizeAPIConfig({ type: 'api', urls: 'https://www.google.com' } as any)).toEqual({
+      errorMessage: 'Invalid monitor key(s) for api type:  urls',
+      formattedConfig: {
+        type: 'api',
       },
     });
   });

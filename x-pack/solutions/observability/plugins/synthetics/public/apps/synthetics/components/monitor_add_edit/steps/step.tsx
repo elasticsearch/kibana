@@ -15,11 +15,13 @@ interface Props {
 
 export const Step = ({ description, children }: Props) => {
   return (
-    <EuiFlexGroup gutterSize="s" wrap>
-      <EuiFlexItem style={{ minWidth: 208 }}>
-        <EuiText>{description}</EuiText>
+    <EuiFlexGroup gutterSize="s" alignItems="flexStart" wrap>
+      <EuiFlexItem css={{ minWidth: 208 }}>
+        <EuiText size="s" color="subdued" css={{ '& > :last-child': { marginBottom: 0 } }}>
+          {description}
+        </EuiText>
       </EuiFlexItem>
-      <EuiFlexItem style={{ minWidth: 208 }}>{children}</EuiFlexItem>
+      <EuiFlexItem css={{ minWidth: 208 }}>{children}</EuiFlexItem>
     </EuiFlexGroup>
   );
 };

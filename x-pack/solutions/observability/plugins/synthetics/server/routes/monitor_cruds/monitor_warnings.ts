@@ -14,17 +14,24 @@ interface MonitorWarning {
   message: string;
 }
 
-const buildBrowserTimeoutWarning = (
+// Browser and API monitors both run via Heartbeat's synthexec runtime (api
+// reuses browser.NewSourceJob per elastic/beats#50802); the public-location
+// timeout limitation is identical for both.
+const isSyntheticsScriptedType = (type?: string) =>
+  type === MonitorTypeEnum.BROWSER || type === MonitorTypeEnum.API;
+
+const buildScriptedMonitorTimeoutWarning = (
   monitorId: string,
-  publicLocationIds: string[]
+  publicLocationIds: string[],
+  monitorType: MonitorTypeEnum
 ): MonitorWarning => ({
   monitorId,
   message: i18n.translate(
     'xpack.synthetics.server.monitors.browserTimeoutNoPrivateLocationsWarning',
     {
       defaultMessage:
-        'For browser monitors, timeout is only supported on private locations. Browser monitor {monitorId} specifies a timeout and is running on public locations: {publicLocationIds}. The timeout will have no effect on these locations.',
-      values: { monitorId, publicLocationIds: publicLocationIds.join(', ') },
+        'For {monitorType} monitors, timeout is only supported on private locations. Monitor {monitorId} specifies a timeout and is running on public locations: {publicLocationIds}. The timeout will have no effect on these locations.',
+      values: { monitorId, monitorType, publicLocationIds: publicLocationIds.join(', ') },
     }
   ),
   publicLocationIds,
@@ -34,7 +41,8 @@ export const getBrowserTimeoutWarningForMonitor = (
   monitor: SyntheticsMonitor,
   monitorId: string
 ): MonitorWarning | null => {
-  if (monitor[ConfigKey.MONITOR_TYPE] !== MonitorTypeEnum.BROWSER) {
+  const monitorType = monitor[ConfigKey.MONITOR_TYPE];
+  if (!isSyntheticsScriptedType(monitorType)) {
     return null;
   }
   if (!monitor[ConfigKey.TIMEOUT]) {
@@ -46,7 +54,11 @@ export const getBrowserTimeoutWarningForMonitor = (
   if (publicLocationIds.length === 0) {
     return null;
   }
-  return buildBrowserTimeoutWarning(monitorId, publicLocationIds);
+  return buildScriptedMonitorTimeoutWarning(
+    monitorId,
+    publicLocationIds,
+    monitorType as MonitorTypeEnum
+  );
 };
 
 export const getBrowserTimeoutWarningsForProjectMonitors = (
@@ -54,11 +66,17 @@ export const getBrowserTimeoutWarningsForProjectMonitors = (
 ): MonitorWarning[] => {
   return monitors.reduce<MonitorWarning[]>((acc, monitor) => {
     if (
-      monitor.type === MonitorTypeEnum.BROWSER &&
+      isSyntheticsScriptedType(monitor.type) &&
       Boolean(monitor.timeout) &&
       (monitor.locations ?? []).length > 0
     ) {
-      acc.push(buildBrowserTimeoutWarning(monitor.id, monitor.locations as string[]));
+      acc.push(
+        buildScriptedMonitorTimeoutWarning(
+          monitor.id,
+          monitor.locations as string[],
+          monitor.type as MonitorTypeEnum
+        )
+      );
     }
 
     return acc;

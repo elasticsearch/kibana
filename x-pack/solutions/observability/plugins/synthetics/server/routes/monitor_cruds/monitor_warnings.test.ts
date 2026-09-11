@@ -23,7 +23,7 @@ describe('monitor warnings', () => {
       expect(getBrowserTimeoutWarningForMonitor(monitor, 'monitor-id')).toEqual({
         monitorId: 'monitor-id',
         message:
-          'For browser monitors, timeout is only supported on private locations. Browser monitor monitor-id specifies a timeout and is running on public locations: us-east. The timeout will have no effect on these locations.',
+          'For browser monitors, timeout is only supported on private locations. Monitor monitor-id specifies a timeout and is running on public locations: us-east. The timeout will have no effect on these locations.',
         publicLocationIds: ['us-east'],
       });
     });
@@ -36,6 +36,21 @@ describe('monitor warnings', () => {
       } as MonitorFields;
 
       expect(getBrowserTimeoutWarningForMonitor(monitor, 'monitor-id')).toBeNull();
+    });
+
+    it('returns warning for api monitor with timeout and only public locations', () => {
+      const monitor = {
+        [ConfigKey.MONITOR_TYPE]: MonitorTypeEnum.API,
+        [ConfigKey.TIMEOUT]: '60',
+        locations: [{ id: 'us-east', isServiceManaged: true }],
+      } as MonitorFields;
+
+      expect(getBrowserTimeoutWarningForMonitor(monitor, 'monitor-id')).toEqual({
+        monitorId: 'monitor-id',
+        message:
+          'For api monitors, timeout is only supported on private locations. Monitor monitor-id specifies a timeout and is running on public locations: us-east. The timeout will have no effect on these locations.',
+        publicLocationIds: ['us-east'],
+      });
     });
 
     it('returns null when timeout is not provided', () => {
@@ -76,7 +91,30 @@ describe('monitor warnings', () => {
         {
           monitorId: 'journey-1',
           message:
-            'For browser monitors, timeout is only supported on private locations. Browser monitor journey-1 specifies a timeout and is running on public locations: public-1. The timeout will have no effect on these locations.',
+            'For browser monitors, timeout is only supported on private locations. Monitor journey-1 specifies a timeout and is running on public locations: public-1. The timeout will have no effect on these locations.',
+          publicLocationIds: ['public-1'],
+        },
+      ]);
+    });
+
+    it('returns warning for api project monitor with timeout and public locations', () => {
+      const monitors = [
+        {
+          id: 'journey-1',
+          type: MonitorTypeEnum.API,
+          name: 'API monitor',
+          schedule: '10',
+          timeout: '60',
+          privateLocations: ['private-1'],
+          locations: ['public-1'],
+        } as ProjectMonitor,
+      ];
+
+      expect(getBrowserTimeoutWarningsForProjectMonitors(monitors)).toEqual([
+        {
+          monitorId: 'journey-1',
+          message:
+            'For api monitors, timeout is only supported on private locations. Monitor journey-1 specifies a timeout and is running on public locations: public-1. The timeout will have no effect on these locations.',
           publicLocationIds: ['public-1'],
         },
       ]);

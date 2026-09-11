@@ -133,12 +133,16 @@ export const LastTestRunComponent = ({
 
       <EuiSpacer size="m" />
 
-      {monitor?.type === MonitorTypeEnum.BROWSER ? (
+      {monitor?.type === MonitorTypeEnum.BROWSER || monitor?.type === MonitorTypeEnum.API ? (
         <BrowserStepsList
           steps={stepsData?.steps ?? []}
           loading={stepsLoading}
           showStepNumber={true}
           showExpand={isErrorDetails}
+          // API journeys reuse the synthexec step pipeline but have no
+          // browser context to screenshot — keep the column out instead
+          // of rendering empty placeholders.
+          showScreenshots={monitor?.type === MonitorTypeEnum.BROWSER}
         />
       ) : (
         <SinglePingResult ping={latestPing} />
@@ -169,7 +173,11 @@ const PanelHeader = ({
   const formatter = useDateFormat();
   const lastRunTimestamp = formatter(latestPing?.['@timestamp']);
 
-  const isBrowserMonitor = monitor?.[ConfigKey.MONITOR_TYPE] === MonitorTypeEnum.BROWSER;
+  // API monitors share the synthexec runtime with browser, so the panel
+  // header treats them the same (script step list available, duration shown).
+  const monitorType = monitor?.[ConfigKey.MONITOR_TYPE];
+  const isBrowserMonitor =
+    monitorType === MonitorTypeEnum.BROWSER || monitorType === MonitorTypeEnum.API;
 
   const TitleNode = (
     <EuiTitle size="xs">

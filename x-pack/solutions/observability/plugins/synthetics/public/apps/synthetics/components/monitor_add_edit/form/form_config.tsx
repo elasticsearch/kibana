@@ -9,7 +9,7 @@ import { i18n } from '@kbn/i18n';
 import type { FieldMeta } from '../types';
 import { ConfigKey, FormMonitorType } from '../types';
 import { AlertConfigKey } from '../constants';
-import { FIELD } from './field_config';
+import { API_PRIVATE_LOCATIONS_ONLY, FIELD } from './field_config';
 
 const DEFAULT_DATA_OPTIONS = (readOnly: boolean) => ({
   title: i18n.translate('xpack.synthetics.monitorConfig.section.dataOptions.title', {
@@ -169,6 +169,32 @@ export const BROWSER_ADVANCED = (readOnly: boolean) => [
   },
 ];
 
+// API journeys share the synthexec runtime with browser journeys but never
+// launch Chromium. Heartbeat's `api` plugin (elastic/beats#50802) silently
+// strips `--throttling` / `--screenshots` / `--sandbox` from the CLI args,
+// so we omit THROTTLING_CONFIG from the form to avoid offering knobs that
+// do nothing. IGNORE_HTTPS_ERRORS and PLAYWRIGHT_OPTIONS are still
+// forwarded because they apply to APIRequestContext.
+export const API_ADVANCED = (readOnly: boolean) => [
+  {
+    title: i18n.translate('xpack.synthetics.monitorConfig.section.syntAgentOptions.title', {
+      defaultMessage: 'Synthetics agent options',
+    }),
+    description: i18n.translate(
+      'xpack.synthetics.monitorConfig.section.syntAgentOptions.description',
+      {
+        defaultMessage: 'Provide fine-tuned configuration for the synthetics agent.',
+      }
+    ),
+    components: [
+      FIELD(readOnly)[ConfigKey.IGNORE_HTTPS_ERRORS],
+      FIELD(readOnly)[ConfigKey.SYNTHETICS_ARGS],
+      FIELD(readOnly)[ConfigKey.PLAYWRIGHT_OPTIONS],
+      FIELD(readOnly)[ConfigKey.PARAMS],
+    ],
+  },
+];
+
 interface AdvancedFieldGroup {
   title: string;
   description: string;
@@ -288,6 +314,36 @@ export const FORM_CONFIG = (readOnly: boolean): FieldConfig => ({
       },
       MAINTENANCE_WINDOWS_OPTIONS(readOnly),
       ...BROWSER_ADVANCED(readOnly),
+      KIBANA_SPACES_OPTIONS(readOnly),
+    ],
+  },
+  [FormMonitorType.API]: {
+    step1: [FIELD(readOnly)[ConfigKey.FORM_MONITOR_TYPE]],
+    step2: [
+      FIELD(readOnly)[ConfigKey.NAME],
+      {
+        ...FIELD(readOnly)[ConfigKey.LOCATIONS],
+        helpText: API_PRIVATE_LOCATIONS_ONLY,
+      },
+      FIELD(readOnly)[`${ConfigKey.SCHEDULE}.number`],
+      FIELD(readOnly)[ConfigKey.ENABLED],
+      FIELD(readOnly)[ConfigKey.MAX_ATTEMPTS],
+      FIELD(readOnly)[AlertConfigKey.STATUS_ENABLED],
+    ],
+    step3: [FIELD(readOnly)['source.inline'], FIELD(readOnly)[ConfigKey.PARAMS]],
+    scriptEdit: [FIELD(readOnly)['source.inline'], FIELD(readOnly)[ConfigKey.PARAMS]],
+    advanced: [
+      {
+        ...DEFAULT_DATA_OPTIONS(readOnly),
+        components: [
+          FIELD(readOnly)[ConfigKey.TAGS],
+          FIELD(readOnly)[ConfigKey.LABELS],
+          FIELD(readOnly)[ConfigKey.APM_SERVICE_NAME],
+          FIELD(readOnly)[ConfigKey.NAMESPACE],
+        ],
+      },
+      MAINTENANCE_WINDOWS_OPTIONS(readOnly),
+      ...API_ADVANCED(readOnly),
       KIBANA_SPACES_OPTIONS(readOnly),
     ],
   },

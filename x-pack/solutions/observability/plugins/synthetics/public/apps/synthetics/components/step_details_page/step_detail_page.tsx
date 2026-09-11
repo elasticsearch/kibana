@@ -24,6 +24,7 @@ import { MonitorDetailsLinkPortal } from '../monitor_add_edit/monitor_details_po
 import { StepImage } from './step_screenshot/step_image';
 import { BreakdownLegend } from './step_timing_breakdown/breakdown_legend';
 import { NetworkTimingsBreakdown } from './network_timings_breakdown';
+import { MonitorTypeEnum } from '../../../../../common/runtime_types';
 
 export const StepDetailPage = () => {
   const { checkGroupId, stepIndex } = useParams<{ checkGroupId: string; stepIndex: string }>();
@@ -32,6 +33,12 @@ export const StepDetailPage = () => {
   useTrackPageview({ app: 'synthetics', path: 'stepDetail', delay: 15000 });
 
   const { data, isFailedStep, currentStep } = useJourneySteps();
+
+  // API journeys never produce screenshots, web-vital metrics (LCP/FCP/CLS/DCL)
+  // or a MIME-typed resource graph, so omit the corresponding panels. The
+  // network timings donut/breakdown and waterfall still apply — they are
+  // computed from `journey/network_info` events that API monitors emit too.
+  const isApiMonitor = data?.details?.journey.monitor.type === MonitorTypeEnum.API;
 
   useStepDetailsBreadcrumbs();
 
@@ -65,13 +72,19 @@ export const StepDetailPage = () => {
         />
       )}
       <EuiFlexGroup gutterSize="m">
-        <EuiFlexItem grow={1}>
-          <EuiPanel hasShadow={false} hasBorder>
-            {data?.details?.journey && currentStep && (
-              <StepImage ping={data?.details?.journey} step={currentStep} isFailed={isFailedStep} />
-            )}
-          </EuiPanel>
-        </EuiFlexItem>
+        {!isApiMonitor && (
+          <EuiFlexItem grow={1}>
+            <EuiPanel hasShadow={false} hasBorder>
+              {data?.details?.journey && currentStep && (
+                <StepImage
+                  ping={data?.details?.journey}
+                  step={currentStep}
+                  isFailed={isFailedStep}
+                />
+              )}
+            </EuiPanel>
+          </EuiFlexItem>
+        )}
         <EuiFlexItem grow={2}>
           <EuiPanel hasShadow={false} hasBorder>
             <EuiFlexGroup wrap>
@@ -92,21 +105,23 @@ export const StepDetailPage = () => {
       <EuiFlexGroup gutterSize="m">
         <EuiFlexItem grow={1}>
           <EuiPanel hasShadow={false} hasBorder>
-            <StepMetrics />
+            <StepMetrics isApiMonitor={isApiMonitor} />
           </EuiPanel>
         </EuiFlexItem>
-        <EuiFlexItem grow={2}>
-          <EuiPanel hasShadow={false} hasBorder>
-            <EuiFlexGroup gutterSize="xl">
-              <EuiFlexItem grow={1}>
-                <ObjectWeightList />
-              </EuiFlexItem>
-              <EuiFlexItem grow={1}>
-                <ObjectCountList />
-              </EuiFlexItem>
-            </EuiFlexGroup>
-          </EuiPanel>
-        </EuiFlexItem>
+        {!isApiMonitor && (
+          <EuiFlexItem grow={2}>
+            <EuiPanel hasShadow={false} hasBorder>
+              <EuiFlexGroup gutterSize="xl">
+                <EuiFlexItem grow={1}>
+                  <ObjectWeightList />
+                </EuiFlexItem>
+                <EuiFlexItem grow={1}>
+                  <ObjectCountList />
+                </EuiFlexItem>
+              </EuiFlexGroup>
+            </EuiPanel>
+          </EuiFlexItem>
+        )}
       </EuiFlexGroup>
 
       <EuiSpacer size="l" />

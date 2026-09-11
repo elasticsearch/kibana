@@ -28,7 +28,12 @@ export const TestRunDetailsStatus = () => {
               isMonitorMissing && stepsData?.details ? (
                 <BadgeStatus
                   status={stepsData.details.journey.monitor.status}
-                  isBrowserType={stepsData.details.journey.monitor.type === 'browser'}
+                  // Browser + API journeys share the Succeeded/Failed badge
+                  // semantics; HTTP/TCP/ICMP fall back to Up/Down.
+                  isBrowserType={
+                    stepsData.details.journey.monitor.type === 'browser' ||
+                    stepsData.details.journey.monitor.type === 'api'
+                  }
                 />
               ) : (
                 <EuiSkeletonText lines={1} />

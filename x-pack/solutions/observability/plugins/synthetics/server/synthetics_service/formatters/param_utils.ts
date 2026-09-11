@@ -106,7 +106,10 @@ export const monitorUsesGlobalParams = (
   monitor: SyntheticsMonitor,
   modifiedParamKeys?: string[]
 ): boolean => {
-  if (monitor.type === MonitorTypeEnum.BROWSER) {
+  // Browser and API monitors access params via JavaScript (`params.paramName`)
+  // which cannot be reliably detected by scanning script content, so assume
+  // they always use global params.
+  if (monitor.type === MonitorTypeEnum.BROWSER || monitor.type === MonitorTypeEnum.API) {
     return true;
   }
 

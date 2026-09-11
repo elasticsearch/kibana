@@ -117,6 +117,70 @@ const MONITOR_SCRIPT_STEP: Step = {
   ),
 };
 
+const MONITOR_API_SCRIPT_STEP: Step = {
+  title: i18n.translate('xpack.synthetics.monitorConfig.monitorApiScriptStep.title', {
+    defaultMessage: 'Add an API journey script',
+  }),
+  children: (
+    <StepFields
+      description={
+        <p>
+          <FormattedMessage
+            id="xpack.synthetics.monitorConfig.monitorApiScriptStep.description"
+            defaultMessage="Write a {apiJourney} script using {playwright} APIRequestContext. No browser is launched."
+            values={{
+              apiJourney: <code>apiJourney(...)</code>,
+              playwright: (
+                <EuiLink
+                  data-test-subj="syntheticsApiJourneyPlaywrightLink"
+                  href="https://playwright.dev/docs/api-testing"
+                  target="_blank"
+                  external
+                >
+                  <FormattedMessage
+                    id="xpack.synthetics.monitorConfig.monitorApiScriptStep.playwrightLink"
+                    defaultMessage="Playwright"
+                  />
+                </EuiLink>
+              ),
+            }}
+          />
+        </p>
+      }
+      stepKey="step3"
+    />
+  ),
+};
+
+const MONITOR_API_SCRIPT_STEP_EDIT = (readOnly: boolean = false): Step => ({
+  title: i18n.translate('xpack.synthetics.monitorConfig.monitorApiScriptEditStep.title', {
+    defaultMessage: 'API journey script',
+  }),
+  children: (
+    <StepFields
+      description={
+        <p>
+          {readOnly ? (
+            <FormattedMessage
+              id="xpack.synthetics.monitorConfig.monitorApiScriptEditStepReadOnly.description"
+              defaultMessage="You can only view and edit the script in the source file of the monitor."
+            />
+          ) : (
+            <FormattedMessage
+              id="xpack.synthetics.monitorConfig.monitorApiScriptEditStep.description"
+              defaultMessage="Edit the existing {apiJourney} script (or paste a new one) in the editor."
+              values={{ apiJourney: <code>apiJourney(...)</code> }}
+            />
+          )}
+        </p>
+      }
+      stepKey="scriptEdit"
+      readOnly={readOnly}
+      descriptionOnly={readOnly}
+    />
+  ),
+});
+
 const MONITOR_SCRIPT_STEP_EDIT = (readOnly: boolean = false): Step => ({
   title: i18n.translate('xpack.synthetics.monitorConfig.monitorScriptEditStep.title', {
     defaultMessage: 'Monitor script',
@@ -165,6 +229,7 @@ const MONITOR_SCRIPT_STEP_EDIT = (readOnly: boolean = false): Step => ({
 
 export const ADD_MONITOR_STEPS: StepMap = {
   [FormMonitorType.MULTISTEP]: [MONITOR_TYPE_STEP, MONITOR_DETAILS_STEP(), MONITOR_SCRIPT_STEP],
+  [FormMonitorType.API]: [MONITOR_TYPE_STEP, MONITOR_DETAILS_STEP(), MONITOR_API_SCRIPT_STEP],
   [FormMonitorType.SINGLE]: [MONITOR_TYPE_STEP, MONITOR_DETAILS_STEP()],
   [FormMonitorType.HTTP]: [MONITOR_TYPE_STEP, MONITOR_DETAILS_STEP()],
   [FormMonitorType.ICMP]: [MONITOR_TYPE_STEP, MONITOR_DETAILS_STEP()],
@@ -173,6 +238,7 @@ export const ADD_MONITOR_STEPS: StepMap = {
 
 export const EDIT_MONITOR_STEPS = (readOnly: boolean): StepMap => ({
   [FormMonitorType.MULTISTEP]: [MONITOR_SCRIPT_STEP_EDIT(readOnly), MONITOR_DETAILS_STEP(readOnly)],
+  [FormMonitorType.API]: [MONITOR_API_SCRIPT_STEP_EDIT(readOnly), MONITOR_DETAILS_STEP(readOnly)],
   [FormMonitorType.SINGLE]: [MONITOR_DETAILS_STEP(readOnly)],
   [FormMonitorType.HTTP]: [MONITOR_DETAILS_STEP(readOnly)],
   [FormMonitorType.ICMP]: [MONITOR_DETAILS_STEP(readOnly)],

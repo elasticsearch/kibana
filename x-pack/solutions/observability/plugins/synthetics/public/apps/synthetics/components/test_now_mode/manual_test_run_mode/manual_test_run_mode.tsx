@@ -30,11 +30,13 @@ export function ManualTestRunMode({
 
   if (!manualTestRun.testRunId || !monitor) return null;
 
-  const isBrowserMonitor = monitor.type === 'browser';
+  // API journeys ride the same step pipeline as browser monitors; the
+  // SimpleTestResults flow only understands single-ping HTTP/TCP/ICMP runs.
+  const isMultiStepMonitor = monitor.type === 'browser' || monitor.type === 'api';
 
   return (
     <Fragment key={manualTestRun.testRunId}>
-      {isBrowserMonitor ? (
+      {isMultiStepMonitor ? (
         <BrowserTestRunResult
           name={monitor.name}
           expectPings={expectPings}

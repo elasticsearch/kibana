@@ -13,6 +13,7 @@ export enum MonitorTypeEnum {
   TCP = 'tcp',
   ICMP = 'icmp',
   BROWSER = 'browser',
+  API = 'api',
 }
 
 export const MonitorTypeCodec = tEnum<MonitorTypeEnum>('type', MonitorTypeEnum);
@@ -102,6 +103,7 @@ export const SourceTypeCodec = tEnum<SourceType>('SourceType', SourceType);
 export enum FormMonitorType {
   SINGLE = 'single',
   MULTISTEP = 'multistep',
+  API = 'api',
   HTTP = 'http',
   TCP = 'tcp',
   ICMP = 'icmp',

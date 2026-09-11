@@ -158,6 +158,7 @@ describe('defaults', () => {
     [MonitorTypeEnum.TCP, FormMonitorType.TCP],
     [MonitorTypeEnum.ICMP, FormMonitorType.ICMP],
     [MonitorTypeEnum.BROWSER, FormMonitorType.MULTISTEP],
+    [MonitorTypeEnum.API, FormMonitorType.API],
   ])(
     'correctly formats legacy uptime monitors to include ConfigKey.FORM_MONITOR_TYPE',
     (dataStream, formType) => {

@@ -8,7 +8,7 @@
 import React from 'react';
 import { fireEvent, waitFor } from '@testing-library/react';
 import type { EncryptedSyntheticsSavedMonitor } from '../../../../../../../common/runtime_types';
-import { ConfigKey, SourceType } from '../../../../../../../common/runtime_types';
+import { ConfigKey, MonitorTypeEnum, SourceType } from '../../../../../../../common/runtime_types';
 import { render } from '../../../../utils/testing/rtl_helpers';
 import { kibanaService } from '../../../../../../utils/kibana_service';
 import { useGetUrlParams } from '../../../../hooks';
@@ -58,9 +58,11 @@ const makeMonitor = (
   {
     origin = SourceType.UI,
     locations = [],
+    type,
   }: {
     origin?: SourceType;
     locations?: Array<{ id: string; label: string; isServiceManaged: boolean }>;
+    type?: MonitorTypeEnum;
   } = {}
 ): EncryptedSyntheticsSavedMonitor =>
   ({
@@ -68,6 +70,7 @@ const makeMonitor = (
     [ConfigKey.NAME]: name,
     [ConfigKey.MONITOR_SOURCE_TYPE]: origin,
     [ConfigKey.LOCATIONS]: locations,
+    [ConfigKey.MONITOR_TYPE]: type,
   } as unknown as EncryptedSyntheticsSavedMonitor);
 
 describe('<BulkLocationsFlyout />', () => {
@@ -100,6 +103,31 @@ describe('<BulkLocationsFlyout />', () => {
   const clickSave = (getByTestId: (id: string) => HTMLElement) => {
     fireEvent.click(getByTestId('syntheticsBulkLocationsSave'));
   };
+
+  it('does not add Elastic managed locations to API Journey monitors', async () => {
+    const monitors = [
+      makeMonitor('http-1', 'HTTP monitor', {
+        locations: [location('us_west', 'US West')],
+        type: MonitorTypeEnum.HTTP,
+      }),
+      makeMonitor('api-1', 'API Journey', {
+        locations: [{ id: 'qa_private', label: 'QA private', isServiceManaged: false }],
+        type: MonitorTypeEnum.API,
+      }),
+    ];
+    fetchBulkUpdateMonitorsMock.mockResolvedValue({ result: [{ id: 'http-1', updated: true }] });
+
+    const { getByTestId } = render(
+      <BulkLocationsFlyout monitors={monitors} onClose={onClose} reloadPage={reloadPage} />
+    );
+
+    selectUsEast(getByTestId);
+    clickSave(getByTestId);
+
+    await waitFor(() => expect(fetchBulkUpdateMonitorsMock).toHaveBeenCalledTimes(1));
+    const arg = fetchBulkUpdateMonitorsMock.mock.calls[0][0];
+    expect(arg.updates.map((u) => u.id)).toEqual(['http-1']);
+  });
 
   it('adds the selected location only to monitors that do not already have it', async () => {
     const monitors = [

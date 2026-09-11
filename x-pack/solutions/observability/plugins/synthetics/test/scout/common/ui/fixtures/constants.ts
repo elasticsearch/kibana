@@ -27,6 +27,7 @@ export const monitorConfigurations = (locationLabel: string) => {
   const tcpName = `tcp monitor ${uuidv4()}`;
   const browserName = `browser monitor ${uuidv4()}`;
   const browserRecorderName = `browser monitor recorder ${uuidv4()}`;
+  const apiName = `api monitor ${uuidv4()}`;
 
   return {
     [FormMonitorType.HTTP]: {
@@ -110,8 +111,32 @@ export const monitorConfigurations = (locationLabel: string) => {
         ['[data-test-subj=syntheticsMonitorConfigSchedule]', '10'],
         ['[data-test-subj=syntheticsMonitorConfigName]', browserName],
         [
-          'div[data-test-subj="codeEditorContainer"][aria-label="JavaScript code editor"] .view-line',
+          'div[data-test-subj="codeEditorContainer"][aria-label="JavaScript code editor"]',
           'step("test step", () => {})',
+        ],
+        ['[data-test-subj=syntheticsMonitorConfigAPMServiceName]', apmServiceName],
+      ] as Array<[string, string]>,
+    },
+    [FormMonitorType.API]: {
+      monitorType: FormMonitorType.API,
+      monitorConfig: {
+        schedule: '10',
+        name: apiName,
+        inlineScript: 'step("ping", async ({ request }) => {})',
+        locations: [locationLabel],
+        apmServiceName,
+      },
+      monitorListDetails: {
+        location: locationLabel,
+        schedule: '10 minutes',
+        name: apiName,
+      },
+      monitorEditDetails: [
+        ['[data-test-subj=syntheticsMonitorConfigSchedule]', '10'],
+        ['[data-test-subj=syntheticsMonitorConfigName]', apiName],
+        [
+          'div[data-test-subj="codeEditorContainer"][aria-label="JavaScript code editor"]',
+          'step("ping", async ({ request }) => {})',
         ],
         ['[data-test-subj=syntheticsMonitorConfigAPMServiceName]', apmServiceName],
       ] as Array<[string, string]>,
@@ -134,7 +159,7 @@ export const monitorConfigurations = (locationLabel: string) => {
         ['[data-test-subj=syntheticsMonitorConfigSchedule]', '10'],
         ['[data-test-subj=syntheticsMonitorConfigName]', browserRecorderName],
         [
-          'div[data-test-subj="codeEditorContainer"][aria-label="JavaScript code editor"] .view-line',
+          'div[data-test-subj="codeEditorContainer"][aria-label="JavaScript code editor"]',
           'step("test step", () => {})',
         ],
       ] as Array<[string, string]>,
