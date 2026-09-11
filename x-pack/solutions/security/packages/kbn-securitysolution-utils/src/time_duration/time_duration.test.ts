@@ -5,7 +5,7 @@
  * 2.0.
  */
 
-import { TimeDuration } from './time_duration';
+import { TimeDuration, getTimeDurationUnit } from './time_duration';
 
 describe('TimeDuration', () => {
   describe('fromMilliseconds', () => {
@@ -22,6 +22,41 @@ describe('TimeDuration', () => {
       const result = TimeDuration.fromMilliseconds(ms);
 
       expect(result).toEqual(expectedTimeDuration);
+    });
+
+    it.each([
+      [360000, 's', new TimeDuration(360, 's')],
+      [360000, 'm', new TimeDuration(6, 'm')],
+      [7200000, 'h', new TimeDuration(2, 'h')],
+      // Falls back to normalization when not a whole number of the preferred unit
+      [150000, 'm', new TimeDuration(150, 's')],
+      // The preferred unit is ignored for zero so it stays "0s"
+      [0, 'm', new TimeDuration(0, 's')],
+    ] as const)(
+      'parses "%s" preserving preferred unit "%s"',
+      (ms, preferredUnit, expectedTimeDuration) => {
+        const result = TimeDuration.fromMilliseconds(ms, preferredUnit);
+
+        expect(result).toEqual(expectedTimeDuration);
+      }
+    );
+  });
+
+  describe('getTimeDurationUnit', () => {
+    it.each([
+      ['360s', 's'],
+      ['6m', 'm'],
+      ['7h', 'h'],
+      ['9d', 'd'],
+      ['now-360s', 's'],
+      ['now-11m', 'm'],
+      ['now-2h', 'h'],
+    ] as const)('extracts unit from "%s"', (input, expectedUnit) => {
+      expect(getTimeDurationUnit(input)).toBe(expectedUnit);
+    });
+
+    it.each([['now'], ['']])('returns "undefined" for "%s"', (input) => {
+      expect(getTimeDurationUnit(input)).toBeUndefined();
     });
   });
 

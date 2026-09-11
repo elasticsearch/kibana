@@ -6,7 +6,7 @@
  */
 
 import React from 'react';
-import { TimeDuration } from '@kbn/securitysolution-utils/time_duration';
+import { TimeDuration, getTimeDurationUnit } from '@kbn/securitysolution-utils/time_duration';
 import type {
   RuleSchedule,
   SimpleRuleSchedule,
@@ -48,8 +48,11 @@ function serializer(formData: FormData): {
   invariant(interval !== undefined && interval.value > 0, 'Rule interval is invalid');
   invariant(lookBack !== undefined && lookBack.value >= 0, "Rule's look-back is invalid");
 
+  // Use the raw unit entered by the user (not `lookBack.unit`, which is
+  // normalized by `parse`) so the chosen format is preserved through `from`.
+  const lookBackUnit = getTimeDurationUnit(formData.lookback);
   const fromOffsetMs = interval.toMilliseconds() + lookBack.toMilliseconds();
-  const fromOffset = TimeDuration.fromMilliseconds(fromOffsetMs);
+  const fromOffset = TimeDuration.fromMilliseconds(fromOffsetMs, lookBackUnit);
 
   const from = `now-${fromOffset}`;
 
