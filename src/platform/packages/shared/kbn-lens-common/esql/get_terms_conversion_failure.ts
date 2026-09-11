@@ -20,8 +20,8 @@ export interface TermsConversionContext {
  * Returns a conversion failure reason when a terms dimension cannot be
  * translated to ES|QL, or `undefined` when the column is eligible.
  *
- * Until terms→ES|QL assembly is implemented, callers should still treat
- * eligibility as non-convertible (e.g. fall back to `terms_not_supported`).
+ * Until terms→ES|QL assembly is implemented for multi-bucket charts, callers
+ * must still reject layers with more than one bucket dimension (Phase 1).
  */
 export const getTermsConversionFailure = (
   { params }: TermsIndexPatternColumn,

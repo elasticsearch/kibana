@@ -34,7 +34,7 @@ import type {
   TermsIndexPatternColumn,
   IndexPatternField,
 } from '@kbn/lens-common';
-import { LENS_DOCUMENT_FIELD_NAME } from '@kbn/lens-common';
+import { LENS_DOCUMENT_FIELD_NAME, toEsqlRegistry, TERMS_ID } from '@kbn/lens-common';
 import { insertOrReplaceColumn, updateColumnParam, updateDefaultLabels } from '../../layer_helpers';
 import type { OperationDefinition } from '..';
 import { ValuesInput } from './values_input';
@@ -142,6 +142,7 @@ export const termsOperation: OperationDefinition<
   priority: 3, // Higher than any metric
   input: 'field',
   scale: () => 'ordinal',
+  toESQL: toEsqlRegistry[TERMS_ID],
   getCurrentFields: (targetColumn) => {
     return [targetColumn.sourceField, ...(targetColumn?.params?.secondaryFields ?? [])];
   },

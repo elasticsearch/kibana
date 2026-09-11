@@ -29,6 +29,7 @@ import { percentileToESQL } from './percentile_to_esql';
 import { buildMetricToESQL } from './metric_to_esql';
 import { dateHistogramToESQL, getDateHistogramSerializedFormat } from './date_histogram_to_esql';
 import { rangesToESQL } from './ranges_to_esql';
+import { termsToESQL } from './terms_to_esql';
 import type {
   EsqlOperationColumnMap,
   EsqlSupportedOperation,
@@ -39,6 +40,7 @@ import type {
 export const DATE_HISTOGRAM_ID = 'date_histogram';
 export const RANGE_ID = 'range';
 export const STATIC_VALUE_ID = 'static_value';
+export const TERMS_ID = 'terms';
 
 /**
  * UI-free registry of per-operation DSL-to-ES|QL conversion functions.
@@ -60,6 +62,7 @@ export const toEsqlRegistry: {
   [STD_DEVIATION_ID]: buildMetricToESQL(STD_DEVIATION_ID),
   [DATE_HISTOGRAM_ID]: dateHistogramToESQL,
   [RANGE_ID]: rangesToESQL,
+  [TERMS_ID]: termsToESQL,
 };
 
 /**
@@ -105,6 +108,7 @@ export const esqlOperationMetaRegistry: {
   [STD_DEVIATION_ID]: metricEsqlMeta,
   [DATE_HISTOGRAM_ID]: dateHistogramEsqlMeta,
   [RANGE_ID]: {},
+  [TERMS_ID]: {},
 };
 
 const isEsqlSupportedOperation = (

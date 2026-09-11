@@ -51,7 +51,7 @@ describe('generateEsqlQuery top N', () => {
     return defaultUiSettingsGet(key);
   });
 
-  it('should return terms_not_supported for an otherwise eligible terms column', () => {
+  it('should convert eligible terms ordered alphabetically', () => {
     const terms = createTermsColumn();
     const result = generateEsqlQuery(
       [
@@ -59,6 +59,120 @@ describe('generateEsqlQuery top N', () => {
         ['2', createAverageColumn()],
       ],
       buildTermsAverageLayer(terms),
+      mockSampleLogsIndexPattern,
+      uiSettings,
+      mockDateRange,
+      new Date()
+    );
+
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.esql).toBe(
+        'FROM kibana_sample_data_logs | WHERE timestamp >= ?_tstart AND timestamp <= ?_tend | STATS AVG(bytes) BY host.keyword | SORT host.keyword ASC | LIMIT 5'
+      );
+    }
+  });
+
+  it('should convert eligible terms ordered by metric', () => {
+    const terms = createTermsColumn({
+      orderBy: { type: 'column', columnId: '2' },
+      orderDirection: 'desc',
+      size: 3,
+    });
+    const result = generateEsqlQuery(
+      [
+        ['1', terms],
+        ['2', createAverageColumn()],
+      ],
+      buildTermsAverageLayer(terms),
+      mockSampleLogsIndexPattern,
+      uiSettings,
+      mockDateRange,
+      new Date()
+    );
+
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.esql).toBe(
+        'FROM kibana_sample_data_logs | WHERE timestamp >= ?_tstart AND timestamp <= ?_tend | STATS AVG(bytes) BY host.keyword | SORT `AVG(bytes)` DESC | LIMIT 3'
+      );
+    }
+  });
+
+  it('should sort by metric alias when columnRoles are provided', () => {
+    const terms = createTermsColumn({
+      orderBy: { type: 'column', columnId: '2' },
+      orderDirection: 'desc',
+    });
+    const result = generateEsqlQuery(
+      [
+        ['1', terms],
+        ['2', createAverageColumn()],
+      ],
+      buildTermsAverageLayer(terms),
+      mockSampleLogsIndexPattern,
+      uiSettings,
+      mockDateRange,
+      new Date(),
+      { '2': 'avg_bytes' }
+    );
+
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.esql).toBe(
+        'FROM kibana_sample_data_logs | WHERE timestamp >= ?_tstart AND timestamp <= ?_tend | STATS avg_bytes = AVG(bytes) BY host.keyword | SORT avg_bytes DESC | LIMIT 5'
+      );
+    }
+  });
+
+  it('should return terms_order_by_not_supported when orderBy column is missing', () => {
+    const terms = createTermsColumn({
+      orderBy: { type: 'column', columnId: 'missing-metric' },
+      orderDirection: 'desc',
+    });
+    const result = generateEsqlQuery(
+      [
+        ['1', terms],
+        ['2', createAverageColumn()],
+      ],
+      buildTermsAverageLayer(terms),
+      mockSampleLogsIndexPattern,
+      uiSettings,
+      mockDateRange,
+      new Date()
+    );
+
+    expect(result).toEqual({
+      success: false,
+      reason: 'terms_order_by_not_supported',
+    });
+  });
+
+  it('should return terms_not_supported for multiple bucket dimensions including terms', () => {
+    const termsA = createTermsColumn();
+    const termsB = createTermsColumn({
+      size: 3,
+      orderBy: { type: 'alphabetical' },
+    });
+    const layer: FormBasedLayer = {
+      columns: {
+        '1': termsA,
+        '2': termsB,
+        '3': createAverageColumn(),
+      },
+      columnOrder: ['1', '2', '3'],
+      incompleteColumns: {},
+      sampling: 1,
+      indexPatternId: mockSampleLogsIndexPattern.id,
+    };
+
+    const result = generateEsqlQuery(
+      [
+        ['1', termsA],
+        ['2', termsB],
+        ['3', createAverageColumn()],
+      ],
+      layer,
       mockSampleLogsIndexPattern,
       uiSettings,
       mockDateRange,

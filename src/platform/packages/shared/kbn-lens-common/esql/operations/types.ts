@@ -22,6 +22,7 @@ import type {
   StandardDeviationIndexPatternColumn,
   StaticValueIndexPatternColumn,
   SumIndexPatternColumn,
+  TermsIndexPatternColumn,
 } from '../../datasources/operations';
 
 /**
@@ -62,6 +63,7 @@ export interface EsqlOperationColumnMap {
   date_histogram: DateHistogramIndexPatternColumn;
   range: RangeIndexPatternColumn;
   static_value: StaticValueIndexPatternColumn;
+  terms: TermsIndexPatternColumn;
 }
 
 export type EsqlSupportedOperation = keyof EsqlOperationColumnMap;
