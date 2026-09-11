@@ -116,6 +116,7 @@ describe('InvestigationSection', () => {
         overlays: {
           openSystemFlyout: mockOpenSystemFlyout,
         },
+        storage: { get: jest.fn(), set: jest.fn(), remove: jest.fn() },
         telemetry: { reportEvent: jest.fn() },
       },
     } as unknown as ReturnType<typeof useKibana>);

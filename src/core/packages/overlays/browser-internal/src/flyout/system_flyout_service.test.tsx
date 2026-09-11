@@ -40,11 +40,33 @@ const emitEvent = (event: FlyoutManagerEvent) => {
   eventListeners.forEach((listener) => listener(event));
 };
 
+// Minimal flyout-manager store state used to exercise the push-offset cleanup: the service
+// subscribes to state changes and reads `containerElement` to reset a stranded push offset.
+const stateListeners = new Set<() => void>();
+let mockManagerState: { containerElement: HTMLElement | null } = { containerElement: null };
+const mockManagerSubscribe = jest.fn((listener: () => void) => {
+  stateListeners.add(listener);
+  return () => {
+    stateListeners.delete(listener);
+  };
+});
+const mockManagerGetState = jest.fn(() => mockManagerState);
+
+/** Sets the manager's push container and notifies subscribers, mimicking a push flyout mounting. */
+const setManagerContainer = (containerElement: HTMLElement | null) => {
+  mockManagerState = { containerElement };
+  stateListeners.forEach((listener) => listener());
+};
+
 jest.mock('@elastic/eui', () => {
   const actual = jest.requireActual('@elastic/eui');
   return {
     ...actual,
-    getFlyoutManagerStore: jest.fn(() => ({ subscribeToEvents: mockSubscribeToEvents })),
+    getFlyoutManagerStore: jest.fn(() => ({
+      subscribeToEvents: mockSubscribeToEvents,
+      subscribe: mockManagerSubscribe,
+      getState: mockManagerGetState,
+    })),
   };
 });
 
@@ -58,7 +80,20 @@ beforeEach(() => {
   mockReactDomUnmount.mockClear();
   mockSubscribeToEvents.mockClear();
   eventListeners.clear();
+  mockManagerSubscribe.mockClear();
+  mockManagerGetState.mockClear();
+  stateListeners.clear();
+  mockManagerState = { containerElement: null };
 });
+
+/**
+ * Resolve the `EuiFlyout` element the service rendered. The service wraps it in a
+ * `SystemFlyoutTypeController` render-prop, so invoke that (with the seeded type) to reach it.
+ */
+const getRenderedFlyout = (callIndex = 0) => {
+  const controller = mockReactDomRender.mock.calls[callIndex][0].props.children;
+  return controller.props.children(controller.props.initialType ?? 'overlay');
+};
 
 afterEach(() => {
   jest.restoreAllMocks();
@@ -271,8 +306,7 @@ describe('SystemFlyoutService', () => {
       expect(mockReactDomRender).toHaveBeenCalledTimes(1);
 
       // Verify the title was passed through
-      const renderedElement = mockReactDomRender.mock.calls[0][0];
-      const euiFlyoutElement = renderedElement.props.children;
+      const euiFlyoutElement = getRenderedFlyout();
       expect(euiFlyoutElement.props.flyoutMenuProps.title).toBe('Top Level Title');
     });
 
@@ -289,9 +323,7 @@ describe('SystemFlyoutService', () => {
       expect(mockReactDomRender).toHaveBeenCalledTimes(1);
 
       // Navigate to the actual EuiFlyout component to check its props
-      const renderedElement = mockReactDomRender.mock.calls[0][0];
-      // The structure is: KibanaRenderContextProvider > EuiFlyout
-      const euiFlyoutElement = renderedElement.props.children;
+      const euiFlyoutElement = getRenderedFlyout();
       expect(euiFlyoutElement.props.flyoutMenuProps).toEqual(expectedFlyoutMenuProps);
     });
 
@@ -303,8 +335,7 @@ describe('SystemFlyoutService', () => {
       expect(mockReactDomRender).toHaveBeenCalledTimes(1);
 
       // Verify that flyoutMenuProps.title takes precedence
-      const renderedElement = mockReactDomRender.mock.calls[0][0];
-      const euiFlyoutElement = renderedElement.props.children;
+      const euiFlyoutElement = getRenderedFlyout();
       expect(euiFlyoutElement.props.flyoutMenuProps.title).toBe('Menu Title');
     });
 
@@ -498,6 +529,53 @@ describe('SystemFlyoutService', () => {
       }).not.toThrow();
 
       testService.stop();
+    });
+  });
+
+  describe('push/overlay type', () => {
+    it('seeds the flyout type controller from the "type" open option', () => {
+      systemFlyouts.open(<div>content</div>, { type: 'push' });
+
+      const controller = mockReactDomRender.mock.calls[0][0].props.children;
+      expect(controller.props.initialType).toBe('push');
+      expect(getRenderedFlyout().props.type).toBe('push');
+    });
+
+    it('leaves the type unset (EUI default overlay) when no type is provided', () => {
+      systemFlyouts.open(<div>content</div>);
+
+      const controller = mockReactDomRender.mock.calls[0][0].props.children;
+      expect(controller.props.initialType).toBeUndefined();
+    });
+
+    it('clears a stranded push offset from the container when the last flyout closes', async () => {
+      const container = document.createElement('div');
+      // The service captures the manager's container element via its subscription.
+      setManagerContainer(container);
+
+      const ref = systemFlyouts.open(<div>content</div>, { type: 'push' });
+      // EUI leaves inline push padding on the container; simulate the stranded offset.
+      container.style.setProperty('padding-inline-end', '384px');
+
+      await ref.close();
+      await Promise.resolve(); // flush the onClose `.then`
+
+      expect(container.style.paddingInlineEnd).toBe('');
+    });
+
+    it('keeps the container offset while another flyout is still open', async () => {
+      const container = document.createElement('div');
+      setManagerContainer(container);
+
+      const ref1 = systemFlyouts.open(<div>one</div>, { type: 'push' });
+      systemFlyouts.open(<div>two</div>, { type: 'push' });
+      container.style.setProperty('padding-inline-end', '384px');
+
+      await ref1.close();
+      await Promise.resolve();
+
+      // One flyout is still open, so the offset must not be cleared yet.
+      expect(container.style.paddingInlineEnd).toBe('384px');
     });
   });
 });

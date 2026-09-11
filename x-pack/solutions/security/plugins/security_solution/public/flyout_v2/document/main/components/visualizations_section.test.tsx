@@ -126,6 +126,7 @@ describe('VisualizationsSection', () => {
           get: jest.fn().mockReturnValue(true),
         },
         serverless: undefined,
+        storage: { get: jest.fn(), set: jest.fn(), remove: jest.fn() },
         telemetry: { reportEvent: jest.fn() },
       },
     } as unknown as ReturnType<typeof useKibana>);

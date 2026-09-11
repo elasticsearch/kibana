@@ -36,6 +36,7 @@ jest.mock('../components/flyout_provider', () => ({
 
 const mockOpenSystemFlyout = jest.fn();
 const mockReportEvent = jest.fn();
+const mockStorage = { get: jest.fn(), set: jest.fn() };
 
 /** Builds a deferred `OverlayRef`-like value, letting the test resolve `onClose` on demand. */
 const createOverlayRef = () => {
@@ -53,9 +54,12 @@ describe('useOpenFlyout', () => {
       services: {
         overlays: { openSystemFlyout: mockOpenSystemFlyout },
         telemetry: { reportEvent: mockReportEvent },
+        storage: mockStorage,
       },
     });
     (useIsInSecurityApp as jest.Mock).mockReturnValue(true);
+    // No persisted preference by default → falls back to 'overlay'.
+    mockStorage.get.mockReturnValue(undefined);
   });
 
   it('opens the system flyout with the wrapped children and given properties', () => {
@@ -68,6 +72,35 @@ describe('useOpenFlyout', () => {
     expect(mockOpenSystemFlyout).toHaveBeenCalledWith('FLYOUT_CONTENT', {
       size: 's',
       session: 'start',
+      type: 'overlay',
+    });
+  });
+
+  it('injects the persisted push/overlay preference from storage', () => {
+    mockStorage.get.mockReturnValue('push');
+    mockOpenSystemFlyout.mockReturnValue(createOverlayRef().ref);
+
+    const { result } = renderHook(() => useOpenFlyout());
+    result.current(<div />, { size: 's', session: 'start' });
+
+    expect(mockOpenSystemFlyout).toHaveBeenCalledWith('FLYOUT_CONTENT', {
+      size: 's',
+      session: 'start',
+      type: 'push',
+    });
+  });
+
+  it('lets an explicit type override the persisted preference', () => {
+    mockStorage.get.mockReturnValue('push');
+    mockOpenSystemFlyout.mockReturnValue(createOverlayRef().ref);
+
+    const { result } = renderHook(() => useOpenFlyout());
+    result.current(<div />, { size: 's', session: 'start', type: 'overlay' });
+
+    expect(mockOpenSystemFlyout).toHaveBeenCalledWith('FLYOUT_CONTENT', {
+      size: 's',
+      session: 'start',
+      type: 'overlay',
     });
   });
 

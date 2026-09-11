@@ -53,3 +53,13 @@ export const GRAPH_PREVIEW_TECHNICAL_PREVIEW_TEST_ID =
   `${GRAPH_PREVIEW_TEST_ID}TechnicalPreview` as const;
 
 export const DOCUMENT_FLYOUT_HEADER_SHARE_BUTTON_TEST_ID = `${PREFIX}HeaderShareButton` as const;
+
+export const FLYOUT_HEADER_SETTINGS_BUTTON_TEST_ID = `${PREFIX}HeaderSettingsButton` as const;
+export const FLYOUT_HEADER_SETTINGS_MENU_TEST_ID = `${PREFIX}HeaderSettingsMenu` as const;
+export const FLYOUT_HEADER_FLYOUT_TYPE_TITLE_TEST_ID = `${PREFIX}HeaderFlyoutTypeTitle` as const;
+export const FLYOUT_HEADER_FLYOUT_TYPE_BUTTON_GROUP_TEST_ID =
+  `${PREFIX}HeaderFlyoutTypeButtonGroup` as const;
+export const FLYOUT_HEADER_FLYOUT_TYPE_OVERLAY_OPTION_TEST_ID =
+  `${PREFIX}HeaderFlyoutTypeOverlayOption` as const;
+export const FLYOUT_HEADER_FLYOUT_TYPE_PUSH_OPTION_TEST_ID =
+  `${PREFIX}HeaderFlyoutTypePushOption` as const;

@@ -22,6 +22,8 @@ jest.mock('@elastic/eui', () => {
     ...actual,
     getFlyoutManagerStore: jest.fn(() => ({
       subscribeToEvents: jest.fn(() => () => {}),
+      subscribe: jest.fn(() => () => {}),
+      getState: jest.fn(() => ({ containerElement: null })),
     })),
   };
 });

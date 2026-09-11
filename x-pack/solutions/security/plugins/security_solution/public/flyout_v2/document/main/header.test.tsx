@@ -15,6 +15,15 @@ import {
   DOCUMENT_FLYOUT_HEADER_SHARE_BUTTON_TEST_ID,
 } from '../../shared/components/test_ids';
 import { useGetFlyoutLink } from '../../../flyout/document_details/right/hooks/use_get_flyout_link';
+import { useIsInSecurityApp } from '../../../common/hooks/is_in_security_app';
+
+jest.mock('../../shared/components/settings_menu', () => ({
+  SettingsMenu: () => <div data-test-subj="mockSettingsMenu" />,
+}));
+
+jest.mock('../../../common/hooks/is_in_security_app', () => ({
+  useIsInSecurityApp: jest.fn(),
+}));
 
 jest.mock('../../../common/lib/kibana', () => ({
   useKibana: () => ({
@@ -150,6 +159,8 @@ const mockUseGetFlyoutLink = useGetFlyoutLink as jest.Mock;
 describe('<DocumentHeader />', () => {
   beforeEach(() => {
     mockUseGetFlyoutLink.mockReturnValue(null);
+    // Default to outside Security so existing assertions are unaffected by the settings menu.
+    (useIsInSecurityApp as jest.Mock).mockReturnValue(false);
   });
   it('should pass the hit to the severity component', () => {
     const { getByTestId } = renderHeader({ hit: alertHit });
@@ -252,5 +263,19 @@ describe('<DocumentHeader />', () => {
     const { queryByTestId } = renderHeader({ hit: eventHit });
 
     expect(queryByTestId(DOCUMENT_FLYOUT_HEADER_SHARE_BUTTON_TEST_ID)).not.toBeInTheDocument();
+  });
+
+  it('should render the settings menu inside the Security Solution app', () => {
+    (useIsInSecurityApp as jest.Mock).mockReturnValue(true);
+    const { getByTestId } = renderHeader({ hit: alertHit });
+
+    expect(getByTestId('mockSettingsMenu')).toBeInTheDocument();
+  });
+
+  it('should not render the settings menu outside the Security Solution app (e.g. Discover)', () => {
+    (useIsInSecurityApp as jest.Mock).mockReturnValue(false);
+    const { queryByTestId } = renderHeader({ hit: alertHit });
+
+    expect(queryByTestId('mockSettingsMenu')).not.toBeInTheDocument();
   });
 });

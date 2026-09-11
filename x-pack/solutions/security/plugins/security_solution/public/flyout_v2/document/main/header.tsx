@@ -29,7 +29,9 @@ import {
 import type { CellActionRenderer } from '../../shared/components/cell_actions';
 import { noopCellActionRenderer } from '../../shared/components/cell_actions';
 import { useUserPrivileges } from '../../../common/components/user_privileges';
+import { useIsInSecurityApp } from '../../../common/hooks/is_in_security_app';
 import { ShareUrlIconButton } from '../../shared/components/share_url_icon_button';
+import { SettingsMenu } from '../../shared/components/settings_menu';
 import { useGetFlyoutLink } from '../../../flyout/document_details/right/hooks/use_get_flyout_link';
 import { isRulePreviewDocument } from '../../shared/utils/is_rule_preview_document';
 
@@ -42,8 +44,10 @@ const SHARE_ALERT_LABEL = i18n.translate(
 
 // Positioned relative to the flyout itself (the nearest positioned ancestor), matching where EUI
 // places its own close button (`right: euiTheme.size.s` / `top: euiTheme.size.s`). The larger
-// inline-end offset makes room for the close button so the two sit side by side.
-const shareButtonStyles = css`
+// inline-end offset makes room for the close button so these sit to its left. The share and
+// settings buttons live in the same group so, left to right, the header reads: share, settings,
+// EUI close.
+const headerButtonsStyles = css`
   position: absolute;
   inset-inline-end: 36px;
   inset-block-start: 8px;
@@ -76,6 +80,9 @@ export interface HeaderProps {
 export const Header: FC<HeaderProps> = memo(
   ({ hit, renderCellActions = noopCellActionRenderer, onAlertUpdated, onShowNotes }) => {
     const canReadRules = useUserPrivileges().rulesPrivileges.rules.read;
+    // The settings menu (push vs overlay) is a Security Solution feature; it must not appear when
+    // this same header is rendered inside Discover.
+    const isSecurityApp = useIsInSecurityApp();
     const isAlert = useMemo(
       () => (getFieldValue(hit, EVENT_KIND) as string) === EventKind.signal,
       [hit]
@@ -90,14 +97,24 @@ export const Header: FC<HeaderProps> = memo(
 
     return (
       <>
-        <div css={shareButtonStyles}>
+        <EuiFlexGroup
+          css={headerButtonsStyles}
+          gutterSize="xs"
+          alignItems="center"
+          responsive={false}
+        >
           <ShareUrlIconButton
             url={isAlert ? alertDetailsLink : null}
             tooltip={SHARE_ALERT_LABEL}
             ariaLabel={SHARE_ALERT_LABEL}
             dataTestSubj={DOCUMENT_FLYOUT_HEADER_SHARE_BUTTON_TEST_ID}
           />
-        </div>
+          {isSecurityApp && (
+            <EuiFlexItem grow={false}>
+              <SettingsMenu />
+            </EuiFlexItem>
+          )}
+        </EuiFlexGroup>
         <DocumentSeverity hit={hit}>
           <EuiSpacer size="s" />
         </DocumentSeverity>
