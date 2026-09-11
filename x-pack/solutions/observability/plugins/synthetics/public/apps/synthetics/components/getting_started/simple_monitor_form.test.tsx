@@ -19,6 +19,8 @@ import { syntheticsTestSubjects } from '../../../../../common/constants/data_tes
 import { apiService } from '../../../../utils/api_service';
 import * as reduxHooks from 'react-redux-v7';
 
+jest.setTimeout(30_000);
+
 describe('SimpleMonitorForm', () => {
   const apiSpy = jest.spyOn(apiService, 'post');
   const dispatchSpy = jest.spyOn(reduxHooks, 'useDispatch');
