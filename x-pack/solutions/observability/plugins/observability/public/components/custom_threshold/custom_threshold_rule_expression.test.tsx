@@ -39,6 +39,7 @@ const dataViewMock = dataViewPluginMocks.createStartContract();
 describe('Expression', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    jest.useRealTimers();
     mockKibana();
   });
 
@@ -224,6 +225,10 @@ describe('Expression', () => {
   });
 
   it('should show an error message when searchSource throws an error', async () => {
+    // Freeze timers so EuiCallOut's `announceOnMount` screen-reader live region never populates a
+    // delayed title/text duplicate that the callout `.text()` read would scoop up; keep `nextTick`
+    // real so the async `setup()` update still flushes.
+    jest.useFakeTimers({ doNotFake: ['nextTick'] });
     const errorMessage = 'Error fetching search sourceCould not locate that data view (id: )';
     const kibanaMock = kibanaStartMock.startContract();
     useKibanaMock.mockReturnValue({
