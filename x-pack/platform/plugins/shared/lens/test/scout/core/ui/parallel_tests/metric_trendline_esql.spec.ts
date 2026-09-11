@@ -105,5 +105,46 @@ spaceTest.describe(
         await expect(pageObjects.lens.metric.trendline).toBeVisible();
       }
     );
+
+    spaceTest(
+      'renders trendline for a FORK query',
+      async ({ apiServices, browserAuth, page, pageObjects, scoutSpace }) => {
+        const dashboardId = await apiServices.dashboard.create(
+          {
+            title: 'ESQL FORK metric trendline',
+            time_range: testData.LOGSTASH_IN_RANGE_DATES,
+            panels: [
+              {
+                type: 'vis',
+                grid: { x: 0, y: 0, w: 12, h: 8 },
+                config: {
+                  type: 'metric',
+                  title: 'ESQL FORK total events with trend',
+                  data_source: {
+                    type: 'esql',
+                    query:
+                      'FROM logstash-* | WHERE @timestamp >= ?_tstart AND @timestamp < ?_tend | FORK (STATS `Total Events` = COUNT(*)) (STATS `Event Count` = COUNT(*) BY `Time Bucket` = BUCKET(@timestamp, 75, ?_tstart, ?_tend))',
+                  },
+                  metrics: [
+                    {
+                      type: 'primary',
+                      column: 'Total Events',
+                      background_chart: { type: 'trend' },
+                    },
+                  ],
+                },
+              },
+            ],
+          },
+          scoutSpace.id
+        );
+
+        await browserAuth.loginAsPrivilegedUser();
+        await pageObjects.dashboard.openDashboardWithId(dashboardId);
+
+        await expect(page.getByTestId('mtrVis')).toBeVisible();
+        await expect(pageObjects.lens.metric.trendline).toBeVisible();
+      }
+    );
   }
 );

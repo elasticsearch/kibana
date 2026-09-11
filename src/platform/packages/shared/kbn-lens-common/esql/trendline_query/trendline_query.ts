@@ -18,14 +18,18 @@ import {
   getTbucketResultColumn,
   getBucketResultColumnForField,
 } from './bucket';
-import { walkTrackedColumn } from './scope_walker';
+import { commandsHaveStats, flattenForkCommands } from './fork';
+import { resolveTrackedColumn, trackColumnAndEnsureKept } from './scope_walker';
 
 export { buildTrendlineBucketExpression } from './bucket';
 
-/** Returns true when the ES|QL query contains at least one STATS command. */
+/**
+ * Returns true when the ES|QL query contains at least one STATS command,
+ * including STATS commands nested inside FORK branches.
+ */
 export const queryHasStatsCommand = (esqlQuery: string): boolean => {
   const { root } = Parser.parse(esqlQuery);
-  return root.commands.some((command) => command.name === 'stats');
+  return commandsHaveStats(root.commands);
 };
 
 /** Returns true when the ES|QL query uses the TS source command. */
@@ -43,7 +47,7 @@ const resolveAfterCommand = (
   command: ESQLCommand,
   resultColumn: string
 ): string =>
-  walkTrackedColumn(root.commands.slice(root.commands.indexOf(command) + 1), resultColumn).name;
+  resolveTrackedColumn(root.commands.slice(root.commands.indexOf(command) + 1), resultColumn).name;
 
 /**
  * Applies the trendline time-bucketing rewrite to a parsed query AST in place
@@ -65,6 +69,9 @@ const resolveAfterCommand = (
  * wrapped in `AVG()` (e.g. `STATS AVG(bytes) BY BUCKET(...)`). When no metric
  * fields are given, it falls back to `STATS COUNT(*) BY BUCKET(...)`.
  *
+ * Queries with a top-level FORK are first reduced to the branch that produces
+ * the metric columns (see `flattenForkCommands`) before the rewrite applies.
+ *
  * Because the rewrite and the time-column resolution operate on the same AST
  * in a single pass, the returned column name is correct by construction for
  * the query the rewrite produced.
@@ -78,6 +85,8 @@ const rewriteTrendlineAst = (
   if (root.commands.length === 0) {
     throw new Error('Cannot append time bucket to an empty ES|QL query');
   }
+
+  flattenForkCommands(root.commands, metricFields);
 
   const bucketExpr = buildTrendlineBucketExpression(timeField);
   const tsStatsCommand = findFirstStatsAfterTs(root.commands);
@@ -127,13 +136,11 @@ const rewriteTrendlineAst = (
     // KEEP commands after STATS only see the BUCKET result column.
     const statsIndex = root.commands.indexOf(statsCmd);
     const timeResultColumn = getBucketResultColumnForField(statsCmd, timeField) ?? bucketExpr;
-    walkTrackedColumn(root.commands.slice(0, statsIndex), timeField, { ensureKept: true });
-    return walkTrackedColumn(root.commands.slice(statsIndex + 1), timeResultColumn, {
-      ensureKept: true,
-    }).name;
+    trackColumnAndEnsureKept(root.commands.slice(0, statsIndex), timeField);
+    return trackColumnAndEnsureKept(root.commands.slice(statsIndex + 1), timeResultColumn).name;
   }
 
-  walkTrackedColumn(root.commands, timeField, { ensureKept: true });
+  trackColumnAndEnsureKept(root.commands, timeField);
   // No STATS → append full STATS <agg> BY BUCKET(...) command.
   // Use AVG(<field>) for each provided metric field, or COUNT(*) as fallback.
   const statsExprs =
@@ -193,7 +200,8 @@ export const buildTrendlineQueryWithMetricFieldMap = (
     throw new Error('Cannot append time bucket to an empty ES|QL query');
   }
 
-  const sourceQueryHasStats = root.commands.some((command) => command.name === 'stats');
+  flattenForkCommands(root.commands, metricFields);
+  const sourceQueryHasStats = commandsHaveStats(root.commands);
 
   const metricFieldMap = new Map<string, string>();
   if (!sourceQueryHasStats) {

@@ -8,58 +8,56 @@
  */
 
 import { Parser, BasicPrettyPrinter } from '@elastic/esql';
-import { walkTrackedColumn } from './scope_walker';
+import { resolveTrackedColumn, trackColumnAndEnsureKept } from './scope_walker';
 
 const parse = (esqlQuery: string) => Parser.parse(esqlQuery).root;
 
-describe('walkTrackedColumn', () => {
-  describe('rename tracking', () => {
-    it('resolves the column name through the AS form', () => {
-      const root = parse('FROM index | RENAME a AS b');
-      expect(walkTrackedColumn(root.commands, 'a').name).toBe('b');
-    });
-
-    it('resolves the column name through the assignment form', () => {
-      const root = parse('FROM index | RENAME b = a');
-      expect(walkTrackedColumn(root.commands, 'a').name).toBe('b');
-    });
-
-    it('resolves chained renames', () => {
-      const root = parse('FROM index | RENAME a AS b | RENAME b AS c');
-      expect(walkTrackedColumn(root.commands, 'a').name).toBe('c');
-    });
-
-    it('returns the original name when no rename applies', () => {
-      const root = parse('FROM index | KEEP a');
-      expect(walkTrackedColumn(root.commands, 'a').name).toBe('a');
-    });
+describe('resolveTrackedColumn', () => {
+  it('resolves the column name through the AS form', () => {
+    const root = parse('FROM index | RENAME a AS b');
+    expect(resolveTrackedColumn(root.commands, 'a').name).toBe('b');
   });
 
-  describe('ensureKept', () => {
-    it('appends a missing column to KEEP commands', () => {
-      const root = parse('FROM index | KEEP bytes');
-      walkTrackedColumn(root.commands, '@timestamp', { ensureKept: true });
-      expect(BasicPrettyPrinter.print(root)).toBe('FROM index | KEEP bytes, @timestamp');
-    });
+  it('resolves the column name through the assignment form', () => {
+    const root = parse('FROM index | RENAME b = a');
+    expect(resolveTrackedColumn(root.commands, 'a').name).toBe('b');
+  });
 
-    it('does not duplicate a column already present in KEEP', () => {
-      const root = parse('FROM index | KEEP bytes, @timestamp');
-      walkTrackedColumn(root.commands, '@timestamp', { ensureKept: true });
-      expect(BasicPrettyPrinter.print(root)).toBe('FROM index | KEEP bytes, @timestamp');
-    });
+  it('resolves chained renames', () => {
+    const root = parse('FROM index | RENAME a AS b | RENAME b AS c');
+    expect(resolveTrackedColumn(root.commands, 'a').name).toBe('c');
+  });
 
-    it('tracks the column through RENAME before a KEEP', () => {
-      const root = parse('FROM index | RENAME @timestamp AS time | KEEP bytes');
-      walkTrackedColumn(root.commands, '@timestamp', { ensureKept: true });
-      expect(BasicPrettyPrinter.print(root)).toBe(
-        'FROM index | RENAME @timestamp AS time | KEEP bytes, time'
-      );
-    });
+  it('returns the original name when no rename applies', () => {
+    const root = parse('FROM index | KEEP a');
+    expect(resolveTrackedColumn(root.commands, 'a').name).toBe('a');
+  });
 
-    it('does not mutate KEEP commands without ensureKept', () => {
-      const root = parse('FROM index | KEEP bytes');
-      walkTrackedColumn(root.commands, '@timestamp');
-      expect(BasicPrettyPrinter.print(root)).toBe('FROM index | KEEP bytes');
-    });
+  it('does not mutate KEEP commands', () => {
+    const root = parse('FROM index | KEEP bytes');
+    resolveTrackedColumn(root.commands, '@timestamp');
+    expect(BasicPrettyPrinter.print(root)).toBe('FROM index | KEEP bytes');
+  });
+});
+
+describe('trackColumnAndEnsureKept', () => {
+  it('appends a missing column to KEEP commands', () => {
+    const root = parse('FROM index | KEEP bytes');
+    trackColumnAndEnsureKept(root.commands, '@timestamp');
+    expect(BasicPrettyPrinter.print(root)).toBe('FROM index | KEEP bytes, @timestamp');
+  });
+
+  it('does not duplicate a column already present in KEEP', () => {
+    const root = parse('FROM index | KEEP bytes, @timestamp');
+    trackColumnAndEnsureKept(root.commands, '@timestamp');
+    expect(BasicPrettyPrinter.print(root)).toBe('FROM index | KEEP bytes, @timestamp');
+  });
+
+  it('tracks the column through RENAME before a KEEP', () => {
+    const root = parse('FROM index | RENAME @timestamp AS time | KEEP bytes');
+    trackColumnAndEnsureKept(root.commands, '@timestamp');
+    expect(BasicPrettyPrinter.print(root)).toBe(
+      'FROM index | RENAME @timestamp AS time | KEEP bytes, time'
+    );
   });
 });

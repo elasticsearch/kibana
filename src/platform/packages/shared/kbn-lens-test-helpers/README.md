@@ -13,7 +13,7 @@ across copies.
 - `buildTrendlineQueryCases({ index })` — ES|QL metric trendline rewrite case
   matrix. Consumed by:
   - unit tests in `@kbn/lens-common`
-    (`esql/trendline_query_cases.test.ts`): assert the
+    (`esql/trendline_query/trendline_query_cases.test.ts`): assert the
     rewritten query and time field for every case (fast, no infra)
   - Scout API tests in the Lens plugin
     (`x-pack/platform/plugins/shared/lens/test/scout/core/api`): execute the
