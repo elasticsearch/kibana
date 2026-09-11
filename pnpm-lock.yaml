@@ -5277,6 +5277,9 @@ importers:
       '@kbn/evals-suite-streams':
         specifier: workspace:*
         version: link:x-pack/platform/packages/shared/kbn-evals-suite-streams
+      '@kbn/evals-suite-threat-intel-enrichment':
+        specifier: workspace:*
+        version: link:x-pack/solutions/security/packages/kbn-evals-suite-threat-intel-enrichment
       '@kbn/evals-suite-workflows':
         specifier: workspace:*
         version: link:src/platform/packages/shared/kbn-evals-suite-workflows
@@ -9422,6 +9425,8 @@ importers:
   x-pack/solutions/security/packages/kbn-evals-suite-security-persona-matrix: {}
 
   x-pack/solutions/security/packages/kbn-evals-suite-siem-readiness: {}
+
+  x-pack/solutions/security/packages/kbn-evals-suite-threat-intel-enrichment: {}
 
   x-pack/solutions/security/packages/kbn-scout-security: {}
 

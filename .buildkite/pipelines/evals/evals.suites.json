@@ -288,6 +288,19 @@
       "serverConfigSet": "evals_lead_generation"
     },
     {
+      "id": "threat-intel-enrichment",
+      "name": "Threat Intel Enrichment",
+      "configPath": "x-pack/solutions/security/packages/kbn-evals-suite-threat-intel-enrichment/playwright.config.ts",
+      "tags": [
+        "security",
+        "threat-intel-enrichment"
+      ],
+      "ciLabels": [
+        "evals:threat-intel-enrichment"
+      ],
+      "serverConfigSet": "evals_threat_intel"
+    },
+    {
       "id": "workflows",
       "name": "Workflows Authoring",
       "configPath": "src/platform/packages/shared/kbn-evals-suite-workflows/playwright.config.ts",

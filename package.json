@@ -1854,6 +1854,7 @@
     "@kbn/evals-suite-significant-events": "workspace:*",
     "@kbn/evals-suite-smoke-tests": "workspace:*",
     "@kbn/evals-suite-streams": "workspace:*",
+    "@kbn/evals-suite-threat-intel-enrichment": "workspace:*",
     "@kbn/evals-suite-workflows": "workspace:*",
     "@kbn/expect": "workspace:*",
     "@kbn/extract-plugin-translations": "workspace:*",

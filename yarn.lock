@@ -6908,6 +6908,10 @@
   version "0.0.0"
   uid ""
 
+"@kbn/evals-suite-threat-intel-enrichment@link:x-pack/solutions/security/packages/kbn-evals-suite-threat-intel-enrichment":
+  version "0.0.0"
+  uid ""
+
 "@kbn/evals-suite-workflows@link:src/platform/packages/shared/kbn-evals-suite-workflows":
   version "0.0.0"
   uid ""

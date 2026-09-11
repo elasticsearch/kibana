@@ -1,0 +1,7 @@
+{
+  "type": "functional-tests",
+  "id": "@kbn/evals-suite-threat-intel-enrichment",
+  "owner": "@elastic/security-threat-hunting",
+  "group": "security",
+  "visibility": "private"
+}

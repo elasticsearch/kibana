@@ -1609,6 +1609,7 @@ packages:
   - 'x-pack/solutions/security/packages/kbn-evals-suite-security-esql-generation-regression'
   - 'x-pack/solutions/security/packages/kbn-evals-suite-security-persona-matrix'
   - 'x-pack/solutions/security/packages/kbn-evals-suite-siem-readiness'
+  - 'x-pack/solutions/security/packages/kbn-evals-suite-threat-intel-enrichment'
   - 'x-pack/solutions/security/packages/kbn-scout-security'
   - 'x-pack/solutions/security/packages/kbn-security-evals-alerts-snapshot'
   - 'x-pack/solutions/security/packages/kbn-security-evals-workflow-traces'

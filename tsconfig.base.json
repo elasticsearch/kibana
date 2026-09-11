@@ -1373,6 +1373,8 @@
       "@kbn/evals-suite-smoke-tests/*": ["./x-pack/platform/packages/shared/kbn-evals-suite-smoke-tests/*"],
       "@kbn/evals-suite-streams": ["./x-pack/platform/packages/shared/kbn-evals-suite-streams"],
       "@kbn/evals-suite-streams/*": ["./x-pack/platform/packages/shared/kbn-evals-suite-streams/*"],
+      "@kbn/evals-suite-threat-intel-enrichment": ["./x-pack/solutions/security/packages/kbn-evals-suite-threat-intel-enrichment"],
+      "@kbn/evals-suite-threat-intel-enrichment/*": ["./x-pack/solutions/security/packages/kbn-evals-suite-threat-intel-enrichment/*"],
       "@kbn/evals-suite-workflows": ["./src/platform/packages/shared/kbn-evals-suite-workflows"],
       "@kbn/evals-suite-workflows/*": ["./src/platform/packages/shared/kbn-evals-suite-workflows/*"],
       "@kbn/event-annotation-common": ["./src/platform/packages/shared/kbn-event-annotation-common"],
