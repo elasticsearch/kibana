@@ -42,6 +42,12 @@ const baseParams = {
 };
 
 describe('buildWorkflowExecutionDocument', () => {
+  it('uses a caller-provided execution ID', () => {
+    expect(
+      buildWorkflowExecutionDocument({ ...baseParams, executionId: 'caller-execution-id' }).id
+    ).toBe('caller-execution-id');
+  });
+
   it('sets version when workflow has version', () => {
     const workflowExecution = buildWorkflowExecutionDocument({
       ...baseParams,

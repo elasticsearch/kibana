@@ -499,7 +499,7 @@ export class WorkflowCrudService {
     workflow: CreateWorkflowCommand,
     spaceId: string,
     request: KibanaRequest,
-    options?: { nameFallback?: string }
+    options?: { nameFallback?: string; originManagedWorkflowId?: string }
   ): Promise<WorkflowDetailDto> {
     if (workflow.id) {
       validateWorkflowId(workflow.id);
@@ -527,6 +527,7 @@ export class WorkflowCrudService {
       spaceId,
       triggerDefinitions,
       nameFallback: options?.nameFallback,
+      originManagedWorkflowId: options?.originManagedWorkflowId,
     });
 
     let id = baseId;

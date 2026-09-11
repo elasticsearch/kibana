@@ -10,6 +10,7 @@
 import type { Logger } from '@kbn/core/server';
 import type { DataStreamsStart } from '@kbn/core-data-streams-server';
 import { WorkflowEventLoggerService } from './workflow_event_logger_service';
+import type { LogsRepository, WorkflowLogEvent } from '../repositories/logs_repository';
 
 const createLoggerMock = () =>
   ({
@@ -98,5 +99,68 @@ describe('WorkflowEventLoggerService', () => {
       'Failed to get recent workflow logs',
       repositoryError
     );
+  });
+});
+
+/**
+ * Machine-checked invariant: when a SyncLogDrain is injected into the service,
+ * every logger the service creates must route flushEvents to the drain — never
+ * to logsRepository.createLogs inline. This pins the "sync call produces no
+ * inline ES write" guarantee so it cannot silently regress.
+ */
+describe('WorkflowEventLoggerService — sync log drain integration', () => {
+  const makeDrain = () => ({ enqueue: jest.fn() });
+  const makeLogsRepository = () =>
+    ({ createLogs: jest.fn() } as unknown as jest.Mocked<LogsRepository>);
+
+  it('routes flushEvents through the drain; createLogs is never called inline', async () => {
+    const drain = makeDrain();
+    const service = new WorkflowEventLoggerService(
+      {} as DataStreamsStart,
+      createLoggerMock(),
+      false,
+      drain as any
+    );
+    (service as any).logsRepository = makeLogsRepository();
+
+    const workflowLogger = service.createLogger({
+      workflowId: 'wf-sync',
+      executionId: 'exec-sync',
+    });
+    workflowLogger.logInfo('sync event');
+    await workflowLogger.flushEvents();
+
+    const logsRepository = (service as any).logsRepository as jest.Mocked<LogsRepository>;
+    expect(logsRepository.createLogs).not.toHaveBeenCalled();
+    expect(drain.enqueue).toHaveBeenCalledTimes(1);
+    const enqueuedEvents = drain.enqueue.mock.calls[0][0] as WorkflowLogEvent[];
+    expect(enqueuedEvents).toHaveLength(1);
+    expect(enqueuedEvents[0].message).toBe('sync event');
+  });
+
+  it('propagates the drain to step loggers so per-step flushes also avoid inline ES writes', async () => {
+    const drain = makeDrain();
+    const service = new WorkflowEventLoggerService(
+      {} as DataStreamsStart,
+      createLoggerMock(),
+      false,
+      drain as any
+    );
+    (service as any).logsRepository = makeLogsRepository();
+
+    const stepLogger = service.createStepLogger(
+      'wf-1',
+      'exec-1',
+      'step-1',
+      'Step',
+      'ai.prompt',
+      'workflow'
+    );
+    stepLogger.logInfo('step event');
+    await stepLogger.flushEvents();
+
+    const logsRepository = (service as any).logsRepository as jest.Mocked<LogsRepository>;
+    expect(logsRepository.createLogs).not.toHaveBeenCalled();
+    expect(drain.enqueue).toHaveBeenCalledTimes(1);
   });
 });

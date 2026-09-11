@@ -81,6 +81,7 @@ export async function runNode(params: WorkflowExecutionLoopParams): Promise<void
   let monitorAbortController: AbortController | undefined;
   let stepExecutionRuntime: StepExecutionRuntime | undefined;
   let nodeImplementation: NodeImplementation | undefined;
+  let abortStepRelay: (() => void) | undefined;
 
   if (!node) {
     return;
@@ -105,6 +106,17 @@ export async function runNode(params: WorkflowExecutionLoopParams): Promise<void
       nodeId: node.id,
       stackFrames: workflowExecutionCursor.currentStackFrames,
     });
+
+    // Cascade the execution-level abort to the step's controller so that in-flight I/O
+    // (e.g. LLM streaming in call_site.proceed) is cancelled immediately when the sync
+    // execution timeout fires rather than waiting for streaming to finish naturally.
+    const runtimeRef = stepExecutionRuntime;
+    abortStepRelay = () => runtimeRef.abortController.abort(params.signal.reason);
+    if (params.signal.aborted) {
+      abortStepRelay();
+    } else {
+      params.signal.addEventListener('abort', abortStepRelay, { once: true });
+    }
 
     // Build the node implementation before the cancel short-circuit so cancellable nodes
     // (e.g. workflow.execute holding a child execution) still get their onCancel hook.
@@ -178,9 +190,17 @@ export async function runNode(params: WorkflowExecutionLoopParams): Promise<void
     await Promise.race([runMonitorPromise, runStepPromise]);
     nodeSpan?.setOutcome('success');
   } catch (error) {
-    workflowExecutionCursor.captureError(error);
+    // Don't overwrite a higher-priority error already captured by onTaskAbort (e.g. the
+    // sync-execution timeout error). The catch fires for monitor/step rejections that are
+    // consequences of that abort, not the root cause.
+    if (!workflowExecutionCursor.error) {
+      workflowExecutionCursor.captureError(error);
+    }
     nodeSpan?.setOutcome('failure');
   } finally {
+    if (abortStepRelay) {
+      params.signal.removeEventListener('abort', abortStepRelay);
+    }
     monitorAbortController?.abort();
 
     // Run cancellation cleanup in `finally` so it fires on BOTH the normal path

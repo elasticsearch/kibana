@@ -246,3 +246,48 @@ describe('WorkflowEventLogger.flushEvents — circuit breaker resilience', () =>
     }
   });
 });
+
+describe('WorkflowEventLogger — sync log drain integration', () => {
+  it('routes flushEvents to the drain instead of calling createLogs when a drain is provided', async () => {
+    const logsRepository = createLogsRepositoryMock();
+    const drain = { enqueue: jest.fn() };
+
+    const logger = new WorkflowEventLogger(
+      logsRepository,
+      loggerMock.create(),
+      {},
+      {},
+      drain as any
+    );
+
+    logger.logInfo('should go to drain');
+    await logger.flushEvents();
+
+    // Drain must receive the event; ES must not be called inline
+    expect(drain.enqueue).toHaveBeenCalledTimes(1);
+    const enqueuedEvents = drain.enqueue.mock.calls[0][0] as WorkflowLogEvent[];
+    expect(enqueuedEvents.length).toBe(1);
+    expect(enqueuedEvents[0].message).toBe('should go to drain');
+    expect(logsRepository.createLogs).not.toHaveBeenCalled();
+  });
+
+  it('propagates the drain to child step loggers created via createStepLogger', async () => {
+    const logsRepository = createLogsRepositoryMock();
+    const drain = { enqueue: jest.fn() };
+
+    const parent = new WorkflowEventLogger(
+      logsRepository,
+      loggerMock.create(),
+      {},
+      {},
+      drain as any
+    );
+    const child = parent.createStepLogger('step-exec-1', 'step-1', 'Step One', 'ai.prompt');
+
+    child.logInfo('child event');
+    await child.flushEvents();
+
+    expect(drain.enqueue).toHaveBeenCalledTimes(1);
+    expect(logsRepository.createLogs).not.toHaveBeenCalled();
+  });
+});

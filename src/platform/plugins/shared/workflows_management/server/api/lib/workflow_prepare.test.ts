@@ -410,4 +410,25 @@ describe('prepareWorkflowDocumentFromYaml', () => {
 
     expect(result.workflowData.name).toBe('From YAML');
   });
+
+  it('retains managed provenance without retaining managed ownership', () => {
+    const result = prepareWorkflowDocumentFromYaml({
+      yaml: 'name: Managed copy\nenabled: false\ntriggers: []\nsteps: []',
+      zodSchema: getWorkflowZodSchema({}),
+      authenticatedUser: 'user1',
+      now,
+      spaceId: 'default',
+      originManagedWorkflowId: 'system-inference_pii_anonymization',
+    });
+
+    expect(result.workflowData).toEqual(
+      expect.objectContaining({
+        enabled: false,
+        managed: false,
+        managedBy: null,
+        lifecycle: null,
+        originManagedWorkflowId: 'system-inference_pii_anonymization',
+      })
+    );
+  });
 });

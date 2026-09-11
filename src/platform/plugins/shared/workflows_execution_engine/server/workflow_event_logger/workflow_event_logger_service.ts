@@ -9,6 +9,7 @@
 
 import type { Logger } from '@kbn/core/server';
 import type { DataStreamsStart } from '@kbn/core-data-streams-server';
+import type { SyncLogDrain } from './sync_log_drain';
 import type {
   BaseLogsParams,
   ExecutionLogsParams,
@@ -27,15 +28,23 @@ export class WorkflowEventLoggerService implements IWorkflowEventLoggerService {
   constructor(
     dataStreams: DataStreamsStart,
     private readonly logger: Logger,
-    private readonly enableConsoleLogging: boolean = false
+    private readonly enableConsoleLogging: boolean = false,
+    /** When provided, all loggers created by this service will route their
+     *  `flushEvents` calls to this drain instead of writing to ES inline.
+     *  Pass only on the synchronous execution path. */
+    private readonly syncLogDrain?: SyncLogDrain
   ) {
     this.logsRepository = new LogsRepository(dataStreams, logger);
   }
 
   public createLogger(context: WorkflowEventLoggerContext): IWorkflowEventLogger {
-    return new WorkflowEventLogger(this.logsRepository, this.logger, context, {
-      enableConsoleLogging: this.enableConsoleLogging,
-    });
+    return new WorkflowEventLogger(
+      this.logsRepository,
+      this.logger,
+      context,
+      { enableConsoleLogging: this.enableConsoleLogging },
+      this.syncLogDrain
+    );
   }
 
   public createWorkflowLogger(workflowId: string, workflowName?: string): IWorkflowEventLogger {

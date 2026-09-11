@@ -11,9 +11,10 @@ export type { CommonStepDefinition } from './step_registry/types';
 export type {
   CommonTriggerDefinition,
   TriggerDocumentation,
+  TriggerExclusivity,
   TriggerSnippets,
 } from './trigger_registry/types';
-export { EVENT_FIELD_PREFIX } from './trigger_registry/constants';
+export { EVENT_FIELD_PREFIX, TRIGGER_EXCLUSIVITY_SCOPES } from './trigger_registry/constants';
 export {
   DataMapStepTypeId,
   DEFAULT_INDEX_BINDING,

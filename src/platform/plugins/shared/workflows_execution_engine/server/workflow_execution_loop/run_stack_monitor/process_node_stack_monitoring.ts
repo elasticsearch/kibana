@@ -50,12 +50,14 @@ export async function processNodeStackMonitoring(
     }
   }
 
-  await cancelWorkflowIfRequested(
-    params.workflowExecutionRepository,
-    params.workflowExecutionState,
-    monitoredStepExecutionRuntime,
-    params.workflowLogger,
-    params.workflowExecutionCursor,
-    monitoredStepExecutionRuntime.abortController
-  );
+  if (params.executionMode !== 'sync') {
+    await cancelWorkflowIfRequested(
+      params.workflowExecutionRepository,
+      params.workflowExecutionState,
+      monitoredStepExecutionRuntime,
+      params.workflowLogger,
+      params.workflowExecutionCursor,
+      monitoredStepExecutionRuntime.abortController
+    );
+  }
 }

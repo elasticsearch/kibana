@@ -10,6 +10,7 @@
 import { merge } from 'lodash';
 import type { Logger } from '@kbn/core/server';
 import { ExecutionError } from '@kbn/workflows/server';
+import type { SyncLogDrain } from './sync_log_drain';
 import type {
   IWorkflowEventLogger,
   WorkflowEventFlushOptions,
@@ -27,7 +28,11 @@ export class WorkflowEventLogger implements IWorkflowEventLogger {
     private logsRepository: LogsRepository,
     private logger: Logger,
     private context: WorkflowEventLoggerContext = {},
-    private options: WorkflowEventLoggerOptions = {}
+    private options: WorkflowEventLoggerOptions = {},
+    /** When provided, `flushEvents` routes events to this drain instead of writing
+     *  to Elasticsearch inline. Used exclusively by the synchronous execution path
+     *  to keep the hot path free of blocking ES round-trips. */
+    private readonly syncLogDrain?: SyncLogDrain
   ) {}
 
   public logEvent(eventProperties: Partial<WorkflowLogEvent>): void {
@@ -171,7 +176,8 @@ export class WorkflowEventLogger implements IWorkflowEventLogger {
         stepName,
         stepType,
       },
-      this.options
+      this.options,
+      this.syncLogDrain
     );
   }
 
@@ -250,6 +256,13 @@ export class WorkflowEventLogger implements IWorkflowEventLogger {
 
     const events = [...this.eventQueue];
     this.eventQueue = [];
+
+    // In sync execution mode, route events to the background drain so the
+    // calling request is not blocked by an inline Elasticsearch write.
+    if (this.syncLogDrain !== undefined) {
+      this.syncLogDrain.enqueue(events);
+      return;
+    }
 
     try {
       await this.logsRepository.createLogs(events);
