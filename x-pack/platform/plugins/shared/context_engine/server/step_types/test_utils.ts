@@ -16,10 +16,12 @@ export const createMockStepContext = ({
   input,
   esClient,
   abortController = new AbortController(),
+  spaceId = 'default',
 }: {
   input: unknown;
   esClient: unknown;
   abortController?: AbortController;
+  spaceId?: string;
 }): StepHandlerContext => {
   return {
     input,
@@ -28,7 +30,7 @@ export const createMockStepContext = ({
     contextManager: {
       getScopedEsClient: jest.fn().mockReturnValue(esClient),
       getFakeRequest: jest.fn().mockReturnValue({ headers: {} }),
-      getContext: jest.fn(),
+      getContext: jest.fn().mockReturnValue({ workflow: { spaceId } }),
       renderInputTemplate: jest.fn(),
     },
     logger: { debug: jest.fn(), info: jest.fn(), warn: jest.fn(), error: jest.fn() },

@@ -33,6 +33,7 @@ dependsOn:
   - '@kbn/workflows'
   - '@kbn/workflows-yaml'
   - '@kbn/agent-builder-plugin'
+  - '@kbn/spaces-plugin'
 tags:
   - plugin
   - prod

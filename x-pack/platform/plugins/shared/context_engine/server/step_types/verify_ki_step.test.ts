@@ -42,6 +42,7 @@ const makeHandlerContext = (
     rawInput: { ki, verifiers },
     contextManager: {
       getFakeRequest: jest.fn(),
+      getContext: jest.fn().mockReturnValue({ workflow: { spaceId: 'default' } }),
       getScopedEsClient: getScopedEsClient ?? jest.fn().mockReturnValue(esClient),
     },
     logger: loggingSystemMock.createLogger(),

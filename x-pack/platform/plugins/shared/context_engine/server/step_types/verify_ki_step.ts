@@ -16,6 +16,7 @@ import {
   KiVerificationService,
 } from '../ki_verification';
 import type { ContextEngineAnalyticsService } from '../telemetry';
+import { isContextEngineEnabledInSpace } from '../utils/is_context_engine_enabled_in_space';
 import { withKiVerificationTelemetry } from './helpers';
 
 export const createVerifyKiStepDefinition = (
@@ -29,10 +30,12 @@ export const createVerifyKiStepDefinition = (
     ...VerifyKiStepCommonDefinition,
     handler: async (context) => {
       const [coreStart] = await coreSetup.getStartServices();
-      const fakeRequest = context.contextManager.getFakeRequest();
-      const soClient = coreStart.savedObjects.getScopedClient(fakeRequest);
-      const uiSettings = coreStart.uiSettings.asScopedToClient(soClient);
-      const isEnabled = (await uiSettings.get<boolean>(CONTEXT_ENGINE_ENABLED_SETTING_ID)) ?? false;
+      const spaceId = context.contextManager.getContext().workflow.spaceId;
+      const isEnabled = await isContextEngineEnabledInSpace({
+        savedObjects: coreStart.savedObjects,
+        uiSettings: coreStart.uiSettings,
+        spaceId,
+      });
       if (!isEnabled) {
         throw new ExecutionError({
           type: 'FeatureDisabledError',

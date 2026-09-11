@@ -226,7 +226,12 @@ describe('saveAutomationHandler', () => {
       'default',
       request
     );
-    expect(aiIndexService.addAutomation).toHaveBeenCalledWith('my-ai-index', {
+    expect(aiIndexService.assertCanAcceptAutomation).toHaveBeenCalledWith(
+      'my-ai-index',
+      'default',
+      undefined
+    );
+    expect(aiIndexService.addAutomation).toHaveBeenCalledWith('my-ai-index', 'default', {
       type: 'workflow',
       value: 'wf-new',
     });
@@ -259,6 +264,11 @@ describe('saveAutomationHandler', () => {
       getWorkflowsManagement: () => workflowsManagement as never,
     });
 
+    expect(aiIndexService.assertCanAcceptAutomation).toHaveBeenCalledWith(
+      'my-ai-index',
+      'default',
+      { type: 'workflow', value: 'wf-persisted' }
+    );
     expect(hasWorkflowUpdatePrivilege).toHaveBeenCalled();
     expect(workflowsManagement.updateWorkflow).toHaveBeenCalledWith(
       'wf-persisted',
@@ -313,7 +323,7 @@ describe('saveAutomationHandler', () => {
     const result = await saveAutomationHandler({
       params: { workflowId: 'wf-new' },
       request,
-      spaceId: 'default',
+      spaceId: 'marketing',
       attachments: attachments as never,
       logger,
       getAiIndexService: async () => aiIndexService as unknown as AiIndexService,
@@ -323,12 +333,21 @@ describe('saveAutomationHandler', () => {
     });
 
     expect(hasWorkflowReadPrivilege).toHaveBeenCalled();
+    expect(aiIndexService.assertCanAcceptAutomation).toHaveBeenCalledWith(
+      'my-ai-index',
+      'marketing',
+      { type: 'workflow', value: 'wf-new' }
+    );
+    expect(aiIndexService.addAutomation).toHaveBeenCalledWith('my-ai-index', 'marketing', {
+      type: 'workflow',
+      value: 'wf-new',
+    });
     expect(result).toEqual({
       aiIndexId: 'my-ai-index',
       workflowId: 'wf-new',
       status: 'attached',
     });
-    expect(workflowsManagement.getWorkflow).toHaveBeenCalledWith('wf-new', 'default');
+    expect(workflowsManagement.getWorkflow).toHaveBeenCalledWith('wf-new', 'marketing');
     expect(workflowsManagement.createWorkflow).not.toHaveBeenCalled();
   });
 

@@ -81,20 +81,27 @@ describe('assertContextEngineWriteAccess', () => {
     };
     coreStart.uiSettings.asScopedToClient = jest.fn().mockReturnValue(uiSettingsClient);
     const security = createSecurityStart();
+    const marketingSpaceId = 'marketing';
 
     await expect(
       assertContextEngineWriteAccess({
         request,
-        spaceId,
+        spaceId: marketingSpaceId,
         getCoreStart: async () => coreStart,
         getSecurityStart: async () => security,
       })
     ).resolves.toBeUndefined();
 
+    expect(
+      coreStart.savedObjects.getUnsafeInternalClient().asScopedToNamespace
+    ).toHaveBeenCalledWith(marketingSpaceId);
     expect(uiSettingsClient.get).toHaveBeenCalledWith(CONTEXT_ENGINE_ENABLED_SETTING_ID);
     expect(security.authz.checkPrivilegesWithRequest).toHaveBeenCalledWith(request);
-    expect(security.authz.checkPrivilegesWithRequest().atSpace).toHaveBeenCalledWith(spaceId, {
-      kibana: [apiPrivileges.writeContextEngine],
-    });
+    expect(security.authz.checkPrivilegesWithRequest().atSpace).toHaveBeenCalledWith(
+      marketingSpaceId,
+      {
+        kibana: [apiPrivileges.writeContextEngine],
+      }
+    );
   });
 });

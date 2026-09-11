@@ -26,6 +26,8 @@ export interface ContextEnginePluginSetup {
 
 export interface ContextEnginePluginStart {
   getAiIndexService: () => AiIndexService;
+  /** Lazily creates/refreshes a managed AI index's doc in one space. */
+  ensureAiIndex: (id: string, spaceId: string) => Promise<void>;
   /** The signals store. */
   getSignalsService: () => SignalsServiceApi;
   /**

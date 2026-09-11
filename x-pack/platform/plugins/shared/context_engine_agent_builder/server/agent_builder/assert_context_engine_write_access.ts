@@ -8,8 +8,8 @@
 import type { CoreStart } from '@kbn/core/server';
 import type { KibanaRequest } from '@kbn/core-http-server';
 import type { SecurityPluginStart } from '@kbn/security-plugin/server';
-import { CONTEXT_ENGINE_ENABLED_SETTING_ID } from '@kbn/management-settings-ids';
 import { apiPrivileges } from '@kbn/context-engine-plugin/common/features';
+import { isContextEngineEnabledInSpace } from '@kbn/context-engine-plugin/server/utils/is_context_engine_enabled_in_space';
 
 export const assertContextEngineWriteAccess = async ({
   request,
@@ -29,9 +29,11 @@ export const assertContextEngineWriteAccess = async ({
     throw new Error('Security plugin is not available.');
   }
 
-  const savedObjectsClient = coreStart.savedObjects.getScopedClient(request);
-  const uiSettings = coreStart.uiSettings.asScopedToClient(savedObjectsClient);
-  const isEnabled = await uiSettings.get<boolean>(CONTEXT_ENGINE_ENABLED_SETTING_ID);
+  const isEnabled = await isContextEngineEnabledInSpace({
+    savedObjects: coreStart.savedObjects,
+    uiSettings: coreStart.uiSettings,
+    spaceId,
+  });
 
   if (!isEnabled) {
     throw new Error('Context Engine is not enabled in this space.');

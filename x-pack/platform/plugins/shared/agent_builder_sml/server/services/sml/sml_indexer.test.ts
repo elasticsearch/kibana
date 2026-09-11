@@ -821,6 +821,145 @@ describe('createSmlIndexer', () => {
       });
     });
 
+    describe('ensureDefaultAiIndex', () => {
+      it('calls ensureDefaultAiIndex once per space before deleteEntry on write', async () => {
+        const bulkMock = jest.fn().mockResolvedValue({ errors: false, items: [] });
+        const getClientMock = jest.fn().mockReturnValue({ bulk: bulkMock });
+        (createSmlStorage as jest.Mock).mockReturnValue({ getClient: getClientMock });
+
+        const smlEntry = { type: 'lens', title: 'T', content: 'c' };
+        const getSmlEntry = jest.fn().mockResolvedValue(smlEntry);
+        const registry = createMockRegistry(
+          createMockSmlTypeDefinition({ id: 'lens', getSmlEntry })
+        );
+        const logger = createMockLogger();
+        const esClient = createMockEsClient();
+        const ensureDefaultAiIndex = jest.fn().mockResolvedValue(undefined);
+        const indexer = createSmlIndexer({ registry, logger, ensureDefaultAiIndex });
+
+        await indexer.indexAttachment(
+          createIndexerParams({
+            originId: 'att-ensure',
+            attachmentType: 'lens',
+            action: 'create',
+            spaces: ['default', 'space-2'],
+            esClient,
+          })
+        );
+
+        expect(ensureDefaultAiIndex).toHaveBeenCalledTimes(2);
+        expect(ensureDefaultAiIndex).toHaveBeenCalledWith('default');
+        expect(ensureDefaultAiIndex).toHaveBeenCalledWith('space-2');
+        expect(esClient.deleteByQuery).toHaveBeenCalledTimes(1);
+        expect(bulkMock).toHaveBeenCalledTimes(1);
+      });
+
+      it('continues indexing when ensureDefaultAiIndex fails', async () => {
+        const bulkMock = jest.fn().mockResolvedValue({ errors: false, items: [] });
+        const getClientMock = jest.fn().mockReturnValue({ bulk: bulkMock });
+        (createSmlStorage as jest.Mock).mockReturnValue({ getClient: getClientMock });
+
+        const smlEntry = { type: 'lens', title: 'T', content: 'c' };
+        const getSmlEntry = jest.fn().mockResolvedValue(smlEntry);
+        const registry = createMockRegistry(
+          createMockSmlTypeDefinition({ id: 'lens', getSmlEntry })
+        );
+        const logger = createMockLogger();
+        const esClient = createMockEsClient();
+        const ensureDefaultAiIndex = jest
+          .fn()
+          .mockRejectedValue(new Error('AI index bootstrap failed'));
+        const indexer = createSmlIndexer({ registry, logger, ensureDefaultAiIndex });
+
+        await indexer.indexAttachment(
+          createIndexerParams({
+            originId: 'att-ensure-fail',
+            attachmentType: 'lens',
+            action: 'create',
+            spaces: ['default'],
+            esClient,
+            logger,
+          })
+        );
+
+        expect(ensureDefaultAiIndex).toHaveBeenCalledWith('default');
+        expect(logger.warn).toHaveBeenCalledWith(
+          expect.stringContaining("failed to ensure the default AI index in space 'default'")
+        );
+        expect(esClient.deleteByQuery).toHaveBeenCalledTimes(1);
+        expect(bulkMock).toHaveBeenCalledTimes(1);
+      });
+
+      it('does not call ensureDefaultAiIndex again for a space after success', async () => {
+        const bulkMock = jest.fn().mockResolvedValue({ errors: false, items: [] });
+        const getClientMock = jest.fn().mockReturnValue({ bulk: bulkMock });
+        (createSmlStorage as jest.Mock).mockReturnValue({ getClient: getClientMock });
+
+        const smlEntry = { type: 'lens', title: 'T', content: 'c' };
+        const getSmlEntry = jest.fn().mockResolvedValue(smlEntry);
+        const registry = createMockRegistry(
+          createMockSmlTypeDefinition({ id: 'lens', getSmlEntry })
+        );
+        const logger = createMockLogger();
+        const esClient = createMockEsClient();
+        const ensureDefaultAiIndex = jest.fn().mockResolvedValue(undefined);
+        const indexer = createSmlIndexer({ registry, logger, ensureDefaultAiIndex });
+
+        await indexer.indexAttachment(
+          createIndexerParams({
+            originId: 'att-ensure-1',
+            attachmentType: 'lens',
+            action: 'create',
+            spaces: ['default'],
+            esClient,
+          })
+        );
+        await indexer.indexAttachment(
+          createIndexerParams({
+            originId: 'att-ensure-2',
+            attachmentType: 'lens',
+            action: 'create',
+            spaces: ['default'],
+            esClient,
+          })
+        );
+
+        expect(ensureDefaultAiIndex).toHaveBeenCalledTimes(1);
+        expect(ensureDefaultAiIndex).toHaveBeenCalledWith('default');
+      });
+
+      it('does not call ensureDefaultAiIndex for * or empty space ids', async () => {
+        const bulkMock = jest.fn().mockResolvedValue({ errors: false, items: [] });
+        const getClientMock = jest.fn().mockReturnValue({ bulk: bulkMock });
+        (createSmlStorage as jest.Mock).mockReturnValue({ getClient: getClientMock });
+
+        const smlEntry = { type: 'lens', title: 'T', content: 'c' };
+        const getSmlEntry = jest.fn().mockResolvedValue(smlEntry);
+        const registry = createMockRegistry(
+          createMockSmlTypeDefinition({ id: 'lens', getSmlEntry })
+        );
+        const logger = createMockLogger();
+        const esClient = createMockEsClient();
+        const ensureDefaultAiIndex = jest.fn().mockResolvedValue(undefined);
+        const indexer = createSmlIndexer({ registry, logger, ensureDefaultAiIndex });
+
+        await indexer.indexAttachment(
+          createIndexerParams({
+            originId: 'att-ensure-wildcard',
+            attachmentType: 'lens',
+            action: 'create',
+            spaces: ['*', '', 'marketing'],
+            esClient,
+          })
+        );
+
+        expect(ensureDefaultAiIndex).toHaveBeenCalledTimes(1);
+        expect(ensureDefaultAiIndex).toHaveBeenCalledWith('marketing');
+        expect(ensureDefaultAiIndex).not.toHaveBeenCalledWith('*');
+        expect(ensureDefaultAiIndex).not.toHaveBeenCalledWith('');
+      });
+    });
+
     describe('getPermissions hook', () => {
       it('stamps fully-shaped empty permissions when type has no getPermissions hook', async () => {
         const bulkMock = jest.fn().mockResolvedValue({ errors: false, items: [] });

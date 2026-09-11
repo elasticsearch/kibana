@@ -8,6 +8,7 @@
     "id": "contextEngineAgentBuilder",
     "browser": true,
     "server": true,
-    "requiredPlugins": ["agentBuilder", "contextEngine", "workflowsManagement", "security"]
+    "requiredPlugins": ["agentBuilder", "contextEngine", "workflowsManagement", "security"],
+    "optionalPlugins": ["spaces"]
   }
 }

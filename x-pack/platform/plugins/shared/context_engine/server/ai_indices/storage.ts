@@ -17,10 +17,15 @@ import type {
 
 export const aiIndicesIndexName = '.contextengine-ai-indices';
 
+export const buildAiIndexDocId = (spaceId: string, aiIndexId: string): string =>
+  `${spaceId}:${aiIndexId}`;
+
 const storageSettings = {
   name: aiIndicesIndexName,
   schema: {
     properties: {
+      id: types.keyword({}),
+      space: types.keyword({}),
       description: types.text({}),
       managed: types.boolean({}),
       date_created: types.date({}),
@@ -56,6 +61,8 @@ const storageSettings = {
 } satisfies IndexStorageSettings;
 
 export interface AiIndexDocument {
+  id: string;
+  space: string;
   description?: string;
   feedback_analysis?: AiIndexFeedbackAnalysis;
   // Optional for backward compatibility with entries written before managed

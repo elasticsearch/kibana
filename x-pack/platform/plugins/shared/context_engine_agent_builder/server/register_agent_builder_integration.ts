@@ -8,6 +8,7 @@
 import type { CoreSetup } from '@kbn/core/server';
 import type { AgentBuilderPluginSetup } from '@kbn/agent-builder-server';
 import { apiPrivileges } from '@kbn/context-engine-plugin/common/features';
+import { resolveSpaceId } from '@kbn/context-engine-plugin/server/utils/resolve_space_id';
 import type { WorkflowsServerPluginSetup } from '@kbn/workflows-management-plugin/server';
 import { registerAgentBuilderTools } from './agent_builder/tools';
 import { registerAttachmentTypes } from './attachment_types';
@@ -34,7 +35,7 @@ export const registerContextEngineAgentBuilderIntegration = ({
 
   agentBuilder.agents.registerAiIndexResolver(async ({ ids, request }) => {
     const [, startDeps] = await coreSetup.getStartServices();
-    const { contextEngine, security } = startDeps;
+    const { contextEngine, security, spaces } = startDeps;
 
     // list() reads through the internal user, bypassing CE's API-layer authz, so re-apply CE's
     // read privilege for the requesting user. One space-aware check covers every id, matching
@@ -47,9 +48,10 @@ export const registerContextEngineAgentBuilderIntegration = ({
       return [];
     }
 
+    const spaceId = resolveSpaceId(spaces, request);
     const aiIndexService = contextEngine.getAiIndexService();
     const requestedIds = new Set(ids);
-    const aiIndices = await aiIndexService.list();
+    const aiIndices = await aiIndexService.list(spaceId);
     return aiIndices
       .filter((aiIndex) => requestedIds.has(aiIndex.id))
       .map((aiIndex) => ({

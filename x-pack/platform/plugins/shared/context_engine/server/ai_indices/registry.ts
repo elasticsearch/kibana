@@ -8,15 +8,15 @@
 import type { Logger } from '@kbn/logging';
 import type { AiIndexProperties } from '../../common/http_api/ai_indices';
 import type { AiIndexService } from './service';
-import { AiIndexConflictError, AiIndexIdConflictError, InvalidAiIndexDestError } from './errors';
+import { AiIndexConflictError } from './errors';
 
 export class AiIndexRegistry {
   private readonly entries = new Map<string, AiIndexProperties>();
-  private started = false;
+  private frozen = false;
 
   register(id: string, properties: AiIndexProperties): void {
-    if (this.started) {
-      throw new Error('registerAiIndex called after plugin start');
+    if (this.frozen) {
+      throw new Error('registerAiIndex called after plugin setup');
     }
     if (this.entries.has(id)) {
       throw new Error(`AI index '${id}' is already registered`);
@@ -24,63 +24,50 @@ export class AiIndexRegistry {
     this.entries.set(id, properties);
   }
 
-  async startupRegister({
-    aiIndexService,
-    isEnabled,
-    logger,
-  }: {
-    aiIndexService: AiIndexService;
-    isEnabled: boolean;
-    logger: Logger;
-  }): Promise<void> {
-    this.started = true;
-
-    if (!isEnabled) {
-      logger.debug('contextEngine:enabled is false — skipping AI index auto-registration');
-      return;
-    }
-
-    for (const [id, properties] of this.entries) {
-      await this.registerOne({ id, properties, aiIndexService, logger });
-    }
+  /** Marks setup complete; further `register()` calls are rejected. */
+  freeze(): void {
+    this.frozen = true;
   }
 
-  private async registerOne({
+  /** Ids of managed AI indices registered by plugins at setup. */
+  getManagedIds(): string[] {
+    return [...this.entries.keys()];
+  }
+
+  has(id: string): boolean {
+    return this.entries.has(id);
+  }
+
+  /**
+   * Idempotent upsert of one managed entry into one space. Safe to call on
+   * every access.
+   */
+  async ensure({
     id,
-    properties,
+    spaceId,
     aiIndexService,
     logger,
   }: {
     id: string;
-    properties: AiIndexProperties;
+    spaceId: string;
     aiIndexService: AiIndexService;
     logger: Logger;
   }): Promise<void> {
-    // Idempotent upsert on every startup: `putManaged` is the source of truth,
-    // so it creates the entry on first boot and refreshes it on later boots
-    // (picking up any registration changes without a manual recovery step).
+    const properties = this.entries.get(id);
+    if (!properties) {
+      return;
+    }
     try {
-      const result = await aiIndexService.putManaged(id, properties);
-      if (result === 'created') {
-        logger.info(`AI index '${id}' registered successfully`);
-      } else {
-        logger.debug(`AI index '${id}' registration refreshed`);
-      }
+      const result = await aiIndexService.putManaged(id, spaceId, properties);
+      logger.debug(`AI index '${id}' ${result} in space '${spaceId}'`);
     } catch (err) {
-      if (err instanceof InvalidAiIndexDestError) {
-        logger.warn(`AI index '${id}' dest is not valid: '${err.message}'. Skipped.`);
-      } else if (err instanceof AiIndexIdConflictError) {
-        logger.warn(
-          `AI index '${id}' is already registered as a user-owned index; skipping managed registration.`
+      if (err instanceof AiIndexConflictError) {
+        logger.debug(
+          `AI index '${id}' was registered concurrently in space '${spaceId}' — skipping.`
         );
-      } else if (err instanceof AiIndexConflictError) {
-        // Another Kibana instance registered this entry concurrently; benign.
-        logger.debug(`AI index '${id}' was registered concurrently — skipping.`);
-      } else {
-        logger.warn(
-          `Failed to register AI index '${id}': ${err instanceof Error ? err.message : String(err)}`
-        );
+        return;
       }
+      throw err;
     }
   }
 }

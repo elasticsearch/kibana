@@ -10,7 +10,9 @@ import type { ActionResult, ConnectorType } from '@kbn/actions-plugin/server';
 import type { Type } from '@kbn/config-schema';
 import type { IRouter, RequestHandler } from '@kbn/core/server';
 import { httpServerMock } from '@kbn/core/server/mocks';
+import { asSpaceId } from '@kbn/core-spaces-common';
 import { loggerMock } from '@kbn/logging-mocks';
+import { spacesMock } from '@kbn/spaces-plugin/server/mocks';
 import { registerAiIndexRoutes } from './ai_indices';
 import {
   MAX_AI_INDEX_SOURCES,
@@ -103,7 +105,9 @@ describe('ai indices routes', () => {
   let esSearch: jest.Mock;
   let esGet: jest.Mock;
   let improvementsClients: unknown[];
+  let getSpaces: jest.Mock;
   const logger = loggerMock.create();
+  const defaultSpaceId = 'default';
 
   const createContext = () =>
     ({
@@ -151,6 +155,7 @@ describe('ai indices routes', () => {
     };
     improvementsService = { deleteByAiIndex: jest.fn().mockResolvedValue(undefined) };
     improvementsClients = [];
+    getSpaces = jest.fn().mockResolvedValue(undefined);
 
     const createVersionedRoute = (method: string) => (config: RegisteredRoute['config']) => ({
       addVersion: (
@@ -183,6 +188,7 @@ describe('ai indices routes', () => {
         return improvementsService as unknown as ImprovementsServiceApi;
       },
       getActions: async () => actions,
+      getSpaces,
     });
   });
 
@@ -267,7 +273,11 @@ describe('ai indices routes', () => {
       await callRoute('POST', aiIndexPath, { body: postBody });
 
       const { id, ...properties } = postBody;
-      expect(aiIndexService.create).toHaveBeenCalledWith('customer_support', properties);
+      expect(aiIndexService.create).toHaveBeenCalledWith(
+        'customer_support',
+        defaultSpaceId,
+        properties
+      );
       expect(response.created).toHaveBeenCalledWith({ body: { status: 'created' } });
     });
 
@@ -304,7 +314,11 @@ describe('ai indices routes', () => {
       await callRoute('POST', aiIndexPath, { body });
 
       const { id, ...properties } = body;
-      expect(aiIndexService.create).toHaveBeenCalledWith('customer_support', properties);
+      expect(aiIndexService.create).toHaveBeenCalledWith(
+        'customer_support',
+        defaultSpaceId,
+        properties
+      );
       expect(response.created).toHaveBeenCalledWith({ body: { status: 'created' } });
     });
 
@@ -360,7 +374,11 @@ describe('ai indices routes', () => {
 
       await callRoute('PUT', aiIndexByIdPath, putRequest);
 
-      expect(aiIndexService.put).toHaveBeenCalledWith('customer_support', putRequest.body);
+      expect(aiIndexService.put).toHaveBeenCalledWith(
+        'customer_support',
+        defaultSpaceId,
+        putRequest.body
+      );
       expect(response.created).toHaveBeenCalledWith({ body: { status: 'created' } });
     });
 
@@ -406,7 +424,7 @@ describe('ai indices routes', () => {
 
       await callRoute('PUT', aiIndexByIdPath, { ...putRequest, body });
 
-      expect(aiIndexService.put).toHaveBeenCalledWith('customer_support', body);
+      expect(aiIndexService.put).toHaveBeenCalledWith('customer_support', defaultSpaceId, body);
       expect(response.ok).toHaveBeenCalledWith({ body: { status: 'updated' } });
     });
 
@@ -433,6 +451,7 @@ describe('ai indices routes', () => {
 
       await callRoute('GET', aiIndexByIdPath, { params: { aiIndexId: 'customer_support' } });
 
+      expect(aiIndexService.get).toHaveBeenCalledWith('customer_support', defaultSpaceId);
       expect(response.ok).toHaveBeenCalledWith({ body: aiIndexItem });
     });
 
@@ -708,6 +727,7 @@ describe('ai indices routes', () => {
 
       await callRoute('GET', aiIndexPath, {});
 
+      expect(aiIndexService.list).toHaveBeenCalledWith(defaultSpaceId);
       expect(response.ok).toHaveBeenCalledWith({ body: { ai_indices: [] } });
     });
   });
@@ -720,7 +740,7 @@ describe('ai indices routes', () => {
         params: { aiIndexId: 'customer_support' },
       });
 
-      expect(aiIndexService.delete).toHaveBeenCalledWith('customer_support');
+      expect(aiIndexService.delete).toHaveBeenCalledWith('customer_support', defaultSpaceId);
       expect(response.ok).toHaveBeenCalledWith({ body: { acknowledged: true } });
     });
 
@@ -780,6 +800,25 @@ describe('ai indices routes', () => {
     });
   });
 
+  describe('space scoping', () => {
+    it('resolves the space id from the spaces plugin and threads it through to the service', async () => {
+      const spaces = spacesMock.createStart();
+      spaces.spacesService.getSpaceId.mockReturnValue(asSpaceId('marketing'));
+      getSpaces.mockResolvedValue(spaces);
+      aiIndexService.list.mockResolvedValue([]);
+      aiIndexService.get.mockResolvedValue(aiIndexItem);
+      aiIndexService.delete.mockResolvedValue(undefined);
+
+      await callRoute('GET', aiIndexPath, {});
+      await callRoute('GET', aiIndexByIdPath, { params: { aiIndexId: 'customer_support' } });
+      await callRoute('DELETE', aiIndexByIdPath, { params: { aiIndexId: 'customer_support' } });
+
+      expect(aiIndexService.list).toHaveBeenCalledWith('marketing');
+      expect(aiIndexService.get).toHaveBeenCalledWith('customer_support', 'marketing');
+      expect(aiIndexService.delete).toHaveBeenCalledWith('customer_support', 'marketing');
+    });
+  });
+
   describe('PUT /internal/context_engine/ai_index/{aiIndexId}/feedback_analysis', () => {
     const feedbackAnalysis = {
       enabled: true,
@@ -798,6 +837,7 @@ describe('ai indices routes', () => {
 
       expect(aiIndexService.setFeedbackAnalysis).toHaveBeenCalledWith(
         'customer_support',
+        defaultSpaceId,
         feedbackAnalysis
       );
       expect(response.ok).toHaveBeenCalledWith({

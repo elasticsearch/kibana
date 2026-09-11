@@ -45,6 +45,7 @@ export interface SmlServiceSetup {
 interface SmlServiceStartDeps {
   logger: Logger;
   securityAuthz?: AuthorizationServiceSetup;
+  ensureDefaultAiIndex: (spaceId: string) => Promise<void>;
 }
 
 export interface SmlServiceInstance {
@@ -75,14 +76,18 @@ class SmlServiceImpl implements SmlServiceInstance {
     };
   }
 
-  start({ logger, securityAuthz }: SmlServiceStartDeps): SmlService {
+  start({ logger, securityAuthz, ensureDefaultAiIndex }: SmlServiceStartDeps): SmlService {
     this.securityAuthz = securityAuthz;
     if (!securityAuthz) {
       logger.warn(
         'SML service started without security authorization — permission checks are disabled (open access)'
       );
     }
-    this.indexer = createSmlIndexer({ registry: this.registry, logger: logger.get('indexer') });
+    this.indexer = createSmlIndexer({
+      registry: this.registry,
+      logger: logger.get('indexer'),
+      ensureDefaultAiIndex,
+    });
     this.crawler = new SmlCrawlerImpl({
       indexer: this.indexer,
       logger: logger.get('crawler'),

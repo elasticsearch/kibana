@@ -27,10 +27,14 @@ describe('registerContextEngineAgentBuilderIntegration', () => {
   const setup = ({
     aiIndices,
     authorized = true,
+    spaceId = 'default',
+    spacesAvailable = true,
   }: {
     aiIndices: unknown[];
     /** Outcome of the privilege check: granted, denied, or the error it rejects with. */
     authorized?: boolean | Error;
+    spaceId?: string;
+    spacesAvailable?: boolean;
   }) => {
     const checkPrivileges =
       authorized instanceof Error
@@ -44,12 +48,15 @@ describe('registerContextEngineAgentBuilderIntegration', () => {
     };
 
     const list = jest.fn().mockResolvedValue(aiIndices);
+    const getSpaceId = jest.fn().mockReturnValue(spaceId);
+    const spaces = spacesAvailable ? { spacesService: { getSpaceId } } : undefined;
     const coreSetup = {
       getStartServices: jest.fn().mockResolvedValue([
         {},
         {
           contextEngine: { getAiIndexService: () => ({ list }) },
           security,
+          spaces,
         },
         {},
       ]),
@@ -76,7 +83,7 @@ describe('registerContextEngineAgentBuilderIntegration', () => {
     if (!resolver) {
       throw new Error('Expected an AI index resolver to be registered');
     }
-    return { resolver, list, security, checkPrivileges };
+    return { resolver, list, security, checkPrivileges, getSpaceId };
   };
 
   it('registers a resolver mapping registry items to id, esqlTarget (dest.value) and description', async () => {
@@ -107,6 +114,30 @@ describe('registerContextEngineAgentBuilderIntegration', () => {
       { id: 'wanted', esqlTarget: 'idx-wanted' },
     ]);
     expect(list).toHaveBeenCalledTimes(1);
+    expect(list).toHaveBeenCalledWith('default');
+  });
+
+  it('lists AI indices for the request space', async () => {
+    const { resolver, list, getSpaceId } = setup({
+      aiIndices: [{ id: 'my-custom', dest: { type: 'index', value: 'idx-custom' } }],
+      spaceId: 'marketing',
+    });
+
+    await resolver({ ids: ['my-custom'], request });
+
+    expect(getSpaceId).toHaveBeenCalledWith(request);
+    expect(list).toHaveBeenCalledWith('marketing');
+  });
+
+  it('falls back to default space when spaces plugin is unavailable', async () => {
+    const { resolver, list } = setup({
+      aiIndices: [{ id: 'my-custom', dest: { type: 'index', value: 'idx-custom' } }],
+      spacesAvailable: false,
+    });
+
+    await resolver({ ids: ['my-custom'], request });
+
+    expect(list).toHaveBeenCalledWith('default');
   });
 
   it('checks the Context Engine read privilege for the request before disclosing details', async () => {
