@@ -5,15 +5,23 @@
  * 2.0.
  */
 
+import type { FC, PropsWithChildren } from 'react';
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { EuiProvider } from '@elastic/eui';
+import { I18nProvider } from '@kbn/i18n-react';
 
 import { TypeFilter, TYPE_FILTER_SCHEDULED, TYPE_FILTER_MANUALLY_GENERATED } from './type_filter';
-import { TestProviders } from '../../../../common/mock';
 import { useKibana } from '../../../../common/lib/kibana';
 import { AttacksEventTypes } from '../../../../common/lib/telemetry';
 
 jest.mock('../../../../common/lib/kibana');
+
+const TestProviders: FC<PropsWithChildren> = ({ children }) => (
+  <I18nProvider>
+    <EuiProvider highContrastMode={false}>{children}</EuiProvider>
+  </I18nProvider>
+);
 
 const defaultProps = {
   selectedTypes: [],
