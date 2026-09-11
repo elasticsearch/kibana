@@ -27,6 +27,15 @@ jest.mock('react-router', () => ({
 jest.mock('../../../../common/lib/kibana');
 jest.mock('../../../../data_view_manager/hooks/use_data_view');
 jest.mock('../schedule/logic/use_schedule_api');
+jest.mock('../schedule/create_flyout', () => ({
+  CreateFlyout: ({ onClose }: { onClose: () => void }) => (
+    <div data-test-subj="scheduleCreateFlyout">
+      <button type="button" data-test-subj="close" onClick={onClose}>
+        close
+      </button>
+    </div>
+  ),
+}));
 
 const mockUseKibana = useKibana as jest.MockedFunction<typeof useKibana>;
 const mockUseDataView = useDataView as jest.MockedFunction<typeof useDataView>;
@@ -277,8 +286,7 @@ describe('useScheduleView', () => {
     });
   });
 
-  // FLAKY: https://github.com/elastic/kibana/issues/277278
-  describe.skip('refetching schedules after flyout closes', () => {
+  describe('refetching schedules after flyout closes', () => {
     const TestScheduleView: React.FC = () => {
       const { scheduleView } = useScheduleView();
 
