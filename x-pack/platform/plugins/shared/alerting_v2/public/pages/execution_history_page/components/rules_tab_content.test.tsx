@@ -6,9 +6,10 @@
  */
 
 import React from 'react';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { I18nProvider } from '@kbn/i18n-react';
+import { UnifiedDataTable } from '@kbn/unified-data-table';
 import type { RuleExecutionView } from '@kbn/alerting-v2-schemas';
 import { RulesTabContent } from './rules_tab_content';
 
@@ -36,6 +37,49 @@ jest.mock('@kbn/core-di-browser', () => ({
     return {};
   },
   CoreStart: (key: string) => key,
+}));
+
+jest.mock('@kbn/unified-data-table', () => {
+  const ReactActual = jest.requireActual('react');
+  return {
+    DataLoadingState: { loading: 'loading', loaded: 'loaded' },
+    ROWS_HEIGHT_OPTIONS: { auto: -1, single: 1, default: 3 },
+    UnifiedDataTable: jest.fn(({ rows, columns, externalCustomRenderers }: Record<string, any>) =>
+      ReactActual.createElement(
+        'div',
+        { 'data-test-subj': 'unifiedDataTable' },
+        rows.map((row: any) =>
+          ReactActual.createElement(
+            'div',
+            { key: row.id, role: 'row' },
+            columns.map((columnId: string) => {
+              const Renderer = externalCustomRenderers?.[columnId];
+              return ReactActual.createElement(
+                'div',
+                { key: columnId, role: 'cell' },
+                Renderer
+                  ? ReactActual.createElement(Renderer, { row, columnId })
+                  : String(row.flattened?.[columnId] ?? '')
+              );
+            })
+          )
+        )
+      )
+    ),
+  };
+});
+
+jest.mock('@kbn/cell-actions', () => ({
+  CellActionsProvider: ({ children }: { children: React.ReactNode }) => children,
+}));
+
+jest.mock('../data_view', () => ({
+  ...jest.requireActual('../data_view'),
+  useRuleExecutionsDataView: () => ({ dataView: {}, error: undefined }),
+}));
+
+jest.mock('../hooks/use_unified_data_table_services', () => ({
+  useUnifiedDataTableServices: () => ({}),
 }));
 
 jest.mock('../../../hooks/use_fetch_rule_executions', () => ({
@@ -84,6 +128,16 @@ const renderComponent = () =>
     </I18nProvider>
   );
 
+// Latest props the component handed to the (stubbed) grid.
+const lastGridProps = () => {
+  const calls = jest.mocked(UnifiedDataTable).mock.calls;
+  return calls[calls.length - 1][0] as Record<string, any>;
+};
+
+const withRows = (items: RuleExecutionView[], total = items.length) => ({
+  data: { items, total, page: 1, per_page: 10 },
+});
+
 describe('RulesTabContent', () => {
   beforeEach(() => {
     jest.clearAllMocks();
@@ -98,14 +152,14 @@ describe('RulesTabContent', () => {
   });
 
   it('renders the table and outcome filter', () => {
-    mockResult();
+    mockResult(withRows([buildItem()]));
     renderComponent();
 
     expect(screen.getByTestId('ruleExecutionHistoryTable')).toBeInTheDocument();
     expect(screen.getByTestId('ruleExecutionHistoryOutcomeFilter')).toBeInTheDocument();
   });
 
-  it('calls useFetchRuleExecutions with default params (page 1, perPage 10, no outcome)', () => {
+  it('calls useFetchRuleExecutions with default params (page 1, perPage 10, default sort)', () => {
     mockResult();
     renderComponent();
 
@@ -113,6 +167,8 @@ describe('RulesTabContent', () => {
       page: 1,
       perPage: 10,
       outcome: undefined,
+      sort: 'startedAt',
+      sortOrder: 'desc',
     });
   });
 
@@ -124,14 +180,7 @@ describe('RulesTabContent', () => {
   });
 
   it('renders rows with timestamp, rule name, duration, outcome badge, and message', () => {
-    mockResult({
-      data: {
-        items: [buildItem()],
-        total: 1,
-        page: 1,
-        per_page: 10,
-      },
-    });
+    mockResult(withRows([buildItem()]));
     renderComponent();
 
     expect(screen.getByText(/2026-05-05/)).toBeInTheDocument();
@@ -142,14 +191,7 @@ describe('RulesTabContent', () => {
   });
 
   it('calls onRuleClick when the rule name link is clicked', async () => {
-    mockResult({
-      data: {
-        items: [buildItem()],
-        total: 1,
-        page: 1,
-        per_page: 10,
-      },
-    });
+    mockResult(withRows([buildItem()]));
     renderComponent();
 
     await userEvent.click(screen.getByText('My Rule'));
@@ -162,35 +204,25 @@ describe('RulesTabContent', () => {
       loading: false,
       error: undefined,
     });
-    mockResult({
-      data: {
-        items: [buildItem({ rule: { id: 'rule-orphan', version: null } })],
-        total: 1,
-        page: 1,
-        per_page: 10,
-      },
-    });
+    mockResult(withRows([buildItem({ rule: { id: 'rule-orphan', version: null } })]));
     renderComponent();
 
     expect(screen.getByText('rule-orphan')).toBeInTheDocument();
-    expect(screen.queryByRole('link', { name: 'rule-orphan' })).not.toBeInTheDocument();
+    expect(
+      screen.queryByTestId('ruleExecutionHistoryRuleLink-rule-orphan')
+    ).not.toBeInTheDocument();
   });
 
   it('shows error message when outcome is failure', () => {
-    mockResult({
-      data: {
-        items: [
-          buildItem({
-            outcome: 'failure',
-            reason: null,
-            error: { message: 'Index not found', stack_trace: null },
-          }),
-        ],
-        total: 1,
-        page: 1,
-        per_page: 10,
-      },
-    });
+    mockResult(
+      withRows([
+        buildItem({
+          outcome: 'failure',
+          reason: null,
+          error: { message: 'Index not found', stack_trace: null },
+        }),
+      ])
+    );
     renderComponent();
 
     expect(screen.getByText('failure')).toBeInTheDocument();
@@ -198,31 +230,17 @@ describe('RulesTabContent', () => {
   });
 
   it('shows "Rule executed successfully" when outcome is success and no reason or error', () => {
-    mockResult({
-      data: {
-        items: [buildItem({ outcome: 'success', reason: null, error: null })],
-        total: 1,
-        page: 1,
-        per_page: 10,
-      },
-    });
+    mockResult(withRows([buildItem({ outcome: 'success', reason: null, error: null })]));
     renderComponent();
 
     expect(screen.getByText('Rule executed successfully')).toBeInTheDocument();
   });
 
   it('shows em dash when outcome is failure but neither reason nor error.message is present', () => {
-    mockResult({
-      data: {
-        items: [buildItem({ outcome: 'failure', reason: null, error: null })],
-        total: 1,
-        page: 1,
-        per_page: 10,
-      },
-    });
+    mockResult(withRows([buildItem({ outcome: 'failure', reason: null, error: null })]));
     renderComponent();
 
-    expect(screen.getByText('\u2014')).toBeInTheDocument();
+    expect(screen.getByText('—')).toBeInTheDocument();
   });
 
   it('renders the error state with retry when isError is true', async () => {
@@ -235,7 +253,7 @@ describe('RulesTabContent', () => {
     expect(mockRefetch).toHaveBeenCalledTimes(1);
   });
 
-  it('changing the outcome filter resets to page 1', async () => {
+  it('changing the outcome filter resets to page 1 and keeps the current sort', async () => {
     mockResult();
     renderComponent();
 
@@ -249,6 +267,8 @@ describe('RulesTabContent', () => {
         page: 1,
         perPage: 10,
         outcome: ['failure'],
+        sort: 'startedAt',
+        sortOrder: 'desc',
       });
     });
   });
@@ -266,43 +286,74 @@ describe('RulesTabContent', () => {
   });
 
   it('formats duration in ms for sub-second values', () => {
-    mockResult({
-      data: {
-        items: [buildItem({ timings: { duration: 250, scheduled_delay: 0 } })],
-        total: 1,
-        page: 1,
-        per_page: 10,
-      },
-    });
+    mockResult(withRows([buildItem({ timings: { duration: 250, scheduled_delay: 0 } })]));
     renderComponent();
 
     expect(screen.getByText('250 ms')).toBeInTheDocument();
   });
 
-  it('renders pagination with 10, 50, 100 page size options', () => {
-    mockResult({
-      data: {
-        items: Array.from({ length: 10 }, (_, idx) =>
-          buildItem({ id: `exec-${idx}`, started_at: `2026-05-05T10:0${idx}:00.000Z` })
-        ),
-        total: 150,
-        page: 1,
-        per_page: 10,
-      },
-    });
-    renderComponent();
+  describe('sorting', () => {
+    it('wires the grid onSort to the fetch hook and resets to page 1', async () => {
+      mockResult(withRows([buildItem()]));
+      renderComponent();
 
-    const pageSizeSelector = screen.getByTestId('tablePaginationPopoverButton');
-    expect(pageSizeSelector).toBeInTheDocument();
+      act(() => {
+        lastGridProps().onSort([['duration', 'asc']]);
+      });
+
+      await waitFor(() => {
+        expect(mockUseFetchRuleExecutions).toHaveBeenLastCalledWith(
+          expect.objectContaining({ page: 1, sort: 'duration', sortOrder: 'asc' })
+        );
+      });
+    });
+
+    it('restores the default sort when the grid sort is cleared', async () => {
+      mockResult(withRows([buildItem()]));
+      renderComponent();
+
+      act(() => {
+        lastGridProps().onSort([['duration', 'asc']]);
+      });
+      act(() => {
+        lastGridProps().onSort([]);
+      });
+
+      await waitFor(() => {
+        expect(mockUseFetchRuleExecutions).toHaveBeenLastCalledWith(
+          expect.objectContaining({ sort: 'startedAt', sortOrder: 'desc' })
+        );
+      });
+    });
   });
 
-  it('caps totalItemCount at the API result window limit', () => {
-    mockResult({
-      data: { items: [buildItem()], total: 1_200_000, page: 1, per_page: 100 },
-    });
-    renderComponent();
+  describe('pagination', () => {
+    it('renders the per-page options control', () => {
+      mockResult(
+        withRows(
+          Array.from({ length: 10 }, (_, idx) =>
+            buildItem({ id: `exec-${idx}`, started_at: `2026-05-05T10:0${idx}:00.000Z` })
+          ),
+          150
+        )
+      );
+      renderComponent();
 
-    expect(screen.getByText(/of 100/)).toBeInTheDocument();
+      expect(screen.getByTestId('tablePaginationPopoverButton')).toBeInTheDocument();
+    });
+
+    it('caps the page count at the API result window limit', () => {
+      // total is far past the window; with the default perPage of 10 and a 10_000 cap the last
+      // page is 1000 (0-indexed button 999), proving the total was clamped before computing the
+      // page count (uncapped it would be 120_000 pages).
+      mockResult({
+        data: { items: [buildItem()], total: 1_200_000, page: 1, per_page: 10 },
+      });
+      renderComponent();
+
+      expect(screen.getByTestId('pagination-button-999')).toBeInTheDocument();
+      expect(screen.queryByTestId('pagination-button-1000')).not.toBeInTheDocument();
+    });
   });
 
   describe('when the user cannot read rules', () => {
@@ -311,20 +362,12 @@ describe('RulesTabContent', () => {
     });
 
     it('does not request rule names (empty ruleIds) and renders rule ids as plain text', () => {
-      // With an empty ruleIds list the real hook resolves no names, so the cache is empty.
       mockUseAlertingRulesCache.mockReturnValue({
         rulesCache: {},
         loading: false,
         error: undefined,
       });
-      mockResult({
-        data: {
-          items: [buildItem()],
-          total: 1,
-          page: 1,
-          per_page: 10,
-        },
-      });
+      mockResult(withRows([buildItem()]));
       renderComponent();
 
       expect(mockUseAlertingRulesCache).toHaveBeenLastCalledWith(

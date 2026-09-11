@@ -7,6 +7,7 @@
 
 import React, { useMemo, useState } from 'react';
 import { EuiSpacer } from '@elastic/eui';
+import { css } from '@emotion/react';
 import { AppHeader } from '@kbn/app-header';
 import type { AppHeaderTab } from '@kbn/app-header';
 import { i18n } from '@kbn/i18n';
@@ -25,6 +26,15 @@ type TabId = typeof POLICIES_TAB_ID | typeof RULES_TAB_ID;
 const EXECUTION_HISTORY_PAGE_TITLE = i18n.translate('xpack.alertingV2.executionHistory.pageTitle', {
   defaultMessage: 'Execution history',
 });
+
+// Full-height flex column so the selected tab can grow and own its own scroll (the grid scrolls
+// internally) instead of the whole page scrolling.
+const pageCss = css`
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+  min-block-size: 0;
+`;
 
 const getExecutionHistoryTabs = ({
   selectedTabId,
@@ -82,7 +92,7 @@ export const ExecutionHistoryPage = () => {
   );
 
   return (
-    <div data-test-subj="executionHistoryPage">
+    <div data-test-subj="executionHistoryPage" css={pageCss}>
       <AppHeader
         sticky={false}
         title={EXECUTION_HISTORY_PAGE_TITLE}

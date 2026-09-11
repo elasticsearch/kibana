@@ -48,6 +48,35 @@ export const COLUMN_WORKFLOWS = i18n.translate(
   }
 );
 
+/** --- Rules table columns --- */
+export const RULES_COLUMN_RULE = i18n.translate(
+  'xpack.alertingV2.executionHistory.rulesTab.columns.rule',
+  {
+    defaultMessage: 'Rule',
+  }
+);
+
+export const RULES_COLUMN_DURATION = i18n.translate(
+  'xpack.alertingV2.executionHistory.rulesTab.columns.duration',
+  {
+    defaultMessage: 'Duration',
+  }
+);
+
+export const RULES_COLUMN_RESPONSE = i18n.translate(
+  'xpack.alertingV2.executionHistory.rulesTab.columns.response',
+  {
+    defaultMessage: 'Response',
+  }
+);
+
+export const RULES_COLUMN_MESSAGE = i18n.translate(
+  'xpack.alertingV2.executionHistory.rulesTab.columns.message',
+  {
+    defaultMessage: 'Message',
+  }
+);
+
 /** --- Outcome badge labels --- */
 export const OUTCOME_DISPATCHED = i18n.translate(
   'xpack.alertingV2.executionHistory.table.outcome.dispatched',
