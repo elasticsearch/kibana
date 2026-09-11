@@ -467,58 +467,62 @@ const AlertsTableComponent: FC<Omit<AlertTableProps, 'services' | 'isMutedAlerts
   }
 
   return (
-    <FullWidthFlexGroupTable gutterSize="none">
-      <StatefulEventContext.Provider value={activeStatefulEventContext}>
-        <EuiDataGridContainer hideLastPage={false}>
-          <AlertTableCellContextProvider tableId={tableType} sourcererScope={pageScope}>
-            <ResponseOpsAlertsTable<SecurityAlertsTableContext>
-              key={isEventRenderedView ? 'eventRenderedView' : 'defaultView'}
-              ref={alertsTableRef}
-              // Stores separate configuration based on the view of the table
-              id={id ?? `detection-engine-alert-table-${tableType}-${tableView}`}
-              ruleTypeIds={SECURITY_SOLUTION_RULE_TYPE_IDS}
-              consumers={ALERT_TABLE_CONSUMERS}
-              projectRouting={PROJECT_ROUTING.ORIGIN}
-              query={finalBoolQuery}
-              sort={sort}
-              casesConfiguration={casesConfiguration}
-              gridStyle={gridStyle}
-              shouldHighlightRow={shouldHighlightRow}
-              rowHeightsOptions={rowHeightsOptions}
-              columns={finalColumns}
-              browserFields={finalBrowserFields}
-              onUpdate={onUpdate}
-              onLoaded={onLoaded}
-              additionalContext={additionalContext}
-              height={alertTableHeight}
-              isMutedAlertsEnabled={false}
-              pageSize={50}
-              runtimeMappings={runtimeMappings}
-              toolbarVisibility={toolbarVisibility}
-              renderCellValue={CellValue}
-              renderActionsCell={ActionsCell}
-              renderAdditionalToolbarControls={
-                shouldRenderAdditionalToolbarControls ? undefined : AdditionalToolbarControls
-              }
-              actionsColumnWidth={leadingControlColumn.width}
-              additionalBulkActions={bulkActions}
-              fieldsBrowserOptions={
-                DETECTIONS_TABLE_IDS.some((tableId) => tableId === tableType)
-                  ? fieldsBrowserOptions
-                  : undefined
-              }
-              cellActionsOptions={cellActionsOptions}
-              showInspectButton
-              showCsvExportButton
-              kibanaVersion={KibanaServices.getKibanaVersion()}
-              services={services}
-              bulkAddToChatConfig={maybeBulkAddToChatConfig}
-              {...tablePropsOverrides}
-            />
-          </AlertTableCellContextProvider>
-        </EuiDataGridContainer>
-      </StatefulEventContext.Provider>
-    </FullWidthFlexGroupTable>
+    <div>
+      {graphOverlay}
+      <FullWidthFlexGroupTable $visible={!graphEventId && graphOverlay == null} gutterSize="none">
+        <StatefulEventContext.Provider value={activeStatefulEventContext}>
+          <EuiDataGridContainer hideLastPage={false}>
+            <AlertTableCellContextProvider
+              tableId={tableType}
+              sourcererScope={SourcererScopeName.detections}
+            >
+              <AlertsTable<SecurityAlertsTableContext>
+                ref={alertsTableRef}
+                // Stores separate configuration based on the view of the table
+                id={id ?? `detection-engine-alert-table-${tableType}-${tableView}`}
+                ruleTypeIds={SECURITY_SOLUTION_RULE_TYPE_IDS}
+                consumers={ALERT_TABLE_CONSUMERS}
+                query={finalBoolQuery}
+                initialSort={initialSort}
+                casesConfiguration={casesConfiguration}
+                gridStyle={gridStyle}
+                shouldHighlightRow={shouldHighlightRow}
+                rowHeightsOptions={rowHeightsOptions}
+                columns={finalColumns}
+                browserFields={finalBrowserFields}
+                onUpdate={onUpdate}
+                onLoaded={onLoad}
+                additionalContext={additionalContext}
+                height={alertTableHeight}
+                initialPageSize={50}
+                runtimeMappings={sourcererDataView?.runtimeFieldMap as RunTimeMappings}
+                toolbarVisibility={toolbarVisibility}
+                renderCellValue={CellValue}
+                renderActionsCell={ActionsCell}
+                renderAdditionalToolbarControls={
+                  tableType !== TableId.alertsOnCasePage ? AdditionalToolbarControls : undefined
+                }
+                actionsColumnWidth={leadingControlColumn.width}
+                additionalBulkActions={bulkActions}
+                fieldsBrowserOptions={
+                  tableType === TableId.alertsOnAlertsPage ||
+                  tableType === TableId.alertsOnRuleDetailsPage
+                    ? fieldsBrowserOptions
+                    : undefined
+                }
+                cellActionsOptions={cellActionsOptions}
+                showInspectButton
+                services={services}
+                {...tablePropsOverrides}
+                //  Setting maxRowCount to 10k because of elasticsearch limitations
+                //  More info here: https://github.com/elastic/kibana/issues/151913
+                maxRowCount={10_000}
+              />
+            </AlertTableCellContextProvider>
+          </EuiDataGridContainer>
+        </StatefulEventContext.Provider>
+      </FullWidthFlexGroupTable>
+    </div>
   );
 };
 

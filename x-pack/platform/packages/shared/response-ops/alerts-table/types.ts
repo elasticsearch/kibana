@@ -473,6 +473,12 @@ export interface AlertsTableProps<AC extends AdditionalContext = AdditionalConte
     cases?: CasesService;
     agentBuilder?: OpenChatService;
   };
+
+  /**
+   * Limits the number of results to be paginated.
+   * @see https://github.com/elastic/kibana/issues/151913
+   */
+  maxRowCount?: number;
 }
 
 /**
@@ -673,6 +679,12 @@ export interface AlertsDataGridProps<AC extends AdditionalContext = AdditionalCo
   sort: AlertsTableSortCombinations[];
   onSortChange: (sort: EuiDataGridSorting['columns']) => void;
   alertsQuerySnapshot?: EsQuerySnapshot;
+
+  /**
+   * Limits the number of results to be paginated.
+   * @see https://github.com/elastic/kibana/issues/151913
+   */
+  maxRowCount?: number;
 }
 
 export interface AlertDetailsNavigation {

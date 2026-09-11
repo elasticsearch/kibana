@@ -95,6 +95,7 @@ export interface GroupingArgs<T> {
     count?: number | undefined
   ) => void;
   settings?: GroupSettings;
+  maxGroupCount?: number;
 }
 
 /**
@@ -110,6 +111,7 @@ export interface GroupingArgs<T> {
  * @param onOptionsChange callback executed when grouping options are changed, used for consumer grouping selector
  * @param tracker telemetry handler
  * @param title of the grouping selector component
+ * @param maxGroupCount limits the pagination to maxGroupCount items
  * @returns {@link Grouping} the grouping constructor { getGrouping, groupSelector, pagination, selectedGroups }
  */
 export const useGrouping = <T,>({
@@ -126,6 +128,7 @@ export const useGrouping = <T,>({
   title,
   onOpenTracker,
   settings,
+  maxGroupCount,
 }: GroupingArgs<T>): UseGrouping<T> => {
   const [groupingState, dispatch] = useReducer(
     groupsReducerWithStorage,
@@ -179,9 +182,10 @@ export const useGrouping = <T,>({
           groupSelector={settings?.hideGroupSelector ? null : groupSelector}
           groupingId={groupingId}
           tracker={tracker}
+          maxGroupCount={maxGroupCount}
         />
       ),
-    [componentProps, groupSelector, groupingId, settings?.hideGroupSelector, tracker]
+    [componentProps, groupSelector, groupingId, settings?.hideGroupSelector, tracker, maxGroupCount]
   );
 
   return useMemo(

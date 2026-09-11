@@ -87,6 +87,12 @@ export interface GroupingProps<T> {
   emptyGroupingComponent?: React.ReactElement;
   /** Optional function to get additional action buttons to display in group stats before the Take actions button */
   getAdditionalActionButtons?: GetAdditionalActionButtons<T>;
+
+  /**
+   * Limits the number of results to be paginated.
+   * @see https://github.com/elastic/kibana/issues/151913
+   */
+  maxGroupCount?: number;
 }
 
 const GroupingComponent = <T,>({
@@ -113,6 +119,7 @@ const GroupingComponent = <T,>({
   multiValueFields,
   emptyGroupingComponent,
   getAdditionalActionButtons,
+  maxGroupCount,
 }: GroupingProps<T>) => {
   const { euiTheme } = useEuiTheme();
   const xsFontSize = useEuiFontSize('xs').fontSize;
@@ -245,9 +252,9 @@ const GroupingComponent = <T,>({
     ]
   );
 
-  // the query backing this component never returns groups beyond
-  // MAX_QUERY_SIZE, so pagination can never be allowed past that point
-  const maxPageCount = Math.max(1, Math.floor(MAX_QUERY_SIZE / itemsPerPage));
+  // the query backing this component never returns groups beyond MAX_QUERY_SIZE, so pagination can
+  // never be allowed past that point. maxGroupCount allows callers to specify a lower cap.
+  const maxPageCount = Math.max(1, Math.floor((maxGroupCount ?? MAX_QUERY_SIZE) / itemsPerPage));
   const totalPageCount = groupCount ? Math.ceil(groupCount / itemsPerPage) : 1;
   const revealedPageCount = Math.min(revealedBatches * PAGE_BATCH_SIZE, maxPageCount);
   const pageCount = Math.min(totalPageCount, revealedPageCount);

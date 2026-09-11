@@ -222,6 +222,7 @@ const AlertsTableContent = typedForwardRef(
       showCsvExportButton = false,
       kibanaVersion,
       services,
+      maxRowCount,
       ...publicDataGridProps
     }: AlertsTableProps<AC>,
     ref: Ref<AlertsTableImperativeApi>
@@ -639,6 +640,7 @@ const AlertsTableContent = typedForwardRef(
         sort,
         onSortChange: onDataGridSortChange,
         showCsvExportButton,
+        maxRowCount,
       }),
       [
         publicDataGridProps,
@@ -662,6 +664,7 @@ const AlertsTableContent = typedForwardRef(
         sort,
         onDataGridSortChange,
         showCsvExportButton,
+        maxRowCount,
       ]
     );
 
