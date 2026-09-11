@@ -72,6 +72,9 @@ Note:
  If not provided, the tool will decide itself which is the best index to use.
 - It is perfectly fine not to specify the 'index' parameter. It should only be specified when you already
  know about the index and fields you want to search on, e.g. if the user explicitly specified it.
+
+Do NOT use this tool if a more specific skill is available for the request (see the SKILLS section) — prefer
+loading that skill first, since its dedicated tools are more accurate than a general-purpose search for that domain.
     `,
     annotations: {
       title: 'Search for Elasticsearch Documents',

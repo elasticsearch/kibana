@@ -17,6 +17,14 @@ const ALERT_INDICES_TO_RESTORE_AND_OVERWRITE = [
   'insights-alerts-*',
 ] as const;
 
+/** Kibana may create this as a standalone index (not only under .internal.*). */
+const ALERT_STANDALONE_INDICES_TO_DELETE = ['.alerts-security.alerts-default'] as const;
+
+const ALERT_INDICES_TO_DELETE_BEFORE_RESTORE = [
+  ...ALERT_INDICES_TO_RESTORE_AND_OVERWRITE,
+  ...ALERT_STANDALONE_INDICES_TO_DELETE,
+] as const;
+
 const resolveIndicesByPattern = async (esClient: Client, pattern: string): Promise<string[]> => {
   try {
     const response = (await esClient.indices.get({
@@ -35,7 +43,7 @@ const deleteExistingAlertIndices = async (esClient: Client, log: ToolingLog): Pr
   log.info('Resolving existing alert indices to delete before restore...');
   const resolved = (
     await Promise.all(
-      ALERT_INDICES_TO_RESTORE_AND_OVERWRITE.map((pattern) =>
+      ALERT_INDICES_TO_DELETE_BEFORE_RESTORE.map((pattern) =>
         resolveIndicesByPattern(esClient, pattern)
       )
     )
