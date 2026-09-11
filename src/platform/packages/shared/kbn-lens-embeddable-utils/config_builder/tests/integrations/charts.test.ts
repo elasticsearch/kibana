@@ -30,6 +30,7 @@ const stableChartTypes = new Set([
   'lnsMetric',
   'lnsLegacyMetric',
   'lnsXY',
+  'lnsGauge',
 ]);
 
 // These need special attention to be sure they are correctly handled in the transformations

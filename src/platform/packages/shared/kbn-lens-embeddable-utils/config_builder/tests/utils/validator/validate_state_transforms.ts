@@ -26,6 +26,7 @@ const strictChartTypes = new Set([
   'metric',
   'legacy_metric',
   'xy',
+  'gauge',
 ]);
 
 /**
