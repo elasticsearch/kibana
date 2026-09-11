@@ -26,7 +26,10 @@ export function prepareCallbacks(
   dispatchRenderComplete: () => void,
   callbacks: LensPublicCallbacks
 ) {
-  const disableTriggers = apiHasDisableTriggers(parentApi) ? parentApi.disableTriggers : undefined;
+  const disableTriggers = apiHasDisableTriggers(parentApi)
+    ? parentApi.disableTriggers$.getValue()
+    : undefined;
+
   return {
     disableTriggers,
     onRender: prepareOnRender(

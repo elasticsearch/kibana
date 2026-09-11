@@ -7,19 +7,20 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
+import { BehaviorSubject } from 'rxjs';
 import { apiHasParentApi } from './has_parent_api';
 
 export interface HasDisableTriggers {
-  disableTriggers: boolean;
+  disableTriggers$: BehaviorSubject<boolean>;
 }
 
 export const apiHasDisableTriggers = (api: unknown | null): api is HasDisableTriggers => {
-  return Boolean(api && typeof (api as HasDisableTriggers).disableTriggers === 'boolean');
+  return Boolean(api && (api as HasDisableTriggers).disableTriggers$ instanceof BehaviorSubject);
 };
 
 export function areTriggersDisabled(api?: unknown) {
   function getDisabledTriggers(thisApi?: unknown) {
-    return apiHasDisableTriggers(thisApi) ? thisApi.disableTriggers : false;
+    return apiHasDisableTriggers(thisApi) ? thisApi.disableTriggers$.getValue() : false;
   }
 
   return (

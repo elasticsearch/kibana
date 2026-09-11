@@ -6,7 +6,7 @@
  */
 
 import { BehaviorSubject } from 'rxjs';
-import type { initializeTitleManager } from '@kbn/presentation-publishing';
+import { apiHasDisableTriggers, type initializeTitleManager } from '@kbn/presentation-publishing';
 import type { ESQLControlVariable } from '@kbn/esql-types';
 import { apiPublishesESQLVariables } from '@kbn/esql-types';
 import type { DataView } from '@kbn/data-views-plugin/common';
@@ -14,7 +14,6 @@ import type {
   ExpressionWrapperProps,
   LensInternalApi,
   LensOverrides,
-  LensPanelProps,
   LensRuntimeState,
   VisualizationContext,
   UserMessage,
@@ -41,7 +40,9 @@ export function initializeInternalApi(
     initialState.attributes || createEmptyLensState().attributes
   );
   const overrides$ = new BehaviorSubject(initialState.overrides);
-  const disableTriggers$ = new BehaviorSubject(initialState.disableTriggers);
+  const disableTriggers$ = apiHasDisableTriggers(parentApi)
+    ? parentApi.disableTriggers$
+    : new BehaviorSubject(initialState.disableTriggers ?? false);
   const dataLoading$ = new BehaviorSubject<boolean | undefined>(undefined);
 
   const dataViews$ = new BehaviorSubject<DataView[] | undefined>(undefined);
@@ -110,8 +111,6 @@ export function initializeInternalApi(
     updateAttributes: (attributes: LensRuntimeState['attributes']) => attributes$.next(attributes),
     updateAbortController: (abortController: AbortController) =>
       expressionAbortController$.next(abortController),
-    updateDisabledTriggers: (disableTriggers: LensPanelProps['disableTriggers']) =>
-      disableTriggers$.next(disableTriggers),
     updateDataViews: (dataViews: DataView[] | undefined) => dataViews$.next(dataViews),
     updateMessages: (newMessages: UserMessage[]) => messages$.next(newMessages),
     updateValidationMessages: (newMessages: UserMessage[]) => validationMessages$.next(newMessages),

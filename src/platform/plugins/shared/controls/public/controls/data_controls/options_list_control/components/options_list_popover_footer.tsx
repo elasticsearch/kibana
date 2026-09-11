@@ -41,7 +41,7 @@ const aggregationToggleButtons = [
 ];
 
 export const OptionsListPopoverFooter = () => {
-  const { componentApi } = useOptionsListContext();
+  const { componentApi, displaySettings } = useOptionsListContext();
 
   const [exclude, viewMode, isPartial, loading] = useBatchedPublishingSubjects(
     isDSLOptionsListApi(componentApi) ? componentApi.exclude$ : new BehaviorSubject(false),
@@ -81,6 +81,7 @@ export const OptionsListPopoverFooter = () => {
         >
           <EuiFlexItem grow={false}>
             <EuiButtonGroup
+              isDisabled={displaySettings.previewMode}
               legend={OptionsListStrings.popover.getIncludeExcludeLegend()}
               options={aggregationToggleButtons}
               idSelected={exclude ? 'optionsList__excludeResults' : 'optionsList__includeResults'}

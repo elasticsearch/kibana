@@ -343,7 +343,7 @@ export const PresentationPanelHoverActions = ({
     return contextMenuPanels.some(({ items }) => items?.length);
   }, [contextMenuPanels]);
 
-  return (
+  return viewMode === 'preview' ? null : (
     <>
       {api && (quickActionElements.length || showContextMenu) && (
         <div

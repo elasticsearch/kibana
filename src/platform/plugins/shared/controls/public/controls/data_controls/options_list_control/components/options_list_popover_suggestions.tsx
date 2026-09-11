@@ -34,10 +34,7 @@ interface OptionsListPopoverSuggestionsProps {
 export const OptionsListPopoverSuggestions = ({
   showOnlySelected,
 }: OptionsListPopoverSuggestionsProps) => {
-  const {
-    componentApi,
-    displaySettings: { hide_exists },
-  } = useOptionsListContext();
+  const { componentApi, displaySettings } = useOptionsListContext();
 
   const { euiTheme } = useEuiTheme();
   const styles = useMemoCss(optionListPopoverSuggestionsStyles);
@@ -95,20 +92,32 @@ export const OptionsListPopoverSuggestions = ({
   }, [availableOptions, selectedOptions, showOnlySelected]);
 
   const existsSelectableOption = useMemo<EuiSelectableOption | undefined>(() => {
-    if (hide_exists || (!existsSelected && (showOnlySelected || suggestions?.length === 0))) return;
+    if (
+      displaySettings.hide_exists ||
+      (!existsSelected && (showOnlySelected || suggestions?.length === 0))
+    )
+      return;
 
     return {
+      disabled: displaySettings.previewMode,
       key: 'exists-option',
       checked: existsSelected ? 'on' : undefined,
       label: OptionsListStrings.controlAndPopover.getExists(),
       css: styles.optionsListExistsFilter,
       'data-test-subj': 'optionsList-control-selection-exists',
     };
-  }, [suggestions, existsSelected, showOnlySelected, hide_exists, styles]);
+  }, [
+    suggestions,
+    existsSelected,
+    showOnlySelected,
+    displaySettings.previewMode,
+    displaySettings.hide_exists,
+    styles,
+  ]);
 
   const [selectableOptions, setSelectableOptions] = useState<EuiSelectableOption[]>([]); // will be set in following useEffect
   useEffect(() => {
-    /* This useEffect makes selectableOptions responsive to search, show only selected, and clear selections */
+    /* This useEffect makes selectableOptions responsive to search, sh  `ow only selected, and clear selections */
     const options: EuiSelectableOption[] = suggestions.map((suggestion) => {
       if (typeof suggestion !== 'object') {
         // this means that `showOnlySelected` is true, and doc count is not known when this is the case
@@ -116,6 +125,7 @@ export const OptionsListPopoverSuggestions = ({
       }
 
       return {
+        disabled: displaySettings.previewMode,
         key: String(suggestion.value),
         label: String(fieldFormatter?.(suggestion.value) ?? suggestion.value),
         checked: (selectedOptions ?? []).includes(suggestion.value as string) ? 'on' : undefined,
@@ -152,6 +162,7 @@ export const OptionsListPopoverSuggestions = ({
     suggestions,
     availableOptions,
     showOnlySelected,
+    displaySettings.previewMode,
     selectedOptions,
     invalidSelections,
     existsSelectableOption,

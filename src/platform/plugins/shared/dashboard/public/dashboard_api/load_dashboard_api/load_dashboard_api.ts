@@ -83,8 +83,9 @@ export async function loadDashboardApi({
     overrideState.panels = await transformPanels(overrideState.panels, overrideState.references);
   }
 
-  // Back up any view mode passed in explicitly.
+  // Back up view mode passed in explicitly; do not back up preview mode because it should never be restored
   if (viewMode) {
+    // && viewMode !== 'preview'
     getDashboardBackupService().storeViewMode(viewMode);
   }
 

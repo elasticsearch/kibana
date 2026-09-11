@@ -12,7 +12,12 @@ import { BehaviorSubject } from 'rxjs';
 
 import type { DataView } from '@kbn/data-views-plugin/common';
 import { SORT_DEFAULT_ORDER_SETTING, getSortArray } from '@kbn/discover-utils';
-import { useBatchedPublishingSubjects, type FetchContext } from '@kbn/presentation-publishing';
+import {
+  useBatchedPublishingSubjects,
+  type PublishingSubject,
+  type ViewMode,
+  type FetchContext,
+} from '@kbn/presentation-publishing';
 import { apiPublishesESQLVariables } from '@kbn/esql-types';
 import type { SortOrder } from '@kbn/saved-search-plugin/public';
 import type { SearchResponseIncompleteWarning } from '@kbn/search-response-warnings/src/types';
@@ -48,6 +53,7 @@ interface SavedSearchEmbeddableComponentProps {
   api: SearchEmbeddableApi & {
     fetchWarnings$: BehaviorSubject<SearchResponseIncompleteWarning[]>;
     fetchContext$: BehaviorSubject<FetchContext | undefined>;
+    viewMode$: PublishingSubject<ViewMode>;
   };
   dataView: DataView;
   onAddFilter?: DocViewFilterFn;
@@ -84,6 +90,7 @@ export function SearchEmbeddableGridComponent({
   const [emptyEsqlVariables$] = useState(() => new BehaviorSubject(undefined));
 
   const [
+    viewMode,
     loading,
     savedSearch,
     savedSearchId,
@@ -101,6 +108,7 @@ export function SearchEmbeddableGridComponent({
     savedSearchDescription,
     esqlVariables,
   ] = useBatchedPublishingSubjects(
+    api.viewMode$,
     api.dataLoading$,
     api.savedSearch$,
     api.savedObjectId$,
@@ -310,6 +318,7 @@ export function SearchEmbeddableGridComponent({
       initialDocViewerTabId={initialDocViewerTabId}
       docViewerRef={docViewerRef}
       setExpandedDoc={setExpandedDoc}
+      previewMode={viewMode === 'preview'}
     />
   );
 }

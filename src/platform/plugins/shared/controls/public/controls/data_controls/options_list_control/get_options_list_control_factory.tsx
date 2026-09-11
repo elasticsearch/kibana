@@ -37,6 +37,7 @@ import {
   type PublishingSubject,
   getViewModeSubject,
   type ViewMode,
+  useStateFromPublishingSubject,
 } from '@kbn/presentation-publishing';
 
 import type { OptionsListSuccessResponse } from '../../../../common/options_list';
@@ -368,6 +369,8 @@ export const getOptionsListControlFactory = (): EmbeddablePublicDefinition<
       return {
         api,
         Component: () => {
+          const viewMode = useStateFromPublishingSubject(componentApi.viewMode$);
+
           useEffect(() => {
             return () => {
               // on unmount, clean up all subscriptions
@@ -389,7 +392,10 @@ export const getOptionsListControlFactory = (): EmbeddablePublicDefinition<
             <OptionsListControlContext.Provider
               value={{
                 componentApi,
-                displaySettings: state.display_settings ?? {},
+                displaySettings: {
+                  ...(state.display_settings ?? {}),
+                  previewMode: viewMode === 'preview',
+                },
               }}
             >
               <OptionsListControl isPinned={isPinned} />

@@ -14,11 +14,12 @@ import {
   apiHasPinnedPanels,
   apiHasSections,
   panelIsRelatedByGlobalFilters,
-  apiPublishesViewMode,
   fetch$,
   initializeRelatedPanels,
   initializeStateApi,
   useBatchedPublishingSubjects,
+  getViewModeSubject,
+  type ViewMode,
 } from '@kbn/presentation-publishing';
 import { DEFAULT_RANGE_SLIDER_STATE, RANGE_SLIDER_CONTROL } from '@kbn/controls-constants';
 import type { EmbeddablePublicDefinition } from '@kbn/embeddable-plugin/public';
@@ -227,10 +228,7 @@ export const getRangesliderControlFactory = (): EmbeddablePublicDefinition<
         selectionHasNoResults$.next(hasNoResults);
       });
 
-      const viewMode$ = apiPublishesViewMode(parentApi)
-        ? parentApi.viewMode$
-        : new BehaviorSubject<boolean>(true);
-
+      const viewMode$ = getViewModeSubject(parentApi) ?? new BehaviorSubject('view' as ViewMode);
       const isPinned = apiHasPinnedPanels(parentApi) ? parentApi.panelIsPinned(uuid) : false;
 
       return {
@@ -279,6 +277,7 @@ export const getRangesliderControlFactory = (): EmbeddablePublicDefinition<
               isInvalid={Boolean(value) && selectionHasNoResults}
               isLoading={typeof dataLoading === 'boolean' ? dataLoading : false}
               isEdit={viewMode === 'edit'}
+              previewMode={viewMode === 'preview'}
               max={max}
               min={min}
               onChange={selections.setValue}

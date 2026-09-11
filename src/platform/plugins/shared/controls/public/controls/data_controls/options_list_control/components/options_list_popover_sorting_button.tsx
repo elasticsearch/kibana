@@ -63,7 +63,7 @@ export const OptionsListPopoverSortingButton = ({
 }: {
   showOnlySelected: boolean;
 }) => {
-  const { componentApi } = useOptionsListContext();
+  const { componentApi, displaySettings } = useOptionsListContext();
 
   const [isSortingPopoverOpen, setIsSortingPopoverOpen] = useState(false);
 
@@ -126,7 +126,7 @@ export const OptionsListPopoverSortingButton = ({
         display="empty"
         color="text"
         iconType={sort?.direction === 'asc' ? 'sortAscending' : 'sortDescending'}
-        isDisabled={showOnlySelected}
+        isDisabled={showOnlySelected || displaySettings.previewMode}
         className="optionsList__sortButton"
         data-test-subj="optionsListControl__sortingOptionsButton"
         onClick={() => setIsSortingPopoverOpen(!isSortingPopoverOpen)}
