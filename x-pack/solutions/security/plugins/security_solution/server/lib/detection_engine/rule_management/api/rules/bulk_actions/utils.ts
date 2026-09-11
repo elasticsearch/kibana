@@ -20,6 +20,42 @@ interface HandleScheduleBackfillResultsOutcome {
   errors: Array<PromisePoolError<RuleAlertType, Error> | BulkOperationError>;
 }
 
+interface SplitAlreadyDeletedRulesParams {
+  errors: BulkOperationError[];
+  rules: RuleAlertType[];
+}
+
+interface SplitAlreadyDeletedRulesOutcome {
+  alreadyDeletedRules: RuleAlertType[];
+  remainingErrors: BulkOperationError[];
+}
+
+/**
+ * Splits bulk delete errors into rules that were already deleted and genuine errors.
+ *
+ * A 404 on delete means the rule is already gone, e.g. deleted by a concurrent
+ * bulk delete targeting an overlapping set of rules. The desired end state is
+ * reached, so such rules count as successfully deleted instead of failing the
+ * whole operation.
+ */
+export const splitAlreadyDeletedRules = ({
+  errors,
+  rules,
+}: SplitAlreadyDeletedRulesParams): SplitAlreadyDeletedRulesOutcome => {
+  const rulesById = new Map(rules.map((rule) => [rule.id, rule]));
+  const alreadyDeletedRules: RuleAlertType[] = [];
+  const remainingErrors: BulkOperationError[] = [];
+  for (const error of errors) {
+    const alreadyDeletedRule = error.status === 404 ? rulesById.get(error.rule.id) : undefined;
+    if (alreadyDeletedRule) {
+      alreadyDeletedRules.push(alreadyDeletedRule);
+    } else {
+      remainingErrors.push(error);
+    }
+  }
+  return { alreadyDeletedRules, remainingErrors };
+};
+
 export const handleScheduleBackfillResults = ({
   results,
   rules,

@@ -55,6 +55,7 @@ import { bulkScheduleBackfill } from './bulk_schedule_rule_run';
 import { createPrebuiltRuleAssetsClient } from '../../../../prebuilt_rules/logic/rule_assets/prebuilt_rule_assets_client';
 import { checkAlertSuppressionBulkEditSupport } from '../../../logic/bulk_actions/check_alert_suppression_bulk_edit_support';
 import { bulkScheduleRuleGapFilling } from './bulk_schedule_rule_gap_filling';
+import { splitAlreadyDeletedRules } from './utils';
 
 const MAX_RULES_TO_PROCESS_TOTAL = 10000;
 // The alerting layer converts IDs into a KQL "OR" boolean query (one should-clause per ID).
@@ -330,8 +331,13 @@ export const performBulkActionRoute = (
               const ruleIds = rules.map((rule) => rule.id);
               const bulkDeleteResult = await detectionRulesClient.bulkDeleteRules({ ruleIds });
 
-              errors.push(...bulkDeleteResult.errors);
-              deleted = bulkDeleteResult.rules;
+              const { alreadyDeletedRules, remainingErrors } = splitAlreadyDeletedRules({
+                errors: bulkDeleteResult.errors,
+                rules,
+              });
+
+              errors.push(...remainingErrors);
+              deleted = [...bulkDeleteResult.rules, ...alreadyDeletedRules];
               break;
             }
             case BulkActionTypeEnum.duplicate: {
