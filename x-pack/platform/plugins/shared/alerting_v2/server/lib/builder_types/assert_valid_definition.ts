@@ -7,6 +7,7 @@
 
 import { z } from '@kbn/zod/v4';
 import {
+  BUILDER_FIELDS_IGNORE_ABOVE,
   MAX_BUILDER_FIELDS_ARRAY_ITEMS,
   MAX_BUILDER_FIELDS_BYTES,
   MAX_BUILDER_FIELDS_STRING_LENGTH,
@@ -28,16 +29,6 @@ const MAX_TYPE_ID_LENGTH = 64;
  */
 const TYPE_ID_PATTERN = /^[a-z0-9_]+(\.[a-z0-9_]+)*$/;
 
-/**
- * The container's `ignore_above` value. Leaf strings stored in
- * `metadata.builder_fields` whose values exceed this length are silently
- * unsearchable as keywords. Any schema field with a maxLength above this
- * must have a typed sub-field declared in the manifest.
- *
- * Ref: rule-data-model.md "Constraints the mapping design works within"
- */
-const BUILDER_FIELDS_IGNORE_ABOVE = 4096;
-
 /** The bounds subject passed to assertBoundedSchema. */
 const BUILDER_FIELDS_SUBJECT = {
   kind: 'Builder type',
@@ -48,6 +39,9 @@ const BUILDER_FIELDS_SUBJECT = {
     arrayItems: MAX_BUILDER_FIELDS_ARRAY_ITEMS,
     totalBytes: MAX_BUILDER_FIELDS_BYTES,
   },
+  // Enable the builder-type-specific extensions to the bounded-schema check:
+  // no-defaults/no-transforms rule and the top-level 64-key cap.
+  builderChecks: true,
 } as const;
 
 // ---------------------------------------------------------------------------
@@ -252,12 +246,7 @@ function walkForIgnoreAbove(
     // For arrays, the sub-field path in a flattened mapping uses dot notation
     // (no array marker). We pass relPath unchanged so element string paths
     // compute correctly.
-    walkForIgnoreAbove(
-      node.items as Record<string, unknown>,
-      relPath,
-      typeName,
-      declaredPaths
-    );
+    walkForIgnoreAbove(node.items as Record<string, unknown>, relPath, typeName, declaredPaths);
   }
 
   const anyOf = node.anyOf ?? node.oneOf;
@@ -313,9 +302,7 @@ function assertManifestConsistency(
   // Versions must be a non-empty object.
   const versionKeys = Object.keys(m.versions).map(Number).filter(Number.isFinite);
   if (versionKeys.length === 0) {
-    throw new Error(
-      `Builder type "${type}" manifest has no versions (manifest consistency check)`
-    );
+    throw new Error(`Builder type "${type}" manifest has no versions (manifest consistency check)`);
   }
 
   // Versions must be dense from 1.
@@ -379,7 +366,9 @@ function assertManagedTypeCompleteness(definition: RegisteredBuilderType): void 
   if (segments.length < 3 || segments[0] !== o.solution || segments[1] !== o.domain) {
     throw new Error(
       `Builder type "${type}" declares ownership { solution: "${o.solution}", domain: "${o.domain}" } ` +
-        `but its id's first two segments ("${segments[0]}", "${segments[1] ?? ''}") do not match — ` +
+        `but its id's first two segments ("${segments[0]}", "${
+          segments[1] ?? ''
+        }") do not match — ` +
         `a managed type's id must start with "<solution>.<domain>." ` +
         `(managed-type completeness check)`
     );

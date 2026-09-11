@@ -42,9 +42,7 @@ import { resolveCreateRuleBuilder, resolveUpdateRuleBuilder } from './builder_re
  * Creates a minimal BuilderTypeRegistry mock.  Only `generate` is consulted
  * by the two resolution functions under test.
  */
-function createMockRegistry(
-  generateFn: jest.Mock = jest.fn()
-): BuilderTypeRegistry {
+function createMockRegistry(generateFn: jest.Mock = jest.fn()): BuilderTypeRegistry {
   return { generate: generateFn } as unknown as BuilderTypeRegistry;
 }
 
@@ -407,9 +405,7 @@ describe('resolveCreateRuleBuilder', () => {
         const standaloneWithoutNoData: GeneratedQuery = {
           query: { format: 'standalone', breach: { query: 'FROM metrics-* | LIMIT 10' } },
         };
-        const registry = createMockRegistry(
-          jest.fn().mockReturnValue(standaloneWithoutNoData)
-        );
+        const registry = createMockRegistry(jest.fn().mockReturnValue(standaloneWithoutNoData));
         const data = {
           ...builderCreateData,
           no_data_strategy: 'last_known_status',
@@ -464,9 +460,7 @@ describe('resolveUpdateRuleBuilder', () => {
         metadata: { builder_type: null, builder_fields: RAW_FIELDS },
       };
 
-      expect(() =>
-        resolveUpdateRuleBuilder(registry, RULE_ID, data, builderExisting)
-      ).toThrow(
+      expect(() => resolveUpdateRuleBuilder(registry, RULE_ID, data, builderExisting)).toThrow(
         expect.objectContaining({
           output: expect.objectContaining({ statusCode: 400 }),
           data: expect.objectContaining({ code: ALERTING_ERROR_CODES.INVALID_BUILDER_FIELDS }),
@@ -484,9 +478,7 @@ describe('resolveUpdateRuleBuilder', () => {
       const registry = createMockRegistry();
       const data: UpdateRuleData = { metadata: { builder_fields: null } };
 
-      expect(() =>
-        resolveUpdateRuleBuilder(registry, RULE_ID, data, builderExisting)
-      ).toThrow(
+      expect(() => resolveUpdateRuleBuilder(registry, RULE_ID, data, builderExisting)).toThrow(
         expect.objectContaining({
           output: expect.objectContaining({ statusCode: 400 }),
           data: expect.objectContaining({ code: ALERTING_ERROR_CODES.INVALID_BUILDER_FIELDS }),
@@ -500,9 +492,7 @@ describe('resolveUpdateRuleBuilder', () => {
         metadata: { builder_type: BUILDER_TYPE, builder_fields: null },
       };
 
-      expect(() =>
-        resolveUpdateRuleBuilder(registry, RULE_ID, data, plainExisting)
-      ).toThrow(
+      expect(() => resolveUpdateRuleBuilder(registry, RULE_ID, data, plainExisting)).toThrow(
         expect.objectContaining({
           output: expect.objectContaining({ statusCode: 400 }),
           data: expect.objectContaining({ code: ALERTING_ERROR_CODES.INVALID_BUILDER_FIELDS }),
@@ -527,9 +517,9 @@ describe('resolveUpdateRuleBuilder', () => {
   // -------------------------------------------------------------------------
 
   describe('providing new builder_fields', () => {
-    it('calls registry.generate with the requestedType, new fields, and existing rule context', () => {
-      // Step 2.1: generate() now takes a third argument — the write-time rule context
-      // derived from the existing rule (id, kind, schedule, time_field).
+    it('calls registry.generate with the post-write schedule and time_field when no update is provided', () => {
+      // When the request carries no schedule or time_field update, the effective
+      // values equal the existing stored values.
       const generate = jest.fn().mockReturnValue(standaloneGenerated);
       const registry = createMockRegistry(generate);
       const data: UpdateRuleData = {
@@ -546,7 +536,56 @@ describe('resolveUpdateRuleBuilder', () => {
       });
     });
 
+    it('merges the requested schedule into the compile context (post-write value)', () => {
+      // A request that updates schedule.every must pass the updated schedule to
+      // generate(), not the pre-update stored schedule. Otherwise the query is
+      // compiled against a schedule that the stored rule will not have.
+      //
+      // Ref: rule-execution-logic.md "The compilation contract"
+      const generate = jest.fn().mockReturnValue(standaloneGenerated);
+      const registry = createMockRegistry(generate);
+      const data: UpdateRuleData = {
+        metadata: { builder_type: BUILDER_TYPE, builder_fields: RAW_FIELDS },
+        schedule: { every: '10m' },
+      };
+
+      resolveUpdateRuleBuilder(registry, RULE_ID, data, plainExisting);
+
+      // Effective schedule = { ...existing.schedule, ...data.schedule }
+      // = { every: '1m', lookback: '5m', ...{ every: '10m' } }
+      // = { every: '10m', lookback: '5m' }
+      expect(generate).toHaveBeenCalledWith(
+        BUILDER_TYPE,
+        RAW_FIELDS,
+        expect.objectContaining({ schedule: { every: '10m', lookback: '5m' } })
+      );
+    });
+
+    it('uses the requested time_field in the compile context (post-write value)', () => {
+      // A request that changes time_field must pass the new time_field to
+      // generate(), not the pre-update stored time_field.
+      //
+      // Ref: rule-execution-logic.md "The compilation contract"
+      const generate = jest.fn().mockReturnValue(standaloneGenerated);
+      const registry = createMockRegistry(generate);
+      const data: UpdateRuleData = {
+        metadata: { builder_type: BUILDER_TYPE, builder_fields: RAW_FIELDS },
+        time_field: 'event.created',
+      };
+
+      resolveUpdateRuleBuilder(registry, RULE_ID, data, plainExisting);
+
+      expect(generate).toHaveBeenCalledWith(
+        BUILDER_TYPE,
+        RAW_FIELDS,
+        expect.objectContaining({ time_field: 'event.created' })
+      );
+    });
+
     it('falls back to the existing builder_type when no requestedType is supplied', () => {
+      // Even without a requestedType, the compile context uses the post-write
+      // (effective) schedule and time_field. Here no update is present, so the
+      // effective values equal the existing stored values.
       const generate = jest.fn().mockReturnValue(standaloneGenerated);
       const registry = createMockRegistry(generate);
       const data: UpdateRuleData = { metadata: { builder_fields: RAW_FIELDS } };
@@ -565,9 +604,7 @@ describe('resolveUpdateRuleBuilder', () => {
       const registry = createMockRegistry();
       const data: UpdateRuleData = { metadata: { builder_fields: RAW_FIELDS } };
 
-      expect(() =>
-        resolveUpdateRuleBuilder(registry, RULE_ID, data, plainExisting)
-      ).toThrow(
+      expect(() => resolveUpdateRuleBuilder(registry, RULE_ID, data, plainExisting)).toThrow(
         expect.objectContaining({
           output: expect.objectContaining({ statusCode: 400 }),
           data: expect.objectContaining({ code: ALERTING_ERROR_CODES.INVALID_BUILDER_FIELDS }),
@@ -745,9 +782,7 @@ describe('resolveUpdateRuleBuilder', () => {
         query: { format: 'standalone', breach: { query: 'FROM new-index-* | LIMIT 5' } },
       };
 
-      expect(() =>
-        resolveUpdateRuleBuilder(registry, RULE_ID, data, builderExisting)
-      ).toThrow(
+      expect(() => resolveUpdateRuleBuilder(registry, RULE_ID, data, builderExisting)).toThrow(
         expect.objectContaining({
           output: expect.objectContaining({ statusCode: 400 }),
           data: expect.objectContaining({
@@ -805,9 +840,7 @@ describe('resolveUpdateRuleBuilder', () => {
         query: { format: 'standalone', breach: { query: 'FROM new-index-* | LIMIT 5' } },
       };
 
-      expect(() =>
-        resolveUpdateRuleBuilder(registry, RULE_ID, data, plainExisting)
-      ).not.toThrow();
+      expect(() => resolveUpdateRuleBuilder(registry, RULE_ID, data, plainExisting)).not.toThrow();
     });
   });
 
@@ -820,9 +853,7 @@ describe('resolveUpdateRuleBuilder', () => {
       const registry = createMockRegistry();
       const data: UpdateRuleData = { metadata: { builder_type: OTHER_BUILDER_TYPE } };
 
-      expect(() =>
-        resolveUpdateRuleBuilder(registry, RULE_ID, data, builderExisting)
-      ).toThrow(
+      expect(() => resolveUpdateRuleBuilder(registry, RULE_ID, data, builderExisting)).toThrow(
         expect.objectContaining({
           output: expect.objectContaining({ statusCode: 400 }),
           data: expect.objectContaining({
@@ -840,9 +871,7 @@ describe('resolveUpdateRuleBuilder', () => {
       const registry = createMockRegistry();
       const data: UpdateRuleData = { metadata: { builder_type: BUILDER_TYPE } };
 
-      expect(() =>
-        resolveUpdateRuleBuilder(registry, RULE_ID, data, plainExisting)
-      ).toThrow(
+      expect(() => resolveUpdateRuleBuilder(registry, RULE_ID, data, plainExisting)).toThrow(
         expect.objectContaining({
           output: expect.objectContaining({ statusCode: 400 }),
           data: expect.objectContaining({

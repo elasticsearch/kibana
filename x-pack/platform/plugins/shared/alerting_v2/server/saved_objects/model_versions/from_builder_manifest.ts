@@ -9,6 +9,7 @@ import type {
   SavedObjectsModelVersion,
   SavedObjectsMappingProperties,
 } from '@kbn/core-saved-objects-server';
+import { BUILDER_FIELDS_IGNORE_ABOVE } from '@kbn/alerting-v2-constants';
 import type {
   BuilderTypeManifest,
   MappingProperty,
@@ -148,7 +149,7 @@ function buildMappingsAddition(
       properties: {
         builder_fields: {
           type: 'flattened',
-          ignore_above: 4096,
+          ignore_above: BUILDER_FIELDS_IGNORE_ABOVE,
           // Cast: our MappingProperty union is narrower than EsMappingProperty
           // (it is an allowlist of the types that work reliably as flattened
           // sub-fields). Every member is a valid EsMappingProperty.
@@ -177,7 +178,6 @@ function buildMappingsAddition(
 function buildScopedBackfillFn(
   type: string,
   fn: (fields: OpaqueBuilderFields) => OpaqueBuilderFields
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
 ): (doc: { attributes?: any }, ctx: unknown) => { attributes: Record<string, unknown> } {
   return (doc) => {
     const builderType = doc.attributes?.metadata?.builder_type;

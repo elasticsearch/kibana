@@ -28,10 +28,9 @@ const TEST_TYPE = 'test.mock.type';
  * Minimal rule document shape understood by the backfill functions.
  * Only the attributes needed by fromBuilderManifest's scoped backfill are set.
  */
-function makeDoc(overrides: {
-  builderType?: string;
-  builderFields?: OpaqueBuilderFields;
-}): { attributes: Record<string, unknown> } {
+function makeDoc(overrides: { builderType?: string; builderFields?: OpaqueBuilderFields }): {
+  attributes: Record<string, unknown>;
+} {
   return {
     attributes: {
       metadata: {
@@ -48,7 +47,6 @@ function makeDoc(overrides: {
  * document's attributes.
  */
 function applyBackfill(
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   backfillFn: (doc: any, ctx: any) => { attributes: Record<string, unknown> },
   doc: ReturnType<typeof makeDoc>
 ): Record<string, unknown> {
@@ -195,7 +193,7 @@ describe('fromBuilderManifest', () => {
       const mv = fromBuilderManifest(manifestV1WithBackfill, 1);
       const change = mv.changes.find((c) => c.type === 'data_backfill') as {
         type: 'data_backfill';
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
         backfillFn: (doc: any, ctx: any) => { attributes: Record<string, unknown> };
       };
 
@@ -209,7 +207,7 @@ describe('fromBuilderManifest', () => {
       const mv = fromBuilderManifest(manifestV1WithBackfill, 1);
       const change = mv.changes.find((c) => c.type === 'data_backfill') as {
         type: 'data_backfill';
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
         backfillFn: (doc: any, ctx: any) => { attributes: Record<string, unknown> };
       };
 
@@ -224,7 +222,7 @@ describe('fromBuilderManifest', () => {
       const mv = fromBuilderManifest(manifestV1WithBackfill, 1);
       const change = mv.changes.find((c) => c.type === 'data_backfill') as {
         type: 'data_backfill';
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
         backfillFn: (doc: any, ctx: any) => { attributes: Record<string, unknown> };
       };
 
@@ -245,12 +243,47 @@ describe('fromBuilderManifest', () => {
       expect(backfillChanges[0].type).toBe('data_backfill');
     });
 
-    it('the injected identity backfill returns builder_fields unchanged for matching documents', () => {
+    it('the injected identity backfill returns non-empty attributes for matching documents', () => {
+      // The returned attributes must be non-empty for matching documents.
+      // Core only rewrites (and therefore re-indexes) a document when a
+      // data_backfill returns non-empty attributes; returning `{}` would be a
+      // silent no-op and the new typed sub-field would never get indexed for
+      // existing rules.
+      //
+      // Ref: rule-data-migration.md "A mapping addition pairs with a rewrite"
       const mv = fromBuilderManifest(manifestV2MappingOnly, 2);
       const change = mv.changes.find((c) => c.type === 'data_backfill') as {
         type: 'data_backfill';
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        backfillFn: (doc: any, ctx: any) => { attributes: Record<string, unknown> };
+        backfillFn: (doc: unknown, ctx: unknown) => { attributes: Record<string, unknown> };
+      };
+
+      const originalFields = { risk_score: 42, tags: ['critical'] };
+      const doc = makeDoc({
+        builderType: manifestV2MappingOnly.type,
+        builderFields: originalFields,
+      });
+
+      const { attributes: returned } = change.backfillFn(doc, {});
+
+      // The returned attributes must carry builder_fields so that core merges
+      // the new values back and triggers re-indexing under the typed sub-field.
+      expect(returned).toHaveProperty('metadata.builder_fields');
+      // The returned fields must equal the original (identity backfill — nothing
+      // is computed, only the document is rewritten to trigger re-indexing).
+      expect(
+        (returned as Record<string, unknown> & { metadata: { builder_fields: unknown } }).metadata
+          .builder_fields
+      ).toEqual(originalFields);
+    });
+
+    it('the injected identity backfill leaves field values unchanged after merge', () => {
+      // After core merges the backfill result into the document, the values must
+      // be identical to what they were before — the sole purpose of the identity
+      // backfill is to force a document rewrite, not to change any values.
+      const mv = fromBuilderManifest(manifestV2MappingOnly, 2);
+      const change = mv.changes.find((c) => c.type === 'data_backfill') as {
+        type: 'data_backfill';
+        backfillFn: (doc: unknown, ctx: unknown) => { attributes: Record<string, unknown> };
       };
 
       const originalFields = { risk_score: 42, tags: ['critical'] };
@@ -263,14 +296,17 @@ describe('fromBuilderManifest', () => {
 
       // The identity backfill rewrites the document (triggering re-indexing)
       // but leaves the field values unchanged.
-      expect((result as any).metadata.builder_fields).toEqual(originalFields);
+      expect(
+        (result as Record<string, unknown> & { metadata: { builder_fields: unknown } }).metadata
+          .builder_fields
+      ).toEqual(originalFields);
     });
 
     it('the injected identity backfill leaves non-matching documents untouched', () => {
       const mv = fromBuilderManifest(manifestV2MappingOnly, 2);
       const change = mv.changes.find((c) => c.type === 'data_backfill') as {
         type: 'data_backfill';
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
         backfillFn: (doc: any, ctx: any) => { attributes: Record<string, unknown> };
       };
 
@@ -304,7 +340,7 @@ describe('fromBuilderManifest', () => {
       const mv = fromBuilderManifest(manifestV2WithBackfill, 2);
       const change = mv.changes.find((c) => c.type === 'data_backfill') as {
         type: 'data_backfill';
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
         backfillFn: (doc: any, ctx: any) => { attributes: Record<string, unknown> };
       };
 
@@ -321,7 +357,7 @@ describe('fromBuilderManifest', () => {
       const mv = fromBuilderManifest(manifestV2WithBackfill, 2);
       const change = mv.changes.find((c) => c.type === 'data_backfill') as {
         type: 'data_backfill';
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
         backfillFn: (doc: any, ctx: any) => { attributes: Record<string, unknown> };
       };
 
@@ -337,9 +373,9 @@ describe('fromBuilderManifest', () => {
 
   describe('missing version guard', () => {
     it('throws if the manifest has no entry for the requested version', () => {
-      expect(() =>
-        fromBuilderManifest(manifestV1Only, 99)
-      ).toThrow(`Builder type "${TEST_TYPE}" has no version 99 in its manifest`);
+      expect(() => fromBuilderManifest(manifestV1Only, 99)).toThrow(
+        `Builder type "${TEST_TYPE}" has no version 99 in its manifest`
+      );
     });
   });
 

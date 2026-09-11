@@ -28,9 +28,7 @@ const makeQuery = (): import('@kbn/alerting-v2-rule-builders').GeneratedQuery =>
 const allFolded: FoldedVersionsRecord = { has: () => true };
 
 /** Builds a minimal valid definition; overrides narrow specific properties. */
-function makeDefinition(
-  overrides: Partial<RegisteredBuilderType> = {}
-): RegisteredBuilderType {
+function makeDefinition(overrides: Partial<RegisteredBuilderType> = {}): RegisteredBuilderType {
   return {
     type: 'test.my_type',
     name: 'Test type',
@@ -45,9 +43,7 @@ function passes(
   definition: Partial<RegisteredBuilderType>,
   foldedVersions: FoldedVersionsRecord = allFolded
 ): void {
-  expect(() =>
-    assertValidDefinition(makeDefinition(definition), foldedVersions)
-  ).not.toThrow();
+  expect(() => assertValidDefinition(makeDefinition(definition), foldedVersions)).not.toThrow();
 }
 
 /** Shorthand: expect assertValidDefinition to throw with a matching message. */
@@ -56,9 +52,7 @@ function rejects(
   match: string | RegExp,
   foldedVersions: FoldedVersionsRecord = allFolded
 ): void {
-  expect(() =>
-    assertValidDefinition(makeDefinition(definition), foldedVersions)
-  ).toThrow(match);
+  expect(() => assertValidDefinition(makeDefinition(definition), foldedVersions)).toThrow(match);
 }
 
 // ---------------------------------------------------------------------------
@@ -159,8 +153,7 @@ describe('assertValidDefinition — check 3: bounded schema (delegation smoke te
     const withDefault = z.object({ val: z.string().max(10).default('x') }).strict();
     rejects(
       {
-        builderFieldsSchema:
-          withDefault as unknown as RegisteredBuilderType['builderFieldsSchema'],
+        builderFieldsSchema: withDefault as unknown as RegisteredBuilderType['builderFieldsSchema'],
       },
       /default/
     );
@@ -168,7 +161,12 @@ describe('assertValidDefinition — check 3: bounded schema (delegation smoke te
 
   it('rejects a schema with .transform()', () => {
     const withTransform = z
-      .object({ val: z.string().max(10).transform((x) => x.toUpperCase()) })
+      .object({
+        val: z
+          .string()
+          .max(10)
+          .transform((x) => x.toUpperCase()),
+      })
       .strict();
     rejects(
       {
@@ -189,7 +187,10 @@ describe('assertValidDefinition — check 4: ignore_above consistency', () => {
   const longStringSchema = z.object({ note: z.string().max(8192) }).strict();
 
   it('accepts a schema whose strings are all <= 4096 with no manifest', () => {
-    passes({ builderFieldsSchema: shortStringSchema as unknown as RegisteredBuilderType['builderFieldsSchema'] });
+    passes({
+      builderFieldsSchema:
+        shortStringSchema as unknown as RegisteredBuilderType['builderFieldsSchema'],
+    });
   });
 
   it('accepts a schema with a long string when the manifest declares the sub-field', () => {
@@ -201,7 +202,8 @@ describe('assertValidDefinition — check 4: ignore_above consistency', () => {
       },
     };
     passes({
-      builderFieldsSchema: longStringSchema as unknown as RegisteredBuilderType['builderFieldsSchema'],
+      builderFieldsSchema:
+        longStringSchema as unknown as RegisteredBuilderType['builderFieldsSchema'],
       manifest,
     });
   });
@@ -242,7 +244,8 @@ describe('assertValidDefinition — check 4: ignore_above consistency', () => {
       },
     };
     passes({
-      builderFieldsSchema: longStringSchema as unknown as RegisteredBuilderType['builderFieldsSchema'],
+      builderFieldsSchema:
+        longStringSchema as unknown as RegisteredBuilderType['builderFieldsSchema'],
       manifest,
     });
   });

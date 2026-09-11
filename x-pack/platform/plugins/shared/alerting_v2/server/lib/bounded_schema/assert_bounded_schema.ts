@@ -21,6 +21,20 @@ export interface BoundedSchemaSubject {
   schemaProperty: string;
   rootPath: string;
   limits: BoundedSchemaLimits;
+  /**
+   * When true, runs builder-type-specific check 3 extensions:
+   *   - Rejects `.default()`, `.transform()`, `.pipe()`, and `.catch()` in the
+   *     Zod tree (no-defaults/no-transforms rule).
+   *   - Rejects the `default` JSON-Schema keyword.
+   *   - Enforces the top-level 64-key cap.
+   *
+   * These checks are scoped to builder schemas only and must NOT run for
+   * artifact schemas or other callers.
+   *
+   * Ref: rule-validation.md "No defaults, no transforms"
+   *      rule-type-registration.md "Registration-time checks" item 3
+   */
+  builderChecks?: boolean;
 }
 
 type Ctx = BoundedSchemaSubject & { typeName: string };
@@ -38,7 +52,10 @@ export function assertBoundedSchema(
   // value differ from the input — defaults, transforms (.transform()/.pipe()),
   // and catch fallbacks. Transforms are invisible on the input side of the
   // JSON-Schema projection, so they must be caught in the Zod tree itself.
-  assertNoDefaultsOrTransforms(schema, ctx.rootPath, ctx);
+  // Builder-schemas only: skipped for artifact types and other non-builder callers.
+  if (ctx.builderChecks) {
+    assertNoDefaultsOrTransforms(schema, ctx.rootPath, ctx);
+  }
 
   let json: JsonSchemaNode;
   try {
@@ -122,10 +139,7 @@ function assertNoDefaultsOrTransforms(schema: z.ZodType, path: string, ctx: Ctx)
     }
   } else if (typeName === 'array' && s._def.element) {
     assertNoDefaultsOrTransforms(s._def.element, `${path}[]`, ctx);
-  } else if (
-    (typeName === 'optional' || typeName === 'nullable') &&
-    s._def.innerType
-  ) {
+  } else if ((typeName === 'optional' || typeName === 'nullable') && s._def.innerType) {
     assertNoDefaultsOrTransforms(s._def.innerType, path, ctx);
   } else if (typeName === 'union' && s._def.options) {
     for (let i = 0; i < s._def.options.length; i++) {
@@ -160,7 +174,8 @@ function assertBoundedNode(
   // Check 3: reject the `default` keyword — surfaces from .default() and
   // .catch(). Transforms (.transform()/.pipe()) are invisible here and are
   // caught by the companion Zod walk above.
-  if (node.default !== undefined) {
+  // Builder-schemas only: skipped for artifact types and other non-builder callers.
+  if (ctx.builderChecks && node.default !== undefined) {
     throw new Error(
       `${prefix(ctx)} at ${path} has a default value; ` +
         `builder schemas must not carry defaults or catch fallbacks ` +
@@ -244,6 +259,25 @@ function unionBranches(node: JsonSchemaNode): JsonSchemaNode[] | undefined {
   return branches as JsonSchemaNode[];
 }
 
+/**
+ * Returns true when `path` is the root path itself or a union-branch of it.
+ *
+ * Union branches of the root are paths of the form `${rootPath}|0`, `${rootPath}|0|1`,
+ * etc. — only trailing `|N` index segments, no dot-separated key names. A path
+ * like `${rootPath}.field|0` is a union *inside* a named key, not a root-level
+ * branch, and this function returns false for it.
+ *
+ * Used by the top-level key count check (check 3) so that a `builderFieldsSchema`
+ * that is a root-level discriminated union still gets its per-branch key count
+ * verified at registration rather than silently deferring to the wire.
+ */
+function isAtRootLevel(path: string, rootPath: string): boolean {
+  if (path === rootPath) return true;
+  if (!path.startsWith(rootPath)) return false;
+  const suffix = path.slice(rootPath.length);
+  return /^(\|[0-9]+)+$/.test(suffix);
+}
+
 function assertBoundedString(node: JsonSchemaNode, path: string, ctx: Ctx): number {
   const maxLength = node.maxLength;
   if (typeof maxLength !== 'number') {
@@ -311,7 +345,15 @@ function assertBoundedObject(
   // request time via MAX_BUILDER_FIELDS_KEYS; registration proves it
   // statically so violations surface at setup rather than at the first
   // write. The constant is MAX_BUILDER_FIELDS_ARRAY_ITEMS (same value: 64).
-  if (path === ctx.rootPath) {
+  //
+  // Builder-schemas only, and applied at the root level (the path equals
+  // rootPath) or at a union branch of the root (path = "${rootPath}|N..."
+  // with only trailing union-index suffixes). A root-level union of strict
+  // objects must have its key count checked in every branch, because each
+  // branch is a candidate root that a caller may send.
+  //
+  // Ref: rule-type-registration.md "Registration-time checks" item 3
+  if (ctx.builderChecks && isAtRootLevel(path, ctx.rootPath)) {
     const keyCount = Object.keys(properties).length;
     if (keyCount > MAX_BUILDER_FIELDS_ARRAY_ITEMS) {
       throw new Error(

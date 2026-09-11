@@ -215,12 +215,24 @@ export function resolveUpdateRuleBuilder(
       );
     }
 
+    // Use the post-write (effective) values of schedule and time_field so that
+    // a query compiled here agrees with what `buildUpdateRuleAttributes` will
+    // persist. The persisted schedule is `{ ...existing.schedule, ...data.schedule }`,
+    // and the persisted time_field is `data.time_field ?? existing.time_field`.
+    // Passing pre-update values would produce a query compiled against a
+    // schedule or time_field that the stored rule no longer reflects.
+    //
+    // Ref: rule-execution-logic.md "The compilation contract" —
+    //   "Read-only framework fields of the rule being compiled"
+    const effectiveSchedule = { ...existing.schedule, ...data.schedule };
+    const effectiveTimeField = data.time_field ?? existing.time_field;
+
     const generated = adaptToKind(
       registry.generate(effectiveType, requestedFields as OpaqueBuilderFields, {
         id: ruleId,
         kind: existing.kind,
-        schedule: existing.schedule,
-        time_field: existing.time_field,
+        schedule: effectiveSchedule,
+        time_field: effectiveTimeField,
       }),
       existing.kind,
       effectiveType

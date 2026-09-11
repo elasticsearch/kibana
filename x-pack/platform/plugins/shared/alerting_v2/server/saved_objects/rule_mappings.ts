@@ -6,6 +6,7 @@
  */
 
 import type { SavedObjectsTypeMappingDefinition } from '@kbn/core-saved-objects-server';
+import { BUILDER_FIELDS_IGNORE_ABOVE } from '@kbn/alerting-v2-constants';
 
 /**
  * Mappings for the rule saved object.
@@ -21,7 +22,7 @@ export const ruleMappings: SavedObjectsTypeMappingDefinition = {
         name: { type: 'text', fields: { keyword: { type: 'keyword', ignore_above: 256 } } },
         description: { type: 'text' },
         tags: { type: 'keyword', ignore_above: 128 },
-        builder_fields: { type: 'flattened', ignore_above: 4096 },
+        builder_fields: { type: 'flattened', ignore_above: BUILDER_FIELDS_IGNORE_ABOVE },
       },
     },
     enabled: { type: 'boolean' },
