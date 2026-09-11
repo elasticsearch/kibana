@@ -18,6 +18,8 @@ export const COMMON_HEADERS = {
 
 export const API_PATHS = {
   DETECTION_RULES: 'api/detection_engine/rules',
+  DETECTION_RULES_IMPORT: 'api/detection_engine/rules/_import',
+  DETECTION_RULES_BULK_ACTION: 'api/detection_engine/rules/_bulk_action',
   OSQUERY_SAVED_QUERIES: 'api/osquery/saved_queries',
   OSQUERY_PACKS: 'api/osquery/packs',
   OSQUERY_LIVE_QUERIES: 'api/osquery/live_queries',
@@ -69,5 +71,24 @@ export const getMinimalLiveQuery = (overrides: Record<string, unknown> = {}) => 
   agent_all: true,
   query: 'select * from uptime;',
   kuery: '',
+  ...overrides,
+});
+
+/**
+ * Live query that runs a saved query by reference.
+ *
+ * Deliberately carries no `query` of its own: a caller authorized only by
+ * `runSavedQueries` may not supply SQL, and the dispatched query is derived from the
+ * referenced saved object. Spreading `getMinimalLiveQuery`'s hardcoded `query` on top of
+ * a `saved_query_id` produces a mismatched pair, which is the privilege-escalation
+ * payload itself and is rejected with a 403.
+ */
+export const getSavedQueryLiveQuery = (
+  savedQueryId: string,
+  overrides: Record<string, unknown> = {}
+) => ({
+  agent_all: true,
+  kuery: '',
+  saved_query_id: savedQueryId,
   ...overrides,
 });

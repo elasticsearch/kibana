@@ -821,9 +821,49 @@ describe('Perform bulk action route', () => {
         endpointAuthz: expect.any(Object),
         endpointService: expect.any(Object),
         spaceId: 'default',
-        rulePayload: {},
-        existingRule: mockRule,
+        rulePayload: { response_actions: mockRule.params.responseActions },
       });
+    });
+
+    it('passes the duplicated response actions as the payload so dry run is not a no-op', async () => {
+      // A duplicate persists these actions on a new rule, so it is validated like a create.
+      // Passing `{}` with `existingRule` would make each one look like it is being *removed*,
+      // so validation would skip them all and a dry run would report success for a duplicate
+      // that `create` goes on to deny.
+      const responseActions = [
+        {
+          actionTypeId: '.osquery' as const,
+          params: { savedQueryId: 'saved-query-1' },
+        },
+      ];
+      bulkGetRulesMock.mockResolvedValue({
+        rules: [{ ...mockRule, params: { ...mockRule.params, responseActions } }],
+        errors: [],
+      });
+
+      const request = requestMock.create({
+        method: 'post',
+        path: DETECTION_ENGINE_RULES_BULK_ACTION,
+        body: getPerformBulkActionDuplicateSchemaMock(),
+      });
+
+      await server.inject(request, requestContextMock.convertContext(context));
+
+      // Params reach the validator in the snake_case payload shape, as they would on a create.
+      expect(validateRuleResponseActionsMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          rulePayload: {
+            response_actions: [
+              {
+                action_type_id: '.osquery',
+                params: expect.objectContaining({ saved_query_id: 'saved-query-1' }),
+              },
+            ],
+          },
+        })
+      );
+      // No `existingRule`: nothing is being removed, so nothing should be carved out.
+      expect(validateRuleResponseActionsMock.mock.calls[0][0]).not.toHaveProperty('existingRule');
     });
   });
 

@@ -26,8 +26,11 @@ const createMockAlert = (overrides: Partial<AlertWithAgent> = {}): AlertWithAgen
 
 const createMockService = () => ({
   create: jest.fn().mockResolvedValue({}),
+  // Osquery resolves the stored saved query / pack to decide this; the persisted copy on the
+  // rule is not authoritative. Default to the persisted verdict so existing cases read naturally.
+  containsDynamicQueries: jest.fn().mockResolvedValue(false),
   stop: jest.fn(),
-  logger: { error: jest.fn() } as unknown as Logger,
+  logger: { error: jest.fn(), warn: jest.fn() } as unknown as Logger,
 });
 
 describe('osqueryResponseAction', () => {
@@ -103,6 +106,8 @@ describe('osqueryResponseAction', () => {
         },
       };
 
+      mockService.containsDynamicQueries.mockResolvedValue(true);
+
       await osqueryResponseAction(responseAction, mockService, endpointService, { alerts });
 
       expect(mockService.create).toHaveBeenCalledTimes(2);
@@ -127,6 +132,58 @@ describe('osqueryResponseAction', () => {
         expect.objectContaining({
           alertData: expect.objectContaining({ _id: 'alert-2' }),
         })
+      );
+    });
+  });
+
+  describe('parameterization decision', () => {
+    it('fans out per alert when the stored query gained a parameter the rule copy lacks', async () => {
+      // Editing a saved query needs only `writeSavedQueries`. If the decision came from the
+      // rule's stale persisted copy, this run would take the non-parameterized branch and
+      // dispatch nothing at all.
+      const alerts = [
+        createMockAlert(),
+        createMockAlert({
+          _id: 'alert-2',
+          agent: { id: 'agent-2', name: 'host-2', type: 'endpoint' },
+        }),
+      ];
+
+      const responseAction: RuleResponseOsqueryAction = {
+        actionTypeId: '.osquery',
+        params: {
+          // Persisted copy looks static.
+          query: 'SELECT * FROM processes;',
+          savedQueryId: 'saved-1',
+        },
+      };
+
+      // The stored saved query now carries `{{...}}`.
+      mockService.containsDynamicQueries.mockResolvedValue(true);
+
+      await osqueryResponseAction(responseAction, mockService, endpointService, { alerts });
+
+      expect(mockService.create).toHaveBeenCalledTimes(2);
+      expect(mockService.create).toHaveBeenNthCalledWith(
+        1,
+        expect.objectContaining({ saved_query_id: 'saved-1', agent_ids: ['agent-1'] }),
+        expect.objectContaining({ alertData: expect.objectContaining({ _id: 'alert-1' }) })
+      );
+    });
+
+    it('asks osquery using the referenced ids and the alert space', async () => {
+      const alerts = [createMockAlert()];
+
+      const responseAction: RuleResponseOsqueryAction = {
+        actionTypeId: '.osquery',
+        params: { packId: 'my-pack-123', savedQueryId: 'saved-1' },
+      };
+
+      await osqueryResponseAction(responseAction, mockService, endpointService, { alerts });
+
+      expect(mockService.containsDynamicQueries).toHaveBeenCalledWith(
+        expect.objectContaining({ pack_id: 'my-pack-123', saved_query_id: 'saved-1' }),
+        { space: { id: DEFAULT_SPACE_ID } }
       );
     });
   });

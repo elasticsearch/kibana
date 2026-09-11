@@ -131,11 +131,14 @@ const LiveQueryFormComponent: React.FC<LiveQueryFormProps> = ({
         ...pickBy(
           {
             agentSelection: values.agentSelection,
-            saved_query_id: values.savedQueryId,
-            query,
+            // Single-query fields must not ride along in pack mode. `defaultValue` suppresses
+            // the reset effect below, so a saved query picked before switching to Pack would
+            // otherwise still be posted and get compared against the pack's queries server-side.
+            saved_query_id: queryType === 'query' ? values.savedQueryId : undefined,
+            query: queryType === 'query' ? query : undefined,
             alert_ids: values.alertIds,
             pack_id: queryType === 'pack' && values?.packId?.length ? values?.packId[0] : undefined,
-            ecs_mapping: values.ecs_mapping,
+            ecs_mapping: queryType === 'query' ? values.ecs_mapping : undefined,
             ...(queryType === 'query' ? { timeout: values.timeout } : {}),
           },
           (value) => !isEmpty(value) || isNumber(value)

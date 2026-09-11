@@ -71,6 +71,37 @@ describe('replaceParamsQuery', () => {
     expect(skipped).toBe(true);
   });
 
+  it('resolves a dotted key from flattened technical fields', () => {
+    // The server substitutes from the alerts index, where ECS fields are literal dotted keys
+    // holding arrays, while the client uses the nested ECS object. Both shapes must produce the
+    // same string or authz would reject a query the client was entitled to build.
+    const query = "SELECT * FROM os_version where name='{{host.os.name}}';";
+    const { result, skipped } = replaceParamsQuery(query, {
+      'host.os.name': ['Ubuntu'],
+    });
+
+    expect(result).toBe("SELECT * FROM os_version where name='Ubuntu';");
+    expect(skipped).toBe(false);
+  });
+
+  it('produces the same result for nested and flattened shapes of the same alert', () => {
+    const query = "SELECT * FROM os_version where name='{{host.os.name}}';";
+
+    const nested = replaceParamsQuery(query, { host: { os: { name: 'Ubuntu' } } });
+    const flattened = replaceParamsQuery(query, { 'host.os.name': ['Ubuntu'] });
+
+    expect(flattened.result).toBe(nested.result);
+    expect(flattened.skipped).toBe(nested.skipped);
+  });
+
+  it('unwraps a single-element array from a flattened field', () => {
+    const query = 'SELECT {{host.os.name}};';
+    const { result } = replaceParamsQuery(query, { 'host.os.name': ['Ubuntu'] });
+
+    // Not `["Ubuntu"]` — the array wrapper would break both the SQL and the authz comparison.
+    expect(result).toBe('SELECT Ubuntu;');
+  });
+
   it('handle complex windows query with registry as param', () => {
     // eslint-disable-next-line no-useless-escape
     const query = `select * FROM registry WHERE key LIKE 'HKEY_USERS\{{user.id}}\Software\Microsoft\IdentityCRL\Immersive\production\Token\{0CB4A94A-6E8C-477B-88C8-A3799FC97414}'`;

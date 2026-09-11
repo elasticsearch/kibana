@@ -5,8 +5,7 @@
  * 2.0.
  */
 
-import { each, map, some, uniq } from 'lodash';
-import { containsDynamicQuery } from '@kbn/osquery-plugin/common/utils/replace_params_query';
+import { each, map, uniq } from 'lodash';
 import { requiredOptional } from '@kbn/zod-helpers/v4';
 import type { ParsedTechnicalFields } from '@kbn/rule-registry-plugin/common';
 import type { ResponseActionAlerts } from './types';
@@ -14,21 +13,13 @@ import type { SetupPlugins } from '../../../plugin_contract';
 import type { RuleResponseOsqueryAction } from '../../../../common/api/detection_engine/model/rule_response_actions';
 import type { EndpointAppContextService } from '../../../endpoint/endpoint_app_context_services';
 
-export const osqueryResponseAction = (
+export const osqueryResponseAction = async (
   responseAction: RuleResponseOsqueryAction,
   osqueryCreateActionService: SetupPlugins['osquery']['createActionService'],
   endpointAppContextService: EndpointAppContextService,
   { alerts }: ResponseActionAlerts
 ) => {
   const logger = osqueryCreateActionService.logger;
-
-  const temporaryQueries = responseAction.params.queries?.length
-    ? responseAction.params.queries
-    : [{ query: responseAction.params.query }];
-  const containsDynamicQueries = some(
-    temporaryQueries,
-    (query) => query.query && containsDynamicQuery(query.query)
-  );
 
   const { savedQueryId, packId, queries, ecsMapping, ...rest } = responseAction.params;
   // Extract space information from the first alert (all alerts should be from the same space)
@@ -52,6 +43,19 @@ export const osqueryResponseAction = (
     );
     return;
   }
+
+  // Ask osquery, which resolves the stored saved query / pack, rather than reading the copy
+  // persisted on this rule — that copy goes stale the moment the referenced object is edited,
+  // and a template added there would otherwise suppress dispatch entirely.
+  const containsDynamicQueries = await osqueryCreateActionService.containsDynamicQueries(
+    {
+      ...rest,
+      ...(packId && { pack_id: packId }),
+      queries: requiredOptional(queries),
+      saved_query_id: savedQueryId,
+    },
+    { space: { id: spaceId } }
+  );
 
   if (!containsDynamicQueries) {
     const agentIds = uniq(map(alerts, 'agent.id'));

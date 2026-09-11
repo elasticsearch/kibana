@@ -83,6 +83,28 @@ export const T1_ANALYST_ROLE: KibanaRole = {
   ],
 };
 
+/**
+ * Rule author who can write detection rules and run saved osquery queries, but cannot
+ * write live queries. Used to exercise the response-action trust boundary: attaching
+ * caller-supplied SQL behind a saved_query_id must be rejected.
+ */
+export const RULE_AUTHOR_RUN_SAVED_ONLY_ROLE: KibanaRole = {
+  elasticsearch: T1_ANALYST_ROLE.elasticsearch,
+  kibana: [
+    {
+      base: [],
+      spaces: ['*'],
+      feature: {
+        ...COMMON_KIBANA_FEATURES,
+        siemV5: ['all'],
+        securitySolutionRulesV2: ['all'],
+        securitySolutionCases: ['all'],
+        osquery: ['read', 'run_saved_queries'],
+      },
+    },
+  ],
+};
+
 export const T2_ANALYST_ROLE: KibanaRole = {
   elasticsearch: {
     cluster: [],

@@ -32,9 +32,13 @@ describe('ScheduleNotificationResponseActions', () => {
 
   const osqueryActionMock = {
     create: jest.fn().mockResolvedValue({}),
+    // Osquery resolves the stored saved query / pack to decide whether this run substitutes
+    // parameters, rather than trusting the copy persisted on the rule.
+    containsDynamicQueries: jest.fn().mockResolvedValue(false),
     stop: jest.fn(),
     logger: {
       error: jest.fn(),
+      warn: jest.fn(),
     } as unknown as Logger,
   };
 
@@ -84,9 +88,9 @@ describe('ScheduleNotificationResponseActions', () => {
       queries: [],
     };
 
-    it('should pass correct space id from alert.kibana.space_ids[0] when space awareness is enabled', () => {
+    it('should pass correct space id from alert.kibana.space_ids[0] when space awareness is enabled', async () => {
       const signals = getSignals();
-      scheduleNotificationResponseActions({
+      await scheduleNotificationResponseActions({
         signals,
         signalsCount: signals.length,
         responseActions: [
@@ -106,9 +110,9 @@ describe('ScheduleNotificationResponseActions', () => {
       );
     });
 
-    it('should log error if space awareness is enabled and space id is missing', () => {
+    it('should log error if space awareness is enabled and space id is missing', async () => {
       const signals = [{ ...getSignals()[0], [SPACE_IDS]: undefined }];
-      scheduleNotificationResponseActions({
+      await scheduleNotificationResponseActions({
         signals,
         signalsCount: signals.length,
         responseActions: [
@@ -145,10 +149,12 @@ describe('ScheduleNotificationResponseActions', () => {
       );
     });
 
-    it('should pass alertData when dynamic queries are present', () => {
+    it('should pass alertData when dynamic queries are present', async () => {
       const dynamicQuery = 'select * from uptime where id = {{host.id}}';
       const signals = getSignals();
-      scheduleNotificationResponseActions({
+      // The parameterization verdict now comes from osquery resolving the stored content.
+      osqueryActionMock.containsDynamicQueries.mockResolvedValueOnce(true);
+      await scheduleNotificationResponseActions({
         signals,
         signalsCount: signals.length,
         responseActions: [
