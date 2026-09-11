@@ -180,4 +180,34 @@ describe('generateEsqlQuery date histogram', () => {
       }
     });
   });
+
+  describe('field names that are not valid bare ES|QL identifiers', () => {
+    it('should escape the bucket alias for a hyphenated date field', () => {
+      const hyphenatedIndexPattern = {
+        ...(mockIndexPattern as unknown as Record<string, unknown>),
+        timeFieldName: 'order-date',
+      } as typeof mockIndexPattern;
+      const dateHistogramCol: DateHistogramIndexPatternColumn = {
+        ...baseDateHistogramColumn,
+        sourceField: 'order-date',
+        params: { interval: 'auto' },
+      };
+      const result = generateEsqlQuery(
+        buildAggEntries(dateHistogramCol),
+        buildLayer(dateHistogramCol),
+        hyphenatedIndexPattern,
+        uiSettings,
+        mockDateRange,
+        new Date()
+      );
+
+      expect(result.success).toBe(true);
+      if (result.success) {
+        // the alias must be backtick-escaped, while the raw field name stays the
+        // esAggsIdMap key (matching the unescaped column name in ES|QL results)
+        expect(result.esql).toContain('BY `order-date` =');
+        expect(result.esAggsIdMap).toHaveProperty(['order-date']);
+      }
+    });
+  });
 });

@@ -39,10 +39,18 @@ describe('Lens flyout', () => {
           newDatasourceState: 'newDatasourceState',
         })
       );
-      expect(updaterFn).toHaveBeenCalledWith('newDatasourceState', null, 'testVis', 'textBased', {
-        formBased: { isLoading: true, state: null },
-        textBased: { isLoading: false, state: 'newDatasourceState' },
-      });
+      expect(updaterFn).toHaveBeenCalledWith(
+        'newDatasourceState',
+        null,
+        'testVis',
+        'textBased',
+        {
+          formBased: { isLoading: true, state: null },
+          textBased: { isLoading: false, state: 'newDatasourceState' },
+        },
+        // session ad hoc data views
+        {}
+      );
       store.dispatch(
         updateVisualizationState({ visualizationId: 'testVis', newState: 'newVisState' })
       );
@@ -54,7 +62,9 @@ describe('Lens flyout', () => {
         {
           formBased: { isLoading: true, state: null },
           textBased: { isLoading: false, state: 'newDatasourceState' },
-        }
+        },
+        // session ad hoc data views
+        {}
       );
     });
 

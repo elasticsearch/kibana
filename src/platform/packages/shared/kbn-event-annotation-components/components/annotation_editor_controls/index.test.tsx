@@ -491,5 +491,34 @@ describe('AnnotationsPanel', () => {
         expect.objectContaining({ timeField: 'field1' })
       );
     });
+
+    describe('hideQueryBasedControls', () => {
+      test('hides the placement type switch and renders manual controls', () => {
+        const component = mountWithThemeProvider({
+          annotation: customLineStaticAnnotation,
+          hideQueryBasedControls: true,
+        });
+
+        expect(
+          component.find(`[data-test-subj="lns-xyAnnotation-placementType"]`).exists()
+        ).toBeFalsy();
+        expect(
+          component.find('EuiDatePicker[data-test-subj="lns-xyAnnotation-time"]').exists()
+        ).toBeTruthy();
+      });
+
+      test('renders manual controls without a data view', () => {
+        const component = mountWithThemeProvider({
+          annotation: customLineStaticAnnotation,
+          hideQueryBasedControls: true,
+          dataView: undefined,
+        });
+
+        expect(
+          component.find('EuiDatePicker[data-test-subj="lns-xyAnnotation-time"]').exists()
+        ).toBeTruthy();
+        expect(component.find('ConfigPanelQueryAnnotation').exists()).toBeFalsy();
+      });
+    });
   });
 });

@@ -2364,6 +2364,30 @@ describe('xy_visualization', () => {
         ).toBeTruthy();
       });
 
+      it('should not restrict to static value only for form-based charts', () => {
+        expect(
+          xyVisualization.getConfiguration({
+            state: getStateWithBaseReferenceLine(),
+            frame,
+            layerId: 'referenceLine',
+          }).groups[0].staticValueOnly
+        ).toBe(false);
+      });
+
+      it('should restrict to static value only on ES|QL charts', () => {
+        frame.datasourceLayers = {
+          first: createMockDatasource('textBased').publicAPIMock,
+          referenceLine: mockDatasource.publicAPIMock,
+        };
+        expect(
+          xyVisualization.getConfiguration({
+            state: getStateWithBaseReferenceLine(),
+            frame,
+            layerId: 'referenceLine',
+          }).groups[0].staticValueOnly
+        ).toBe(true);
+      });
+
       it('should return no referenceLine groups for a empty data layer', () => {
         const state = getStateWithBaseReferenceLine();
         (state.layers[0] as XYDataLayerConfig).accessors = [];
@@ -4325,6 +4349,33 @@ describe('xy_visualization', () => {
             layerId: 'annotation',
           })
         ).toEqual({ data: true, appearance: false });
+      });
+
+      it('should expose no data settings for an annotation layer on an ES|QL chart', () => {
+        const baseState = exampleState();
+        expect(
+          xyVisualization.hasLayerSettings?.({
+            state: {
+              ...baseState,
+              layers: [
+                ...baseState.layers,
+                {
+                  layerId: 'annotation',
+                  layerType: layerTypes.ANNOTATIONS,
+                  annotations: [exampleAnnotation2],
+                  ignoreGlobalFilters: true,
+                  indexPatternId: 'myIndexPattern',
+                },
+              ],
+            },
+            frame: createMockFramePublicAPI({
+              datasourceLayers: {
+                first: createMockDatasource('textBased').publicAPIMock,
+              },
+            }),
+            layerId: 'annotation',
+          })
+        ).toEqual({ data: false, appearance: false });
       });
     });
   });

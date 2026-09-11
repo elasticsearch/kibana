@@ -62,6 +62,16 @@ const mockLayers: ConvertibleLayer[] = [
     isConvertibleToEsql: false,
     conversionData: mockConversionData,
   },
+  {
+    id: '5',
+    icon: 'layers',
+    name: 'Layer 5',
+    type: layerTypes.DATA,
+    query: '',
+    isConvertibleToEsql: false,
+    conversionData: mockConversionData,
+    failureReason: 'formula_not_supported' as const,
+  },
 ];
 
 const mockOnCancel = jest.fn();
@@ -112,6 +122,15 @@ describe('ConvertToEsqlModal', () => {
       expect(screen.getByText('Layer 1')).toBeInTheDocument();
       expect(screen.getByText('Layer 2')).toBeInTheDocument();
       expect(screen.getByText('Layer 3')).toBeInTheDocument();
+    });
+
+    it('shows failure reason tooltip icon for non-convertible data layers', () => {
+      renderComponent();
+
+      const icon = screen.getByTestId('lnsEsqlConversionFailureReason-5');
+      expect(icon).toBeInTheDocument();
+      // EuiIcon jest mock renders the aria-label as text content
+      expect(icon).toHaveTextContent(/Cannot convert to ES\|QL: Formula operations/);
     });
 
     it('disables selection for non-convertible layers', () => {

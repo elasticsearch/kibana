@@ -189,7 +189,10 @@ export function convertFormBasedToTextBasedLayer({
   datasourceStates,
   framePublicAPI,
 }: ConvertToEsqlParams): TypedLensSerializedState['attributes'] | undefined {
-  if (layersToConvert.length === 0) {
+  const validLayersToConvert = layersToConvert.filter(
+    (layer) => layer.type === 'data' && layer.isConvertibleToEsql && layer.query.trim().length > 0
+  );
+  if (validLayersToConvert.length === 0) {
     return undefined;
   }
 
@@ -199,7 +202,7 @@ export function convertFormBasedToTextBasedLayer({
   }
 
   const newDatasourceState = buildTextBasedState(
-    layersToConvert,
+    validLayersToConvert,
     formBasedState.layers,
     framePublicAPI
   );
@@ -209,13 +212,23 @@ export function convertFormBasedToTextBasedLayer({
   }
 
   // Ensure the converted layer carries an ES|QL query
-  const firstLayerId = layersToConvert[0].id;
-  if (!newDatasourceState.layers[firstLayerId]?.query) {
+  const firstLayerId = validLayersToConvert[0].id;
+  const esqlQuery = newDatasourceState.layers[firstLayerId]?.query;
+
+  if (!esqlQuery?.esql.trim()) {
     return undefined;
   }
 
-  // Build new attributes with textBased datasource
-  // Keep visualization state unchanged - original column IDs are preserved in the text-based layer
+  const convertedLayerIds = new Set(validLayersToConvert.map(({ id }) => id));
+  const remainingFormBasedLayers = Object.fromEntries(
+    Object.entries(formBasedState.layers).filter(([id]) => !convertedLayerIds.has(id))
+  );
+  const hasRemainingFormBasedLayers = Object.keys(remainingFormBasedLayers).length > 0;
+
+  // Build new attributes with converted layers in the text-based datasource and preserve
+  // non-data helper layers (reference lines/annotations) in the form-based datasource.
+  // Callers must not pass a subset of data layers: leaving a form-based data layer
+  // alongside text-based ones creates an invalid mixed state (see useEsqlConversionCheck guard).
   const newAttributes: TypedLensSerializedState['attributes'] = {
     ...attributes,
     state: {
@@ -224,6 +237,9 @@ export function convertFormBasedToTextBasedLayer({
       // chart-scoped KQL/Lucene filter in the top-level slot (if any).
       query: getChartScopedFilterQuery(attributes.state.query),
       datasourceStates: {
+        ...(hasRemainingFormBasedLayers
+          ? { formBased: { ...formBasedState, layers: remainingFormBasedLayers } }
+          : {}),
         textBased: newDatasourceState,
       },
       visualization: visualizationState,

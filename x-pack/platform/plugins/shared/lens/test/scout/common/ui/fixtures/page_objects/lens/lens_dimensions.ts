@@ -5,7 +5,7 @@
  * 2.0.
  */
 
-import type { Locator, ScoutPage } from '@kbn/scout';
+import type { EuiComboBoxObject, Locator, ScoutPage } from '@kbn/scout';
 import { WAIT_FOR_FUNCTION_TIMEOUT_MS } from './lens_editor_helpers';
 
 /** `useDebouncedValue` waits 256ms before committing; add margin for a busy main thread. */
@@ -49,6 +49,7 @@ export class LensDimensions {
   readonly formatDecimalsInput;
   readonly dimensionColorPicker;
   readonly dimensionNameInput;
+  private readonly textBasedDimensionFieldCombo: EuiComboBoxObject;
 
   constructor(private readonly page: ScoutPage, private readonly deps: LensDimensionsDeps) {
     this.dimensionTriggerLocator = this.page.testSubj.locator('lns-dimensionTrigger');
@@ -74,6 +75,7 @@ export class LensDimensions {
       'indexPattern-filter-by-input > switchQueryLanguageButton'
     );
     this.luceneLanguageMenuItem = this.page.testSubj.locator('luceneLanguageMenuItem');
+    this.textBasedDimensionFieldCombo = this.page.components.comboBox('text-based-dimension-field');
   }
 
   /**
@@ -181,6 +183,13 @@ export class LensDimensions {
   /** Closes the open dimension editor flyout (same as `LensApp.closeDimensionEditor`, kept for FTR parity naming). */
   async closeDimensionEditorPanel() {
     await this.deps.closeDimensionEditor();
+  }
+
+  /** Selects a field for a text-based dimension and closes its editor. */
+  async setTextBasedDimensionField(dimension: string, field: string, layerIndex = 0) {
+    await this.openDimensionEditor(`${dimension} > lns-empty-dimension`, layerIndex);
+    await this.textBasedDimensionFieldCombo.setSelectedOptions([field]);
+    await this.closeDimensionEditorPanel();
   }
 
   /** Clears the dimension field combo box (removes the currently selected field). */

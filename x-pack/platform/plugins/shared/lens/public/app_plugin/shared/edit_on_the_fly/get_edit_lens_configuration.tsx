@@ -39,6 +39,7 @@ import {
   initExisting,
   initEmpty,
   setSelectedLayerId,
+  selectAdHocDataViews,
 } from '../../../state_management';
 import { generateId } from '../../../id_generator';
 import { LensEditConfigurationFlyout } from './lens_configuration_flyout';
@@ -107,7 +108,10 @@ export const updatingMiddleware =
         // conversion (e.g. formBased -> textBased) the serialized attributes can
         // lag behind the store, so re-deriving the id from them may pick a stale key
         (activeDatasourceId as LensDatasourceId | null) ?? undefined,
-        datasourceStates
+        datasourceStates,
+        // ad hoc data views created during the editing session (e.g. for a new
+        // reference line layer) are not part of the persisted attributes yet
+        selectAdHocDataViews(store.getState())
       );
     }
   };

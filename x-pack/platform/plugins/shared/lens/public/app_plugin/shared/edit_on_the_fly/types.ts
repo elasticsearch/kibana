@@ -15,6 +15,8 @@ import type {
   LensInspector,
   LensDatasourceId,
 } from '@kbn/lens-common';
+import type { DataViewSpec } from '@kbn/data-views-plugin/common';
+
 import type { TextBasedQueryState } from '../../../editor_frame_service/editor_frame/config_panel/types';
 import type { LensPluginStartDependencies } from '../../../plugin';
 
@@ -44,7 +46,8 @@ export type LensPanelStateUpdater = (
   /** When restoring state (e.g. on cancel), pass the datasource the state belongs to. */
   datasourceId?: LensDatasourceId,
   /** All datasource states from the editor store, so non-active loaded states are preserved. */
-  allDatasourceStates?: DatasourceStates
+  allDatasourceStates?: DatasourceStates,
+  adHocDataViews?: Record<string, DataViewSpec>
 ) => void;
 
 export interface EditConfigPanelProps {

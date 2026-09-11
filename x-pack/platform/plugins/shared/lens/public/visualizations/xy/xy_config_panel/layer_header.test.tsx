@@ -8,7 +8,8 @@
 import React from 'react';
 
 import type { FramePublicAPI } from '@kbn/lens-common';
-import { LayerHeader } from './layer_header';
+import { LayerHeader, LayerHeaderContent } from './layer_header';
+import { createMockDatasource, createMockFramePublicAPI } from '../../../mocks';
 import type {
   XYByReferenceAnnotationLayerConfig,
   XYByValueAnnotationLayerConfig,
@@ -80,6 +81,46 @@ describe('layer header', () => {
           .text()
           .trim()
       ).toBe(cachedMetadata.title);
+    });
+  });
+
+  describe('annotation layer header content', () => {
+    const annotationLayer: XYByValueAnnotationLayerConfig = {
+      layerId: 'annotation',
+      layerType: 'annotations',
+      annotations: [],
+      indexPatternId: 'myIndexPattern',
+      ignoreGlobalFilters: false,
+    };
+
+    const state: XYVisualizationState = {
+      preferredSeriesType: 'area',
+      legend: { isVisible: false, position: 'left' },
+      layers: [annotationLayer],
+    };
+
+    const getProps = (frame: FramePublicAPI) => ({
+      layerId: 'annotation',
+      frame,
+      state,
+      onChangeIndexPattern: () => {},
+      setState: () => {},
+    });
+
+    it('renders the data view switcher for form-based charts', () => {
+      const frame = createMockFramePublicAPI({
+        datasourceLayers: { data: createMockDatasource('formBased').publicAPIMock },
+      });
+      const instance = mountWithProviders(<LayerHeaderContent {...getProps(frame)} />);
+      expect(instance.find('[data-test-subj="indexPattern-switcher"]').exists()).toBe(true);
+    });
+
+    it('hides the data view switcher on ES|QL charts', () => {
+      const frame = createMockFramePublicAPI({
+        datasourceLayers: { data: createMockDatasource('textBased').publicAPIMock },
+      });
+      const instance = mountWithProviders(<LayerHeaderContent {...getProps(frame)} />);
+      expect(instance.isEmptyRender()).toBe(true);
     });
   });
 });

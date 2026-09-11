@@ -22,7 +22,7 @@ import type {
   XYDataLayerConfig,
 } from '@kbn/lens-common';
 import { LENS_APP_NAME } from '../../../../../common/constants';
-import { DONT_CLOSE_DIMENSION_CONTAINER_ON_CLICK_CLASS } from '../../../../utils';
+import { DONT_CLOSE_DIMENSION_CONTAINER_ON_CLICK_CLASS, isEsqlChart } from '../../../../utils';
 import { updateLayer } from '../../toolbar';
 import { isDataLayer } from '../../visualization_helpers';
 
@@ -68,18 +68,22 @@ export const AnnotationsPanel = (
     [localLayer, localState, index, setState, accessor]
   );
 
+  // ES|QL charts do not expose data views: restrict the editor to manual annotations
+  const hideQueryBasedControls = isEsqlChart(frame.datasourceLayers);
+
   const [currentDataView, setCurrentDataView] = useState<DataView>();
 
   useEffect(() => {
     const updateDataView = async () => {
-      let dataView: DataView;
+      let dataView: DataView | undefined;
       const availableIds = await props.dataViewsService.getIds();
       if (availableIds.includes(localLayer.indexPatternId)) {
         dataView = await props.dataViewsService.get(localLayer.indexPatternId);
       } else {
-        dataView = await props.dataViewsService.create(
-          frame.dataViews.indexPatterns[localLayer.indexPatternId].spec
-        );
+        const spec = frame.dataViews.indexPatterns[localLayer.indexPatternId]?.spec;
+        if (spec) {
+          dataView = await props.dataViewsService.create(spec);
+        }
       }
       setCurrentDataView(dataView);
     };
@@ -93,12 +97,13 @@ export const AnnotationsPanel = (
     throw new Error('Annotation not found... this should never happen!');
   }
 
-  return currentDataView ? (
+  return currentDataView || hideQueryBasedControls ? (
     <div className="lnsIndexPatternDimensionEditor--padded">
       <AnnotationEditorControls
         annotation={currentAnnotation}
         onAnnotationChange={(newAnnotation) => setAnnotation(newAnnotation)}
         dataView={currentDataView}
+        hideQueryBasedControls={hideQueryBasedControls}
         getDefaultRangeEnd={(rangeStart) =>
           getEndTimestamp(
             props.datatableUtilities,

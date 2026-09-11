@@ -6,6 +6,7 @@
  */
 
 import type { FilterManager } from '@kbn/data-plugin/public';
+import type { DataViewSpec } from '@kbn/data-views-plugin/common';
 import type {
   DatasourceStates,
   VisualizationMap,
@@ -36,12 +37,13 @@ export function getStateManagementForInlineEditing(
     visualizationState: unknown,
     visualizationType?: string,
     datasourceId?: LensDatasourceId,
-    allDatasourceStates?: DatasourceStates
+    allDatasourceStates?: DatasourceStates,
+    adHocDataViews?: Record<string, DataViewSpec>
   ) => {
     const vis = getAttributes();
     const activeDatasourceId = resolveActiveDatasourceId(datasourceId);
     // drop loading/uninitialized entries so they never get serialized into the attributes
-    const loadedDatasourceStates = Object.fromEntries(
+    const loadedDatasourceStates: DatasourceStates = Object.fromEntries(
       Object.entries(allDatasourceStates ?? {}).filter(
         ([, { isLoading, state }]) => !isLoading && state !== null && state !== undefined
       )
@@ -69,7 +71,10 @@ export function getStateManagementForInlineEditing(
       vis.state.query,
       vis.state.filters,
       activeDatasourceId,
-      vis.state.adHocDataViews || {},
+      // Prefer the live ad hoc data views from the editing session: layers added
+      // in the flyout (e.g. reference lines) may use ad hoc data views that are
+      // not part of the previously persisted attributes yet.
+      { ...vis.state.adHocDataViews, ...adHocDataViews },
       { visualizationMap, datasourceMap, extractFilterReferences }
     );
     const newDoc: TypedLensSerializedState['attributes'] = {

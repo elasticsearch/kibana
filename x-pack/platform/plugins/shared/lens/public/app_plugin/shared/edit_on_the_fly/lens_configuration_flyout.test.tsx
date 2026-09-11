@@ -311,8 +311,8 @@ describe('LensEditConfigurationFlyout', () => {
       state: {
         ...lensAttributes.state,
         datasourceStates: {
-          formBased: mockFormBasedStateChanged,
-          textBased: mockTextBasedState,
+          formBased: mockFormBasedState,
+          textBased: mockTextBasedStateChanged,
         },
       },
     } as unknown as TypedLensSerializedState['attributes'];
@@ -324,13 +324,13 @@ describe('LensEditConfigurationFlyout', () => {
     await userEvent.click(screen.getByTestId('cancelFlyoutButton'));
 
     expect(updatePanelStateSpy).toHaveBeenCalledWith(
-      mockFormBasedStateChanged,
+      mockTextBasedStateChanged,
       expect.anything(),
       undefined,
-      'formBased',
+      'textBased',
       {
-        formBased: { isLoading: false, state: mockFormBasedStateChanged },
-        textBased: { isLoading: false, state: mockTextBasedState },
+        formBased: { isLoading: false, state: mockFormBasedState },
+        textBased: { isLoading: false, state: mockTextBasedStateChanged },
       }
     );
   });
@@ -384,13 +384,22 @@ describe('LensEditConfigurationFlyout', () => {
       title: 'test',
       visualizationType: 'testVis',
       state: {
-        datasourceStates: { formBased: mockFormBasedState, textBased: mockTextBasedState },
+        adHocDataViews: {},
+        internalReferences: [],
+        // the empty formBased state is dropped so consumers don't misdetect the
+        // chart's datasource from serialized attributes
+        datasourceStates: { textBased: mockTextBasedState },
         visualization: {},
         filters: [],
       },
       filters: [],
       query: { esql: 'from index1 | limit 10' },
-      references: [],
+      // references from non-adhoc data views are kept even in ES|QL mode so that
+      // form-based layers (reference lines, query annotations) keep their data view
+      references: [
+        { type: 'index-pattern', id: 'mockip', name: 'mockip' },
+        { type: 'index-pattern', id: 'mockip', name: 'mockip' },
+      ],
     });
   });
 

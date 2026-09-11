@@ -22,6 +22,7 @@ import {
   removeDimension,
   setLayerDefaultDimension,
   setDimensionAndUpdateDatasource,
+  onDropToDimension,
 } from '.';
 import { LayerTypes } from '@kbn/expression-xy-plugin/public';
 import {
@@ -330,7 +331,7 @@ describe('lensSlice', () => {
             getOperationForColumnId: jest.fn(),
             getTableSpec: jest.fn(),
           }),
-          getLayers: () => ['layer1'],
+          getLayers: (layerIds: unknown) => layerIds as string[],
           clearLayer: (layerIds: unknown, layerId: string) => ({
             removedLayerIds: [],
             newState: (layerIds as string[]).map((id: string) =>
@@ -427,6 +428,26 @@ describe('lensSlice', () => {
         ]);
         expect(state.datasourceStates.textBased.state).toEqual(['layer2']);
         expect(state.stagedPreview).not.toBeDefined();
+      });
+
+      it('addLayer: should add the layer to the requested datasource', () => {
+        customStore.dispatch(
+          addLayer({
+            layerId: 'foo',
+            layerType: LayerTypes.REFERENCELINE,
+            extraArg: undefined,
+            datasourceId: 'textBased',
+          })
+        );
+        const state = customStore.getState().lens;
+
+        expect(state.visualization.state).toEqual(['layer1', 'layer2', 'foo']);
+        expect(state.datasourceStates.formBased.state).toEqual(['layer1']);
+        expect(state.datasourceStates.textBased.state).toEqual([
+          'layer2',
+          'foo',
+          'linked-layer-id',
+        ]);
       });
 
       it('addLayer: syncs linked dimensions', () => {
@@ -696,6 +717,137 @@ describe('lensSlice', () => {
 
           expect(formBasedWithInit.initializeDimension).not.toHaveBeenCalled();
         });
+
+        it('should route the dimension to the datasource that owns the layer on mixed panels', () => {
+          // active datasource is textBased (ES|QL chart), but the reference line
+          // layer lives in the formBased datasource
+          const activeVisualization = visualizationMap[activeVisId] as Visualization;
+          const formBasedWithInit = {
+            ...formBased('formBased'),
+            initializeDimension: jest.fn((state) => state),
+          };
+          const textBasedWithInit = {
+            ...formBased('textBased'),
+            initializeDimension: jest.fn((state) => state),
+          };
+
+          const customStoreWithInit = makeLensStore({
+            preloadedState: {
+              activeDatasourceId: 'textBased',
+              datasourceStates: {
+                formBased: { isLoading: false, state: ['refLayer'] },
+                textBased: { isLoading: false, state: ['layer2'] },
+              },
+              visualization: {
+                activeId: activeVisId,
+                state: ['refLayer', 'layer2'],
+                selectedLayerId: null,
+              },
+            },
+            storeDeps: mockStoreDeps({
+              visualizationMap: {
+                [activeVisId]: {
+                  ...activeVisualization,
+                  getSupportedLayers: jest.fn(() => [
+                    {
+                      type: LayerTypes.REFERENCELINE,
+                      label: 'Reference Layer',
+                      initialDimensions: [
+                        { groupId: 'testGroup', columnId: 'testColumn', staticValue: 100 },
+                      ],
+                    },
+                  ]),
+                  getLayerType: jest.fn(() => LayerTypes.REFERENCELINE),
+                  setDimension: jest.fn(({ prevState }) => prevState),
+                  getConfiguration: jest.fn(() => ({ groups: [] })),
+                },
+              } as unknown as VisualizationMap,
+              datasourceMap: {
+                formBased: formBasedWithInit,
+                textBased: textBasedWithInit,
+              } as unknown as DatasourceMap,
+            }),
+          }).store;
+
+          customStoreWithInit.dispatch(
+            setLayerDefaultDimension({
+              layerId: 'refLayer',
+              columnId: 'testColumn',
+              groupId: 'testGroup',
+            })
+          );
+
+          expect(formBasedWithInit.initializeDimension).toHaveBeenCalled();
+          expect(textBasedWithInit.initializeDimension).not.toHaveBeenCalled();
+        });
+      });
+
+      describe('onDropToDimension', () => {
+        it('syncs the datasource that owns the target layer, not the active one', () => {
+          // active datasource is textBased (ES|QL chart); the drop target layer
+          // lives in formBased. Regression: syncLinkedDimensions defaulted to the
+          // active datasource and its state overwrote the formBased state.
+          const activeVisualization = visualizationMap[activeVisId] as Visualization;
+          const droppedFormBasedState = ['refLayer', 'newColumnMarker'];
+          const formBasedWithDrop = {
+            ...formBased('formBased'),
+            onDrop: jest.fn(() => droppedFormBasedState),
+          };
+          const textBasedWithDrop = {
+            ...formBased('textBased'),
+            onDrop: jest.fn(),
+          };
+
+          const customStoreWithDrop = makeLensStore({
+            preloadedState: {
+              activeDatasourceId: 'textBased',
+              datasourceStates: {
+                formBased: { isLoading: false, state: ['refLayer'] },
+                textBased: { isLoading: false, state: ['dataLayer'] },
+              },
+              visualization: {
+                activeId: activeVisId,
+                state: ['refLayer', 'dataLayer'],
+                selectedLayerId: null,
+              },
+            },
+            storeDeps: mockStoreDeps({
+              visualizationMap: {
+                [activeVisId]: {
+                  ...activeVisualization,
+                  getConfiguration: jest.fn(() => ({ groups: [] })),
+                  onDrop: jest.fn(({ prevState }) => prevState),
+                  getLinkedDimensions: jest.fn(() => undefined),
+                },
+              } as unknown as VisualizationMap,
+              datasourceMap: {
+                formBased: formBasedWithDrop,
+                textBased: textBasedWithDrop,
+              } as unknown as DatasourceMap,
+            }),
+          }).store;
+
+          customStoreWithDrop.dispatch(
+            onDropToDimension({
+              source: { id: 'col1', humanData: { label: 'Col 1' } },
+              target: {
+                layerId: 'refLayer',
+                columnId: 'col2',
+                groupId: 'testGroup',
+                filterOperations: () => true,
+              },
+              dropType: 'duplicate_compatible',
+            })
+          );
+
+          const { lens } = customStoreWithDrop.getState();
+          expect(formBasedWithDrop.onDrop).toHaveBeenCalled();
+          expect(textBasedWithDrop.onDrop).not.toHaveBeenCalled();
+          // formBased received its own dropped state and was not overwritten
+          // with the active (textBased) datasource state
+          expect(lens.datasourceStates.formBased.state).toEqual(droppedFormBasedState);
+          expect(lens.datasourceStates.textBased.state).toEqual(['dataLayer']);
+        });
       });
 
       it('removeLayer: should remove the layer if it is not the only layer', () => {
@@ -711,6 +863,23 @@ describe('lensSlice', () => {
         expect(state.visualization.state).toEqual(['layer2']);
         expect(state.datasourceStates.formBased.state).toEqual([]);
         expect(state.datasourceStates.textBased.state).toEqual(['layer2']);
+        expect(state.stagedPreview).not.toBeDefined();
+      });
+
+      it('removeLayer: should remove the layer from a non-active datasource that owns it', () => {
+        // active datasource is formBased, but layer2 lives in the textBased datasource
+        customStore.dispatch(
+          removeOrClearLayer({
+            visualizationId: 'testVis',
+            layerId: 'layer2',
+            layerIds: ['layer1', 'layer2'],
+          })
+        );
+        const state = customStore.getState().lens;
+
+        expect(state.visualization.state).toEqual(['layer1']);
+        expect(state.datasourceStates.formBased.state).toEqual(['layer1']);
+        expect(state.datasourceStates.textBased.state).toEqual([]);
         expect(state.stagedPreview).not.toBeDefined();
       });
 

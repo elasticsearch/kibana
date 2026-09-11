@@ -15,7 +15,7 @@ import { ChildDragDropProvider } from '@kbn/dom-drag-drop';
 import type { ProviderProps } from '@kbn/dom-drag-drop/src';
 import { coreMock } from '@kbn/core/public/mocks';
 import { dataPluginMock } from '@kbn/data-plugin/public/mocks';
-import type { Datatable } from '@kbn/expressions-plugin/common';
+import type { Datatable, DatatableColumn } from '@kbn/expressions-plugin/common';
 
 import { generateId } from '../../../id_generator';
 import {
@@ -34,11 +34,16 @@ import type {
   VisualizationConfigProps,
 } from '@kbn/lens-common';
 import { LayerPanel } from './layer_panel';
+import { ESQLEditor } from './esql_editor';
 import type { LayerPanelProps } from './types';
 import { EditorFrameServiceProvider } from '../../editor_frame_service_context';
 import { onActiveDataChange } from '../../../state_management';
 
 jest.mock('../../../id_generator');
+
+jest.mock('./esql_editor', () => ({
+  ESQLEditor: jest.fn(() => <div data-test-subj="mockESQLEditor" />),
+}));
 
 jest.mock('@kbn/kibana-utils-plugin/public', () => {
   const original = jest.requireActual('@kbn/kibana-utils-plugin/public');
@@ -93,6 +98,9 @@ describe('LayerPanel', () => {
   let mockVisualization: jest.Mocked<Visualization>;
 
   let mockDatasource = createMockDatasource('formBased');
+  let mockTextBasedDatasource = createMockDatasource('textBased', {
+    isTextBasedLanguage: jest.fn(() => true),
+  });
 
   function getDefaultProps(): LayerPanelProps {
     return {
@@ -148,6 +156,7 @@ describe('LayerPanel', () => {
               }}
               datasourceMap={{
                 formBased: mockDatasource,
+                textBased: mockTextBasedDatasource,
               }}
             >
               {children}
@@ -168,6 +177,9 @@ describe('LayerPanel', () => {
     mockVisualization = createMockVisualization(faker.string.alphanumeric());
     mockVisualization.getLayerIds.mockReturnValue(['first']);
     mockDatasource = createMockDatasource();
+    mockTextBasedDatasource = createMockDatasource('textBased', {
+      isTextBasedLanguage: jest.fn(() => true),
+    });
   });
 
   afterEach(() => {
@@ -390,6 +402,10 @@ describe('LayerPanel', () => {
       renderLayerPanel();
       await userEvent.click(screen.getByTestId('lnsLayerPanel-dimensionLink'));
       expect(screen.queryByTestId('lnsVisDimensionEditor')).toBeInTheDocument();
+      expect(mockVisualization.DimensionEditorComponent).toHaveBeenCalledWith(
+        expect.objectContaining({ datasource: mockDatasource.publicAPIMock }),
+        {}
+      );
     });
 
     it('should not render visualization dimension editor when clicking on empty dimension', async () => {
@@ -1123,6 +1139,172 @@ describe('LayerPanel', () => {
       const droppable = within(dimensionGroups[1]).getAllByTestId('lnsDragDrop-domDroppable')[0];
       fireEvent.dragOver(droppable);
       fireEvent.drop(droppable);
+    });
+  });
+
+  describe('ES|QL editor visibility', () => {
+    const esqlQuery = { esql: 'FROM test-index | LIMIT 10' };
+
+    const makeMixedDatasourceFrameAPI = (): FramePublicAPI => ({
+      ...createMockFramePublicAPI(),
+      datasourceLayers: {
+        data: mockTextBasedDatasource.publicAPIMock,
+        annotation: mockDatasource.publicAPIMock,
+      },
+    });
+
+    const mixedDatasourceState: Partial<LensAppState> = {
+      query: esqlQuery,
+      datasourceStates: {
+        textBased: {
+          isLoading: false,
+          state: { layers: { data: { query: esqlQuery } } },
+        },
+        formBased: {
+          isLoading: false,
+          state: { layers: { annotation: {} } },
+        },
+      },
+    };
+
+    // the ES|QL editor only renders for text-based documents (see `isTextBasedAttributes`)
+    const makeTextBasedAttributes = (layers: Record<string, unknown>) =>
+      ({
+        state: { datasourceStates: { textBased: { layers } } },
+      } as unknown as LayerPanelProps['attributes']);
+
+    it('renders the editor for the selected text-based layer', () => {
+      mockVisualization.getLayerIds.mockReturnValue(['data', 'annotation']);
+      renderLayerPanel({
+        propsOverrides: {
+          layerId: 'data',
+          isOnlyLayer: false,
+          framePublicAPI: makeMixedDatasourceFrameAPI(),
+          attributes: makeTextBasedAttributes({ data: { query: esqlQuery } }),
+        },
+        preloadedState: mixedDatasourceState,
+      });
+
+      expect(screen.getByTestId('mockESQLEditor')).toBeInTheDocument();
+      expect(jest.mocked(ESQLEditor).mock.calls.at(-1)?.[0]).toEqual(
+        expect.objectContaining({ onLayerQuerySubmit: expect.any(Function) })
+      );
+    });
+
+    it('does not render the editor for a selected static annotation layer', () => {
+      renderLayerPanel({
+        propsOverrides: {
+          layerId: 'annotation',
+          framePublicAPI: makeMixedDatasourceFrameAPI(),
+        },
+        preloadedState: mixedDatasourceState,
+      });
+
+      expect(screen.queryByTestId('mockESQLEditor')).not.toBeInTheDocument();
+    });
+
+    it('updates and reconciles only the selected text-based layer query', async () => {
+      mockVisualization.getLayerIds.mockReturnValue(['first', 'second']);
+      const firstQuery = { esql: 'FROM first-index | LIMIT 10' };
+      const secondQuery = { esql: 'FROM second-index | STATS COUNT(*)' };
+      const newSecondQuery = { esql: 'FROM second-index | STATS MAX(bytes)' };
+      const queryColumns: DatatableColumn[] = [
+        { id: 'MAX(bytes)', name: 'MAX(bytes)', meta: { type: 'number' } },
+      ];
+      const updateDatasource = jest.fn();
+      const textBasedState = {
+        layers: {
+          first: { columns: [], query: firstQuery },
+          second: {
+            columns: [
+              {
+                columnId: 'second-metric',
+                fieldName: 'COUNT(*)',
+                label: 'Count of records',
+                customLabel: true,
+                meta: { type: 'number' as const },
+              },
+            ],
+            query: secondQuery,
+          },
+        },
+        indexPatternRefs: [],
+      };
+
+      renderLayerPanel({
+        propsOverrides: {
+          layerId: 'second',
+          isOnlyLayer: false,
+          dimensionGroups: [
+            {
+              groupId: 'metric',
+              groupLabel: 'Metric',
+              accessors: [{ columnId: 'second-metric' }],
+              supportsMoreColumns: true,
+              filterOperations: () => true,
+              dataTestSubj: 'metric',
+            },
+          ],
+          updateDatasource,
+          framePublicAPI: {
+            ...createMockFramePublicAPI(),
+            datasourceLayers: {
+              first: mockTextBasedDatasource.publicAPIMock,
+              second: mockTextBasedDatasource.publicAPIMock,
+            },
+          },
+          attributes: makeTextBasedAttributes(textBasedState.layers),
+        },
+        preloadedState: {
+          query: firstQuery,
+          datasourceStates: {
+            textBased: { isLoading: false, state: textBasedState },
+          },
+        },
+      });
+
+      const editorProps = jest.mocked(ESQLEditor).mock.calls.at(-1)?.[0];
+      expect(editorProps).toEqual(
+        expect.objectContaining({
+          layerId: 'second',
+          layerQuery: secondQuery,
+          onLayerQuerySubmit: expect.any(Function),
+        })
+      );
+
+      await act(async () => editorProps?.onLayerQuerySubmit?.(newSecondQuery, queryColumns));
+
+      expect(updateDatasource).toHaveBeenCalledWith('textBased', {
+        ...textBasedState,
+        layers: {
+          first: textBasedState.layers.first,
+          second: {
+            ...textBasedState.layers.second,
+            query: newSecondQuery,
+            columns: [
+              {
+                columnId: 'second-metric',
+                fieldName: 'MAX(bytes)',
+                label: 'Count of records',
+                customLabel: true,
+                meta: { type: 'number' },
+              },
+            ],
+            errors: undefined,
+          },
+        },
+      });
+
+      updateDatasource.mockClear();
+      const incompatibleQuery = { esql: 'FROM second-index | KEEP message' };
+      const incompatibleColumns: DatatableColumn[] = [
+        { id: 'message', name: 'message', meta: { type: 'string' } },
+      ];
+
+      await expect(
+        editorProps?.onLayerQuerySubmit?.(incompatibleQuery, incompatibleColumns)
+      ).rejects.toThrow('does not contain compatible fields');
+      expect(updateDatasource).not.toHaveBeenCalled();
     });
   });
 

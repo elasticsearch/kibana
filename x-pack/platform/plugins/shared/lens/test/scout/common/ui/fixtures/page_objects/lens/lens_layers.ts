@@ -15,9 +15,11 @@ export class LensLayers {
   // Tab `data-test-subj` values use layer ids (not numeric indices); this only ever
   // resolves to elements when there are 2+ layers (EUI hides the tab strip for one).
   private readonly layerTabsLocator;
+  private readonly layerTabButtonsLocator;
 
   constructor(private readonly page: ScoutPage) {
     this.layerTabsLocator = this.page.testSubj.locator('^unifiedTabs_tab_');
+    this.layerTabButtonsLocator = this.page.testSubj.locator('^unifiedTabs_selectTabBtn_');
   }
 
   /**
@@ -68,8 +70,7 @@ export class LensLayers {
       throw new Error(`Layer tab not found at index ${index}`);
     }
 
-    await tab.click();
-    await this.page.testSubj.locator(`lns-layerPanel-${index}`).waitFor({ state: 'visible' });
+    await this.activateTab(index);
   }
 
   /**
@@ -83,14 +84,24 @@ export class LensLayers {
     if (tabs.length === 0) {
       return;
     }
-    const tab = tabs[index];
-    if (!tab) {
-      throw new Error(`Layer tab not found at index ${index}`);
+    const tabButton = (await this.layerTabButtonsLocator.all())[index];
+    if (!tabButton) {
+      throw new Error(`Layer tab button not found at index ${index}`);
     }
-    if ((await tab.getAttribute('aria-selected')) === 'true') {
+    if ((await tabButton.getAttribute('aria-selected')) === 'true') {
       return;
     }
-    await tab.click();
+    await this.activateTab(index);
+  }
+
+  private async activateTab(index: number) {
+    const tabButton = (await this.layerTabButtonsLocator.all())[index];
+    if (!tabButton) {
+      throw new Error(`Layer tab button not found at index ${index}`);
+    }
+    // Layer actions overlap the tab control when they appear on hover. Clicking the label follows
+    // the existing Unified Tabs/FTR locator pattern without relying on pointer coordinates.
+    await tabButton.locator('[data-test-subj="fullText"]').click();
     await this.page.testSubj.locator(`lns-layerPanel-${index}`).waitFor({ state: 'visible' });
   }
 
@@ -184,12 +195,22 @@ export class LensLayers {
    */
   async createLayer(
     layerType: 'data' | 'referenceLine' | 'annotations',
-    annotationFromLibraryTitle?: string
+    annotationFromLibraryTitle?: string,
+    options: {
+      /**
+       * ES|QL charts hide the annotation library, so the annotations menu item adds the
+       * layer directly instead of opening the "Select annotation method" submenu.
+       * The caller must state which flow to expect: auto-detecting the submenu would
+       * be a timing race (a slow render could show it after the check concluded).
+       * Defaults to the DSL submenu flow, keeping existing call sites unchanged.
+       */
+      annotationsAddDirectly?: boolean;
+    } = {}
   ) {
     const tabsBefore = await this.getLayerCount();
     await this.page.testSubj.click('lnsLayerAddButton');
     await this.page.testSubj.click(`lnsLayerAddButton-${layerType}`);
-    if (layerType === 'annotations') {
+    if (layerType === 'annotations' && !options.annotationsAddDirectly) {
       if (annotationFromLibraryTitle) {
         await this.page.testSubj.click('lnsAnnotationLayer_addFromLibrary');
         await this.page.testSubj.click(

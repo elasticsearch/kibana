@@ -36,6 +36,8 @@ export interface AddLayerButtonProps {
   addLayer: AddLayerFunction<ExtraAppendLayerArg>;
   eventAnnotationService: EventAnnotationServiceType;
   isInlineEditing?: boolean;
+  /** Hides the annotation library option (ES|QL charts do not support data-view-based library groups) */
+  hideAnnotationLibrary?: boolean;
 }
 
 export enum AddLayerPanelType {
@@ -50,6 +52,7 @@ export function AddLayerButton({
   addLayer,
   eventAnnotationService,
   isInlineEditing,
+  hideAnnotationLibrary,
 }: AddLayerButtonProps) {
   const [showLayersChoice, toggleLayersChoice] = useState(false);
 
@@ -63,7 +66,16 @@ export function AddLayerButton({
     toolTipContent,
   }: (typeof supportedLayers)[0]) => {
     return {
-      panel: AddLayerPanelType.selectAnnotationMethod,
+      // without the library option there is no annotation method to choose from,
+      // so add a new annotation layer directly
+      ...(hideAnnotationLibrary
+        ? {
+            onClick: () => {
+              addLayer(LayerTypes.ANNOTATIONS);
+              toggleLayersChoice(false);
+            },
+          }
+        : { panel: AddLayerPanelType.selectAnnotationMethod }),
       toolTipContent,
       disabled,
       name: (

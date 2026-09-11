@@ -76,6 +76,7 @@ const PLATFORM_KBN_ARCHIVER_DIR = 'src/platform/test/functional/fixtures/kbn_arc
 
 export const KBN_ARCHIVE_PATHS = {
   ESQL_CONVERSION_DASHBOARD: `${LENS_SCOUT_FIXTURES_DIR}/esql_conversion_dashboard.json`,
+  ESQL_MULTI_LAYER_DASHBOARD: `${LENS_SCOUT_FIXTURES_DIR}/esql_multi_layer_dashboard.json`,
   /** Saved Lens objects including `lnsXYvis` (group5 formula transition). */
   LONG_WINDOW_LOGSTASH_INDEX_PATTERN: `${PLATFORM_KBN_ARCHIVER_DIR}/long_window_logstash_index_pattern.json`,
   KIBANA_SAMPLE_DATA_FLIGHTS_INDEX_PATTERN: `${PLATFORM_KBN_ARCHIVER_DIR}/kibana_sample_data_flights_index_pattern.json`,
@@ -154,4 +155,11 @@ export const ESQL_CONVERSION_DASHBOARD_ID = '3cda479c-8797-4492-99f4-2259e1377f8
 export const ESQL_CONVERSION_PANEL_IDS = {
   INLINE_METRIC: 'fb4626b8-d8ce-42d3-913a-081af94cfb51',
   SAVED_METRIC: '3aef33a1-bcbc-4cd7-b2d9-fa678b2fefa5',
+  MULTI_LAYER: 'esql-conversion-multi-panel',
+  PARTIAL_MULTI_LAYER: 'esql-conversion-partial-panel',
+} as const;
+
+export const ESQL_MULTI_LAYER_PANEL_IDS = {
+  DATA: 'esql-multi-data-panel',
+  MIXED_DATA: 'esql-mixed-data-panel',
 } as const;

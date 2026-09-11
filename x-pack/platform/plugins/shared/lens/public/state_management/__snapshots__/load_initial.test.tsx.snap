@@ -3,7 +3,7 @@
 exports[`Initializing the store should initialize all datasources with state from doc 1`] = `
 Object {
   "lens": Object {
-    "activeDatasourceId": "formBased",
+    "activeDatasourceId": "textBased",
     "annotationGroups": Object {},
     "dataViews": Object {
       "indexPatternRefs": Array [],

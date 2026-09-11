@@ -30,6 +30,8 @@ import { annotationXY, byRefAnnotationXY, runtimeByRefAnnotationXY } from './ann
 import {
   esqlChart,
   esqlChartWithBreakdownColorMapping,
+  esqlChartWithManualAnnotationLayer,
+  esqlChartWithReferenceLineLayer,
   esqlXYWithCollapseByBreakdown,
 } from './esqlXY.mock';
 import {
@@ -37,6 +39,7 @@ import {
   AS_CODE_DATA_VIEW_SPEC_TYPE,
 } from '@kbn/as-code-data-views-schema';
 import { DEFAULT_LINE_CATEGORICAL_COLOR_MAPPING } from '../../transforms/charts/xy/defaults';
+import { xyConfigSchema } from '../../schema/charts/xy';
 
 function setSeriesType(attributes: LensAttributes, seriesType: 'bar' | 'line' | 'area') {
   return {
@@ -257,13 +260,17 @@ describe('XY', () => {
 
         expect(() => builder.toAPIFormat(manualAnnotationXY)).not.toThrow();
 
-        const api = builder.toAPIFormat(manualAnnotationXY) as XYConfig;
+        const api = builder.toAPIFormat(manualAnnotationXY) as XYConfigNoESQL;
         const annotationLayer = api.layers.find((layer) => layer.type === 'annotations');
 
         // Manual-only annotation layer: no data view is emitted on the API layer,
         // even though the source state still has the `xy-visualization-layer-` ref.
         expect(annotationLayer).toBeDefined();
-        expect(annotationLayer?.data_source).toBeUndefined();
+        expect(
+          annotationLayer && 'data_source' in annotationLayer
+            ? annotationLayer.data_source
+            : undefined
+        ).toBeUndefined();
 
         // Round trip back to state must produce a persisted by-value annotation
         // layer (no `indexPatternId`, no own reference). The Lens XY runtime then
@@ -290,10 +297,14 @@ describe('XY', () => {
       // its `data_source` (and `fromAPIFormat` must round-trip the reference).
       it('emits data_source for a query annotation layer', () => {
         const builder = new LensConfigBuilder(undefined, true);
-        const api = builder.toAPIFormat(annotationXY) as XYConfig;
+        const api = builder.toAPIFormat(annotationXY) as XYConfigNoESQL;
         const annotationLayer = api.layers.find((layer) => layer.type === 'annotations');
 
-        expect(annotationLayer?.data_source).toEqual(
+        expect(
+          annotationLayer && 'data_source' in annotationLayer
+            ? annotationLayer.data_source
+            : undefined
+        ).toEqual(
           expect.objectContaining({
             type: AS_CODE_DATA_VIEW_REFERENCE_TYPE,
             ref_id: 'metrics-*',
@@ -477,6 +488,139 @@ describe('XY', () => {
           validator.xy.fromState(setSeriesType(esqlChartWithBreakdownColorMapping, type));
         });
       }
+
+      it('should convert an ES|QL chart with a manual by-value annotation layer', () => {
+        validator.xy.fromState(esqlChartWithManualAnnotationLayer);
+      });
+
+      it('should convert an ES|QL chart with a form-based reference line layer', () => {
+        validator.xy.fromState(esqlChartWithReferenceLineLayer);
+      });
+
+      describe('ES|QL configs with annotation and reference line layers (API-first)', () => {
+        const esqlDataLayer = {
+          data_source: {
+            type: 'esql' as const,
+            query:
+              'FROM kibana_sample_data_logs | STATS count = COUNT(*) BY buckets = BUCKET(3 hours, @timestamp)',
+          },
+          type: 'bar' as const,
+          ignore_global_filters: false,
+          sampling: 1,
+          x: { column: 'buckets' },
+          y: [{ column: 'count' }],
+        };
+
+        it('should accept a manual annotation layer alongside an ES|QL data layer', () => {
+          validator.xy.fromApi({
+            type: 'xy',
+            title: 'ES|QL chart with manual annotation',
+            layers: [
+              esqlDataLayer,
+              {
+                type: 'annotations',
+                ignore_global_filters: true,
+                events: [
+                  {
+                    type: 'point',
+                    label: 'Alert fired',
+                    timestamp: '2026-07-15T14:00:00.000Z',
+                  },
+                ],
+              },
+            ],
+          });
+        });
+
+        it('should accept a static value reference line layer alongside an ES|QL data layer', () => {
+          validator.xy.fromApi({
+            type: 'xy',
+            title: 'ES|QL chart with static reference line',
+            layers: [
+              esqlDataLayer,
+              {
+                type: 'reference_lines',
+                data_source: { type: AS_CODE_DATA_VIEW_REFERENCE_TYPE, ref_id: 'logs-*' },
+                ignore_global_filters: false,
+                sampling: 1,
+                thresholds: [
+                  {
+                    operation: 'static_value',
+                    value: 200,
+                    color: { type: 'static', color: '#e5281e' },
+                  },
+                ],
+              },
+            ],
+          });
+        });
+
+        it('should reject query-based annotations on ES|QL charts', () => {
+          const result = xyConfigSchema.safeParse({
+            type: 'xy',
+            title: 'ES|QL chart with query annotation',
+            layers: [
+              esqlDataLayer,
+              {
+                type: 'annotations',
+                ignore_global_filters: false,
+                data_source: { type: AS_CODE_DATA_VIEW_REFERENCE_TYPE, ref_id: 'logs-*' },
+                events: [
+                  {
+                    type: 'query',
+                    query: { language: 'kuery', query: 'error: true' },
+                    time_field: '@timestamp',
+                  },
+                ],
+              },
+            ],
+          });
+          expect(result.success).toBe(false);
+        });
+
+        it('should reject by-reference annotation groups on ES|QL charts', () => {
+          const result = xyConfigSchema.safeParse({
+            type: 'xy',
+            title: 'ES|QL chart with by-ref annotation group',
+            layers: [esqlDataLayer, { type: 'annotation_group', group_id: 'my-group' }],
+          });
+          expect(result.success).toBe(false);
+        });
+
+        it('should reject non-static reference line thresholds on ES|QL charts', () => {
+          const result = xyConfigSchema.safeParse({
+            type: 'xy',
+            title: 'ES|QL chart with dynamic reference line',
+            layers: [
+              esqlDataLayer,
+              {
+                type: 'reference_lines',
+                data_source: { type: AS_CODE_DATA_VIEW_REFERENCE_TYPE, ref_id: 'logs-*' },
+                ignore_global_filters: false,
+                sampling: 1,
+                thresholds: [{ operation: 'average', field: 'bytes' }],
+              },
+            ],
+          });
+          expect(result.success).toBe(false);
+        });
+
+        it('should reject ES|QL column-based reference line layers on ES|QL charts', () => {
+          const result = xyConfigSchema.safeParse({
+            type: 'xy',
+            title: 'ES|QL chart with ES|QL reference line',
+            layers: [
+              esqlDataLayer,
+              {
+                type: 'reference_lines',
+                data_source: { type: 'esql', query: 'FROM logs | STATS threshold = AVG(bytes)' },
+                thresholds: [{ column: 'threshold' }],
+              },
+            ],
+          });
+          expect(result.success).toBe(false);
+        });
+      });
 
       describe('X-axis scale detection', () => {
         it('should detect temporal scale for ES|QL chart with date column', () => {

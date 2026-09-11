@@ -28837,7 +28837,6 @@
     "xpack.lens.config.cannotConvertToEsqlDropPartialsTooltip": "ES|QLに変換できません。「不完全なバケットをドロップ」は今後のアップデートでサポートされる予定です。",
     "xpack.lens.config.cannotConvertToEsqlFormulaTooltip": "ES|QLに変換できません。数式操作は今後のアップデートでサポートされる予定です。",
     "xpack.lens.config.cannotConvertToEsqlIncludeEmptyRowsTooltip": "ES|QLに変換できません：「空の行を含める」は今後のアップデートでサポートされる予定です。",
-    "xpack.lens.config.cannotConvertToEsqlMultiLayerTooltip": "ES|QLに変換できません。マルチレイヤーの可視化は、今後のアップデートでサポートされる予定です。",
     "xpack.lens.config.cannotConvertToEsqlOperationTooltip": "ES|QLに変換できません。使用されている1つ以上の機能は今後のアップデートでサポートされる予定です。",
     "xpack.lens.config.cannotConvertToEsqlReducedTimeRangeTooltip": "ES|QLに変換できません。時間範囲の短縮は今後のアップデートでサポートされる予定です。",
     "xpack.lens.config.cannotConvertToEsqlRuntimeFieldTooltip": "ES|QLに変換できません。ランタイムフィールドは今後のアップデートでサポートされる予定です。",

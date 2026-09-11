@@ -363,11 +363,13 @@ export function ConfigPanel(
         addLayer={addLayer}
         isOnlyLayer={isOnlyLayer}
         onEmptyDimensionAdd={(columnId, { groupId }) => {
+          // the layer's datasource can differ from the active one on mixed panels
+          // (e.g. a form-based reference line layer on an ES|QL chart)
+          const layerDatasourceId =
+            props.framePublicAPI.datasourceLayers?.[selectedLayerId]?.datasourceId ??
+            activeDatasourceId;
           // avoid state update if the datasource does not support initializeDimension
-          if (
-            activeDatasourceId != null &&
-            datasourceMap[activeDatasourceId]?.initializeDimension
-          ) {
+          if (layerDatasourceId != null && datasourceMap[layerDatasourceId]?.initializeDimension) {
             dispatchLens(
               setLayerDefaultDimension({
                 layerId: selectedLayerId,

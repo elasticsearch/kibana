@@ -14,6 +14,7 @@ import type {
   VisualizationLayerWidgetProps,
 } from '@kbn/lens-common';
 import { getIgnoreGlobalFilterIcon } from '../../../shared_components/ignore_global_filter/data_view_picker_icon';
+import { isEsqlChart } from '../../../utils';
 import type { XYVisualizationState, XYAnnotationLayerConfig } from '../types';
 import { ChangeIndexPattern, StaticHeader } from '../../../shared_components';
 import {
@@ -40,7 +41,12 @@ export function LayerHeaderContent(
   props: VisualizationLayerHeaderContentProps<XYVisualizationState>
 ) {
   const layer = props.state.layers.find((l) => l.layerId === props.layerId);
-  if (layer && isAnnotationsLayer(layer)) {
+  if (
+    layer &&
+    isAnnotationsLayer(layer) &&
+    // ES|QL charts do not expose data views, so the data view switcher is hidden
+    !isEsqlChart(props.frame.datasourceLayers)
+  ) {
     return <AnnotationLayerHeaderContent {...props} />;
   }
   return null;

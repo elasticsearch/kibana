@@ -7,7 +7,7 @@
 
 import type { DebugState } from '@elastic/charts';
 import { encode as encodeRison } from '@kbn/rison';
-import type { Locator, ScoutPage } from '@kbn/scout';
+import { KibanaCodeEditorWrapper, type Locator, type ScoutPage } from '@kbn/scout';
 import { LOGSTASH_IN_RANGE_DATES } from '../../../../fixtures/constants';
 import { WAIT_FOR_FUNCTION_TIMEOUT_MS } from './lens_editor_helpers';
 
@@ -64,6 +64,8 @@ export class LensWorkspace {
   private readonly dimensionFilterQueryInput;
   private readonly shareModal;
   private readonly copyShareUrlButton;
+  private readonly esqlCodeEditor;
+  readonly esqlRunQueryButton;
 
   constructor(private readonly page: ScoutPage, private readonly deps: LensWorkspaceDeps) {
     this.chartTitle = this.page.testSubj.locator('lns_ChartTitle');
@@ -101,6 +103,22 @@ export class LensWorkspace {
     );
     this.shareModal = this.page.testSubj.locator('shareContextModal');
     this.copyShareUrlButton = this.page.testSubj.locator('copyShareUrlButton');
+    this.esqlCodeEditor = new KibanaCodeEditorWrapper(this.page);
+    this.esqlRunQueryButton = this.page.testSubj.locator('ESQLEditor-run-query-button');
+  }
+
+  /** Submits a query through the visible inline ES|QL editor. */
+  async submitEsqlQuery(query: string) {
+    await this.esqlCodeEditor.waitCodeEditorReady('InlineEditingESQLEditor');
+    await this.esqlCodeEditor.setCodeEditorValue(query);
+    await this.esqlRunQueryButton.waitFor({ state: 'visible' });
+    await this.esqlRunQueryButton.click();
+  }
+
+  /** Reads the query from the visible inline ES|QL editor. */
+  async getEsqlQuery(): Promise<string> {
+    await this.esqlCodeEditor.waitCodeEditorReady('InlineEditingESQLEditor');
+    return this.esqlCodeEditor.getCodeEditorValue();
   }
 
   async openFullEditor() {
@@ -571,7 +589,10 @@ export class LensWorkspace {
       { sel: selector, expected: value },
       { timeout: WAIT_FOR_FUNCTION_TIMEOUT_MS }
     );
-    await input.press('Tab');
+    // Blur programmatically instead of pressing Tab: Tab would focus the next
+    // control, and focus-opening widgets (e.g. EuiComboBox) would leave a portal
+    // popover behind that intercepts subsequent clicks.
+    await input.evaluate((el) => (el as HTMLElement).blur());
     // Blur completed — callers must poll a UI side effect (chart debug, dimension label)
     // before closing flyouts; useDebouncedValue (~256ms) has no DOM readiness hook here.
     await this.page.waitForFunction(

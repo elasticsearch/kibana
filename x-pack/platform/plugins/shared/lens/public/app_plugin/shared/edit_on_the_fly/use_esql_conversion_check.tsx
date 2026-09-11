@@ -26,9 +26,11 @@ import {
   generateEsqlQuery,
   isEsqlQuerySuccess,
   esqlConversionFailureReasonMessages,
-  getFailureTooltip,
+  type EsqlConversionFailureReason,
   type ColumnRoles,
 } from '@kbn/lens-common';
+import { isQueryAnnotationConfig } from '@kbn/event-annotation-common';
+import type { EventAnnotationConfig } from '@kbn/event-annotation-common';
 import type { ConvertibleLayer } from './esql_conversion_types';
 import { operationDefinitionMap } from '../../../datasources/form_based/operations';
 import type { LensPluginStartDependencies } from '../../../plugin';
@@ -49,6 +51,52 @@ const getEsqlConversionDisabledSettings = (
   isConvertToEsqlButtonDisabled: true,
   convertToEsqlButtonTooltip: tooltip,
   convertibleLayers: [],
+});
+
+const getConvertibleLayerName = (layerId: string): string =>
+  i18n.translate('xpack.lens.config.convertToEsqlLayerName', {
+    defaultMessage: 'Layer {layerId}',
+    values: { layerId: layerId.substring(0, 6) },
+  });
+
+/**
+ * Detects query-based annotations in a visualization state. These rely on data views
+ * and are not yet supported on ES|QL charts, so they block conversion.
+ *
+ * The state is intentionally probed structurally instead of via `XYVisualizationState`
+ * and `isAnnotationsLayer`: this hook is visualization-agnostic (`visualization.state`
+ * is `unknown` in the store and may belong to any vis type), mirroring the
+ * `getTrendlineLayerId` probe for metric state below. Trade-off: if the annotation
+ * layer shape ever changes (`layerType` / `annotations`), this returns `false` and
+ * the conversion guard silently disappears — keep it in sync with
+ * `XYAnnotationLayerConfig` (`@kbn/lens-common`).
+ */
+export const hasQueryBasedAnnotations = (visualizationState: unknown): boolean => {
+  const layers = (visualizationState as { layers?: unknown })?.layers;
+  if (!Array.isArray(layers)) {
+    return false;
+  }
+  return layers.some(
+    (layer: { layerType?: string; annotations?: EventAnnotationConfig[] }) =>
+      layer?.layerType === layerTypes.ANNOTATIONS &&
+      Array.isArray(layer.annotations) &&
+      layer.annotations.some(isQueryAnnotationConfig)
+  );
+};
+
+const makeNonConvertibleLayer = (
+  layerId: string,
+  type: ConvertibleLayer['type'],
+  failureReason?: EsqlConversionFailureReason
+): ConvertibleLayer => ({
+  id: layerId,
+  icon: 'layers',
+  name: getConvertibleLayerName(layerId),
+  type,
+  query: '',
+  isConvertibleToEsql: false,
+  conversionData: { esAggsIdMap: {}, partialRows: false },
+  failureReason,
 });
 
 export const useEsqlConversionCheck = (
@@ -96,48 +144,22 @@ export const useEsqlConversionCheck = (
       );
     }
 
-    // Detect trendline layer from metric visualization state
-    const trendlineLayerId = getTrendlineLayerId(state);
-
-    // Guard: layer count (trendline layers don't count — they are auto-included)
-    const dataLayerIds = trendlineLayerId
-      ? layerIds.filter((id) => id !== trendlineLayerId)
-      : layerIds;
-    if (dataLayerIds.length > 1) {
+    // Guard: query-based annotations require data views and are not yet supported on ES|QL charts
+    if (hasQueryBasedAnnotations(state)) {
       return getEsqlConversionDisabledSettings(
-        esqlConversionFailureReasonMessages.multi_layer_not_supported
+        esqlConversionFailureReasonMessages.query_annotations_not_supported
       );
     }
+
+    // Detect trendline layer from metric visualization state
+    const trendlineLayerId = getTrendlineLayerId(state);
 
     // Guard: datasource state exists and has layers
     if (!isValidDatasourceState(datasourceState)) {
       return getEsqlConversionDisabledSettings();
     }
 
-    // Guard: layer access
-    const layerId = dataLayerIds[0];
     const layers = datasourceState.layers as Record<string, FormBasedLayer>;
-    if (!layerId || !layers[layerId]) {
-      return getEsqlConversionDisabledSettings();
-    }
-
-    const singleLayer = layers[layerId];
-    if (!singleLayer || !singleLayer.columnOrder || !singleLayer.columns) {
-      return getEsqlConversionDisabledSettings();
-    }
-
-    // Main logic: compute esqlLayer
-    const { columnOrder } = singleLayer;
-    const columns = { ...singleLayer.columns };
-    const columnEntries = columnOrder.map((colId) => [colId, columns[colId]] as const);
-    const [, esAggEntries] = partition(
-      columnEntries,
-      ([, col]) =>
-        (operationDefinitionMap[col.operationType]?.input === 'fullReference' ||
-          operationDefinitionMap[col.operationType]?.input === 'managedReference') &&
-        // Keep static_value columns - they'll be converted to EVAL statements
-        col.operationType !== 'static_value'
-    );
 
     // Extract column roles from visualization state for semantic ES|QL column naming
     const columnRoles: ColumnRoles = {};
@@ -146,34 +168,70 @@ export const useEsqlConversionCheck = (
       columnRoles[visState.maxAccessor] = 'max_value';
     }
 
-    let esqlLayer;
-    try {
-      esqlLayer = generateEsqlQuery(
-        esAggEntries,
-        singleLayer,
-        framePublicAPI.dataViews.indexPatterns[singleLayer.indexPatternId],
-        coreStart.uiSettings,
-        framePublicAPI.dateRange,
-        startDependencies.data.nowProvider.get(),
-        columnRoles
+    // Iterate over data layers and attempt conversion for each. Non-data layers remain
+    // visible in the conversion modal but stay in their original datasource.
+    const convertibleLayers: ConvertibleLayer[] = [];
+    for (const layerId of layerIds) {
+      // Metric trendlines are converted separately and omitted from the modal.
+      if (layerId === trendlineLayerId) {
+        continue;
+      }
+
+      const layerType = activeVisualization.getLayerType(layerId, state) ?? layerTypes.DATA;
+
+      // Trendlines are excluded above via trendlineLayerId; this guard only narrows
+      // the type (ConvertibleLayer['type'] excludes 'metricTrendline').
+      if (layerType === layerTypes.METRIC_TRENDLINE) {
+        continue;
+      }
+
+      if (layerType !== layerTypes.DATA) {
+        convertibleLayers.push(makeNonConvertibleLayer(layerId, layerType));
+        continue;
+      }
+
+      const layer = layers[layerId];
+      if (!layer || !layer.columnOrder || !layer.columns) {
+        convertibleLayers.push(makeNonConvertibleLayer(layerId, layerTypes.DATA, 'unknown'));
+        continue;
+      }
+
+      const { columnOrder } = layer;
+      const columns = { ...layer.columns };
+      const columnEntries = columnOrder.map((colId) => [colId, columns[colId]] as const);
+      const [, esAggEntries] = partition(
+        columnEntries,
+        ([, col]) =>
+          (operationDefinitionMap[col.operationType]?.input === 'fullReference' ||
+            operationDefinitionMap[col.operationType]?.input === 'managedReference') &&
+          col.operationType !== 'static_value'
       );
-    } catch (e) {
-      // Layer remains non-convertible
-      // This prevents conversion errors from breaking the visualization
-      return getEsqlConversionDisabledSettings(esqlConversionFailureReasonMessages.unknown);
-    }
 
-    if (!isEsqlQuerySuccess(esqlLayer)) {
-      const reason = esqlLayer?.reason;
-      const tooltipMessage = getFailureTooltip(reason);
-      return getEsqlConversionDisabledSettings(tooltipMessage);
-    }
+      let esqlLayer;
+      try {
+        esqlLayer = generateEsqlQuery(
+          esAggEntries,
+          layer,
+          framePublicAPI.dataViews.indexPatterns[layer.indexPatternId],
+          coreStart.uiSettings,
+          framePublicAPI.dateRange,
+          startDependencies.data.nowProvider.get(),
+          columnRoles
+        );
+      } catch (e) {
+        convertibleLayers.push(makeNonConvertibleLayer(layerId, layerTypes.DATA, 'unknown'));
+        continue;
+      }
 
-    const convertibleLayers: ConvertibleLayer[] = [
-      {
+      if (!isEsqlQuerySuccess(esqlLayer)) {
+        convertibleLayers.push(makeNonConvertibleLayer(layerId, layerTypes.DATA, esqlLayer.reason));
+        continue;
+      }
+
+      convertibleLayers.push({
         id: layerId,
         icon: 'layers',
-        name: '',
+        name: getConvertibleLayerName(layerId),
         type: layerTypes.DATA,
         query: esqlLayer.esql,
         isConvertibleToEsql: true,
@@ -181,8 +239,8 @@ export const useEsqlConversionCheck = (
           esAggsIdMap: esqlLayer.esAggsIdMap,
           partialRows: esqlLayer.partialRows,
         },
-      },
-    ];
+      });
+    }
 
     // If there is a trendline layer, attempt to convert it alongside the main layer
     const trendlineResult = trendlineLayerId
@@ -204,10 +262,26 @@ export const useEsqlConversionCheck = (
       );
     }
 
-    // Trendline is auto-included in the conversion but not shown in the modal
+    // Guard: converting only a subset of data layers would leave a form-based data
+    // layer alongside text-based ones, which is an invalid mixed state
+    // (buildVisualizationAPI rejects mixed ESQL and non-ESQL data layers).
+    const nonConvertibleDataLayer = convertibleLayers.find(
+      (layer) => layer.type === layerTypes.DATA && !layer.isConvertibleToEsql
+    );
+    if (nonConvertibleDataLayer) {
+      return getEsqlConversionDisabledSettings(
+        esqlConversionFailureReasonMessages[nonConvertibleDataLayer.failureReason ?? 'unknown']
+      );
+    }
+
+    // Trendline is auto-included in the conversion but not shown in the modal.
+    // Non-data helper layers (reference lines/annotations) remain in their original datasource.
+    const convertibleDataLayers = convertibleLayers.filter(
+      (layer) => layer.type === layerTypes.DATA && layer.isConvertibleToEsql
+    );
     const layersToConvert = trendlineResult?.success
-      ? [...convertibleLayers, trendlineResult.layer]
-      : convertibleLayers;
+      ? [...convertibleDataLayers, trendlineResult.layer]
+      : convertibleDataLayers;
 
     const newAttributes = convertFormBasedToTextBasedLayer({
       layersToConvert,

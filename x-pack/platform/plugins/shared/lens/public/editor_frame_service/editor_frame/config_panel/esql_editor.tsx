@@ -10,6 +10,7 @@ import { EuiFlexItem, useEuiTheme } from '@elastic/eui';
 import type { AggregateQuery, Query } from '@kbn/es-query';
 import { isOfAggregateQueryType } from '@kbn/es-query';
 import { getRepresentativeQuery } from '@kbn/lens-common';
+import type { DatatableColumn } from '@kbn/expressions-plugin/public';
 import { useFetchContext } from '@kbn/presentation-publishing';
 import type { CoreStart, IUiSettingsClient } from '@kbn/core/public';
 import { isEqual } from 'lodash';
@@ -28,7 +29,8 @@ import { useESQLEditorContext } from './esql_editor_context';
 import { getActiveDataFromDatatable } from '../../../state_management/shared_logic';
 import { useLensSelector, selectSearchSessionId } from '../../../state_management';
 import type { ESQLDataGridAttrs } from '../../../app_plugin/shared/edit_on_the_fly/helpers';
-import { getSuggestions } from '../../../app_plugin/shared/edit_on_the_fly/helpers';
+import { getGridAttrs, getSuggestions } from '../../../app_plugin/shared/edit_on_the_fly/helpers';
+import { addColumnsToCache } from '../../../datasources/text_based/fieldlist_cache';
 import { useESQLVariables } from '../../../app_plugin/shared/edit_on_the_fly/use_esql_variables';
 import { MAX_NUM_OF_COLUMNS } from '../../../datasources/text_based/utils';
 import type { LayerPanelProps } from './types';
@@ -41,6 +43,12 @@ export type ESQLEditorProps = Simplify<
     isTextBasedLanguage: boolean;
     uiSettings: IUiSettingsClient;
     http: CoreStart['http'];
+    layerQuery?: AggregateQuery;
+    onLayerQuerySubmit?: (
+      query: AggregateQuery,
+      columns: DatatableColumn[],
+      abortController?: AbortController
+    ) => Promise<void>;
   } & Pick<
     LayerPanelProps,
     | 'attributes'
@@ -84,10 +92,12 @@ export function ESQLEditor({
   setCurrentAttributes,
   updateSuggestion,
   onTextBasedQueryStateChange,
+  layerQuery,
+  onLayerQuerySubmit,
 }: ESQLEditorProps) {
   // recomputed every render but only read by the useRef/useState initializers
   // below — do not hoist into a memo, later renders intentionally ignore it
-  const initialQuery = getRepresentativeQuery(attributes) || { esql: '' };
+  const initialQuery = layerQuery ?? (getRepresentativeQuery(attributes) || { esql: '' });
   const prevQuery = useRef<AggregateQuery | Query>(initialQuery);
   const [query, setQuery] = useState<AggregateQuery | Query>(initialQuery);
 
@@ -108,8 +118,18 @@ export function ESQLEditor({
   const [isESQLResultsAccordionOpen, setIsESQLResultsAccordionOpen] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
 
+  useEffect(() => {
+    if (!layerQuery || isEqual(layerQuery, prevQuery.current)) {
+      return;
+    }
+
+    prevQuery.current = layerQuery;
+    setQuery(layerQuery);
+    setSubmittedQuery(layerQuery);
+    setErrors([]);
+  }, [layerQuery]);
+
   const currentAttributes = useCurrentAttributes({
-    textBasedMode: isTextBasedLanguage,
     initialAttributes: attributes,
   });
 
@@ -152,6 +172,37 @@ export function ESQLEditor({
   const runQuery = useCallback(
     async (q: AggregateQuery, abortController?: AbortController, shouldUpdateAttrs?: boolean) => {
       setErrors([]);
+
+      if (onLayerQuerySubmit) {
+        try {
+          const gridAttrs = await getGridAttrs(
+            q,
+            adHocDataViews,
+            data,
+            http,
+            uiSettings,
+            abortController,
+            esqlVariables,
+            isApproximate
+          );
+          // Commit the grid and fieldlist cache only after the layer accepted the
+          // query; otherwise a rejected query (e.g. missing-dimension validation)
+          // would leave them showing results the layer state does not reflect.
+          await onLayerQuerySubmit(q, gridAttrs.columns, abortController);
+          addColumnsToCache(q, gridAttrs.columns);
+          setDataGridAttrs(gridAttrs);
+          prevQuery.current = q;
+          setSubmittedQuery(q);
+        } catch (error) {
+          if (!abortController?.signal.aborted) {
+            setErrors([error instanceof Error ? error : new Error(String(error))]);
+          }
+        } finally {
+          setIsVisualizationLoading(false);
+        }
+        return;
+      }
+
       const attrs = await getSuggestions(
         q,
         data,
@@ -196,11 +247,12 @@ export function ESQLEditor({
       isApproximate,
       setCurrentAttributes,
       updateSuggestion,
+      onLayerQuerySubmit,
     ]
   );
 
   useInitializeChart({
-    isTextBasedLanguage,
+    isTextBasedLanguage: isTextBasedLanguage && !onLayerQuerySubmit,
     query,
     dataGridAttrs,
     isInitialized,
@@ -210,6 +262,53 @@ export function ESQLEditor({
     setErrors,
     setIsInitialized,
   });
+
+  // Initial ES|QL results grid load for the layer-scoped path: fetch grid attrs
+  // for the last submitted layer query without re-submitting it to the layer state.
+  useEffect(() => {
+    if (!onLayerQuerySubmit || dataGridAttrs) {
+      return;
+    }
+    const lastSubmittedQuery = submittedQueryRef.current;
+    if (!isOfAggregateQueryType(lastSubmittedQuery)) {
+      return;
+    }
+    const abortController = new AbortController();
+    getGridAttrs(
+      lastSubmittedQuery,
+      adHocDataViews,
+      data,
+      http,
+      uiSettings,
+      abortController,
+      esqlVariables,
+      isApproximate
+    )
+      .then((gridAttrs) => {
+        addColumnsToCache(lastSubmittedQuery, gridAttrs.columns);
+        setDataGridAttrs(gridAttrs);
+      })
+      .catch(() => {
+        if (abortController.signal.aborted) {
+          // expected: the effect cleanup aborted the request (unmount/re-run)
+          return;
+        }
+        // deliberately not surfaced here: the chart itself reports query errors
+        // via its own error handling path
+      });
+    return () => {
+      abortController.abort();
+    };
+  }, [
+    onLayerQuerySubmit,
+    dataGridAttrs,
+    adHocDataViews,
+    data,
+    http,
+    uiSettings,
+    esqlVariables,
+    isApproximate,
+  ]);
 
   // Track and report query state to parent
   useEffect(() => {
@@ -222,6 +321,10 @@ export function ESQLEditor({
   // Refresh the ES|QL results table for the last submitted query when inputs to the preview
   // request change without the user submitting again.
   useEffect(() => {
+    if (onLayerQuerySubmit) {
+      return;
+    }
+
     // Skip the initial render, the grid is populated by useInitializeChart → runQuery
     if (isInitialRenderRef.current) {
       isInitialRenderRef.current = false;
@@ -267,6 +370,7 @@ export function ESQLEditor({
     datasourceMap,
     visualizationMap,
     adHocDataViews,
+    onLayerQuerySubmit,
   ]);
 
   if (!isOfAggregateQueryType(query)) {
@@ -282,6 +386,7 @@ export function ESQLEditor({
         runQuery={runQuery}
         adHocDataViews={adHocDataViews}
         errors={errors}
+        setErrors={setErrors}
         suggestsLimitedColumns={suggestsLimitedColumns}
         isVisualizationLoading={isVisualizationLoading}
         setIsVisualizationLoading={setIsVisualizationLoading}
@@ -331,6 +436,7 @@ type InnerEditorProps = Simplify<
       shouldUpdateAttrs?: boolean
     ) => Promise<void>;
     errors: Error[];
+    setErrors: (errors: Error[]) => void;
     isVisualizationLoading: boolean | undefined;
     setIsVisualizationLoading: (status: boolean) => void;
     suggestsLimitedColumns: boolean;
@@ -344,6 +450,7 @@ function InnerESQLEditor({
   query,
   adHocDataViews,
   errors,
+  setErrors,
   suggestsLimitedColumns,
   attributes,
   parentApi,
@@ -377,7 +484,12 @@ function InnerESQLEditor({
       >
         <ESQLLangEditor
           query={query}
-          onTextLangQueryChange={setQuery}
+          onTextLangQueryChange={(nextQuery) => {
+            setQuery(nextQuery);
+            if (errors.length > 0) {
+              setErrors([]);
+            }
+          }}
           errors={errors}
           warning={
             suggestsLimitedColumns

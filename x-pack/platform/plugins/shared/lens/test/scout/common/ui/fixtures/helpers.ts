@@ -54,12 +54,13 @@ export async function createAdHocDataViewFromLens(page: ScoutPage, name: string)
  */
 export async function addDataLayer(
   page: ScoutPage,
-  seriesType: 'bar' | 'line' = 'line'
+  seriesType: 'bar' | 'line' = 'line',
+  layerIndex = 1
 ): Promise<void> {
   await page.testSubj.click('lnsLayerAddButton');
   await page.testSubj.click('lnsLayerAddButton-data');
   await page.testSubj.click(`lnsXY_seriesType-${seriesType}`);
-  await page.testSubj.locator('lns-layerPanel-1').waitFor({ state: 'visible' });
+  await page.testSubj.locator(`lns-layerPanel-${layerIndex}`).waitFor({ state: 'visible' });
 }
 
 /**
@@ -518,9 +519,11 @@ export async function deleteAnnotationGroupFromLibrary(page: ScoutPage, title: s
 export async function convertToEsqlViaModal({
   pageObjects,
   page,
+  selectAllLayers = false,
 }: {
   pageObjects: DashboardAndLens;
   page: ScoutPage;
+  selectAllLayers?: boolean;
 }) {
   const { lens } = pageObjects;
 
@@ -529,6 +532,9 @@ export async function convertToEsqlViaModal({
 
   // Click on the confirmation button in the modal
   const modal = lens.workspace.convertToEsqlModal;
+  if (selectAllLayers) {
+    await modal.getByRole('checkbox', { name: 'Select all rows' }).click();
+  }
   await lens.workspace.convertToEsqlModalConfirmButton.click();
   await expect(modal).toBeHidden();
 

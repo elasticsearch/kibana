@@ -160,6 +160,17 @@ export function getLayerMetaInfo(
         isVisible,
       };
     }
+    // The datasource may hold only non-data layers (e.g. a form-based reference
+    // line layer next to ES|QL data layers); there is no underlying data to show.
+    if (dataLayerIds.length === 0) {
+      return {
+        meta: undefined,
+        error: i18n.translate('xpack.lens.app.showUnderlyingDataNoDataLayers', {
+          defaultMessage: 'Visualization has no data layers to show underlying data for',
+        }),
+        isVisible,
+      };
+    }
     datasourceAPI = currentDatasource.getPublicAPI({
       layerId: dataLayerIds[0],
       state: datasourceState,

@@ -28844,7 +28844,6 @@
     "xpack.lens.config.cannotConvertToEsqlDropPartialsTooltip": "无法转换为 ES|QL：即将推出的更新将支持“删除部分分桶”。",
     "xpack.lens.config.cannotConvertToEsqlFormulaTooltip": "无法转换为 ES|QL：即将发布的更新将支持公式操作。",
     "xpack.lens.config.cannotConvertToEsqlIncludeEmptyRowsTooltip": "无法转换为 ES|QL：“包含空行”将在即将推出的更新中支持。",
-    "xpack.lens.config.cannotConvertToEsqlMultiLayerTooltip": "无法转换为 ES|QL：即将发布的更新将支持多层可视化。",
     "xpack.lens.config.cannotConvertToEsqlOperationTooltip": "无法转换为 ES|QL：对其中一个或多个函数的支持将在未来的更新中提供。",
     "xpack.lens.config.cannotConvertToEsqlReducedTimeRangeTooltip": "无法转换为 ES|QL：即将发布的更新将支持缩短的时间范围。",
     "xpack.lens.config.cannotConvertToEsqlRuntimeFieldTooltip": "无法转换为 ES|QL：即将发布的更新将支持运行时字段。",

@@ -42,7 +42,7 @@ spaceTest.describe('Lens Convert to ES|QL button', { tag: '@local-stateful-class
       const { dashboard, lens } = pageObjects;
 
       await dashboard.openDashboardWithIdInEditMode(dashboardId);
-      await dashboard.waitForPanelsToLoad(2);
+      await dashboard.waitForPanelsToLoad(4);
 
       await openInlineEditorAndWaitVisible(
         pageObjects,

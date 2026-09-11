@@ -7,7 +7,7 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
-import type { XYDataLayerConfig } from '@kbn/lens-common';
+import type { StaticValueIndexPatternColumn, XYDataLayerConfig } from '@kbn/lens-common';
 import type { LensAttributes } from '../../types';
 import { LENS_ITEM_LATEST_VERSION } from '@kbn/lens-common/content_management/constants';
 
@@ -324,4 +324,104 @@ export const esqlXYWithCollapseByBreakdown: LensAttributes = {
   },
   visualizationType: 'lnsXY',
   version: LENS_ITEM_LATEST_VERSION,
+};
+
+/**
+ * Derives from esqlChart, adding a by-value annotation layer with a manual
+ * point annotation. Manual annotations need no data view, so the layer carries
+ * no `xy-visualization-layer-*` reference.
+ */
+export const esqlChartWithManualAnnotationLayer: LensAttributes = {
+  ...esqlChart,
+  title: 'ES|QL bar with manual annotation layer',
+  state: {
+    ...esqlChart.state,
+    visualization: {
+      ...(esqlChart.state.visualization as Record<string, unknown>),
+      layers: [
+        ...(esqlChart.state.visualization as { layers: unknown[] }).layers,
+        {
+          layerId: '16f0980e-4f7a-43d0-b5aa-e8c75c4cd930',
+          layerType: 'annotations',
+          ignoreGlobalFilters: true,
+          annotations: [
+            {
+              id: 'cf13a990-6a33-427a-a85a-2f271116776a',
+              type: 'manual',
+              key: {
+                type: 'point_in_time',
+                timestamp: '2026-07-15T14:00:00.000Z',
+              },
+              label: 'Alert fired',
+              icon: 'alert',
+              color: '#bd271e',
+            },
+          ],
+        },
+      ],
+    },
+  },
+};
+
+/**
+ * Derives from esqlChart, adding a form-based (data view) reference line layer.
+ * Reference line layers on ES|QL charts route to the form-based datasource.
+ */
+export const esqlChartWithReferenceLineLayer: LensAttributes = {
+  ...esqlChart,
+  title: 'ES|QL bar with reference line layer',
+  references: [
+    {
+      id: 'logs-*',
+      name: 'indexpattern-datasource-layer-350803f8-7a8f-4b45-a509-94b9f6baf73c',
+      type: 'index-pattern',
+    },
+  ],
+  state: {
+    ...esqlChart.state,
+    datasourceStates: {
+      ...esqlChart.state.datasourceStates,
+      formBased: {
+        layers: {
+          '350803f8-7a8f-4b45-a509-94b9f6baf73c': {
+            columnOrder: ['d661ac91-a1bc-45cc-bd62-b01cdf81199f'],
+            columns: {
+              'd661ac91-a1bc-45cc-bd62-b01cdf81199f': {
+                customLabel: true,
+                dataType: 'number',
+                isBucketed: false,
+                label: 'Threshold',
+                operationType: 'static_value',
+                params: {
+                  value: '200',
+                },
+                references: [],
+                scale: 'ratio',
+              } as StaticValueIndexPatternColumn,
+            },
+            incompleteColumns: {},
+            sampling: 1,
+          },
+        },
+      },
+    },
+    visualization: {
+      ...(esqlChart.state.visualization as Record<string, unknown>),
+      layers: [
+        ...(esqlChart.state.visualization as { layers: unknown[] }).layers,
+        {
+          accessors: ['d661ac91-a1bc-45cc-bd62-b01cdf81199f'],
+          layerId: '350803f8-7a8f-4b45-a509-94b9f6baf73c',
+          layerType: 'referenceLine',
+          yConfig: [
+            {
+              axisMode: 'left',
+              color: '#e5281e',
+              forAccessor: 'd661ac91-a1bc-45cc-bd62-b01cdf81199f',
+            },
+          ],
+        },
+      ],
+    },
+  },
 };

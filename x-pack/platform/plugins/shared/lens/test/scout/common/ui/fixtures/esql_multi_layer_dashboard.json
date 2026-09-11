@@ -1,0 +1,52 @@
+{
+  "attributes": {
+    "allowHidden": false,
+    "fieldAttrs": "{}",
+    "fieldFormatMap": "{}",
+    "fields": "[]",
+    "name": "logstash-*",
+    "runtimeFieldMap": "{}",
+    "sourceFilters": "[]",
+    "timeFieldName": "@timestamp",
+    "title": "logstash-*"
+  },
+  "coreMigrationVersion": "8.8.0",
+  "created_at": "2026-02-05T09:05:54.260Z",
+  "created_by": "u_EWATCHX9oIEsmcXj8aA1FkcaY3DE-XEpsiGTjrR2PmM_0",
+  "id": "7d4752fe-05bd-4472-9bcb-fb347412f558",
+  "managed": false,
+  "references": [],
+  "type": "index-pattern",
+  "typeMigrationVersion": "8.0.0",
+  "updated_at": "2026-02-05T09:05:54.260Z",
+  "updated_by": "u_EWATCHX9oIEsmcXj8aA1FkcaY3DE-XEpsiGTjrR2PmM_0",
+  "version": "WzExLDFd"
+}
+
+{
+  "attributes": {
+    "controlGroupInput": {
+      "panelsJSON": "{}"
+    },
+    "description": "Scout fixture for ES|QL multi-layer UI tests",
+    "kibanaSavedObjectMeta": {
+      "searchSourceJSON": "{\"query\":{\"query\":\"\",\"language\":\"kuery\"}}"
+    },
+    "optionsJSON": "{\"hidePanelTitles\":false,\"useMargins\":true,\"autoApplyFilters\":true,\"syncColors\":false,\"syncCursor\":true,\"syncTooltips\":false}",
+    "panelsJSON": "[{\"type\":\"lens\",\"embeddableConfig\":{\"syncColors\":false,\"syncCursor\":true,\"syncTooltips\":false,\"filters\":[],\"query\":{\"query\":\"\",\"language\":\"kuery\"},\"attributes\":{\"visualizationType\":\"lnsXY\",\"version\":2,\"title\":\"ESQL multi-layer data\",\"state\":{\"datasourceStates\":{\"textBased\":{\"layers\":{\"line_0\":{\"index\":\"logstash-*\",\"query\":{\"esql\":\"FROM logstash-* | WHERE @timestamp >= ?_tstart AND @timestamp <= ?_tend | STATS COUNT(*) BY @timestamp = BUCKET(@timestamp, 75, ?_tstart, ?_tend)\"},\"timeField\":\"@timestamp\",\"columns\":[{\"columnId\":\"line_0_x\",\"fieldName\":\"@timestamp\",\"label\":\"@timestamp\",\"customLabel\":true,\"meta\":{\"type\":\"date\"}},{\"columnId\":\"line_0_y_0\",\"fieldName\":\"COUNT(*)\",\"label\":\"Count of records\",\"customLabel\":true,\"meta\":{\"type\":\"number\"}}],\"ignoreGlobalFilters\":false}}}},\"internalReferences\":[],\"visualization\":{\"preferredSeriesType\":\"line\",\"legend\":{\"isVisible\":true,\"position\":\"bottom\",\"layout\":\"list\"},\"yLeftScale\":\"linear\",\"axisTitlesVisibilitySettings\":{\"x\":false,\"yLeft\":true,\"yRight\":true},\"tickLabelsVisibilitySettings\":{\"x\":true,\"yLeft\":true,\"yRight\":true},\"gridlinesVisibilitySettings\":{\"x\":true,\"yLeft\":true,\"yRight\":true},\"xExtent\":{\"mode\":\"dataBounds\",\"niceValues\":false},\"yLeftExtent\":{\"mode\":\"full\",\"niceValues\":true},\"labelsOrientation\":{\"x\":0,\"yLeft\":0,\"yRight\":0},\"hideEndzones\":true,\"showCurrentTimeMarker\":false,\"valueLabels\":\"hide\",\"pointVisibility\":\"auto\",\"curveType\":\"LINEAR\",\"minBarHeight\":1,\"fittingFunction\":\"Linear\",\"layers\":[{\"layerId\":\"line_0\",\"accessors\":[\"line_0_y_0\"],\"layerType\":\"data\",\"seriesType\":\"line\",\"xAccessor\":\"line_0_x\",\"yConfig\":[{\"axisMode\":\"left\",\"forAccessor\":\"line_0_y_0\"}]}]},\"adHocDataViews\":{\"logstash-*\":{\"id\":\"logstash-*\",\"title\":\"logstash-*\",\"timeFieldName\":\"@timestamp\",\"sourceFilters\":[],\"type\":\"esql\",\"fieldFormats\":{},\"runtimeFieldMap\":{},\"allowNoIndex\":false,\"name\":\"logstash-*\",\"allowHidden\":false,\"managed\":false}},\"query\":{\"esql\":\"FROM logstash-* | WHERE @timestamp >= ?_tstart AND @timestamp <= ?_tend | STATS COUNT(*) BY @timestamp = BUCKET(@timestamp, 75, ?_tstart, ?_tend)\"},\"filters\":[]},\"references\":[]}},\"panelIndex\":\"esql-multi-data-panel\",\"gridData\":{\"x\":0,\"y\":0,\"w\":24,\"h\":15,\"i\":\"esql-multi-data-panel\"}},{\"type\":\"lens\",\"embeddableConfig\":{\"syncColors\":false,\"syncCursor\":true,\"syncTooltips\":false,\"filters\":[],\"query\":{\"query\":\"\",\"language\":\"kuery\"},\"attributes\":{\"visualizationType\":\"lnsXY\",\"version\":2,\"title\":\"ESQL mixed data layers\",\"state\":{\"datasourceStates\":{\"formBased\":{\"layers\":{\"bar_1\":{\"columns\":{\"bar_1_x\":{\"label\":\"timestamp\",\"dataType\":\"date\",\"operationType\":\"date_histogram\",\"sourceField\":\"@timestamp\",\"isBucketed\":true,\"params\":{\"interval\":\"auto\",\"includeEmptyRows\":false,\"dropPartials\":false}},\"bar_1_y_0\":{\"label\":\"Median of bytes\",\"dataType\":\"number\",\"operationType\":\"median\",\"sourceField\":\"bytes\",\"isBucketed\":false,\"params\":{\"emptyAsNull\":true}}},\"columnOrder\":[\"bar_1_x\",\"bar_1_y_0\"],\"incompleteColumns\":{},\"sampling\":1}}},\"textBased\":{\"layers\":{\"line_0\":{\"index\":\"logstash-*\",\"query\":{\"esql\":\"FROM logstash-* | WHERE @timestamp >= ?_tstart AND @timestamp <= ?_tend | STATS COUNT(*) BY @timestamp = BUCKET(@timestamp, 75, ?_tstart, ?_tend)\"},\"timeField\":\"@timestamp\",\"columns\":[{\"columnId\":\"line_0_x\",\"fieldName\":\"@timestamp\",\"label\":\"@timestamp\",\"customLabel\":true,\"meta\":{\"type\":\"date\"}},{\"columnId\":\"line_0_y_0\",\"fieldName\":\"COUNT(*)\",\"label\":\"Count of records\",\"customLabel\":true,\"meta\":{\"type\":\"number\"}}],\"ignoreGlobalFilters\":false}}}},\"internalReferences\":[],\"visualization\":{\"preferredSeriesType\":\"line\",\"legend\":{\"isVisible\":true,\"position\":\"bottom\",\"layout\":\"list\"},\"yLeftScale\":\"linear\",\"axisTitlesVisibilitySettings\":{\"x\":false,\"yLeft\":true,\"yRight\":true},\"tickLabelsVisibilitySettings\":{\"x\":true,\"yLeft\":true,\"yRight\":true},\"gridlinesVisibilitySettings\":{\"x\":true,\"yLeft\":true,\"yRight\":true},\"xExtent\":{\"mode\":\"dataBounds\",\"niceValues\":false},\"yLeftExtent\":{\"mode\":\"full\",\"niceValues\":true},\"labelsOrientation\":{\"x\":0,\"yLeft\":0,\"yRight\":0},\"hideEndzones\":true,\"showCurrentTimeMarker\":false,\"valueLabels\":\"hide\",\"pointVisibility\":\"auto\",\"curveType\":\"LINEAR\",\"minBarHeight\":1,\"fittingFunction\":\"Linear\",\"layers\":[{\"layerId\":\"line_0\",\"accessors\":[\"line_0_y_0\"],\"layerType\":\"data\",\"seriesType\":\"line\",\"xAccessor\":\"line_0_x\",\"yConfig\":[{\"axisMode\":\"left\",\"forAccessor\":\"line_0_y_0\"}]},{\"layerId\":\"bar_1\",\"accessors\":[\"bar_1_y_0\"],\"layerType\":\"data\",\"seriesType\":\"bar\",\"xAccessor\":\"bar_1_x\",\"yConfig\":[{\"axisMode\":\"left\",\"forAccessor\":\"bar_1_y_0\"}]}]},\"adHocDataViews\":{\"logstash-*\":{\"id\":\"logstash-*\",\"title\":\"logstash-*\",\"timeFieldName\":\"@timestamp\",\"sourceFilters\":[],\"type\":\"esql\",\"fieldFormats\":{},\"runtimeFieldMap\":{},\"allowNoIndex\":false,\"name\":\"logstash-*\",\"allowHidden\":false,\"managed\":false}},\"query\":{\"esql\":\"FROM logstash-* | WHERE @timestamp >= ?_tstart AND @timestamp <= ?_tend | STATS COUNT(*) BY @timestamp = BUCKET(@timestamp, 75, ?_tstart, ?_tend)\"},\"filters\":[]},\"references\":[{\"id\":\"7d4752fe-05bd-4472-9bcb-fb347412f558\",\"name\":\"indexpattern-datasource-layer-bar_1\",\"type\":\"index-pattern\"}]}},\"panelIndex\":\"esql-mixed-data-panel\",\"gridData\":{\"x\":24,\"y\":0,\"w\":24,\"h\":15,\"i\":\"esql-mixed-data-panel\"}}]",
+    "timeRestore": false,
+    "title": "ESQL Multi-layer Dashboard"
+  },
+  "coreMigrationVersion": "8.8.0",
+  "id": "esql-multi-layer-dashboard",
+  "managed": false,
+  "references": [
+    {
+      "id": "7d4752fe-05bd-4472-9bcb-fb347412f558",
+      "name": "esql-mixed-data-panel:indexpattern-datasource-layer-bar_1",
+      "type": "index-pattern"
+    }
+  ],
+  "type": "dashboard",
+  "typeMigrationVersion": "10.3.0"
+}

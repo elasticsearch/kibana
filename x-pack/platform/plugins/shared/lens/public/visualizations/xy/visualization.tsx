@@ -53,6 +53,7 @@ import {
   nonNullable,
   renewIDs,
   getColorMappingDefaults,
+  isEsqlChart,
 } from '../../utils';
 import { getSuggestions } from './xy_suggestions';
 import {
@@ -404,9 +405,14 @@ export const getXyVisualization = ({
     }
   },
 
-  hasLayerSettings({ state, layerId: currentLayerId }) {
+  hasLayerSettings({ state, layerId: currentLayerId, frame }) {
     const layer = state.layers?.find(({ layerId }) => layerId === currentLayerId);
-    return { data: Boolean(layer && isAnnotationsLayer(layer)), appearance: false };
+    return {
+      // the only annotation layer setting (ignore global filters) only affects query-based
+      // annotations, which are not supported on ES|QL charts
+      data: Boolean(layer && isAnnotationsLayer(layer) && !isEsqlChart(frame.datasourceLayers)),
+      appearance: false,
+    };
   },
 
   LayerSettingsComponent(props) {

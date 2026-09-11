@@ -28747,7 +28747,6 @@
     "xpack.lens.config.cannotConvertToEsqlDropPartialsTooltip": "Kann nicht nach ES|QL konvertieren: „Drop partial buckets“ wird in einem kommenden Update unterstützt.",
     "xpack.lens.config.cannotConvertToEsqlFormulaTooltip": "Kann nicht nach ES|QL konvertieren: Formeloperationen werden in einem kommenden Update unterstützt.",
     "xpack.lens.config.cannotConvertToEsqlIncludeEmptyRowsTooltip": "Konvertierung in ES|QL nicht möglich: Die Option „Leere Zeilen einbeziehen“ wird in einem kommenden Update unterstützt.",
-    "xpack.lens.config.cannotConvertToEsqlMultiLayerTooltip": "Konvertierung in ES|QL nicht möglich: Mehrschichtige Visualisierungen werden in einem kommenden Update unterstützt.",
     "xpack.lens.config.cannotConvertToEsqlOperationTooltip": "Kann nicht in ES|QL konvertiert werden: Die Unterstützung für eine oder mehrere der verwendeten Funktionen wird in einem der nächsten Updates verfügbar sein.",
     "xpack.lens.config.cannotConvertToEsqlReducedTimeRangeTooltip": "Kann nicht nach ES|QL konvertieren: Reduzierter Zeitbereich wird in einem kommenden Update unterstützt.",
     "xpack.lens.config.cannotConvertToEsqlRuntimeFieldTooltip": "Kann nicht nach ES|QL konvertieren: Runtime-Felder werden in einem kommenden Update unterstützt.",

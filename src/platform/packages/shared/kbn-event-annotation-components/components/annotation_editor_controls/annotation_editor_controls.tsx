@@ -56,11 +56,17 @@ import { ConfigPanelQueryAnnotation } from './query_annotation_panel';
 export interface Props {
   annotation: EventAnnotationConfig;
   onAnnotationChange: (annotation: EventAnnotationConfig) => void;
-  dataView: DataView;
+  /** Required unless `hideQueryBasedControls` is set — only query-based annotations read from the data view */
+  dataView?: DataView;
   getDefaultRangeEnd: (rangeStart: string) => string;
   calendarClassName?: string;
   queryInputServices: QueryInputServices;
   appName: string;
+  /**
+   * Hides all query-based (data-view-dependent) controls and restricts the editor
+   * to manual annotations. Used for ES|QL charts where no data view is available.
+   */
+  hideQueryBasedControls?: boolean;
 }
 
 export const idPrefix = htmlIdGenerator()();
@@ -73,6 +79,7 @@ const AnnotationEditorControls = ({
   calendarClassName,
   queryInputServices,
   appName,
+  hideQueryBasedControls,
 }: Props) => {
   const { hasFieldData } = useExistingFieldsReader();
   const { colorMode } = useEuiTheme();
@@ -117,90 +124,97 @@ const AnnotationEditorControls = ({
           defaultMessage: 'Placement',
         })}
       >
-        <EuiFormRow
-          label={i18n.translate('eventAnnotationComponents.xyChart.annotationDate.placementType', {
-            defaultMessage: 'Placement type',
-          })}
-          display="rowCompressed"
-          fullWidth
-        >
-          <EuiButtonGroup
-            legend={i18n.translate(
+        {!hideQueryBasedControls && (
+          <EuiFormRow
+            label={i18n.translate(
               'eventAnnotationComponents.xyChart.annotationDate.placementType',
               {
                 defaultMessage: 'Placement type',
               }
             )}
-            data-test-subj="lns-xyAnnotation-placementType"
-            name="placementType"
-            buttonSize="compressed"
-            options={[
-              {
-                id: `lens_xyChart_annotation_manual`,
-                label: i18n.translate('eventAnnotationComponents.xyChart.annotation.manual', {
-                  defaultMessage: 'Static date',
-                }),
-                'data-test-subj': 'lnsXY_annotation_manual',
-              },
-              {
-                id: `lens_xyChart_annotation_query`,
-                label: i18n.translate('eventAnnotationComponents.xyChart.annotation.query', {
-                  defaultMessage: 'Custom query',
-                }),
-                'data-test-subj': 'lnsXY_annotation_query',
-              },
-            ]}
-            idSelected={`lens_xyChart_annotation_${currentAnnotation?.type}`}
-            onChange={(id) => {
-              const typeFromId = id.replace(
-                'lens_xyChart_annotation_',
-                ''
-              ) as EventAnnotationConfig['type'];
-              if (currentAnnotation?.type === typeFromId) {
-                return;
-              }
-              if (typeFromId === 'query') {
-                // If coming from a range type, it requires some additional resets
-                const additionalRangeResets = isRangeAnnotationConfig(currentAnnotation)
-                  ? {
-                      label:
-                        currentAnnotation.label === defaultRangeAnnotationLabel
-                          ? defaultAnnotationLabel
-                          : currentAnnotation.label,
-                      color: toLineAnnotationColor(currentAnnotation.color),
-                    }
-                  : {};
-                return update({
+            display="rowCompressed"
+            fullWidth
+          >
+            <EuiButtonGroup
+              legend={i18n.translate(
+                'eventAnnotationComponents.xyChart.annotationDate.placementType',
+                {
+                  defaultMessage: 'Placement type',
+                }
+              )}
+              data-test-subj="lns-xyAnnotation-placementType"
+              name="placementType"
+              buttonSize="compressed"
+              options={[
+                {
+                  id: `lens_xyChart_annotation_manual`,
+                  label: i18n.translate('eventAnnotationComponents.xyChart.annotation.manual', {
+                    defaultMessage: 'Static date',
+                  }),
+                  'data-test-subj': 'lnsXY_annotation_manual',
+                },
+                {
+                  id: `lens_xyChart_annotation_query`,
+                  label: i18n.translate('eventAnnotationComponents.xyChart.annotation.query', {
+                    defaultMessage: 'Custom query',
+                  }),
+                  'data-test-subj': 'lnsXY_annotation_query',
+                },
+              ]}
+              idSelected={`lens_xyChart_annotation_${currentAnnotation?.type}`}
+              onChange={(id) => {
+                const typeFromId = id.replace(
+                  'lens_xyChart_annotation_',
+                  ''
+                ) as EventAnnotationConfig['type'];
+                if (currentAnnotation?.type === typeFromId) {
+                  return;
+                }
+                if (typeFromId === 'query') {
+                  // If coming from a range type, it requires some additional resets
+                  const additionalRangeResets = isRangeAnnotationConfig(currentAnnotation)
+                    ? {
+                        label:
+                          currentAnnotation.label === defaultRangeAnnotationLabel
+                            ? defaultAnnotationLabel
+                            : currentAnnotation.label,
+                        color: toLineAnnotationColor(currentAnnotation.color),
+                      }
+                    : {};
+                  return update({
+                    type: typeFromId,
+                    timeField:
+                      (dataView?.timeFieldName ||
+                        // fallback to the first avaiable date field in the dataView
+                        dataView?.fields
+                          .filter(isFieldLensCompatible)
+                          .find(({ type: fieldType }) => fieldType === 'date')?.displayName) ??
+                      '',
+                    key: { type: 'point_in_time' },
+                    ...additionalRangeResets,
+                  });
+                }
+                // From query to manual annotation
+                return update<PointInTimeEventAnnotationConfig>({
                   type: typeFromId,
-                  timeField:
-                    (dataView.timeFieldName ||
-                      // fallback to the first avaiable date field in the dataView
-                      dataView.fields
-                        .filter(isFieldLensCompatible)
-                        .find(({ type: fieldType }) => fieldType === 'date')?.displayName) ??
-                    '',
-                  key: { type: 'point_in_time' },
-                  ...additionalRangeResets,
+                  key: { type: 'point_in_time', timestamp: moment().toISOString() },
                 });
-              }
-              // From query to manual annotation
-              return update<PointInTimeEventAnnotationConfig>({
-                type: typeFromId,
-                key: { type: 'point_in_time', timestamp: moment().toISOString() },
-              });
-            }}
-            isFullWidth
-          />
-        </EuiFormRow>
+              }}
+              isFullWidth
+            />
+          </EuiFormRow>
+        )}
         {isQueryBased ? (
-          <ConfigPanelQueryAnnotation
-            annotation={currentAnnotation}
-            onChange={update}
-            dataView={dataView}
-            queryInputShouldOpen={queryInputShouldOpen}
-            queryInputServices={queryInputServices}
-            appName={appName}
-          />
+          dataView ? (
+            <ConfigPanelQueryAnnotation
+              annotation={currentAnnotation}
+              onChange={update}
+              dataView={dataView}
+              queryInputShouldOpen={queryInputShouldOpen}
+              queryInputServices={queryInputServices}
+              appName={appName}
+            />
+          ) : null
         ) : (
           <ConfigPanelManualAnnotation
             annotation={currentAnnotation}
@@ -237,7 +251,7 @@ const AnnotationEditorControls = ({
               isQueryBased={isQueryBased}
             >
               {(textDecorationSelected) => {
-                if (textDecorationSelected !== 'field') {
+                if (textDecorationSelected !== 'field' || !dataView) {
                   return null;
                 }
                 const options = dataView.fields
@@ -366,7 +380,7 @@ const AnnotationEditorControls = ({
           onChange={(ev) => update({ isHidden: ev.target.checked })}
         />
       </DimensionEditorSection>
-      {isQueryBased && currentAnnotation && (
+      {isQueryBased && currentAnnotation && dataView && (
         <DimensionEditorSection
           title={i18n.translate('eventAnnotationComponents.xyChart.tooltip', {
             defaultMessage: 'Tooltip',

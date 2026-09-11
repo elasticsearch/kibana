@@ -28678,7 +28678,6 @@
     "xpack.lens.config.cannotConvertToEsqlDropPartialsTooltip": "Impossible de convertir en ES|QL : l'option \"Abandonner les buckets partiels\" sera prise en charge dans une prochaine mise à jour.",
     "xpack.lens.config.cannotConvertToEsqlFormulaTooltip": "Impossible de convertir en ES|QL : les opérations de formule seront prises en charge dans une prochaine mise à jour.",
     "xpack.lens.config.cannotConvertToEsqlIncludeEmptyRowsTooltip": "Impossible de convertir en ES|QL : l'option \"Inclure les lignes vides\" sera prise en charge dans une prochaine mise à jour.",
-    "xpack.lens.config.cannotConvertToEsqlMultiLayerTooltip": "Impossible de convertir en ES|QL : les visualisations multicalques seront prises en charge dans une prochaine mise à jour.",
     "xpack.lens.config.cannotConvertToEsqlOperationTooltip": "Impossible de convertir en ES|QL : la prise en charge d'une ou plusieurs fonctions utilisées sera disponible dans une prochaine mise à jour.",
     "xpack.lens.config.cannotConvertToEsqlReducedTimeRangeTooltip": "Impossible de convertir en ES|QL : la période réduite sera prise en charge dans une prochaine mise à jour.",
     "xpack.lens.config.cannotConvertToEsqlRuntimeFieldTooltip": "Impossible de convertir en ES|QL : les champs runtime seront pris en charge dans une prochaine mise à jour.",

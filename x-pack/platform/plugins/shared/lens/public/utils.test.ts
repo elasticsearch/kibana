@@ -7,7 +7,13 @@
 
 import { createDatatableUtilitiesMock } from '@kbn/data-plugin/common/mocks';
 import type { Datatable } from '@kbn/expressions-plugin/public';
-import { getUniqueLabelGenerator, inferTimeField, renewIDs } from './utils';
+import type { LensDocument } from '@kbn/lens-common';
+import {
+  getActiveDatasourceIdFromDoc,
+  getUniqueLabelGenerator,
+  inferTimeField,
+  renewIDs,
+} from './utils';
 
 const datatableUtilities = createDatatableUtilitiesMock();
 
@@ -52,6 +58,64 @@ const tableWithoutAppliedTimeRange = {
 };
 
 describe('utils', () => {
+  describe('getActiveDatasourceIdFromDoc', () => {
+    const docWithDatasourceStates = (datasourceStates: Record<string, unknown>): LensDocument =>
+      ({
+        state: { datasourceStates },
+      } as unknown as LensDocument);
+
+    it('prefers textBased over formBased when both hold data', () => {
+      expect(
+        getActiveDatasourceIdFromDoc(
+          docWithDatasourceStates({
+            formBased: { layers: { a: {} } },
+            textBased: { layers: { b: {} } },
+          })
+        )
+      ).toBe('textBased');
+    });
+
+    it('ignores empty datasource states when another one holds data', () => {
+      expect(
+        getActiveDatasourceIdFromDoc(
+          docWithDatasourceStates({
+            textBased: { layers: {} },
+            formBased: { layers: { a: {} } },
+          })
+        )
+      ).toBe('formBased');
+    });
+
+    it('falls back to known datasource keys when all states are empty', () => {
+      expect(
+        getActiveDatasourceIdFromDoc(
+          docWithDatasourceStates({
+            textBased: { layers: {} },
+            formBased: { layers: {} },
+          })
+        )
+      ).toBe('formBased');
+    });
+
+    it('returns null when the only non-empty state belongs to an unknown datasource', () => {
+      // corrupted doc or forward-incompatible export: the panel config lives under
+      // an unknown id, so it must surface as "no datasource" instead of resolving
+      // to an empty known datasource
+      expect(
+        getActiveDatasourceIdFromDoc(
+          docWithDatasourceStates({
+            UNKNOWN: { layers: { a: {} } },
+            textBased: { layers: {} },
+          })
+        )
+      ).toBeNull();
+    });
+
+    it('returns null when no known datasource key exists', () => {
+      expect(getActiveDatasourceIdFromDoc(docWithDatasourceStates({ UNKNOWN: {} }))).toBeNull();
+    });
+  });
+
   describe('inferTimeField', () => {
     test('infer time field for brush event', () => {
       expect(

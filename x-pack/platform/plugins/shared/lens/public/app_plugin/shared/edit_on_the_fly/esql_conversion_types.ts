@@ -9,6 +9,7 @@ import type { IconType } from '@elastic/eui';
 
 import type {
   DatasourceStates,
+  EsqlConversionFailureReason,
   FormBasedLayer,
   FramePublicAPI,
   LensLayerType,
@@ -42,6 +43,8 @@ export interface ConvertibleLayer {
   query: string;
   isConvertibleToEsql: boolean;
   conversionData: EsqlConversionData;
+  /** Why the layer could not be converted; only set when isConvertibleToEsql is false. */
+  failureReason?: EsqlConversionFailureReason;
 }
 
 /** Type alias for ES|QL query strings. */

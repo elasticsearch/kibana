@@ -10,7 +10,7 @@
 import type { z } from '@kbn/zod';
 import { expectPrettyError } from '@kbn/zod-helpers/v4';
 import type { DataSourceTypeESQL } from '../data_source';
-import type { xyDataLayerSharedShape, XYConfig } from './xy';
+import type { xyDataLayerSharedShape, XYConfig, XYConfigNoESQL } from './xy';
 import { statisticsOptionsSize, statisticsSchema, xyConfigSchema } from './xy';
 import {
   AS_CODE_DATA_VIEW_REFERENCE_TYPE,
@@ -624,10 +624,15 @@ describe('XY', () => {
             },
             y: [{ operation: 'count', empty_as_null: false }],
           },
+          // intentionally invalid layer to assert the schema rejects it: an ES|QL
+          // data_source on an annotation layer matches no layer schema by design
+          // (annotation layers are data-view based or, on ES|QL charts, carry no
+          // data_source at all; an ES|QL variant may be added later, see
+          // https://github.com/elastic/kibana-team/issues/4006). The cast below
+          // bypasses the same rejection at the type level.
           {
             type: 'annotations',
             ignore_global_filters: false,
-            // @ts-expect-error - mixing not allowed
             data_source: {
               type: 'esql',
               query:
@@ -645,7 +650,7 @@ describe('XY', () => {
                 },
               },
             ],
-          },
+          } as unknown as XYConfigNoESQL['layers'][number],
         ],
       } satisfies XYConfig);
       expectPrettyError(result).toMatchInlineSnapshot(`"✖ Invalid input"`);

@@ -9,8 +9,13 @@ import type { ReactElement } from 'react';
 import { useCallback, useMemo } from 'react';
 
 import type { CoreStart } from '@kbn/core/public';
-import { isOfAggregateQueryType } from '@kbn/es-query';
-import type { AddLayerFunction, FramePublicAPI } from '@kbn/lens-common';
+import {
+  LENS_DATASOURCE_ID,
+  LENS_LAYER_TYPES,
+  type AddLayerFunction,
+  type FramePublicAPI,
+  type LensDatasourceId,
+} from '@kbn/lens-common';
 
 import type { LensPluginStartDependencies } from '../../../plugin';
 import { createIndexPatternService } from '../../../data_views_service/service';
@@ -27,6 +32,25 @@ import {
 } from '../../../state_management';
 import { replaceIndexpattern } from '../../../state_management/lens_slice';
 import { generateId } from '../../../id_generator';
+import { isEsqlChart } from '../../../utils';
+
+export const getDatasourceIdForNewLayer = (
+  layerType: Parameters<AddLayerFunction>[0],
+  selectedLayerDatasourceId: LensDatasourceId | undefined,
+  isEsql: boolean
+): LensDatasourceId | undefined => {
+  if (layerType === LENS_LAYER_TYPES.REFERENCELINE) {
+    return LENS_DATASOURCE_ID.FORM_BASED;
+  }
+  // On ES|QL charts only helper layers (reference lines / annotations) are
+  // form-based; a new data layer must stay text-based even when a form-based
+  // helper layer is currently selected, otherwise the chart ends up with
+  // unsupported mixed ES|QL / non-ES|QL data layers.
+  if (isEsql && layerType === LENS_LAYER_TYPES.DATA) {
+    return LENS_DATASOURCE_ID.TEXT_BASED;
+  }
+  return selectedLayerDatasourceId;
+};
 
 export const useAddLayerButton = (
   framePublicAPI: FramePublicAPI,
@@ -36,7 +60,7 @@ export const useAddLayerButton = (
   setIsInlineFlyoutVisible: (flag: boolean) => void
 ): ReactElement | null => {
   const { visualizationMap } = useEditorFrameService();
-  const { visualization, datasourceStates, query } = useLensSelector((state) => state.lens);
+  const { visualization, datasourceStates } = useLensSelector((state) => state.lens);
   const dispatchLens = useLensDispatch();
 
   const activeVisualization = visualization.activeId
@@ -62,25 +86,37 @@ export const useAddLayerButton = (
   const addLayer: AddLayerFunction = useCallback(
     (layerType, extraArg, ignoreInitialValues, seriesType) => {
       const layerId = generateId();
+      const selectedLayerDatasourceId = (
+        visualization.selectedLayerId
+          ? framePublicAPI.datasourceLayers[visualization.selectedLayerId]?.datasourceId
+          : undefined
+      ) as LensDatasourceId | undefined;
+      const datasourceId = getDatasourceIdForNewLayer(
+        layerType,
+        selectedLayerDatasourceId,
+        isEsqlChart(framePublicAPI.datasourceLayers)
+      );
+
       dispatchLens(
-        addLayerAction({ layerId, layerType, extraArg, ignoreInitialValues, seriesType })
+        addLayerAction({
+          layerId,
+          layerType,
+          extraArg,
+          ignoreInitialValues,
+          seriesType,
+          datasourceId,
+        })
       );
       dispatchLens(setSelectedLayerId({ layerId }));
     },
-    [dispatchLens]
+    [dispatchLens, framePublicAPI.datasourceLayers, visualization.selectedLayerId]
   );
 
   const registerLibraryAnnotationGroupFunction = useCallback<
     LayerPanelProps['registerLibraryAnnotationGroup']
   >((groupInfo) => dispatchLens(registerLibraryAnnotationGroup(groupInfo)), [dispatchLens]);
 
-  const hideAddLayerButton = query && isOfAggregateQueryType(query);
-
   return useMemo(() => {
-    if (hideAddLayerButton) {
-      return null;
-    }
-
     return (
       activeVisualization?.getAddLayerButtonComponent?.({
         state: visualization.state,
@@ -122,6 +158,8 @@ export const useAddLayerButton = (
         },
         registerLibraryAnnotationGroup: registerLibraryAnnotationGroupFunction,
         isInlineEditing: Boolean(setIsInlineFlyoutVisible),
+        // annotation library groups are data-view-based and not supported on ES|QL charts
+        hideAnnotationLibrary: isEsqlChart(framePublicAPI.datasourceLayers),
       }) ?? null
     );
   }, [
@@ -129,7 +167,6 @@ export const useAddLayerButton = (
     addLayer,
     datasourceStates,
     dispatchLens,
-    hideAddLayerButton,
     indexPatternService,
     dataViews,
     framePublicAPI,

@@ -109,6 +109,7 @@ export function DimensionEditor(props: DimensionEditorProps) {
     toggleFullscreen,
     isFullscreen,
     supportStaticValue,
+    staticValueOnly,
     enableFormatSelector = true,
     layerType,
     paramEditorCustomProps,
@@ -284,14 +285,19 @@ export function DimensionEditor(props: DimensionEditorProps) {
     ...incompleteParams
   } = incompleteInfo || {};
 
+  // restricts the editor to the static value option (i.e. for ES|QL charts without data views)
+  const isStaticValueOnly = Boolean(staticValueOnly && supportStaticValue);
+
   const isQuickFunctionSelected = Boolean(
     supportStaticValue
       ? selectedOperationDefinition && isQuickFunction(selectedOperationDefinition.type)
       : !selectedOperationDefinition || isQuickFunction(selectedOperationDefinition.type)
   );
-  const showQuickFunctions = temporaryQuickFunction || isQuickFunctionSelected;
+  const showQuickFunctions =
+    !isStaticValueOnly && (temporaryQuickFunction || isQuickFunctionSelected);
 
   const showStaticValueFunction =
+    isStaticValueOnly ||
     temporaryStaticValue ||
     (temporaryState === 'none' &&
       supportStaticValue &&
@@ -970,7 +976,7 @@ export function DimensionEditor(props: DimensionEditorProps) {
   const hasFormula =
     !isFullscreen && operationSupportMatrix.operationWithoutField.has(formulaOperationName);
 
-  const hasButtonGroups = !isFullscreen && (hasFormula || supportStaticValue);
+  const hasButtonGroups = !isFullscreen && !isStaticValueOnly && (hasFormula || supportStaticValue);
 
   const initialMethod = useMemo(() => {
     let methodId = '';
