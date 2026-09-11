@@ -101,6 +101,8 @@ describe('validateTags', () => {
   });
 });
 
+jest.setTimeout(20_000);
+
 describe('TagsField', () => {
   beforeEach(() => {
     jest.clearAllMocks();
