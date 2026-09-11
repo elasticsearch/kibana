@@ -45,7 +45,6 @@ dependsOn:
   - '@kbn/aiops-log-rate-analysis'
   - '@kbn/aiops-test-utils'
   - '@kbn/ml-agg-utils'
-  - '@kbn/share-plugin'
   - '@kbn/tooling-log'
   - '@kbn/snapshot-restore-plugin'
   - '@kbn/monitoring-plugin'
