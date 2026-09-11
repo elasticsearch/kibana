@@ -23,6 +23,7 @@ import { normalizeEventChainVisitedWorkflowIds } from './telemetry/utils/extract
 import type { WorkflowExecutionForInputRendering } from '../workflow_context_manager/build_workflow_context';
 
 export interface BuildWorkflowExecutionDocumentParams {
+  executionId?: string;
   workflow: WorkflowExecutionEngineModel;
   context: Record<string, unknown>;
   defaultTriggeredBy: string;
@@ -47,6 +48,7 @@ export const buildWorkflowExecutionDocument = (
 ): WorkflowExecutionForInputRendering => {
   const {
     workflow,
+    executionId,
     context,
     defaultTriggeredBy,
     authenticatedUser,
@@ -78,7 +80,7 @@ export const buildWorkflowExecutionDocument = (
     typeof metadata?.eventId === 'string' ? metadata.eventId.trim() || undefined : undefined;
   const missingIdentity = authenticatedUser == null;
   const workflowExecution: WorkflowExecutionForInputRendering = {
-    id: generateUuid(),
+    id: executionId ?? generateUuid(),
     spaceId,
     workflowId: workflow.id,
     ...pickManagedWorkflowFields(workflow),

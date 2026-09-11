@@ -22,9 +22,15 @@ dependsOn:
   - '@kbn/zod'
   - '@kbn/workflows'
   - '@kbn/workflows-extensions'
+  - '@kbn/workflows-management-plugin'
   - '@kbn/inference-plugin'
   - '@kbn/inference-common'
   - '@kbn/search-inference-endpoints'
+  - '@kbn/core-http-server-mocks'
+  - '@kbn/core-logging-server-mocks'
+  - '@kbn/core-spaces-common'
+  - '@kbn/spaces-plugin'
+  - '@kbn/config-schema'
 tags:
   - plugin
   - prod

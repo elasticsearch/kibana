@@ -14,7 +14,7 @@ import type {
   WorkflowTokenUsage,
 } from '@kbn/workflows';
 import { isTerminalStatus } from '@kbn/workflows';
-import type { WorkflowExecutionRepository } from '../repositories/workflow_execution_repository';
+import type { WorkflowExecutionPersistence } from '../repositories/execution_persistence';
 import { sumTokenUsage } from '../utils';
 
 /** Context for the step that failed during this run; used to build workflow_execution_failed event. */
@@ -100,7 +100,7 @@ export class WorkflowExecutionState {
 
   constructor(
     initialWorkflowExecution: EsWorkflowExecution,
-    private workflowExecutionRepository: WorkflowExecutionRepository
+    private workflowExecutionRepository: WorkflowExecutionPersistence
   ) {
     this.workflowExecution = initialWorkflowExecution;
   }

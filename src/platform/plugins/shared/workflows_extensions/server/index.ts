@@ -50,6 +50,8 @@ export type {
   StepHandler,
   StepHandlerContext,
   StepHandlerResult,
+  WorkflowExecutionCapability,
+  WorkflowExecutionCapabilities,
   OnCancelHandler,
   StartWithHandoffHandler,
   PollHandler,
@@ -74,6 +76,9 @@ export {
 } from './step_registry/types';
 
 export { TriggerRegistry } from './trigger_registry';
+
+export type { TriggerExclusivity } from '../common';
+export { TRIGGER_EXCLUSIVITY_SCOPES } from '../common';
 
 export { WORKFLOW_EXECUTION_FAILED_TRIGGER_ID } from './triggers';
 export type { WorkflowExecutionFailedEvent } from './triggers';

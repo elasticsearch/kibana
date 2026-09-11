@@ -12,13 +12,31 @@ import type { StepHandlerContext } from '@kbn/workflows-extensions/server';
 import type { StepExecutionRuntime } from '../../../workflow_context_manager/step_execution_runtime';
 import type { IWorkflowEventLogger } from '../../../workflow_event_logger';
 
+export type BaseHandlerNode = Pick<AtomicGraphNode, 'stepId' | 'stepType'>;
+export interface BaseHandlerStepExecutionRuntime {
+  abortController: StepExecutionRuntime['abortController'];
+  contextManager: Pick<
+    StepExecutionRuntime['contextManager'],
+    | 'callKibanaApi'
+    | 'getContext'
+    | 'getEsClientAsUser'
+    | 'getExecutionCapabilities'
+    | 'getFakeRequest'
+    | 'renderValueAccordingToContext'
+  >;
+}
+export type BaseHandlerWorkflowLogger = Pick<
+  IWorkflowEventLogger,
+  'logDebug' | 'logError' | 'logInfo' | 'logWarn'
+>;
+
 export function createBaseHandlerContext(
   input: unknown,
   rawInput: unknown,
   config: Record<string, unknown>,
-  node: AtomicGraphNode,
-  stepExecutionRuntime: StepExecutionRuntime,
-  workflowLogger: IWorkflowEventLogger
+  node: BaseHandlerNode,
+  stepExecutionRuntime: BaseHandlerStepExecutionRuntime,
+  workflowLogger: BaseHandlerWorkflowLogger
 ): StepHandlerContext {
   return {
     input,
@@ -56,5 +74,6 @@ export function createBaseHandlerContext(
     abortSignal: stepExecutionRuntime.abortController.signal,
     stepId: node.stepId,
     stepType: node.stepType,
+    capabilities: stepExecutionRuntime.contextManager.getExecutionCapabilities(),
   };
 }

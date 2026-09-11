@@ -71,6 +71,27 @@ const makeStepRuntime = (
   } as unknown as jest.Mocked<StepExecutionRuntime>);
 
 describe('handleExecutionDelay', () => {
+  it.each([
+    ExecutionStatus.WAITING,
+    ExecutionStatus.WAITING_FOR_INPUT,
+    ExecutionStatus.WAITING_FOR_CHILD,
+  ])('rejects asynchronous resume status %s in sync mode', async (status) => {
+    const params = makeParams();
+    params.executionMode = 'sync';
+    const stepRuntime = makeStepRuntime({
+      node: { stepId: 'blocking-step', stepType: 'wait' } as any,
+      stepExecution: { status } as any,
+    });
+
+    await expect(handleExecutionDelay(params, stepRuntime)).rejects.toThrow(
+      'is not supported in synchronous workflows'
+    );
+    expect(params.workflowTaskManager.scheduleResumeTask).not.toHaveBeenCalled();
+    expect(
+      params.workflowTaskManager.scheduleWorkflowGlobalTimeoutResumeTask
+    ).not.toHaveBeenCalled();
+  });
+
   describe('WAITING_FOR_INPUT step (HITL)', () => {
     it('should set workflow status to WAITING_FOR_INPUT', async () => {
       const params = makeParams();

@@ -9,5 +9,5 @@ import type { PluginInitializerContext } from '@kbn/core/server';
 
 export async function plugin(initializerContext: PluginInitializerContext) {
   const { InferenceWorkflowsPlugin } = await import('./plugin');
-  return new InferenceWorkflowsPlugin();
+  return new InferenceWorkflowsPlugin(initializerContext);
 }
