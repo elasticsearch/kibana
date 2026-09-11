@@ -54,10 +54,10 @@ const recoveryTrackingColSuffix = (pair: RecoveryTrackingPair): string =>
   pair.ruleIdx !== undefined ? `${pair.stepIdx}_${pair.ruleIdx}` : `${pair.stepIdx}`;
 
 const resolveRecoveryTrackingPairs = (state: SequenceFormValues): RecoveryTrackingPair[] | null => {
-  const recoveryIndices: number[] =
-    state.recoveryStepIndices && state.recoveryStepIndices.length > 0
+  const recoveryIndices =
+    state.recoveryStepIndices.length > 0
       ? [...state.recoveryStepIndices].sort((a, b) => a - b)
-      : [state.recoveryStepIndex];
+      : [state.steps.length - 1];
 
   const recoveryPairs: RecoveryTrackingPair[] = [];
   for (const si of recoveryIndices) {
@@ -244,8 +244,7 @@ export const buildSequenceRecoveryEsql = (state: SequenceFormValues): string => 
 
   const isCorrelated = getCommonGroupingFields(state).length > 0;
 
-  const isLastStepMode = !state.recoveryStepIndices?.length;
-  if (recoveryPairs.length === 1 && isLastStepMode) {
+  if (recoveryPairs.length === 1) {
     const pair = recoveryPairs[0];
     const { kind, stalenessSeconds } = pair;
     const idFilter = ruleIdPredicate(pair);

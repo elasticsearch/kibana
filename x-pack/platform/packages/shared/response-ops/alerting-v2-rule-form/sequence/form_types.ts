@@ -47,8 +47,7 @@ export interface SequenceStep {
 export interface SequenceFormValues {
   steps: SequenceStep[];
   hopWindows: HopWindow[];
-  recoveryStepIndex: number;
-  recoveryStepIndices?: number[];
+  recoveryStepIndices: number[];
 }
 
 export const RULE_DRAG_MIME_TYPE = 'application/x-alerting-v2-rule-id';
@@ -59,7 +58,7 @@ export const generateStepId = (): string => `step_${Date.now()}_${++idCounter}`;
 export const DEFAULT_SEQUENCE_FORM_VALUES: SequenceFormValues = {
   steps: [],
   hopWindows: [],
-  recoveryStepIndex: 0,
+  recoveryStepIndices: [],
 };
 
 export const isSequenceValid = (state: SequenceFormValues): boolean => {

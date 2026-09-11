@@ -31,7 +31,7 @@ const twoStepOr = (): SequenceFormValues => ({
     { id: generateStepId(), rules: [makeRule('rule-b')], operator: 'or' },
   ],
   hopWindows: [{ value: 5, unit: 'm' }],
-  recoveryStepIndex: 1,
+  recoveryStepIndices: [1],
 });
 
 describe('buildSequenceEsql', () => {
@@ -39,7 +39,7 @@ describe('buildSequenceEsql', () => {
     const state: SequenceFormValues = {
       steps: [{ id: 's1', rules: [makeRule('a')], operator: 'or' }],
       hopWindows: [],
-      recoveryStepIndex: 0,
+      recoveryStepIndices: [0],
     };
     expect(buildSequenceEsql(state)).toBe('');
   });
@@ -51,7 +51,7 @@ describe('buildSequenceEsql', () => {
         { id: 's2', rules: [], operator: 'or' },
       ],
       hopWindows: [{ value: 5, unit: 'm' }],
-      recoveryStepIndex: 1,
+      recoveryStepIndices: [1],
     };
     expect(buildSequenceEsql(state)).toBe('');
   });
@@ -99,7 +99,7 @@ describe('buildSequenceEsql', () => {
         { id: 's2', rules: [makeCorrelatedRule('rule-b')], operator: 'or' },
       ],
       hopWindows: [{ value: 5, unit: 'm' }],
-      recoveryStepIndex: 1,
+      recoveryStepIndices: [1],
     };
     const query = buildSequenceEsql(state);
 
@@ -116,7 +116,7 @@ describe('buildSequenceEsql', () => {
         { id: 's2', rules: [makeRule('rule-b', ['service.name'])], operator: 'or' },
       ],
       hopWindows: [{ value: 5, unit: 'm' }],
-      recoveryStepIndex: 1,
+      recoveryStepIndices: [1],
     };
     const query = buildSequenceEsql(state);
 
@@ -132,7 +132,7 @@ describe('buildSequenceEsql', () => {
         { id: 's2', rules: [makeRule('rule-b')], operator: 'or' },
       ],
       hopWindows: [{ value: 5, unit: 'm' }],
-      recoveryStepIndex: 1,
+      recoveryStepIndices: [1],
     };
     const query = buildSequenceEsql(state);
 
@@ -147,7 +147,7 @@ describe('buildSequenceEsql', () => {
         { id: 's2', rules: [makeRule('rule-c')], operator: 'or' },
       ],
       hopWindows: [{ value: 10, unit: 'm' }],
-      recoveryStepIndex: 1,
+      recoveryStepIndices: [1],
     };
     const query = buildSequenceEsql(state);
 
@@ -169,7 +169,7 @@ describe('buildSequenceEsql', () => {
         },
       ],
       hopWindows: [{ value: 5, unit: 'm' }],
-      recoveryStepIndex: 1,
+      recoveryStepIndices: [1],
     };
     const query = buildSequenceEsql(state);
 
@@ -202,7 +202,7 @@ describe('buildSequenceEsql', () => {
         { id: 's2', rules: [makeRule('rule-b'), makeRule('rule-c')], operator: 'or' },
       ],
       hopWindows: [{ value: 5, unit: 'm' }],
-      recoveryStepIndex: 1,
+      recoveryStepIndices: [1],
     };
     const query = buildSequenceEsql(state);
 
@@ -220,7 +220,7 @@ describe('buildSequenceEsql', () => {
         { id: 's2', rules: [makeRule('rule-a'), makeRule('rule-b')], operator: 'or' },
       ],
       hopWindows: [{ value: 5, unit: 'm' }],
-      recoveryStepIndex: 1,
+      recoveryStepIndices: [1],
     };
     const query = buildSequenceEsql(state);
     const inMatch = query.match(/rule\.id IN \(([^)]+)\)/);
@@ -240,7 +240,7 @@ describe('buildSequenceEsql', () => {
         { value: 5, unit: 'm' },
         { value: 10, unit: 'm' },
       ],
-      recoveryStepIndex: 2,
+      recoveryStepIndices: [2],
     };
     const query = buildSequenceEsql(state);
 
@@ -256,7 +256,7 @@ describe('buildSequenceEsql', () => {
         { id: 's2', rules: [makeRule('rule-b')], operator: 'or' },
       ],
       hopWindows: [{ value: 5, unit: 'm' }],
-      recoveryStepIndex: 1,
+      recoveryStepIndices: [1],
     };
     const query = buildSequenceEsql(state);
 
@@ -269,7 +269,7 @@ describe('buildSequenceRecoveryEsql', () => {
     const state: SequenceFormValues = {
       steps: [{ id: 's1', rules: [makeRule('a')], operator: 'or' }],
       hopWindows: [],
-      recoveryStepIndex: 0,
+      recoveryStepIndices: [0],
     };
     expect(buildSequenceRecoveryEsql(state)).toBe('');
   });
@@ -288,10 +288,10 @@ describe('buildSequenceRecoveryEsql', () => {
     expect(query).not.toContain('VALUES(CASE');
   });
 
-  it('tracks a non-last step when recoveryStepIndex is set', () => {
+  it('tracks a non-last step when recoveryStepIndices targets step 0', () => {
     const state: SequenceFormValues = {
       ...twoStepOr(),
-      recoveryStepIndex: 0,
+      recoveryStepIndices: [0],
     };
     const query = buildSequenceRecoveryEsql(state);
 
@@ -299,32 +299,30 @@ describe('buildSequenceRecoveryEsql', () => {
     expect(query).not.toContain('rule-b');
   });
 
-  it('uses STATS format for custom single step (recoveryStepIndices set)', () => {
+  it('uses simple format for single-step recovery targeting step 0', () => {
     const state: SequenceFormValues = {
       ...twoStepOr(),
-      recoveryStepIndex: 0,
       recoveryStepIndices: [0],
     };
     const query = buildSequenceRecoveryEsql(state);
 
-    expect(query).toContain('a_0 = MAX(CASE(rule.id == "rule-a"');
-    expect(query).toContain('r_0 = MAX(CASE(rule.id == "rule-a" AND status == "recovered"');
-    expect(query).not.toContain('SORT');
-    expect(query).not.toContain('LIMIT');
+    expect(query).toContain('rule.id == "rule-a"');
+    expect(query).toContain('SORT @timestamp DESC');
+    expect(query).toContain('LIMIT 1');
+    expect(query).toContain('WHERE status == "recovered"');
   });
 
-  it('uses STATS format when last step is explicitly chosen as custom (recoveryStepIndices set)', () => {
+  it('uses simple format for single-step recovery targeting last step', () => {
     const state: SequenceFormValues = {
       ...twoStepOr(),
-      recoveryStepIndex: 1,
       recoveryStepIndices: [1],
     };
     const query = buildSequenceRecoveryEsql(state);
 
-    expect(query).toContain('a_1 = MAX(CASE(rule.id == "rule-b"');
-    expect(query).toContain('r_1 = MAX(CASE(rule.id == "rule-b" AND status == "recovered"');
-    expect(query).not.toContain('SORT');
-    expect(query).not.toContain('LIMIT');
+    expect(query).toContain('rule.id == "rule-b"');
+    expect(query).toContain('SORT @timestamp DESC');
+    expect(query).toContain('LIMIT 1');
+    expect(query).toContain('WHERE status == "recovered"');
   });
 
   it('checks all rules in AND tracking step (any-rule-recovers)', () => {
@@ -334,7 +332,7 @@ describe('buildSequenceRecoveryEsql', () => {
         { id: 's2', rules: [makeRule('rule-b'), makeRule('rule-c')], operator: 'and' },
       ],
       hopWindows: [{ value: 5, unit: 'm' }],
-      recoveryStepIndex: 1,
+      recoveryStepIndices: [1],
     };
     const query = buildSequenceRecoveryEsql(state);
 
@@ -355,7 +353,7 @@ describe('buildSequenceRecoveryEsql', () => {
         { id: 's2', rules: [makeRule('rule-b'), makeRule('rule-c')], operator: 'or' },
       ],
       hopWindows: [{ value: 5, unit: 'm' }],
-      recoveryStepIndex: 1,
+      recoveryStepIndices: [1],
     };
     const query = buildSequenceRecoveryEsql(state);
 
@@ -372,7 +370,6 @@ describe('buildSequenceRecoveryEsql', () => {
         { id: 's2', rules: [makeRule('rule-b'), makeRule('rule-c')], operator: 'or' },
       ],
       hopWindows: [{ value: 5, unit: 'm' }],
-      recoveryStepIndex: 0,
       recoveryStepIndices: [0, 1],
     };
     const query = buildSequenceRecoveryEsql(state);
@@ -395,7 +392,7 @@ describe('buildSequenceRecoveryEsql', () => {
         { id: 's2', rules: [makeCorrelatedRule('rule-b')], operator: 'or' },
       ],
       hopWindows: [{ value: 5, unit: 'm' }],
-      recoveryStepIndex: 1,
+      recoveryStepIndices: [1],
     };
     const query = buildSequenceRecoveryEsql(state);
 
@@ -416,7 +413,7 @@ describe('buildSequenceEsql — signal rules', () => {
         { id: 's2', rules: [makeSignalRule('signal-b')], operator: 'or' },
       ],
       hopWindows: [{ value: 15, unit: 'm' }],
-      recoveryStepIndex: 1,
+      recoveryStepIndices: [1],
     };
     const query = buildSequenceEsql(state);
 
@@ -437,7 +434,7 @@ describe('buildSequenceEsql — signal rules', () => {
         { id: 's2', rules: [makeSignalRule('signal-b')], operator: 'or' },
       ],
       hopWindows: [{ value: 15, unit: 'm' }],
-      recoveryStepIndex: 1,
+      recoveryStepIndices: [1],
     };
     const query = buildSequenceEsql(state);
 
@@ -452,7 +449,7 @@ describe('buildSequenceEsql — signal rules', () => {
         { id: 's2', rules: [makeSignalRule('signal-b')], operator: 'or' },
       ],
       hopWindows: [{ value: 15, unit: 'm' }],
-      recoveryStepIndex: 1,
+      recoveryStepIndices: [1],
     };
     const query = buildSequenceEsql(state);
 
@@ -467,7 +464,7 @@ describe('buildSequenceEsql — signal rules', () => {
         { id: 's2', rules: [makeRule('rule-c')], operator: 'or' },
       ],
       hopWindows: [{ value: 5, unit: 'm' }],
-      recoveryStepIndex: 1,
+      recoveryStepIndices: [1],
     };
     const query = buildSequenceEsql(state);
 
@@ -486,7 +483,7 @@ describe('buildSequenceRecoveryEsql — signal rules', () => {
         { id: 's2', rules: [makeSignalRule('signal-b')], operator: 'or' },
       ],
       hopWindows: [{ value: 15, unit: 'm' }],
-      recoveryStepIndex: 1,
+      recoveryStepIndices: [1],
     };
     const query = buildSequenceRecoveryEsql(state);
 
@@ -512,7 +509,7 @@ describe('buildSequenceRecoveryEsql — signal rules', () => {
         { id: 's2', rules: [makeCorrelatedSignalRule('signal-b')], operator: 'or' },
       ],
       hopWindows: [{ value: 15, unit: 'm' }],
-      recoveryStepIndex: 1,
+      recoveryStepIndices: [1],
     };
     const query = buildSequenceRecoveryEsql(state);
 
@@ -537,7 +534,7 @@ describe('buildSequenceRecoveryEsql — signal rules', () => {
         { value: 5, unit: 'm' },
         { value: 1, unit: 'h' },
       ],
-      recoveryStepIndex: 2,
+      recoveryStepIndices: [2],
     };
     const query = buildSequenceRecoveryEsql(state);
 
@@ -551,7 +548,7 @@ describe('buildSequenceRecoveryEsql — signal rules', () => {
         { id: 's2', rules: [makeRule('rule-b')], operator: 'or' },
       ],
       hopWindows: [{ value: 10, unit: 'm' }],
-      recoveryStepIndex: 0,
+      recoveryStepIndices: [0],
     };
     const query = buildSequenceRecoveryEsql(state);
 
@@ -566,7 +563,6 @@ describe('buildSequenceRecoveryEsql — signal rules', () => {
         { id: 's2', rules: [makeSignalRule('signal-b')], operator: 'or' },
       ],
       hopWindows: [{ value: 15, unit: 'm' }],
-      recoveryStepIndex: 0,
       recoveryStepIndices: [0, 1],
     };
     const query = buildSequenceRecoveryEsql(state);
@@ -601,7 +597,7 @@ describe('buildSequenceRecoveryEsql — signal rules', () => {
         },
       ],
       hopWindows: [{ value: 10, unit: 'm' }],
-      recoveryStepIndex: 1,
+      recoveryStepIndices: [1],
     };
     const query = buildSequenceRecoveryEsql(state);
 

@@ -7,7 +7,7 @@
 
 import React, { useCallback, useMemo, useState } from 'react';
 import { FormProvider } from 'react-hook-form';
-import { EuiEmptyPrompt, EuiFlexGroup, EuiFlexItem } from '@elastic/eui';
+import { EuiFlexGroup, EuiFlexItem } from '@elastic/eui';
 import { PluginStart } from '@kbn/core-di';
 import { CoreStart, useService } from '@kbn/core-di-browser';
 import type { DataPublicPluginStart } from '@kbn/data-plugin/public';
@@ -18,11 +18,16 @@ import type { DashboardStart } from '@kbn/dashboard-plugin/public';
 import type { CPSPluginStart } from '@kbn/cps/public';
 import { RuleFormProvider } from '@kbn/alerting-v2-rule-form';
 import type { RuleFormServices } from '@kbn/alerting-v2-rule-form';
-import { FormattedMessage } from '@kbn/i18n-react';
 import { useAlertingLocators } from '../../application/locator_context';
 import { useSequenceBuilderForm, useSequenceBuilderState } from './use_sequence_builder_form';
 import { SequenceBuilderHeader } from './sequence_builder_header';
 import { AlertConditionCanvas } from './alert_condition_canvas';
+import {
+  RecoveryConditionCanvas,
+  DEFAULT_RECOVERY_CONFIG,
+  resolveRecoveryIndices,
+} from './recovery_condition_canvas';
+import type { RecoveryConfig } from './recovery_condition_canvas';
 
 const useRuleFormServicesBag = (): RuleFormServices => {
   const http = useService(CoreStart('http'));
@@ -77,6 +82,24 @@ export const SequenceBuilderPage: React.FC = () => {
   const uiState = useSequenceBuilderState();
   const [isRuleListOpen, setIsRuleListOpen] = useState(true);
   const handleToggleRuleList = useCallback(() => setIsRuleListOpen((prev) => !prev), []);
+  const [recoveryConfig, setRecoveryConfig] = useState<RecoveryConfig>(DEFAULT_RECOVERY_CONFIG);
+
+  const handleStepChange = useCallback(
+    (nextStep: 'alert' | 'recovery') => {
+      if (nextStep === 'recovery') {
+        uiState.setSeqValues((prev) => ({
+          ...prev,
+          ...resolveRecoveryIndices(
+            recoveryConfig.mode,
+            prev.steps.length,
+            prev.recoveryStepIndices
+          ),
+        }));
+      }
+      uiState.setStep(nextStep);
+    },
+    [uiState, recoveryConfig.mode]
+  );
 
   const handleCancel = useCallback(() => {
     rulesLocators.navigateSync({});
@@ -95,22 +118,13 @@ export const SequenceBuilderPage: React.FC = () => {
         onToggleRuleList={handleToggleRuleList}
       />
     ) : (
-      <EuiEmptyPrompt
-        iconType="checkCircle"
-        title={
-          <h3>
-            <FormattedMessage
-              id="xpack.alertingV2.sequenceBuilderPage.recoveryPlaceholder"
-              defaultMessage="Recovery condition"
-            />
-          </h3>
-        }
-        body={
-          <FormattedMessage
-            id="xpack.alertingV2.sequenceBuilderPage.recoveryPlaceholderBody"
-            defaultMessage="Recovery condition UI coming soon. Last-step recovery is applied automatically on save."
-          />
-        }
+      <RecoveryConditionCanvas
+        seqValues={uiState.seqValues}
+        setSeqValues={uiState.setSeqValues}
+        recoveryConfig={recoveryConfig}
+        setRecoveryConfig={setRecoveryConfig}
+        isRuleListOpen={isRuleListOpen}
+        onToggleRuleList={handleToggleRuleList}
       />
     );
 
@@ -128,7 +142,7 @@ export const SequenceBuilderPage: React.FC = () => {
               seqValues={uiState.seqValues}
               isSaving={uiState.isSaving}
               rulesListHref={rulesListHref}
-              onStepChange={uiState.setStep}
+              onStepChange={handleStepChange}
               onSave={handleSave}
               onCancel={handleCancel}
             />

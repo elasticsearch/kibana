@@ -52,19 +52,31 @@ const buildEdges = (
   return edges;
 };
 
-export const layoutSequence = (
-  stages: StageItem[],
-  hopWindows: string[],
-  onRemoveRule?: (stepId: string, ruleId: string) => void,
-  onOperatorChange?: (stepId: string, op: 'and' | 'or') => void,
+export interface LayoutSequenceOptions {
+  onRemoveRule?: (stepId: string, ruleId: string) => void;
+  onOperatorChange?: (stepId: string, op: 'and' | 'or') => void;
   onDropRule?: (
     stepId: string,
     payload: { id: string; name: string; groupingFields: string[]; kind: 'alert' | 'signal' }
-  ) => void,
-  onHopWindowChange?: (hopIndex: number, value: string) => void,
-  closeAllTick: number = 0,
-  interactive: boolean = true
+  ) => void;
+  onHopWindowChange?: (hopIndex: number, value: string) => void;
+  closeAllTick?: number;
+  interactive?: boolean;
+}
+
+export const layoutSequence = (
+  stages: StageItem[],
+  hopWindows: string[],
+  options: LayoutSequenceOptions = {}
 ): { nodes: SequenceNodeType[]; edges: SequenceEdgeType[] } => {
+  const {
+    onRemoveRule,
+    onOperatorChange,
+    onDropRule,
+    onHopWindowChange,
+    closeAllTick = 0,
+    interactive = true,
+  } = options;
   const edges = buildEdges(stages, hopWindows, onHopWindowChange, closeAllTick, interactive);
 
   const noop = () => {};

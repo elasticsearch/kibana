@@ -129,3 +129,4 @@ export type { SequenceNodeType } from './sequence/sequence_node';
 export { SequenceEdge, WINDOW_OPTIONS } from './sequence/sequence_edge';
 export type { SequenceEdgeType } from './sequence/sequence_edge';
 export { layoutSequence } from './sequence/layout_sequence';
+export type { LayoutSequenceOptions } from './sequence/layout_sequence';
