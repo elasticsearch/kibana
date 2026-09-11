@@ -78,7 +78,9 @@ describe('useRiskInputActionsPanels', () => {
     jest.clearAllMocks();
     mockCanUseCases.mockReturnValue({
       create: true,
+      createComment: true,
       read: true,
+      update: false,
     });
     mockUseSendBulkToTimeline.mockReturnValue({
       sendBulkEventsToTimelineHandler: jest.fn(),
@@ -101,23 +103,42 @@ describe('useRiskInputActionsPanels', () => {
     expect(getByTestId('contextMenuPanelTitle')).toHaveTextContent('2 selected');
   });
 
-  it('displays cases actions when user has cases permissions', () => {
-    const { container } = customRender();
+  it('displays the singular case action when user has cases permissions', () => {
+    const { getByTestId } = customRender();
 
-    expect(container).toHaveTextContent('Add to existing case');
-    expect(container).toHaveTextContent('Add to new case');
+    expect(getByTestId('add-to-case')).toHaveTextContent('Add to case');
+  });
+
+  it('keeps action order, icons, and the explicit group separator visible', () => {
+    mockUseUserPrivileges.mockReturnValue({
+      timelinePrivileges: { read: true },
+    });
+    const { getAllByRole, getByTestId } = customRender();
+
+    expect(getAllByRole('menuitem').map(({ textContent }) => textContent)).toEqual([
+      'Add to new timeline',
+      'Add to case',
+    ]);
+    expect(getByTestId('securityActionMenuGroupSeparator')).toBeInTheDocument();
+    expect(
+      getByTestId('add-to-new-timeline').querySelector('[data-euiicon-type="timeline"]')
+    ).not.toBeNull();
+    expect(
+      getByTestId('add-to-case').querySelector('[data-euiicon-type="briefcase"]')
+    ).not.toBeNull();
   });
 
   it('does NOT display cases actions when user has NO cases permissions', () => {
     mockCanUseCases.mockReturnValue({
       create: false,
+      createComment: false,
       read: false,
+      update: false,
     });
 
     const { container } = customRender();
 
-    expect(container).not.toHaveTextContent('Add to existing case');
-    expect(container).not.toHaveTextContent('Add to new case');
+    expect(container).not.toHaveTextContent('Add to case');
   });
 
   it('displays the timeline action when user has sufficient privileges', () => {
@@ -158,11 +179,12 @@ describe('useRiskInputActionsPanels', () => {
     );
 
     const timelineAction = result.current[0].items?.find(
-      (item: Partial<{ name: React.JSX.Element }>) =>
-        item.name?.props?.defaultMessage === 'Add to new timeline'
+      ({ key }) => key === 'add-to-new-timeline'
     );
 
-    timelineAction?.onClick?.();
+    if (timelineAction && 'onClick' in timelineAction) {
+      timelineAction.onClick?.({} as React.MouseEvent<HTMLHRElement>);
+    }
 
     expect(mockSendBulkEvents).toHaveBeenCalledWith([
       {

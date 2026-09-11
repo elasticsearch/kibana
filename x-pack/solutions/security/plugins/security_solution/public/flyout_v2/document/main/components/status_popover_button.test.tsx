@@ -145,6 +145,25 @@ describe('StatusPopoverButton', () => {
     getByText('open');
   });
 
+  test('decorates status items with coloured dot icons', async () => {
+    (useAlertsPrivileges as jest.Mock<AlertsPriveleges>).mockReturnValue(writePriveleges);
+    const { getByText, getByTestId } = render(
+      <TestProviders>
+        <StatusPopoverButton {...props} />
+      </TestProviders>
+    );
+
+    getByText('open').click();
+    await waitForEuiPopoverOpen();
+
+    expect(
+      getByTestId('acknowledged-alert-status').querySelector('[data-euiicon-type="dot"]')
+    ).toBeInTheDocument();
+    expect(
+      getByTestId('alert-close-context-menu-item').querySelector('[data-euiicon-type="dot"]')
+    ).toBeInTheDocument();
+  });
+
   test('it shows the correct options when clicked', async () => {
     (useAlertsPrivileges as jest.Mock<AlertsPriveleges>).mockReturnValue(writePriveleges);
     const { getByText, container } = render(

@@ -130,8 +130,7 @@ export const KeyInsightsTile: React.FC<KeyInsightsTileProps> = ({
       inspectTitle={inspectTitle}
       withActions={[
         VisualizationContextMenuActions.inspect,
-        VisualizationContextMenuActions.addToNewCase,
-        VisualizationContextMenuActions.addToExistingCase,
+        VisualizationContextMenuActions.addToCase,
         VisualizationContextMenuActions.saveToLibrary,
         // Excluding VisualizationContextMenuActions.openInLens
       ]}

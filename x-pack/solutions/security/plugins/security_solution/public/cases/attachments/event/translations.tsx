@@ -29,16 +29,6 @@ export const NO_EVENTS_TITLE = i18n.translate('xpack.securitySolution.caseEvents
   defaultMessage: 'No Events Found',
 });
 
-export const ADD_TO_NEW_CASE = i18n.translate('xpack.securitySolution.caseEvents.addToNewCase', {
-  defaultMessage: 'Add to new case',
-});
-
-export const ADD_TO_EXISTING_CASE = i18n.translate(
-  'xpack.securitySolution.caseEvents.addToExistingCase',
-  {
-    defaultMessage: 'Add to existing case',
-  }
-);
 export const EVENT_COMMENT_LABEL_TITLE = i18n.translate(
   'xpack.securitySolution.cases.eventAttachment.eventCommentLabelTitle',
   {

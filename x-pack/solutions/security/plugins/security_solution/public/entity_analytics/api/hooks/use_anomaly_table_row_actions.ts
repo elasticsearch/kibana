@@ -23,8 +23,14 @@ import {
   ENTITY_ANOMALY_TABLE_ROW_ACTION_VIEW_IN_SMV,
 } from '../../components/anomalies/translations';
 
+const ANOMALY_ACTION_IDS = {
+  addToTimeline: 'add-to-timeline',
+  viewInDiscover: 'view-in-discover',
+  viewInSingleMetricViewer: 'view-in-single-metric-viewer',
+} as const;
+
 export interface AnomalyTableRowAction {
-  key: string;
+  key: (typeof ANOMALY_ACTION_IDS)[keyof typeof ANOMALY_ACTION_IDS];
   label: string;
   icon: IconType;
   onClick: () => void;
@@ -242,7 +248,7 @@ export const useAnomalyTableRowActions = ({
 
     if (canReadTimeline) {
       items.push({
-        key: 'add-to-timeline',
+        key: ANOMALY_ACTION_IDS.addToTimeline,
         label: ENTITY_ANOMALY_TABLE_ROW_ACTION_ADD_TO_TIMELINE,
         icon: 'timeline',
         onClick: handleAddToTimeline,
@@ -250,7 +256,7 @@ export const useAnomalyTableRowActions = ({
     }
 
     items.push({
-      key: 'view-in-discover',
+      key: ANOMALY_ACTION_IDS.viewInDiscover,
       label: ENTITY_ANOMALY_TABLE_ROW_ACTION_VIEW_IN_DISCOVER,
       icon: 'productDiscover',
       onClick: handleViewInDiscover,
@@ -258,7 +264,7 @@ export const useAnomalyTableRowActions = ({
 
     if (getUrl) {
       items.push({
-        key: 'view-in-single-metric-viewer',
+        key: ANOMALY_ACTION_IDS.viewInSingleMetricViewer,
         label: ENTITY_ANOMALY_TABLE_ROW_ACTION_VIEW_IN_SMV,
         icon: 'singleMetricViewer',
         onClick: handleViewInSingleMetricViewer,

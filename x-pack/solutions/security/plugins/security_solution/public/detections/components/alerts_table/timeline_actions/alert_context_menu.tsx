@@ -7,7 +7,7 @@
 
 import React, { useCallback, useMemo, useState } from 'react';
 
-import { EuiButtonIcon, EuiContextMenu, EuiPopover, EuiToolTip } from '@elastic/eui';
+import { EuiButtonIcon, EuiPopover, EuiToolTip } from '@elastic/eui';
 import { indexOf } from 'lodash';
 import { useSelector } from 'react-redux-v7';
 import { ExceptionListTypeEnum } from '@kbn/securitysolution-io-ts-list-types';
@@ -50,11 +50,12 @@ import { ATTACH_ALERT_TO_CASE_FOR_ROW } from '../../../../timelines/components/t
 import { selectTimelineById } from '../../../../timelines/store/selectors';
 import { useEventFilterAction } from './use_event_filter_action';
 import { useAddToCaseActions } from './use_add_to_case_actions';
-import type { AlertTableContextMenuItem } from '../types';
 import { useAlertTagsActions } from './use_alert_tags_actions';
 import { useAlertAssigneesActions } from './use_alert_assignees_actions';
 import { useAddToChatAction } from './use_add_to_chat_action';
 import { timelineDefaults } from '../../../../timelines/store/defaults';
+import { AlertRowActionMenu, getAlertRowActionGroups } from './action_menu/alert_row_action_menu';
+
 interface AlertContextMenuProps {
   ariaLabel?: string;
   ariaRowindex: number;
@@ -262,49 +263,44 @@ const AlertContextMenuComponent: React.FC<AlertContextMenuProps> = ({
     alertId: ecsRowData._id,
   });
 
-  const items: AlertTableContextMenuItem[] = useMemo(
+  const isAlertActionMenu = !isEvent && Boolean(ruleId);
+  const hasAgent = Boolean(agentId);
+  const hasItems = useMemo(
     () =>
-      !isEvent && ruleId
-        ? [
-            ...addToCaseActionItems,
-            ...statusActionItems,
-            ...runWorkflowMenuItem,
-            ...alertTagsItems,
-            ...alertAssigneesItems,
-            ...exceptionActionItems,
-            ...(agentId ? osqueryActionItems : []),
-            ...addToChatActionItems,
-          ]
-        : [
-            ...addToCaseActionItems,
-            ...runDocumentWorkflowMenuItem,
-            ...(canCreateEndpointEventFilters ? eventFilterActionItems : []),
-            ...(agentId ? osqueryActionItems : []),
-          ],
+      getAlertRowActionGroups({
+        addToCaseItems: addToCaseActionItems,
+        addToChatItems: addToChatActionItems,
+        alertAssigneeItems: alertAssigneesItems,
+        alertTagItems: alertTagsItems,
+        canCreateEndpointEventFilters,
+        eventFilterItems: eventFilterActionItems,
+        exceptionItems: exceptionActionItems,
+        hasAgent,
+        isAlert: isAlertActionMenu,
+        osqueryItems: osqueryActionItems,
+        runAlertWorkflowItems: runWorkflowMenuItem,
+        runDocumentWorkflowItems: runDocumentWorkflowMenuItem,
+        statusItems: statusActionItems,
+      }).some((group) => group.length > 0),
     [
+      addToCaseActionItems,
+      addToChatActionItems,
+      alertAssigneesItems,
+      alertTagsItems,
+      canCreateEndpointEventFilters,
+      eventFilterActionItems,
+      exceptionActionItems,
+      hasAgent,
+      isAlertActionMenu,
+      osqueryActionItems,
       runWorkflowMenuItem,
       runDocumentWorkflowMenuItem,
-      isEvent,
-      ruleId,
-      addToCaseActionItems,
       statusActionItems,
-      exceptionActionItems,
-      agentId,
-      osqueryActionItems,
-      eventFilterActionItems,
-      canCreateEndpointEventFilters,
-      alertTagsItems,
-      alertAssigneesItems,
-      addToChatActionItems,
     ]
   );
 
   const panels = useMemo(
     () => [
-      {
-        id: 0,
-        items,
-      },
       ...alertTagsPanels,
       ...alertAssigneesPanels,
       ...statusActionPanels,
@@ -312,7 +308,6 @@ const AlertContextMenuComponent: React.FC<AlertContextMenuProps> = ({
       ...runDocumentWorkflowPanels,
     ],
     [
-      items,
       alertTagsPanels,
       alertAssigneesPanels,
       statusActionPanels,
@@ -322,7 +317,6 @@ const AlertContextMenuComponent: React.FC<AlertContextMenuProps> = ({
   );
 
   const button = useMemo(() => {
-    const hasItems = !!items.length;
     const tooltipContent = isRemoteDocument
       ? i18n.REMOTE_DOCUMENT_ACTIONS_UNAVAILABLE
       : hasItems
@@ -343,7 +337,7 @@ const AlertContextMenuComponent: React.FC<AlertContextMenuProps> = ({
         />
       </EuiToolTip>
     );
-  }, [ariaLabel, isPopoverOpen, onButtonClick, isRemoteDocument, items.length]);
+  }, [ariaLabel, hasItems, isPopoverOpen, onButtonClick, isRemoteDocument]);
 
   const osqueryFlyout = useMemo(() => {
     return (
@@ -370,10 +364,21 @@ const AlertContextMenuComponent: React.FC<AlertContextMenuProps> = ({
             anchorPosition="downLeft"
             repositionOnScroll
           >
-            <EuiContextMenu
-              initialPanelId={0}
+            <AlertRowActionMenu
+              addToCaseItems={addToCaseActionItems}
+              addToChatItems={addToChatActionItems}
+              alertAssigneeItems={alertAssigneesItems}
+              alertTagItems={alertTagsItems}
+              canCreateEndpointEventFilters={canCreateEndpointEventFilters}
+              eventFilterItems={eventFilterActionItems}
+              exceptionItems={exceptionActionItems}
+              hasAgent={hasAgent}
+              isAlert={isAlertActionMenu}
+              osqueryItems={osqueryActionItems}
               panels={panels}
-              data-test-subj="actions-context-menu"
+              runAlertWorkflowItems={runWorkflowMenuItem}
+              runDocumentWorkflowItems={runDocumentWorkflowMenuItem}
+              statusItems={statusActionItems}
             />
           </EuiPopover>
         </EventsTdContent>

@@ -140,8 +140,7 @@ export const EsqlDashboardPanel = <TableItemType extends Record<string, string>>
           timerange={timerange}
           withActions={[
             VisualizationContextMenuActions.inspect,
-            VisualizationContextMenuActions.addToNewCase,
-            VisualizationContextMenuActions.addToExistingCase,
+            VisualizationContextMenuActions.addToCase,
             VisualizationContextMenuActions.saveToLibrary,
             // Excluding VisualizationContextMenuActions.openInLens
           ]}

@@ -33,8 +33,7 @@ import * as i18n from './translations';
 const ChartSize = 250;
 
 const VISUALIZATION_ACTIONS = [
-  VisualizationContextMenuActions.addToExistingCase,
-  VisualizationContextMenuActions.addToNewCase,
+  VisualizationContextMenuActions.addToCase,
   VisualizationContextMenuActions.inspect,
 ];
 const visualizationIdPrefix = 'aiValueAlertProcessingDonut';

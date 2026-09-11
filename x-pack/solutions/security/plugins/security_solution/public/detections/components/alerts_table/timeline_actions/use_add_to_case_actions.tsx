@@ -5,13 +5,13 @@
  * 2.0.
  */
 
-import { ADD_TO_CASE } from '@kbn/response-ops-alerts-table';
+import { ADD_TO_CASE } from '@kbn/response-ops-alerts-table/translations';
 import { useCallback, useMemo } from 'react';
 import { SECURITY_ALERT_ATTACHMENT_TYPE } from '@kbn/cases-plugin/common';
 import type { CaseAttachmentsWithoutOwner } from '@kbn/cases-plugin/public';
 import type { EcsSecurityExtension as Ecs } from '@kbn/securitysolution-ecs';
-import { APP_ID } from '../../../../../common';
 import { useKibana } from '../../../../common/lib/kibana';
+import { useCanAttachToCase } from '../../../../cases/attachments/hooks/use_can_attach_to_case';
 import type { TimelineNonEcsData } from '../../../../../common/search_strategy';
 import type { AlertTableContextMenuItem } from '../types';
 import { generateEventAttachmentWithoutOwner } from '../../../../cases/attachments/event/utils';
@@ -40,7 +40,7 @@ export const useAddToCaseActions = ({
   refetch,
 }: UseAddToCaseActions) => {
   const { cases: casesUi } = useKibana().services;
-  const userCasesPermissions = casesUi.helpers.canUseCases([APP_ID]);
+  const canAttach = useCanAttachToCase();
 
   const isAlert = useMemo(() => {
     return ecsData?.event?.kind?.includes('signal');
@@ -98,7 +98,7 @@ export const useAddToCaseActions = ({
   }, [caseAttachments, onActionClick, onMenuItemClick, selectCaseModal]);
 
   const addToCaseActionItems: AlertTableContextMenuItem[] = useMemo(() => {
-    if (!userCasesPermissions.createComment || !userCasesPermissions.read) {
+    if (!canAttach) {
       return [];
     }
 
@@ -111,12 +111,7 @@ export const useAddToCaseActions = ({
         name: ADD_TO_CASE,
       },
     ];
-  }, [
-    ariaLabel,
-    handleAddToCaseClick,
-    userCasesPermissions.createComment,
-    userCasesPermissions.read,
-  ]);
+  }, [ariaLabel, handleAddToCaseClick, canAttach]);
 
   return {
     addToCaseActionItems,

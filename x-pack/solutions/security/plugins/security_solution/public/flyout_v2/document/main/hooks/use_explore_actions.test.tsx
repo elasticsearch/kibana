@@ -5,8 +5,7 @@
  * 2.0.
  */
 
-import type React from 'react';
-import { render, renderHook } from '@testing-library/react';
+import { renderHook } from '@testing-library/react';
 import type { DataTableRecord } from '@kbn/discover-utils';
 import { useExploreActions } from './use_explore_actions';
 
@@ -69,8 +68,7 @@ describe('useExploreActions', () => {
           closePopover: mockClosePopover,
         })
       );
-      const { getByText } = render(result.current.exploreActionItems[0].name as React.ReactElement);
-      expect(getByText('Explore in Alerts')).toBeInTheDocument();
+      expect(result.current.exploreActionItems[0].name).toBe('Explore in Alerts');
     });
 
     it('shows "Explore in Timeline" for non-alert documents', () => {
@@ -80,8 +78,7 @@ describe('useExploreActions', () => {
           closePopover: mockClosePopover,
         })
       );
-      const { getByText } = render(result.current.exploreActionItems[0].name as React.ReactElement);
-      expect(getByText('Explore in Timeline')).toBeInTheDocument();
+      expect(result.current.exploreActionItems[0].name).toBe('Explore in Timeline');
     });
   });
 

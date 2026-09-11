@@ -6,6 +6,7 @@
  */
 
 import { renderHook } from '@testing-library/react';
+import type { MouseEvent } from 'react';
 import type { BulkActionsProps } from './use_bulk_action_items';
 import { useBulkActionItems } from './use_bulk_action_items';
 import { useAppToasts } from '../../../hooks/use_app_toasts';
@@ -92,6 +93,28 @@ describe('useBulkActionItems', () => {
         (item) => item['data-test-subj'] === 'alert-close-context-menu-item'
       )
     ).toBeUndefined();
+  });
+
+  it('exposes custom actions for composed bulk action menus', () => {
+    const onClick = jest.fn();
+    // Use a neutral icon value — 'briefcase' is NOT set here because icon decoration for
+    // the add-to-case action is the responsibility of EventsTableBulkActionMenu, not this hook.
+    const { result } = renderUseBulkActionItems({
+      customBulkActions: [
+        {
+          key: 'some-custom-action',
+          label: 'Custom action',
+          icon: 'gear',
+          onClick,
+        },
+      ],
+    });
+
+    const customAction = result.current.items.find(({ key }) => key === 'some-custom-action');
+    customAction?.onClick?.({} as MouseEvent<HTMLHRElement>);
+
+    expect(onClick).toHaveBeenCalledWith(['mockEventId']);
+    expect(customAction?.icon).toBe('gear');
   });
 
   describe('workflow actions', () => {

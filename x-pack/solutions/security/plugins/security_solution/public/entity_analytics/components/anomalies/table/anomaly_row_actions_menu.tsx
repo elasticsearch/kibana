@@ -28,20 +28,18 @@ export const AnomalyRowActionsMenu: React.FC<AnomalyRowActionsMenuProps> = ({ ro
 
   const { actions } = useAnomalyTableRowActions({ row, timeRange, closePopover });
 
-  const panels = useMemo<EuiContextMenuPanelDescriptor[]>(
-    () => [
-      {
-        id: 0,
-        items: actions.map((action) => ({
-          name: action.label,
-          icon: action.icon,
-          onClick: action.onClick,
-          'data-test-subj': `${ANOMALIES_TABLE_ROW_ACTION_TEST_ID_PREFIX}${action.key}`,
-        })),
-      },
-    ],
+  const items = useMemo(
+    () =>
+      actions.map((action) => ({
+        key: action.key,
+        name: action.label,
+        icon: action.icon,
+        onClick: action.onClick,
+        'data-test-subj': `${ANOMALIES_TABLE_ROW_ACTION_TEST_ID_PREFIX}${action.key}`,
+      })),
     [actions]
   );
+  const menuPanels = useMemo<EuiContextMenuPanelDescriptor[]>(() => [{ id: 0, items }], [items]);
 
   const button = (
     <EuiToolTip content={ENTITY_ANOMALY_TABLE_ACTIONS_COLUMN_TOOLTIP} disableScreenReaderOutput>
@@ -64,7 +62,7 @@ export const AnomalyRowActionsMenu: React.FC<AnomalyRowActionsMenuProps> = ({ ro
       panelPaddingSize="none"
       anchorPosition="downRight"
     >
-      <EuiContextMenu initialPanelId={0} panels={panels} />
+      <EuiContextMenu initialPanelId={0} panels={menuPanels} />
     </EuiPopover>
   );
 };

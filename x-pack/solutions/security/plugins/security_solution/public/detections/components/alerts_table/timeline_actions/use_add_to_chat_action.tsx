@@ -13,6 +13,7 @@ import { useReportAddToChat } from '../../../../agent_builder/hooks/use_report_a
 import { stringifyEssentialAlertData } from '../../../../agent_builder/helpers';
 import { ALERT_ATTACHMENT_PROMPT } from '../../../../agent_builder/components/prompts';
 import { SecurityAgentBuilderAttachments } from '../../../../../common/constants';
+import { ADD_TO_CHAT_ACTION_ID } from '../../../../common/constants/action_ids';
 import type { AlertTableContextMenuItem } from '../types';
 import * as i18n from '../../../../agent_builder/components/translations';
 
@@ -70,6 +71,7 @@ export const useAddToChatAction = ({
 
     return [
       {
+        key: ADD_TO_CHAT_ACTION_ID,
         name: i18n.ADD_TO_CHAT,
         'data-test-subj': 'add-to-chat-action',
         disabled: !hasValidAgentBuilderLicense,

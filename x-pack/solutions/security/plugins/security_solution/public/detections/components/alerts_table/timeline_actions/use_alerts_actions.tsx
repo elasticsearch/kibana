@@ -80,7 +80,10 @@ export const useAlertsActions = ({
     setEventsDeleted,
   ]);
 
-  const { items: actionItems, panels } = useBulkActionItems(actionItemArgs);
+  const {
+    groups: { statusItems: actionItems },
+    panels,
+  } = useBulkActionItems(actionItemArgs);
 
   return useMemo(() => {
     return hasAlertsUpdate ? { actionItems, panels } : { actionItems: [], panels: [] };

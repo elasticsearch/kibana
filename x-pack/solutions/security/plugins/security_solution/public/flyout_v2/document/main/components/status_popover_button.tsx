@@ -10,6 +10,8 @@ import React, { memo, useCallback, useMemo, useState } from 'react';
 import type { SerializedFieldFormat } from '@kbn/field-formats-plugin/common';
 import { getFieldFormat } from '../../../shared/utils/get_field_format';
 import { useAlertsActions } from '../../../../detections/components/alerts_table/timeline_actions/use_alerts_actions';
+import { withStatusDotIcons } from '../../../../common/utils/action_menu_items';
+import { ALERT_STATUS_ICON_COLORS } from '../../../../common/components/toolbar/bulk_actions/use_bulk_action_items';
 import type { Status } from '../../../../../common/api/detection_engine';
 import {
   CHANGE_ALERT_STATUS,
@@ -22,10 +24,11 @@ import { useFlyoutTelemetry } from '../../../shared/hooks/use_flyout_telemetry';
 import { wrapActionTelemetry } from '../utils/wrap_action_telemetry';
 
 // Same status items as the footer's take-action menu (both come from `useAlertsActions`).
-const STATUS_ACTION_TEST_SUBJ: Partial<Record<string, FlyoutActionType>> = {
-  'open-alert-status': FLYOUT_ACTION.STATUS_OPEN,
-  'acknowledged-alert-status': FLYOUT_ACTION.STATUS_ACKNOWLEDGED,
-  'alert-close-context-menu-item': FLYOUT_ACTION.STATUS_CLOSED,
+// Keyed on item.key (the stable action id from ALERT_STATUS_ACTION_IDS / ALERT_CLOSE_WITH_REASON_ACTION_ID).
+const STATUS_ACTIONS_BY_ID: Partial<Record<string, FlyoutActionType>> = {
+  open: FLYOUT_ACTION.STATUS_OPEN,
+  acknowledge: FLYOUT_ACTION.STATUS_ACKNOWLEDGED,
+  'close-alert-with-reason': FLYOUT_ACTION.STATUS_CLOSED,
 };
 
 export interface StatusPopoverButtonFieldInfo {
@@ -103,7 +106,12 @@ export const StatusPopoverButton = memo(
     });
 
     const actionItems = useMemo(
-      () => wrapActionTelemetry(rawActionItems, STATUS_ACTION_TEST_SUBJ, reportActionClicked),
+      () =>
+        wrapActionTelemetry(
+          withStatusDotIcons(rawActionItems, ALERT_STATUS_ICON_COLORS),
+          STATUS_ACTIONS_BY_ID,
+          reportActionClicked
+        ),
       [rawActionItems, reportActionClicked]
     );
 

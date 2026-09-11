@@ -6,11 +6,11 @@
  */
 
 import React from 'react';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { useKibana as mockUseKibana } from '../../../../common/lib/kibana/__mocks__';
-import { AddToExistingCase } from './add_to_existing_case';
 import { TestProvidersComponent } from '../../../../threat_intelligence/mocks/test_providers';
 import type { EntityToAttach } from '..';
+import { AddToCase } from './add_to_case';
 
 jest.mock('../../../../common/lib/kibana');
 
@@ -20,7 +20,7 @@ const ENTITY: EntityToAttach = {
   type: 'host',
 };
 
-describe('AddToExistingCase', () => {
+describe('AddToCase', () => {
   const mockOpen = jest.fn();
   const mockOnClick = jest.fn();
 
@@ -31,34 +31,26 @@ describe('AddToExistingCase', () => {
       .mockReturnValue({ open: mockOpen });
   });
 
-  it('renders the menu item with the correct label', () => {
+  it('renders the singular case action', () => {
     render(
       <TestProvidersComponent>
-        <AddToExistingCase entity={ENTITY} onClick={mockOnClick} />
+        <AddToCase entity={ENTITY} onClick={mockOnClick} />
       </TestProvidersComponent>
     );
 
-    expect(screen.getByText('Add to existing case')).toBeInTheDocument();
+    expect(screen.getByText('Add to case')).toBeInTheDocument();
   });
 
-  it('calls onClick and opens the existing-case modal on click', () => {
+  it('opens the unified case modal with the entity attachment', () => {
     render(
       <TestProvidersComponent>
-        <AddToExistingCase entity={ENTITY} onClick={mockOnClick} />
+        <AddToCase entity={ENTITY} onClick={mockOnClick} />
       </TestProvidersComponent>
     );
 
-    fireEvent.click(screen.getByRole('button', { name: /add to existing case/i }));
+    fireEvent.click(screen.getByRole('button', { name: /add to case/i }));
 
     expect(mockOnClick).toHaveBeenCalledTimes(1);
-    expect(mockOpen).toHaveBeenCalledTimes(1);
-    expect(mockOpen).toHaveBeenCalledWith(
-      expect.objectContaining({
-        getAttachments: expect.any(Function),
-      })
-    );
-
-    // Verify the getAttachments callback returns the correct payload.
     const { getAttachments } = mockOpen.mock.calls[0][0];
     expect(getAttachments()).toEqual(
       expect.arrayContaining([
@@ -73,17 +65,13 @@ describe('AddToExistingCase', () => {
     );
   });
 
-  it('forwards a data-test-subj to the menu item', () => {
+  it('forwards the test subject', () => {
     render(
       <TestProvidersComponent>
-        <AddToExistingCase
-          entity={ENTITY}
-          onClick={mockOnClick}
-          data-test-subj="my-add-to-existing-case"
-        />
+        <AddToCase entity={ENTITY} onClick={mockOnClick} data-test-subj="my-add-to-case" />
       </TestProvidersComponent>
     );
 
-    expect(screen.getByTestId('my-add-to-existing-case')).toBeInTheDocument();
+    expect(screen.getByTestId('my-add-to-case')).toBeInTheDocument();
   });
 });

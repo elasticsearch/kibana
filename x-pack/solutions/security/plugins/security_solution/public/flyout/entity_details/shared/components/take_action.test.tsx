@@ -87,6 +87,16 @@ describe('<TakeAction />', () => {
       fireEvent.click(result.getByTestId('investigate-in-timeline-take-action-button'));
     };
 
+    it('renders the timeline icon', () => {
+      const result = render(<TakeAction kqlQuery={kqlQuery} />, { wrapper: TestProviders });
+      fireEvent.click(result.getByRole('button', { name: /take action/i }));
+      expect(
+        result
+          .getByTestId('investigate-in-timeline-take-action-button')
+          .querySelector('[data-euiicon-type="timeline"]')
+      ).toBeInTheDocument();
+    });
+
     it('opens Timeline with the entity query', async () => {
       const result = render(<TakeAction kqlQuery={kqlQuery} />, {
         wrapper: TestProviders,

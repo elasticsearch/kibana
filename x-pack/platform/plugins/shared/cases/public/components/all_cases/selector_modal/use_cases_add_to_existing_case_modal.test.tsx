@@ -41,7 +41,6 @@ const getAttachments = jest.fn().mockReturnValue([alertComment]);
 const useCasesToastMock = useCasesToast as jest.Mock;
 const useCasesAddToNewCaseFlyoutMock = useCasesAddToNewCaseFlyout as jest.Mock;
 const AllCasesSelectorModalMock = AllCasesSelectorModal as unknown as jest.Mock;
-const openCreateNewCaseFlyout = jest.fn();
 
 // test component to test the hook integration
 const TestComponent: React.FC<AddToExistingCaseModalProps> = (
@@ -97,11 +96,6 @@ describe('use cases add to existing case modal hook', () => {
   beforeEach(() => {
     dispatch.mockReset();
     AllCasesSelectorModalMock.mockReset();
-    useCasesAddToNewCaseFlyoutMock.mockReturnValue({
-      close: jest.fn(),
-      open: openCreateNewCaseFlyout,
-    });
-    openCreateNewCaseFlyout.mockReset();
     onSuccess.mockReset();
     mockOpenCreateCaseFlyout.mockReset();
     useCasesAddToNewCaseFlyoutMock.mockReturnValue({
@@ -189,8 +183,8 @@ describe('use cases add to existing case modal hook', () => {
     await userEvent.click(screen.getByTestId('open-modal'));
 
     await waitFor(() => {
-      expect(openCreateNewCaseFlyout).toHaveBeenCalledWith({
-        attachments: [alertComment],
+      expect(mockOpenCreateCaseFlyout).toHaveBeenCalledWith({
+        getAttachments: expect.any(Function),
         headerContent,
       });
     });

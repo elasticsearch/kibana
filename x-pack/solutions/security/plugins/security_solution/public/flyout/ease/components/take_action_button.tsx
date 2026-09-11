@@ -6,12 +6,13 @@
  */
 
 import React, { memo, useCallback, useMemo, useState } from 'react';
-import { EuiButton, EuiContextMenu, EuiPopover } from '@elastic/eui';
+import { EuiButton, EuiPopover } from '@elastic/eui';
 import { i18n } from '@kbn/i18n';
 import { flattenObject } from '@kbn/object-utils';
 import { useEaseDetailsContext } from '../context';
 import { useAddToCaseActions } from '../../../detections/components/alerts_table/timeline_actions/use_add_to_case_actions';
 import { useAlertTagsActions } from '../../../detections/components/alerts_table/timeline_actions/use_alert_tags_actions';
+import { AlertSummaryActionMenu } from '../../../detections/components/alert_summary/action_menu/alert_summary_action_menu';
 
 export const TAKE_ACTION_BUTTON_TEST_ID = 'alert-summary-flyout-take-action';
 
@@ -80,17 +81,6 @@ export const TakeActionButton = memo(() => {
     ecsRowData: dataAsNestedObject,
   });
 
-  const panels = useMemo(
-    () => [
-      {
-        id: 0,
-        items: [...addToCaseActionItems, ...alertTagsItems],
-      },
-      ...alertTagsPanels,
-    ],
-    [addToCaseActionItems, alertTagsItems, alertTagsPanels]
-  );
-
   return (
     <EuiPopover
       aria-label={TAKE_ACTION_BUTTON}
@@ -99,7 +89,11 @@ export const TakeActionButton = memo(() => {
       isOpen={isPopoverOpen}
       panelPaddingSize="none"
     >
-      <EuiContextMenu initialPanelId={0} panels={panels} />
+      <AlertSummaryActionMenu
+        addToCaseItems={addToCaseActionItems}
+        alertTagsItems={alertTagsItems}
+        panels={alertTagsPanels}
+      />
     </EuiPopover>
   );
 });

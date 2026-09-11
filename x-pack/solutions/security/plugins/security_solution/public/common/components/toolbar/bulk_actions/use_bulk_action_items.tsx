@@ -6,7 +6,7 @@
  */
 
 import { useMemo, useCallback } from 'react';
-import type { EuiContextMenuPanelDescriptor } from '@elastic/eui';
+import type { EuiContextMenuPanelDescriptor, EuiIconProps } from '@elastic/eui';
 import { useBulkClosingReasonItems } from '@kbn/response-ops-detections-close-reason';
 import { flattenObject } from '@kbn/object-utils';
 import type { AlertTableContextMenuItem } from '../../../../detections/components/alerts_table/types';
@@ -29,6 +29,34 @@ import { useAlertCloseInfoModal } from '../../../../detections/hooks/use_alert_c
 import { useAlertsPrivileges } from '../../../../detections/containers/detection_engine/alerts/use_alerts_privileges';
 import { useRunDocumentWorkflowPanel } from '../../../../detections/components/alerts_table/timeline_actions/use_run_document_workflow_panel';
 
+export type BulkActionMenuItem = AlertTableContextMenuItem;
+
+/**
+ * Structured groups returned alongside the flat `items` array.
+ * `casesItems` and `timelineItems` are sub-partitions of custom bulk actions
+ * whose producers set `groupId: 'cases'` or `groupId: 'timeline'` respectively.
+ * `customItems` holds any remaining custom actions with no recognised group.
+ */
+export interface BulkActionGroups {
+  statusItems: BulkActionMenuItem[];
+  casesItems: BulkActionMenuItem[];
+  timelineItems: BulkActionMenuItem[];
+  customItems: BulkActionMenuItem[];
+  workflowItems: BulkActionMenuItem[];
+}
+
+export const ALERT_STATUS_ACTION_IDS = {
+  markAsAcknowledged: 'acknowledge',
+  markAsOpen: 'open',
+} as const;
+
+/** Shared status-dot colour map — keyed on the action item `key`, not `data-test-subj`. */
+export const ALERT_STATUS_ICON_COLORS: Readonly<Record<string, EuiIconProps['color']>> = {
+  [ALERT_STATUS_ACTION_IDS.markAsOpen]: 'danger',
+  [ALERT_STATUS_ACTION_IDS.markAsAcknowledged]: 'primary',
+  'close-alert-with-reason': 'subdued',
+};
+
 export interface BulkActionsProps {
   eventIds: string[];
   currentStatus?: AlertWorkflowStatus;
@@ -43,6 +71,14 @@ export interface BulkActionsProps {
   closePopover?: () => void;
   showRunWorkflowActions?: boolean;
 }
+
+/**
+ * Fall-through group assignment for custom actions whose producer does not set `groupId`.
+ * Keyed by the stable action `key`; values match the `BulkActionGroups` partition names.
+ */
+const CUSTOM_ACTION_GROUP_BY_KEY: Readonly<Record<string, 'casesItems' | 'timelineItems'>> = {
+  'attach-case': 'casesItems',
+};
 
 export const useBulkActionItems = ({
   eventIds,
@@ -194,77 +230,99 @@ export const useBulkActionItems = ({
     closePopover: closePopover ?? noop,
   });
 
-  const items = useMemo(() => {
-    const actionItems: AlertTableContextMenuItem[] = [];
-    if (showAlertStatusActions && hasAlertsUpdate) {
-      if (currentStatus !== FILTER_OPEN) {
-        actionItems.push({
-          key: 'open',
-          'data-test-subj': 'open-alert-status',
-          onClick: () => {
-            closePopover?.();
-            onClickUpdate(FILTER_OPEN as AlertWorkflowStatus);
-          },
-          name: i18n.BULK_ACTION_OPEN_SELECTED,
-        });
-      }
-      if (currentStatus !== FILTER_ACKNOWLEDGED) {
-        actionItems.push({
-          key: 'acknowledge',
-          'data-test-subj': 'acknowledged-alert-status',
-          onClick: () => {
-            closePopover?.();
-            onClickUpdate(FILTER_ACKNOWLEDGED as AlertWorkflowStatus);
-          },
-          name: i18n.BULK_ACTION_ACKNOWLEDGED_SELECTED,
-        });
-      }
-      if (currentStatus !== FILTER_CLOSED) {
-        actionItems.push({
-          key: alertClosingReasonItem?.key,
-          'data-test-subj': alertClosingReasonItem?.['data-test-subj'],
-          name: alertClosingReasonItem?.label,
-          panel: alertClosingReasonItem?.panel,
-        });
-      }
+  const statusItems = useMemo<BulkActionMenuItem[]>(() => {
+    const result: BulkActionMenuItem[] = [];
+    if (!showAlertStatusActions || !hasAlertsUpdate) return result;
+    if (currentStatus !== FILTER_OPEN) {
+      result.push({
+        key: ALERT_STATUS_ACTION_IDS.markAsOpen,
+        'data-test-subj': 'open-alert-status',
+        onClick: () => {
+          closePopover?.();
+          onClickUpdate(FILTER_OPEN as AlertWorkflowStatus);
+        },
+        name: i18n.BULK_ACTION_OPEN_SELECTED,
+      });
     }
-
-    const additionalItems = customBulkActions
-      ? customBulkActions.reduce<AlertTableContextMenuItem[]>((acc, action) => {
-          const isDisabled = !!(query && action.disableOnQuery);
-          acc.push({
-            key: action.key,
-            disabled: isDisabled,
-            'data-test-subj': action['data-test-subj'],
-            toolTipContent: isDisabled ? action.disabledLabel : null,
-            onClick: () => {
-              closePopover?.();
-              action.onClick(eventIds);
-            },
-            name: action.label,
-          });
-          return acc;
-        }, [])
-      : [];
-
-    return [
-      ...actionItems,
-      ...additionalItems,
-      ...(showRunWorkflowActions ? runWorkflowMenuItem : []),
-    ];
+    if (currentStatus !== FILTER_ACKNOWLEDGED) {
+      result.push({
+        key: ALERT_STATUS_ACTION_IDS.markAsAcknowledged,
+        'data-test-subj': 'acknowledged-alert-status',
+        onClick: () => {
+          closePopover?.();
+          onClickUpdate(FILTER_ACKNOWLEDGED as AlertWorkflowStatus);
+        },
+        name: i18n.BULK_ACTION_ACKNOWLEDGED_SELECTED,
+      });
+    }
+    if (currentStatus !== FILTER_CLOSED) {
+      result.push({
+        key: alertClosingReasonItem?.key,
+        'data-test-subj': alertClosingReasonItem?.['data-test-subj'],
+        name: alertClosingReasonItem?.label,
+        panel: alertClosingReasonItem?.panel,
+      });
+    }
+    return result;
   }, [
     showAlertStatusActions,
     hasAlertsUpdate,
-    customBulkActions,
-    runWorkflowMenuItem,
-    showRunWorkflowActions,
     currentStatus,
     closePopover,
     onClickUpdate,
     alertClosingReasonItem,
-    query,
-    eventIds,
   ]);
+
+  const { casesItems, timelineItems, customItems } = useMemo(() => {
+    const cases: BulkActionMenuItem[] = [];
+    const timeline: BulkActionMenuItem[] = [];
+    const rest: BulkActionMenuItem[] = [];
+    if (customBulkActions) {
+      for (const action of customBulkActions) {
+        const isDisabled = !!(query && action.disableOnQuery);
+        const onClick = () => {
+          closePopover?.();
+          action.onClick(eventIds);
+        };
+        const menuItem: BulkActionMenuItem = {
+          key: action.key,
+          disabled: isDisabled,
+          'data-test-subj': action['data-test-subj'],
+          icon: action.icon,
+          toolTipContent: isDisabled ? action.disabledLabel : null,
+          onClick,
+          name: action.label,
+        };
+        const bucket =
+          action.groupId === 'cases'
+            ? cases
+            : action.groupId === 'timeline'
+            ? timeline
+            : CUSTOM_ACTION_GROUP_BY_KEY[action.key] === 'casesItems'
+            ? cases
+            : CUSTOM_ACTION_GROUP_BY_KEY[action.key] === 'timelineItems'
+            ? timeline
+            : rest;
+        bucket.push(menuItem);
+      }
+    }
+    return { casesItems: cases, timelineItems: timeline, customItems: rest };
+  }, [customBulkActions, query, closePopover, eventIds]);
+
+  const workflowItems = useMemo<BulkActionMenuItem[]>(
+    () => (showRunWorkflowActions ? runWorkflowMenuItem : []),
+    [showRunWorkflowActions, runWorkflowMenuItem]
+  );
+
+  const items = useMemo<BulkActionMenuItem[]>(
+    () => [...statusItems, ...casesItems, ...timelineItems, ...customItems, ...workflowItems],
+    [statusItems, casesItems, timelineItems, customItems, workflowItems]
+  );
+
+  const groups = useMemo<BulkActionGroups>(
+    () => ({ statusItems, casesItems, timelineItems, customItems, workflowItems }),
+    [statusItems, casesItems, timelineItems, customItems, workflowItems]
+  );
 
   const panels = useMemo(
     () =>
@@ -284,5 +342,5 @@ export const useBulkActionItems = ({
     [alertClosingReasonPanels, runDocumentWorkflowPanel, showRunWorkflowActions]
   );
 
-  return useMemo(() => ({ items, panels }), [items, panels]);
+  return useMemo(() => ({ items, panels, groups }), [items, panels, groups]);
 };

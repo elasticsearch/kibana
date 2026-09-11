@@ -210,7 +210,7 @@ export const useBulkAddToCaseActions = ({
                   return getCaseAttachments({
                     alerts,
                     caseId: theCase.id,
-                    owner: theCase.owner,
+                    owner: theCase.owner ?? caseOwner ?? '',
                     groupAlertsByRule: casesService?.helpers.groupAlertsByRule,
                   });
                 },

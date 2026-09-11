@@ -96,11 +96,8 @@ describe('VisualizationActions', () => {
 
     expect(getByTestId('viz-actions-menu')).toBeInTheDocument();
     expect(mockContextMenu.mock.calls[0][0].panels[0].items[0].name).toEqual('Inspect');
-    expect(mockContextMenu.mock.calls[0][0].panels[0].items[1].name).toEqual('Add to new case');
-    expect(mockContextMenu.mock.calls[0][0].panels[0].items[2].name).toEqual(
-      'Add to existing case'
-    );
-    expect(mockContextMenu.mock.calls[0][0].panels[1].items[0].name).toEqual('Added to library');
-    expect(mockContextMenu.mock.calls[0][0].panels[1].items[1].name).toEqual('Open in Lens');
+    expect(mockContextMenu.mock.calls[0][0].panels[0].items[1].name).toEqual('Add to case');
+    expect(mockContextMenu.mock.calls[0][0].panels[0].items[2].name).toEqual('Added to library');
+    expect(mockContextMenu.mock.calls[0][0].panels[0].items[3].name).toEqual('Open in Lens');
   });
 });

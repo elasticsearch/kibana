@@ -54,8 +54,7 @@ const formatTooltipHeader = ({ value }: { value: number }) => {
 const ID = 'CostSavingsTrendQuery';
 
 const VISUALIZATION_ACTIONS = [
-  VisualizationContextMenuActions.addToExistingCase,
-  VisualizationContextMenuActions.addToNewCase,
+  VisualizationContextMenuActions.addToCase,
   VisualizationContextMenuActions.inspect,
 ];
 

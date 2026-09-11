@@ -6,13 +6,14 @@
  */
 
 import React, { memo, useCallback, useMemo, useState } from 'react';
-import { EuiButtonIcon, EuiContextMenu, EuiPopover, EuiToolTip } from '@elastic/eui';
+import { EuiButtonIcon, EuiPopover, EuiToolTip } from '@elastic/eui';
 import type { EcsSecurityExtension } from '@kbn/securitysolution-ecs';
 import type { Alert } from '@kbn/alerting-types';
 import { i18n } from '@kbn/i18n';
 import { expandDottedObject } from '../../../../../common/utils/expand_dotted';
 import { useAlertTagsActions } from '../../alerts_table/timeline_actions/use_alert_tags_actions';
 import { useAddToCaseActions } from '../../alerts_table/timeline_actions/use_add_to_case_actions';
+import { AlertSummaryActionMenu } from '../action_menu/alert_summary_action_menu';
 
 export const MORE_ACTIONS_BUTTON_TEST_ID = 'alert-summary-table-row-action-more-actions';
 
@@ -84,17 +85,6 @@ export const MoreActionsRowControlColumn = memo(({ alert }: MoreActionsRowContro
     ecsRowData: ecsAlert,
   });
 
-  const panels = useMemo(
-    () => [
-      {
-        id: 0,
-        items: [...addToCaseActionItems, ...alertTagsItems],
-      },
-      ...alertTagsPanels,
-    ],
-    [addToCaseActionItems, alertTagsItems, alertTagsPanels]
-  );
-
   return (
     <EuiPopover
       aria-label={MORE_ACTIONS_BUTTON_ARIA_LABEL}
@@ -103,7 +93,11 @@ export const MoreActionsRowControlColumn = memo(({ alert }: MoreActionsRowContro
       isOpen={isPopoverOpen}
       panelPaddingSize="none"
     >
-      <EuiContextMenu initialPanelId={0} panels={panels} />
+      <AlertSummaryActionMenu
+        addToCaseItems={addToCaseActionItems}
+        alertTagsItems={alertTagsItems}
+        panels={alertTagsPanels}
+      />
     </EuiPopover>
   );
 });

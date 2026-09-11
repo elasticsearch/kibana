@@ -232,20 +232,6 @@ export const CLICK_TO_CHANGE_ALERT_STATUS = i18n.translate(
   }
 );
 
-export const ADD_TO_EXISTING_CASE = i18n.translate(
-  'xpack.securitySolution.detectionEngine.alerts.actions.addToCase',
-  {
-    defaultMessage: 'Add to existing case',
-  }
-);
-
-export const ADD_TO_NEW_CASE = i18n.translate(
-  'xpack.securitySolution.detectionEngine.alerts.actions.addToNewCase',
-  {
-    defaultMessage: 'Add to new case',
-  }
-);
-
 export const INVESTIGATE_BULK_IN_TIMELINE = i18n.translate(
   'xpack.securitySolution.detectionEngine.alerts.actions.addBulkToTimeline',
   {

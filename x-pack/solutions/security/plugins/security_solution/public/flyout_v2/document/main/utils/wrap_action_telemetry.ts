@@ -13,9 +13,10 @@ import type { ReportActionClickedParams } from '../../../shared/hooks/use_flyout
 /**
  * Wraps a list of EUI context-menu items so that clicking one reports a `FlyoutActionClicked`
  * telemetry event (via `reportActionClicked`) before invoking the item's original `onClick`, when
- * known. Items are matched by their existing `data-test-subj`; an item whose test-subj isn't in
- * `actionsByTestSubj` (or is a pure separator/render-custom item, with neither `onClick` nor
- * `panel`) passes through unchanged.
+ * known. Items are matched by their `key` field (the stable action id, NOT `data-test-subj` —
+ * test-subj values are allowed to drift with UI testing conventions while the action id is stable).
+ * An item whose key isn't in `actionsByKey` (or is a pure separator/render-custom item, with neither
+ * `onClick` nor `panel`) passes through unchanged.
  *
  * Some actions (e.g. "Mark as closed", which opens a closing-reason sub-panel) are pure
  * panel-navigation items with a `panel` id and no `onClick` of their own — EUI's `EuiContextMenu`
@@ -25,13 +26,12 @@ import type { ReportActionClickedParams } from '../../../shared/hooks/use_flyout
  */
 export const wrapActionTelemetry = <T extends EuiContextMenuPanelItemDescriptor>(
   items: T[],
-  actionsByTestSubj: Partial<Record<string, FlyoutActionType>>,
+  actionsByKey: Partial<Record<string, FlyoutActionType>>,
   reportActionClicked: (params: ReportActionClickedParams) => void,
   flyoutType: FlyoutType = 'document'
 ): T[] =>
   items.map((item) => {
-    const testSubj = item['data-test-subj'];
-    const action = typeof testSubj === 'string' ? actionsByTestSubj[testSubj] : undefined;
+    const action = typeof item.key === 'string' ? actionsByKey[item.key] : undefined;
     const hasPanel = (item as { panel?: unknown }).panel != null;
     if (!action || (!item.onClick && !hasPanel)) {
       return item;

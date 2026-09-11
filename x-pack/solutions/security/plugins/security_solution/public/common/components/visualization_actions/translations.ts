@@ -25,20 +25,6 @@ export const OPEN_IN_LENS = i18n.translate(
   }
 );
 
-export const ADD_TO_NEW_CASE = i18n.translate(
-  'xpack.securitySolution.visualizationActions.addToNewCase',
-  {
-    defaultMessage: 'Add to new case',
-  }
-);
-
-export const ADD_TO_EXISTING_CASE = i18n.translate(
-  'xpack.securitySolution.visualizationActions.addToExistingCase',
-  {
-    defaultMessage: 'Add to existing case',
-  }
-);
-
 export const ADD_TO_CASE_SUCCESS = i18n.translate(
   'xpack.securitySolution.visualizationActions.addToCaseSuccessContent',
   {

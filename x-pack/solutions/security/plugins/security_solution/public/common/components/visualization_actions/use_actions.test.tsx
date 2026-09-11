@@ -8,7 +8,7 @@
 import { renderHook } from '@testing-library/react';
 import React from 'react';
 import { mockAttributes } from './mocks';
-import { DEFAULT_ACTIONS, useActions } from './use_actions';
+import { DEFAULT_ACTIONS, useActions, VISUALIZATION_CONTEXT_MENU_TRIGGER } from './use_actions';
 import { TestProviders } from '../../mock';
 
 jest.mock('./use_add_to_existing_case', () => {
@@ -19,15 +19,6 @@ jest.mock('./use_add_to_existing_case', () => {
     }),
   };
 });
-jest.mock('./use_add_to_new_case', () => {
-  return {
-    useAddToNewCase: jest.fn().mockReturnValue({
-      disabled: false,
-      onAddToNewCaseClicked: jest.fn(),
-    }),
-  };
-});
-
 jest.mock('./use_redirect_to_dashboard_from_lens', () => ({
   useRedirectToDashboardFromLens: jest.fn().mockReturnValue({
     redirectTo: jest.fn(),
@@ -80,15 +71,16 @@ describe(`useActions`, () => {
       wrapper: TestProviders,
     });
     expect(result.current[0].id).toEqual('inspect');
-    expect(result.current[0].order).toEqual(4);
-    expect(result.current[1].id).toEqual('addToNewCase');
-    expect(result.current[1].order).toEqual(3);
-    expect(result.current[2].id).toEqual('addToExistingCase');
-    expect(result.current[2].order).toEqual(2);
-    expect(result.current[3].id).toEqual('saveToLibrary');
-    expect(result.current[3].order).toEqual(1);
-    expect(result.current[4].id).toEqual('openInLens');
-    expect(result.current[4].order).toEqual(0);
+    expect(result.current[0].order).toEqual(3);
+    expect(result.current[1].id).toEqual('addToCase');
+    expect(
+      result.current[1].getDisplayName({ trigger: VISUALIZATION_CONTEXT_MENU_TRIGGER })
+    ).toEqual('Add to case');
+    expect(result.current[1].order).toEqual(2);
+    expect(result.current[2].id).toEqual('saveToLibrary');
+    expect(result.current[2].order).toEqual(1);
+    expect(result.current[3].id).toEqual('openInLens');
+    expect(result.current[3].order).toEqual(0);
   });
 
   it('should render extra actions if available', () => {
@@ -121,16 +113,14 @@ describe(`useActions`, () => {
     );
 
     expect(result.current[0].id).toEqual('inspect');
-    expect(result.current[0].order).toEqual(5);
-    expect(result.current[1].id).toEqual('addToNewCase');
-    expect(result.current[1].order).toEqual(4);
-    expect(result.current[2].id).toEqual('addToExistingCase');
-    expect(result.current[2].order).toEqual(3);
-    expect(result.current[3].id).toEqual('saveToLibrary');
-    expect(result.current[3].order).toEqual(2);
-    expect(result.current[4].id).toEqual('openInLens');
-    expect(result.current[4].order).toEqual(1);
-    expect(result.current[5].id).toEqual('mockExtraAction');
-    expect(result.current[5].order).toEqual(0);
+    expect(result.current[0].order).toEqual(4);
+    expect(result.current[1].id).toEqual('addToCase');
+    expect(result.current[1].order).toEqual(3);
+    expect(result.current[2].id).toEqual('saveToLibrary');
+    expect(result.current[2].order).toEqual(2);
+    expect(result.current[3].id).toEqual('openInLens');
+    expect(result.current[3].order).toEqual(1);
+    expect(result.current[4].id).toEqual('mockExtraAction');
+    expect(result.current[4].order).toEqual(0);
   });
 });

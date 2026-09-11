@@ -11,25 +11,18 @@ import type { Action, Trigger } from '@kbn/ui-actions-plugin/public';
 import { createAction } from '@kbn/ui-actions-plugin/public';
 import type { ActionDefinition } from '@kbn/ui-actions-plugin/public/actions';
 import type { LensProps } from '@kbn/cases-plugin/public/types';
+import { ADD_TO_CASE } from '@kbn/response-ops-alerts-table/translations';
 import { useKibana } from '../../lib/kibana/kibana_react';
 import { useAddToExistingCase } from './use_add_to_existing_case';
-import { useAddToNewCase } from './use_add_to_new_case';
 import { useSaveToLibrary } from './use_save_to_library';
 
 import { VisualizationContextMenuActions } from './types';
 import type { LensAttributes } from './types';
-import {
-  ADDED_TO_LIBRARY,
-  ADD_TO_EXISTING_CASE,
-  ADD_TO_NEW_CASE,
-  INSPECT,
-  OPEN_IN_LENS,
-} from './translations';
+import { ADDED_TO_LIBRARY, INSPECT, OPEN_IN_LENS } from './translations';
 
 export const DEFAULT_ACTIONS: VisualizationContextMenuActions[] = [
   VisualizationContextMenuActions.inspect,
-  VisualizationContextMenuActions.addToNewCase,
-  VisualizationContextMenuActions.addToExistingCase,
+  VisualizationContextMenuActions.addToCase,
   VisualizationContextMenuActions.saveToLibrary,
   VisualizationContextMenuActions.openInLens,
 ];
@@ -53,16 +46,9 @@ const ACTION_DEFINITION: Record<
     type: 'actionButton',
     order: 4,
   },
-  [VisualizationContextMenuActions.addToNewCase]: {
-    id: VisualizationContextMenuActions.addToNewCase,
-    getDisplayName: () => ADD_TO_NEW_CASE,
-    getIconType: () => 'casesApp',
-    type: 'actionButton',
-    order: 3,
-  },
-  [VisualizationContextMenuActions.addToExistingCase]: {
-    id: VisualizationContextMenuActions.addToExistingCase,
-    getDisplayName: () => ADD_TO_EXISTING_CASE,
+  [VisualizationContextMenuActions.addToCase]: {
+    id: VisualizationContextMenuActions.addToCase,
+    getDisplayName: () => ADD_TO_CASE,
     getIconType: () => 'casesApp',
     type: 'actionButton',
     order: 2,
@@ -123,18 +109,12 @@ export const useActions = ({
     );
   }, [attributes, navigateToPrefilledEditor, timeRange]);
 
-  const { disabled: isAddToExistingCaseDisabled, onAddToExistingCaseClicked } =
+  const { disabled: isAddToCaseDisabled, onAddToExistingCaseClicked: onAddToCaseClicked } =
     useAddToExistingCase({
       lensAttributes: attributes,
       timeRange,
       lensMetadata,
     });
-
-  const { onAddToNewCaseClicked, disabled: isAddToNewCaseDisabled } = useAddToNewCase({
-    timeRange,
-    lensAttributes: attributes,
-    lensMetadata,
-  });
 
   const { openSaveVisualizationFlyout, disableVisualizations } = useSaveToLibrary({ attributes });
 
@@ -150,23 +130,13 @@ export const useActions = ({
           isCompatible: async () => withActions.includes(VisualizationContextMenuActions.inspect),
         }),
         createAction({
-          ...ACTION_DEFINITION[VisualizationContextMenuActions.addToNewCase],
+          ...ACTION_DEFINITION[VisualizationContextMenuActions.addToCase],
           execute: async () => {
-            onAddToNewCaseClicked();
+            onAddToCaseClicked();
             topValuesPopover.closePopover();
           },
-          isDisabled: () => isAddToNewCaseDisabled,
-          isCompatible: async () =>
-            withActions.includes(VisualizationContextMenuActions.addToNewCase),
-        }),
-        createAction({
-          ...ACTION_DEFINITION[VisualizationContextMenuActions.addToExistingCase],
-          execute: async () => {
-            onAddToExistingCaseClicked();
-          },
-          isDisabled: () => isAddToExistingCaseDisabled,
-          isCompatible: async () =>
-            withActions.includes(VisualizationContextMenuActions.addToExistingCase),
+          isDisabled: () => isAddToCaseDisabled,
+          isCompatible: async () => withActions.includes(VisualizationContextMenuActions.addToCase),
           order: 2,
         }),
         createAction({
@@ -201,10 +171,8 @@ export const useActions = ({
       disableVisualizations,
       extraActions,
       inspectActionProps,
-      isAddToExistingCaseDisabled,
-      isAddToNewCaseDisabled,
-      onAddToExistingCaseClicked,
-      onAddToNewCaseClicked,
+      isAddToCaseDisabled,
+      onAddToCaseClicked,
       onOpenInLens,
       openSaveVisualizationFlyout,
       withActions,

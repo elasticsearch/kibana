@@ -14,6 +14,7 @@ import {
   isActionMenuItem,
   withActionIcon,
   withActionIcons,
+  withGroupSeparators,
   withStatusDotIcons,
 } from './action_menu_items';
 
@@ -74,33 +75,76 @@ describe('action menu item utilities', () => {
       expect(result[1]).toBe(secondAction);
       expect(result[2]).toBe(separator);
     });
+
+    it('does not overwrite an icon that was already set by the producer', () => {
+      const itemWithIcon: EuiContextMenuPanelItemDescriptor = {
+        ...firstAction,
+        icon: 'workflow',
+      };
+      const result = withActionIcons([itemWithIcon], { 'first-action': 'bell' });
+
+      // 'workflow' must be preserved; 'bell' must not clobber it
+      expect(result[0]).toMatchObject({ icon: 'workflow' });
+    });
   });
 
   describe('withStatusDotIcons', () => {
-    it('selects colors by action id instead of test subject', () => {
-      const result = withStatusDotIcons(
-        [firstAction, secondAction],
-        {
-          'first-action': 'success',
-          'second-action': 'danger',
-        },
-        'subdued'
-      );
+    it('selects colors by action id', () => {
+      const result = withStatusDotIcons([firstAction, secondAction], {
+        'first-action': 'success',
+        'second-action': 'danger',
+      });
 
       expectStatusDot(result[0], 'success');
       expectStatusDot(result[1], 'danger');
     });
 
-    it('uses the default color for an action without a configured color', () => {
+    it('leaves an unmapped item unchanged (no default color)', () => {
+      // With no entry for 'first-action', the item should pass through as-is
       const result = withStatusDotIcons([firstAction], {});
 
-      expectStatusDot(result[0], 'subdued');
+      expect(result[0]).toBe(firstAction);
     });
 
     it('leaves separators unchanged', () => {
       const result = withStatusDotIcons([separator], {});
 
       expect(result[0]).toBe(separator);
+    });
+  });
+
+  describe('withGroupSeparators', () => {
+    it('inserts separators between non-empty groups', () => {
+      const result = withGroupSeparators([[firstAction], [secondAction]]);
+
+      expect(result).toHaveLength(3); // item + separator + item
+      expect(result[0]).toBe(firstAction);
+      expect(result[1]).toMatchObject({
+        isSeparator: true,
+        'data-test-subj': ACTION_MENU_GROUP_SEPARATOR_TEST_ID,
+      });
+      expect(result[2]).toBe(secondAction);
+    });
+
+    it('skips empty groups so no orphan separators appear', () => {
+      const result = withGroupSeparators([[firstAction], [], [secondAction]]);
+
+      expect(result).toHaveLength(3); // item + separator + item (middle empty group skipped)
+      expect(result[0]).toBe(firstAction);
+      expect(result[1]).toMatchObject({ isSeparator: true });
+      expect(result[2]).toBe(secondAction);
+    });
+
+    it('returns a flat array when only one group is non-empty', () => {
+      const result = withGroupSeparators([[], [firstAction, secondAction], []]);
+
+      expect(result).toHaveLength(2);
+      expect(result[0]).toBe(firstAction);
+      expect(result[1]).toBe(secondAction);
+    });
+
+    it('returns an empty array when all groups are empty', () => {
+      expect(withGroupSeparators([[], []])).toHaveLength(0);
     });
   });
 

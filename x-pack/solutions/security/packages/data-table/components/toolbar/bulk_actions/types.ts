@@ -5,6 +5,7 @@
  * 2.0.
  */
 
+import type { IconType } from '@elastic/eui';
 import type { TimelineItem } from '@kbn/timelines-plugin/common';
 
 export type AlertWorkflowStatus = 'open' | 'closed' | 'acknowledged';
@@ -12,6 +13,7 @@ export type AlertWorkflowStatus = 'open' | 'closed' | 'acknowledged';
 export interface CustomBulkAction {
   key: string;
   label: string;
+  icon?: IconType;
   disableOnQuery?: boolean;
   disabledLabel?: string;
   onClick: (items?: TimelineItem[]) => void;

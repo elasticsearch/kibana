@@ -99,6 +99,11 @@ describe('AnomalyRowActionsMenu', () => {
     expect(screen.getByTestId(ADD_TO_TIMELINE)).toBeInTheDocument();
     expect(screen.getByTestId(VIEW_IN_DISCOVER)).toBeInTheDocument();
     expect(screen.getByTestId(VIEW_IN_SMV)).toBeInTheDocument();
+    expect(screen.getAllByRole('menuitem').map(({ textContent }) => textContent)).toEqual([
+      'Add to timeline',
+      'View in Discover',
+      'View in Single metric viewer',
+    ]);
   });
 
   it('labels each investigation action', async () => {

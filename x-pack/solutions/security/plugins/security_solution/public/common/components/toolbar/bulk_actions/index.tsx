@@ -6,10 +6,11 @@
  */
 
 import type { EuiContextMenuPanelDescriptor } from '@elastic/eui';
-import { EuiPopover, EuiButtonEmpty, EuiContextMenu } from '@elastic/eui';
-import React, { useState, useCallback, useMemo, useEffect } from 'react';
+import { EuiPopover, EuiButtonEmpty } from '@elastic/eui';
+import React, { useState, useCallback, useEffect } from 'react';
 import styled from 'styled-components';
-import type { AlertTableContextMenuItem } from '../../../../detections/components/alerts_table/types';
+import { EventsTableBulkActionMenu } from './events_table_bulk_action_menu';
+import type { BulkActionGroups } from './use_bulk_action_items';
 
 interface OwnProps {
   selectText: string;
@@ -17,8 +18,8 @@ interface OwnProps {
   showClearSelection: boolean;
   onSelectAll: () => void;
   onClearSelection: () => void;
-  bulkActionItems: AlertTableContextMenuItem[];
   bulkActionPanels: EuiContextMenuPanelDescriptor[];
+  bulkActionGroups: BulkActionGroups;
   closePopoverRef?: React.MutableRefObject<() => void>;
 }
 
@@ -38,8 +39,8 @@ const BulkActionsComponent: React.FC<OwnProps> = ({
   showClearSelection,
   onSelectAll,
   onClearSelection,
-  bulkActionItems,
   bulkActionPanels,
+  bulkActionGroups,
   closePopoverRef,
 }) => {
   const [isActionsPopoverOpen, setIsActionsPopoverOpen] = useState(false);
@@ -66,17 +67,6 @@ const BulkActionsComponent: React.FC<OwnProps> = ({
     }
   }, [onClearSelection, onSelectAll, showClearSelection]);
 
-  const panels = useMemo(
-    () => [
-      {
-        id: 0,
-        items: bulkActionItems,
-      },
-      ...bulkActionPanels,
-    ],
-    [bulkActionItems, bulkActionPanels]
-  );
-
   return (
     <BulkActionsContainer data-test-subj="bulk-actions-button-container">
       <EuiPopover
@@ -99,7 +89,7 @@ const BulkActionsComponent: React.FC<OwnProps> = ({
         }
         closePopover={closeActionPopover}
       >
-        <EuiContextMenu panels={panels} initialPanelId={0} />
+        <EventsTableBulkActionMenu panels={bulkActionPanels} groups={bulkActionGroups} />
       </EuiPopover>
 
       <EuiButtonEmpty

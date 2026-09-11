@@ -20,8 +20,8 @@ import {
 import { i18n } from '@kbn/i18n';
 import { FormattedMessage } from '@kbn/i18n-react';
 import { css } from '@emotion/react';
-import { useRiskInputActionsPanels } from '../hooks/use_risk_input_actions_panels';
 import type { InputAlert } from '../../../hooks/use_risk_contributing_alerts';
+import { useRiskInputActionsPanels } from '../hooks/use_risk_input_actions_panels';
 
 interface Props {
   riskInputs: InputAlert[];
@@ -80,7 +80,7 @@ export const RiskInputsUtilityBar: FunctionComponent<Props> = React.memo(({ risk
               </EuiButtonEmpty>
             }
           >
-            <EuiContextMenu panels={panels} initialPanelId={0} />
+            <EuiContextMenu initialPanelId={0} panels={panels} />
           </EuiPopover>
         </EuiFlexItem>
       </EuiFlexGroup>

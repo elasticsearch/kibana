@@ -83,8 +83,7 @@ describe('AlertProcessingDonut', () => {
         scopeId: PageScope.alerts,
         timerange: { from: defaultProps.from, to: defaultProps.to },
         withActions: [
-          VisualizationContextMenuActions.addToExistingCase,
-          VisualizationContextMenuActions.addToNewCase,
+          VisualizationContextMenuActions.addToCase,
           VisualizationContextMenuActions.inspect,
         ],
         getLensAttributes: expect.any(Function),

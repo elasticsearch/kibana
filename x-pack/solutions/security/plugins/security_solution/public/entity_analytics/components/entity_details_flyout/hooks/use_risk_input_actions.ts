@@ -6,7 +6,7 @@
  */
 
 import { useMemo } from 'react';
-import { get, noop } from 'lodash/fp';
+import { get } from 'lodash/fp';
 import { SECURITY_ALERT_ATTACHMENT_TYPE } from '@kbn/cases-plugin/common';
 import type { CaseAttachmentsWithoutOwner } from '@kbn/cases-plugin/public';
 import { ALERT_RULE_NAME, ALERT_RULE_UUID } from '@kbn/rule-data-utils';
@@ -18,7 +18,6 @@ import type { InputAlert } from '../../../hooks/use_risk_contributing_alerts';
  */
 export const useRiskInputActions = (inputs: InputAlert[], closePopover: () => void) => {
   const { cases: casesService } = useKibana().services;
-  const createCaseFlyout = casesService?.hooks.useCasesAddToNewCaseFlyout({ onSuccess: noop });
   const selectCaseModal = casesService?.hooks.useCasesAddToExistingCaseModal();
 
   const caseAttachments: CaseAttachmentsWithoutOwner = useMemo(
@@ -39,15 +38,11 @@ export const useRiskInputActions = (inputs: InputAlert[], closePopover: () => vo
 
   return useMemo(
     () => ({
-      addToExistingCase: () => {
+      addToCase: () => {
         closePopover();
         selectCaseModal.open({ getAttachments: () => caseAttachments });
       },
-      addToNewCaseClick: () => {
-        closePopover();
-        createCaseFlyout.open({ attachments: caseAttachments });
-      },
     }),
-    [caseAttachments, closePopover, createCaseFlyout, selectCaseModal]
+    [caseAttachments, closePopover, selectCaseModal]
   );
 };

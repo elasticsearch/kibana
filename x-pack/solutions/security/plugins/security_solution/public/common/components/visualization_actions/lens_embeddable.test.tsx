@@ -16,12 +16,7 @@ import { useVisualizationResponse } from './use_visualization_response';
 import type { UseVisualizationResponseMock } from './use_visualization_response.mock';
 import { useVisualizationResponseMock } from './use_visualization_response.mock';
 
-const mockActions = [
-  { id: 'inspect' },
-  { id: 'openInLens' },
-  { id: 'addToNewCase' },
-  { id: 'addToExistingCase' },
-];
+const mockActions = [{ id: 'inspect' }, { id: 'openInLens' }, { id: 'addToCase' }];
 
 jest.mock('react-redux-v7', () => {
   const actual = jest.requireActual('react-redux-v7');
