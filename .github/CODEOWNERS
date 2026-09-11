@@ -3383,6 +3383,17 @@ x-pack/platform/plugins/shared/actions/server/lib/token_tracking @elastic/securi
 /x-pack/solutions/security/plugins/security_solution/server/workflows/step_types/create_rule_step @elastic/security-detection-engineering
 /x-pack/solutions/security/plugins/security_solution/server/workflows/step_types/patch_rule_step @elastic/security-detection-engineering
 /x-pack/solutions/security/plugins/security_solution/server/workflows/utils/bulk_rule_action* @elastic/security-detection-engineering
+
+# Defend Workflows owned endpoint response-action workflow steps
+/x-pack/solutions/security/plugins/security_solution/common/workflows/step_types/isolate_host_step @elastic/security-defend-workflows
+/x-pack/solutions/security/plugins/security_solution/common/workflows/step_types/kill_process_step @elastic/security-defend-workflows
+/x-pack/solutions/security/plugins/security_solution/common/workflows/step_types/suspend_process_step @elastic/security-defend-workflows
+/x-pack/solutions/security/plugins/security_solution/public/workflows/step_types/isolate_host_step @elastic/security-defend-workflows
+/x-pack/solutions/security/plugins/security_solution/public/workflows/step_types/kill_process_step @elastic/security-defend-workflows
+/x-pack/solutions/security/plugins/security_solution/public/workflows/step_types/suspend_process_step @elastic/security-defend-workflows
+/x-pack/solutions/security/plugins/security_solution/server/workflows/step_types/isolate_host_step @elastic/security-defend-workflows
+/x-pack/solutions/security/plugins/security_solution/server/workflows/step_types/kill_process_step @elastic/security-defend-workflows
+/x-pack/solutions/security/plugins/security_solution/server/workflows/step_types/suspend_process_step @elastic/security-defend-workflows
 /x-pack/solutions/security/plugins/security_solution/common/workflows/step_types/create_rule_exception_step @elastic/security-detection-engineering
 /x-pack/solutions/security/plugins/security_solution/common/workflows/step_types/create_exception_list_item_step @elastic/security-detection-engineering
 /x-pack/solutions/security/plugins/security_solution/public/workflows/step_types/create_rule_exception_step @elastic/security-detection-engineering

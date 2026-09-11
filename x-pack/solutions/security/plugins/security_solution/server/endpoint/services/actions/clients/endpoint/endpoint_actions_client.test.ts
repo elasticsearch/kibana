@@ -638,6 +638,49 @@ describe('EndpointActionsClient', () => {
     });
   });
 
+  describe('#isolate()', () => {
+    describe('isolation capability check', () => {
+      it('should throw error when endpoint has isolation disabled by policy', async () => {
+        const generator = new EndpointMetadataGenerator('seed');
+        // Generate a base doc and then explicitly clear capabilities — lodash merge (used inside
+        // generator.generate()) does NOT clear arrays when an empty array override is provided, so
+        // setting capabilities directly is required here.
+        const docWithNoIsolation = generator.generate();
+        docWithNoIsolation.Endpoint.capabilities = [];
+
+        applyEsClientSearchMock({
+          esClientMock: classConstructorOptions.esClient as ElasticsearchClientMock,
+          index: metadataCurrentIndexPattern,
+          response: generator.toEsSearchResponse([generator.toEsSearchHit(docWithNoIsolation)]),
+        });
+
+        await expect(
+          endpointActionsClient.isolate(
+            responseActionsClientMock.createIsolateOptions(getCommonResponseActionOptions())
+          )
+        ).rejects.toThrow('The following agents have host isolation disabled by policy');
+      });
+
+      it('should succeed when endpoint has the isolation capability', async () => {
+        const generator = new EndpointMetadataGenerator('seed');
+        const docWithIsolation = generator.generate();
+        docWithIsolation.Endpoint.capabilities = ['isolation'];
+
+        applyEsClientSearchMock({
+          esClientMock: classConstructorOptions.esClient as ElasticsearchClientMock,
+          index: metadataCurrentIndexPattern,
+          response: generator.toEsSearchResponse([generator.toEsSearchHit(docWithIsolation)]),
+        });
+
+        await expect(
+          endpointActionsClient.isolate(
+            responseActionsClientMock.createIsolateOptions(getCommonResponseActionOptions())
+          )
+        ).resolves.toBeDefined();
+      });
+    });
+  });
+
   describe('#killProcess()', () => {
     describe('when `kill_descendants` parameter is set to `true`', () => {
       beforeEach(() => {

@@ -1561,17 +1561,18 @@ describe('Response actions', () => {
         .mockReturnValue({
           getMetadataForEndpoints: jest.fn().mockResolvedValue([
             {
-              elastic: {
-                agent: {
-                  id: '123-456',
-                },
-              },
-              agent: {
-                id: '123-456',
-              },
-              host: {
-                hostname: 'test-host',
-              },
+              elastic: { agent: { id: '123-456' } },
+              agent: { id: '123-456', version: '8.0.0' },
+              host: { hostname: 'test-host' },
+              Endpoint: { capabilities: ['isolation'] },
+            },
+          ]),
+          findHostMetadataForFleetAgents: jest.fn().mockResolvedValue([
+            {
+              elastic: { agent: { id: '123-456' } },
+              agent: { id: '123-456', version: '8.0.0' },
+              host: { hostname: 'test-host' },
+              Endpoint: { capabilities: ['isolation'] },
             },
           ]),
         });
@@ -1654,17 +1655,18 @@ describe('Response actions', () => {
         .mockReturnValue({
           getMetadataForEndpoints: jest.fn().mockResolvedValue([
             {
-              elastic: {
-                agent: {
-                  id: '123-456',
-                },
-              },
-              agent: {
-                id: '123-456',
-              },
-              host: {
-                hostname: 'test-host',
-              },
+              elastic: { agent: { id: '123-456' } },
+              agent: { id: '123-456', version: '8.0.0' },
+              host: { hostname: 'test-host' },
+              Endpoint: { capabilities: ['isolation'] },
+            },
+          ]),
+          findHostMetadataForFleetAgents: jest.fn().mockResolvedValue([
+            {
+              elastic: { agent: { id: '123-456' } },
+              agent: { id: '123-456', version: '8.0.0' },
+              host: { hostname: 'test-host' },
+              Endpoint: { capabilities: ['isolation'] },
             },
           ]),
         });

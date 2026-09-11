@@ -179,6 +179,33 @@ export class EndpointActionsClient extends ResponseActionsClientImpl {
       }
     }
 
+    // Isolate: `linux.advanced.host_isolation.allowed` policy setting causes the Endpoint agent
+    // to omit 'isolation' from its reported capabilities. Reject early so callers get a clear
+    // error rather than a silent no-op.
+    if (actionRequest.command === 'isolate') {
+      const endpointMetadata = await this.options.endpointService
+        .getEndpointMetadataService(this.options.spaceId)
+        .findHostMetadataForFleetAgents(actionRequest.endpoint_ids);
+
+      const unsupportedAgents = endpointMetadata
+        .filter((endpointMeta) => !endpointMeta.Endpoint.capabilities?.includes('isolation'))
+        .map(
+          (endpointMeta) =>
+            `${endpointMeta.agent.id} / ${endpointMeta.host.hostname} (Agent v.${endpointMeta.agent.version})`
+        );
+
+      if (unsupportedAgents.length > 0) {
+        return {
+          isValid: false,
+          error: new ResponseActionsClientError(
+            `The following agents have host isolation disabled by policy: ${unsupportedAgents.join(
+              ', '
+            )}`
+          ),
+        };
+      }
+    }
+
     // Kill Process: `kill_descendants` is gated by a feature flag and requires that the
     // Endpoint supports it (via the `kill_process_descendants` capability).
     if (
