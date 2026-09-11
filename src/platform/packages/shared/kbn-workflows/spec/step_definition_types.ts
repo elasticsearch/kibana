@@ -25,6 +25,8 @@ export enum StepCategory {
 
 export const StepCategories = Object.values(StepCategory) as StepCategory[];
 
+export type StepExecutionMode = 'async' | 'sync';
+
 /**
  * Documentation information for a workflow step.
  */
@@ -124,4 +126,22 @@ export interface BaseStepDefinition<
    * suggested for new workflows.
    */
   deprecation?: StepDeprecationInfo;
+
+  /**
+   * Execution modes supported by this step.
+   *
+   * Declare `['async']` for any step that cannot complete within a single request because it
+   * depends on Task Manager — either to suspend and resume the workflow (`wait`, the
+   * human-in-the-loop steps) or to schedule work outside the current execution
+   * (`workflow.execute`, `workflow.executeAsync`). `validateSyncWorkflow` rejects such steps
+   * when a workflow is run synchronously.
+   *
+   * Omitting the field means both modes are supported. That default is deliberately
+   * permissive: the several hundred connector-backed steps are plain request/response calls
+   * that are safe to run inline, and requiring each to opt in would make the field noise
+   * rather than signal. The trade-off is that a *new* Task Manager-dependent step is
+   * sync-eligible until someone marks it, so add the annotation in the same change that
+   * introduces the step.
+   */
+  supportedExecutionModes?: readonly [StepExecutionMode, ...StepExecutionMode[]];
 }

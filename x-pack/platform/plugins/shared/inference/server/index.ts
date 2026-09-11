@@ -21,6 +21,15 @@ import type {
 
 export type { InferenceServerSetup, InferenceServerStart };
 export type { InferenceEndpoint } from './util/get_inference_endpoints';
+export type { WorkflowAnonymizationProvider } from './workflow_anonymization_provider';
+export {
+  createPiiTokenizationCapabilityValue,
+  resolvePiiTokenizationCapabilityValue,
+  createInferenceProceedCapabilityValue,
+  resolveInferenceProceedCapabilityValue,
+  INFERENCE_PROCEED_CAPABILITY_ID,
+  PII_TOKENIZATION_CAPABILITY_ID,
+} from './workflow_anonymization_capabilities';
 
 export {
   naturalLanguageToEsql,

@@ -1,0 +1,57 @@
+name: "Protect sensitive inference data"
+enabled: false
+description: "Protects common identifiers around inference completion calls. Author: Elastic"
+version: "1"
+tags:
+  - inference
+  - anonymization
+
+triggers:
+  - type: inference.aroundCompletion
+
+outputs:
+  - name: content
+    type: string
+    required: true
+
+steps:
+  - name: anonymize_completion
+    type: ai.pii
+    with:
+      system: "${{ event.system }}"
+      messages: "${{ event.messages }}"
+      rules:
+        - type: RegExp
+          enabled: true
+          entityClass: EMAIL
+          pattern: '([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})'
+        - type: RegExp
+          enabled: true
+          entityClass: IP
+          pattern: '\b(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\b'
+        - type: RegExp
+          enabled: true
+          entityClass: HOST_NAME
+          pattern: '\b(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,63}\b'
+        - type: RegExp
+          enabled: true
+          entityClass: USER_NAME
+          pattern: '\b(?:user(?:name)?|login|account)\s*[:=]\s*[a-zA-Z0-9._-]{1,64}\b'
+
+  - name: invoke_inference
+    type: call_site.proceed
+    with:
+      system: "${{ steps.anonymize_completion.output.system }}"
+      messages: "${{ steps.anonymize_completion.output.messages }}"
+      tokenMap: "${{ steps.anonymize_completion.output.tokenMap }}"
+
+  - name: restore_completion
+    type: transform.pii_restore
+    with:
+      rawContent: "${{ steps.invoke_inference.output.rawContent }}"
+      tokenMap: "${{ steps.anonymize_completion.output.tokenMap }}"
+
+  - name: emit_restored_completion
+    type: workflow.output
+    with:
+      content: "${{ steps.restore_completion.output.content }}"

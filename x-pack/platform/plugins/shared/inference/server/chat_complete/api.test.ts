@@ -13,7 +13,16 @@ import {
   inferenceEndpointAdapterMock,
 } from './api.test.mocks';
 
-import { of, Subject, isObservable, toArray, firstValueFrom, filter } from 'rxjs';
+import {
+  concat,
+  filter,
+  firstValueFrom,
+  isObservable,
+  of,
+  Subject,
+  throwError,
+  toArray,
+} from 'rxjs';
 import { loggerMock, type MockedLogger } from '@kbn/logging-mocks';
 import { httpServerMock } from '@kbn/core/server/mocks';
 import { actionsMock } from '@kbn/actions-plugin/server/mocks';
@@ -37,6 +46,7 @@ import {
 import { createChatCompleteApi } from './api';
 import { createChatCompleteCallbackApi } from './callback_api';
 import { InferenceEndpointIdCache } from '../util/inference_endpoint_id_cache';
+import type { WorkflowAnonymizationProvider } from '../workflow_anonymization_provider';
 
 describe('createChatCompleteApi', () => {
   let request: ReturnType<typeof httpServerMock.createKibanaRequest>;
@@ -159,6 +169,96 @@ describe('createChatCompleteApi', () => {
       temperature: 0.7,
       modelName: 'gpt-4o',
     });
+  });
+
+  it('uses original event data and workflow-transformed connector input in workflow mode', async () => {
+    const protectedMessages = [{ role: MessageRole.User, content: 'protected question' }] as const;
+    const provider: WorkflowAnonymizationProvider = {
+      supportsSynchronousExecution: true,
+      execute: jest.fn(async ({ event, namespace, proceed }) => {
+        expect(event).toEqual({
+          system: 'original system',
+          messages: [{ role: MessageRole.User, content: 'original question' }],
+          sessionId: 'session-a',
+          agentId: 'agent-a',
+        });
+        expect(namespace).toBe('space-a');
+        await proceed.invoke({ messages: protectedMessages, tokenMap: {} });
+        return { matched: true, content: 'workflow restored' };
+      }),
+    };
+    const workflowCallbackApi = createChatCompleteCallbackApi({
+      request,
+      namespace: 'space-a',
+      actions,
+      logger,
+      // Workflow mode must not wait for or consume the legacy anonymization rule source.
+      anonymizationRulesPromise: new Promise<never>(() => {}),
+      regexWorker,
+      esClient: mockEsClient,
+      endpointIdCache,
+      anonymization: { saltPromise: Promise.resolve('server-managed-salt') },
+      workflowAnonymization: { provider, failureMode: 'block', preLLMTimeoutMs: 0 },
+    });
+    const workflowChatComplete = createChatCompleteApi({ callbackApi: workflowCallbackApi });
+
+    await expect(
+      workflowChatComplete({
+        connectorId: 'connectorId',
+        system: 'original system',
+        messages: [{ role: MessageRole.User, content: 'original question' }],
+        sessionId: 'session-a',
+        metadata: { agentId: 'agent-a' },
+        maxRetries: 0,
+      })
+    ).resolves.toEqual(expect.objectContaining({ content: 'workflow restored' }));
+    expect(inferenceAdapter.chatComplete).toHaveBeenCalledWith(
+      expect.objectContaining({ messages: protectedMessages })
+    );
+  });
+
+  it('does not retry a workflow connector call after streaming has started', async () => {
+    const providerError = createInferenceProviderError('stream failed', { status: 500 });
+    inferenceAdapter.chatComplete.mockReturnValue(
+      concat(
+        of(chunkEvent('partial')),
+        throwError(() => providerError)
+      )
+    );
+    const provider: WorkflowAnonymizationProvider = {
+      supportsSynchronousExecution: true,
+      execute: jest.fn(async ({ proceed }) => {
+        await proceed.invoke({
+          messages: [{ role: MessageRole.User, content: 'protected question' }],
+          tokenMap: {},
+        });
+        return { matched: true, content: 'unreachable' };
+      }),
+    };
+    const workflowChatComplete = createChatCompleteApi({
+      callbackApi: createChatCompleteCallbackApi({
+        request,
+        namespace: 'space-a',
+        actions,
+        logger,
+        anonymizationRulesPromise: Promise.resolve([]),
+        regexWorker,
+        esClient: mockEsClient,
+        endpointIdCache,
+        anonymization: { saltPromise: Promise.resolve('server-managed-salt') },
+        workflowAnonymization: { provider, failureMode: 'allow_unsafe', preLLMTimeoutMs: 0 },
+      }),
+    });
+
+    await expect(
+      workflowChatComplete({
+        connectorId: 'connectorId',
+        messages: [{ role: MessageRole.User, content: 'original question' }],
+        maxRetries: 1,
+        retryConfiguration: { retryOn: 'all', initialDelay: 0 },
+      })
+    ).rejects.toBe(providerError);
+    expect(inferenceAdapter.chatComplete).toHaveBeenCalledTimes(1);
   });
 
   it('forwards `maxContentLength` down to `inferenceAdapter.chatComplete`', async () => {

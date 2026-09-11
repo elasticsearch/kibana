@@ -24,6 +24,7 @@ import type { RegexWorkerService } from '../chat_complete/anonymization/regex_wo
 import type { InferenceAnonymizationOptions } from './anonymization_options';
 import type { InferenceEndpointIdCache } from '../util/inference_endpoint_id_cache';
 import type { TokenUsageLogger } from '../token_usage';
+import type { WorkflowAnonymizationOptions } from './workflow_anonymization_options';
 
 interface CreateClientOptions {
   request: KibanaRequest;
@@ -37,6 +38,7 @@ interface CreateClientOptions {
   endpointIdCache: InferenceEndpointIdCache;
   callbacks?: InferenceCallbacks;
   anonymization?: InferenceAnonymizationOptions;
+  workflowAnonymization?: WorkflowAnonymizationOptions;
   tokenUsageLogger?: TokenUsageLogger;
   isTokenUsageTrackingEnabled?: () => Promise<boolean>;
   isDefaultConnectorOnly?: () => Promise<boolean>;
@@ -64,6 +66,7 @@ export function createClient(
     endpointIdCache,
     callbacks,
     anonymization,
+    workflowAnonymization,
     tokenUsageLogger,
     isTokenUsageTrackingEnabled,
     isDefaultConnectorOnly,
@@ -81,6 +84,7 @@ export function createClient(
     endpointIdCache,
     callbacks,
     anonymization,
+    workflowAnonymization,
     tokenUsageLogger,
     isTokenUsageTrackingEnabled,
     isDefaultConnectorOnly,
