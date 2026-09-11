@@ -5,6 +5,7 @@
  * 2.0.
  */
 
+import { v4 as uuidv4 } from 'uuid';
 import type { ToolingLog } from '@kbn/tooling-log';
 import type SuperTest from 'supertest';
 import type { CreateExceptionListItemSchema } from '@kbn/securitysolution-io-ts-list-types';
@@ -31,10 +32,12 @@ export const createContainerWithEntries = async (
   if (entries.length === 0) {
     return [];
   }
+  // Namespace the list id per invocation so two containers created within one test don't collide.
+  const uniqueListId = `some-list-id-${uuidv4()}`;
   // Create the rule exception list container
   const { id, list_id, namespace_type, type } = await createExceptionList(supertest, log, {
     description: 'some description',
-    list_id: 'some-list-id',
+    list_id: uniqueListId,
     name: 'some name',
     type: 'detection',
   });
@@ -44,7 +47,7 @@ export const createContainerWithEntries = async (
     entries.map((entry) => {
       const exceptionListItem: CreateExceptionListItemSchema = {
         description: 'some description',
-        list_id: 'some-list-id',
+        list_id: uniqueListId,
         name: 'some name',
         type: 'simple',
         entries: entry,
