@@ -19,6 +19,9 @@ export default function ({ getService, getPageObjects, updateBaselines }: FtrPro
     const userWithoutPermissions = { username: 'user_without_permissions', password: 'changeme' };
 
     before(async () => {
+      // Settle any leftover redirect from the preceding suite so setScreenshotSize doesn't drive a navigating page.
+      await PageObjects.security.forceLogout();
+
       // We use a really small window to minimize differences across os's and browsers.
       await browser.setScreenshotSize(1000, 500);
 
