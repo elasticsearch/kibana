@@ -37,8 +37,8 @@ const durationString = z
 const indexPatternString = z.string().max(MAX_INDEX_PATTERN_LENGTH);
 const indexPatternsArray = z.array(indexPatternString).max(MAX_INDEX_PATTERNS);
 
-// Schema for shape validation (no defaults)
-export const LogExtractionShape = z.object({
+// Schema for field validation (no defaults)
+export const LogExtractionObj = z.object({
   additionalIndexPatterns: indexPatternsArray,
   excludedIndexPatterns: indexPatternsArray,
   fieldHistoryLength: z.number().int(),
@@ -53,7 +53,33 @@ export const LogExtractionShape = z.object({
   maxLogsPerWindowCapBehavior: z.enum(['defer', 'drop']),
 });
 
-const base = LogExtractionShape.shape;
+/** Field schemas of an object schema. Not `z.ZodRawShape`, which widens values to a type without the `.nullable()` builder. */
+type ZodFields = Record<string, z.ZodType>;
+
+/** Maps every field of `T` to an optional, nullable version of itself. */
+type NullishFields<T extends ZodFields> = {
+  [K in keyof T]: z.ZodOptional<z.ZodNullable<T[K]>>;
+};
+
+/** Makes every field optional and nullable, so an omitted field is left alone and a null field is cleared. */
+const nullishFields = <T extends ZodFields>(fields: T): NullishFields<T> =>
+  Object.fromEntries(
+    Object.entries(fields).map(([key, fieldSchema]) => [key, fieldSchema.nullable().optional()])
+  ) as NullishFields<T>;
+
+export type LogExtractionOverride = z.infer<typeof LogExtractionOverride>;
+/** Store-wide override layer. `timeout` is not settable over HTTP. */
+export const LogExtractionOverride = z.object(
+  nullishFields(LogExtractionObj.omit({ timeout: true }).shape)
+);
+
+export type LogExtractionTypeOverride = z.infer<typeof LogExtractionTypeOverride>;
+/** Per entity-type override layer, stored on the engine descriptor. Drops the two fields that are never read at runtime. */
+export const LogExtractionTypeOverride = z.object(
+  nullishFields(LogExtractionObj.omit({ timeout: true, fieldHistoryLength: true }).shape)
+);
+
+const base = LogExtractionObj.shape;
 
 export type LogExtractionConfig = z.infer<typeof LogExtractionConfig>;
 
@@ -108,6 +134,6 @@ export const EntityStoreGlobalStateOverrides = z
     // 'latest': logsExtraction holds overrides only. (new writes)
     defaultsVersion: z.enum(['legacy', 'latest']),
     historySnapshot: HistorySnapshotState,
-    logsExtraction: LogExtractionShape.partial(),
+    logsExtraction: LogExtractionObj.partial(),
   })
   .partial();

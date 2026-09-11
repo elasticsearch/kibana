@@ -348,6 +348,39 @@ const version7: SavedObjectsFullModelVersion = {
   },
 };
 
+/** Mirrors the zod `LogExtractionTypeOverride`: every field optional and nullable, without `timeout` and `fieldHistoryLength`. */
+const logExtractionConfigSchemaV8 = schema.object({
+  additionalIndexPatterns: schema.maybe(
+    schema.nullable(schema.arrayOf(schema.string(), { maxSize: 10000 }))
+  ),
+  excludedIndexPatterns: schema.maybe(
+    schema.nullable(schema.arrayOf(schema.string(), { maxSize: 10000 }))
+  ),
+  lookbackPeriod: schema.maybe(schema.nullable(schema.string())),
+  delay: schema.maybe(schema.nullable(schema.string())),
+  docsLimit: schema.maybe(schema.nullable(schema.number())),
+  maxLogsPerPage: schema.maybe(schema.nullable(schema.number())),
+  frequency: schema.maybe(schema.nullable(schema.string())),
+  maxTimeWindowSize: schema.maybe(schema.nullable(schema.string())),
+  maxLogsPerWindow: schema.maybe(schema.nullable(schema.number())),
+  maxLogsPerWindowCapBehavior: schema.maybe(
+    schema.nullable(schema.oneOf([schema.literal('defer'), schema.literal('drop')] as const))
+  ),
+});
+
+const engineDescriptorSchemaV8 = engineDescriptorSchemaV7.extends({
+  logExtractionConfig: schema.maybe(logExtractionConfigSchemaV8),
+});
+
+// Adds logExtractionConfig. Optional, so older descriptors stay valid with no backfill. Not queried, so no mappings addition.
+const version8: SavedObjectsFullModelVersion = {
+  changes: [],
+  schemas: {
+    create: engineDescriptorSchemaV8,
+    forwardCompatibility: engineDescriptorSchemaV8.extends({}, { unknowns: 'ignore' }),
+  },
+};
+
 export const EngineDescriptorType: SavedObjectsType = {
   name: EngineDescriptorTypeName,
   hidden: false,
@@ -361,6 +394,7 @@ export const EngineDescriptorType: SavedObjectsType = {
     5: version5,
     6: version6,
     7: version7,
+    8: version8,
   },
   hiddenFromHttpApis: true,
 };

@@ -7,7 +7,7 @@
 
 import { z } from '@kbn/zod/v4';
 import type { EngineDescriptor, LogExtractionConfig, HistorySnapshotState } from './saved_objects';
-import type { EntityStoreStatus } from '../../common';
+import type { EntityStoreStatus, EntityType } from '../../common';
 import type { ENTITY_STORE_STATUS } from './constants';
 
 export type { EntityStoreStatus };
@@ -45,6 +45,8 @@ export interface GetStatusSuccessResult {
   engines: Array<EngineDescriptor | (EngineDescriptor & { components: EngineComponentStatus[] })>;
   historySnapshot: HistorySnapshotState;
   logsExtractionConfig: LogExtractionConfig;
+  /** Config in effect per entity type, keyed by the types with an installed engine. */
+  logsExtractionConfigByType: Partial<Record<EntityType, LogExtractionConfig>>;
 }
 
 export interface GetStatusNotInstalledResult {

@@ -27,7 +27,10 @@ export function registerUpdate(router: EntityStorePluginRouter) {
       path: ENTITY_STORE_ROUTES.public.UPDATE,
       access: 'public',
       summary: 'Update the Entity Store',
-      description: 'Update the Entity Store log extraction configuration.',
+      description:
+        'Update the Entity Store log extraction configuration. ' +
+        'Omitting a field leaves it unchanged. ' +
+        'Sending `null` for a field clears that override and reverts to the default value.',
       options: {
         tags: ['oas-tag:Security entity store'],
       },
@@ -56,16 +59,18 @@ export function registerUpdate(router: EntityStorePluginRouter) {
         } = await ctx.entityStore;
         logger.debug('Update api called');
 
+        const { logExtraction } = req.body;
+
         const forbidden = await enforceEntityStorePrivileges(
           assetManager,
           req,
           res,
-          req.body.logExtraction?.additionalIndexPatterns
+          logExtraction?.additionalIndexPatterns ?? undefined
         );
         if (forbidden) return forbidden;
 
         try {
-          await logsExtractionClient.updateConfig(req.body.logExtraction);
+          await logsExtractionClient.updateConfig(logExtraction);
         } catch (error) {
           if (SavedObjectsErrorHelpers.isNotFoundError(error)) {
             return res.notFound({ body: { message: 'Entity store is not installed' } });

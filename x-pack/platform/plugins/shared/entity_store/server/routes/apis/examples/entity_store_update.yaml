@@ -10,6 +10,13 @@ requestBody:
               lookbackPeriod: "6h"
               frequency: "10m"
               fieldHistoryLength: 15
+        clearLogExtractionOverrideExample:
+          summary: "Clear log extraction overrides"
+          description: "Send null for any field to clear that override and revert it to the default value."
+          value:
+            logExtraction:
+              frequency: null
+              delay: null
 responses:
   200:
     description: "Indicates a successful response."

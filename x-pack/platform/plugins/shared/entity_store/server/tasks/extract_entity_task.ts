@@ -149,8 +149,8 @@ async function runTask({
 
     let schedule: { schedule: IntervalSchedule } | undefined;
     try {
-      const config = await logsExtractionClient.globalStateClient.findOrThrow();
-      schedule = getNewSchedule(config.logsExtraction.frequency, taskInstance);
+      const config = await logsExtractionClient.getMergedConfigForType(entityType);
+      schedule = getNewSchedule(config.frequency, taskInstance);
     } catch (e) {
       logger.warn(`Error getting new schedule, received ${e.message}`);
     }

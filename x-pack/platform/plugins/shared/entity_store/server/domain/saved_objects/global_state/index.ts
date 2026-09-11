@@ -16,6 +16,7 @@ import {
   EntityStoreGlobalStateOverrides,
   HistorySnapshotState,
   LogExtractionConfig,
+  type LogExtractionOverride,
 } from './constants';
 import { EntityStoreGlobalStateTypeName } from './types';
 import { getLegacyLogExtractionOverrides } from './legacy_defaults';
@@ -26,10 +27,32 @@ const getLogsExtractionOverrides = (attrs: EntityStoreGlobalStateOverrides) =>
     ? attrs.logsExtraction ?? {}
     : getLegacyLogExtractionOverrides(attrs.logsExtraction ?? {});
 
+/** Applies incoming overrides on top of the stored ones. `undefined` leaves a key alone, `null` deletes it. */
+const applyLogExtractionOverrides = (
+  stored: Partial<LogExtractionConfig>,
+  incoming: LogExtractionOverride = {}
+): Partial<LogExtractionConfig> => {
+  const next: Partial<LogExtractionConfig> = { ...stored };
+  for (const key of Object.keys(incoming) as Array<keyof LogExtractionOverride>) {
+    const value = incoming[key];
+    if (value === null) {
+      delete next[key];
+    } else if (value !== undefined) {
+      (next as Record<string, unknown>)[key] = value;
+    }
+  }
+  return next;
+};
+
+/** Write-path input. Like the persisted overrides, but each log extraction field also accepts `null` to delete it. */
+export type GlobalStateOverridesInput = Omit<EntityStoreGlobalStateOverrides, 'logsExtraction'> & {
+  logsExtraction?: LogExtractionOverride;
+};
+
 // takes existing config, strips legacy defaults (if exists) and merges with new overrides
 const mergeOverrides = (
   raw: EntityStoreGlobalStateOverrides,
-  overrides: EntityStoreGlobalStateOverrides
+  overrides: GlobalStateOverridesInput
 ): EntityStoreGlobalStateOverrides =>
   EntityStoreGlobalStateOverrides.parse({
     defaultsVersion: 'latest',
@@ -37,10 +60,10 @@ const mergeOverrides = (
       ...HistorySnapshotState.parse(raw.historySnapshot ?? {}),
       ...overrides.historySnapshot,
     },
-    logsExtraction: {
-      ...getLogsExtractionOverrides(raw),
-      ...overrides.logsExtraction,
-    },
+    logsExtraction: applyLogExtractionOverrides(
+      getLogsExtractionOverrides(raw),
+      overrides.logsExtraction
+    ),
   });
 
 // Read path: stored attributes in, full config out (missing fields get the current defaults).
@@ -72,7 +95,13 @@ export class EntityStoreGlobalStateClient {
     return response;
   }
 
-  async init(initialState?: EntityStoreGlobalStateOverrides): Promise<EntityStoreGlobalState> {
+  /** Store-wide log extraction overrides without the code defaults applied. The layered merge needs this sparse view, not `find()`. */
+  async findLogExtractionOverrides(): Promise<Partial<LogExtractionConfig>> {
+    const raw = await this.findRaw();
+    return raw === undefined ? {} : getLogsExtractionOverrides(raw.attributes);
+  }
+
+  async init(initialState?: GlobalStateOverridesInput): Promise<EntityStoreGlobalState> {
     const raw = await this.findRaw();
     if (raw !== undefined) {
       return this.update(initialState ?? {});
@@ -85,7 +114,7 @@ export class EntityStoreGlobalStateClient {
       EntityStoreGlobalStateTypeName,
       EntityStoreGlobalStateOverrides.parse({
         ...initialState,
-        logsExtraction: initialState?.logsExtraction ?? {},
+        logsExtraction: applyLogExtractionOverrides({}, initialState?.logsExtraction),
         defaultsVersion: 'latest',
       }),
       { id }
@@ -95,7 +124,7 @@ export class EntityStoreGlobalStateClient {
   }
 
   async update(
-    overrides: EntityStoreGlobalStateOverrides,
+    overrides: GlobalStateOverridesInput,
     retryOpts?: RetryOnConflictOptions
   ): Promise<EntityStoreGlobalState> {
     // retries on version conflict, so concurrent writers

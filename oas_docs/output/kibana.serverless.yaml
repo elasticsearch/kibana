@@ -64469,7 +64469,7 @@ paths:
 
         Refer to [Spaces](https://www.elastic.co/docs/deploy-manage/manage-spaces) for more information.
 
-        Update the Entity Store log extraction configuration.<br/><br/>[Required authorization] Route required privileges: securitySolution.
+        Update the Entity Store log extraction configuration. Omitting a field leaves it unchanged. Sending `null` for a field clears that override and reverts to the default value.<br/><br/>[Required authorization] Route required privileges: securitySolution.
       operationId: put-security-entity-store
       parameters:
         - description: A required header to protect against CSRF attacks
@@ -64483,6 +64483,13 @@ paths:
         content:
           application/json:
             examples:
+              clearLogExtractionOverrideExample:
+                description: Send null for any field to clear that override and revert it to the default value.
+                summary: Clear log extraction overrides
+                value:
+                  logExtraction:
+                    delay: null
+                    frequency: null
               updateLogExtractionExample:
                 description: Update the log extraction configuration with a new lookback period and frequency.
                 summary: Update log extraction settings
@@ -64504,48 +64511,59 @@ paths:
                         maxLength: 2048
                         type: string
                       maxItems: 1000
+                      nullable: true
                       type: array
                     delay:
                       maxLength: 32
+                      nullable: true
                       pattern: '[smdh]$'
                       type: string
                     docsLimit:
                       maximum: 9007199254740991
                       minimum: 1
+                      nullable: true
                       type: integer
                     excludedIndexPatterns:
                       items:
                         maxLength: 2048
                         type: string
                       maxItems: 1000
+                      nullable: true
                       type: array
                     fieldHistoryLength:
                       maximum: 9007199254740991
                       minimum: -9007199254740991
+                      nullable: true
                       type: integer
                     frequency:
                       maxLength: 32
+                      nullable: true
                       pattern: '[smdh]$'
                       type: string
                     lookbackPeriod:
                       maxLength: 32
+                      nullable: true
                       pattern: '[smdh]$'
                       type: string
                     maxLogsPerPage:
                       maximum: 9007199254740991
                       minimum: 1
+                      nullable: true
                       type: integer
                     maxLogsPerWindow:
                       maximum: 9007199254740991
                       minimum: 0
+                      nullable: true
                       type: integer
                     maxLogsPerWindowCapBehavior:
                       enum:
                         - defer
                         - drop
+                      nullable: true
                       type: string
                     maxTimeWindowSize:
                       maxLength: 32
+                      nullable: true
                       pattern: '[smdh]$'
                       type: string
               required:
@@ -72994,7 +73012,7 @@ paths:
 
         Refer to [Spaces](https://www.elastic.co/docs/deploy-manage/manage-spaces) for more information.
 
-        Install the Entity Store and create engines for the specified entity types. A single `logExtraction` configuration is shared across all entity types. Supply it once at install to customize settings; omit it (or send an empty object) to use defaults on first install or preserve the existing configuration on re-install. To change settings after install, use the update endpoint.<br/><br/>[Required authorization] Route required privileges: securitySolution.
+        Install the Entity Store and create engines for the specified entity types. A single `logExtraction` configuration is shared across all entity types. Supply it once at install to customize settings; omit it (or send an empty object) to use defaults on first install or preserve the existing configuration on re-install. Omitting a field leaves it unchanged. Sending `null` for a field clears that override and reverts to the default value. To change settings after install, use the update endpoint.<br/><br/>[Required authorization] Route required privileges: securitySolution.
       operationId: post-security-entity-store-install
       parameters:
         - description: A required header to protect against CSRF attacks
@@ -73065,48 +73083,59 @@ paths:
                         maxLength: 2048
                         type: string
                       maxItems: 1000
+                      nullable: true
                       type: array
                     delay:
                       maxLength: 32
+                      nullable: true
                       pattern: '[smdh]$'
                       type: string
                     docsLimit:
                       maximum: 9007199254740991
                       minimum: 1
+                      nullable: true
                       type: integer
                     excludedIndexPatterns:
                       items:
                         maxLength: 2048
                         type: string
                       maxItems: 1000
+                      nullable: true
                       type: array
                     fieldHistoryLength:
                       maximum: 9007199254740991
                       minimum: -9007199254740991
+                      nullable: true
                       type: integer
                     frequency:
                       maxLength: 32
+                      nullable: true
                       pattern: '[smdh]$'
                       type: string
                     lookbackPeriod:
                       maxLength: 32
+                      nullable: true
                       pattern: '[smdh]$'
                       type: string
                     maxLogsPerPage:
                       maximum: 9007199254740991
                       minimum: 1
+                      nullable: true
                       type: integer
                     maxLogsPerWindow:
                       maximum: 9007199254740991
                       minimum: 0
+                      nullable: true
                       type: integer
                     maxLogsPerWindowCapBehavior:
                       enum:
                         - defer
                         - drop
+                      nullable: true
                       type: string
                     maxTimeWindowSize:
                       maxLength: 32
+                      nullable: true
                       pattern: '[smdh]$'
                       type: string
       responses:
