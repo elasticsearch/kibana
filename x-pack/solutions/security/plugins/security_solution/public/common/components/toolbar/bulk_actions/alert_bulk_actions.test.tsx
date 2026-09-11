@@ -12,8 +12,7 @@ import type { StatefulAlertBulkActionsProps } from './alert_bulk_actions';
 import { AlertBulkActionsComponent } from './alert_bulk_actions';
 import { TableId } from '@kbn/securitysolution-data-table';
 import { clearSelected } from '@kbn/securitysolution-data-table/store/data_table/actions';
-import { render, screen } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import { render, screen, fireEvent } from '@testing-library/react';
 import { useAlertsPrivileges } from '../../../../detections/containers/detection_engine/alerts/use_alerts_privileges';
 
 jest.mock('../../../../detections/containers/detection_engine/alerts/use_alerts_privileges');
@@ -49,13 +48,13 @@ describe('AlertBulkActionsComponent', () => {
   });
 
   describe('after clicking the bulk actions button', () => {
-    beforeEach(async () => {
+    beforeEach(() => {
       const { container } = renderAlertBulkActions();
       const bulkActionsButton = container.querySelector(
         'button[data-test-subj="selectedShowBulkActionsButton"]'
       )!;
 
-      await userEvent.click(bulkActionsButton);
+      fireEvent.click(bulkActionsButton);
     });
 
     it('"Mark as open" should be visible', () => {
