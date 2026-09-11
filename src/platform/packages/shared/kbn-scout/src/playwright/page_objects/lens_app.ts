@@ -283,9 +283,31 @@ export class LensApp {
     }
   }
 
+  async configureTextBasedDimension({
+    dimension,
+    field,
+  }: {
+    dimension: string;
+    field: string;
+  }): Promise<void> {
+    await this.page.testSubj.locator(dimension).click();
+
+    const fieldPicker = this.page.components.comboBox('text-based-dimension-field');
+    await fieldPicker.setSelectedOptions([field]);
+
+    await this.closeDimensionEditor();
+    await this.applyFlyoutButton.click();
+  }
+
   private async openDimensionSelector(dimension: string) {
     await this.page.testSubj.locator(dimension).click();
     await this.closeDimensionEditorButton.waitFor({ state: 'visible' });
+  }
+
+  async removeDimension(dimensionTestSubj: string) {
+    await this.page.testSubj
+      .locator(`${dimensionTestSubj} > indexPattern-dimension-remove`)
+      .click();
   }
 
   async switchToFormula() {
