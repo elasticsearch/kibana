@@ -114,7 +114,11 @@ export function resolveCreateRuleBuilder(
 
   if (builderType && builderFields) {
     const generated = adaptToKind(
-      registry.generate(builderType, builderFields),
+      registry.generate(builderType, builderFields, {
+        kind: data.kind,
+        schedule: data.schedule,
+        time_field: data.time_field,
+      }),
       data.kind,
       builderType
     );
@@ -212,7 +216,12 @@ export function resolveUpdateRuleBuilder(
     }
 
     const generated = adaptToKind(
-      registry.generate(effectiveType, requestedFields as OpaqueBuilderFields),
+      registry.generate(effectiveType, requestedFields as OpaqueBuilderFields, {
+        id: ruleId,
+        kind: existing.kind,
+        schedule: existing.schedule,
+        time_field: existing.time_field,
+      }),
       existing.kind,
       effectiveType
     );

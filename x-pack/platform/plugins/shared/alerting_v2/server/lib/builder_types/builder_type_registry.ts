@@ -18,7 +18,12 @@ import { BuilderQueryGenerationError } from '@kbn/alerting-v2-rule-builders';
 import { ALERTING_ERROR_CODES } from '../errors/error_codes';
 import { assertBoundedSchema } from '../bounded_schema';
 import { assertValidDefinition } from './assert_valid_definition';
-import type { GeneratedQuery, OpaqueBuilderFields, RegisteredBuilderType } from './types';
+import type {
+  GeneratedQuery,
+  OpaqueBuilderFields,
+  QueryGenerationInput,
+  RegisteredBuilderType,
+} from './types';
 
 const BUILDER_FIELDS_SUBJECT = {
   kind: 'Builder type',
@@ -58,7 +63,16 @@ export class BuilderTypeRegistry {
     return [...this.types.values()];
   }
 
-  public generate(builderType: string, builderFields: OpaqueBuilderFields): GeneratedQuery {
+  /**
+   * Compiles the builder fields into a query at write time. Synchronous: if the
+   * registered `generateQuery` returns a Promise, this method throws immediately,
+   * because async generation is only supported at execution time (step 6.1).
+   */
+  public generate(
+    builderType: string,
+    builderFields: OpaqueBuilderFields,
+    rule: QueryGenerationInput<OpaqueBuilderFields>['rule']
+  ): GeneratedQuery {
     const definition = this.types.get(builderType);
     if (!definition) {
       throw Boom.badRequest(
@@ -74,8 +88,9 @@ export class BuilderTypeRegistry {
 
     const fields = this.parseFields(definition, builderFields);
 
+    let result: GeneratedQuery | Promise<GeneratedQuery>;
     try {
-      return definition.generateQuery(fields);
+      result = definition.generateQuery({ fields, rule });
     } catch (error) {
       if (error instanceof BuilderQueryGenerationError) {
         throw Boom.badRequest(
@@ -91,6 +106,15 @@ export class BuilderTypeRegistry {
       }
       throw error;
     }
+
+    if (result instanceof Promise) {
+      throw new Error(
+        `Rule builder "${builderType}" generateQuery returned a Promise at write time. ` +
+          `Async generation is only supported at execution time (compilation: 'execution_time').`
+      );
+    }
+
+    return result;
   }
 
   /**

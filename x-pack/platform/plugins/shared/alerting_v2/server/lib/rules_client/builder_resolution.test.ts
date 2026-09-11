@@ -168,13 +168,19 @@ describe('resolveCreateRuleBuilder', () => {
   // -------------------------------------------------------------------------
 
   describe('builder path', () => {
-    it('calls registry.generate with the exact builder_type and builder_fields from the request', () => {
+    it('calls registry.generate with the exact builder_type, builder_fields, and write-time rule context', () => {
+      // Step 2.1: generate() now takes a third argument — the write-time rule context
+      // (kind, schedule, time_field) derived from the create data. No id at create time.
       const generate = jest.fn().mockReturnValue(standaloneGenerated);
       const registry = createMockRegistry(generate);
 
       resolveCreateRuleBuilder(registry, builderCreateData);
 
-      expect(generate).toHaveBeenCalledWith(BUILDER_TYPE, RAW_FIELDS);
+      expect(generate).toHaveBeenCalledWith(BUILDER_TYPE, RAW_FIELDS, {
+        kind: 'alert',
+        schedule: { every: '5m' },
+        time_field: '@timestamp',
+      });
     });
 
     it('replaces the query in the result with the generated query', () => {
@@ -521,7 +527,9 @@ describe('resolveUpdateRuleBuilder', () => {
   // -------------------------------------------------------------------------
 
   describe('providing new builder_fields', () => {
-    it('calls registry.generate with the requestedType and the new fields', () => {
+    it('calls registry.generate with the requestedType, new fields, and existing rule context', () => {
+      // Step 2.1: generate() now takes a third argument — the write-time rule context
+      // derived from the existing rule (id, kind, schedule, time_field).
       const generate = jest.fn().mockReturnValue(standaloneGenerated);
       const registry = createMockRegistry(generate);
       const data: UpdateRuleData = {
@@ -530,7 +538,12 @@ describe('resolveUpdateRuleBuilder', () => {
 
       resolveUpdateRuleBuilder(registry, RULE_ID, data, plainExisting);
 
-      expect(generate).toHaveBeenCalledWith(BUILDER_TYPE, RAW_FIELDS);
+      expect(generate).toHaveBeenCalledWith(BUILDER_TYPE, RAW_FIELDS, {
+        id: RULE_ID,
+        kind: 'alert',
+        schedule: { every: '1m', lookback: '5m' },
+        time_field: '@timestamp',
+      });
     });
 
     it('falls back to the existing builder_type when no requestedType is supplied', () => {
@@ -540,7 +553,12 @@ describe('resolveUpdateRuleBuilder', () => {
 
       resolveUpdateRuleBuilder(registry, RULE_ID, data, builderExisting);
 
-      expect(generate).toHaveBeenCalledWith(BUILDER_TYPE, RAW_FIELDS);
+      expect(generate).toHaveBeenCalledWith(BUILDER_TYPE, RAW_FIELDS, {
+        id: RULE_ID,
+        kind: 'alert',
+        schedule: { every: '1m', lookback: '5m' },
+        time_field: '@timestamp',
+      });
     });
 
     it('throws INVALID_BUILDER_FIELDS when builder_fields are provided but there is no effective type', () => {

@@ -7,7 +7,15 @@
 
 export type {
   BuilderTypeDefinition,
-  RegisteredBuilderType,
-  OpaqueBuilderFields,
+  BuilderTypeManifest,
+  BuilderTypeVersion,
+  DerivedRuleFields,
+  GenerateQuery,
   GeneratedQuery,
+  MappingProperty,
+  OpaqueBuilderFields,
+  QueryGenerationInput,
+  RegisteredBuilderType,
+  RuleEventEnrichment,
+  RuleEventEnrichmentInput,
 } from '@kbn/alerting-v2-rule-builders';

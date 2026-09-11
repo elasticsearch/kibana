@@ -32,9 +32,23 @@ function makeDefinition(
 ): RegisteredBuilderType {
   return {
     type: 'test.my_type',
+    // name is required by the widened BuilderTypeDefinition (step 2.1).
+    name: 'Test type',
     builderFieldsSchema: simpleSchema as unknown as RegisteredBuilderType['builderFieldsSchema'],
     generateQuery: jest.fn(() => makeQuery()),
     ...overrides,
+  };
+}
+
+/**
+ * A minimal write-time rule context for registry.generate() calls in tests.
+ * Step 2.1 widened generate() to require the rule subset as a third argument.
+ */
+function makeRuleContext() {
+  return {
+    kind: 'alert' as const,
+    schedule: { every: '5m' },
+    time_field: '@timestamp',
   };
 }
 
@@ -204,7 +218,7 @@ describe('BuilderTypeRegistry.generate — UNKNOWN_BUILDER_TYPE', () => {
   it('throws a Boom 400 with UNKNOWN_BUILDER_TYPE when the type is not registered', () => {
     let error: unknown;
     try {
-      registry.generate('no.such.type', { value: 'x' });
+      registry.generate('no.such.type', { value: 'x' }, makeRuleContext());
     } catch (e) {
       error = e;
     }
@@ -222,7 +236,7 @@ describe('BuilderTypeRegistry.generate — UNKNOWN_BUILDER_TYPE', () => {
     registry.register(makeDefinition({ type: 'test.known' }));
     let error: unknown;
     try {
-      registry.generate('test.unknown', {});
+      registry.generate('test.unknown', {}, makeRuleContext());
     } catch (e) {
       error = e;
     }
@@ -233,7 +247,7 @@ describe('BuilderTypeRegistry.generate — UNKNOWN_BUILDER_TYPE', () => {
   it('mentions "none" in the error message when no types are registered', () => {
     let error: unknown;
     try {
-      registry.generate('test.unknown', {});
+      registry.generate('test.unknown', {}, makeRuleContext());
     } catch (e) {
       error = e;
     }
@@ -243,7 +257,7 @@ describe('BuilderTypeRegistry.generate — UNKNOWN_BUILDER_TYPE', () => {
   it('mentions the unknown type id in the error message', () => {
     let error: unknown;
     try {
-      registry.generate('test.ghost', {});
+      registry.generate('test.ghost', {}, makeRuleContext());
     } catch (e) {
       error = e;
     }
@@ -264,21 +278,26 @@ describe('BuilderTypeRegistry.generate — parse-and-call', () => {
     generateQuery = jest.fn(() => makeQuery());
     registry.register({
       type: 'test.parse_type',
+      // name is required by the widened BuilderTypeDefinition (step 2.1).
+      name: 'Parse test type',
       builderFieldsSchema: simpleSchema as unknown as RegisteredBuilderType['builderFieldsSchema'],
       generateQuery,
     });
   });
 
-  it('calls generateQuery with the schema-parsed data', () => {
-    registry.generate('test.parse_type', { value: 'hello' });
+  it('calls generateQuery with the schema-parsed data wrapped in a QueryGenerationInput', () => {
+    // Step 2.1 widened generateQuery's input from bare fields to QueryGenerationInput.
+    // The registry wraps the parsed fields and the rule context into the input object.
+    const ruleCtx = makeRuleContext();
+    registry.generate('test.parse_type', { value: 'hello' }, ruleCtx);
     expect(generateQuery).toHaveBeenCalledTimes(1);
-    expect(generateQuery).toHaveBeenCalledWith({ value: 'hello' });
+    expect(generateQuery).toHaveBeenCalledWith({ fields: { value: 'hello' }, rule: ruleCtx });
   });
 
   it('returns the value from generateQuery unchanged', () => {
     const expected = makeQuery();
     generateQuery.mockReturnValue(expected);
-    const result = registry.generate('test.parse_type', { value: 'hello' });
+    const result = registry.generate('test.parse_type', { value: 'hello' }, makeRuleContext());
     expect(result).toBe(expected);
   });
 
@@ -286,7 +305,7 @@ describe('BuilderTypeRegistry.generate — parse-and-call', () => {
     let error: unknown;
     try {
       // value must be a string; passing a number violates the schema
-      registry.generate('test.parse_type', { value: 12345 });
+      registry.generate('test.parse_type', { value: 12345 }, makeRuleContext());
     } catch (e) {
       error = e;
     }
@@ -301,7 +320,7 @@ describe('BuilderTypeRegistry.generate — parse-and-call', () => {
   it('throws Boom INVALID_BUILDER_FIELDS when strict schema receives extra fields', () => {
     let error: unknown;
     try {
-      registry.generate('test.parse_type', { value: 'ok', extra: 'unwanted' });
+      registry.generate('test.parse_type', { value: 'ok', extra: 'unwanted' }, makeRuleContext());
     } catch (e) {
       error = e;
     }
@@ -313,7 +332,7 @@ describe('BuilderTypeRegistry.generate — parse-and-call', () => {
   it('includes treeified error details in INVALID_BUILDER_FIELDS', () => {
     let error: unknown;
     try {
-      registry.generate('test.parse_type', { value: 12345 });
+      registry.generate('test.parse_type', { value: 12345 }, makeRuleContext());
     } catch (e) {
       error = e;
     }
@@ -327,7 +346,7 @@ describe('BuilderTypeRegistry.generate — parse-and-call', () => {
     });
     let error: unknown;
     try {
-      registry.generate('test.parse_type', { value: 'ok' });
+      registry.generate('test.parse_type', { value: 'ok' }, makeRuleContext());
     } catch (e) {
       error = e;
     }
@@ -345,7 +364,7 @@ describe('BuilderTypeRegistry.generate — parse-and-call', () => {
     });
     let error: unknown;
     try {
-      registry.generate('test.parse_type', { value: 'ok' });
+      registry.generate('test.parse_type', { value: 'ok' }, makeRuleContext());
     } catch (e) {
       error = e;
     }
@@ -359,7 +378,7 @@ describe('BuilderTypeRegistry.generate — parse-and-call', () => {
     });
     let error: unknown;
     try {
-      registry.generate('test.parse_type', { value: 'ok' });
+      registry.generate('test.parse_type', { value: 'ok' }, makeRuleContext());
     } catch (e) {
       error = e;
     }
@@ -372,15 +391,20 @@ describe('BuilderTypeRegistry.generate — parse-and-call', () => {
     generateQuery.mockImplementation(() => {
       throw originalError;
     });
-    expect(() => registry.generate('test.parse_type', { value: 'ok' })).toThrow(originalError);
+    expect(() =>
+      registry.generate('test.parse_type', { value: 'ok' }, makeRuleContext())
+    ).toThrow(originalError);
   });
 
   it('passes the schema-parsed data (not raw input) to generateQuery', () => {
     // The strict schema strips no fields (strict rejects), but we can verify that
-    // generateQuery receives the result of safeParse, not the original object reference.
+    // generateQuery receives the result of safeParse inside a QueryGenerationInput,
+    // not the original raw object. Step 2.1 changed the call from generateQuery(fields)
+    // to generateQuery({ fields, rule }) — the rule context is threaded through from
+    // the third argument of registry.generate().
     const raw = { value: 'test-value' };
-    registry.generate('test.parse_type', raw);
-    // The parsed data has the same shape; confirm it's what generateQuery received.
-    expect(generateQuery).toHaveBeenCalledWith({ value: 'test-value' });
+    const ruleCtx = makeRuleContext();
+    registry.generate('test.parse_type', raw, ruleCtx);
+    expect(generateQuery).toHaveBeenCalledWith({ fields: { value: 'test-value' }, rule: ruleCtx });
   });
 });
