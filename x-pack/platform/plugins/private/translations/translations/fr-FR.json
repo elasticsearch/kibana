@@ -51702,7 +51702,6 @@
     "xpack.snapshotRestore.deleteSnapshot.confirmModal.deleteMultipleTitle": "Supprimer {count} snapshots ?",
     "xpack.snapshotRestore.deleteSnapshot.confirmModal.deleteSingleTitle": "Supprimer le snapshot \"{name}\" ?",
     "xpack.snapshotRestore.deleteSnapshot.confirmModal.deletingCalloutDescription": "Cette opération peut prendre quelques minutes.",
-    "xpack.snapshotRestore.deleteSnapshot.confirmModal.deletingCalloutTitle": "Suppression des snapshots",
     "xpack.snapshotRestore.deleteSnapshot.errorMultipleNotificationTitle": "Erreur lors de la suppression de {count} snapshots",
     "xpack.snapshotRestore.deleteSnapshot.errorSingleNotificationTitle": "Erreur lors de la suppression du snapshot \"{name}\"",
     "xpack.snapshotRestore.deleteSnapshot.successMultipleNotificationTitle": "Suppression de {count} snapshots effectuée",

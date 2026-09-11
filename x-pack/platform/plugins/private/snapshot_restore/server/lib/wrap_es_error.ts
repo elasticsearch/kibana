@@ -28,9 +28,11 @@ const extractCausedByChain = (causedBy: any = {}, accumulator: any[] = []): any 
  */
 export const wrapEsError = (err: any, statusCodeToMessageMap: any = {}) => {
   const { statusCode, response } = err;
+  // Errors thrown by the ES client carry the ES response body under `meta.body`, not `response`
+  const esBody = response ?? err.meta?.body ?? {};
 
   const { error: { root_cause = [], caused_by = {} } = {} } =
-    typeof response === 'string' ? JSON.parse(response) : response;
+    typeof esBody === 'string' ? JSON.parse(esBody) : esBody;
 
   // If no custom message if specified for the error's status code, just
   // wrap the error as a Boom error response, include the additional information from ES, and return it

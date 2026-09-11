@@ -52105,7 +52105,6 @@
     "xpack.snapshotRestore.deleteSnapshot.confirmModal.deleteMultipleTitle": "{count}件のスナップショットを削除しますか?",
     "xpack.snapshotRestore.deleteSnapshot.confirmModal.deleteSingleTitle": "スナップショット''{name}''を削除",
     "xpack.snapshotRestore.deleteSnapshot.confirmModal.deletingCalloutDescription": "これには数分かかる場合があります。",
-    "xpack.snapshotRestore.deleteSnapshot.confirmModal.deletingCalloutTitle": "スナップショットを削除中",
     "xpack.snapshotRestore.deleteSnapshot.errorMultipleNotificationTitle": "{count}件のスナップショットの削除中のエラー",
     "xpack.snapshotRestore.deleteSnapshot.errorSingleNotificationTitle": "スナップショット''{name}''の削除中のエラー",
     "xpack.snapshotRestore.deleteSnapshot.successMultipleNotificationTitle": "{count}件のスナップショットを削除しました",

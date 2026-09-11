@@ -92,7 +92,8 @@ export const registerEsHelpers = (getService: FtrProviderContext['getService']) 
   };
 
   const deleteSnapshots = (repositoryName: string) => {
-    es.snapshot
+    // return the promise so the after hook waits for deletion before the cluster is torn down
+    return es.snapshot
       .delete({ repository: repositoryName, snapshot: '*' })
       .then(() => {})
       .catch((err) => {

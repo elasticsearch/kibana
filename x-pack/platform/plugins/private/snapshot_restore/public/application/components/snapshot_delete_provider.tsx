@@ -64,7 +64,7 @@ export const SnapshotDeleteProvider: React.FunctionComponent<Props> = ({ childre
     deleteSnapshots(snapshotsToDelete).then(({ data, error }) => {
       const { itemsDeleted, errors } = data || { itemsDeleted: undefined, errors: undefined };
 
-      // Wait until request is done to close modal; deleting snapshots take longer due to their sequential nature
+      // Report the result only after Elasticsearch completes the deletion request.
       closeModal();
       setIsDeleting(false);
 
@@ -178,7 +178,7 @@ export const SnapshotDeleteProvider: React.FunctionComponent<Props> = ({ childre
             values={{ count: snapshotIds.length }}
           />
         </p>
-        {!isSingle && isDeleting ? (
+        {isDeleting ? (
           <Fragment>
             <KbnWarningCallout
               announceOnMount
@@ -191,7 +191,8 @@ export const SnapshotDeleteProvider: React.FunctionComponent<Props> = ({ childre
                     <EuiFlexItem>
                       <FormattedMessage
                         id="xpack.snapshotRestore.deleteSnapshot.confirmModal.deletingCalloutTitle"
-                        defaultMessage="Deleting snapshots"
+                        defaultMessage="Deleting {count, plural, one {snapshot} other {snapshots}}"
+                        values={{ count: snapshotIds.length }}
                       />
                     </EuiFlexItem>
                   </EuiFlexGroup>

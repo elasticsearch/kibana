@@ -82,6 +82,7 @@ const getPolicyBody = (policy: Partial<SlmPolicy>): SlmPolicy => {
 
 export default function ({ getService }: FtrProviderContext) {
   const supertest = getService('supertest');
+  const es = getService('es');
 
   const {
     createSnapshot,
@@ -724,6 +725,87 @@ export default function ({ getService }: FtrProviderContext) {
           );
           expect(snapshotsExcluded).to.eql(true);
         });
+      });
+    });
+
+    // Runs last: it creates and removes its own snapshots so the counts asserted above stay intact
+    describe('bulk_delete', () => {
+      const BULK_DELETE_SNAPSHOT_1 = 'bulk_delete_snapshot_1';
+      const BULK_DELETE_SNAPSHOT_2 = 'bulk_delete_snapshot_2';
+      const BULK_DELETE_SNAPSHOT_3 = 'bulk_delete_snapshot_3';
+      const MISSING_SNAPSHOT_NAME = 'bulk_delete_missing_snapshot';
+
+      const getSnapshotsTotal = async (): Promise<number> => {
+        const {
+          body: { total },
+        } = await supertest.get(getApiPath({})).set('kbn-xsrf', 'xxx').send();
+        return total;
+      };
+
+      const bulkDelete = (snapshots: Array<{ repository: string; snapshot: string }>) =>
+        supertest
+          .post('/api/snapshot_restore/snapshots/bulk_delete')
+          .set('kbn-xsrf', 'xxx')
+          .send(snapshots);
+
+      beforeEach(async () => {
+        await es.snapshot.create({
+          repository: REPO_NAME_1,
+          snapshot: BULK_DELETE_SNAPSHOT_1,
+          wait_for_completion: true,
+        });
+        await es.snapshot.create({
+          repository: REPO_NAME_1,
+          snapshot: BULK_DELETE_SNAPSHOT_2,
+          wait_for_completion: true,
+        });
+        await es.snapshot.create({
+          repository: REPO_NAME_2,
+          snapshot: BULK_DELETE_SNAPSHOT_3,
+          wait_for_completion: true,
+        });
+      });
+
+      afterEach(async () => {
+        await es.snapshot.delete({ repository: REPO_NAME_1, snapshot: 'bulk_delete_*' });
+        await es.snapshot.delete({ repository: REPO_NAME_2, snapshot: 'bulk_delete_*' });
+      });
+
+      it('deletes snapshots from several repositories in one request', async () => {
+        const { body } = await bulkDelete([
+          { repository: REPO_NAME_1, snapshot: BULK_DELETE_SNAPSHOT_1 },
+          { repository: REPO_NAME_2, snapshot: BULK_DELETE_SNAPSHOT_3 },
+          { repository: REPO_NAME_1, snapshot: BULK_DELETE_SNAPSHOT_2 },
+        ]).expect(200);
+
+        expect(body).to.eql({
+          itemsDeleted: [
+            { snapshot: BULK_DELETE_SNAPSHOT_1, repository: REPO_NAME_1 },
+            { snapshot: BULK_DELETE_SNAPSHOT_2, repository: REPO_NAME_1 },
+            { snapshot: BULK_DELETE_SNAPSHOT_3, repository: REPO_NAME_2 },
+          ],
+          errors: [],
+        });
+        expect(await getSnapshotsTotal()).to.eql(SNAPSHOT_COUNT);
+      });
+
+      it('reports only the missing snapshot and still deletes the others', async () => {
+        const { body } = await bulkDelete([
+          { repository: REPO_NAME_1, snapshot: MISSING_SNAPSHOT_NAME },
+          { repository: REPO_NAME_1, snapshot: BULK_DELETE_SNAPSHOT_1 },
+          { repository: REPO_NAME_2, snapshot: BULK_DELETE_SNAPSHOT_3 },
+        ]).expect(200);
+
+        expect(body.itemsDeleted).to.eql([
+          { snapshot: BULK_DELETE_SNAPSHOT_1, repository: REPO_NAME_1 },
+          { snapshot: BULK_DELETE_SNAPSHOT_3, repository: REPO_NAME_2 },
+        ]);
+        expect(body.errors.map(({ id }: { id: unknown }) => id)).to.eql([
+          { snapshot: MISSING_SNAPSHOT_NAME, repository: REPO_NAME_1 },
+        ]);
+        expect(body.errors[0].error.statusCode).to.eql(404);
+        // only BULK_DELETE_SNAPSHOT_2 in REPO_NAME_1 is left from this test's fixtures
+        expect(await getSnapshotsTotal()).to.eql(SNAPSHOT_COUNT + 1);
       });
     });
   });

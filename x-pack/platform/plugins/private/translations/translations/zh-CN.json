@@ -52109,7 +52109,6 @@
     "xpack.snapshotRestore.deleteSnapshot.confirmModal.deleteMultipleTitle": "删除 {count} 个快照？",
     "xpack.snapshotRestore.deleteSnapshot.confirmModal.deleteSingleTitle": "删除快照“{name}”？",
     "xpack.snapshotRestore.deleteSnapshot.confirmModal.deletingCalloutDescription": "这可能需要若干分钟。",
-    "xpack.snapshotRestore.deleteSnapshot.confirmModal.deletingCalloutTitle": "正在删除快照",
     "xpack.snapshotRestore.deleteSnapshot.errorMultipleNotificationTitle": "删除 {count} 个快照时出错",
     "xpack.snapshotRestore.deleteSnapshot.errorSingleNotificationTitle": "删除快照“{name}”时出错",
     "xpack.snapshotRestore.deleteSnapshot.successMultipleNotificationTitle": "已删除 {count} 个快照",

@@ -6,6 +6,7 @@
  */
 
 import type { TypeOf } from '@kbn/config-schema';
+import { errors } from '@elastic/elasticsearch';
 import { schema } from '@kbn/config-schema';
 import type { SnapshotSnapshotState } from '@elastic/elasticsearch/lib/api/types';
 import type { SnapshotDetailsEs } from '../../../common/types';
@@ -38,6 +39,54 @@ const isSearchingForNonExistentRepository = (
   }
   // otherwise we will use a wildcard, so allow the request
   return false;
+};
+
+// Deleting many or large snapshots can outlast Kibana's default socket timeout (`server.socketTimeout`, 120s);
+// give this route the same generous budget other long-running routes use.
+const SNAPSHOT_DELETE_SOCKET_TIMEOUT_MS = 30 * 60 * 1000;
+
+// ES rejects requests whose first line exceeds `http.max_initial_line_length` (4kb by default), so the
+// encoded repository name plus the comma-separated snapshot names in a DELETE path are kept well below it.
+const MAX_DELETE_PATH_LENGTH = 3000;
+
+const getEncodedLength = (value: string): number => {
+  try {
+    return encodeURIComponent(value).length;
+  } catch (e) {
+    // a value that cannot be encoded (e.g. a lone surrogate) gets a request of its own, so only that one fails
+    return Infinity;
+  }
+};
+
+// ES fails a multi-snapshot delete before deleting anything when one of the names does not exist
+const isSnapshotMissingError = (e: unknown): boolean =>
+  e instanceof errors.ResponseError && e.body?.error?.type === 'snapshot_missing_exception';
+
+const chunkSnapshotNames = (repository: string, snapshotNames: string[]): string[][] => {
+  const maxSnapshotNamesLength = MAX_DELETE_PATH_LENGTH - getEncodedLength(repository);
+  const chunks: string[][] = [];
+  let currentChunk: string[] = [];
+  let currentLength = 0;
+
+  for (const snapshotName of snapshotNames) {
+    // encoded name plus the encoded comma separator (`%2C`)
+    const encodedLength = getEncodedLength(snapshotName) + 3;
+
+    if (currentChunk.length > 0 && currentLength + encodedLength > maxSnapshotNamesLength) {
+      chunks.push(currentChunk);
+      currentChunk = [];
+      currentLength = 0;
+    }
+
+    currentChunk.push(snapshotName);
+    currentLength += encodedLength;
+  }
+
+  if (currentChunk.length > 0) {
+    chunks.push(currentChunk);
+  }
+
+  return chunks;
 };
 
 export function registerSnapshotsRoutes({
@@ -290,6 +339,7 @@ export function registerSnapshotsRoutes({
   router.post(
     {
       path: addBasePath('snapshots/bulk_delete'),
+      options: { timeout: { idleSocket: SNAPSHOT_DELETE_SOCKET_TIMEOUT_MS } },
       security: {
         authz: {
           enabled: false,
@@ -311,21 +361,63 @@ export function registerSnapshotsRoutes({
 
       const snapshots = req.body;
 
-      try {
-        // We intentionally perform deletion requests sequentially (blocking) instead of in parallel (non-blocking)
-        // because there can only be one snapshot deletion task performed at a time (ES restriction).
-        for (let i = 0; i < snapshots.length; i++) {
-          const { snapshot, repository } = snapshots[i];
+      // Group snapshots by repository so that each repository is handled with as few ES requests as possible
+      const snapshotsByRepository = new Map<string, string[]>();
+      for (const { snapshot, repository } of snapshots) {
+        const snapshotNames = snapshotsByRepository.get(repository) ?? [];
+        snapshotNames.push(snapshot);
+        snapshotsByRepository.set(repository, snapshotNames);
+      }
 
-          await clusterClient.asCurrentUser.snapshot
-            .delete({ snapshot, repository })
-            .then(() => response.itemsDeleted.push({ snapshot, repository }))
-            .catch((e) =>
-              response.errors.push({
-                id: { snapshot, repository },
-                error: wrapEsError(e),
-              })
+      const deleteBatches = [...snapshotsByRepository].flatMap(([repository, snapshotNames]) =>
+        chunkSnapshotNames(repository, snapshotNames).map((chunk) => ({
+          repository,
+          snapshotNames: chunk,
+        }))
+      );
+
+      type SnapshotId = (typeof snapshots)[number];
+
+      const deleteSnapshots = async (repository: string, ids: SnapshotId[]): Promise<void> => {
+        await clusterClient.asCurrentUser.snapshot.delete(
+          { repository, snapshot: ids.map(({ snapshot }) => snapshot).join(',') },
+          // Keep waiting for the deletion result instead of reporting a client timeout as a failure.
+          { requestTimeout: 0 }
+        );
+        response.itemsDeleted.push(...ids);
+      };
+
+      const recordErrors = (ids: SnapshotId[], e: unknown) => {
+        const error = wrapEsError(e);
+        response.errors.push(...ids.map((id) => ({ id, error })));
+      };
+
+      const deleteBatch = async (repository: string, snapshotNames: string[]): Promise<void> => {
+        const ids = snapshotNames.map((snapshot) => ({ snapshot, repository }));
+
+        try {
+          await deleteSnapshots(repository, ids);
+        } catch (e) {
+          if (ids.length === 1 || !isSnapshotMissingError(e)) {
+            recordErrors(ids, e);
+            return;
+          }
+
+          // A stale name (e.g. removed by SLM retention meanwhile) must not block the other snapshots in the batch:
+          // retry them one by one so only the missing snapshot is reported as an error.
+          for (const id of ids) {
+            await deleteSnapshots(repository, [id]).catch((retryError) =>
+              recordErrors([id], retryError)
             );
+          }
+        }
+      };
+
+      try {
+        // We intentionally perform deletion requests sequentially (blocking) instead of in parallel (non-blocking):
+        // ES runs at most one deletion per repository at a time and queues additional ones.
+        for (const { repository, snapshotNames } of deleteBatches) {
+          await deleteBatch(repository, snapshotNames);
         }
 
         return res.ok({ body: response });
