@@ -13,13 +13,25 @@ import { cloudSecurityMetringCallback, getCloudProductTier } from './cloud_secur
 import {
   getCloudSecurityUsageRecord,
   getSearchQueryByCloudSecuritySolution,
+  getGcpComputeDurationFilter,
+  getGcpComputeDurationRuntimeMapping,
+  getAssetAggQueryByCloudSecuritySolution,
 } from './cloud_security_metering_task';
 
 import type { ServerlessSecurityConfig } from '../config';
 import type { MeteringCallbackInput } from '../types';
 
 import type { ProductTier } from '../../common/product';
-import { CLOUD_SECURITY_TASK_TYPE, CSPM, KSPM, CNVM, BILLABLE_ASSETS_CONFIG } from './constants';
+import {
+  CLOUD_SECURITY_TASK_TYPE,
+  CSPM,
+  KSPM,
+  CNVM,
+  BILLABLE_ASSETS_CONFIG,
+  GCP_COMPUTE_MIN_RUNNING_DURATION_HOURS,
+  GCP_COMPUTE_INSTANCE_SUB_TYPE,
+  GCP_COMPUTE_DURATION_RUNTIME_FIELD,
+} from './constants';
 
 const mockEsClient = elasticsearchServiceMock.createStart().client.asInternalUser;
 const logger: ReturnType<typeof loggingSystemMock.createLogger> = loggingSystemMock.createLogger();
@@ -300,6 +312,137 @@ describe('getSearchQueryByCloudSecuritySolution', () => {
         ],
       },
     });
+  });
+});
+
+describe('getGcpComputeDurationFilter', () => {
+  const minDurationMillis = GCP_COMPUTE_MIN_RUNNING_DURATION_HOURS * 60 * 60 * 1000;
+
+  it('should pass non-gcp-compute-instance docs and gate gcp-compute-instance docs on the runtime field', () => {
+    const filter = getGcpComputeDurationFilter();
+
+    expect(filter).toEqual({
+      bool: {
+        should: [
+          {
+            bool: {
+              must_not: [{ term: { 'resource.sub_type': GCP_COMPUTE_INSTANCE_SUB_TYPE } }],
+            },
+          },
+          {
+            bool: {
+              must: [
+                { term: { 'resource.sub_type': GCP_COMPUTE_INSTANCE_SUB_TYPE } },
+                {
+                  range: {
+                    [GCP_COMPUTE_DURATION_RUNTIME_FIELD]: { gte: minDurationMillis },
+                  },
+                },
+              ],
+            },
+          },
+        ],
+        minimum_should_match: 1,
+      },
+    });
+  });
+
+  it('should use 24 hours as the minimum running duration', () => {
+    const filter = getGcpComputeDurationFilter();
+    const [, gcpComputeClause] = filter.bool.should;
+
+    expect(gcpComputeClause).toEqual({
+      bool: {
+        must: [
+          { term: { 'resource.sub_type': GCP_COMPUTE_INSTANCE_SUB_TYPE } },
+          {
+            range: {
+              [GCP_COMPUTE_DURATION_RUNTIME_FIELD]: { gte: 24 * 60 * 60 * 1000 },
+            },
+          },
+        ],
+      },
+    });
+  });
+});
+
+describe('getGcpComputeDurationRuntimeMapping', () => {
+  it('should define a long runtime field with nowMillis, lookbackStartMs and subType params', () => {
+    const nowMillis = Date.now();
+    const mapping = getGcpComputeDurationRuntimeMapping(nowMillis);
+
+    expect(mapping[GCP_COMPUTE_DURATION_RUNTIME_FIELD]).toMatchObject({
+      type: 'long',
+      script: {
+        lang: 'painless',
+        params: {
+          nowMillis,
+          // must stay aligned with the now-24h @timestamp range filter (ASSETS_SAMPLE_GRANULARITY)
+          lookbackStartMs: nowMillis - 24 * 60 * 60 * 1000,
+          subType: GCP_COMPUTE_INSTANCE_SUB_TYPE,
+        },
+      },
+    });
+  });
+
+  it('should only count stopped instances whose stop event falls within the look-back window', () => {
+    const mapping = getGcpComputeDurationRuntimeMapping(Date.now());
+    const source: string = mapping[GCP_COMPUTE_DURATION_RUNTIME_FIELD].script.source;
+
+    // A stopped instance with a >=24h historical run must not be re-billed on every
+    // later day it appears in scans — only during the window in which it stopped.
+    const guardIndex = source.indexOf("if (lastStopMs < params['lookbackStartMs']) return;");
+    expect(guardIndex).toBeGreaterThan(-1);
+    // The guard must run before the duration is emitted
+    expect(guardIndex).toBeLessThan(source.indexOf('emit('));
+  });
+
+  it('should read _source via params and not use doc[] for resource.raw fields', () => {
+    const mapping = getGcpComputeDurationRuntimeMapping(Date.now());
+    const source: string = mapping[GCP_COMPUTE_DURATION_RUNTIME_FIELD].script.source;
+
+    expect(source).toContain("params['_source']");
+    expect(source).not.toContain("doc['resource.raw");
+    expect(source).toContain('lastStartTimestamp');
+    expect(source).toContain('lastStopTimestamp');
+    expect(source).toContain('emit(');
+  });
+
+  it('should guard the _source access and timestamp parsing so a malformed doc cannot abort the search', () => {
+    const mapping = getGcpComputeDurationRuntimeMapping(Date.now());
+    const source: string = mapping[GCP_COMPUTE_DURATION_RUNTIME_FIELD].script.source;
+
+    // A runtime-field script error fails the whole search request, and the metering callers
+    // swallow errors log-only — so an unguarded parse would silently zero all CSPM usage.
+    expect(source).toContain('try {');
+    expect(source).toContain('catch (Exception e)');
+    // Both ZonedDateTime.parse calls must be inside the try block
+    const tryIndex = source.indexOf('try {');
+    expect(source.indexOf('ZonedDateTime.parse')).toBeGreaterThan(tryIndex);
+    expect(source.lastIndexOf('ZonedDateTime.parse')).toBeGreaterThan(tryIndex);
+    expect(source.indexOf('catch')).toBeGreaterThan(source.lastIndexOf('emit('));
+  });
+});
+
+describe('getAssetAggQueryByCloudSecuritySolution', () => {
+  it('should include runtime_mappings and GCP duration filter for CSPM', () => {
+    const result = getAssetAggQueryByCloudSecuritySolution(CSPM);
+
+    if (!('runtime_mappings' in result)) {
+      throw new Error('expected the CSPM asset agg query to include runtime_mappings');
+    }
+    expect(result.runtime_mappings).toHaveProperty(GCP_COMPUTE_DURATION_RUNTIME_FIELD);
+    expect(result.query.bool.must).toHaveLength(2);
+  });
+
+  it('should not include runtime_mappings for KSPM', () => {
+    const result = getAssetAggQueryByCloudSecuritySolution(KSPM);
+    expect(result).not.toHaveProperty('runtime_mappings');
+  });
+
+  it('should not include runtime_mappings for CNVM', () => {
+    const result = getAssetAggQueryByCloudSecuritySolution(CNVM);
+    expect(result).not.toHaveProperty('runtime_mappings');
   });
 });
 

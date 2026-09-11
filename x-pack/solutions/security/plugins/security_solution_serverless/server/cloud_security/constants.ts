@@ -36,6 +36,15 @@ export const METERING_CONFIGS = {
   },
 };
 
+// GCP Compute instance duration-based metering filter
+// Only count gcp-compute-instance resources that have been running for at least this duration
+export const GCP_COMPUTE_MIN_RUNNING_DURATION_HOURS = 24;
+export const GCP_COMPUTE_INSTANCE_SUB_TYPE = 'gcp-compute-instance';
+// Runtime field name used to compute GCP compute instance running duration at query time.
+// resource.raw is stored with enabled:false so its sub-fields are inaccessible via doc[]; a runtime
+// field is the only way to read _source in a filter context.
+export const GCP_COMPUTE_DURATION_RUNTIME_FIELD = '_kibana_cspm_gcp_running_duration_ms';
+
 // see https://github.com/elastic/security-team/issues/8970 for billable asset definition
 export const BILLABLE_ASSETS_CONFIG = {
   [CSPM]: {
