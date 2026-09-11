@@ -6,7 +6,6 @@
  */
 
 import { loggingSystemMock } from '@kbn/core/server/mocks';
-import type { ConfigType } from '@kbn/screenshotting-server';
 import { SpanStatusCode, trace } from '@opentelemetry/api';
 import { tracing } from '@elastic/opentelemetry-node/sdk';
 import moment from 'moment';
@@ -36,7 +35,6 @@ afterAll(async () => {
 type EventLoggerArgs = [message: string, meta: ScreenshottingAction];
 describe('Event Logger', () => {
   let eventLogger: EventLogger;
-  let config: ConfigType;
   let logSpy: jest.SpyInstance<void, EventLoggerArgs>;
 
   beforeEach(() => {
@@ -49,8 +47,7 @@ describe('Event Logger', () => {
     });
 
     const logger = loggingSystemMock.createLogger();
-    config = { capture: { zoom: 2 } } as ConfigType;
-    eventLogger = new EventLogger(logger, config);
+    eventLogger = new EventLogger(logger);
 
     logSpy = jest.spyOn(logger, 'debug') as jest.SpyInstance<void, EventLoggerArgs>;
   });
@@ -223,7 +220,7 @@ describe('Event Logger', () => {
       'screenshot capture test',
       Actions.GET_SCREENSHOT,
       'read',
-      eventLogger.getPixelsFromElementPosition(elementPosition)
+      eventLogger.getPixelsFromElementPosition(elementPosition, 2)
     );
     endScreenshot({ byte_length: 4444 });
 

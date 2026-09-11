@@ -6,7 +6,6 @@
  */
 
 import { loggingSystemMock } from '@kbn/core/server/mocks';
-import type { ConfigType } from '@kbn/screenshotting-server';
 import { createMockBrowserDriver } from '../browsers/mock';
 import type { Layout } from '../layouts';
 import { createMockLayout } from '../layouts/mock';
@@ -32,13 +31,11 @@ describe('getScreenshots', () => {
   ];
   let browser: ReturnType<typeof createMockBrowserDriver>;
   let eventLogger: EventLogger;
-  let config = {} as ConfigType;
   let layout: Layout;
 
   beforeEach(async () => {
     browser = createMockBrowserDriver();
-    config = { capture: { zoom: 2 } } as ConfigType;
-    eventLogger = new EventLogger(loggingSystemMock.createLogger(), config);
+    eventLogger = new EventLogger(loggingSystemMock.createLogger());
     browser.evaluate.mockImplementation(({ fn, args }) => (fn as Function)(...args));
     layout = createMockLayout();
   });

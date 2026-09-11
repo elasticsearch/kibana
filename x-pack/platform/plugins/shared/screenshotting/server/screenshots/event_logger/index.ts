@@ -6,7 +6,6 @@
  */
 
 import type { Logger, LogMeta } from '@kbn/core/server';
-import type { ConfigType } from '@kbn/screenshotting-server';
 import apm from 'elastic-apm-node';
 import { withActiveSpan } from '@kbn/tracing-utils';
 import { type Span as OtelSpan, trace } from '@opentelemetry/api';
@@ -151,7 +150,7 @@ export class EventLogger {
   private logEvent: LogAdapter;
   private timings: Partial<Record<Actions | Transactions, Date>> = {};
 
-  constructor(private readonly logger: Logger, private readonly config: ConfigType) {
+  constructor(private readonly logger: Logger) {
     this.sessionId = uuidv4();
     this.logEvent = logAdapter(logger.get('events'), this.sessionId);
   }
@@ -286,12 +285,16 @@ export class EventLogger {
   /**
    * Helper function to create the "metricPre" data needed to log the start
    * of a screenshot capture event.
+   *
+   * `zoom` must be the layout's effective zoom rather than the configured one: the
+   * layouts step it down for large reports, so reading it from config overstates
+   * the captured pixels by 4x on exactly those reports.
    */
   public getPixelsFromElementPosition(
-    elementPosition: ElementPosition
+    elementPosition: ElementPosition,
+    zoom: number
   ): Pick<SimpleEvent, 'pixels'> {
     const { width, height } = elementPosition.boundingClientRect;
-    const zoom = this.config.capture.zoom;
     const pixels = width * zoom * (height * zoom);
     return { pixels };
   }

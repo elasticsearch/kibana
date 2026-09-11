@@ -196,7 +196,7 @@ export class Screenshots {
       return throwError(() => new errors.InsufficientMemoryAvailableOnCloudError());
     }
 
-    const eventLogger = new EventLogger(logger, this.config);
+    const eventLogger = new EventLogger(logger);
     const layoutInstance = createLayout(layout ?? {});
     const captureOptions = this.getCaptureOptions(options);
 

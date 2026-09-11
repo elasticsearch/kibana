@@ -30,7 +30,7 @@ describe('ScreenshotObservableHandler', () => {
       },
     } as ConfigType;
     layout = createMockLayout();
-    eventLogger = new EventLogger(loggingSystemMock.createLogger(), config);
+    eventLogger = new EventLogger(loggingSystemMock.createLogger());
     options = {
       headers: { testHeader: 'testHeadValue' },
       urls: [],

@@ -73,7 +73,7 @@ export const getScreenshots = async (
         'screenshot capture',
         Actions.GET_SCREENSHOT,
         'read',
-        eventLogger.getPixelsFromElementPosition(position)
+        eventLogger.getPixelsFromElementPosition(position, layout.getBrowserZoom())
       );
 
       const data = await browser.screenshot({

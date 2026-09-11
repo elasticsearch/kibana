@@ -6,7 +6,6 @@
  */
 
 import { loggingSystemMock } from '@kbn/core/server/mocks';
-import type { ConfigType } from '@kbn/screenshotting-server';
 import { createMockBrowserDriver } from '../browsers/mock';
 import { createMockLayout } from '../layouts/mock';
 import { EventLogger } from './event_logger';
@@ -17,13 +16,11 @@ describe('getNumberOfItems', () => {
   let browser: ReturnType<typeof createMockBrowserDriver>;
   let layout: ReturnType<typeof createMockLayout>;
   let eventLogger: EventLogger;
-  let config = {} as ConfigType;
 
   beforeEach(async () => {
     browser = createMockBrowserDriver();
     layout = createMockLayout();
-    config = { capture: { zoom: 2 } } as ConfigType;
-    eventLogger = new EventLogger(loggingSystemMock.createLogger(), config);
+    eventLogger = new EventLogger(loggingSystemMock.createLogger());
     browser.evaluate.mockImplementation(({ fn, args }) => (fn as Function)(...args));
   });
 

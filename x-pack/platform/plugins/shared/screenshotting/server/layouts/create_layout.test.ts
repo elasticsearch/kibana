@@ -99,6 +99,7 @@ describe('Create Layout', () => {
         },
         "useReportingBranding": false,
         "width": 18,
+        "zoom": 2,
       }
     `);
   });

@@ -11,8 +11,10 @@ import type { ReportParamsGetter, ReportParamsGetterOptions } from '../../types'
 import type { JobParamsProviderOptions } from '../share_context_menu';
 
 const getBaseParams = (objectType: string) => {
-  const viewportWidth = Math.max(document.documentElement.clientWidth, window.innerWidth || 0);
-
+  // Measure the container being captured, not the browser window. The window width
+  // includes chrome that is not part of the report, and it sizes the Chromium raster
+  // surface on the server: peak memory scales linearly with the requested width.
+  // See https://github.com/elastic/kibana/issues/271230.
   const el = document.querySelector('[data-shared-items-container]');
   const { height, width } = el ? el.getBoundingClientRect() : { height: 768, width: 1024 };
 
@@ -20,10 +22,7 @@ const getBaseParams = (objectType: string) => {
     objectType,
     layout: {
       id: 'preserve_layout' as 'preserve_layout' | 'print',
-      dimensions: {
-        height,
-        width: viewportWidth || width,
-      },
+      dimensions: { height, width },
     },
   };
 };

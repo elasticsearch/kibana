@@ -10,9 +10,7 @@ import { DEFAULT_SELECTORS } from '.';
 import type { Layout } from '.';
 import type { PdfImageSize } from './base_layout';
 import { BaseLayout } from './base_layout';
-
-// FIXME - should use zoom from capture config
-const ZOOM: number = 2;
+import { getBrowserZoom } from './get_browser_zoom';
 
 /*
  * This class provides a Layout definition. The PdfMaker class uses this to
@@ -24,6 +22,7 @@ export class CanvasLayout extends BaseLayout implements Layout {
   public readonly selectors: LayoutSelectorDictionary = { ...DEFAULT_SELECTORS };
   public readonly height: number;
   public readonly width: number;
+  private readonly zoom: number;
   private readonly scaledHeight: number;
   private readonly scaledWidth: number;
   private imageSize: PdfImageSize = { height: 0, width: 0 };
@@ -36,8 +35,9 @@ export class CanvasLayout extends BaseLayout implements Layout {
     super('canvas');
     this.height = size.height;
     this.width = size.width;
-    this.scaledHeight = size.height * ZOOM;
-    this.scaledWidth = size.width * ZOOM;
+    this.zoom = getBrowserZoom(size);
+    this.scaledHeight = size.height * this.zoom;
+    this.scaledWidth = size.width * this.zoom;
   }
 
   public getPdfPageOrientation() {
@@ -56,14 +56,14 @@ export class CanvasLayout extends BaseLayout implements Layout {
   }
 
   public getBrowserZoom() {
-    return ZOOM;
+    return this.zoom;
   }
 
   public getViewport() {
     return {
       height: this.height,
       width: this.width,
-      zoom: ZOOM,
+      zoom: this.zoom,
     };
   }
 
