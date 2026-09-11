@@ -79,7 +79,14 @@ export async function catchError(
     // 2. There are items in the execution stack
     // 3. The top stack entry has nested scopes to process
     // This allows error handling to bubble up through the scope hierarchy.
-    if (failedStepExecutionRuntime.stepExecutionExists() && failedStepExecutionRuntime.error) {
+    // Don't overwrite a higher-priority error already set by onTaskAbort (e.g. the sync-
+    // execution timeout). The step's error is a consequence of that abort; the timeout
+    // message is what callers need to see.
+    if (
+      failedStepExecutionRuntime.stepExecutionExists() &&
+      failedStepExecutionRuntime.error &&
+      !workflowExecutionCursor.error
+    ) {
       workflowExecutionCursor.captureError(failedStepExecutionRuntime.error);
     } else if (failedStepExecutionRuntime.stepExecutionExists()) {
       const stepExecution = failedStepExecutionRuntime.stepExecution;

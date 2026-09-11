@@ -57,17 +57,17 @@ export async function resumeWorkflow({
 }): Promise<{ idleTimeoutResumeAt?: Date }> {
   let setupResult: Awaited<ReturnType<typeof setupDependencies>>;
   try {
-    setupResult = await setupDependencies(
+    setupResult = await setupDependencies({
       workflowRunId,
       spaceId,
       logger,
       config,
       dependencies,
+      fakeRequest,
+      workflowsExecutionEngine,
       workflowExecutionRepository,
       stepExecutionRepository,
-      fakeRequest,
-      workflowsExecutionEngine
-    );
+    });
   } catch (error) {
     // The graph could not be built — a permanent author error (the parallel
     // branch-body constraints, normally caught in the editor by validateGraphBuild

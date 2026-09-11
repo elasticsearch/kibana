@@ -13,6 +13,14 @@ import type { StepContext } from '@kbn/workflows';
 import type { z } from '@kbn/zod/v4';
 import type { CommonStepDefinition } from '../../common';
 
+/** A named request-local capability transported opaquely by the workflow engine. */
+export interface WorkflowExecutionCapability {
+  readonly id: string;
+  readonly value: object;
+}
+
+export type WorkflowExecutionCapabilities = readonly WorkflowExecutionCapability[];
+
 // -----------------------------------------------------------------------------
 // Poll step types
 // -----------------------------------------------------------------------------
@@ -318,6 +326,8 @@ export function createPollServerStepDefinition<
 >(
   definition: ServerPollStepDefinition<Input, Output, Config, State>
 ): ServerPollStepDefinition<Input, Output, Config, State> {
+  definition.supportedExecutionModes = ['async'];
+
   if (!definition.ceilings) {
     definition.ceilings = PollStepDefaults.ceilings;
   }
@@ -383,6 +393,30 @@ export interface StepHandlerContext<TInput = z.ZodType, TConfig = z.ZodObject> {
    * Current step's type
    */
   stepType: string;
+
+  /**
+   * Request-local privileged capabilities supplied by the execution caller.
+   *
+   * **Injection scope:** injected unconditionally into every step handler context
+   * regardless of step type. Only step handlers that know the exact `id` and pass
+   * the value sentinel check (via `getCapabilityValue`) can read a capability;
+   * all other handlers see `undefined` from that helper.
+   *
+   * **Threat model:** capability `value` objects are intentionally designed to be
+   * non-serializable. Implementations must store their real payload behind a
+   * non-enumerable Symbol key in a WeakMap and freeze the container.
+   * `JSON.stringify` strips Symbol keys, so the ES-persistence path sees `[{}]`,
+   * not the underlying function references. A handler that attempts to include
+   * capabilities in its step output or log them loses the real payload on the
+   * round-trip — this is a deliberate self-destruct guarantee.
+   *
+   * **Do not** add capabilities whose `value` holds plain JSON-serializable data.
+   * That bypasses the self-destruct guarantee and exposes the value to every handler.
+   *
+   * These must never be added to workflow context, template variables, or step
+   * input/output directly.
+   */
+  capabilities?: WorkflowExecutionCapabilities;
 }
 
 /**

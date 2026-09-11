@@ -12,6 +12,7 @@ import {
   CONNECTOR_ID_MAX_LENGTH,
   type ConnectorContractUnion,
   generateYamlSchemaFromConnectors,
+  TEMPLATE_EXPRESSION_MAX_LENGTH,
 } from '../..';
 
 const BASE_WORKFLOW = {
@@ -216,6 +217,201 @@ describe('generateYamlSchemaFromConnectors', () => {
 
       expect(result.success).toBe(false);
       expect(elapsed).toBeLessThan(500);
+    });
+  });
+
+  describe('withTemplateStringSupport (array field widening)', () => {
+    const arrayConnector: ConnectorContractUnion = {
+      summary: 'Notifier',
+      description: null,
+      type: 'notify',
+      paramsSchema: z.object({
+        recipients: z.array(z.string()),
+        subject: z.string(),
+      }),
+      outputSchema: z.unknown(),
+    };
+
+    const parse = (withValue: unknown) =>
+      generateYamlSchemaFromConnectors([arrayConnector]).safeParse({
+        ...BASE_WORKFLOW,
+        steps: [{ name: 'step', type: 'notify', with: withValue }],
+      });
+
+    it('accepts a ${{ expr }} template for an array param', () => {
+      expect(
+        parse({ recipients: '${{ workflow.inputs.recipients }}', subject: 'hi' }).success
+      ).toBe(true);
+    });
+
+    // Only `${{ … }}` survives as an array at runtime: WorkflowTemplatingEngine returns the raw
+    // evaluated value for that form only, and renders everything else to a string. Accepting any
+    // of the shapes below would let YAML be saved that hands the connector a string — or, for the
+    // multi-expression forms, throws "The provided expression is invalid" mid-execution, because
+    // evaluateExpression slices from the first `{{` to the last `}}`.
+    it.each([
+      ['a plain string', 'not-a-template'],
+      ['a bare {{ expr }} template (renders to a string, not an array)', '{{ recipients }}'],
+      ['text before the expression', 'prefix-${{ expr }}'],
+      ['text after the expression', '${{ expr }}-suffix'],
+      ['two concatenated expressions', '${{ a }}-${{ b }}'],
+      ['an expression with literal text between two others', '${{ a }} literal ${{ b }}'],
+      ['leading whitespace (the runtime check does not trim)', '  ${{ expr }}'],
+      ['trailing whitespace (the runtime check does not trim)', '${{ expr }}  '],
+    ])('rejects %s for an array param', (_label, recipients) => {
+      expect(parse({ recipients, subject: 'hi' }).success).toBe(false);
+    });
+
+    it('rejects a template string exceeding TEMPLATE_EXPRESSION_MAX_LENGTH', () => {
+      const long = `\${{ ${'x'.repeat(TEMPLATE_EXPRESSION_MAX_LENGTH)} }}`;
+      expect(parse({ recipients: long, subject: 'hi' }).success).toBe(false);
+    });
+
+    it('does not widen non-array fields — string params remain string-only', () => {
+      expect(parse({ recipients: ['a@b.com'], subject: '{{ not-widened }}' }).success).toBe(true);
+      // A real Liquid expression is still valid as a string value, but a plain array is not
+      expect(parse({ recipients: ['a@b.com'], subject: ['array', 'not', 'ok'] }).success).toBe(
+        false
+      );
+    });
+
+    it('widens optional array params and preserves optionality', () => {
+      const connector: ConnectorContractUnion = {
+        summary: 'Opt',
+        description: null,
+        type: 'opt.step',
+        paramsSchema: z.object({ tags: z.array(z.string()).optional() }),
+        outputSchema: z.unknown(),
+      };
+      const schema = generateYamlSchemaFromConnectors([connector]);
+      // template string accepted
+      expect(
+        schema.safeParse({
+          ...BASE_WORKFLOW,
+          steps: [{ name: 's', type: 'opt.step', with: { tags: '${{ workflow.inputs.tags }}' } }],
+        }).success
+      ).toBe(true);
+      // omitting the optional field is still valid
+      expect(
+        schema.safeParse({
+          ...BASE_WORKFLOW,
+          steps: [{ name: 's', type: 'opt.step', with: {} }],
+        }).success
+      ).toBe(true);
+    });
+
+    it('widens default-wrapped array params without making them required', () => {
+      const connector: ConnectorContractUnion = {
+        summary: 'Def',
+        description: null,
+        type: 'def.step',
+        // Mirrors a real shipped connector: InferenceRerankParamsSchema declares
+        // `input: z.array(z.string()).default([])` as a top-level param.
+        paramsSchema: z.object({ tags: z.array(z.string()).default([]), query: z.string() }),
+        outputSchema: z.unknown(),
+      };
+      const schema = generateYamlSchemaFromConnectors([connector]);
+      expect(
+        schema.safeParse({
+          ...BASE_WORKFLOW,
+          steps: [
+            {
+              name: 's',
+              type: 'def.step',
+              with: { tags: '${{ workflow.inputs.tags }}', query: 'q' },
+            },
+          ],
+        }).success
+      ).toBe(true);
+
+      // Widening must not strip `.default()`. If it did, every existing workflow that omits a
+      // defaulted array param would stop validating — including on update, since this schema
+      // gates persistence and not just editor feedback.
+      const omitted = schema.safeParse({
+        ...BASE_WORKFLOW,
+        steps: [{ name: 's', type: 'def.step', with: { query: 'q' } }],
+      });
+      expect(omitted.success).toBe(true);
+      expect(omitted.data).toMatchObject({ steps: [{ with: { tags: [] } }] });
+    });
+
+    it('widens array params wrapped in both .optional() and .default()', () => {
+      const connector: ConnectorContractUnion = {
+        summary: 'Both',
+        description: null,
+        type: 'both.step',
+        paramsSchema: z.object({ tags: z.array(z.string()).optional().default([]) }),
+        outputSchema: z.unknown(),
+      };
+      const schema = generateYamlSchemaFromConnectors([connector]);
+      // Stacked wrappers must still be unwrapped down to the array, otherwise the field is
+      // silently skipped and the template string is reported as a type error.
+      expect(
+        schema.safeParse({
+          ...BASE_WORKFLOW,
+          steps: [{ name: 's', type: 'both.step', with: { tags: '${{ workflow.inputs.tags }}' } }],
+        }).success
+      ).toBe(true);
+    });
+
+    it('preserves the object unknownKeys policy of the original paramsSchema', () => {
+      // A strict paramsSchema should still reject unknown keys after widening.
+      const connector: ConnectorContractUnion = {
+        summary: 'Strict',
+        description: null,
+        type: 'strict.step',
+        paramsSchema: z.strictObject({ ids: z.array(z.string()) }),
+        outputSchema: z.unknown(),
+      };
+      const schema = generateYamlSchemaFromConnectors([connector]);
+      expect(
+        schema.safeParse({
+          ...BASE_WORKFLOW,
+          steps: [
+            {
+              name: 's',
+              type: 'strict.step',
+              with: { ids: '${{ workflow.inputs.ids }}', unknown_key: 'bad' },
+            },
+          ],
+        }).success
+      ).toBe(false);
+    });
+
+    it('does not throw for a connector whose paramsSchema has object-level refinements', () => {
+      const connector: ConnectorContractUnion = {
+        summary: 'Refined',
+        description: null,
+        type: 'refined.step',
+        paramsSchema: z
+          .object({ ids: z.array(z.string()), name: z.string() })
+          .refine((v) => v.ids.length > 0, 'ids must not be empty'),
+        outputSchema: z.unknown(),
+      };
+      // Schema construction must not throw even though paramsSchema has a refinement.
+      expect(() => generateYamlSchemaFromConnectors([connector])).not.toThrow();
+
+      const schema = generateYamlSchemaFromConnectors([connector]);
+      // Template string still accepted for the array field.
+      expect(
+        schema.safeParse({
+          ...BASE_WORKFLOW,
+          steps: [
+            {
+              name: 's',
+              type: 'refined.step',
+              with: { ids: '${{ workflow.inputs.ids }}', name: 'x' },
+            },
+          ],
+        }).success
+      ).toBe(true);
+      // The object-level refinement is preserved: an empty ids array fails.
+      expect(
+        schema.safeParse({
+          ...BASE_WORKFLOW,
+          steps: [{ name: 's', type: 'refined.step', with: { ids: [], name: 'x' } }],
+        }).success
+      ).toBe(false);
     });
   });
 });

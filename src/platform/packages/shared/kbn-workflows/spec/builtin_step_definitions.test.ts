@@ -65,6 +65,39 @@ describe('builtInStepDefinitions', () => {
   });
 });
 
+describe('supportedExecutionModes', () => {
+  // These steps depend on Task Manager — to suspend and resume the workflow, or to schedule
+  // work outside the current execution — so they can never complete inside a single HTTP
+  // request. `validateSyncWorkflow` refuses to run a workflow containing one of them in sync
+  // mode; if an annotation here is dropped, that guard silently stops firing and a synchronous
+  // request hangs instead of failing fast.
+  const ASYNC_ONLY_IDS = [
+    'wait',
+    'waitForInput',
+    'waitForApproval',
+    'workflow.execute',
+    'workflow.executeAsync',
+  ];
+
+  it.each(ASYNC_ONLY_IDS)('"%s" is declared async-only', (id) => {
+    expect(getBuiltInStepDefinition(id)?.supportedExecutionModes).toEqual(['async']);
+  });
+
+  it('lists every async-only built-in — a new Task Manager-dependent step must be added here', () => {
+    const declaredAsyncOnly = builtInStepDefinitions
+      .filter((def) => def.supportedExecutionModes?.includes('sync') === false)
+      .map((def) => def.id);
+    expect(declaredAsyncOnly.sort()).toEqual([...ASYNC_ONLY_IDS].sort());
+  });
+
+  it.each(['console', 'data.set', 'if', 'foreach'])(
+    '"%s" leaves the field unset, so it stays runnable in both modes',
+    (id) => {
+      expect(getBuiltInStepDefinition(id)?.supportedExecutionModes).toBeUndefined();
+    }
+  );
+});
+
 describe('getBuiltInStepDefinition', () => {
   it('returns the definition for a known id', () => {
     const def = getBuiltInStepDefinition('if');

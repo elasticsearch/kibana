@@ -12,11 +12,14 @@ import type { CloudSetup } from '@kbn/cloud-plugin/server';
 import type { CoreStart, KibanaRequest } from '@kbn/core/server';
 import type { TaskManagerStartContract } from '@kbn/task-manager-plugin/server';
 import type { WorkflowRepository } from '@kbn/workflows';
-import type { WorkflowsExtensionsServerPluginStart } from '@kbn/workflows-extensions/server';
+import type {
+  WorkflowExecutionCapabilities,
+  WorkflowsExtensionsServerPluginStart,
+} from '@kbn/workflows-extensions/server';
 import type { WorkflowsExecutionEngineConfig } from '../config';
+import type { WorkflowExecutionPersistence } from '../repositories/execution_persistence';
 import type { WorkflowLogEvent } from '../repositories/logs_repository';
 import type { StepExecutionRepository } from '../repositories/step_execution_repository';
-import type { WorkflowExecutionRepository } from '../repositories/workflow_execution_repository';
 import type { WorkflowsExecutionEnginePluginStart } from '../types';
 
 export interface ContextDependencies {
@@ -27,11 +30,13 @@ export interface ContextDependencies {
   workflowsExtensions: WorkflowsExtensionsServerPluginStart;
   config: WorkflowsExecutionEngineConfig;
   workflowRepository?: WorkflowRepository;
-  workflowExecutionRepository?: WorkflowExecutionRepository;
+  workflowExecutionRepository?: WorkflowExecutionPersistence;
   stepExecutionRepository?: StepExecutionRepository;
   workflowsExecutionEngine?: WorkflowsExecutionEnginePluginStart;
   spaceId?: string;
   request?: KibanaRequest;
+  /** Request-local privileged behavior; never serialize this value. */
+  capabilities?: WorkflowExecutionCapabilities;
 }
 
 /**
