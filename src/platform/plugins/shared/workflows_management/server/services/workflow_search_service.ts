@@ -104,6 +104,15 @@ export class WorkflowSearchService {
       'valid',
       'created_at',
       'updated_at',
+      // Required for executeWorkflowSynchronously when the DTO is reused directly:
+      // 'version' is surfaced to Liquid templates as {{ workflow.version }} in sync mode;
+      // the managed fields feed execution telemetry.
+      'version',
+      'managed',
+      'managedBy',
+      'billable',
+      'originManagedWorkflowId',
+      'managedVersion',
     ];
 
     const pitResponse = await esClient.openPointInTime({

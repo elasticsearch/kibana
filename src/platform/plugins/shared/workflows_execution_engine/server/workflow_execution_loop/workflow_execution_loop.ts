@@ -65,17 +65,30 @@ export async function workflowExecutionLoop(params: WorkflowExecutionLoopParams)
       return;
     }
 
-    params.workflowExecutionState.updateWorkflowExecution({
-      cancelRequested: true,
-      cancelledAt: new Date().toISOString(),
-      cancellationReason: 'Task aborted',
-      status: ExecutionStatus.CANCELLED,
-    });
-    if (wasWaitingForInput) {
-      emitHitlLifecycle({
-        type: 'canceled',
-        executionId: workflowRuntime.getWorkflowExecution().id,
+    const reason = params.signal.reason;
+    // When the abort carries an explicit error (e.g. a pre-LLM or sync-execution
+    // timeout), treat it as FAILED so the error detail is surfaced to callers.
+    // A plain abort (no reason, or an AbortError from a no-arg abort()) keeps
+    // CANCELLED semantics — that represents an intentional stop (user disconnect).
+    const isFailureAbort = reason instanceof Error && reason.name !== 'AbortError';
+    if (isFailureAbort) {
+      workflowExecutionCursor.captureError(reason);
+      params.workflowExecutionState.updateWorkflowExecution({
+        status: ExecutionStatus.FAILED,
       });
+    } else {
+      params.workflowExecutionState.updateWorkflowExecution({
+        cancelRequested: true,
+        cancelledAt: new Date().toISOString(),
+        cancellationReason: 'Task aborted',
+        status: ExecutionStatus.CANCELLED,
+      });
+      if (wasWaitingForInput) {
+        emitHitlLifecycle({
+          type: 'canceled',
+          executionId: workflowRuntime.getWorkflowExecution().id,
+        });
+      }
     }
     // Also abort persistence loop when task is aborted
     persistenceAbortController.abort();
@@ -91,20 +104,26 @@ export async function workflowExecutionLoop(params: WorkflowExecutionLoopParams)
     workflowExecutionCursor.start();
     // Run execution and persistence loops in parallel
     // When execution finishes, signal persistence loop to exit immediately
-    await Promise.all([
-      executionFlowLoop(params).finally(() => {
-        // Signal persistence loop to stop waiting and exit
-        persistenceAbortController.abort();
-      }),
-      persistenceLoop(params, persistenceAbortController.signal),
-    ]);
+    if (params.executionMode === 'sync') {
+      await executionFlowLoop(params);
+    } else {
+      await Promise.all([
+        executionFlowLoop(params).finally(() => {
+          // Signal persistence loop to stop waiting and exit
+          persistenceAbortController.abort();
+        }),
+        persistenceLoop(params, persistenceAbortController.signal),
+      ]);
+    }
   } catch (error) {
     workflowExecutionCursor.captureError(error);
   } finally {
     const finalFlushSpan = apm.startSpan('final flush state', 'workflow', 'persistence');
-    await flushState(params, {
-      workflowLogFlushSignal: params.signal,
-    });
+    if (params.executionMode !== 'sync') {
+      await flushState(params, {
+        workflowLogFlushSignal: params.signal,
+      });
+    }
     finalFlushSpan?.end();
   }
 

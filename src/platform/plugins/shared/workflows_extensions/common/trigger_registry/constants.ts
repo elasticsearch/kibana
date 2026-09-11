@@ -12,3 +12,15 @@
  * Use this when calling validateKqlAgainstSchema for trigger conditions so paths and error messages stay consistent.
  */
 export const EVENT_FIELD_PREFIX = 'event.';
+
+/**
+ * Valid exclusivity scopes a trigger definition may declare.
+ * Kept as a const tuple so the {@link TriggerExclusivity} type and the
+ * registration-time validator in TriggerRegistry share one source of truth.
+ *
+ * Deliberately has no 'global' member: trigger dispatch always derives a single
+ * spaceId from the emitting request, and `spaceId: '*'` (global) workflows are
+ * a single document, so cross-space exclusivity is structurally guaranteed and
+ * needs no enforcement here. Add a member only when a real fan-out case exists.
+ */
+export const TRIGGER_EXCLUSIVITY_SCOPES = ['per-space'] as const;

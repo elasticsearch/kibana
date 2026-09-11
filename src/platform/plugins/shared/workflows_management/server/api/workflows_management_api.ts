@@ -49,14 +49,25 @@ import type {
   WorkflowPartialDetailDto,
   WorkflowSortField,
 } from '@kbn/workflows/types/v1';
-import type { WorkflowsExecutionEnginePluginStart } from '@kbn/workflows-execution-engine/server';
+import type {
+  ExecuteWorkflowResponse,
+  WorkflowsExecutionEnginePluginStart,
+} from '@kbn/workflows-execution-engine/server';
+import { classifyWorkflowTriggerMatch } from '@kbn/workflows-execution-engine/server';
 import type { LogSearchResult } from '@kbn/workflows-execution-engine/server/repositories/logs_repository';
 import type {
   ExecutionLogsParams,
   StepLogsParams,
 } from '@kbn/workflows-execution-engine/server/workflow_event_logger/types';
-import type { ServerTriggerDefinition } from '@kbn/workflows-extensions/server';
-import { parseYamlToJSONWithoutValidation, WorkflowValidationError } from '@kbn/workflows-yaml';
+import type {
+  ServerTriggerDefinition,
+  WorkflowExecutionCapabilities,
+} from '@kbn/workflows-extensions/server';
+import {
+  parseYamlToJSONWithoutValidation,
+  WorkflowConflictError,
+  WorkflowValidationError,
+} from '@kbn/workflows-yaml';
 import type { z } from '@kbn/zod/v4';
 import {
   type ExternalResumeFormPageParams,
@@ -67,6 +78,11 @@ import {
   resumeWorkflowExecutionExternallyWithInput,
 } from './external_resume/external_resume_service';
 import type { StepExecutionListResult } from './lib/search_step_executions';
+import {
+  getTriggerTypesFromDefinition,
+  getTriggerTypesFromYaml,
+  workflowYamlDeclaresEnabled,
+} from './lib/workflow_prepare';
 import { ManagedWorkflowDeleteForbiddenError } from './managed_workflow_delete_error';
 import { ManagedWorkflowUpdateForbiddenError } from './managed_workflow_errors';
 import { preprocessAlertInputs } from './routes/executions/utils/preprocess_alert_inputs';
@@ -113,6 +129,26 @@ export interface GetWorkflowsParams {
 
 export interface GetWorkflowAggsOptions {
   managedFilter?: GetWorkflowsParams['managedFilter'];
+}
+
+export interface ResolveWorkflowTriggerMatchesResult {
+  matched: WorkflowDetailDto[];
+  invalidConditionWorkflows: Array<{ id: string; name: string }>;
+}
+
+export interface ExecuteWorkflowSynchronouslyParams {
+  workflowId: string;
+  /**
+   * Pre-fetched workflow DTO (e.g. from trigger resolution). When supplied, the ES re-fetch
+   * inside `executeWorkflowSynchronously` is skipped — eliminates a redundant read on the
+   * inference hot path. The DTO is still validated (enabled, valid, definition) before execution.
+   */
+  workflow?: WorkflowDetailDto;
+  context: Record<string, unknown>;
+  spaceId: string;
+  request: KibanaRequest;
+  capabilities?: WorkflowExecutionCapabilities;
+  abortSignal?: AbortSignal;
 }
 
 export interface DeleteWorkflowsResponse {
@@ -310,6 +346,63 @@ export class WorkflowsManagementApi {
     return this.workflowsService.getWorkflowsExecutionEngine();
   }
 
+  /**
+   * Enforces trigger-declared exclusivity before a workflow becomes enabled.
+   *
+   * A trigger definition may declare `exclusivity: 'per-space'`, meaning at most
+   * one *enabled* workflow per space may subscribe to it. The rule is entirely
+   * registration-driven: this method never names a specific trigger, and a
+   * trigger that does not declare exclusivity costs nothing (no search is issued).
+   *
+   * Best-effort: two concurrent enables can interleave between the search and the
+   * write. There is no unique key in the workflow index to make this atomic; the
+   * guard exists to return a clear 409 rather than silently nondeterministic dispatch.
+   *
+   * @param triggerTypes Trigger ids the workflow will subscribe to once written.
+   * @param spaceId      Space the workflow is being written into.
+   * @param excludeWorkflowId The workflow being updated, skipped as its own conflict.
+   *   Omitted on create, where there is no self to skip yet.
+   */
+  private async assertExclusiveTriggersAvailable({
+    triggerTypes,
+    spaceId,
+    excludeWorkflowId,
+  }: {
+    triggerTypes: string[];
+    spaceId: string;
+    excludeWorkflowId?: string;
+  }): Promise<void> {
+    if (triggerTypes.length === 0) {
+      return;
+    }
+
+    const workflowsExtensions = await this.workflowsService.getWorkflowsExtensions();
+
+    // Dedupe: a workflow may declare the same trigger twice (different conditions),
+    // so one exclusive trigger costs at most one search. Sequential by design —
+    // the common case is zero exclusive triggers and issues no search at all.
+    for (const triggerId of new Set(triggerTypes)) {
+      if (workflowsExtensions.getTriggerDefinition(triggerId)?.exclusivity === 'per-space') {
+        // Already filtered to enabled: true and includes global (spaceId: '*') subscribers.
+        const enabledSubscribers = await this.getWorkflowsSubscribedToTrigger(triggerId, spaceId);
+        const conflict = enabledSubscribers.find((w) => w.id !== excludeWorkflowId);
+        if (conflict) {
+          throw new WorkflowConflictError(
+            i18n.translate('workflowsManagement.exclusiveTriggerConflictError', {
+              defaultMessage:
+                'Cannot enable: workflow "{conflictingWorkflowName}" is already enabled for the {triggerId} trigger. Disable it first.',
+              values: {
+                conflictingWorkflowName: conflict.name ?? conflict.id,
+                triggerId,
+              },
+            }),
+            conflict.id
+          );
+        }
+      }
+    }
+  }
+
   public setSmlIndexAttachment(fn: SmlIndexAttachmentFn, logger: Logger): void {
     this.smlIndexAttachment = fn;
     this.smlLogger = logger;
@@ -350,6 +443,50 @@ export class WorkflowsManagementApi {
     return this.workflowsService.getWorkflowsSubscribedToTrigger(triggerId, spaceId);
   }
 
+  public async resolveWorkflowTriggerMatches(
+    triggerId: string,
+    event: Record<string, unknown>,
+    spaceId: string
+  ): Promise<ResolveWorkflowTriggerMatchesResult> {
+    const subscribed = await this.getWorkflowsSubscribedToTrigger(triggerId, spaceId);
+    const matched: WorkflowDetailDto[] = [];
+    const invalidConditionWorkflows: Array<{ id: string; name: string }> = [];
+
+    subscribed.forEach((workflow) => {
+      const outcome = classifyWorkflowTriggerMatch(workflow, triggerId, event);
+      if (outcome === 'matched') {
+        matched.push(workflow);
+      } else if (outcome === 'kql_error') {
+        invalidConditionWorkflows.push({
+          id: workflow.id,
+          name: workflow.name ?? workflow.definition?.name ?? workflow.id,
+        });
+      }
+    });
+
+    return { matched, invalidConditionWorkflows };
+  }
+
+  public async executeWorkflowSynchronously({
+    workflowId,
+    workflow: prefetchedWorkflow,
+    context,
+    spaceId,
+    request,
+    capabilities,
+    abortSignal,
+  }: ExecuteWorkflowSynchronouslyParams): Promise<ExecuteWorkflowResponse> {
+    const model = prefetchedWorkflow
+      ? this.validateAndBuildWorkflowModel(prefetchedWorkflow)
+      : await this.getSavedWorkflowExecutionModel(workflowId, spaceId);
+    const workflowsExecutionEngine = await this.getWorkflowsExecutionEngine();
+    return workflowsExecutionEngine.executeWorkflow(model, context, request, {
+      executionMode: 'sync',
+      capabilities,
+      abortSignal,
+    });
+  }
+
   public async getWorkflow(id: string, spaceId: string): Promise<WorkflowDetailDto | null> {
     return this.workflowsService.getWorkflow(id, spaceId);
   }
@@ -381,9 +518,19 @@ export class WorkflowsManagementApi {
   public async createWorkflow(
     workflow: CreateWorkflowCommand,
     spaceId: string,
-    request: KibanaRequest
+    request: KibanaRequest,
+    options?: { originManagedWorkflowId?: string }
   ): Promise<WorkflowDetailDto> {
-    const result = await this.workflowsService.createWorkflow(workflow, spaceId, request);
+    // A workflow can be created already enabled when the YAML declares `enabled: true`,
+    // so the exclusivity guard must run here, not only on the enable transition.
+    if (workflowYamlDeclaresEnabled(workflow.yaml)) {
+      await this.assertExclusiveTriggersAvailable({
+        triggerTypes: getTriggerTypesFromYaml(workflow.yaml),
+        spaceId,
+      });
+    }
+
+    const result = await this.workflowsService.createWorkflow(workflow, spaceId, request, options);
     this.notifySml(result.id, 'create', request);
     return result;
   }
@@ -419,6 +566,15 @@ export class WorkflowsManagementApi {
     })}`;
     const clonedYaml = updateWorkflowYamlFields(workflow.yaml, { name: cloneName });
 
+    // A clone inherits the source's `enabled` state from the YAML. If the source is
+    // enabled for an exclusive trigger, a second enabled subscriber would form — block it.
+    if (workflowYamlDeclaresEnabled(clonedYaml)) {
+      await this.assertExclusiveTriggersAvailable({
+        triggerTypes: getTriggerTypesFromYaml(clonedYaml),
+        spaceId,
+      });
+    }
+
     // `updateWorkflowYamlFields` cannot inject a `name` key when the YAML root is not a
     // mapping (a scalar or sequence), so it returns the YAML unchanged in that case. Pass
     // `cloneName` as an explicit fallback so the clone is still named "<name> Copy" instead
@@ -452,6 +608,36 @@ export class WorkflowsManagementApi {
     ) {
       throw new ManagedWorkflowUpdateForbiddenError();
     }
+
+    // Enforce trigger-declared exclusivity before any path that results in this
+    // workflow becoming enabled. The condition covers three routes to enablement:
+    //
+    //   1. Field-only enable (`workflow.enabled === true`): trigger types unchanged,
+    //      so use the existing definition.
+    //   2. YAML update that declares top-level `enabled: true`: the YAML value wins
+    //      over the `enabled` field (see workflow_crud_service.ts for the precedence
+    //      rule), so check the NEW trigger types from the incoming YAML.
+    //   3. YAML update that adds an exclusive trigger to an already-enabled workflow
+    //      (`workflow.enabled` absent but new triggers in YAML): same as case 2.
+    //
+    // Known gap: restoreWorkflowVersion — the restored snapshot YAML is fetched
+    // inside the crud service and is unavailable here. Track as a follow-up.
+    if (workflow.yaml) {
+      if (workflowYamlDeclaresEnabled(workflow.yaml) || workflow.enabled === true) {
+        await this.assertExclusiveTriggersAvailable({
+          triggerTypes: getTriggerTypesFromYaml(workflow.yaml),
+          spaceId,
+          excludeWorkflowId: id,
+        });
+      }
+    } else if (workflow.enabled === true) {
+      await this.assertExclusiveTriggersAvailable({
+        triggerTypes: getTriggerTypesFromDefinition(originalWorkflow.definition),
+        spaceId,
+        excludeWorkflowId: id,
+      });
+    }
+
     const result = await this.workflowsService.updateWorkflow(id, workflow, spaceId, request);
     this.notifySml(id, 'update', request);
     return result;
@@ -653,26 +839,33 @@ export class WorkflowsManagementApi {
     };
   }
 
+  /**
+   * Validates an already-fetched workflow DTO and converts it to an execution model.
+   * Used by `executeWorkflowSynchronously` when the caller passes a pre-fetched workflow,
+   * and by `getSavedWorkflowExecutionModel` after the ES fetch.
+   */
+  private validateAndBuildWorkflowModel(workflow: WorkflowDetailDto): WorkflowExecutionEngineModel {
+    if (!workflow.enabled) {
+      throw new Error(`Workflow '${workflow.id}' is disabled and cannot be executed.`);
+    }
+    if (!workflow.valid) {
+      throw new Error(`Workflow '${workflow.id}' has validation errors and cannot be executed.`);
+    }
+    if (!workflow.definition) {
+      throw new Error(`Workflow '${workflow.id}' has no definition and cannot be executed.`);
+    }
+    return toWorkflowExecutionEngineModel(workflow);
+  }
+
   private async getSavedWorkflowExecutionModel(
     workflowId: string,
     spaceId: string
   ): Promise<WorkflowExecutionEngineModel> {
     const workflow = await this.getWorkflow(workflowId, spaceId);
-
     if (!workflow) {
       throw new WorkflowNotFoundError(workflowId);
     }
-    if (!workflow.enabled) {
-      throw new Error(`Workflow '${workflowId}' is disabled and cannot be executed.`);
-    }
-    if (!workflow.valid) {
-      throw new Error(`Workflow '${workflowId}' has validation errors and cannot be executed.`);
-    }
-    if (!workflow.definition) {
-      throw new Error(`Workflow '${workflowId}' has no definition and cannot be executed.`);
-    }
-
-    return toWorkflowExecutionEngineModel(workflow);
+    return this.validateAndBuildWorkflowModel(workflow);
   }
 
   private async waitForWorkflowExecution({

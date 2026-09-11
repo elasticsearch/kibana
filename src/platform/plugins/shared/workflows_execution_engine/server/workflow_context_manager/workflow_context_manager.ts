@@ -19,6 +19,7 @@ import {
   type WorkflowContext,
 } from '@kbn/workflows';
 import type { GraphNodeUnion, WorkflowGraph } from '@kbn/workflows/graph';
+import type { WorkflowExecutionCapabilities } from '@kbn/workflows-extensions/server';
 import { buildWorkflowContext } from './build_workflow_context';
 import type { StepIoService } from './step_io_service';
 import type { ContextDependencies } from './types';
@@ -120,6 +121,10 @@ export class WorkflowContextManager {
     this.stackFrames = init.stackFrames;
     this.templateEngine = init.templateEngine;
     this.dependencies = init.dependencies;
+  }
+
+  public getExecutionCapabilities(): WorkflowExecutionCapabilities | undefined {
+    return this.dependencies.capabilities;
   }
 
   /**

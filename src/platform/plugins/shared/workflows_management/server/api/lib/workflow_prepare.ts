@@ -28,6 +28,38 @@ export const getTriggerTypesFromDefinition = (
     .filter(<T>(v: T): v is NonNullable<T> => v != null);
 };
 
+/**
+ * Reads trigger type ids straight off the YAML without requiring schema
+ * validation, so callers see the same trigger set the storage document will
+ * derive from `getTriggerTypesFromDefinition`. Returns `[]` on parse failure.
+ */
+export const getTriggerTypesFromYaml = (yamlString: string): string[] => {
+  const parsed = parseYamlToJSONWithoutValidation(yamlString);
+  if (!parsed.success || parsed.json == null || typeof parsed.json !== 'object') {
+    return [];
+  }
+  const triggers = (parsed.json as { triggers?: unknown }).triggers;
+  if (!Array.isArray(triggers)) {
+    return [];
+  }
+  return triggers
+    .map((t) =>
+      t && typeof t === 'object' && typeof (t as { type?: unknown }).type === 'string'
+        ? (t as { type: string }).type
+        : null
+    )
+    .filter((v): v is string => v != null);
+};
+
+/** True when the YAML root map sets `enabled: true` at the top level. */
+export const workflowYamlDeclaresEnabled = (yamlString: string): boolean => {
+  const parsed = parseYamlToJSONWithoutValidation(yamlString);
+  if (!parsed.success || parsed.json == null || typeof parsed.json !== 'object') {
+    return false;
+  }
+  return (parsed.json as { enabled?: unknown }).enabled === true;
+};
+
 /** True when the YAML root map includes `enabled` (before Zod defaults). */
 export const workflowYamlDeclaresTopLevelEnabled = (yamlString: string): boolean => {
   const parsed = parseYamlToJSONWithoutValidation(yamlString);
@@ -71,6 +103,7 @@ export const prepareWorkflowDocumentFromYaml = (params: {
   authenticatedUser: string;
   now: Date;
   spaceId: string;
+  originManagedWorkflowId?: string;
   triggerDefinitions?: Array<{ id: string; eventSchema: z.ZodType }>;
   nameFallback?: string;
 }): { id: string; workflowData: WorkflowProperties; definition?: WorkflowYaml } => {
@@ -81,6 +114,7 @@ export const prepareWorkflowDocumentFromYaml = (params: {
     authenticatedUser,
     now,
     spaceId,
+    originManagedWorkflowId,
     triggerDefinitions,
     nameFallback,
   } = params;
@@ -124,7 +158,7 @@ export const prepareWorkflowDocumentFromYaml = (params: {
     managed: false,
     managedBy: null,
     definitionHash: null,
-    originManagedWorkflowId: null,
+    originManagedWorkflowId: originManagedWorkflowId ?? null,
     lifecycle: null,
     valid: workflowToCreate.valid,
     deleted_at: null,

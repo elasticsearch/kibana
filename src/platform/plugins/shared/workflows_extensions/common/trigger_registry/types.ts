@@ -10,6 +10,17 @@
 import type { StabilityLevel } from '@kbn/workflows';
 import type { z } from '@kbn/zod/v4';
 
+import type { TRIGGER_EXCLUSIVITY_SCOPES } from './constants';
+
+/**
+ * Narrows how many workflows may be *enabled* for a trigger at a time.
+ * - `'per-space'`: at most one enabled workflow per Kibana space. Global
+ *   (`spaceId: '*'`) workflows count as a subscriber in every space.
+ *
+ * Omit for triggers that fan out to any number of subscribers (the default).
+ */
+export type TriggerExclusivity = (typeof TRIGGER_EXCLUSIVITY_SCOPES)[number];
+
 /**
  * Documentation for a trigger (aligned with steps: details + examples).
  */
@@ -42,6 +53,7 @@ export interface TriggerSnippets {
  * Constraints (enforced at registration):
  * - id: globally unique, namespaced format <solution>.<event>
  * - eventSchema: must be a Zod object schema that rejects unknown fields
+ * - exclusivity: must be a value from {@link TRIGGER_EXCLUSIVITY_SCOPES} when set
  *
  * Server and agent tooling read title and description from here; documentation and snippets are optional.
  * Public definitions spread this object and add UI-only fields (e.g. icon).
@@ -82,4 +94,14 @@ export interface CommonTriggerDefinition<EventSchema extends z.ZodType = z.ZodTy
    * Only connector-event–derived triggers set this.
    */
   requiresConnectorId?: boolean;
+  /**
+   * Declares that only one workflow may be *enabled* for this trigger at a time.
+   * Workflows management enforces this generically when a workflow is created
+   * already enabled, or transitions to enabled, rejecting with a 409 conflict.
+   *
+   * Omit for triggers that fan out to any number of subscribers (the default).
+   * A string rather than a boolean so the scope is self-documenting at the
+   * registration site, and new scopes are additive without changing callers.
+   */
+  exclusivity?: TriggerExclusivity;
 }

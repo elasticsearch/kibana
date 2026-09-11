@@ -73,6 +73,62 @@ const configSchema = schema.object({
   hitlExternalResume: schema.object({
     enabled: schema.boolean({ defaultValue: true }),
   }),
+  /**
+   * Synchronous workflow execution path — used by the inference anonymization pipeline
+   * to run workflows inline within an HTTP request without persisting execution state to
+   * Elasticsearch. Must be enabled alongside `xpack.inference.anonymization.workflowDriven`.
+   */
+  syncExecution: schema.object({
+    /**
+     * Master switch for the synchronous execution path. Must be set to true alongside
+     * `xpack.inference.anonymization.workflowDriven: true` to enable workflow-driven
+     * PII anonymization. Defaults to false so the path is inert until explicitly activated.
+     */
+    enabled: schema.boolean({ defaultValue: false }),
+    /**
+     * Maximum wall-clock time allowed for a single synchronous workflow execution.
+     * When the deadline is reached the internal AbortController is aborted, which
+     * propagates cancellation through the execution loop and cancels any in-flight
+     * I/O (e.g. LLM streaming). Around-hook workflows that wrap LLM calls can take
+     * several minutes; the 10-minute default reflects this. The natural upper bound
+     * is the HTTP request timeout — if the client disconnects, that signal propagates
+     * first. Callers may impose a shorter deadline via ExecuteWorkflowOptions.abortSignal.
+     */
+    maxDurationMs: schema.number({ defaultValue: 600_000, min: 1_000 }),
+  }),
+  /**
+   * Configuration for the synchronous-execution log drain.
+   * The drain buffers workflow event-log writes in memory and flushes them to
+   * Elasticsearch out-of-band, keeping the sync execution hot path free of
+   * inline ES round-trips.
+   *
+   * Defaults are sized for ~1000 concurrent sync req/s × 4 step events each
+   * (~4000 events/sec inbound). Tune these values to your deployment's actual
+   * load if the `kibana.workflows.sync_log_drain.events.dropped` metric is non-zero.
+   */
+  syncLogDrain: schema.object({
+    /**
+     * When false, the drain is disabled and sync executions write event-log
+     * entries to Elasticsearch inline (same as async executions). Useful for
+     * A/B comparisons to measure the drain's overhead vs. direct ES writes.
+     */
+    enabled: schema.boolean({ defaultValue: true }),
+    /**
+     * How often (ms) the background timer flushes buffered events to ES.
+     * Lower values reduce event latency but increase write frequency.
+     */
+    intervalMs: schema.number({ defaultValue: 500, min: 100 }),
+    /**
+     * Maximum number of events held in the in-memory buffer before drop-oldest
+     * kicks in. ~5 s of inbound capacity at the default rate.
+     */
+    maxQueue: schema.number({ defaultValue: 20000, min: 1000 }),
+    /**
+     * Maximum number of events written to ES in a single drain tick.
+     * Should be ≥ intervalMs/1000 × peak inbound rate so one tick clears backlog.
+     */
+    maxBatch: schema.number({ defaultValue: 4000, min: 100 }),
+  }),
 });
 
 export type EventTriggersConfig = TypeOf<typeof EventTriggersConfigSchema>;

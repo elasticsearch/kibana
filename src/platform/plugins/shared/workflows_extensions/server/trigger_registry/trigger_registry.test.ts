@@ -155,6 +155,40 @@ describe('TriggerRegistry', () => {
         );
       }).toThrow('"eventSchema" must be a Zod object schema');
     });
+
+    describe('exclusivity', () => {
+      it('accepts a definition with exclusivity omitted, and it round-trips as undefined', () => {
+        const def = createValidDefinition();
+        registry.register(def);
+        expect(registry.get('cases.updated')?.exclusivity).toBeUndefined();
+      });
+
+      it('accepts exclusivity: "per-space" and round-trips the value', () => {
+        const def = createValidDefinition({ exclusivity: 'per-space' });
+        registry.register(def);
+        expect(registry.get('cases.updated')?.exclusivity).toBe('per-space');
+      });
+
+      it('throws for exclusivity: "global" — pins the deliberate absence of a global scope', () => {
+        expect(() => {
+          registry.register(
+            createValidDefinition({ exclusivity: 'global' as unknown as 'per-space' })
+          );
+        }).toThrow('"exclusivity" must be one of "per-space"');
+      });
+
+      it('throws for exclusivity: "" (empty string)', () => {
+        expect(() => {
+          registry.register(createValidDefinition({ exclusivity: '' as unknown as 'per-space' }));
+        }).toThrow('"exclusivity" must be one of "per-space"');
+      });
+
+      it('throws for exclusivity: true (boolean)', () => {
+        expect(() => {
+          registry.register(createValidDefinition({ exclusivity: true as unknown as 'per-space' }));
+        }).toThrow('"exclusivity" must be one of "per-space"');
+      });
+    });
   });
 
   describe('freeze', () => {
