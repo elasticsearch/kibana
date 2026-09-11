@@ -11,6 +11,12 @@ import { useHostIsolationAction } from './use_host_isolation_action';
 import type { AppContextTestRender, UserPrivilegesMockSetter } from '../../../../mock/endpoint';
 import { createAppRootMockRenderer, endpointAlertDataMock } from '../../../../mock/endpoint';
 import { agentStatusGetHttpMock } from '../../../../../management/mocks';
+import { endpointMetadataHttpMocks } from '../../../../../management/pages/endpoint_hosts/mocks';
+import { EndpointMetadataGenerator } from '../../../../../../common/endpoint/data_generators/endpoint_metadata_generator';
+import {
+  ENDPOINT_VERSION_NOT_SUPPORTED,
+  HOST_ISOLATION,
+} from '../../../../../management/common/translations';
 import { useUserPrivileges as _useUserPrivileges } from '../../../user_privileges';
 import type { AlertTableContextMenuItem } from '../../../../../detections/components/alerts_table/types';
 import type { ResponseActionsApiCommandNames } from '../../../../../../common/endpoint/service/response_actions/constants';
@@ -31,6 +37,8 @@ describe('useHostIsolationAction', () => {
   let appContextMock: AppContextTestRender;
   let hookProps: UseHostIsolationActionProps;
   let apiMock: ReturnType<typeof agentStatusGetHttpMock>;
+  let metadataApiMock: ReturnType<typeof endpointMetadataHttpMocks>;
+  let generator: EndpointMetadataGenerator;
   let authMockSetter: UserPrivilegesMockSetter;
 
   const buildExpectedMenuItemResult = (
@@ -52,6 +60,7 @@ describe('useHostIsolationAction', () => {
 
   beforeEach(() => {
     appContextMock = createAppRootMockRenderer();
+    generator = new EndpointMetadataGenerator('test');
     authMockSetter = appContextMock.getUserPrivilegesMockSetter(useUserPrivilegesMock);
     hookProps = {
       closePopover: jest.fn(),
@@ -60,6 +69,7 @@ describe('useHostIsolationAction', () => {
       onAddIsolationStatusClick: jest.fn(),
     };
     apiMock = agentStatusGetHttpMock(appContextMock.coreStart.http);
+    metadataApiMock = endpointMetadataHttpMocks(appContextMock.coreStart.http);
     authMockSetter.set({
       canIsolateHost: true,
       canUnIsolateHost: true,
@@ -170,6 +180,54 @@ describe('useHostIsolationAction', () => {
       );
     }
   );
+
+  it('should return disabled menu item when endpoint host does not support isolation capability', async () => {
+    const metadata = generator.generate();
+    metadata.Endpoint.capabilities = (metadata.Endpoint.capabilities ?? []).filter(
+      (capability) => capability !== 'isolation'
+    );
+    metadataApiMock.responseProvider.metadataDetails.mockReturnValue({
+      ...metadataApiMock.responseProvider.metadataDetails(),
+      metadata,
+    });
+
+    const { result } = render();
+
+    await appContextMock.waitFor(() =>
+      expect(result.current).toEqual([
+        buildExpectedMenuItemResult({
+          disabled: true,
+          toolTipContent: ENDPOINT_VERSION_NOT_SUPPORTED(HOST_ISOLATION),
+        }),
+      ])
+    );
+  });
+
+  it('should return enabled menu item when endpoint host supports isolation capability', async () => {
+    const metadata = generator.generate();
+    expect(metadata.Endpoint.capabilities).toContain('isolation');
+    metadataApiMock.responseProvider.metadataDetails.mockReturnValue({
+      ...metadataApiMock.responseProvider.metadataDetails(),
+      metadata,
+    });
+
+    const { result } = render();
+
+    await appContextMock.waitFor(() =>
+      expect(result.current).toEqual([buildExpectedMenuItemResult()])
+    );
+  });
+
+  it('should NOT fetch endpoint metadata for a non-endpoint host agent type', async () => {
+    hookProps.detailsData = endpointAlertDataMock.generateSentinelOneAlertDetailsItemData();
+    render();
+
+    await appContextMock.waitFor(() =>
+      expect(apiMock.responseProvider.getAgentStatus).toHaveBeenCalled()
+    );
+
+    expect(metadataApiMock.responseProvider.metadataDetails).not.toHaveBeenCalled();
+  });
 
   it('should call isolate API when agent is currently NOT isolated', async () => {
     const { result } = render();

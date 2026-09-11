@@ -8,6 +8,7 @@
 import React, { useMemo } from 'react';
 import { FormattedMessage } from '@kbn/i18n-react';
 import { pagePathGetters } from '@kbn/fleet-plugin/public';
+import { ENDPOINT_VERSION_NOT_SUPPORTED, HOST_ISOLATION } from '../../../../common/translations';
 import type { EndpointCapabilities } from '../../../../../../common/endpoint/service/response_actions/constants';
 import { useUserPrivileges } from '../../../../../common/components/user_privileges';
 import { useWithShowResponder } from '../../../../hooks';
@@ -54,6 +55,8 @@ export const useEndpointActionItems = (
 
     const endpointAgentPolicyId = endpointInfo.policy_info?.agent.applied.id;
     const endpointMetadata = endpointInfo.metadata;
+    const supportsHostIsolation =
+      endpointInfo.metadata.Endpoint.capabilities?.includes('isolation') ?? true;
     const isIsolated = isEndpointHostIsolated(endpointMetadata);
     const endpointId = endpointMetadata.agent.id;
     const endpointHostName = endpointMetadata.host.hostname.toLowerCase();
@@ -75,7 +78,7 @@ export const useEndpointActionItems = (
       selected_endpoint: endpointId,
     });
 
-    const isolationActions = [];
+    const isolationActions: ContextMenuItemNavByRouterProps[] = [];
 
     if (isIsolated && canUnIsolateHost) {
       // Un-isolate is available to users regardless of license level if they have unisolate permissions
@@ -102,10 +105,12 @@ export const useEndpointActionItems = (
         icon: 'lock',
         key: 'isolateHost',
         navigateAppId: APP_UI_ID,
-        navigateOptions: {
-          path: endpointIsolatePath,
-        },
+        navigateOptions: { path: endpointIsolatePath },
         href: getAppUrl({ path: endpointIsolatePath }),
+        toolTipContent: !supportsHostIsolation
+          ? ENDPOINT_VERSION_NOT_SUPPORTED(HOST_ISOLATION)
+          : '',
+        disabled: !supportsHostIsolation,
         children: (
           <FormattedMessage
             id="xpack.securitySolution.endpoint.actions.isolateHost"

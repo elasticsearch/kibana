@@ -538,3 +538,15 @@ export const RESPONSE_ACTION_STATUS = Object.freeze({
     defaultMessage: 'Action successful',
   }),
 });
+
+export const ENDPOINT_VERSION_NOT_SUPPORTED = (unsupportedFeature: string): string => {
+  return i18n.translate('xpack.securitySolution.translations.endpointVersionNotSupported', {
+    defaultMessage:
+      'The version of Endpoint running on this host does not support {unsupportedFeature}.',
+    values: { unsupportedFeature },
+  });
+};
+
+export const HOST_ISOLATION = i18n.translate('xpack.securitySolution.translations.hostIsolation', {
+  defaultMessage: 'host isolation',
+});
