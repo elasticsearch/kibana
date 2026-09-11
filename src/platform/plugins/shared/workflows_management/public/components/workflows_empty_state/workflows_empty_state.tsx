@@ -11,8 +11,6 @@ import {
   EuiButton,
   EuiButtonEmpty,
   EuiEmptyPrompt,
-  EuiFlexGroup,
-  EuiFlexItem,
   EuiIllustration,
   EuiLink,
   EuiTitle,
@@ -68,18 +66,15 @@ export function WorkflowsEmptyState({ onCreateWorkflow }: WorkflowsEmptyStatePro
         </>
       }
       actions={
-        onCreateWorkflow ? (
-          <EuiFlexGroup gutterSize="s" alignItems="center">
-            <EuiFlexItem grow={false}>
+        onCreateWorkflow
+          ? [
               <EuiButton color="primary" fill onClick={onCreateWorkflow} iconType="plusCircle">
                 <FormattedMessage
                   id="workflows.emptyState.createButton"
                   defaultMessage="Create workflow"
                 />
-              </EuiButton>
-            </EuiFlexItem>
-            <EuiFlexItem grow={false}>
-              {isLibraryEnabled ? (
+              </EuiButton>,
+              isLibraryEnabled ? (
                 <EuiButtonEmpty
                   onClick={navigateToLibrary}
                   iconType="chevronSingleRight"
@@ -104,10 +99,9 @@ export function WorkflowsEmptyState({ onCreateWorkflow }: WorkflowsEmptyStatePro
                     defaultMessage="Example workflows"
                   />
                 </EuiButtonEmpty>
-              )}
-            </EuiFlexItem>
-          </EuiFlexGroup>
-        ) : null
+              ),
+            ]
+          : null
       }
       footer={
         <>
