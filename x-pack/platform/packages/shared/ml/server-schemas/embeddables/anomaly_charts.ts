@@ -37,9 +37,11 @@ export const severityThresholdSchema = z.union([
       max: z.literal(ML_ANOMALY_THRESHOLD.CRITICAL),
     })
     .strict(),
+  // Open-ended floor: scores >= min. Covers the canonical critical band
+  // (`min: 75`) and arbitrary 0–100 thresholds (e.g. agent-builder charts).
   z
     .object({
-      min: z.literal(ML_ANOMALY_THRESHOLD.CRITICAL),
+      min: z.number().min(0).max(100),
     })
     .strict(),
 ]);

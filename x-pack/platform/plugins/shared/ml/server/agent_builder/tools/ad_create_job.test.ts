@@ -126,7 +126,7 @@ describe('adCreateJobTool', () => {
 
       expect(ml.putDatafeed).toHaveBeenCalledWith({
         datafeed_id: 'datafeed-my-job',
-        body: datafeedConfig,
+        body: { job_id: 'my-job', ...datafeedConfig },
       });
     });
 

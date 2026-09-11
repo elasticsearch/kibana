@@ -5,58 +5,49 @@
  * 2.0.
  */
 
+import type { ResolveMlCapabilities } from '@kbn/ml-common-types/capabilities';
 import { createAnomalyDetectionSkill } from '.';
-import {
-  AD_GET_JOB_INFO_TOOL_ID,
-  AD_CREATE_JOB_TOOL_ID,
-  AD_MANAGE_JOB_STATE_TOOL_ID,
-  AD_UPDATE_JOB_CONFIG_TOOL_ID,
-  QUERY_ANOMALIES_TOOL_ID,
-} from '../../tools/tool_ids';
+
+const mockResolveMlCapabilities = jest.fn() as ResolveMlCapabilities;
 
 describe('createAnomalyDetectionSkill', () => {
   it('returns a skill definition with the correct id and name', () => {
-    const skill = createAnomalyDetectionSkill();
+    const skill = createAnomalyDetectionSkill(mockResolveMlCapabilities);
     expect(skill.id).toBe('ml.anomaly-detection');
     expect(skill.name).toBe('anomaly-detection');
   });
 
   it('is marked experimental so it requires agentBuilder:experimentalFeatures', () => {
-    const skill = createAnomalyDetectionSkill();
+    const skill = createAnomalyDetectionSkill(mockResolveMlCapabilities);
     expect(skill.experimental).toBe(true);
   });
 
   it('uses the correct basePath for the anomaly_detection subdirectory', () => {
-    const skill = createAnomalyDetectionSkill();
+    const skill = createAnomalyDetectionSkill(mockResolveMlCapabilities);
     expect(skill.basePath).toBe('skills/ml/anomaly_detection');
   });
 
   it('has a non-empty description within the 1024 character limit', () => {
-    const skill = createAnomalyDetectionSkill();
+    const skill = createAnomalyDetectionSkill(mockResolveMlCapabilities);
     expect(skill.description).toBeTruthy();
     expect(skill.description.length).toBeLessThanOrEqual(1024);
   });
 
   it('has non-empty content', () => {
-    const skill = createAnomalyDetectionSkill();
+    const skill = createAnomalyDetectionSkill(mockResolveMlCapabilities);
     expect(skill.content).toBeTruthy();
   });
 
-  it('registers registry tools including ml.query_anomalies for .ml* ES|QL', async () => {
-    const skill = createAnomalyDetectionSkill();
+  it('registers only platform.core.execute_esql as a registry tool', async () => {
+    const skill = createAnomalyDetectionSkill(mockResolveMlCapabilities);
     const toolIds = await skill.getRegistryTools?.();
-    expect(toolIds).toHaveLength(6);
-    expect(toolIds).toContain(QUERY_ANOMALIES_TOOL_ID);
+    expect(toolIds).toHaveLength(1);
     // Retained for source-data ES|QL (RCA evidence / ingest latency) as the current user.
     expect(toolIds).toContain('platform.core.execute_esql');
-    expect(toolIds).toContain(AD_GET_JOB_INFO_TOOL_ID);
-    expect(toolIds).toContain(AD_CREATE_JOB_TOOL_ID);
-    expect(toolIds).toContain(AD_MANAGE_JOB_STATE_TOOL_ID);
-    expect(toolIds).toContain(AD_UPDATE_JOB_CONFIG_TOOL_ID);
   });
 
   it('has exactly 5 referenced content items', () => {
-    const skill = createAnomalyDetectionSkill();
+    const skill = createAnomalyDetectionSkill(mockResolveMlCapabilities);
     expect(skill.referencedContent).toHaveLength(5);
     const names = skill.referencedContent!.map((r) => r.name);
     expect(names).toContain('esql-read-queries');
@@ -67,15 +58,17 @@ describe('createAnomalyDetectionSkill', () => {
   });
 
   it('all referenced content uses ./references relativePath', () => {
-    const skill = createAnomalyDetectionSkill();
+    const skill = createAnomalyDetectionSkill(mockResolveMlCapabilities);
     for (const ref of skill.referencedContent!) {
       expect(ref.relativePath).toBe('./references');
       expect(ref.content).toBeTruthy();
     }
   });
 
-  it('has no inline tools (uses only registry tools)', () => {
-    const skill = createAnomalyDetectionSkill();
-    expect(skill.getInlineTools).toBeUndefined();
+  it('exposes 6 ML tools inline so they only load when the skill is read', async () => {
+    const skill = createAnomalyDetectionSkill(mockResolveMlCapabilities);
+    expect(skill.getInlineTools).toBeDefined();
+    const tools = await skill.getInlineTools!();
+    expect(tools).toHaveLength(6);
   });
 });

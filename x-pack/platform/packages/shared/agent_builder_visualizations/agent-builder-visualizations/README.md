@@ -13,6 +13,9 @@ surfaces can consume one implementation.
 - **`InlineVisualization`** — dispatches to the Lens or Vega renderer based on `renderer`.
 - **`getVisualizationDimensionsFromLensConfig` / `getVisualizationDimensionsFromChartType`** —
   recommended container sizing helpers.
+- **`VisualizationPreviewShell` / `useVisPreviewUnifiedSearch`** — shared time-picker
+  chrome and action-button registration used by Lens, Vega, and custom embeddable
+  previews (e.g. ML anomaly charts).
 
 The Vega renderer pulls `@kbn/embeddable-plugin` and `@kbn/presentation-util-plugin`,
 so every consumer of this package takes those dependencies.

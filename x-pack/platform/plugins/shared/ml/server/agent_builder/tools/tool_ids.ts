@@ -12,3 +12,4 @@ export const AD_CREATE_JOB_TOOL_ID = `${internalNamespaces.ml}.ad_create_job`;
 export const AD_MANAGE_JOB_STATE_TOOL_ID = `${internalNamespaces.ml}.ad_manage_job_state`;
 export const AD_UPDATE_JOB_CONFIG_TOOL_ID = `${internalNamespaces.ml}.ad_update_job_config`;
 export const QUERY_ANOMALIES_TOOL_ID = `${internalNamespaces.ml}.query_anomalies`;
+export const CREATE_ML_CHARTS_TOOL_ID = `${internalNamespaces.ml}.create_ml_charts`;

@@ -112653,8 +112653,8 @@ components:
                 type: object
                 properties:
                   min:
-                    enum:
-                      - 75
+                    maximum: 100
+                    minimum: 0
                     type: number
                 required:
                   - min
@@ -112694,6 +112694,11 @@ components:
               description: Number of rows to display per page in a view-by swim lane. Ignored for overall swim lanes.
               minimum: 1
               type: number
+            severity_threshold:
+              description: Minimum anomaly score (0–100) to show in the swim lane. Anomalies with scores at or above this value are displayed.
+              maximum: 100
+              minimum: 0
+              type: number
             swimlane_type:
               enum:
                 - overall
@@ -112730,6 +112735,11 @@ components:
             per_page:
               description: Number of rows to display per page in a view-by swim lane. Ignored for overall swim lanes.
               minimum: 1
+              type: number
+            severity_threshold:
+              description: Minimum anomaly score (0–100) to show in the swim lane. Anomalies with scores at or above this value are displayed.
+              maximum: 100
+              minimum: 0
               type: number
             swimlane_type:
               enum:

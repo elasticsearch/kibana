@@ -21,6 +21,7 @@ export const swimLaneComparators: StateComparators<AnomalySwimLaneControlsState>
   swimlane_type: 'referenceEquality',
   view_by: 'referenceEquality',
   per_page: 'referenceEquality',
+  severity_threshold: 'deepEquality',
 };
 
 export const initializeSwimLaneControls = (
@@ -36,12 +37,20 @@ export const initializeSwimLaneControls = (
   const perPage = new BehaviorSubject<number | undefined>(
     initialState.per_page ?? SWIM_LANE_DEFAULT_PAGE_SIZE
   );
+  const severityThreshold = new BehaviorSubject<number | undefined>(
+    initialState.severity_threshold
+  );
 
   const updateUserInput = (update: AnomalySwimLaneEmbeddableState) => {
     jobIds.next(update.job_ids);
     swimlaneType.next(update.swimlane_type);
     viewBy.next(update.swimlane_type === SWIMLANE_TYPE.VIEW_BY ? update.view_by : undefined);
+    severityThreshold.next(update.severity_threshold);
     titlesApi.setTitle(update.title);
+  };
+
+  const updateSeverityThreshold = (threshold: number | undefined) => {
+    severityThreshold.next(threshold);
   };
 
   const updatePagination = (update: { perPage?: number; fromPage: number }) => {
@@ -61,6 +70,7 @@ export const initializeSwimLaneControls = (
       swimlane_type: swimlaneType.value,
       view_by: viewBy.value,
       per_page: perPage.value,
+      severity_threshold: severityThreshold.value,
     };
   };
 
@@ -71,8 +81,10 @@ export const initializeSwimLaneControls = (
       viewBy,
       fromPage,
       perPage,
+      severityThreshold,
       updateUserInput,
       updatePagination,
+      updateSeverityThreshold,
     } as unknown as AnomalySwimLaneComponentApi,
     anyStateChange$: merge(
       jobIds.pipe(
@@ -90,6 +102,10 @@ export const initializeSwimLaneControls = (
       perPage.pipe(
         skip(1),
         map(() => undefined)
+      ),
+      severityThreshold.pipe(
+        skip(1),
+        map(() => undefined)
       )
     ),
     getLatestState,
@@ -100,6 +116,7 @@ export const initializeSwimLaneControls = (
         lastSavedState.swimlane_type === SWIMLANE_TYPE.VIEW_BY ? lastSavedState.view_by : undefined
       );
       perPage.next(lastSavedState.per_page);
+      severityThreshold.next(lastSavedState.severity_threshold);
     },
     cleanup: () => {
       subscription.unsubscribe();
@@ -109,6 +126,7 @@ export const initializeSwimLaneControls = (
       viewBy.complete();
       fromPage.complete();
       perPage.complete();
+      severityThreshold.complete();
     },
   };
 };

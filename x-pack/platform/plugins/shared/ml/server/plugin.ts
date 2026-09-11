@@ -322,6 +322,17 @@ export class MlServerPlugin
         authorization: plugins.security?.authz,
         mlLicense: this.mlLicense,
         enabledFeatures: this.enabledFeatures,
+        mlClientFactoryDeps: {
+          getInternalSavedObjectsClient,
+          getAuditService: () => this.auditService,
+          spacesEnabled: this.spacesPlugin !== undefined,
+          authorization: plugins.security?.authz,
+          mlLicense: this.mlLicense,
+          serverless: this.serverless,
+          isMlReady: () => this.isMlReady,
+          getDataViews,
+          compatibleModuleType: this.compatibleModuleType,
+        },
       });
     }
 
