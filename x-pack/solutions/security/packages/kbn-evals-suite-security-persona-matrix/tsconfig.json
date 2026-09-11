@@ -4,16 +4,18 @@
     "outDir": "target/types",
     "types": ["jest", "node"]
   },
-  "include": ["**/*.ts"],
+  "include": ["**/*.ts", "persona_matrix.config.json"],
   "exclude": ["target/**/*"],
   "kbn_references": [
     "@kbn/agent-builder-common",
     "@kbn/core",
     "@kbn/evals",
+    "@kbn/evals-extensions",
     "@kbn/evals-suite-attack-discovery",
     "@kbn/scout",
     "@kbn/security-evals-alerts-snapshot",
     "@kbn/tooling-log",
-    "@kbn/kbn-client"
+    "@kbn/kbn-client",
+    "@kbn/evals-common"
   ]
 }

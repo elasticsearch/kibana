@@ -27,7 +27,9 @@ import { probeHttp } from './profiles';
 
 const SCOUT_LOCAL_CONFIG = '.scout/servers/local.json';
 const SCOUT_READY_POLL_INTERVAL_MS = 3000;
-const SCOUT_READY_TIMEOUT_MS = 180_000;
+// Overridable via SCOUT_READY_TIMEOUT_MS env: cold-boot rspack compile (303
+// bundles) can exceed the 180s default on loaded eval VMs.
+const SCOUT_READY_TIMEOUT_MS = Number(process.env.SCOUT_READY_TIMEOUT_MS) || 180_000;
 
 const waitForScoutReady = async (repoRoot: string, log: ToolingLog): Promise<void> => {
   const configPath = Path.join(repoRoot, SCOUT_LOCAL_CONFIG);
@@ -155,6 +157,7 @@ export interface EnsureScoutOptions {
   log: ToolingLog;
   gcsCredentials: string | undefined;
   tracingExporters: string | undefined;
+  agentBuilderTracingExporters?: string | undefined;
   serverConfigSet?: string;
 }
 
@@ -167,6 +170,7 @@ export const ensureScout = async ({
   log,
   gcsCredentials,
   tracingExporters,
+  agentBuilderTracingExporters,
   serverConfigSet = 'evals_tracing',
 }: EnsureScoutOptions): Promise<void> => {
   const scoutEnv: Record<string, string> = {};
@@ -175,6 +179,9 @@ export const ensureScout = async ({
   }
   if (tracingExporters) {
     scoutEnv.TRACING_EXPORTERS = tracingExporters;
+  }
+  if (agentBuilderTracingExporters) {
+    scoutEnv.AGENT_BUILDER_TRACING_EXPORTERS = agentBuilderTracingExporters;
   }
 
   const scoutAlive = isServiceRunning(repoRoot, 'scout');
@@ -293,6 +300,7 @@ export const ensureEvalStack = async ({
     log,
     gcsCredentials: profileEnvOverrides.GCS_CREDENTIALS,
     tracingExporters: profileEnvOverrides.TRACING_EXPORTERS,
+    agentBuilderTracingExporters: profileEnvOverrides.AGENT_BUILDER_TRACING_EXPORTERS,
     serverConfigSet,
   });
 

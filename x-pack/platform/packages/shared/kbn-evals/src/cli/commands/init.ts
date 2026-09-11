@@ -45,16 +45,112 @@ const buildKbnUrl = (basePath: string): string => {
     : 'http://elastic:changeme@localhost:5601';
 };
 
+/**
+ * Scout writes the ports it actually bound to `.scout/servers/local.json`. They do
+ * not match the `yarn start` defaults baked into LOCAL_DEFAULTS (5620/9220 vs
+ * 5601/9200), so a config written from those defaults points the eval client at a
+ * stack that isn't there and every dataset fetch fails.
+ */
+const readScoutHosts = (repoRoot: string): { kibana?: string; elasticsearch?: string } => {
+  try {
+    const raw = Fs.readFileSync(Path.join(repoRoot, '.scout/servers/local.json'), 'utf-8');
+    const parsed = JSON.parse(raw) as { hosts?: { kibana?: string; elasticsearch?: string } };
+    return parsed.hosts ?? {};
+  } catch {
+    return {};
+  }
+};
+
+const withCredentials = (url: string): string =>
+  url.replace(/^(https?:\/\/)(?!.*@)/, '$1elastic:changeme@');
+
+const isConfigEntry = (value: unknown): value is { url: string } =>
+  typeof value === 'object' &&
+  value !== null &&
+  typeof (value as { url?: unknown }).url === 'string';
+
+const hostPortOf = (url: string): string => {
+  try {
+    const parsed = new URL(url);
+    return `${parsed.hostname}:${parsed.port}`;
+  } catch {
+    return '';
+  }
+};
+
+/**
+ * Rewrite an existing local config whose host:port no longer matches the running
+ * Scout stack. Only the origin is replaced -- credentials, base path and every
+ * unrelated field are preserved.
+ */
+const repairStaleScoutHosts = (
+  configPath: string,
+  scoutHosts: { kibana?: string; elasticsearch?: string },
+  log: ToolingLog
+): void => {
+  if (!scoutHosts.kibana && !scoutHosts.elasticsearch) return;
+
+  let config: Record<string, unknown>;
+  try {
+    config = JSON.parse(Fs.readFileSync(configPath, 'utf-8'));
+  } catch {
+    return;
+  }
+
+  const repaired: string[] = [];
+  const realign = (key: 'evaluationsKbn' | 'evaluationsEs' | 'tracingEs', target?: string) => {
+    if (!target) return;
+    const entry = config[key];
+    if (!isConfigEntry(entry)) return;
+    if (hostPortOf(entry.url) === hostPortOf(target)) return;
+
+    try {
+      const current = new URL(entry.url);
+      const scout = new URL(target);
+      current.hostname = scout.hostname;
+      current.port = scout.port;
+      // Scout serves at the root: a `/dev` base path from `yarn start` 404s here.
+      if (key === 'evaluationsKbn') current.pathname = scout.pathname;
+      config[key] = { ...entry, url: current.toString().replace(/\/$/, '') };
+      repaired.push(key);
+    } catch {
+      // leave the entry untouched if it isn't a parsable URL
+    }
+  };
+
+  realign('evaluationsKbn', scoutHosts.kibana);
+  realign('evaluationsEs', scoutHosts.elasticsearch);
+  realign('tracingEs', scoutHosts.elasticsearch);
+
+  if (repaired.length === 0) return;
+  Fs.writeFileSync(configPath, JSON.stringify(config, null, 2) + '\n');
+  log.info(`[init] realigned ${repaired.join(', ')} to the running Scout stack`);
+};
+
 export const ensureLocalConfig = async (repoRoot: string, log: ToolingLog): Promise<void> => {
   const configPath = resolveVaultConfigPath(repoRoot, 'local');
-  if (Fs.existsSync(configPath)) return;
+  // Prefer the ports Scout actually bound over the `yarn start` defaults.
+  const scoutHosts = readScoutHosts(repoRoot);
+
+  if (Fs.existsSync(configPath)) {
+    // An existing config is NOT necessarily a correct one: a config written before
+    // Scout booted (or by a `yarn start` run) points at 5601/9200 and silently
+    // fails every request against a Scout stack on 5620/9220. Repair in place
+    // rather than returning early on mere existence.
+    repairStaleScoutHosts(configPath, scoutHosts, log);
+    return;
+  }
+
+  const evaluationsEs = scoutHosts.elasticsearch
+    ? { url: withCredentials(scoutHosts.elasticsearch), apiKey: '' }
+    : { ...LOCAL_DEFAULTS.evaluationsEs };
 
   const config: Record<string, unknown> = {
     description: 'kbn-evals local config',
     owner: resolveUserIdentifier(),
     environment: 'local',
-    evaluationsEs: { ...LOCAL_DEFAULTS.evaluationsEs },
-    tracingEs: { ...LOCAL_DEFAULTS.tracingEs },
+    evaluationsEs,
+    tracingEs: { ...evaluationsEs },
     tracingExporters: [...LOCAL_DEFAULTS.tracingExporters],
   };
 
@@ -107,9 +203,15 @@ export const ensureLocalConfig = async (repoRoot: string, log: ToolingLog): Prom
       }
     }
   } else {
-    config.evaluationsKbn = { ...LOCAL_DEFAULTS.evaluationsKbn };
+    // Non-interactive (CI, background shells): no prompt for a base path, so take
+    // Scout's URL verbatim. Scout serves at the root -- appending the `/dev`
+    // basePath that `yarn start` uses would 404 every request.
+    config.evaluationsKbn = scoutHosts.kibana
+      ? { url: withCredentials(scoutHosts.kibana), apiKey: '' }
+      : { ...LOCAL_DEFAULTS.evaluationsKbn };
   }
 
+  Fs.mkdirSync(Path.dirname(configPath), { recursive: true });
   Fs.writeFileSync(configPath, JSON.stringify(config, null, 2) + '\n');
   log.info(`Written local config to ${configPath}`);
   log.info('');

@@ -42,7 +42,9 @@ Use this skill when:
 - Prefer ECS field names for cross-source portability
 
 ### 3. Explore Data Iteratively
-- Start with broad queries to establish baselines using 'platform.core.generate_esql' and 'platform.core.execute_esql'
+- Build every query with 'platform.core.generate_esql', then run it with 'platform.core.execute_esql'. This is required, not a shortcut to skip: 'generate_esql' validates syntax and resolves field names against the live mapping, so a hand-written query that looks correct can silently reference a field this deployment does not have. Do not hand-write ES|QL and pass it straight to 'platform.core.execute_esql'.
+- This applies to the query templates below too. They are starting points for a hypothesis, not runnable answers — pass the pattern you want through 'platform.core.generate_esql' to bind it to the actual indices and fields in this environment before executing.
+- Never report a finding from a query you did not execute. An unexecuted query is a hypothesis, not evidence.
 - Always scope queries with @timestamp ranges: WHERE @timestamp >= NOW() - 7 DAYS
 - Use STATS ... BY for aggregated views before drilling into raw events
 - Chain WHERE clauses to iteratively narrow down — avoid overly complex single queries
@@ -68,7 +70,7 @@ Use this skill when:
 
 ## Query Templates
 
-The following embedded query templates provide common hunting patterns (available as referenced content):
+The following embedded query templates provide common hunting patterns (available as referenced content). They are hypothesis starting points, not runnable answers — rebuild the pattern through 'platform.core.generate_esql' so it binds to this deployment's indices and fields, then execute it:
 - lateral-movement: Detect lateral movement via remote service creation and suspicious logon types
 - c2-beaconing: Identify C2 beaconing through periodic network connection analysis
 - brute-force: Detect brute force and credential spraying attempts
@@ -76,6 +78,7 @@ The following embedded query templates provide common hunting patterns (availabl
 
 ## Best Practices
 - Always start with a time-bounded hypothesis — do not explore without direction
+- Generate queries with 'platform.core.generate_esql' and execute them with 'platform.core.execute_esql'; report findings only from executed results
 - Use STATS and aggregations before raw event queries to understand data volume
 - Validate findings against known-good baselines before escalating
 - Hunt on 7-30 day windows for behavioral patterns; use shorter windows for IOC sweeps

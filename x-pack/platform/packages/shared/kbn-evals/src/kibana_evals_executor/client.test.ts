@@ -754,4 +754,103 @@ describe('KibanaEvalsClient', () => {
       expect(exp.evaluationRuns).toHaveLength(4);
     });
   });
+
+  describe('error isolation', () => {
+    const dataset: EvaluationDataset = {
+      name: 'ds',
+      description: 'desc',
+      examples: [
+        { id: 'ex-1', input: { q: 1 }, output: { expected: 1 } },
+        { id: 'ex-2', input: { q: 2 }, output: { expected: 2 } },
+      ],
+    };
+
+    const evaluators: Array<Evaluator<EvaluationDataset['examples'][number], { value: number }>> = [
+      {
+        name: 'AlwaysOne',
+        kind: 'CODE',
+        direction: 'maximize',
+        evaluate: async () => ({ score: 1 }),
+      },
+    ];
+
+    it('records a task failure, keeps other examples, and rejects after the run', async () => {
+      const client = createClient({ repetitions: 1 });
+
+      await expect(
+        client.runExperiment(
+          {
+            datasets: [dataset],
+            task: async (example) => {
+              if ((example.input as { q: number }).q === 2) {
+                throw new Error('converse 500: Request timed out');
+              }
+              return { value: 1 };
+            },
+          },
+          evaluators
+        )
+      ).rejects.toThrow('errored run: exampleIndex=1, repetition=0: converse 500');
+
+      // The partial result is still accumulated, with the failure explicit on the run
+      const [exp] = await client.getDatasetRunResults();
+      const recordedRuns = Object.values(exp.runs);
+      expect(recordedRuns).toHaveLength(2);
+      const failed = recordedRuns.find((run) => run.exampleIndex === 1);
+      expect(failed?.error).toBe('converse 500: Request timed out');
+      expect(failed?.output).toBeNull();
+
+      // Only the healthy example was evaluated
+      expect(exp.evaluationRuns).toHaveLength(1);
+      expect(exp.evaluationRuns[0].exampleId).toBe('ex-1');
+    });
+
+    it('records an evaluator failure as an explicit error result and completes', async () => {
+      const client = createClient({ repetitions: 1 });
+
+      const flakyJudge: Evaluator<EvaluationDataset['examples'][number], { value: number }> = {
+        name: 'FlakyJudge',
+        kind: 'LLM',
+        direction: 'maximize',
+        evaluate: async ({ input }) => {
+          if ((input as { q: number }).q === 2) {
+            throw new Error('toolValidationError');
+          }
+          return { score: 1 };
+        },
+      };
+
+      const [exp] = await client.runExperiment(
+        { datasets: [dataset], task: async () => ({ value: 1 }) },
+        [flakyJudge]
+      );
+
+      expect(exp.evaluationRuns).toHaveLength(2);
+      const errorRun = exp.evaluationRuns.find((run) => run.exampleId === 'ex-2');
+      expect(errorRun?.result).toEqual({
+        score: null,
+        label: 'error',
+        explanation: 'Evaluator threw: toolValidationError',
+      });
+    });
+
+    it('fails the experiment when an evaluator errors on every run', async () => {
+      const client = createClient({ repetitions: 1 });
+
+      const brokenJudge: Evaluator<EvaluationDataset['examples'][number], { value: number }> = {
+        name: 'BrokenJudge',
+        kind: 'LLM',
+        direction: 'maximize',
+        evaluate: async () => {
+          throw new Error('connector dead');
+        },
+      };
+
+      await expect(
+        client.runExperiment({ datasets: [dataset], task: async () => ({ value: 1 }) }, [
+          brokenJudge,
+        ])
+      ).rejects.toThrow('evaluator "BrokenJudge" failed on every run');
+    });
+  });
 });

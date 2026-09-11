@@ -272,7 +272,7 @@ describe('createSkillInvocationEvaluator', () => {
     (mockEsClient.esql.query as jest.Mock).mockRejectedValue(new Error('Network failure'));
 
     const promise = evaluateWith(evaluator, VALID_TRACE_ID);
-    await jest.advanceTimersByTimeAsync(300_000);
+    await jest.advanceTimersByTimeAsync(600_000);
     const result = await promise;
 
     expect(result.label).toBe('error');

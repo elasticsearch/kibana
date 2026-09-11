@@ -97,6 +97,15 @@ const { TRACING_EXPORTERS: tracingExporters } = process.env;
 if (tracingExporters) {
   JSON.parse(tracingExporters); // validate parseable JSON; throws early if malformed
 }
+// Agent Builder maintains its own tracer provider (register_tracing.ts) whose
+// spans back the trace-based evaluators. It always exports to the LOCAL ES via
+// ElasticsearchOtlpExporter; entries here are APPENDED, so setting this adds a
+// remote destination (e.g. the golden cluster) without losing local fidelity.
+const { AGENT_BUILDER_TRACING_EXPORTERS: agentBuilderTracingExporters } = process.env;
+if (agentBuilderTracingExporters) {
+  JSON.parse(agentBuilderTracingExporters); // validate parseable JSON; throws early if malformed
+}
+
 const isCi = Boolean(process.env.CI);
 const shouldEnableTracing = Boolean(tracingExporters) || !isCi;
 const exporters = tracingExporters ?? defaultExporters;
@@ -133,6 +142,14 @@ export const servers: ScoutServerConfig = {
       ...defaultConfig.kbnTestServer.serverArgs,
       '--xpack.evals.enabled=true',
       ...(preconfiguredEisConnectorsArg ? [preconfiguredEisConnectorsArg] : []),
+      // Unconditional: Agent Builder's span processor strips gen_ai.tool.call.arguments
+      // and .result from every tool span unless this is on (it defaults to false for
+      // privacy). Trace-based evaluators that match on tool call arguments --
+      // SkillInvoked matches the skill name inside them -- then score 0 for every
+      // model, which reads as a model failure rather than a missing attribute.
+      // Evals run on synthetic data, so always capture the details: gating this on
+      // `shouldEnableTracing` silently drops it whenever exporters are unset.
+      '--uiSettings.overrides.agentBuilder:tracing:includeToolDetails=true',
       ...(shouldEnableTracing
         ? [
             '--elastic.apm.active=false',
@@ -141,6 +158,9 @@ export const servers: ScoutServerConfig = {
             '--telemetry.tracing.enabled=true',
             '--telemetry.tracing.sample_rate=1',
             `--telemetry.tracing.exporters=${exporters}`,
+            ...(agentBuilderTracingExporters
+              ? [`--xpack.agentBuilder.tracing.exporters=${agentBuilderTracingExporters}`]
+              : []),
           ]
         : []),
     ],

@@ -24,6 +24,14 @@ export const GetExampleScoresRequestQuery = lazySchema(() =>
      * Filter scores to a specific dataset. When omitted, scores from all datasets matching the example ID are returned.
      */
     dataset_id: z.string().min(1).max(1024).optional(),
+    /**
+     * Filter by execution ID (the full composite execution identifier)
+     */
+    execution_id: z.string().max(1024).optional(),
+    /**
+     * Filter by task model ID
+     */
+    model_id: z.string().max(256).optional(),
   })
 );
 export type GetExampleScoresRequestQuery = z.infer<typeof GetExampleScoresRequestQuery>;

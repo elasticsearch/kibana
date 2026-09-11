@@ -79,6 +79,21 @@ describe('withKbnClientApiKeyAuth', () => {
   });
 });
 describe('getEvaluationsKbnClient', () => {
+  let originalEvalKbnUrl: string | undefined;
+
+  beforeEach(() => {
+    originalEvalKbnUrl = process.env.EVAL_KBN_URL;
+    delete process.env.EVAL_KBN_URL;
+  });
+
+  afterEach(() => {
+    if (originalEvalKbnUrl === undefined) {
+      delete process.env.EVAL_KBN_URL;
+    } else {
+      process.env.EVAL_KBN_URL = originalEvalKbnUrl;
+    }
+  });
+
   it('returns default kbnClient when EVAL_KBN_URL is not set', () => {
     const defaultKbnClient = createMockKbnClient();
     const createKbnClient = jest.fn();

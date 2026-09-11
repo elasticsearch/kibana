@@ -73,9 +73,12 @@ describe('wrapKbnClientWithRetries', () => {
     expect(log.warning).toHaveBeenCalledTimes(1);
   });
 
-  it('does NOT retry on HTTP 500', async () => {
+  it('retries an EIS-shaped HTTP 500, inheriting the retry_utils policy', async () => {
+    // Policy owned by retry_utils (RETRYABLE_SERVER_STATUSES), which this wrapper
+    // delegates to; changed 2026-09-02 because EIS reports transient upstream
+    // provider faults as a Kibana 500 rather than a 502/503. See retry_utils.ts.
     const err = makeStatusError(500);
-    const request = jest.fn().mockRejectedValue(err);
+    const request = jest.fn().mockRejectedValueOnce(err).mockResolvedValueOnce('ok');
     const inner = { request } as unknown as KbnClient;
     const log = createLog();
 
@@ -83,8 +86,8 @@ describe('wrapKbnClientWithRetries', () => {
 
     await expect(
       wrapped.request({ path: '/x', method: 'POST' } as Parameters<KbnClient['request']>[0])
-    ).rejects.toBe(err);
-    expect(request).toHaveBeenCalledTimes(1);
+    ).resolves.toBe('ok');
+    expect(request).toHaveBeenCalledTimes(2);
     expect(log.error).not.toHaveBeenCalled();
   });
 

@@ -57,9 +57,9 @@ export const runSuiteCmd: Command<void> = {
       'evaluations-kbn-url',
       'evaluations-kbn-api-key',
     ],
-    boolean: ['dry-run'],
+    boolean: ['dry-run', 'require-eis-judge'],
     alias: { model: 'project', judge: 'evaluation-connector-id' },
-    default: { 'dry-run': false },
+    default: { 'dry-run': false, 'require-eis-judge': false },
   },
   run: async ({ log, flagsReader }) => {
     const repoRoot = process.cwd();

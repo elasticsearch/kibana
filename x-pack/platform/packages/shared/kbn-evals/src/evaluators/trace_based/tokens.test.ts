@@ -136,12 +136,13 @@ describe('createCachedTokensEvaluator', () => {
       query.mockRejectedValue(new Error('verification_exception: Unknown column [typo_column]'));
 
       const promise = evaluate();
-      await jest.advanceTimersByTimeAsync(300_000);
+      await jest.advanceTimersByTimeAsync(600_000);
       const result = await promise;
 
       expect(result.label).toBe('error');
-      // Only the main query runs; the probe is never reached for an unrelated column.
-      expect(query).toHaveBeenCalledTimes(6);
+      // Only the main query runs (8 retries + initial attempt); the probe is
+      // never reached for an unrelated column.
+      expect(query).toHaveBeenCalledTimes(9);
       expect(mockLog.error).toHaveBeenCalled();
     });
   });

@@ -18,12 +18,15 @@ import {
   type EvaluationDataset,
   type Evaluator,
   type TaskOutput,
+  TRACE_INDEX_PATTERN,
 } from '@kbn/evals';
 import type { ToolingLog } from '@kbn/tooling-log';
 import type {
   PersonaMatrixExample,
   PersonaMatrixExampleInput,
 } from './datasets/persona_matrix_prompts';
+import { selectShard } from './datasets/select_shard';
+import { createConnectorInvokedEvaluator } from './evaluators/connector_invoked_evaluator';
 import type { PersonaMatrixChatClient } from './chat_client';
 
 /**
@@ -67,9 +70,19 @@ export const toDatasetExample = (ex: PersonaMatrixExample): PersonaMatrixDataset
 };
 
 /**
- * ExpectedToolCalled — verifies the primary expected tool was invoked.
- * Reads `expectedTools` from example metadata (first entry) or `tool_sequence`
- * from the expected output.
+ * ExpectedToolCalled — verifies every declared expected tool was invoked.
+ * Reads `expectedTools` from example metadata, or `tool_sequence` from the
+ * expected output.
+ *
+ * Scores the whole declared set, not just `expectedTools[0]`. 16 of the 21
+ * examples declare more than one expected tool, so reading only the first
+ * entry left the rest unenforced: an example annotated
+ * `['platform.core.generate_esql', 'platform.core.execute_esql']` scored 1 for
+ * a run that generated a query and never executed it.
+ *
+ * All-or-nothing rather than a partial ratio: `Trajectory` already reports
+ * graded per-tool overlap. `missingToolIds` names what was skipped so a 0 is
+ * diagnosable without re-reading the trace.
  */
 export const createPersonaMatrixExpectedToolCalledEvaluator = (): Evaluator => ({
   name: 'ExpectedToolCalled',
@@ -89,14 +102,143 @@ export const createPersonaMatrixExpectedToolCalledEvaluator = (): Evaluator => (
       };
     }
 
-    const expectedToolId = expectedTools[0];
     const usedToolIds = getToolCallSteps(output as TaskOutput)
       .map((step) => step.tool_id)
       .filter((id): id is string => Boolean(id));
 
+    const usedToolIdSet = new Set(usedToolIds);
+    const missingToolIds = expectedTools.filter((toolId) => !usedToolIdSet.has(toolId));
+
     return {
-      score: usedToolIds.includes(expectedToolId) ? 1 : 0,
-      metadata: { expectedToolId, usedToolIds },
+      score: missingToolIds.length === 0 ? 1 : 0,
+      explanation: missingToolIds.length
+        ? `Expected tools not called: ${missingToolIds.join(', ')}.`
+        : `All expected tools called: ${expectedTools.join(', ')}.`,
+      metadata: { expectedToolIds: expectedTools, missingToolIds, usedToolIds },
+    };
+  },
+});
+
+/**
+ * Tools whose successful result is itself the user-facing deliverable: they
+ * render an artifact (a rule) inline in the conversation. A run that ends on
+ * one of these has answered the user even with no closing prose.
+ */
+const ARTIFACT_PRODUCING_TOOL_IDS = new Set([
+  'security.create_detection_rule',
+  'security.update_detection_rule',
+]);
+
+/**
+ * True when the run produced a rendered artifact: an artifact-producing tool
+ * returned `success: true` with a `rule` payload. Mirrors the shape asserted
+ * by the dataset references ("renders the created rule attachment inline").
+ */
+const hasRenderedArtifact = (output: TaskOutput): boolean =>
+  getToolCallSteps(output).some((step) => {
+    if (!step.tool_id || !ARTIFACT_PRODUCING_TOOL_IDS.has(step.tool_id)) {
+      return false;
+    }
+    return (step.results ?? []).some((result) => {
+      const data = (result as { data?: { success?: unknown; rule?: unknown } } | undefined)?.data;
+      return Boolean(data?.success === true && data?.rule);
+    });
+  });
+
+/**
+ * Regression gate for the empty-final-message failure mode: 62% of
+ * detection-rule-edit runs in the 2026-08-21 sweep ended on a tool call with
+ * no user-facing closing text, leaving judges (and users) with nothing to
+ * read.
+ *
+ * Scores 1 when the run leaves the user something to read: either non-empty
+ * closing prose, or a rendered artifact (a successfully created/updated rule).
+ * The artifact clause exists because `detection-rule-edit` references
+ * explicitly ask the agent to render the rule attachment inline "rather than
+ * describing the rule in prose only" — scoring those runs 0 measured the
+ * harness, not the model. Runs that end silently *without* producing an
+ * artifact still score 0: that is the real premature-termination failure.
+ *
+ * N/A only when the task produced no output at all (harness failure — already
+ * surfaced by every other evaluator).
+ */
+export const createPersonaMatrixFinalAnswerPresentEvaluator = (): Evaluator => ({
+  name: 'FinalAnswerPresent',
+  kind: 'CODE',
+  direction: 'maximize',
+  evaluate: async ({ output }) => {
+    const taskOutput = output as { messages?: Array<{ message?: unknown }> } | undefined;
+    if (!taskOutput) {
+      return {
+        score: null,
+        label: 'N/A',
+        explanation: 'No task output — skipping FinalAnswerPresent.',
+      };
+    }
+    const hasMessage = (taskOutput.messages ?? []).some(
+      (msg) => typeof msg?.message === 'string' && msg.message.trim().length > 0
+    );
+    if (hasMessage) {
+      return { score: 1, explanation: 'Final user-facing message present.' };
+    }
+    if (hasRenderedArtifact(output as TaskOutput)) {
+      return {
+        score: 1,
+        explanation: 'No closing prose, but the run rendered a rule artifact inline.',
+      };
+    }
+    return {
+      score: 0,
+      explanation: 'Run ended without a user-facing final message or rendered artifact.',
+    };
+  },
+});
+
+/**
+ * MinExpectedSteps — flags "gave up without trying": the agent produced a
+ * (possibly non-empty) answer but performed fewer tool calls than the example
+ * declares in `expectedTools`. Distinct from FinalAnswerPresent (which only
+ * checks that *some* text exists) — a model can write a confident answer having
+ * called nothing, which is exactly the premature-termination failure mode seen
+ * in the original sweep (~90 runs finished in <3 steps).
+ *
+ * Scores 1 when the run made at least `expectedTools.length` tool calls,
+ * otherwise 0. N/A when the example declares no expectedTools (nothing to
+ * compare against) or the task produced no output.
+ */
+export const createPersonaMatrixMinExpectedStepsEvaluator = (): Evaluator => ({
+  name: 'MinExpectedSteps',
+  kind: 'CODE',
+  direction: 'maximize',
+  evaluate: async ({ output, expected, metadata }) => {
+    const toolSequence = (expected as PersonaMatrixDatasetExpected | undefined)?.tool_sequence;
+    const meta = metadata as { expectedTools?: string[] } | undefined;
+    const expectedTools = meta?.expectedTools ?? toolSequence ?? [];
+    const minToolCalls = expectedTools.length;
+    if (minToolCalls === 0) {
+      return {
+        score: null,
+        label: 'N/A',
+        explanation: 'No expectedTools annotation — skipping MinExpectedSteps.',
+      };
+    }
+    const taskOutput = output as TaskOutput | undefined;
+    if (!taskOutput) {
+      return {
+        score: null,
+        label: 'N/A',
+        explanation: 'No task output — skipping MinExpectedSteps.',
+      };
+    }
+    const actualToolCalls = getToolCallSteps(taskOutput).length;
+    const met = actualToolCalls >= minToolCalls;
+    return {
+      score: met ? 1 : 0,
+      explanation: met
+        ? `Made ${actualToolCalls} tool call(s), meeting the expected minimum of ${minToolCalls}.`
+        : `Made ${actualToolCalls} tool call(s) but expected at least ${minToolCalls} (${expectedTools.join(
+            ', '
+          )}) — agent may have given up without trying.`,
     };
   },
 });
@@ -111,6 +253,10 @@ export const createPersonaMatrixExpectedToolCalledEvaluator = (): Evaluator => (
  * up as a noisy "extra tool".
  */
 const FILESTORE_READ_TOOL_ID = 'filestore.read';
+
+export const isRankablePathContract = (
+  metadata: { pathContract?: 'rankable' | 'candidate' | 'probe' } | undefined
+): boolean => metadata?.pathContract !== 'probe';
 
 export const createPersonaMatrixTrajectoryEvaluator = (): Evaluator => {
   const inner = createTrajectoryEvaluator({
@@ -129,6 +275,17 @@ export const createPersonaMatrixTrajectoryEvaluator = (): Evaluator => {
     name: 'Trajectory',
     evaluate: async (args) => {
       const exp = args.expected as PersonaMatrixDatasetExpected | undefined;
+      const meta = args.metadata as
+        | { pathContract?: 'rankable' | 'candidate' | 'probe' }
+        | undefined;
+      if (!isRankablePathContract(meta)) {
+        return {
+          score: null,
+          label: 'N/A',
+          explanation: 'Open-ended capability probe — trajectory is diagnostic, not rankable.',
+          metadata: { pathContract: 'probe' },
+        };
+      }
       if (!exp?.tool_sequence || exp.tool_sequence.length === 0) {
         return {
           score: null,
@@ -196,10 +353,13 @@ export const createPersonaMatrixSkillInvokedEvaluator = ({
     }
 
     const skillPredicate = acceptedSkills
-      .map((skillName) => `attributes.gen_ai.tool.call.arguments LIKE "*/${skillName}/SKILL.md*"`)
+      .flatMap((skillName) => [
+        `attributes.gen_ai.tool.call.arguments LIKE "*\\\"skill\\\":\\\"${skillName}\\\"*"`,
+        `attributes.gen_ai.tool.call.arguments LIKE "*/${skillName}/SKILL.md*"`,
+      ])
       .join(' OR ');
 
-    const query = `FROM traces-*
+    const query = `FROM ${TRACE_INDEX_PATTERN}
 | WHERE trace.id == "${traceId}"
 | STATS
   total_tool_spans = COUNT(
@@ -269,7 +429,18 @@ export function createEvaluatePersonaMatrixDataset({
   }: {
     dataset: EvaluationDataset<PersonaMatrixExample>;
   }): Promise<void> {
-    const wrappedExamples = dataset.examples.map(toDatasetExample);
+    // Shard before wrapping so a sharded run seeds and grades only its slice.
+    // Slow models need hours for all 21 examples on one stack; the sweeper fans
+    // shards out to one VM each.
+    const shardedExamples = selectShard(dataset.examples, process.env.PERSONA_MATRIX_SHARD);
+    const wrappedExamples = shardedExamples.map(toDatasetExample);
+
+    if (process.env.PERSONA_MATRIX_SHARD) {
+      log.info(
+        `[persona-matrix] shard ${process.env.PERSONA_MATRIX_SHARD}: ` +
+          `${shardedExamples.length}/${dataset.examples.length} examples`
+      );
+    }
 
     const skillInvokedEvaluator = createPersonaMatrixSkillInvokedEvaluator({
       traceEsClient,
@@ -278,6 +449,12 @@ export function createEvaluatePersonaMatrixDataset({
 
     const trajectoryEvaluator = createPersonaMatrixTrajectoryEvaluator();
     const expectedToolCalledEvaluator = createPersonaMatrixExpectedToolCalledEvaluator();
+    const finalAnswerPresentEvaluator = createPersonaMatrixFinalAnswerPresentEvaluator();
+    const minExpectedStepsEvaluator = createPersonaMatrixMinExpectedStepsEvaluator();
+    // Deterministic proof that an authored workflow targets the connector the
+    // prompt demanded. ExpectedToolCalled only proves generate_workflow was
+    // called, never what it produced -- see connector_invoked_evaluator.ts.
+    const connectorInvokedEvaluator = createConnectorInvokedEvaluator();
 
     const { inputTokens, outputTokens, toolCalls, latency } = evaluators.traceBasedEvaluators;
 
@@ -288,6 +465,9 @@ export function createEvaluatePersonaMatrixDataset({
       skillInvokedEvaluator,
       trajectoryEvaluator,
       expectedToolCalledEvaluator,
+      finalAnswerPresentEvaluator,
+      minExpectedStepsEvaluator,
+      connectorInvokedEvaluator,
       ...createQuantitativeCorrectnessEvaluators(),
       createQuantitativeGroundednessEvaluator(),
       evaluators.criteria([
@@ -304,6 +484,12 @@ export function createEvaluatePersonaMatrixDataset({
 
     await executorClient.runExperiment(
       {
+        // Reasoning models (GLM, Qwen-thinking) wedge a single-node Kibana
+        // event loop at the default concurrency of 5: `converse` calls time out
+        // or fail outright with `fetch failed`, losing whole examples. Allow the
+        // runner to dial it back per model instead of hardcoding one value that
+        // is either too slow for frontier models or too aggressive for these.
+        concurrency: Number(process.env.PERSONA_MATRIX_CONCURRENCY) || undefined,
         datasets: [
           {
             name: dataset.name,
@@ -320,9 +506,17 @@ export function createEvaluatePersonaMatrixDataset({
 
           const taskOutput: TaskOutput = {
             messages: response.messages,
+            // Which turn the answer came from: 'response' is the model's real
+            // closing message, 'last_assistant_step' is chat_client's fallback
+            // to an interior reasoning/output step (models that end on a tool
+            // call return an empty response.message). Without this tag, mid-run
+            // narration is indistinguishable from a final answer once stored.
+            messageSource: response.messageSource,
             steps: response.steps,
             errors: response.errors,
             traceId: response.traceId ?? null,
+            sampling: response.sampling,
+            trajectoryFingerprint: response.trajectoryFingerprint,
           };
 
           // Precompute the qualitative analyses inside the task once, so the
@@ -331,7 +525,12 @@ export function createEvaluatePersonaMatrixDataset({
           // result and correctnessAnalysis() is invoked exactly once per
           // example (was: once here + once again as a registered evaluator).
           const expected = example.output as PersonaMatrixDatasetExpected;
-          const [correctnessResult, groundednessResult] = await Promise.all([
+
+          // The judges already retry internally; if they still fail, degrade this
+          // example's qualitative scores to "unavailable" (the quantitative
+          // evaluators handle a missing analysis) rather than discarding the
+          // agent's real trajectory, which the deterministic evaluators can score.
+          const [correctnessSettled, groundednessSettled] = await Promise.allSettled([
             withEvaluatorSpan('CorrectnessAnalysis', {}, () =>
               evaluators.correctnessAnalysis().evaluate({
                 input,
@@ -349,6 +548,25 @@ export function createEvaluatePersonaMatrixDataset({
               })
             ),
           ]);
+
+          for (const [name, settled] of [
+            ['CorrectnessAnalysis', correctnessSettled],
+            ['GroundednessAnalysis', groundednessSettled],
+          ] as const) {
+            if (settled.status === 'rejected') {
+              const reason = settled.reason;
+              log.error(
+                `[persona-matrix] ${name} failed for example "${example.id ?? question}": ${
+                  reason instanceof Error ? reason.message : String(reason)
+                }`
+              );
+            }
+          }
+
+          const correctnessResult =
+            correctnessSettled.status === 'fulfilled' ? correctnessSettled.value : undefined;
+          const groundednessResult =
+            groundednessSettled.status === 'fulfilled' ? groundednessSettled.value : undefined;
 
           return {
             ...(taskOutput as object),

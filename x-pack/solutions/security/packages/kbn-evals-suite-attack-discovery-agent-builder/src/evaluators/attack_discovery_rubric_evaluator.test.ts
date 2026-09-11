@@ -52,7 +52,7 @@ const expectedFor = (
 
 describe('createAttackDiscoveryRubricEvaluator', () => {
   const judge = jest.fn();
-  const criteria = jest.fn(() => ({
+  const criteria = jest.fn((_criteria: string[]) => ({
     name: 'criteria',
     kind: 'LLM' as const,
     direction: 'maximize',
@@ -85,6 +85,27 @@ describe('createAttackDiscoveryRubricEvaluator', () => {
 
       expect(judge).toHaveBeenCalledTimes(1);
       expect(result.score).toBe(1);
+    });
+
+    // The saturation guard. Each rubric item must reach the judge as its own
+    // criterion, because `evaluators.criteria` scores criteria independently
+    // and returns the weighted pass rate. One combined criterion carrying a
+    // "5 of 7 -> Y/N" threshold can only ever return 0 or 1, which is what
+    // pinned 95.6% of regraded attack-discovery cells at the ceiling.
+    it('passes each rubric item as a separate criterion so partial credit survives', async () => {
+      await evaluate({ insights: [insight], expected: expectedFor([insight]) });
+
+      const passedCriteria = criteria.mock.calls[0][0];
+      expect(passedCriteria).toHaveLength(7);
+      // No item may smuggle the old aggregate threshold back in: that is the
+      // exact construct that collapsed 7 signals into one binary verdict.
+      for (const criterion of passedCriteria) {
+        expect(criterion).not.toMatch(/at least 5 of the 7/i);
+        expect(criterion).not.toMatch(/single character/i);
+      }
+      // Every item keeps the reference, otherwise a judge scoring one item in
+      // isolation has nothing to compare the submission against.
+      expect(passedCriteria.every((c) => c.includes('Reference:'))).toBe(true);
     });
 
     // Guards against the N/A branch becoming a blanket exemption: an example

@@ -1,0 +1,446 @@
+{
+  "title": "Security Persona Matrix (persona columns only)",
+  "branch": "main",
+  "lookbackDays": 120,
+  "columns": [
+    {
+      "id": "alert-analysis-a",
+      "label": "Alert Analysis A",
+      "group": "Alert Analysis",
+      "suites": [
+        "security-persona-matrix"
+      ],
+      "datasetIds": [
+        "alert-analysis-a"
+      ]
+    },
+    {
+      "id": "alert-analysis-b",
+      "label": "Alert Analysis B",
+      "group": "Alert Analysis",
+      "suites": [
+        "security-persona-matrix"
+      ],
+      "datasetIds": [
+        "alert-analysis-b"
+      ]
+    },
+    {
+      "id": "alert-analysis-c",
+      "label": "Alert Analysis C",
+      "group": "Alert Analysis",
+      "suites": [
+        "security-persona-matrix"
+      ],
+      "datasetIds": [
+        "alert-analysis-c"
+      ]
+    },
+    {
+      "id": "entity-analytics-a",
+      "label": "Entity Analytics A",
+      "group": "Entity Analytics",
+      "suites": [
+        "security-persona-matrix"
+      ],
+      "datasetIds": [
+        "entity-analytics-a"
+      ]
+    },
+    {
+      "id": "entity-analytics-b",
+      "label": "Entity Analytics B",
+      "group": "Entity Analytics",
+      "suites": [
+        "security-persona-matrix"
+      ],
+      "datasetIds": [
+        "entity-analytics-b"
+      ]
+    },
+    {
+      "id": "entity-analytics-c",
+      "label": "Entity Analytics C",
+      "group": "Entity Analytics",
+      "suites": [
+        "security-persona-matrix"
+      ],
+      "datasetIds": [
+        "entity-analytics-c"
+      ]
+    },
+    {
+      "id": "threat-hunting-a",
+      "label": "Threat Hunting A",
+      "group": "Threat Hunting",
+      "suites": [
+        "security-persona-matrix"
+      ],
+      "datasetIds": [
+        "threat-hunting-a"
+      ]
+    },
+    {
+      "id": "threat-hunting-b",
+      "label": "Threat Hunting B",
+      "group": "Threat Hunting",
+      "suites": [
+        "security-persona-matrix"
+      ],
+      "datasetIds": [
+        "threat-hunting-b"
+      ]
+    },
+    {
+      "id": "threat-hunting-c",
+      "label": "Threat Hunting C",
+      "group": "Threat Hunting",
+      "suites": [
+        "security-persona-matrix"
+      ],
+      "datasetIds": [
+        "threat-hunting-c"
+      ]
+    },
+    {
+      "id": "detection-rule-edit-a",
+      "label": "Detection Rules A",
+      "group": "Detection Rules",
+      "suites": [
+        "security-persona-matrix"
+      ],
+      "datasetIds": [
+        "detection-rule-edit-a"
+      ]
+    },
+    {
+      "id": "detection-rule-edit-b",
+      "label": "Detection Rules B",
+      "group": "Detection Rules",
+      "suites": [
+        "security-persona-matrix"
+      ],
+      "datasetIds": [
+        "detection-rule-edit-b"
+      ]
+    },
+    {
+      "id": "detection-rule-edit-c",
+      "label": "Detection Rules C",
+      "group": "Detection Rules",
+      "suites": [
+        "security-persona-matrix"
+      ],
+      "datasetIds": [
+        "detection-rule-edit-c"
+      ]
+    },
+    {
+      "id": "workflow-authoring-a",
+      "label": "Workflow Authoring A",
+      "group": "Workflow Authoring",
+      "suites": [
+        "security-persona-matrix"
+      ],
+      "datasetIds": [
+        "workflow-authoring-a"
+      ]
+    },
+    {
+      "id": "workflow-authoring-b",
+      "label": "Workflow Authoring B",
+      "group": "Workflow Authoring",
+      "suites": [
+        "security-persona-matrix"
+      ],
+      "datasetIds": [
+        "workflow-authoring-b"
+      ]
+    },
+    {
+      "id": "workflow-authoring-c",
+      "label": "Workflow Authoring C",
+      "group": "Workflow Authoring",
+      "suites": [
+        "security-persona-matrix"
+      ],
+      "datasetIds": [
+        "workflow-authoring-c"
+      ]
+    },
+    {
+      "id": "workflow-execution-a",
+      "label": "Triggering Workflows A",
+      "group": "Triggering Workflows",
+      "suites": [
+        "security-persona-matrix"
+      ],
+      "datasetIds": [
+        "workflow-execution-a"
+      ]
+    },
+    {
+      "id": "workflow-execution-b",
+      "label": "Triggering Workflows B",
+      "group": "Triggering Workflows",
+      "suites": [
+        "security-persona-matrix"
+      ],
+      "datasetIds": [
+        "workflow-execution-b"
+      ]
+    },
+    {
+      "id": "workflow-execution-c",
+      "label": "Triggering Workflows C",
+      "group": "Triggering Workflows",
+      "suites": [
+        "security-persona-matrix"
+      ],
+      "datasetIds": [
+        "workflow-execution-c"
+      ]
+    },
+    {
+      "id": "multi-step-a",
+      "label": "Multi-Step Executions A",
+      "group": "Multi-Step Executions",
+      "suites": [
+        "security-persona-matrix"
+      ],
+      "datasetIds": [
+        "multi-step-a"
+      ]
+    },
+    {
+      "id": "multi-step-b",
+      "label": "Multi-Step Executions B",
+      "group": "Multi-Step Executions",
+      "suites": [
+        "security-persona-matrix"
+      ],
+      "datasetIds": [
+        "multi-step-b"
+      ]
+    },
+    {
+      "id": "multi-step-c",
+      "label": "Multi-Step Executions C",
+      "group": "Multi-Step Executions",
+      "suites": [
+        "security-persona-matrix"
+      ],
+      "datasetIds": [
+        "multi-step-c"
+      ]
+    }
+  ],
+  "composites": [],
+  "models": [
+    {
+      "id": "anthropic-claude-4.5-haiku",
+      "label": "Claude Haiku 4.5",
+      "openSource": false
+    },
+    {
+      "id": "anthropic-claude-4.5-opus",
+      "label": "Anthropic claude 4.5 opus",
+      "openSource": false
+    },
+    {
+      "id": "anthropic-claude-4.5-sonnet",
+      "label": "Anthropic claude 4.5 sonnet",
+      "openSource": false
+    },
+    {
+      "id": "anthropic-claude-4.6-opus",
+      "label": "Anthropic claude 4.6 opus",
+      "openSource": false
+    },
+    {
+      "id": "anthropic-claude-4.6-sonnet",
+      "label": "Claude Sonnet 4.6",
+      "openSource": false
+    },
+    {
+      "id": "anthropic-claude-4.7-opus",
+      "label": "Anthropic claude 4.7 opus",
+      "openSource": false
+    },
+    {
+      "id": "anthropic-claude-4.8-opus",
+      "label": "Claude Opus 4.8",
+      "openSource": false
+    },
+    {
+      "id": "anthropic-claude-5-sonnet",
+      "label": "Claude Sonnet 5",
+      "openSource": false
+    },
+    {
+      "id": "deepseek/deepseek-v4-pro-0813",
+      "label": "Deepseek v4 pro 0813",
+      "openSource": true
+    },
+    {
+      "id": "eis-anthropic-claude-4-5-haiku",
+      "label": "Anthropic claude 4 5 haiku",
+      "openSource": false
+    },
+    {
+      "id": "eis-anthropic-claude-4-5-opus",
+      "label": "Anthropic claude 4 5 opus",
+      "openSource": false
+    },
+    {
+      "id": "eis-anthropic-claude-4-6-opus",
+      "label": "Anthropic claude 4 6 opus",
+      "openSource": false
+    },
+    {
+      "id": "eis-anthropic-claude-4-6-sonnet",
+      "label": "Anthropic claude 4 6 sonnet",
+      "openSource": false
+    },
+    {
+      "id": "eis-anthropic-claude-4-7-opus",
+      "label": "Anthropic claude 4 7 opus",
+      "openSource": false
+    },
+    {
+      "id": "eis-anthropic-claude-4-8-opus",
+      "label": "Anthropic claude 4 8 opus",
+      "openSource": false
+    },
+    {
+      "id": "eis-anthropic-claude-5-sonnet",
+      "label": "Anthropic claude 5 sonnet",
+      "openSource": false
+    },
+    {
+      "id": "eis-google-gemini-3-0-flash",
+      "label": "Google gemini 3 0 flash",
+      "openSource": false
+    },
+    {
+      "id": "eis-google-gemini-3-1-pro",
+      "label": "Google gemini 3 1 pro",
+      "openSource": false
+    },
+    {
+      "id": "eis-openai-gpt-5-2",
+      "label": "Openai gpt 5 2",
+      "openSource": false
+    },
+    {
+      "id": "eis-openai-gpt-5-4",
+      "label": "Openai gpt 5 4",
+      "openSource": false
+    },
+    {
+      "id": "eis-openai-gpt-5-4-mini",
+      "label": "Openai gpt 5 4 mini",
+      "openSource": false
+    },
+    {
+      "id": "eis-openai-gpt-5-4-nano",
+      "label": "Openai gpt 5 4 nano",
+      "openSource": false
+    },
+    {
+      "id": "eis-openai-gpt-5-5",
+      "label": "Openai gpt 5 5",
+      "openSource": false
+    },
+    {
+      "id": "eis-openai-gpt-oss-120b",
+      "label": "Openai gpt oss 120b",
+      "openSource": true
+    },
+    {
+      "id": "google-gemini-2.5-flash",
+      "label": "Google gemini 2.5 flash",
+      "openSource": false
+    },
+    {
+      "id": "google-gemini-2.5-pro",
+      "label": "Google gemini 2.5 pro",
+      "openSource": false
+    },
+    {
+      "id": "google-gemini-3.0-flash",
+      "label": "Google gemini 3.0 flash",
+      "openSource": false
+    },
+    {
+      "id": "google-gemini-3.1-flash-lite",
+      "label": "Google gemini 3.1 flash lite",
+      "openSource": false
+    },
+    {
+      "id": "google-gemini-3.1-pro",
+      "label": "Gemini 3.1 Pro",
+      "openSource": false
+    },
+    {
+      "id": "google-gemini-3.5-flash",
+      "label": "Google gemini 3.5 flash",
+      "openSource": false
+    },
+    {
+      "id": "openai-gpt-5.2",
+      "label": "Openai gpt 5.2",
+      "openSource": false
+    },
+    {
+      "id": "openai-gpt-5.4",
+      "label": "GPT-5.4",
+      "openSource": false
+    },
+    {
+      "id": "openai-gpt-5.4-mini",
+      "label": "GPT-5.4 Mini",
+      "openSource": false
+    },
+    {
+      "id": "openai-gpt-5.4-nano",
+      "label": "GPT-5.4 Nano",
+      "openSource": false
+    },
+    {
+      "id": "openai-gpt-5.5",
+      "label": "GPT-5.5",
+      "openSource": false
+    },
+    {
+      "id": "openai-gpt-oss-120b",
+      "label": "Openai gpt oss 120b",
+      "openSource": true
+    },
+    {
+      "id": "openai/gpt-5.6-sol",
+      "label": "Gpt 5.6 sol",
+      "openSource": false
+    },
+    {
+      "id": "qwen/qwen3.8-27b",
+      "label": "Qwen3.8 27b",
+      "openSource": true
+    },
+    {
+      "id": "qwen3.8-27b",
+      "label": "Qwen3.8 27b",
+      "openSource": true
+    },
+    {
+      "id": "selfhost-qwen38",
+      "label": "Selfhost qwen38",
+      "openSource": true
+    },
+    {
+      "id": "z-ai/glm-5.3-flash",
+      "label": "Glm 5.3 flash",
+      "openSource": true
+    }
+  ]
+}

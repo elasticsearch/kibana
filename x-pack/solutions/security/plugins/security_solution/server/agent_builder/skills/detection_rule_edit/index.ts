@@ -196,6 +196,7 @@ Checklist before finishing the answer:
 - [ ] Did I run \`security.run_rule_preview\` after creating or modifying the rule query or schedule?`
     : ''
 }
+- [ ] Did I end with a user-facing summary of what was created or changed — what the rule detects, its severity, and MITRE mapping? NEVER finish the turn on a tool call: after the last tool result, always write the closing message for the user.
 
 ---
 

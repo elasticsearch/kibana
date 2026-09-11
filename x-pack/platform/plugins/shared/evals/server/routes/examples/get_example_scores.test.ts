@@ -49,12 +49,12 @@ describe('GET /internal/evals/examples/{exampleId}/scores', () => {
     return { handler, context, evaluationScoreService, logger };
   };
 
-  const makeRequest = (exampleId = 'example-123') =>
+  const makeRequest = (exampleId = 'example-123', query: Record<string, string> = {}) =>
     httpServerMock.createKibanaRequest({
       method: 'get',
       path: EVALS_EXAMPLE_SCORES_URL.replace('{exampleId}', exampleId),
       params: { exampleId },
-      query: {},
+      query,
     });
 
   it('uses the correct query parameters', async () => {
@@ -83,6 +83,33 @@ describe('GET /internal/evals/examples/{exampleId}/scores', () => {
 
     expect(evaluationScoreService.search).toHaveBeenCalledWith(
       expect.objectContaining({ _source_excludes: UNBOUNDED_SCORE_FIELDS })
+    );
+  });
+
+  it('passes execution_id and model_id query params into the ES query', async () => {
+    const { handler, context, evaluationScoreService } = setup();
+    evaluationScoreService.search.mockResolvedValueOnce({ hits: { hits: [] } } as any);
+
+    await handler(
+      context,
+      makeRequest('example-123', { execution_id: 'run-abc', model_id: 'openai-gpt-5.4' }),
+      kibanaResponseFactory
+    );
+
+    expect(evaluationScoreService.search).toHaveBeenCalledWith(
+      expect.objectContaining({
+        query: {
+          bool: {
+            must: [
+              { term: { 'example.id': 'example-123' } },
+              { term: { 'metadata.execution_id': 'run-abc' } },
+              { term: { 'task.model.id': 'openai-gpt-5.4' } },
+              buildSpaceFilter('default'),
+            ],
+          },
+        },
+        size: 10000,
+      })
     );
   });
 

@@ -6,7 +6,7 @@
  */
 
 import type { Client as EsClient } from '@elastic/elasticsearch';
-import { createTraceBasedEvaluator, type Evaluator } from '@kbn/evals';
+import { createTraceBasedEvaluator, TRACE_INDEX_PATTERN, type Evaluator } from '@kbn/evals';
 import type { ToolingLog } from '@kbn/tooling-log';
 
 const VALID_SKILL_NAME = /^[a-zA-Z0-9_-]+$/;
@@ -32,7 +32,7 @@ export function createSecuritySkillInvocationEvaluator({
     config: {
       name: `Skill Invoked (${skillName})`,
       direction: 'maximize',
-      buildQuery: (traceId) => `FROM traces-*
+      buildQuery: (traceId) => `FROM ${TRACE_INDEX_PATTERN}
 | WHERE trace.id == "${traceId}"
 | STATS
   total_spans = COUNT(*),

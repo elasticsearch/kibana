@@ -55,12 +55,21 @@ export const registerGetExampleScoresRoute = ({
       async (context, request, response) => {
         try {
           const { exampleId } = request.params;
-          const { dataset_id: datasetId } = request.query;
+          const {
+            dataset_id: datasetId,
+            execution_id: executionId,
+            model_id: modelId,
+          } = request.query;
           const evalsContext = await context.evals;
           const spaceId = getSpaceId ? await getSpaceId(request) : DEFAULT_SPACE_ID;
 
           const searchResponse = await evalsContext.evaluationScoreService.search({
-            query: buildExampleScoresQuery(exampleId, { spaceId, datasetId }),
+            query: buildExampleScoresQuery(exampleId, {
+              spaceId,
+              datasetId,
+              executionId,
+              modelId,
+            }),
             sort: EXAMPLE_SCORES_SORT_ORDER,
             size: MAX_SCORES_PER_QUERY,
             _source_excludes: UNBOUNDED_SCORE_FIELDS,

@@ -61,7 +61,9 @@ Follow these steps rigorously:
 7.  Enforce Strict Phrasing for Procedural Steps: For claims that describe specific UI elements or actions, the agent's wording must be an exact match or very close to the `[Ground Truth Response]`. Using a functionally different synonym should be marked as `CONTRADICTED`. For example, if the ground truth says "click the `Apply` button to see a preview," an agent claiming "click the `Save` button to see a preview" is a contradiction, as `Apply` and `Save` often have distinct functions in a user interface.
 
 [OUTPUT FORMAT]
-Your final output MUST be a single, valid JSON object. Do not include any text or explanations outside of this JSON object.
+Your final output MUST be a single tool call to `analyze` whose arguments are a single, valid JSON object matching the schema EXACTLY. Do not include any text or explanations outside of this tool call.
+
+CRITICAL: the `summary` argument MUST be a JSON OBJECT with exactly three string fields (`factual_accuracy_summary`, `relevance_summary`, `sequence_accuracy_summary`) — never a free-text string. The `analysis` argument MUST be an array of claim objects. Use ONLY the field names and enum values shown below; any other key or value makes the whole evaluation invalid.
 
 [JSON STRUCTURE]
 

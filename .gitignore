@@ -216,3 +216,6 @@ src/platform/plugins/shared/workflows_execution_engine/docs/parallel_step_p1_sco
 src/platform/plugins/shared/workflows_execution_engine/docs/parallel_step_nested_flow_control_tradeoff.md
 
 .ralph/
+
+# Sweep host credentials — secret-bearing, never commit
+scripts/orca_vm/*.env

@@ -21,6 +21,19 @@ type HttpHandlerArgs =
  * Creates a function that matches the HttpHandler interface from Core's
  * API, using the KbnClient from @kbn/kbn-client
  */
+/**
+ * Combine an optional caller signal with an optional timeout signal so an abort from
+ * either one takes effect. Picking one (`a || b`) silently disables the other.
+ */
+function combineSignals(
+  callerSignal: AbortSignal | null | undefined,
+  timeoutSignal: AbortSignal | undefined
+): AbortSignal | undefined {
+  if (!callerSignal) return timeoutSignal;
+  if (!timeoutSignal) return callerSignal;
+  return AbortSignal.any([callerSignal, timeoutSignal]);
+}
+
 export function httpHandlerFromKbnClient({
   kbnClient,
   log,
@@ -64,7 +77,16 @@ export function httpHandlerFromKbnClient({
     const finalHeaders = Object.keys(nextHeaders).length ? nextHeaders : undefined;
 
     const maxRetries = Number(process.env.KBN_EVALS_HTTP_RETRIES ?? '0') || 0;
-    const retryStatuses = new Set([429, 503, 504]);
+    // 500 belongs here: EIS surfaces transient upstream provider faults as a
+    // Kibana 500 ("Received a server error status code for request from inference
+    // entity id [...] status [500]"), not a 502/503. Observed 2026-09-02: a
+    // provider-side blip failed 21/21 examples on two independent VMs at the same
+    // repetition and discarded two good repetitions with them. These are retryable
+    // by nature — a non-retryable 500 just fails again and costs one extra call.
+    const retryStatuses = new Set([429, 500, 502, 503, 504]);
+    // Transport-level deaths, which arrive with no HTTP status at all.
+    const RETRYABLE_TRANSPORT_ERRORS =
+      /fetch failed|aborted|AbortError|ECONNRESET|ECONNREFUSED|ETIMEDOUT|EPIPE|EAI_AGAIN|socket hang up|other side closed/i;
 
     async function sleep(ms: number) {
       await new Promise((r) => setTimeout(r, ms));
@@ -94,9 +116,31 @@ export function httpHandlerFromKbnClient({
       return seconds * 1000;
     }
 
+    // A hung endpoint is worse than a failing one: retries need a request that
+    // FAILS, and a converse call that never returns just parks the worker in
+    // ep_poll forever. Observed on 2026-08-29: a glm-5-2 run sat 45 minutes with
+    // 4 seconds of CPU and six open sockets while /api/status still answered 200.
+    // Bound each attempt so a dead endpoint becomes a retryable failure. Set it
+    // ABOVE the slowest legitimate call: golden shows a real glm-5-2 example at
+    // 1198s, so too tight a bound aborts healthy work and the retry aborts again.
+    //
+    // Default to a bound rather than 0. With no bound no AbortController is created,
+    // so nothing can ever abort and attempt 4 parks forever: measured 2026-09-02 at
+    // concurrency 1, 2 and 5 alike (Kibana 0.0% CPU, zero established sockets),
+    // which is what ruled concurrency out as the cause.
+    const DEFAULT_REQUEST_TIMEOUT_MS = 1_500_000;
+    const rawTimeout = process.env.KBN_EVALS_HTTP_TIMEOUT_MS;
+    const requestTimeoutMs =
+      rawTimeout === undefined || rawTimeout === ''
+        ? DEFAULT_REQUEST_TIMEOUT_MS
+        : Number(rawTimeout) || 0;
     let lastError: unknown;
 
     for (let attempt = 0; attempt <= maxRetries; attempt++) {
+      const timeoutController = requestTimeoutMs > 0 ? new AbortController() : undefined;
+      const timeoutHandle = timeoutController
+        ? setTimeout(() => timeoutController.abort(), requestTimeoutMs)
+        : undefined;
       try {
         const response = await kbnClient.request({
           path: options.path,
@@ -105,10 +149,14 @@ export function httpHandlerFromKbnClient({
           query,
           responseType: rawResponse ? 'stream' : undefined,
           headers: finalHeaders,
-          signal: signal || undefined,
+          // Compose rather than choose: `signal || timeoutController?.signal` silently
+          // drops the timeout the moment a caller supplies its own signal, leaving the
+          // abort timer firing into nothing and restoring the unbounded hang.
+          signal: combineSignals(signal, timeoutController?.signal),
           // We implement retries here so we can retry only on specific status codes.
           retries: 0,
         });
+        if (timeoutHandle) clearTimeout(timeoutHandle);
         // success
         if (asResponse) {
           // `HttpResponse.request` is required by Core's type. We don't have access to undici's
@@ -136,14 +184,29 @@ export function httpHandlerFromKbnClient({
         }
         return response.data as any;
       } catch (err) {
+        if (timeoutHandle) clearTimeout(timeoutHandle);
         // `kbnClient.request` only ever throws `KbnClientRequesterError`.
         const error = err as KbnClientRequesterError;
         const status = error.status;
 
         lastError = error;
 
+        // A dead transport carries no HTTP status: kbnClient surfaces it as
+        // `Status: N/A, Cause: fetch failed` (undici) or a bare socket errno.
+        // Those are exactly the blips a long sweep must survive -- glm-5-2 lost
+        // 19 of 21 examples 58 minutes in when Kibana stopped answering and
+        // every remaining example failed this way. Retry them like a 503, but
+        // stay narrow: a status-less TypeError from our own code is a bug, not
+        // a blip, and must still fail fast.
+        const transportCause = `${error.message ?? ''} ${
+          (error as { cause?: { code?: string; message?: string } }).cause?.code ?? ''
+        } ${(error as { cause?: { message?: string } }).cause?.message ?? ''}`;
+        const isTransportFailure =
+          typeof status !== 'number' && RETRYABLE_TRANSPORT_ERRORS.test(transportCause);
+
         const shouldRetry =
-          attempt < maxRetries && typeof status === 'number' && retryStatuses.has(status);
+          attempt < maxRetries &&
+          ((typeof status === 'number' && retryStatuses.has(status)) || isTransportFailure);
 
         if (!shouldRetry) {
           throw error;
@@ -154,17 +217,32 @@ export function httpHandlerFromKbnClient({
           parseRetryAfterMsFromMessage(error.message);
 
         // Exponential backoff (1s, 2s, 4s, ...) with jitter, but never sooner than retry-after.
+        //
+        // Cap the growth, not the patience: an uncapped 2^attempt reaches 8.5
+        // minutes by attempt 6, but a floor that is too eager is worse. Measured
+        // 2026-09-06 on sweep-1788696599-g53: Kibana went unreachable and
+        // examples 3 and 4 burned all four attempts inside SEVEN SECONDS
+        // (1s + 2s + 4s), losing two examples of a shard whose examples cost
+        // ~5 minutes each. The endpoint answered 200 again minutes later, so the
+        // outage outlived the retry window by orders of magnitude. Retry patience
+        // must be proportional to the cost of the work it protects, so hold a
+        // floor of 30s once the cheap early attempts are exhausted.
         const baseBackoffMs = 1000 * Math.pow(2, attempt);
-        const baseDelayMs = retryAfterMs ? Math.max(baseBackoffMs, retryAfterMs) : baseBackoffMs;
+        const patientBackoffMs = attempt >= 2 ? Math.max(baseBackoffMs, 30_000) : baseBackoffMs;
+        const baseDelayMs = retryAfterMs
+          ? Math.max(patientBackoffMs, retryAfterMs)
+          : patientBackoffMs;
         const jitterMs = Math.floor(
           Math.random() * Math.min(1000, Math.max(100, baseDelayMs * 0.15))
         );
         const delayMs = baseDelayMs + jitterMs;
 
         log.warning(
-          `HTTP ${status} from Kibana; retrying in ${Math.round(delayMs / 1000)}s (attempt ${
-            attempt + 1
-          }/${maxRetries + 1})`
+          `${
+            typeof status === 'number' ? `HTTP ${status}` : 'Transport failure'
+          } from Kibana; retrying in ${Math.round(delayMs / 1000)}s (attempt ${attempt + 1}/${
+            maxRetries + 1
+          })`
         );
         await sleep(delayMs);
       }

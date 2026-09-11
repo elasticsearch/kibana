@@ -76,6 +76,9 @@ export type {
 export type { DefaultEvaluators, EvaluatorKind, ReportDisplayOptions } from './src/types';
 export type { Direction } from '@kbn/evals-common';
 export type { EvaluationCriterion, EvaluationCriterionStructured } from './src/evaluators/criteria';
+// Exposed so judge-replay tooling can rebuild a suite's criteria evaluator
+// outside an eval run, where `DefaultEvaluators` is not constructed.
+export { createCriteriaEvaluator } from './src/evaluators/criteria';
 export { createPlaywrightEvalsConfig } from './src/config/create_playwright_eval_config';
 export type {
   Example,
@@ -91,14 +94,20 @@ export type {
   OnExperimentStart,
 } from './src/types';
 export { KibanaEvalsClient } from './src/kibana_evals_executor/client';
-export { createQuantitativeCorrectnessEvaluators } from './src/evaluators/correctness';
+export {
+  createQuantitativeCorrectnessEvaluators,
+  createCorrectnessAnalysisEvaluator,
+} from './src/evaluators/correctness';
 export { LlmCorrectnessEvaluationPrompt } from './src/evaluators/correctness/prompt';
 export type { CorrectnessAnalysis } from './src/evaluators/correctness/types';
 export {
   calculateFactualScore,
   calculateRelevanceScore,
 } from './src/evaluators/correctness/scoring';
-export { createQuantitativeGroundednessEvaluator } from './src/evaluators/groundedness';
+export {
+  createQuantitativeGroundednessEvaluator,
+  createGroundednessAnalysisEvaluator,
+} from './src/evaluators/groundedness';
 export type { EvaluationDataset, EvaluationWorkerFixtures, EvaluationReport } from './src/types';
 export { withEvaluatorSpan, withTaskSpan, getCurrentTraceId } from './src/utils/tracing';
 export { withRetry, type RetryOptions } from './src/utils/retry_utils';
@@ -125,11 +134,20 @@ export type {
 export { createTable } from './src/utils/reporting/report_table';
 export {
   EvalsClient,
+  MAX_LIST_EXPERIMENTS,
   type EvaluatorStats,
   type ExperimentStats,
   type UpsertDatasetInput,
   type DatasetWithId,
+  type ListExperimentsFilters,
 } from './src/utils/evals_client';
+export {
+  createEvaluationsEvalsClient,
+  getEvaluationsKbnClient,
+  DEFAULT_EVALUATIONS_KBN_URL,
+  type CreateEvaluationsEvalsClientParams,
+} from './src/utils/evaluations_kbn_client';
+export { envFromDatasetsProfile } from './src/cli/profiles';
 export { EvaluatorApiClient, type MapContextFn } from './src/utils/evaluator_api_client';
 export { getBuildkiteCiMetadataFromEnv, type BuildkiteCiMetadata } from './src/utils/ci_metadata';
 export { buildIngestRequest } from './src/utils/build_ingest_request';
@@ -152,6 +170,7 @@ export {
   createSkillInvocationEvaluator,
   createChatCallsEvaluator,
   createToolCallsEvaluator,
+  TRACE_INDEX_PATTERN,
 } from './src/evaluators/trace_based';
 export { getGitMetadata, type GitMetadata } from './src/utils/git_metadata';
 

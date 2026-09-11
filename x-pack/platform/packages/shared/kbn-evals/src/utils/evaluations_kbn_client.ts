@@ -10,6 +10,42 @@ import type { KbnClient } from '@kbn/kbn-client';
 import { KbnClient as TestKbnClient } from '@kbn/kbn-client';
 import { wrapKbnClientWithRetries } from './kbn_client_with_retries';
 
+import { EvalsClient } from './evals_client';
+
+/**
+ * Default target used when no evaluations Kibana URL is provided. Keeps
+ * `@kbn/kbn-client` an implementation detail of `@kbn/evals` so callers (e.g.
+ * `@kbn/evals-extensions`) can build a client without depending on it directly.
+ */
+export const DEFAULT_EVALUATIONS_KBN_URL = 'http://elastic:changeme@localhost:5601';
+
+export interface CreateEvaluationsEvalsClientParams {
+  log: ToolingLog;
+  /** Evaluations Kibana URL (falls back to {@link DEFAULT_EVALUATIONS_KBN_URL}). */
+  url?: string;
+  /** API key used to authenticate against a non-local target. */
+  apiKey?: string;
+}
+
+/**
+ * Thin factory wiring the default {@link TestKbnClient} through
+ * {@link getEvaluationsKbnClient} (URL/API-key/version/retry handling).
+ */
+export function createEvaluationsEvalsClient({
+  log,
+  url,
+  apiKey,
+}: CreateEvaluationsEvalsClientParams): EvalsClient {
+  const defaultKbnClient = new TestKbnClient({ log, url: DEFAULT_EVALUATIONS_KBN_URL });
+  const kbnClient = getEvaluationsKbnClient({
+    kbnClient: defaultKbnClient,
+    log,
+    evaluationsKbnUrl: url,
+    evaluationsKbnApiKey: apiKey,
+  });
+  return new EvalsClient(kbnClient, log);
+}
+
 export interface GetEvaluationsKbnClientParams {
   kbnClient: KbnClient;
   log: ToolingLog;

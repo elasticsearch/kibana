@@ -48,6 +48,7 @@ interface VaultConfig {
   evaluationsKbn?: { url?: string; apiKey?: string };
   tracingEs?: { url?: string; apiKey?: string };
   tracingExporters?: unknown;
+  agentBuilderTracingExporters?: unknown;
   gcsDatasetAccessCredentials?: unknown;
 }
 
@@ -154,6 +155,19 @@ export const envFromExportProfile = (
 
   const next: Record<string, string> = {};
 
+  // Score ingest targets EVAL_KBN_*, which otherwise only the datasets profile
+  // sets. Without this an explicit `--export-profile <remote>` silently leaves
+  // scores pointed at the default local Kibana, so a run reports success while
+  // the intended export target receives nothing.
+  if (cfg.evaluationsKbn) {
+    if (isNonEmptyString(cfg.evaluationsKbn.url) && !isPlaceholder(cfg.evaluationsKbn.url)) {
+      next.EVAL_KBN_URL = cfg.evaluationsKbn.url;
+    }
+    if (isNonEmptyString(cfg.evaluationsKbn.apiKey) && !isPlaceholder(cfg.evaluationsKbn.apiKey)) {
+      next.EVAL_KBN_API_KEY = cfg.evaluationsKbn.apiKey;
+    }
+  }
+
   if (isNonEmptyString(cfg.tracingEs?.url) && !isPlaceholder(cfg.tracingEs.url)) {
     next.TRACING_ES_URL = cfg.tracingEs.url;
   }
@@ -165,6 +179,17 @@ export const envFromExportProfile = (
     next.TRACING_EXPORTERS = JSON.stringify(cfg.tracingExporters);
   } else if (options?.defaultTracingExporters) {
     next.TRACING_EXPORTERS = JSON.stringify([{ http: { url: 'http://localhost:4318/v1/traces' } }]);
+  }
+
+  // Agent Builder runs its own tracer provider (see register_tracing.ts); its
+  // spans are what trace-based evaluators query and they do NOT flow through
+  // telemetry.tracing.exporters. Kept separate so the built-in local-ES
+  // exporter stays intact and this only ADDS a remote destination.
+  if (
+    Array.isArray(cfg.agentBuilderTracingExporters) &&
+    cfg.agentBuilderTracingExporters.length > 0
+  ) {
+    next.AGENT_BUILDER_TRACING_EXPORTERS = JSON.stringify(cfg.agentBuilderTracingExporters);
   }
 
   maybeSetGcsCredentialsEnv(cfg, next);

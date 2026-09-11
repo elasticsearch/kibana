@@ -45,11 +45,25 @@ describe('withRetry', () => {
     expect(fn).toHaveBeenCalledTimes(2);
   });
 
-  it('does NOT retry on HTTP 500 (treated as deterministic in this stack)', async () => {
+  it('retries an EIS-shaped HTTP 500 (transient upstream provider fault)', async () => {
+    // Policy change 2026-09-02, overturning "500 is deterministic in this stack".
+    // EIS wraps transient upstream provider faults as a Kibana 500, not a 502/503:
+    //   "Received a server error status code for request from inference entity id
+    //    [.anthropic-claude-4.7-opus-chat_completion] status [500]"
+    // Observed: 27 such 500s per model failed 21/21 examples on two independent
+    // VMs at the same repetition, discarding two good repetitions with them.
+    // A truly deterministic 500 costs one extra call; a transient one cost a sweep.
+    const fn = jest.fn().mockRejectedValueOnce(makeStatusError(500)).mockResolvedValueOnce('ok');
+    const result = await withRetry(fn, fastRetryOptions);
+    expect(result).toBe('ok');
+    expect(fn).toHaveBeenCalledTimes(2);
+  });
+
+  it('gives up on a persistent HTTP 500 instead of retrying forever', async () => {
     const err = makeStatusError(500);
     const fn = jest.fn().mockRejectedValue(err);
-    await expect(withRetry(fn, fastRetryOptions)).rejects.toBe(err);
-    expect(fn).toHaveBeenCalledTimes(1);
+    await expect(withRetry(fn, { ...fastRetryOptions, maxAttempts: 3 })).rejects.toBe(err);
+    expect(fn).toHaveBeenCalledTimes(3);
   });
 
   it('does NOT retry on HTTP 413 (payload too large)', async () => {

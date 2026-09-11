@@ -7,6 +7,7 @@
 
 import type { KbnClient } from '@kbn/kbn-client';
 import type { ToolingLog } from '@kbn/tooling-log';
+import { agentBuilderDefaultAgentId } from '@kbn/agent-builder-common';
 
 /**
  * Seeds two real, registered Agent Builder tools (`virustotal_lookup` and
@@ -31,8 +32,6 @@ const AGENT_BUILDER_TOOLS_HEADERS = {
   'elastic-api-version': ELASTIC_API_VERSION,
 } as const;
 
-const ALERT_INDEX = '.internal.alerts-security.alerts-default-000001';
-
 export const PERSONA_MATRIX_TOOL_IDS = ['virustotal_lookup', 'on_call_lookup'] as const;
 
 interface SeedToolsOptions {
@@ -45,6 +44,7 @@ async function createToolIfMissing({
   log,
   body,
 }: SeedToolsOptions & { body: Record<string, unknown> }): Promise<void> {
+  const toolPath = `/api/agent_builder/tools/${encodeURIComponent(String(body.id))}`;
   try {
     await kbnClient.request({
       method: 'POST',
@@ -54,12 +54,35 @@ async function createToolIfMissing({
     });
     log.info(`[persona-matrix] created tool '${body.id}'`);
   } catch (error) {
-    const status = (error as { status?: number })?.status;
-    if (status === 409) {
-      log.info(`[persona-matrix] tool '${body.id}' already exists, reusing`);
-      return;
+    const message = String((error as Error)?.message ?? error);
+    if (!/already exists/i.test(message)) {
+      throw error;
     }
-    throw error;
+    // Multi-model gate runs re-execute beforeAll per model worker against the
+    // same stack, so the tool can pre-date this call. Recover by reinstalling
+    // the CURRENT definition (delete-then-post); if the delete also fails,
+    // keep the stale-but-equivalent definition rather than failing the suite.
+    try {
+      await kbnClient.request({
+        method: 'DELETE',
+        path: toolPath,
+        headers: AGENT_BUILDER_TOOLS_HEADERS,
+      });
+      await kbnClient.request({
+        method: 'POST',
+        path: '/api/agent_builder/tools',
+        headers: AGENT_BUILDER_TOOLS_HEADERS,
+        body,
+      });
+      log.info(`[persona-matrix] removed stale tool '${body.id}', reinstalled`);
+    } catch (recoveryError) {
+      log.warning(
+        `[persona-matrix] tool '${body.id}' already exists and reinstall failed ` +
+          `(${String(
+            (recoveryError as Error)?.message ?? recoveryError
+          )}); keeping existing definition`
+      );
+    }
   }
 }
 
@@ -72,11 +95,22 @@ export async function seedPersonaMatrixTools({ kbnClient, log }: SeedToolsOption
       type: 'esql',
       description:
         'Look up a file hash, URL, or domain against VirusTotal threat intelligence to check ' +
-        'for known-malicious indicators. Use this to verify whether a given hash, URL, or ' +
+        'for known-malicious indicators. Returns the verdict (benign/malicious), detection ' +
+        'ratio, and classification. Use this to verify whether a given hash, URL, or ' +
         'domain has been flagged by security vendors.',
       tags: ['persona-matrix', 'threat-intel'],
       configuration: {
-        query: `FROM ${ALERT_INDEX} | WHERE kibana.alert.rule.name LIKE "*Chrysalis*" | KEEP kibana.alert.rule.name, kibana.alert.reason | LIMIT 10`,
+        // Queries the eval-seeded mock verdict index (see env_seeds.ts) so the
+        // tool returns a coherent VirusTotal-style answer without any network
+        // access or real VirusTotal subscription. `params` is REQUIRED by the
+        // esql tool schema (verified live: omitting it fails with "[params]:
+        // expected value of type [object] but got [undefined]"; a params entry
+        // not referenced by a {{placeholder}} fails with "Defined parameters
+        // not used in query"). The {{hash}} placeholder drives the input
+        // schema; params stays empty.
+        query:
+          'FROM ti-mock-default | WHERE threat_intel.indicator.value == "{{hash}}" ' +
+          '| KEEP threat_intel.verdict, threat_intel.detection_ratio, threat_intel.classification | LIMIT 5',
         params: {},
       },
     },
@@ -93,11 +127,51 @@ export async function seedPersonaMatrixTools({ kbnClient, log }: SeedToolsOption
         'on-call responder to own or escalate a security incident.',
       tags: ['persona-matrix', 'incident-response'],
       configuration: {
-        query: `FROM ${ALERT_INDEX} | WHERE kibana.alert.rule.name LIKE "*Chrysalis*" | KEEP kibana.alert.rule.name, kibana.alert.severity | LIMIT 10`,
+        // Queries the eval-seeded on-call schedule index (see env_seeds.ts A5).
+        // Previously this pointed at the alerts index, which has no responder
+        // fields — making workflow-execution-b structurally unanswerable.
+        query:
+          `FROM on-call-schedule | WHERE is_primary == true ` +
+          `| KEEP name, email, slack_handle, shift_start, shift_end | LIMIT 5`,
+        // esql tool schema requires `params` present (even empty) — omitting
+        // it fails validation with "expected value of type [object] but got
+        // [undefined]" (verified live).
         params: {},
       },
     },
   });
+}
+
+/**
+ * Attaches the seeded tools to the default agent's configuration.
+ *
+ * Creating a tool only puts it in the registry. `selectTools` (agent_builder
+ * server) exposes ONLY `agentConfiguration.tools` plus the hardcoded
+ * `defaultAgentToolIds` (all `platform.core.*`) — so a registry tool that is
+ * never attached is invisible to the model, and any example scoring
+ * "did it call virustotal_lookup" is structurally unanswerable. Verified live
+ * 2026-08-22: default agent ships `tools: []`, and every workflow-execution
+ * run scored ExpectedToolCalled=0 until this attach was added.
+ */
+export async function attachPersonaMatrixToolsToAgent({
+  kbnClient,
+  log,
+}: SeedToolsOptions): Promise<void> {
+  await kbnClient.request({
+    method: 'PUT',
+    path: `/api/agent_builder/agents/${agentBuilderDefaultAgentId}`,
+    headers: AGENT_BUILDER_TOOLS_HEADERS,
+    body: {
+      configuration: {
+        tools: [{ tool_ids: [...PERSONA_MATRIX_TOOL_IDS] }],
+      },
+    },
+  });
+  log.info(
+    `[persona-matrix] attached ${PERSONA_MATRIX_TOOL_IDS.join(
+      ', '
+    )} to '${agentBuilderDefaultAgentId}'`
+  );
 }
 
 export async function cleanupPersonaMatrixTools({

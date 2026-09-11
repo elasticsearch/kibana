@@ -36,8 +36,9 @@ describe('createTraceBasedEvaluator', () => {
       debug: jest.fn(),
     } as any;
 
-    // Longer than the factory's full 62s backoff, so the retry budget is always drained.
-    exhaustRetries = () => jest.advanceTimersByTimeAsync(300_000);
+    // Longer than the factory's full backoff (~515s with 8 retries, 5s min /
+    // 120s max), so the retry budget is always drained.
+    exhaustRetries = () => jest.advanceTimersByTimeAsync(600_000);
 
     mockConfig = {
       name: 'Test Evaluator',
@@ -203,6 +204,37 @@ describe('createTraceBasedEvaluator', () => {
     expect(result.score).toBeNull();
     expect(result.label).toBe('potentially_incomplete');
     expect(result.metadata).toEqual({ incomplete: true });
+  });
+
+  it('should not republish a rejected value as the retry fallback', async () => {
+    // The exact shape that published 25 fabricated `Tool Calls: 0` cells: TOOL spans are
+    // not indexed yet, so every attempt reads 0, `isResultValid` rejects all of them, and
+    // retries exhaust. The fallback must NOT resurrect the rejected 0 as a real score --
+    // an unscored cell is honest, a zero next to a trace full of tool calls is not.
+    const query = mockEsClient.esql.query as jest.Mock;
+    query.mockResolvedValue({
+      columns: [{ name: 'r', type: 'number' }],
+      values: [[0]],
+    });
+
+    const evaluator = createTraceBasedEvaluator({
+      traceEsClient: mockEsClient,
+      log: mockLog,
+      config: {
+        ...mockConfig,
+        isResultValid: (result) => result !== null && result > 0,
+      },
+    });
+
+    const promise = evaluateWith(evaluator, VALID_TRACE_ID);
+    await exhaustRetries();
+    const result = await promise;
+
+    // The rejected 0 must not survive as a score. With no validated value to fall back
+    // on, this is an honestly-unscored cell rather than `potentially_incomplete: 0`.
+    expect(result.score).not.toBe(0);
+    expect(result.score ?? null).toBeNull();
+    expect(result.label).toBe('error');
   });
 
   it('should not log an error when a usable result is still returned', async () => {

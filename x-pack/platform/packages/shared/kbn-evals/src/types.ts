@@ -181,6 +181,8 @@ export interface TaskRun {
   metadata: Example['metadata'];
   output: TaskOutput;
   traceId?: string | null;
+  /** Set when the task itself threw; evaluators are skipped for such runs. */
+  error?: string;
 }
 
 export interface EvaluationRun {

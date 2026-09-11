@@ -27,6 +27,20 @@ paths:
             minLength: 1
             maxLength: 1024
           description: Filter scores to a specific dataset. When omitted, scores from all datasets matching the example ID are returned.
+        - name: execution_id
+          in: query
+          required: false
+          schema:
+            type: string
+            maxLength: 1024
+          description: Filter by execution ID (the full composite execution identifier)
+        - name: model_id
+          in: query
+          required: false
+          schema:
+            type: string
+            maxLength: 256
+          description: Filter by task model ID
       responses:
         "200":
           description: Successful response

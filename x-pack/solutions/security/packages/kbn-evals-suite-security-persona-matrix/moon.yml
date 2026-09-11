@@ -20,11 +20,13 @@ dependsOn:
   - '@kbn/agent-builder-common'
   - '@kbn/core'
   - '@kbn/evals'
+  - '@kbn/evals-extensions'
   - '@kbn/evals-suite-attack-discovery'
   - '@kbn/scout'
   - '@kbn/security-evals-alerts-snapshot'
   - '@kbn/tooling-log'
   - '@kbn/kbn-client'
+  - '@kbn/evals-common'
 tags:
   - functional-tests
   - package
@@ -35,6 +37,7 @@ tags:
 fileGroups:
   src:
     - '**/*.ts'
+    - persona_matrix.config.json
     - '!target/**/*'
   jest-config:
     - jest.config.js

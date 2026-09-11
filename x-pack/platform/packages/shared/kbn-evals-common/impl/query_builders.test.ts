@@ -82,6 +82,18 @@ describe('query_builders', () => {
       expect(query.bool.must).toHaveLength(2);
       expect(query.bool.must[1]).toEqual(buildSpaceFilter('marketing'));
     });
+
+    it('adds execution and model filters when provided', () => {
+      const query = buildExampleScoresQuery('example-123', {
+        executionId: 'run-abc',
+        modelId: 'openai-gpt-5.4',
+      });
+      expect(query.bool.must).toEqual([
+        { term: { 'example.id': 'example-123' } },
+        { term: { 'metadata.execution_id': 'run-abc' } },
+        { term: { 'task.model.id': 'openai-gpt-5.4' } },
+      ]);
+    });
   });
 
   describe('buildDatasetExampleScoresQuery', () => {

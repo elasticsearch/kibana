@@ -22,23 +22,11 @@ export const goldenClusterPrivileges = {
         indices: [
           {
             names: [`${EvaluationIndices.SCORES}*`],
-            privileges: [
-              'auto_configure',
-              'create_index',
-              'create_doc',
-              'read',
-              'view_index_metadata',
-            ],
+            privileges: ['auto_configure', 'create_index', 'create', 'read', 'view_index_metadata'],
           },
           {
             names: ['traces-*'],
-            privileges: [
-              'auto_configure',
-              'create_index',
-              'create_doc',
-              'read',
-              'view_index_metadata',
-            ],
+            privileges: ['auto_configure', 'create_index', 'create', 'read', 'view_index_metadata'],
           },
           {
             names: [
@@ -49,7 +37,7 @@ export const goldenClusterPrivileges = {
             privileges: [
               'auto_configure',
               'create_index',
-              'create_doc',
+              'create',
               'read',
               'view_index_metadata',
               'delete',

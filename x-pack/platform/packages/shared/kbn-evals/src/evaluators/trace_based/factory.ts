@@ -21,6 +21,24 @@ interface EsqlResponse {
 // "no value" case distinct from a legitimate score.
 const NOT_REPORTED = Symbol('notReported');
 
+/**
+ * Index pattern every trace-based evaluator reads spans from.
+ *
+ * `traces-*` alone is not enough. On a remote tracing cluster the API key is
+ * granted on the datastream BACKING indices (`.ds-traces-generic*`,
+ * `.ds-traces-agent_builder*`), which `traces-*` does not match -- so the
+ * pattern resolves to zero authorized indices and ES|QL reports
+ * `Unknown column [trace.id]`. That reads like "this model emitted no spans"
+ * but means "this key may not see any index under that pattern", and it
+ * silently nulled every trace metric (Tool Calls, Latency, tokens,
+ * SkillInvoked) for runs pointed at the golden cluster.
+ *
+ * Both forms are listed so the evaluators work against a local Scout cluster
+ * (plain datastream name) and a remote one (backing indices) without knowing
+ * which they were handed.
+ */
+export const TRACE_INDEX_PATTERN = 'traces-*,.ds-traces-*';
+
 export interface TraceBasedEvaluatorConfig {
   name: string;
   buildQuery: (traceId: string) => string;
@@ -140,22 +158,38 @@ export function createTraceBasedEvaluator({
         }
 
         const result = extractResult(response);
-        lastResult = result;
 
         const valid = isResultValid ? isResultValid(result) : result !== null;
         if (!valid) {
+          // A value rejected by a custom `isResultValid` must not become the retry
+          // fallback below, which republishes the last value seen. Remembering it would
+          // resurrect exactly what validation rejected: a `Tool Calls: 0` produced by
+          // unindexed TOOL spans is indistinguishable from a real zero, and 25 published
+          // cells read `0` next to a trace that plainly shows tools running. An unscored
+          // cell is honest; a fabricated zero is not. A plain `null` (no custom validator)
+          // still records, so the existing `potentially_incomplete` path is unchanged.
+          if (!isResultValid) {
+            lastResult = result;
+          }
           throw new Error(`${name} result looks incomplete (value: ${result}), retrying`);
         }
+
+        lastResult = result;
 
         return result as number;
       }
 
       try {
         const score = await pRetry(fetchStats, {
-          retries: 5,
+          // The budget must exceed the OTel collector's flush lag (~3-7 min on
+          // sweep VMs): `Unknown column [trace.id]` means no traces-* index
+          // exists yet, and a 62s budget (5 x factor-2 retries) burns entirely
+          // inside that empty window, erroring every trace evaluator on
+          // otherwise healthy runs (observed on Azure shard 1/2, run 9).
+          retries: 8,
           factor: 2,
-          minTimeout: 2000,
-          maxTimeout: 60000,
+          minTimeout: 5000,
+          maxTimeout: 120000,
           onFailedAttempt: (error) => {
             log.debug(
               `${name} query failed on attempt ${error.attemptNumber}, ${error.retriesLeft} retries left (traceId: ${traceId}): ${error.message}`

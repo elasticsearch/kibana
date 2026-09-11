@@ -184,6 +184,8 @@ export class KibanaEvalsClient implements EvalsExecutorClient {
 
       const evaluationRuns: DatasetRunResult['evaluationRuns'] = [];
       const runs: DatasetRunResult['runs'] = {};
+      const erroredRuns: string[] = [];
+      const evaluatorAttempts = new Map<string, { errors: number; total: number }>();
 
       const runJobs: Array<Promise<void>> = [];
 
@@ -201,23 +203,51 @@ export class KibanaEvalsClient implements EvalsExecutorClient {
                 `🔧 Running task "${resolvedDataset.name}" on dataset "${datasetId}" (exampleIndex=${exampleIndex}, repetition=${rep})`
               );
 
-              const { taskOutput, traceId } = await withTaskSpan(
-                resolvedDataset.name,
-                {
-                  attributes: {
-                    'dataset.name': resolvedDataset.name,
-                    'dataset.id': datasetId,
+              const runTask = () =>
+                withTaskSpan(
+                  resolvedDataset.name,
+                  {
+                    attributes: {
+                      'dataset.name': resolvedDataset.name,
+                      'dataset.id': datasetId,
+                    },
                   },
-                },
-                async () => {
-                  const _traceId = getCurrentTraceId();
-                  const _taskOutput = await task(example);
-                  return {
-                    taskOutput: _taskOutput,
-                    traceId: _traceId,
-                  };
-                }
-              );
+                  async () => {
+                    const _traceId = getCurrentTraceId();
+                    const _taskOutput = await task(example);
+                    return {
+                      taskOutput: _taskOutput,
+                      traceId: _traceId,
+                    };
+                  }
+                );
+
+              let taskSpanResult: Awaited<ReturnType<typeof runTask>>;
+              try {
+                taskSpanResult = await runTask();
+              } catch (error) {
+                // One example failing (e.g. converse 500) must not abort the whole
+                // experiment: record the run as errored, skip its evaluators, and
+                // keep measuring the remaining examples. The aggregate check after
+                // all jobs complete still fails the run so this never goes green.
+                const message = error instanceof Error ? error.message : String(error);
+                this.options.log.error(
+                  `❌ Task failed on dataset "${datasetId}" (exampleIndex=${exampleIndex}, repetition=${rep}); continuing with remaining examples: ${message}`
+                );
+                runs[runKey] = {
+                  exampleIndex,
+                  repetition: rep,
+                  input: example.input,
+                  expected: example.output ?? null,
+                  metadata: example.metadata ?? {},
+                  output: null,
+                  traceId: null,
+                  error: message,
+                };
+                erroredRuns.push(`exampleIndex=${exampleIndex}, repetition=${rep}: ${message}`);
+                return;
+              }
+              const { taskOutput, traceId } = taskSpanResult;
 
               // Prefer the trace id the task itself surfaced (e.g. converse's response
               // trace_id) over the eval client's own task-span trace id. See #276308.
@@ -242,40 +272,67 @@ export class KibanaEvalsClient implements EvalsExecutorClient {
                   this.options.log.info(
                     `🧠 Evaluating run (exampleIndex=${exampleIndex}, repetition=${rep}) with evaluator "${evaluator.name}"`
                   );
-                  const { result, evaluatorTraceId } = await withEvaluatorSpan(
-                    evaluator.name,
-                    {},
-                    async () => {
-                      const _traceId = getCurrentTraceId();
-                      const _result = await evaluator.evaluate({
-                        input: example.input,
-                        output: {
-                          ...taskOutput,
-                          traceId: taskOrClientTraceId,
-                        },
-                        expected: example.output ?? null,
-                        metadata: example.metadata ?? {},
-                      });
-                      return {
-                        result: _result,
-                        evaluatorTraceId: _traceId,
-                      };
-                    }
-                  );
-                  this.options.log.info(
-                    `✅ Evaluator "${evaluator.name}" on run (exampleIndex=${exampleIndex}, repetition=${rep}) completed`
-                  );
-                  return {
-                    evaluatorName: evaluator.name,
-                    direction: evaluator.direction,
-                    result,
-                    evaluatorTraceId,
-                    kind: evaluator.kind,
-                    // Read after `evaluate` so evaluators that learn their model from
-                    // the `_evaluate` response have it by now.
-                    model: evaluator.getModel?.(),
-                    version: evaluator.getVersion?.(),
-                  };
+                  const attempts = evaluatorAttempts.get(evaluator.name) ?? { errors: 0, total: 0 };
+                  attempts.total += 1;
+                  evaluatorAttempts.set(evaluator.name, attempts);
+                  try {
+                    const { result, evaluatorTraceId } = await withEvaluatorSpan(
+                      evaluator.name,
+                      {},
+                      async () => {
+                        const _traceId = getCurrentTraceId();
+                        const _result = await evaluator.evaluate({
+                          input: example.input,
+                          output: {
+                            ...taskOutput,
+                            traceId: taskOrClientTraceId,
+                          },
+                          expected: example.output ?? null,
+                          metadata: example.metadata ?? {},
+                        });
+                        return {
+                          result: _result,
+                          evaluatorTraceId: _traceId,
+                        };
+                      }
+                    );
+                    this.options.log.info(
+                      `✅ Evaluator "${evaluator.name}" on run (exampleIndex=${exampleIndex}, repetition=${rep}) completed`
+                    );
+                    return {
+                      evaluatorName: evaluator.name,
+                      result,
+                      evaluatorTraceId,
+                      kind: evaluator.kind,
+                      direction: evaluator.direction,
+                      // Read after `evaluate` so evaluators that learn their model from
+                      // the `_evaluate` response have it by now.
+                      model: evaluator.getModel?.(),
+                      version: evaluator.getVersion?.(),
+                    };
+                  } catch (error) {
+                    // A single evaluator failing (e.g. an LLM judge's inference call
+                    // erroring out) must not take down the run's other measurements:
+                    // record an explicit error result so the gap is visible in the
+                    // exported scores instead of silently dropping the document.
+                    const message = error instanceof Error ? error.message : String(error);
+                    attempts.errors += 1;
+                    this.options.log.error(
+                      `❌ Evaluator "${evaluator.name}" failed on run (exampleIndex=${exampleIndex}, repetition=${rep}): ${message}`
+                    );
+                    return {
+                      evaluatorName: evaluator.name,
+                      result: {
+                        score: null,
+                        label: 'error',
+                        explanation: `Evaluator threw: ${message}`,
+                      },
+                      evaluatorTraceId: undefined,
+                      kind: evaluator.kind,
+                      model: evaluator.getModel?.(),
+                      version: evaluator.getVersion?.(),
+                    };
+                  }
                 })
               );
 
@@ -295,7 +352,7 @@ export class KibanaEvalsClient implements EvalsExecutorClient {
                   experimentRunId: runKey,
                   traceId: evaluatorTraceId,
                   exampleId: example.id,
-                  direction,
+                  direction: direction ?? 'neutral',
                   kind,
                   ...(model && { model }),
                 };
@@ -325,7 +382,6 @@ export class KibanaEvalsClient implements EvalsExecutorClient {
       }
 
       await Promise.all(runJobs);
-      this.options.log.info(`✅ Experiment ${experimentId} completed`);
 
       const result: DatasetRunResult = {
         id: experimentId,
@@ -343,6 +399,31 @@ export class KibanaEvalsClient implements EvalsExecutorClient {
       };
 
       this.datasetRunResults.push(result);
+
+      const fullyBrokenEvaluators = [...evaluatorAttempts.entries()]
+        .filter(([, { errors, total }]) => total > 0 && errors === total)
+        .map(([name]) => name);
+      if (erroredRuns.length > 0 || fullyBrokenEvaluators.length > 0) {
+        // Every completed measurement is recorded and exported by now; failing the
+        // experiment afterwards keeps errored examples visible instead of either
+        // aborting the whole run (previous behavior) or silently going green. An
+        // evaluator that failed on every single run is a broken instrument, not a
+        // measurement, so that fails the experiment too.
+        const details = [
+          ...erroredRuns.map((run) => `errored run: ${run}`),
+          ...fullyBrokenEvaluators.map(
+            (name) =>
+              `evaluator "${name}" failed on every run (broken instrument, not a measurement)`
+          ),
+        ];
+        throw new Error(
+          `Experiment "${experimentName}" finished with ${
+            details.length
+          } failure(s):\n${details.join('\n')}`
+        );
+      }
+
+      this.options.log.info(`✅ Experiment ${experimentId} completed`);
       return result;
     });
   }

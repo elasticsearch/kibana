@@ -257,15 +257,28 @@ export const resolveEvaluationConnectorId = async (
   const evaluationConnectorId =
     flagsReader.string('evaluation-connector-id') ?? process.env.EVAL_CONNECTOR_ID;
 
-  if (evaluationConnectorId) {
-    return evaluationConnectorId;
+  const resolved =
+    evaluationConnectorId ?? (isTTY() ? await promptForConnector(repoRoot, log) : undefined);
+
+  if (!resolved) {
+    throw createFlagError('EVAL_CONNECTOR_ID is required. Set --evaluation-connector-id or env.');
   }
 
-  if (isTTY()) {
-    return promptForConnector(repoRoot, log);
+  // Judged scores are only comparable across runs when the judge's weights and
+  // quantisation are pinned by the eval infra. Ad-hoc endpoints (LiteLLM
+  // aliases, HuggingFace repo paths, local 4-bit quants) have graded golden
+  // data before, which makes those scores unusable for ranking.
+  if (
+    (flagsReader.boolean('require-eis-judge') || process.env.EVAL_REQUIRE_EIS_JUDGE === 'true') &&
+    !isEisConnectorId(resolved)
+  ) {
+    throw createFlagError(
+      `Evaluation connector ${resolved} is not EIS-backed. Pass an eis-* connector, ` +
+        `or drop --require-eis-judge to allow an unpinned judge.`
+    );
   }
 
-  throw createFlagError('EVAL_CONNECTOR_ID is required. Set --evaluation-connector-id or env.');
+  return resolved;
 };
 
 const isEisConnectorId = (id: string): boolean => id.startsWith('eis-');
@@ -478,7 +491,12 @@ export const evalRunFlags: FlagOptions = {
     'evaluations-kbn-url',
     'evaluations-kbn-api-key',
   ],
-  boolean: ['skip-server', 'dry-run', 'skip-init'],
+  boolean: ['skip-server', 'dry-run', 'skip-init', 'require-eis-judge'],
   alias: { model: 'project', judge: 'evaluation-connector-id' },
-  default: { 'skip-server': false, 'dry-run': false, 'skip-init': false },
+  default: {
+    'skip-server': false,
+    'dry-run': false,
+    'skip-init': false,
+    'require-eis-judge': false,
+  },
 };

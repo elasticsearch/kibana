@@ -7,14 +7,19 @@
 
 import type { Client as EsClient } from '@elastic/elasticsearch';
 import type { ToolingLog } from '@kbn/tooling-log';
-import type { TaskOutput } from '@kbn/evals';
+import type { DefaultEvaluators, EvalsExecutorClient, TaskOutput } from '@kbn/evals';
 import {
   toDatasetExample,
+  createEvaluatePersonaMatrixDataset,
   createPersonaMatrixTrajectoryEvaluator,
   createPersonaMatrixExpectedToolCalledEvaluator,
+  createPersonaMatrixFinalAnswerPresentEvaluator,
+  createPersonaMatrixMinExpectedStepsEvaluator,
   createPersonaMatrixSkillInvokedEvaluator,
+  isRankablePathContract,
   type PersonaMatrixDatasetExample,
 } from './evaluate_dataset';
+import type { PersonaMatrixChatClient } from './chat_client';
 import {
   PERSONA_MATRIX_EXAMPLES,
   type PersonaMatrixExample,
@@ -42,6 +47,29 @@ const buildLog = (): ToolingLog =>
     error: jest.fn(),
     debug: jest.fn(),
   } as unknown as ToolingLog);
+
+describe('path contract classification', () => {
+  it('keeps probes diagnostic and leaves candidate/rankable paths measurable', () => {
+    expect(isRankablePathContract({ pathContract: 'probe' })).toBe(false);
+    expect(isRankablePathContract({ pathContract: 'candidate' })).toBe(true);
+    expect(isRankablePathContract({ pathContract: 'rankable' })).toBe(true);
+    expect(isRankablePathContract(undefined)).toBe(true);
+  });
+
+  it('marks every measured 0/5 hunt example as a probe', () => {
+    const probePrefixes = [
+      'alert-analysis-',
+      'entity-analytics-',
+      'multi-step-',
+      'threat-hunting-',
+    ];
+    const probes = PERSONA_MATRIX_EXAMPLES.filter((example) =>
+      probePrefixes.some((prefix) => example.id.startsWith(prefix))
+    );
+    expect(probes).toHaveLength(12);
+    expect(probes.every((example) => example.metadata.pathContract === 'probe')).toBe(true);
+  });
+});
 
 describe('toDatasetExample', () => {
   it('resolves the golden path from metadata.expectedTools into output.tool_sequence', () => {
@@ -162,21 +190,29 @@ describe('createPersonaMatrixTrajectoryEvaluator', () => {
           }))
         )
       );
-      expect(result.score).not.toBeNull();
-      const metadata = result.metadata as { expected: string[] } | undefined;
-      expect(metadata?.expected).toEqual(wrapped.output.tool_sequence);
+      if (example.metadata.pathContract === 'probe') {
+        expect(result.score).toBeNull();
+        expect(result.metadata).toMatchObject({ pathContract: 'probe' });
+      } else {
+        expect(result.score).not.toBeNull();
+        const metadata = result.metadata as { expected: string[] } | undefined;
+        expect(metadata?.expected).toEqual(wrapped.output.tool_sequence);
+      }
     }
   });
 });
 
 describe('createPersonaMatrixExpectedToolCalledEvaluator', () => {
-  it('scores 1 when the primary expected tool was called', async () => {
+  it('scores 1 when every declared expected tool was called', async () => {
     const evaluator = createPersonaMatrixExpectedToolCalledEvaluator();
     const result = await evaluator.evaluate({
       input: { question: 'q' },
       expected: toDatasetExample(baseExample).output,
       output: {
-        steps: [{ type: 'tool_call', tool_id: 'security.alerts' }],
+        steps: [
+          { type: 'tool_call', tool_id: 'security.alerts' },
+          { type: 'tool_call', tool_id: 'security.get_related_alerts' },
+        ],
       } as unknown as TaskOutput,
       metadata: baseExample.metadata,
     } as unknown as Parameters<ReturnType<typeof createPersonaMatrixExpectedToolCalledEvaluator>['evaluate']>[0]);
@@ -195,6 +231,191 @@ describe('createPersonaMatrixExpectedToolCalledEvaluator', () => {
       output: { steps: [] } as unknown as TaskOutput,
       metadata: unannotated.metadata,
     } as unknown as Parameters<ReturnType<typeof createPersonaMatrixExpectedToolCalledEvaluator>['evaluate']>[0]);
+    expect(result.score).toBeNull();
+    expect(result.label).toBe('N/A');
+  });
+
+  // Regression: only `expectedTools[0]` used to be checked, so a run that
+  // skipped every later declared tool still scored a full 1.
+  it('scores 0 when a non-primary expected tool was skipped', async () => {
+    const evaluator = createPersonaMatrixExpectedToolCalledEvaluator();
+    const multiTool: PersonaMatrixExample = {
+      ...baseExample,
+      metadata: {
+        ...baseExample.metadata,
+        expectedTools: ['platform.core.generate_esql', 'platform.core.execute_esql'],
+      },
+    };
+    const result = await evaluator.evaluate({
+      input: { question: 'q' },
+      expected: toDatasetExample(multiTool).output,
+      output: {
+        steps: [{ type: 'tool_call', tool_id: 'platform.core.generate_esql' }],
+      } as unknown as TaskOutput,
+      metadata: multiTool.metadata,
+    } as unknown as Parameters<ReturnType<typeof createPersonaMatrixExpectedToolCalledEvaluator>['evaluate']>[0]);
+    expect(result.score).toBe(0);
+    expect((result.metadata as { missingToolIds: string[] }).missingToolIds).toEqual([
+      'platform.core.execute_esql',
+    ]);
+  });
+
+  it('scores 1 only when every declared expected tool was called', async () => {
+    const evaluator = createPersonaMatrixExpectedToolCalledEvaluator();
+    const multiTool: PersonaMatrixExample = {
+      ...baseExample,
+      metadata: {
+        ...baseExample.metadata,
+        expectedTools: ['platform.core.generate_esql', 'platform.core.execute_esql'],
+      },
+    };
+    const result = await evaluator.evaluate({
+      input: { question: 'q' },
+      expected: toDatasetExample(multiTool).output,
+      output: {
+        steps: [
+          { type: 'tool_call', tool_id: 'platform.core.generate_esql' },
+          { type: 'tool_call', tool_id: 'platform.core.list_indices' },
+          { type: 'tool_call', tool_id: 'platform.core.execute_esql' },
+        ],
+      } as unknown as TaskOutput,
+      metadata: multiTool.metadata,
+    } as unknown as Parameters<ReturnType<typeof createPersonaMatrixExpectedToolCalledEvaluator>['evaluate']>[0]);
+    expect(result.score).toBe(1);
+    expect((result.metadata as { missingToolIds: string[] }).missingToolIds).toEqual([]);
+  });
+});
+
+describe('createPersonaMatrixFinalAnswerPresentEvaluator', () => {
+  const evaluate = (output: unknown) =>
+    createPersonaMatrixFinalAnswerPresentEvaluator().evaluate({
+      input: { question: 'q' },
+      expected: undefined,
+      output,
+      metadata: {},
+    } as unknown as Parameters<ReturnType<typeof createPersonaMatrixFinalAnswerPresentEvaluator>['evaluate']>[0]);
+
+  it('scores 1 when the run produced a non-empty final message', async () => {
+    const result = await evaluate({ messages: [{ message: 'Rule created: ...' }] });
+    expect(result.score).toBe(1);
+  });
+
+  // Regression: 62% of detection-rule-edit runs in the 2026-08-21 sweep ended
+  // on a tool call with no user-facing closing text.
+  it('scores 0 when every message is empty', async () => {
+    const result = await evaluate({ messages: [{ message: '' }] });
+    expect(result.score).toBe(0);
+  });
+
+  it('scores 0 when messages are missing from the output', async () => {
+    const result = await evaluate({ steps: [] });
+    expect(result.score).toBe(0);
+  });
+
+  const ruleToolStep = (data: unknown, toolId = 'security.create_detection_rule') => ({
+    type: 'tool_call',
+    tool_id: toolId,
+    results: [{ type: 'other', data }],
+  });
+
+  // The detection-rule-edit references ask the agent to render the created rule
+  // attachment inline "rather than describing the rule in prose only", so a run
+  // that ends on a successful rule tool call HAS answered the user. Scoring it 0
+  // measured the harness, not the model: 86% of FinalAnswerPresent=0 runs in the
+  // family had successfully created a rule.
+  it('scores 1 when the run ended on a rendered rule artifact instead of prose', async () => {
+    const result = await evaluate({
+      messages: [{ message: '' }],
+      steps: [ruleToolStep({ success: true, rule: { id: 'abc', severity: 'high' } })],
+    });
+    expect(result.score).toBe(1);
+    expect(result.explanation).toContain('artifact');
+  });
+
+  it('scores 1 for an update_detection_rule artifact as well', async () => {
+    const result = await evaluate({
+      messages: [],
+      steps: [
+        ruleToolStep({ success: true, rule: { id: 'abc' } }, 'security.update_detection_rule'),
+      ],
+    });
+    expect(result.score).toBe(1);
+  });
+
+  // The gate must keep biting real silent failures: 27 of 196 FinalAnswerPresent=0
+  // runs in the family produced no rule at all.
+  it('still scores 0 when the rule tool call failed', async () => {
+    const result = await evaluate({
+      messages: [{ message: '' }],
+      steps: [ruleToolStep({ success: false, rule: { id: 'abc' } })],
+    });
+    expect(result.score).toBe(0);
+  });
+
+  it('still scores 0 when a rule tool reported success without a rule payload', async () => {
+    const result = await evaluate({
+      messages: [{ message: '' }],
+      steps: [ruleToolStep({ success: true })],
+    });
+    expect(result.score).toBe(0);
+  });
+
+  it('does not count a non-artifact tool call as an answer', async () => {
+    const result = await evaluate({
+      messages: [{ message: '' }],
+      steps: [ruleToolStep({ success: true, rule: { id: 'abc' } }, 'security.run_rule_preview')],
+    });
+    expect(result.score).toBe(0);
+  });
+
+  it('returns N/A when there is no task output at all', async () => {
+    const result = await evaluate(undefined);
+    expect(result.score).toBeNull();
+    expect(result.label).toBe('N/A');
+  });
+});
+
+describe('createPersonaMatrixMinExpectedStepsEvaluator', () => {
+  const toolStep = (id: string) => ({ type: 'tool_call', tool_id: id });
+  const evaluate = (output: unknown, expectedTools?: string[]) =>
+    createPersonaMatrixMinExpectedStepsEvaluator().evaluate({
+      input: { question: 'q' },
+      expected: expectedTools ? { tool_sequence: expectedTools } : {},
+      output,
+      metadata: expectedTools ? { expectedTools } : {},
+    } as unknown as Parameters<ReturnType<typeof createPersonaMatrixMinExpectedStepsEvaluator>['evaluate']>[0]);
+
+  it('scores 1 when tool calls meet the expected minimum', async () => {
+    const result = await evaluate(
+      { steps: [toolStep('platform.core.generate_esql'), toolStep('platform.core.execute_esql')] },
+      ['platform.core.generate_esql', 'platform.core.execute_esql']
+    );
+    expect(result.score).toBe(1);
+  });
+
+  // Regression: ~90 original-sweep runs produced an answer in <3 steps having
+  // called nothing — premature termination that FinalAnswerPresent alone misses.
+  it('scores 0 when the agent gave up without trying (fewer calls than expected)', async () => {
+    const result = await evaluate({ steps: [] }, ['on_call_lookup']);
+    expect(result.score).toBe(0);
+  });
+
+  it('scores 0 when only some of the expected tools were called', async () => {
+    const result = await evaluate({ steps: [toolStep('platform.core.generate_esql')] }, [
+      'platform.core.generate_esql',
+      'platform.core.execute_esql',
+    ]);
+    expect(result.score).toBe(0);
+  });
+
+  it('returns N/A when the example declares no expectedTools', async () => {
+    const result = await evaluate({ steps: [toolStep('x')] });
+    expect(result.score).toBeNull();
+    expect(result.label).toBe('N/A');
+  });
+
+  it('returns N/A when there is no task output', async () => {
+    const result = await evaluate(undefined, ['on_call_lookup']);
     expect(result.score).toBeNull();
     expect(result.label).toBe('N/A');
   });
@@ -236,14 +457,9 @@ describe('createPersonaMatrixSkillInvokedEvaluator', () => {
     expect(result.label).toBe('unavailable');
   });
 
-  it('matches the load_skill tool, not just the retired filestore.read', async () => {
-    // Regression guard. The agent loads skills via the `load_skill` tool:
-    //   {"skill":"/skills/<category>/<name>/SKILL.md"}
-    // A predicate pinned to `filestore.read` can never match, so `skill_invoked`
-    // stays 0 while `total_tool_spans` is non-zero -- meaning the "unavailable"
-    // guard does NOT trip and the evaluator reports a confident false 0 for
-    // every model. Verified against the golden cluster: over 7 days,
-    // filestore.read = 0 spans, load_skill = 7,991 spans.
+  it('matches load_skill by skill ID while retaining the legacy SKILL.md path', async () => {
+    // `load_skill` accepts an ID or path. Current traces store {"skill":"<id>"};
+    // older traces may contain a SKILL.md path.
     const query = jest.fn().mockResolvedValue({
       columns: [{ name: 'total_tool_spans' }, { name: 'skill_invoked' }],
       values: [[2, 1]],
@@ -253,13 +469,15 @@ describe('createPersonaMatrixSkillInvokedEvaluator', () => {
       log: buildLog(),
     });
 
-    const result = await evaluator.evaluate(
+    await evaluator.evaluate(
       buildEvaluatorArgs(baseExample.metadata, '0af7651916cd43dd8448eb211c80319c')
     );
 
     const sent = query.mock.calls[0][0].query as string;
     expect(sent).toContain('load_skill');
-    expect(result.score).toBe(1);
+    expect(sent).toContain('filestore.read');
+    expect(sent).toContain('*\\"skill\\":\\"alert-analysis\\"*');
+    expect(sent).toContain('*/alert-analysis/SKILL.md*');
   });
 });
 
@@ -277,5 +495,114 @@ describe('task output shape', () => {
     const messages = (taskOutput as { messages?: Array<{ message?: string }> }).messages ?? [];
     const latestMessage = messages[messages.length - 1]?.message;
     expect(latestMessage).toBe('the real answer');
+  });
+
+  it('forwards messageSource so a fallback answer is distinguishable from a real final turn', async () => {
+    // chat_client falls back to the last non-empty reasoning/output step when a
+    // model ends its turn on a tool call, and tags which one it used via
+    // `messageSource`. If the task drops that tag, every stored cell looks like
+    // a genuine closing answer and mid-run narration ("I will now preview the
+    // detection rule...") is scored as if it were the model's final response.
+    // Measured 2026-09-07: 0 of 2422 Sep-4+ detection-rule-edit score docs
+    // carried messageSource, because taskOutput never forwarded it.
+    const log = buildLog();
+    let capturedTask: ((example: unknown) => Promise<unknown>) | undefined;
+
+    const evaluateDataset = createEvaluatePersonaMatrixDataset({
+      chatClient: {
+        query: jest.fn().mockResolvedValue({
+          messages: [{ message: 'I will now preview the detection rule.' }],
+          messageSource: 'last_assistant_step',
+          steps: [],
+          errors: [],
+          traceId: 'trace-1',
+        }),
+      } as unknown as PersonaMatrixChatClient,
+      evaluators: {
+        traceBasedEvaluators: {
+          inputTokens: { name: 'inputTokens' },
+          outputTokens: { name: 'outputTokens' },
+          toolCalls: { name: 'toolCalls' },
+          latency: { name: 'latency' },
+        },
+        criteria: jest.fn(),
+        correctnessAnalysis: () => ({ evaluate: jest.fn().mockResolvedValue({ metadata: {} }) }),
+        groundednessAnalysis: () => ({ evaluate: jest.fn().mockResolvedValue({ metadata: {} }) }),
+      } as unknown as DefaultEvaluators,
+      executorClient: {
+        runExperiment: jest.fn(async (params: { task: unknown }) => {
+          capturedTask = params.task as (example: unknown) => Promise<unknown>;
+        }),
+      } as unknown as EvalsExecutorClient,
+      traceEsClient: {} as EsClient,
+      log,
+    });
+
+    await evaluateDataset({
+      dataset: { name: 'ds', description: 'desc', examples: [baseExample] },
+    });
+
+    const output = (await capturedTask!(toDatasetExample(baseExample))) as Record<string, unknown>;
+
+    expect(output.messageSource).toBe('last_assistant_step');
+  });
+});
+
+describe('task judge failure isolation', () => {
+  it('keeps the trajectory and degrades qualitative scores when a judge call rejects', async () => {
+    // Regression guard for the determinism-sweep suite deaths: a single judge
+    // call failing (e.g. inference 500 toolValidationError) must not throw out
+    // of the task and take down all remaining examples.
+    const log = buildLog();
+    let capturedTask: ((example: unknown) => Promise<unknown>) | undefined;
+
+    const evaluateDataset = createEvaluatePersonaMatrixDataset({
+      chatClient: {
+        query: jest.fn().mockResolvedValue({
+          messages: [{ message: 'the real answer' }],
+          steps: [],
+          errors: [],
+          traceId: 'trace-1',
+        }),
+      } as unknown as PersonaMatrixChatClient,
+      evaluators: {
+        traceBasedEvaluators: {
+          inputTokens: { name: 'inputTokens' },
+          outputTokens: { name: 'outputTokens' },
+          toolCalls: { name: 'toolCalls' },
+          latency: { name: 'latency' },
+        },
+        criteria: jest.fn(),
+        correctnessAnalysis: () => ({
+          evaluate: jest.fn().mockRejectedValue(new Error('toolValidationError')),
+        }),
+        groundednessAnalysis: () => ({
+          evaluate: jest.fn().mockResolvedValue({ metadata: { verdict: 'grounded' } }),
+        }),
+      } as unknown as DefaultEvaluators,
+      executorClient: {
+        runExperiment: jest.fn(async (params: { task: unknown }) => {
+          capturedTask = params.task as (example: unknown) => Promise<unknown>;
+        }),
+      } as unknown as EvalsExecutorClient,
+      traceEsClient: {} as EsClient,
+      log,
+    });
+
+    await evaluateDataset({
+      dataset: { name: 'ds', description: 'desc', examples: [baseExample] },
+    });
+
+    expect(capturedTask).toBeDefined();
+    const output = (await capturedTask!(toDatasetExample(baseExample))) as Record<string, unknown>;
+
+    // The failed judge degrades to an absent analysis (quantitative evaluators
+    // then report "unavailable"); the successful judge and the agent's real
+    // trajectory are preserved.
+    expect(output.correctnessAnalysis).toBeUndefined();
+    expect(output.groundednessAnalysis).toEqual({ verdict: 'grounded' });
+    expect((output.messages as Array<{ message: string }>)[0].message).toBe('the real answer');
+    expect(log.error).toHaveBeenCalledWith(expect.stringContaining('CorrectnessAnalysis failed'));
+    expect((log.error as jest.Mock).mock.calls.flat().join(' ')).toContain('toolValidationError');
   });
 });

@@ -43,15 +43,26 @@ import { servers as evalsTracingConfig } from '../../evals_tracing/stateful/clas
  * alert-analysis, alert-triage, workflow-authoring, entity-analytics (v1 path),
  * detection-rule-edit (base), find-security-ml-jobs.
  *
+ * `server.maxPayload` is raised from the Scout default (1.6 MB) because the
+ * judge's `/internal/inference/prompt` requests carry the full agent trajectory
+ * and exceed it on long multi-step examples (observed 413 on
+ * gemini-3.1-flash-lite, 2026-08-20). The inherited arg is filtered out and
+ * re-set here so the value is deterministic regardless of CLI arg ordering.
+ *
  * Usage:
  *   node scripts/scout start-server --arch stateful --domain classic --serverConfigSet evals_security_persona_matrix
  */
+const MAX_PAYLOAD_BYTES = 50 * 1024 * 1024; // 50 MB
+
 export const servers: ScoutServerConfig = {
   ...evalsTracingConfig,
   kbnTestServer: {
     ...evalsTracingConfig.kbnTestServer,
     serverArgs: [
-      ...evalsTracingConfig.kbnTestServer.serverArgs,
+      ...evalsTracingConfig.kbnTestServer.serverArgs.filter(
+        (arg) => !arg.startsWith('--server.maxPayload=')
+      ),
+      `--server.maxPayload=${MAX_PAYLOAD_BYTES}`,
       '--uiSettings.overrides.agentBuilder:experimentalFeatures=true',
       `--xpack.securitySolution.enableExperimental=${JSON.stringify([
         'automaticTroubleshootingSkill',

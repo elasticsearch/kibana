@@ -6,7 +6,9 @@
  */
 
 import { RunWithCommands } from '@kbn/dev-cli-runner';
+import { matrixCmd } from './commands/matrix';
 import { redTeamCmd } from './commands/red_team';
+import { rejudgeCmd } from './commands/rejudge';
 
 export async function run() {
   await new RunWithCommands(
@@ -14,6 +16,6 @@ export async function run() {
       usage: 'node scripts/evals ext',
       description: 'Evals extensions CLI (experimental)',
     },
-    [redTeamCmd]
+    [redTeamCmd, matrixCmd, rejudgeCmd]
   ).execute();
 }

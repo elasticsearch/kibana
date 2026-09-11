@@ -1,0 +1,449 @@
+{
+  "title": "Persona Matrix \u2014 per-prompt proprietary sweep",
+  "branch": "main",
+  "lookbackDays": 45,
+  "scoring": {
+    "useVerdictLadder": true,
+    "requireEisJudge": true,
+    "excludeSelfJudged": true
+  },
+  "defaultScale": 10,
+  "decimals": 2,
+  "notRecommendedBelow": 0,
+  "minCoverage": 12,
+  "overall": {
+    "runStdev": 0.478,
+    "excludeSaturatedEvaluators": true
+  },
+  "toolCallWarnAbove": 40,
+  "notRecommendedLabel": "Not recommended",
+  "showOverall": true,
+  "columns": [
+    {
+      "id": "alert-analysis-a",
+      "label": "Alert Analysis A",
+      "group": "Alert Analysis",
+      "suites": [
+        "security-persona-matrix"
+      ],
+      "examplePrefixes": [
+        "alert-analysis-a"
+      ],
+      "weight": 1
+    },
+    {
+      "id": "alert-analysis-b",
+      "label": "Alert Analysis B",
+      "group": "Alert Analysis",
+      "suites": [
+        "security-persona-matrix"
+      ],
+      "examplePrefixes": [
+        "alert-analysis-b"
+      ],
+      "weight": 1
+    },
+    {
+      "id": "alert-analysis-c",
+      "label": "Alert Analysis C",
+      "group": "Alert Analysis",
+      "suites": [
+        "security-persona-matrix"
+      ],
+      "examplePrefixes": [
+        "alert-analysis-c"
+      ],
+      "weight": 1
+    },
+    {
+      "id": "entity-analytics-a",
+      "label": "Entity Analytics A",
+      "group": "Entity Analytics",
+      "suites": [
+        "security-persona-matrix"
+      ],
+      "examplePrefixes": [
+        "entity-analytics-a"
+      ],
+      "weight": 1
+    },
+    {
+      "id": "entity-analytics-b",
+      "label": "Entity Analytics B",
+      "group": "Entity Analytics",
+      "suites": [
+        "security-persona-matrix"
+      ],
+      "examplePrefixes": [
+        "entity-analytics-b"
+      ],
+      "weight": 1
+    },
+    {
+      "id": "entity-analytics-c",
+      "label": "Entity Analytics C",
+      "group": "Entity Analytics",
+      "suites": [
+        "security-persona-matrix"
+      ],
+      "examplePrefixes": [
+        "entity-analytics-c"
+      ],
+      "weight": 1
+    },
+    {
+      "id": "threat-hunting-a",
+      "label": "Threat Hunting A",
+      "group": "Threat Hunting",
+      "suites": [
+        "security-persona-matrix"
+      ],
+      "examplePrefixes": [
+        "threat-hunting-a"
+      ],
+      "weight": 1
+    },
+    {
+      "id": "threat-hunting-b",
+      "label": "Threat Hunting B",
+      "group": "Threat Hunting",
+      "suites": [
+        "security-persona-matrix"
+      ],
+      "examplePrefixes": [
+        "threat-hunting-b"
+      ],
+      "weight": 1
+    },
+    {
+      "id": "threat-hunting-c",
+      "label": "Threat Hunting C",
+      "group": "Threat Hunting",
+      "suites": [
+        "security-persona-matrix"
+      ],
+      "examplePrefixes": [
+        "threat-hunting-c"
+      ],
+      "weight": 1
+    },
+    {
+      "id": "detection-rule-edit-a",
+      "label": "Detection Rules A",
+      "group": "Detection Rules",
+      "suites": [
+        "security-persona-matrix"
+      ],
+      "examplePrefixes": [
+        "detection-rule-edit-a"
+      ],
+      "weight": 1
+    },
+    {
+      "id": "detection-rule-edit-b",
+      "label": "Detection Rules B",
+      "group": "Detection Rules",
+      "suites": [
+        "security-persona-matrix"
+      ],
+      "examplePrefixes": [
+        "detection-rule-edit-b"
+      ],
+      "weight": 1
+    },
+    {
+      "id": "detection-rule-edit-c",
+      "label": "Detection Rules C",
+      "group": "Detection Rules",
+      "suites": [
+        "security-persona-matrix"
+      ],
+      "examplePrefixes": [
+        "detection-rule-edit-c"
+      ],
+      "weight": 1
+    },
+    {
+      "id": "workflow-authoring-a",
+      "label": "Workflow Authoring A",
+      "group": "Workflow Authoring",
+      "suites": [
+        "security-persona-matrix"
+      ],
+      "examplePrefixes": [
+        "workflow-authoring-a"
+      ],
+      "weight": 1
+    },
+    {
+      "id": "workflow-authoring-b",
+      "label": "Workflow Authoring B",
+      "group": "Workflow Authoring",
+      "suites": [
+        "security-persona-matrix"
+      ],
+      "examplePrefixes": [
+        "workflow-authoring-b"
+      ],
+      "weight": 1
+    },
+    {
+      "id": "workflow-authoring-c",
+      "label": "Workflow Authoring C",
+      "group": "Workflow Authoring",
+      "suites": [
+        "security-persona-matrix"
+      ],
+      "examplePrefixes": [
+        "workflow-authoring-c"
+      ],
+      "weight": 1
+    },
+    {
+      "id": "workflow-execution-a",
+      "label": "Triggering Workflows A",
+      "group": "Triggering Workflows",
+      "suites": [
+        "security-persona-matrix"
+      ],
+      "examplePrefixes": [
+        "workflow-execution-a"
+      ],
+      "weight": 1
+    },
+    {
+      "id": "workflow-execution-b",
+      "label": "Triggering Workflows B",
+      "group": "Triggering Workflows",
+      "suites": [
+        "security-persona-matrix"
+      ],
+      "examplePrefixes": [
+        "workflow-execution-b"
+      ],
+      "weight": 1
+    },
+    {
+      "id": "workflow-execution-c",
+      "label": "Triggering Workflows C",
+      "group": "Triggering Workflows",
+      "suites": [
+        "security-persona-matrix"
+      ],
+      "examplePrefixes": [
+        "workflow-execution-c"
+      ],
+      "weight": 1
+    },
+    {
+      "id": "multi-step-a",
+      "label": "Multi-Step Executions A",
+      "group": "Multi-Step Executions",
+      "suites": [
+        "security-persona-matrix"
+      ],
+      "examplePrefixes": [
+        "multi-step-a"
+      ],
+      "weight": 1
+    },
+    {
+      "id": "multi-step-b",
+      "label": "Multi-Step Executions B",
+      "group": "Multi-Step Executions",
+      "suites": [
+        "security-persona-matrix"
+      ],
+      "examplePrefixes": [
+        "multi-step-b"
+      ],
+      "weight": 1
+    },
+    {
+      "id": "multi-step-c",
+      "label": "Multi-Step Executions C",
+      "group": "Multi-Step Executions",
+      "suites": [
+        "security-persona-matrix"
+      ],
+      "examplePrefixes": [
+        "multi-step-c"
+      ],
+      "weight": 1
+    },
+    {
+      "id": "attack-discovery",
+      "label": "Kill-Chain Discovery",
+      "group": "Attack Discovery",
+      "suites": [
+        "attack-discovery-agent-builder"
+      ],
+      "evaluators": [
+        "AttackDiscoveryBasic",
+        "Rubric",
+        "Criteria"
+      ],
+      "weight": 1,
+      "allowSelfJudged": true,
+      "branch": ["main", "patrykkopycinski:feat/attack-discovery-agent-builder-evals", "feat/evals-extensions-matrix-v3"]
+    },
+    {
+      "id": "migrations-rules",
+      "label": "Rule Translation",
+      "group": "Automatic Migrations",
+      "suites": [
+        "security-automatic-migrations"
+      ],
+      "evaluators": [
+        "Translation Result",
+        "Translated ESQL Validity",
+        "Custom Query Accuracy",
+        "Prebuilt Rule Match",
+        "Integration Match",
+        "Hallucination Detection",
+        "Unsupported Pattern Detection",
+        "LOOKUP JOIN Preservation",
+        "NL Description Faithfulness"
+      ],
+      "weight": 1,
+      "branch": ["main", "elastic:fix/weekly-evals-matrix", "elastic:feat/siem-migrations-invoke-endpoint", "feat/evals-extensions-matrix-v3"]
+    },
+    {
+      "id": "migrations-dashboards",
+      "label": "Dashboard Translation",
+      "group": "Automatic Migrations",
+      "suites": [
+        "security-automatic-migrations"
+      ],
+      "evaluators": [
+        "Translation Completeness",
+        "ES|QL Completeness",
+        "Index Pattern Validity",
+        "Panel Count Preservation",
+        "Lookup Join Presence",
+        "Markdown Error Detection",
+        "translation_fidelity"
+      ],
+      "weight": 1,
+      "branch": ["main", "elastic:fix/weekly-evals-matrix", "elastic:feat/siem-migrations-invoke-endpoint", "feat/evals-extensions-matrix-v3"]
+    }
+  ],
+  "models": [
+    {
+      "id": "anthropic-claude-4.5-haiku",
+      "label": "Claude Haiku 4.5"
+    },
+    {
+      "id": "anthropic-claude-4.5-sonnet",
+      "label": "Claude Sonnet 4.5"
+    },
+    {
+      "id": "anthropic-claude-4.5-opus",
+      "label": "Claude Opus 4.5"
+    },
+    {
+      "id": "anthropic-claude-4.6-sonnet",
+      "label": "Claude Sonnet 4.6",
+      "matchIds": [
+        "anthropic-claude-4.6-sonnet-chat_completion"
+      ]
+    },
+    {
+      "id": "anthropic-claude-4.6-opus",
+      "label": "Claude Opus 4.6"
+    },
+    {
+      "id": "anthropic-claude-4.7-opus",
+      "label": "Claude Opus 4.7"
+    },
+    {
+      "id": "anthropic-claude-4.8-opus",
+      "label": "Claude Opus 4.8"
+    },
+    {
+      "id": "openai-gpt-5.2",
+      "label": "GPT-5.2"
+    },
+    {
+      "id": "openai-gpt-5.4",
+      "label": "GPT-5.4"
+    },
+    {
+      "id": "openai-gpt-5.4-mini",
+      "label": "GPT-5.4 Mini"
+    },
+    {
+      "id": "openai-gpt-5.4-nano",
+      "label": "GPT-5.4 Nano"
+    },
+    {
+      "id": "google-gemini-2.5-flash",
+      "label": "Gemini 2.5 Flash"
+    },
+    {
+      "id": "google-gemini-2.5-pro",
+      "label": "Gemini 2.5 Pro"
+    },
+    {
+      "id": "google-gemini-3.0-flash",
+      "label": "Gemini 3.0 Flash"
+    },
+    {
+      "id": "google-gemini-3.1-flash-lite",
+      "label": "Gemini 3.1 Flash Lite"
+    },
+    {
+      "id": "google-gemini-3.1-pro",
+      "label": "Gemini 3.1 Pro"
+    },
+    {
+      "id": "google-gemini-3.5-flash",
+      "label": "Gemini 3.5 Flash"
+    },
+    {
+      "id": "anthropic-claude-5-sonnet",
+      "label": "Claude Sonnet 5"
+    },
+    {
+      "id": "openai-gpt-5.5",
+      "label": "GPT-5.5"
+    },
+    {
+      "id": "openai-gpt-oss-120b",
+      "label": "GPT-OSS 120B",
+      "openSource": true
+    },
+    {
+      "id": "zai-glm-5-2",
+      "label": "GLM-5.2",
+      "openSource": true
+    },
+    {
+      "id": "openrouter-zai-glm-5-3-flash",
+      "label": "GLM-5.3 Flash",
+      "openSource": true,
+      "matchIds": ["z-ai/glm-5.3-flash"]
+    },
+    {
+      "id": "openrouter-deepseek-v4-pro",
+      "label": "DeepSeek V4 Pro",
+      "openSource": true,
+      "matchIds": ["deepseek/deepseek-v4-pro-0813"]
+    }
+  ],
+  "tokenCost": {},
+  "provenance": {
+    "fixtureFingerprint": "sha256:cf9c1d22 (env_seeds.ts + persona_matrix_tools_seed.ts, persona-matrix-env-truth worktree)",
+    "methodologyNotes": [
+      "ExpectedToolCalled is all-or-nothing over the FULL declared expectedTools set since 2026-08-21 (previously only expectedTools[0] was checked). Categories whose skill contract changed (e.g. threat-hunting requiring generate_esql before execute_esql) score lower than in pre-fix matrices for identical traces.",
+      "FinalAnswerPresent evaluator added 2026-08-22: scores 0 when a run ends on a tool call with no user-facing final message (observed in 62% of detection-rule-edit runs). Folded into every cell mean.",
+      "MinExpectedSteps evaluator added 2026-08-22: scores 0 when a run made fewer tool calls than the declared expectedTools count \u2014 flags premature-termination / 'gave up without trying' (complements FinalAnswerPresent). Folded into every cell mean.",
+      "Repetition depth varies by model: determinism-sweep models ran 3 reps/example, batch models 1 rep. Trace cards carry an N reps badge; 1-rep cells have proportionally higher variance.",
+      "Scores are means over 10 evaluators (8 score-typed + FinalAnswerPresent + MinExpectedSteps), scaled to 0-10. Token/latency/tool-count observability evaluators are excluded from cell means and shown separately in the token-cost table.",
+      "Judged evaluators (Groundedness, Factuality, Relevance) are scored from their categorical verdict via an ordinal ladder since 2026-08-24, not the per-run geometric mean over a re-extracted claim list. Repetitions re-run the agent, which emits semantically equivalent but textually different answers (inter-rep output similarity 0.172, zero identical across 8,482 measured docs); the judge then extracts a different claim list from different prose and the continuous mean wobbles. Measured on 312 multi-repetition cells, rank flip between repetitions falls from 83.3% to 33.3%. Contract evaluators are deterministic and unaffected.",
+      "Scores from judges that are not EIS-pinned are excluded since 2026-08-24 (2,077 docs, 5.7%), as are 807 self-judged docs where a model graded its own output. A non-EIS judge id (LiteLLM alias, HuggingFace repo path, local quantisation) cannot be re-run to reproduce a number. Cells whose only grades came from excluded judges are absent rather than estimated.",
+      "Scores in this matrix are NOT comparable to matrices generated before 2026-08-24: the judged-evaluator scoring basis changed from continuous mean to verdict ladder, and the judge population changed. Compare model-to-model within this matrix, not cell-to-cell across generations.",
+      "Fixture fingerprint pins the dataset/tool seeds this matrix was scored against; comparing across fingerprints is a cross-generation comparison, not a model delta."
+    ]
+  }
+}

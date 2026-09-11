@@ -44,7 +44,16 @@ export interface AttackDiscoveryAgentBuilderMetadata extends Record<string, unkn
     | 'status-only'
     | 'multiple-alert-sets'
     | 'scenario-registry';
-  scenarioKey?: string;
+  /**
+   * Join key a rejudge uses to match a recorded score document back to this
+   * example's ground truth. Required, not optional: golden documents carry
+   * `example.id = '0'` for almost every attack-discovery row, so this is the
+   * only field that distinguishes one scenario from another. The five
+   * golden-path scenarios shipped without it and became permanently
+   * unreplayable -- a rejudge would have graded all five against the first
+   * scenario's references.
+   */
+  scenarioKey: string;
   seedProfile?: 'clean';
 }
 

@@ -22,4 +22,15 @@ export type { EvaluationScoreDocument } from '@kbn/evals-common';
 
 export * as cli from './src/cli';
 export { runRedTeam, RED_TEAM_MODULE_IDS } from './src/red_team';
+export { planReplay, summarizePlan, replayExecutionId } from './src/matrix/replay_plan';
+export type { ReplayCell, ReplayPlan, ReferenceLookup } from './src/matrix/replay_plan';
+export { checkEvaluatorHealth } from './src/matrix/evaluator_health';
+export type {
+  EvaluatorHealthInput,
+  EvaluatorHealthReport,
+  EvaluatorFinding,
+  EvaluatorObservation,
+  EvaluatorClassification,
+  EvaluatorRole,
+} from './src/matrix/evaluator_health';
 export type { RedTeamConfig, RedTeamReport, RedTeamModuleId } from './src/red_team';
