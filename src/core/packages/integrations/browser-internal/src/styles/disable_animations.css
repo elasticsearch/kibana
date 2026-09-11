@@ -13,9 +13,50 @@
   -webkit-animation-duration: 0s !important;
   animation-duration: 0s !important;
 
+  /**
+   * Zero animation-delay so staggered animations do not produce a visible
+   * delay-window where elements appear in a pre-animation state. Without
+   * this, elements with animation-delay > 0 sit in their default (unanimated)
+   * position for the duration of the delay even though duration is 0s.
+   */
+  -webkit-animation-delay: 0s !important;
+  animation-delay: 0s !important;
+
+  /**
+   * Detach scroll-driven animations (introduced in EUI v116 for overflow
+   * scroll shadows in EuiSelectable, EuiComboBox, EuiContextMenu).
+   * scroll-driven animations use scroll position as their timeline, so
+   * animation-duration: 0s has no effect on them. Setting animation-timeline
+   * to the default `auto` (time-based) makes the duration-zeroing rule above
+   * apply to them as well.
+   */
+  animation-timeline: auto !important;
+
   -webkit-transition-duration: 0s !important;
   transition-duration: 0s !important;
 
   -webkit-transition-delay: 0s !important;
   transition-delay: 0s !important;
+}
+
+/**
+ * EUI loading spinners (EuiLoadingChart, EuiLoadingElastic, EuiLoadingSpinner,
+ * etc.) gate their keyframe animation behind @media (prefers-reduced-motion:
+ * no-preference), which is an OS-level preference and is not controlled by the
+ * Kibana accessibility:disableAnimations setting.  The duration-zeroing rules
+ * above stop the animation from advancing, but the animation is still
+ * "running" (play-state: running) which can produce non-deterministic
+ * screenshots and visible flicker on some browser/OS combinations.
+ *
+ * Pure-visual loading indicators do not rely on animationend/animationiteration
+ * callbacks, so it is safe to pause them outright.  We identify them via the
+ * `.kbnLoadingIndicator` marker class added by kbn-panel-loader and
+ * kbn-screenshot-mode.
+ *
+ * https://github.com/elastic/kibana/issues/283806
+ */
+.kbnLoadingIndicator,
+.kbnLoadingIndicator * {
+  -webkit-animation-play-state: paused !important;
+  animation-play-state: paused !important;
 }

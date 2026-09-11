@@ -35,7 +35,7 @@ export const PanelLoader = (props: {
       hasBorder={props.showBorder}
       data-test-subj={props.dataTestSubj}
     >
-      <EuiLoadingChart size="l" />
+      <EuiLoadingChart size="l" className="kbnLoadingIndicator" />
     </EuiPanel>
   );
 };

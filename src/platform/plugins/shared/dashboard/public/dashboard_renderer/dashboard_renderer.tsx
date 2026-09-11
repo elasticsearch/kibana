@@ -182,9 +182,9 @@ export function DashboardRenderer({
   });
 
   const loadingSpinner = showPlainSpinner ? (
-    <EuiLoadingSpinner size="xxl" />
+    <EuiLoadingSpinner size="xxl" className="kbnLoadingIndicator" />
   ) : (
-    <EuiLoadingElastic size="xxl" />
+    <EuiLoadingElastic size="xxl" className="kbnLoadingIndicator" />
   );
 
   const renderDashboardContents = () => {
