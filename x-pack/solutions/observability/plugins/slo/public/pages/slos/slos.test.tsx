@@ -186,6 +186,7 @@ const mockKibana = () => {
           hasQuerySuggestions: () => {},
         },
       },
+      inspector: { open: jest.fn() },
       executionContext: {
         get: () => ({
           name: 'slo',
@@ -315,7 +316,7 @@ describe('SLOs Page', () => {
         render(<SlosPage />);
       });
 
-      expect(screen.getByText('Create SLO')).toBeTruthy();
+      expect(await screen.findByText('Create SLO')).toBeTruthy();
     });
 
     describe('when API has returned results', () => {

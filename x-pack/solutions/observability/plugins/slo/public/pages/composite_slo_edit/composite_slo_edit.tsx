@@ -5,13 +5,13 @@
  * 2.0.
  */
 
-import { EuiLoadingSpinner } from '@elastic/eui';
+import { EuiLoadingSpinner, EuiPageSection } from '@elastic/eui';
 import { i18n } from '@kbn/i18n';
 import { useBreadcrumbs } from '@kbn/observability-shared-plugin/public';
 import { paths } from '@kbn/slo-shared-plugin/common/locators/paths';
 import React, { useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import { HeaderMenu } from '../../components/header_menu/header_menu';
+import { SloAppHeader } from '../../components/slo_app_header/slo_app_header';
 import { useCompositeSloEnabled } from '../../hooks/use_composite_slo_enabled';
 import { useKibana } from '../../hooks/use_kibana';
 import { useLicense } from '../../hooks/use_license';
@@ -19,6 +19,10 @@ import { usePermissions } from '../../hooks/use_permissions';
 import { usePluginContext } from '../../hooks/use_plugin_context';
 import { CompositeSloEditForm } from './components/composite_slo_edit_form';
 import { useFetchCompositeSlo } from './hooks/use_fetch_composite_slo';
+
+const slosBackLabel = i18n.translate('xpack.slo.breadcrumbs.sloLabel', {
+  defaultMessage: 'SLOs',
+});
 
 export function CompositeSloEditPage() {
   const {
@@ -57,9 +61,7 @@ export function CompositeSloEditPage() {
     [
       {
         href: basePath.prepend(paths.slos),
-        text: i18n.translate('xpack.slo.breadcrumbs.sloLabel', {
-          defaultMessage: 'SLOs',
-        }),
+        text: slosBackLabel,
         deepLinkId: 'slo',
       },
       {
@@ -75,30 +77,34 @@ export function CompositeSloEditPage() {
     { serverless }
   );
 
+  const pageTitle = isEditMode
+    ? i18n.translate('xpack.slo.compositeSloEditPageTitle', {
+        defaultMessage: 'Edit composite SLO',
+      })
+    : i18n.translate('xpack.slo.compositeSloCreatePageTitle', {
+        defaultMessage: 'Create composite SLO',
+      });
+
   return (
     <ObservabilityPageTemplate
-      pageHeader={{
-        pageTitle: isEditMode
-          ? i18n.translate('xpack.slo.compositeSloEditPageTitle', {
-              defaultMessage: 'Edit composite SLO',
-            })
-          : i18n.translate('xpack.slo.compositeSloCreatePageTitle', {
-              defaultMessage: 'Create composite SLO',
-            }),
-        bottomBorder: false,
-      }}
       data-test-subj="compositeSloEditPage"
+      pageSectionProps={{ paddingSize: 'none' }}
     >
-      <HeaderMenu />
-      {isEditMode && isLoadingCompositeSlo ? (
-        <EuiLoadingSpinner size="xl" />
-      ) : (
-        <CompositeSloEditForm
-          compositeSloId={compositeSloId}
-          isEditMode={isEditMode}
-          initialValues={initialValues}
-        />
-      )}
+      <SloAppHeader
+        title={pageTitle}
+        back={{ href: basePath.prepend(paths.slos), label: slosBackLabel }}
+      />
+      <EuiPageSection paddingSize="l" restrictWidth={false}>
+        {isEditMode && isLoadingCompositeSlo ? (
+          <EuiLoadingSpinner size="xl" />
+        ) : (
+          <CompositeSloEditForm
+            compositeSloId={compositeSloId}
+            isEditMode={isEditMode}
+            initialValues={initialValues}
+          />
+        )}
+      </EuiPageSection>
     </ObservabilityPageTemplate>
   );
 }

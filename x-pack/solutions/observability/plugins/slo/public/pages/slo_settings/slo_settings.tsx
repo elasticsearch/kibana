@@ -4,14 +4,23 @@
  * 2.0; you may not use this file except in compliance with the Elastic License
  * 2.0.
  */
+import { EuiPageSection } from '@elastic/eui';
 import { i18n } from '@kbn/i18n';
 import { useBreadcrumbs } from '@kbn/observability-shared-plugin/public';
 import { paths } from '@kbn/slo-shared-plugin/common/locators/paths';
 import React from 'react';
-import { HeaderMenu } from '../../components/header_menu/header_menu';
+import { SloAppHeader } from '../../components/slo_app_header/slo_app_header';
 import { useKibana } from '../../hooks/use_kibana';
 import { usePluginContext } from '../../hooks/use_plugin_context';
 import { SettingsForm } from './settings_form';
+
+const pageTitle = i18n.translate('xpack.slo.pageHeader.title.', {
+  defaultMessage: 'SLOs Settings',
+});
+
+const slosBackLabel = i18n.translate('xpack.slo.breadcrumbs.sloLabel', {
+  defaultMessage: 'SLOs',
+});
 
 export function SloSettingsPage() {
   const {
@@ -42,15 +51,16 @@ export function SloSettingsPage() {
   return (
     <ObservabilityPageTemplate
       data-test-subj="slosSettingsPage"
-      pageHeader={{
-        pageTitle: i18n.translate('xpack.slo.pageHeader.title.', {
-          defaultMessage: 'SLOs Settings',
-        }),
-        rightSideItems: [],
-      }}
+      pageSectionProps={{ paddingSize: 'none' }}
     >
-      <HeaderMenu />
-      <SettingsForm />
+      <SloAppHeader
+        title={pageTitle}
+        hiddenItemIds={['settings']}
+        back={{ href: basePath.prepend(paths.slos), label: slosBackLabel }}
+      />
+      <EuiPageSection paddingSize="l" restrictWidth={false}>
+        <SettingsForm />
+      </EuiPageSection>
     </ObservabilityPageTemplate>
   );
 }

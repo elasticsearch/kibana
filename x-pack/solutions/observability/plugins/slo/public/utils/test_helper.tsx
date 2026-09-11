@@ -15,6 +15,7 @@ import type { DefaultClientOptions } from '@kbn/server-route-repository-client';
 import { createRepositoryClient } from '@kbn/server-route-repository-client';
 import { KibanaPageTemplate } from '@kbn/shared-ux-page-kibana-template';
 import { QueryClient, QueryClientProvider } from '@kbn/react-query';
+import { MockAppHeaderProvider } from '@kbn/app-header/mocks';
 import { render as testLibRender } from '@testing-library/react';
 import React from 'react';
 import { i18n } from '@kbn/i18n';
@@ -76,7 +77,9 @@ export const render = (component: React.ReactNode) => {
           }}
         >
           <PluginContext.Provider value={pluginContextDefaultValue}>
-            <QueryClientProvider client={queryClient}>{component}</QueryClientProvider>
+            <MockAppHeaderProvider>
+              <QueryClientProvider client={queryClient}>{component}</QueryClientProvider>
+            </MockAppHeaderProvider>
           </PluginContext.Provider>
         </KibanaContextProvider>
       </EuiProvider>

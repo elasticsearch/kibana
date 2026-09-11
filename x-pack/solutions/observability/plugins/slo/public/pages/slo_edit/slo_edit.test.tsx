@@ -140,6 +140,7 @@ const mockKibana = (license: ILicense | null = licenseMock) => {
         license$: new BehaviorSubject(license),
       },
       share: sharePluginMock.createStartContract(),
+      inspector: { open: jest.fn() },
     },
   });
 };

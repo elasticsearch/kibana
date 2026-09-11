@@ -6,6 +6,7 @@
  */
 import type { AppMountParameters } from '@kbn/core-application-browser';
 import type { CoreTheme } from '@kbn/core-theme-browser';
+import { MockAppHeaderProvider } from '@kbn/app-header/mocks';
 import { KibanaContextProvider } from '@kbn/kibana-react-plugin/public';
 import { sloFeatureId } from '@kbn/observability-shared-plugin/common';
 import { KibanaPageTemplate } from '@kbn/shared-ux-page-kibana-template';
@@ -60,8 +61,12 @@ export function KibanaReactStorybookDecorator(Story: ComponentType) {
         docLinks: {
           links: {
             query: {},
+            observability: {
+              slo: 'https://www.elastic.co/guide',
+            },
           },
         },
+        inspector: { open: () => {} },
         http: {
           basePath: {
             prepend: (_: string) => '',
@@ -104,9 +109,11 @@ export function KibanaReactStorybookDecorator(Story: ComponentType) {
         }}
       >
         <MemoryRouter>
-          <QueryClientProvider client={queryClient}>
-            <Story />
-          </QueryClientProvider>
+          <MockAppHeaderProvider>
+            <QueryClientProvider client={queryClient}>
+              <Story />
+            </QueryClientProvider>
+          </MockAppHeaderProvider>
         </MemoryRouter>
       </PluginContext.Provider>
     </KibanaContextProvider>

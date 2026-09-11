@@ -5,13 +5,26 @@
  * 2.0.
  */
 
+import { AppHeader } from '@kbn/app-header';
+import React from 'react';
 import { buildSlo } from '../../../data/slo/slo';
+import { ActionModalProvider } from '../../../context/action_modal';
 import { KibanaReactStorybookDecorator } from '../../../utils/kibana_react.storybook_decorator';
 import type { Props } from './header_control';
-import { HeaderControl as Component } from './header_control';
+import { useSloDetailsActionsPrimary } from './header_control';
+
+function HeaderControlHarness({ slo }: Props) {
+  const { primaryActionItem, flyouts } = useSloDetailsActionsPrimary({ slo });
+  return (
+    <ActionModalProvider>
+      <AppHeader title={slo.name} menu={{ primaryActionItem }} />
+      {flyouts}
+    </ActionModalProvider>
+  );
+}
 
 export default {
-  component: Component,
+  component: HeaderControlHarness,
   title: 'app/SLO/DetailsPage/HeaderControl',
   decorators: [KibanaReactStorybookDecorator],
 };
@@ -22,8 +35,4 @@ const defaultProps: Props = {
 
 export const Default = {
   args: defaultProps,
-};
-
-export const WithLoading = {
-  args: { slo: undefined, isLoading: true },
 };

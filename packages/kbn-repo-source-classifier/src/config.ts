@@ -33,6 +33,7 @@ export const TEST_TAG = new Set([
   'stub',
   'fixture',
   'story_decorators',
+  'storybook_decorator',
   'test_helpers',
 ]);
 

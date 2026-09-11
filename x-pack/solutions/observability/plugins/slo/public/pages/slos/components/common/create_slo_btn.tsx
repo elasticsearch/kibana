@@ -5,112 +5,98 @@
  * 2.0.
  */
 
-import { EuiButton, EuiContextMenuItem, EuiContextMenuPanel, EuiPopover } from '@elastic/eui';
+import type { AppHeaderMenu } from '@kbn/app-header';
 import { i18n } from '@kbn/i18n';
 import { paths } from '@kbn/slo-shared-plugin/common/locators/paths';
 import React, { useCallback, useMemo, useState } from 'react';
+import { SloTemplatesFlyout } from '../../../../components/slo/slo_templates/slo_templates_flyout';
 import { useCompositeSloEnabled } from '../../../../hooks/use_composite_slo_enabled';
 import { useKibana } from '../../../../hooks/use_kibana';
 import { usePermissions } from '../../../../hooks/use_permissions';
-import { SloTemplatesFlyout } from '../../../../components/slo/slo_templates/slo_templates_flyout';
 
-export function CreateSloBtn() {
+export function useCreateSloPrimaryAction(): {
+  primaryActionItem: NonNullable<AppHeaderMenu['primaryActionItem']>;
+  templatesFlyout: React.ReactNode;
+} {
   const {
     application: { navigateToUrl },
     http: { basePath },
   } = useKibana().services;
 
   const { data: permissions } = usePermissions();
-  const [isPopoverOpen, setIsPopoverOpen] = useState(false);
   const [isFlyoutOpen, setIsFlyoutOpen] = useState(false);
 
   const isDisabled = !permissions?.hasAllWriteRequested;
   const isCompositeSloEnabled = useCompositeSloEnabled();
 
   const handleClickCreateSlo = useCallback(() => {
-    setIsPopoverOpen(false);
     navigateToUrl(basePath.prepend(paths.sloCreate));
   }, [basePath, navigateToUrl]);
 
-  const handleClickCreateFromTemplate = () => {
-    setIsPopoverOpen(false);
+  const handleClickCreateFromTemplate = useCallback(() => {
     setIsFlyoutOpen(true);
-  };
+  }, []);
 
   const handleClickCreateCompositeSlo = useCallback(() => {
-    setIsPopoverOpen(false);
     navigateToUrl(basePath.prepend(paths.sloCompositeCreate));
   }, [basePath, navigateToUrl]);
 
-  const menuItems = useMemo(() => {
-    const items = [
-      <EuiContextMenuItem
-        key="create"
-        icon="plus"
-        onClick={handleClickCreateSlo}
-        data-test-subj="slosPageCreateNewSloButton"
-      >
-        {i18n.translate('xpack.slo.sloList.pageHeader.create', { defaultMessage: 'Create SLO' })}
-      </EuiContextMenuItem>,
-      <EuiContextMenuItem
-        key="createFromTemplate"
-        icon="pagesSelect"
-        onClick={handleClickCreateFromTemplate}
-        data-test-subj="slosPageCreateFromTemplateButton"
-      >
-        {i18n.translate('xpack.slo.sloList.pageHeader.createFromTemplate', {
-          defaultMessage: 'Create from template',
-        })}
-      </EuiContextMenuItem>,
-    ];
-
-    if (isCompositeSloEnabled) {
-      items.push(
-        <EuiContextMenuItem
-          key="createComposite"
-          icon="aggregate"
-          onClick={handleClickCreateCompositeSlo}
-          data-test-subj="slosPageCreateCompositeSloButton"
-        >
-          {i18n.translate('xpack.slo.sloList.pageHeader.createComposite', {
-            defaultMessage: 'Create composite SLO',
-          })}
-        </EuiContextMenuItem>
-      );
-    }
-
-    return items;
-  }, [handleClickCreateCompositeSlo, handleClickCreateSlo, isCompositeSloEnabled]);
-
-  return (
-    <>
-      <EuiPopover
-        aria-label={i18n.translate('xpack.slo.createSloBtn.popoverAriaLabel', {
-          defaultMessage: 'Create SLO options',
-        })}
-        button={
-          <EuiButton
-            color="primary"
-            data-test-subj="slosPageCreateSloDropdown"
-            disabled={isDisabled}
-            fill
-            iconType="chevronSingleDown"
-            iconSide="right"
-            onClick={() => setIsPopoverOpen(!isPopoverOpen)}
-          >
-            {i18n.translate('xpack.slo.sloList.pageHeader.create', {
-              defaultMessage: 'Create SLO',
-            })}
-          </EuiButton>
-        }
-        isOpen={isPopoverOpen}
-        closePopover={() => setIsPopoverOpen(false)}
-        panelPaddingSize="none"
-        anchorPosition="downRight"
-      >
-        <EuiContextMenuPanel items={menuItems} />
-      </EuiPopover>
-      {isFlyoutOpen && <SloTemplatesFlyout onClose={() => setIsFlyoutOpen(false)} />}
-    </>
+  const primaryActionItem = useMemo<NonNullable<AppHeaderMenu['primaryActionItem']>>(
+    () => ({
+      id: 'createSlo',
+      label: i18n.translate('xpack.slo.sloList.pageHeader.create', {
+        defaultMessage: 'Create SLO',
+      }),
+      iconType: 'plusCircle',
+      testId: 'slosPageCreateSloDropdown',
+      disableButton: isDisabled,
+      items: [
+        {
+          id: 'create',
+          label: i18n.translate('xpack.slo.sloList.pageHeader.create', {
+            defaultMessage: 'Create SLO',
+          }),
+          iconType: 'plus',
+          testId: 'slosPageCreateNewSloButton',
+          run: handleClickCreateSlo,
+        },
+        {
+          id: 'createFromTemplate',
+          label: i18n.translate('xpack.slo.sloList.pageHeader.createFromTemplate', {
+            defaultMessage: 'Create from template',
+          }),
+          iconType: 'pagesSelect',
+          testId: 'slosPageCreateFromTemplateButton',
+          run: handleClickCreateFromTemplate,
+        },
+        ...(isCompositeSloEnabled
+          ? [
+              {
+                id: 'createComposite',
+                label: i18n.translate('xpack.slo.sloList.pageHeader.createComposite', {
+                  defaultMessage: 'Create composite SLO',
+                }),
+                iconType: 'aggregate' as const,
+                testId: 'slosPageCreateCompositeSloButton',
+                run: handleClickCreateCompositeSlo,
+              },
+            ]
+          : []),
+      ],
+    }),
+    [
+      handleClickCreateCompositeSlo,
+      handleClickCreateFromTemplate,
+      handleClickCreateSlo,
+      isCompositeSloEnabled,
+      isDisabled,
+    ]
   );
+
+  return {
+    primaryActionItem,
+    templatesFlyout: isFlyoutOpen ? (
+      <SloTemplatesFlyout onClose={() => setIsFlyoutOpen(false)} />
+    ) : null,
+  };
 }

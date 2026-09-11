@@ -77,6 +77,8 @@ const mockKibana = () => {
           },
         },
       },
+      inspector: { open: jest.fn() },
+      uiSettings: { get: () => false },
       observabilityAIAssistant: mockObservabilityAIAssistant,
     },
   });

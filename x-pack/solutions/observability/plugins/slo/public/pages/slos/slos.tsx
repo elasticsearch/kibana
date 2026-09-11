@@ -5,7 +5,7 @@
  * 2.0.
  */
 
-import { EuiSpacer, EuiTab, EuiTabs } from '@elastic/eui';
+import { EuiPageSection, EuiSpacer, EuiTab, EuiTabs } from '@elastic/eui';
 import { i18n } from '@kbn/i18n';
 import { useBreadcrumbs } from '@kbn/observability-shared-plugin/public';
 import {
@@ -16,7 +16,7 @@ import {
 } from '@kbn/slo-shared-plugin/common/locators/paths';
 import React, { useEffect } from 'react';
 import { useHistory, useLocation } from 'react-router-dom';
-import { HeaderMenu } from '../../components/header_menu/header_menu';
+import { SloAppHeader } from '../../components/slo_app_header/slo_app_header';
 import { SloOutdatedCallout } from '../../components/slo/slo_outdated_callout';
 import { useCompositeSloEnabled } from '../../hooks/use_composite_slo_enabled';
 import { useHasSlos } from '../../hooks/use_has_slos';
@@ -24,12 +24,14 @@ import { useKibana } from '../../hooks/use_kibana';
 import { useLicense } from '../../hooks/use_license';
 import { usePermissions } from '../../hooks/use_permissions';
 import { usePluginContext } from '../../hooks/use_plugin_context';
-import { LoadingPage } from '../loading_page';
+import { LoadingState } from '../../components/loading_state';
 import { CompositeSloList } from './components/composite_slo/composite_slo_list';
-import { CreateSloBtn } from './components/common/create_slo_btn';
+import { useCreateSloPrimaryAction } from './components/common/create_slo_btn';
 import { SloList } from './components/slo_list';
 import { SloListSearchBar } from './components/slo_list_search_bar';
 import { SLOsOverview } from './components/slos_overview/slos_overview';
+
+const pageTitle = i18n.translate('xpack.slo.slosPage.', { defaultMessage: 'SLOs' });
 
 export const SLO_PAGE_ID = 'slo-page-container';
 
@@ -96,47 +98,48 @@ export function SlosPage() {
     }
   }, [history, basePath, hasAtLeast, isError, isLoading, hasSlos, permissions]);
 
-  if (isLoading) {
-    return <LoadingPage dataTestSubj="sloListPageLoading" />;
-  }
+  const { primaryActionItem, templatesFlyout } = useCreateSloPrimaryAction();
 
   return (
-    <ObservabilityPageTemplate
-      data-test-subj="slosPage"
-      pageHeader={{
-        pageTitle: i18n.translate('xpack.slo.slosPage.', { defaultMessage: 'SLOs' }),
-        rightSideItems: [<CreateSloBtn />],
-      }}
-    >
-      <HeaderMenu />
-      <SloOutdatedCallout />
-      {isCompositeSloEnabled && (
-        <>
-          <EuiTabs>
-            {tabs.map(({ id, label, path }) => (
-              <EuiTab
-                key={id}
-                isSelected={id === selectedTabId}
-                onClick={() => history.push(path)}
-                data-test-subj={`sloTab-${id}`}
-              >
-                {label}
-              </EuiTab>
-            ))}
-          </EuiTabs>
-          <EuiSpacer size="m" />
-        </>
-      )}
-      {selectedTabId === 'slos' && (
-        <>
-          <SloListSearchBar />
-          <EuiSpacer size="m" />
-          <SLOsOverview />
-          <EuiSpacer size="m" />
-          <SloList />
-        </>
-      )}
-      {isCompositeSloEnabled && selectedTabId === 'compositeSlos' && <CompositeSloList />}
+    <ObservabilityPageTemplate data-test-subj="slosPage" pageSectionProps={{ paddingSize: 'none' }}>
+      <SloAppHeader title={pageTitle} primaryActionItem={hasSlos ? primaryActionItem : undefined} />
+      {templatesFlyout}
+      <EuiPageSection paddingSize="l" restrictWidth={false}>
+        {isLoading ? (
+          <LoadingState dataTestSubj="sloListPageLoading" />
+        ) : (
+          <>
+            <SloOutdatedCallout />
+            {isCompositeSloEnabled && (
+              <>
+                <EuiTabs>
+                  {tabs.map(({ id, label, path }) => (
+                    <EuiTab
+                      key={id}
+                      isSelected={id === selectedTabId}
+                      onClick={() => history.push(path)}
+                      data-test-subj={`sloTab-${id}`}
+                    >
+                      {label}
+                    </EuiTab>
+                  ))}
+                </EuiTabs>
+                <EuiSpacer size="m" />
+              </>
+            )}
+            {selectedTabId === 'slos' && (
+              <>
+                <SloListSearchBar />
+                <EuiSpacer size="m" />
+                <SLOsOverview />
+                <EuiSpacer size="m" />
+                <SloList />
+              </>
+            )}
+            {isCompositeSloEnabled && selectedTabId === 'compositeSlos' && <CompositeSloList />}
+          </>
+        )}
+      </EuiPageSection>
     </ObservabilityPageTemplate>
   );
 }

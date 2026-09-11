@@ -30,6 +30,7 @@ jest.mock('react-router-dom', () => ({
 }));
 
 jest.mock('@kbn/observability-shared-plugin/public', () => ({
+  ...jest.requireActual('@kbn/observability-shared-plugin/public'),
   useBreadcrumbs: jest.fn(),
 }));
 jest.mock('../../hooks/use_kibana');
@@ -44,9 +45,6 @@ jest.mock('./components/slo_definitions/slo_management_table', () => ({
 jest.mock('./components/slo_definitions/slo_management_outdated_filter_callout', () => ({
   SloOutdatedFilterCallout: () => null,
 }));
-jest.mock('./components/header_control/header_control', () => ({
-  HeaderControl: () => <div>Header Control</div>,
-}));
 jest.mock('../../components/header_menu/header_menu', () => ({
   HeaderMenu: () => null,
 }));
@@ -55,6 +53,7 @@ jest.mock('./context/bulk_operation', () => ({
 }));
 jest.mock('../../context/action_modal', () => ({
   ActionModalProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+  useActionModal: () => ({ triggerAction: jest.fn() }),
 }));
 jest.mock('./hooks/use_templates_url_search_state', () => ({
   useTemplatesUrlSearchState: () => ({
@@ -87,6 +86,9 @@ describe('SloManagementPage', () => {
         application: { navigateToUrl: mockNavigateToUrl },
         unifiedSearch: { ui: { SearchBar: MockSearchBar } },
         serverless: undefined,
+        inspector: { open: jest.fn() },
+        uiSettings: { get: () => false },
+        docLinks: { links: { observability: { slo: 'dummy_link' } } },
       },
     });
     useLicenseMock.mockReturnValue({ hasAtLeast: () => true });
@@ -110,12 +112,13 @@ describe('SloManagementPage', () => {
     });
   });
 
-  it('renders with definitions tab selected by default', () => {
+  it('renders with definitions tab selected by default', async () => {
     render(<SloManagementPage />);
 
     expect(screen.getByTestId('managementTabDefinitions')).toHaveAttribute('aria-selected', 'true');
     expect(screen.getByTestId('managementTabTemplates')).toHaveAttribute('aria-selected', 'false');
     expect(screen.getByTestId('sloManagementTable')).toBeTruthy();
+    expect(await screen.findByTestId('headerControlActionsButton')).toBeTruthy();
   });
 
   it('navigates to templates tab when clicked', () => {

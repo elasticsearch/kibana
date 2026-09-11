@@ -5,7 +5,7 @@
  * 2.0.
  */
 
-import { EuiSkeletonText } from '@elastic/eui';
+import { EuiPageSection, EuiSpacer } from '@elastic/eui';
 import type { ChromeBreadcrumb } from '@kbn/core-chrome-browser';
 import type { IBasePath } from '@kbn/core-http-browser';
 import { usePageReady } from '@kbn/ebt-tools';
@@ -15,10 +15,10 @@ import { useIsMutating } from '@kbn/react-query';
 import type { SLOWithSummaryResponse } from '@kbn/slo-schema';
 import { paths } from '@kbn/slo-shared-plugin/common/locators/paths';
 import dedent from 'dedent';
-import React, { useEffect } from 'react';
+import React, { useCallback, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { OBSERVABILITY_SLO_ATTACHMENT_TYPE_ID } from '@kbn/observability-agent-builder-plugin/public';
-import { HeaderMenu } from '../../components/header_menu/header_menu';
+import { SloAppHeader } from '../../components/slo_app_header/slo_app_header';
 import { LoadingState } from '../../components/loading_state';
 import { ActionModalProvider } from '../../context/action_modal';
 import { useFetchSloDetails } from '../../hooks/use_fetch_slo_details';
@@ -27,15 +27,24 @@ import { useLicense } from '../../hooks/use_license';
 import { usePermissions } from '../../hooks/use_permissions';
 import { usePluginContext } from '../../hooks/use_plugin_context';
 import PageNotFound from '../404';
-import { AutoRefreshButton } from './components/auto_refresh_button';
-import { HeaderControl } from './components/header_control';
+import { useAutoRefreshOverflowItem } from './components/auto_refresh_button';
+import { useSloDetailsActionsPrimary } from './components/header_control';
 import { HeaderTitle } from './components/header_title';
 import { SloDetails } from './components/slo_details';
 import { useAutoRefreshState } from './hooks/use_auto_refresh_state';
 import { useGetQueryParams } from './hooks/use_get_query_params';
 import { useSelectedTab } from './hooks/use_selected_tab';
+import { useSloDetailsAppHeader } from './hooks/use_slo_details_app_header';
 import { useSloDetailsTabs } from './hooks/use_slo_details_tabs';
 import type { SloDetailsPathParams } from './types';
+
+const slosBackLabel = i18n.translate('xpack.slo.breadcrumbs.slosLinkText', {
+  defaultMessage: 'SLOs',
+});
+
+const detailsFallbackTitle = i18n.translate('xpack.slo.breadcrumbs.sloDetailsLinkText', {
+  defaultMessage: 'Details',
+});
 
 export function SloDetailsPage() {
   const {
@@ -68,7 +77,7 @@ export function SloDetailsPage() {
 
   const { selectedTabId } = useSelectedTab();
 
-  const { tabs } = useSloDetailsTabs({
+  const { appHeaderTabs } = useSloDetailsTabs({
     slo,
     isAutoRefreshing,
     selectedTabId,
@@ -154,31 +163,82 @@ export function SloDetailsPage() {
 
   return (
     <ObservabilityPageTemplate
-      pageHeader={{
-        pageTitle: slo?.name ?? <EuiSkeletonText lines={1} />,
-        children: <HeaderTitle isLoading={isPerformingAction} slo={slo} />,
-        rightSideItems: !isLoading
-          ? [
-              <ActionModalProvider>
-                <HeaderControl slo={slo!} />
-              </ActionModalProvider>,
-              <AutoRefreshButton
-                isAutoRefreshing={isAutoRefreshing}
-                onClick={() => setAutoRefresh((prev) => !prev)}
-              />,
-            ]
-          : undefined,
-        tabs,
-      }}
       data-test-subj="sloDetailsPage"
+      pageSectionProps={{ paddingSize: 'none' }}
     >
-      <HeaderMenu />
-      {isLoading ? (
-        <LoadingState dataTestSubj="sloDetailsLoading" />
-      ) : (
-        <SloDetails slo={slo!} isAutoRefreshing={isAutoRefreshing} selectedTabId={selectedTabId} />
-      )}
+      <ActionModalProvider>
+        {slo ? (
+          <SloDetailsPageContent
+            slo={slo}
+            isAutoRefreshing={isAutoRefreshing}
+            setAutoRefresh={setAutoRefresh}
+            isPerformingAction={isPerformingAction}
+            selectedTabId={selectedTabId}
+            tabs={appHeaderTabs}
+          />
+        ) : (
+          <>
+            <SloAppHeader
+              title={detailsFallbackTitle}
+              back={{ href: basePath.prepend(paths.slos), label: slosBackLabel }}
+            />
+            <EuiPageSection paddingSize="l" restrictWidth={false}>
+              <HeaderTitle isLoading={isPerformingAction} slo={slo} />
+              <LoadingState dataTestSubj="sloDetailsLoading" />
+            </EuiPageSection>
+          </>
+        )}
+      </ActionModalProvider>
     </ObservabilityPageTemplate>
+  );
+}
+
+function SloDetailsPageContent({
+  slo,
+  isAutoRefreshing,
+  setAutoRefresh,
+  isPerformingAction,
+  selectedTabId,
+  tabs,
+}: {
+  slo: SLOWithSummaryResponse;
+  isAutoRefreshing: boolean;
+  setAutoRefresh: (value: boolean | ((val: boolean) => boolean)) => void;
+  isPerformingAction: boolean;
+  selectedTabId: ReturnType<typeof useSelectedTab>['selectedTabId'];
+  tabs: ReturnType<typeof useSloDetailsTabs>['appHeaderTabs'];
+}) {
+  const {
+    http: { basePath },
+  } = useKibana().services;
+  const { primaryActionItem, flyouts } = useSloDetailsActionsPrimary({ slo });
+  const { badges, metadata } = useSloDetailsAppHeader(slo);
+  const onToggleAutoRefresh = useCallback(() => {
+    setAutoRefresh((prev) => !prev);
+  }, [setAutoRefresh]);
+  const autoRefreshItem = useAutoRefreshOverflowItem({
+    isAutoRefreshing,
+    onToggle: onToggleAutoRefresh,
+  });
+
+  return (
+    <>
+      <SloAppHeader
+        title={slo.name}
+        back={{ href: basePath.prepend(paths.slos), label: slosBackLabel }}
+        primaryActionItem={primaryActionItem}
+        extraItems={[autoRefreshItem]}
+        tabs={tabs}
+        badges={badges}
+        metadata={metadata}
+      />
+      {flyouts}
+      <EuiPageSection paddingSize="l" restrictWidth={false}>
+        <HeaderTitle isLoading={isPerformingAction} slo={slo} omitAppHeaderItems />
+        <EuiSpacer size="m" />
+        <SloDetails slo={slo} isAutoRefreshing={isAutoRefreshing} selectedTabId={selectedTabId} />
+      </EuiPageSection>
+    </>
   );
 }
 
@@ -189,17 +249,11 @@ function getBreadcrumbs(
   return [
     {
       href: basePath.prepend(paths.slos),
-      text: i18n.translate('xpack.slo.breadcrumbs.slosLinkText', {
-        defaultMessage: 'SLOs',
-      }),
+      text: slosBackLabel,
       deepLinkId: 'slo',
     },
     {
-      text:
-        slo?.name ??
-        i18n.translate('xpack.slo.breadcrumbs.sloDetailsLinkText', {
-          defaultMessage: 'Details',
-        }),
+      text: slo?.name ?? detailsFallbackTitle,
     },
   ];
 }

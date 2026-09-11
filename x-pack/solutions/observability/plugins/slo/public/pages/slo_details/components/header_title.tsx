@@ -24,9 +24,11 @@ import { SloInstance } from './instance_selector/slo_instance';
 export interface Props {
   slo?: SLOWithSummaryResponse;
   isLoading: boolean;
+  /** Hide value/status badges and last-updated; those live on AppHeader for the details page. */
+  omitAppHeaderItems?: boolean;
 }
 
-export function HeaderTitle({ isLoading, slo }: Props) {
+export function HeaderTitle({ isLoading, slo, omitAppHeaderItems = false }: Props) {
   if (isLoading || !slo) {
     return <EuiSkeletonText lines={2} data-test-subj="loadingTitle" />;
   }
@@ -41,8 +43,12 @@ export function HeaderTitle({ isLoading, slo }: Props) {
         responsive={false}
         wrap={true}
       >
-        <SloValueBadge slo={slo} isLoading={isLoading} />
-        <SloStatusBadge slo={slo} isLoading={isLoading} />
+        {!omitAppHeaderItems && (
+          <>
+            <SloValueBadge slo={slo} isLoading={isLoading} />
+            <SloStatusBadge slo={slo} isLoading={isLoading} />
+          </>
+        )}
         <SloStateBadge slo={slo} />
         <SloRemoteBadge slo={slo} />
         <SloTagsBadge slo={slo} />
@@ -56,17 +62,19 @@ export function HeaderTitle({ isLoading, slo }: Props) {
           </EuiText>
         </EuiFlexItem>
       )}
-      <EuiFlexItem grow={false}>
-        <EuiMarkdownFormat textSize="xs" color="subdued">
-          {i18n.translate('xpack.slo.sloDetails.headerTitle.lastUpdatedLabel', {
-            defaultMessage: '**Last updated by** {updatedBy} **on** {updatedAt}',
-            values: {
-              updatedBy: slo.updatedBy ?? NOT_AVAILABLE_LABEL,
-              updatedAt: moment(slo.updatedAt).format('ll'),
-            },
-          })}
-        </EuiMarkdownFormat>
-      </EuiFlexItem>
+      {!omitAppHeaderItems && (
+        <EuiFlexItem grow={false}>
+          <EuiMarkdownFormat textSize="xs" color="subdued">
+            {i18n.translate('xpack.slo.sloDetails.headerTitle.lastUpdatedLabel', {
+              defaultMessage: '**Last updated by** {updatedBy} **on** {updatedAt}',
+              values: {
+                updatedBy: slo.updatedBy ?? NOT_AVAILABLE_LABEL,
+                updatedAt: moment(slo.updatedAt).format('ll'),
+              },
+            })}
+          </EuiMarkdownFormat>
+        </EuiFlexItem>
+      )}
       <SloInstance slo={slo} />
     </EuiFlexGroup>
   );

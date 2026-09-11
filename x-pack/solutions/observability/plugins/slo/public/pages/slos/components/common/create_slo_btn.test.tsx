@@ -5,7 +5,7 @@
  * 2.0.
  */
 
-import { waitForEuiPopoverOpen } from '@elastic/eui/lib/test/rtl';
+import { AppHeader } from '@kbn/app-header';
 import { fireEvent, screen } from '@testing-library/react';
 import React from 'react';
 import { useKibana } from '../../../../hooks/use_kibana';
@@ -13,7 +13,7 @@ import { useFetchSloTemplateTags } from '../../../../hooks/use_fetch_slo_templat
 import { useFetchSloTemplates } from '../../../../hooks/use_fetch_slo_templates';
 import { usePermissions } from '../../../../hooks/use_permissions';
 import { render } from '../../../../utils/test_helper';
-import { CreateSloBtn } from './create_slo_btn';
+import { useCreateSloPrimaryAction } from './create_slo_btn';
 
 jest.mock('../../../../hooks/use_kibana');
 jest.mock('../../../../hooks/use_permissions');
@@ -29,7 +29,17 @@ const usePermissionsMock = usePermissions as jest.Mock;
 const useFetchSloTemplatesMock = useFetchSloTemplates as jest.Mock;
 const useFetchSloTemplateTagsMock = useFetchSloTemplateTags as jest.Mock;
 
-describe('CreateSloBtn', () => {
+function CreateSloPrimaryHarness() {
+  const { primaryActionItem, templatesFlyout } = useCreateSloPrimaryAction();
+  return (
+    <>
+      <AppHeader title="SLOs" menu={{ primaryActionItem }} />
+      {templatesFlyout}
+    </>
+  );
+}
+
+describe('useCreateSloPrimaryAction', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     useKibanaMock.mockReturnValue({
@@ -53,49 +63,46 @@ describe('CreateSloBtn', () => {
     });
   });
 
-  it('renders a dropdown button', () => {
-    render(<CreateSloBtn />);
+  it('renders a dropdown button', async () => {
+    render(<CreateSloPrimaryHarness />);
 
-    expect(screen.getByTestId('slosPageCreateSloDropdown')).toBeTruthy();
+    expect(await screen.findByTestId('slosPageCreateSloDropdown')).toBeTruthy();
   });
 
-  it('disables the button when user lacks write permissions', () => {
+  it('disables the button when user lacks write permissions', async () => {
     usePermissionsMock.mockReturnValue({
       data: { hasAllReadRequested: true, hasAllWriteRequested: false },
     });
 
-    render(<CreateSloBtn />);
+    render(<CreateSloPrimaryHarness />);
 
-    expect(screen.getByTestId('slosPageCreateSloDropdown')).toBeDisabled();
+    expect(await screen.findByTestId('slosPageCreateSloDropdown')).toBeDisabled();
   });
 
   it('shows dropdown items on click', async () => {
-    render(<CreateSloBtn />);
+    render(<CreateSloPrimaryHarness />);
 
-    fireEvent.click(screen.getByTestId('slosPageCreateSloDropdown'));
-    await waitForEuiPopoverOpen();
+    fireEvent.click(await screen.findByTestId('slosPageCreateSloDropdown'));
 
-    expect(screen.getByTestId('slosPageCreateNewSloButton')).toBeTruthy();
+    expect(await screen.findByTestId('slosPageCreateNewSloButton')).toBeTruthy();
     expect(screen.getByTestId('slosPageCreateFromTemplateButton')).toBeTruthy();
   });
 
   it('navigates to create SLO page when "Create SLO" is clicked', async () => {
-    render(<CreateSloBtn />);
+    render(<CreateSloPrimaryHarness />);
 
-    fireEvent.click(screen.getByTestId('slosPageCreateSloDropdown'));
-    await waitForEuiPopoverOpen();
-    fireEvent.click(screen.getByTestId('slosPageCreateNewSloButton'));
+    fireEvent.click(await screen.findByTestId('slosPageCreateSloDropdown'));
+    fireEvent.click(await screen.findByTestId('slosPageCreateNewSloButton'));
 
     expect(mockNavigateToUrl).toHaveBeenCalledWith('/app/slos/create');
   });
 
   it('opens flyout when "Create from template" is clicked', async () => {
-    render(<CreateSloBtn />);
+    render(<CreateSloPrimaryHarness />);
 
-    fireEvent.click(screen.getByTestId('slosPageCreateSloDropdown'));
-    await waitForEuiPopoverOpen();
-    fireEvent.click(screen.getByTestId('slosPageCreateFromTemplateButton'));
+    fireEvent.click(await screen.findByTestId('slosPageCreateSloDropdown'));
+    fireEvent.click(await screen.findByTestId('slosPageCreateFromTemplateButton'));
 
-    expect(screen.getByTestId('sloTemplatesFlyout')).toBeTruthy();
+    expect(await screen.findByTestId('sloTemplatesFlyout')).toBeTruthy();
   });
 });
