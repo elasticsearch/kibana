@@ -36,6 +36,8 @@ jest.mock('@kbn/discover-utils', () => {
     METRICS_GRID_SORT_DEFAULTS,
   } = jest.requireActual('@kbn/discover-utils/src/data_types/metrics');
 
+  const { useFlyoutWidth } = jest.requireActual('@kbn/discover-utils/src/hooks/use_flyout_width');
+
   return {
     DiscoverFlyouts: { metricInsights: 'metricInsights' },
     METRICS_GRID_HISTOGRAM_PERCENTILES,
@@ -43,6 +45,7 @@ jest.mock('@kbn/discover-utils', () => {
     METRICS_GRID_SIMPLE_AGGREGATIONS,
     METRICS_GRID_SORT_DEFAULTS,
     dismissAllFlyoutsExceptFor: jest.fn(),
+    useFlyoutWidth,
   };
 });
 

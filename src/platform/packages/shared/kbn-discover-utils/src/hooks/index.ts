@@ -8,3 +8,5 @@
  */
 
 export * from './use_pager';
+export { isResizeHandleEvent, useFlyoutWidth } from './use_flyout_width';
+export type { UseFlyoutWidthParams, UseFlyoutWidthResult } from './use_flyout_width';

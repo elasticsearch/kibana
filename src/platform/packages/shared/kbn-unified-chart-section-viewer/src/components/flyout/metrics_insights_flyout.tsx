@@ -18,10 +18,9 @@ import {
   useGeneratedHtmlId,
   useIsWithinMinBreakpoint,
 } from '@elastic/eui';
-import React, { useCallback, useEffect, useRef } from 'react';
+import React, { useCallback, useEffect } from 'react';
 import { i18n } from '@kbn/i18n';
-import useLocalStorage from 'react-use/lib/useLocalStorage';
-import { DiscoverFlyouts, dismissAllFlyoutsExceptFor } from '@kbn/discover-utils';
+import { DiscoverFlyouts, dismissAllFlyoutsExceptFor, useFlyoutWidth } from '@kbn/discover-utils';
 import type { ParsedMetricItem } from '../../types';
 import { MetricFlyoutBody } from './metrics_flyout_body';
 import { useFlyoutA11y } from './hooks/use_flyout_a11y';
@@ -41,11 +40,8 @@ export const MetricInsightsFlyout = ({
   const { euiTheme } = useEuiTheme();
   const defaultWidth = euiTheme.base * 34;
   const isXlScreen = useIsWithinMinBreakpoint('xl');
-  const [flyoutWidth, setFlyoutWidth] = useLocalStorage(
-    'metricsExperience:flyoutWidth',
-    defaultWidth
-  );
-  const flyoutWidthRef = useRef(flyoutWidth ?? defaultWidth);
+  const { initialWidth, onKeyDownCapture, onPointerCancel, onPointerDown, onResize } =
+    useFlyoutWidth({ localStorageKey: 'metricsExperience:flyoutWidth', defaultWidth });
   const { a11yProps, screenReaderDescription } = useFlyoutA11y({ isXlScreen });
   const { fieldsMetadata = {} } = useFieldsMetadataContext();
 
@@ -104,18 +100,18 @@ export const MetricInsightsFlyout = ({
       onClose={onClose}
       type="push"
       pushMinBreakpoint="xl"
-      size={flyoutWidthRef.current}
+      size={initialWidth}
       data-test-subj="metricsExperienceFlyout"
       aria-labelledby={metricFlyoutTitleId}
       onKeyDown={onKeyDown}
+      onKeyDownCapture={onKeyDownCapture}
+      onPointerDown={onPointerDown}
+      onPointerCancel={onPointerCancel}
       ownFocus
       minWidth={minWidth}
       maxWidth={maxWidth}
       resizable={true}
-      onResize={setFlyoutWidth}
-      css={{
-        maxWidth: `${isXlScreen ? `calc(100vw - ${defaultWidth}px)` : '90vw'} !important`,
-      }}
+      onResize={onResize}
       paddingSize="m"
       {...a11yProps}
     >

@@ -65,6 +65,8 @@ export {
   getShouldShowFieldHandler,
   isEsqlSavedSearch,
   isNestedFieldParent,
+  isResizeHandleEvent,
+  useFlyoutWidth,
   usePager,
   calcFieldCounts,
   getLogLevelColor,
@@ -107,6 +109,8 @@ export {
 } from './src';
 
 export type {
+  UseFlyoutWidthParams,
+  UseFlyoutWidthResult,
   LogsContextService,
   ApmContextService,
   SortOrder,

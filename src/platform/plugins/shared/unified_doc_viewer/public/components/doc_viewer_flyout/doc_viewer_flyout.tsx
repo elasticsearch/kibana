@@ -8,7 +8,7 @@
  */
 
 import type { ReactNode } from 'react';
-import React, { useCallback, useMemo, useRef } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import type { DocViewerProps, ElasticRequestState } from '@kbn/unified-doc-viewer';
 import { DOC_VIEWER_FLYOUT_HISTORY_KEY } from '@kbn/unified-doc-viewer';
 import { i18n } from '@kbn/i18n';
@@ -29,8 +29,8 @@ import {
   useEuiTheme,
   useIsWithinMinBreakpoint,
 } from '@elastic/eui';
+import { isResizeHandleEvent, useFlyoutWidth } from '@kbn/discover-utils';
 import type { DataTableColumnsMeta, DataTableRecord } from '@kbn/discover-utils/types';
-import useLocalStorage from 'react-use/lib/useLocalStorage';
 import type { ToastsStart } from '@kbn/core-notifications-browser';
 import useObservable from 'react-use/lib/useObservable';
 import type { ChromeStart } from '@kbn/core/public';
@@ -136,11 +136,11 @@ export function UnifiedDocViewerFlyout({
   const isProjectStyle = chromeStyle === 'project';
   const DEFAULT_WIDTH = euiTheme.base * 34;
   const defaultWidth = flyoutDefaultWidth ?? DEFAULT_WIDTH; // Give enough room to search bar to not wrap
-  const [flyoutWidth, setFlyoutWidth] = useLocalStorage(
-    flyoutWidthLocalStorageKey ?? FLYOUT_WIDTH_KEY,
-    defaultWidth
-  );
-  const flyoutWidthRef = useRef(flyoutWidth ?? defaultWidth);
+  const { initialWidth, onKeyDownCapture, onPointerCancel, onPointerDown, onResize } =
+    useFlyoutWidth({
+      localStorageKey: flyoutWidthLocalStorageKey ?? FLYOUT_WIDTH_KEY,
+      defaultWidth,
+    });
   const minWidth = euiTheme.base * 24;
   const maxWidth = euiTheme.breakpoint.xl;
   // Get actual hit with updated highlighted searches
@@ -190,10 +190,8 @@ export function UnifiedDocViewerFlyout({
         return;
       }
 
-      const isResizableButton =
-        (ev.target as HTMLElement).getAttribute('data-test-subj') === 'euiResizableButton';
-      if (isResizableButton) {
-        // ignore events triggered when the resizable button is focused
+      if (isResizeHandleEvent(ev)) {
+        // ignore events triggered when a resize handle is focused
         return;
       }
 
@@ -272,19 +270,18 @@ export function UnifiedDocViewerFlyout({
             className="DiscoverFlyout" // used to override the z-index of the flyout from SecuritySolution
             onClose={onClose}
             type={flyoutType ?? 'push'}
-            // workaround for remounting EUI flyout on resize if session prop is set to 'start'
-            size={flyoutWidthRef.current}
+            size={initialWidth}
             pushMinBreakpoint="xl"
             data-test-subj={dataTestSubj ?? 'docViewerFlyout'}
             onKeyDown={onKeyDown}
+            onKeyDownCapture={onKeyDownCapture}
+            onPointerDown={onPointerDown}
+            onPointerCancel={onPointerCancel}
             ownFocus={true}
             minWidth={minWidth}
             maxWidth={maxWidth}
             resizable={true}
-            onResize={setFlyoutWidth}
-            css={{
-              maxWidth: `${isXlScreen ? `calc(100vw - ${DEFAULT_WIDTH}px)` : '90vw'} !important`,
-            }}
+            onResize={onResize}
             paddingSize="m"
             aria-label={currentFlyoutTitle}
             {...a11yProps}
