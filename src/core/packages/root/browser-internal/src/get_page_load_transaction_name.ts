@@ -29,7 +29,9 @@ const stripBasePath = (pathname: string, basePath: string): string => {
  * Derives a low-cardinality page-load transaction name from a URL pathname.
  *
  * - App routes resolve to `/app/{appId}` regardless of deeper path segments.
- * - Non-app routes (e.g. `/login`) keep their pathname as-is.
+ * - Non-app routes resolve to their first path segment only (e.g. `/login`),
+ *   so dynamic tails on chromeless non-app routes (such as the short-URL id in
+ *   `/goto/{id}`) cannot leak into the name and inflate transaction cardinality.
  */
 export const getPageLoadTransactionName = (pathname: string, basePath = ''): string => {
   const path = stripBasePath(pathname, basePath);
@@ -39,7 +41,8 @@ export const getPageLoadTransactionName = (pathname: string, basePath = ''): str
     return `/app/${appMatch[1]}`;
   }
 
-  return path;
+  const [, firstSegment] = path.split('/');
+  return firstSegment ? `/${firstSegment}` : path;
 };
 
 export const isAppPath = (pathname: string, basePath = ''): boolean => {

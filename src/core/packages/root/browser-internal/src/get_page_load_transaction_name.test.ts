@@ -26,6 +26,16 @@ describe('getPageLoadTransactionName', () => {
     expect(getPageLoadTransactionName('/login')).toBe('/login');
     expect(getPageLoadTransactionName('/status')).toBe('/status');
   });
+
+  it('bounds non-app routes to their first segment so dynamic tails cannot inflate cardinality', () => {
+    // /goto/{id} is a chromeless redirect app; the id must not leak into the name
+    expect(getPageLoadTransactionName('/goto/abcdef123456')).toBe('/goto');
+    expect(getPageLoadTransactionName('/spaces/space_selector')).toBe('/spaces');
+  });
+
+  it('returns the root pathname unchanged', () => {
+    expect(getPageLoadTransactionName('/')).toBe('/');
+  });
 });
 
 describe('isAppPath', () => {
