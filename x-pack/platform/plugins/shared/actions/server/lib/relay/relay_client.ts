@@ -43,10 +43,11 @@ interface RelayBindingsListResponse {
   next_cursor?: string;
 }
 
-/** Raw shape of the `POST /v1/trigger` acknowledgement body. */
+/** Raw shape of the `POST /v1/slack/trigger` acknowledgement body. */
 interface RelayTriggerResponseBody {
   ref?: string;
   tenant_key?: string;
+  channel?: string;
 }
 
 export class RelayClient implements RelayClientContract {
@@ -170,7 +171,11 @@ export class RelayClient implements RelayClientContract {
         'Relay invalid response format missing expected `ref`'
       );
     }
-    return { ref: body.ref, tenantKey: body?.tenant_key ?? tenantKey };
+    return {
+      ref: body.ref,
+      tenantKey: body.tenant_key ?? tenantKey,
+      channel: typeof body.channel === 'string' && body.channel.length > 0 ? body.channel : channel,
+    };
   }
 
   isRelayOrigin(url: string): boolean {

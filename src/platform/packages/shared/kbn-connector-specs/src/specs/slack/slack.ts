@@ -1099,7 +1099,7 @@ export const Slack: ConnectorSpec = {
       isTool: true,
       scope: 'write',
       description:
-        'Send a message to a Slack channel or DM. Requires a channel ID. Use listChannels to discover channels, or resolveChannelId when you know the channel name and need its ID. Returns the message timestamp, which can be used as threadTs to post a reply in a thread. Confirm the message content and destination with the user before sending unless they have already made their intent explicit.',
+        'Send a message to a Slack channel or DM. Accepts a conversation ID, or a connected channel name (e.g. "#general") on the Elastic Slack app. Use listChannels to discover channels, or resolveChannelId when you know the name and need its ID. Returns the message timestamp, which can be used as threadTs to post a reply in a thread. Confirm the message content and destination with the user before sending unless they have already made their intent explicit.',
       input: SlackSendMessageInputSchema,
       handler: async (ctx, input) => {
         const typedInput: SlackSendMessageInput = SlackSendMessageInputSchema.parse(input);

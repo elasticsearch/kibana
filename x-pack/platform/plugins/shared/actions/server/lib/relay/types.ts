@@ -63,8 +63,8 @@ export interface RelayBindingsPage {
 }
 
 /**
- * The Relay resolves the target from `tenantKey` + `channel`, so `channel` must be the Slack channel
- * *id* (a binding's `scope_id`), not a display name.
+ * The Relay resolves `channel` to a bound Slack conversation. Accepts a conversation id (`C…` /
+ * `G…` / `D…`) or a connected channel name (`#general`, `general`).
  */
 export interface RelayTriggerInput {
   tenantKey: string;
@@ -78,6 +78,8 @@ export interface RelayTriggerResponse {
   /** The posted message's Slack `ts`. */
   ref: string;
   tenantKey: string;
+  /** Slack conversation id after Relay resolved a name, or the id that was sent. */
+  channel: string;
 }
 
 export interface RelayClientContract {

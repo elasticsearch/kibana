@@ -262,10 +262,11 @@ export interface ActionDefinition<TInput = unknown, TOutput = unknown, TError = 
 export interface RelayActionClient {
   trigger(input: {
     tenantKey: string;
+    /** Slack conversation id or a connected channel name (`#general`). */
     channel: string;
     message: string;
     threadTs?: string;
-  }): Promise<{ ref: string; tenantKey: string }>;
+  }): Promise<{ ref: string; tenantKey: string; channel: string }>;
   /** One page of the channels this deployment has connected; follow `nextCursor` for the rest. */
   listBindings(
     tenantKey: string,

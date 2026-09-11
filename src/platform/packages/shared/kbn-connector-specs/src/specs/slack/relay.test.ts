@@ -66,34 +66,75 @@ describe('getRelayConnection', () => {
 });
 
 describe('relaySendMessage', () => {
-  const send = async (input: Record<string, unknown>, trigger: jest.Mock) => {
-    const ctx = createContext(relaySecrets, { trigger });
+  const CHANNEL_ID = 'C0123456789';
+
+  const send = async (
+    input: Record<string, unknown>,
+    deps: { trigger: jest.Mock; listBindings?: jest.Mock }
+  ) => {
+    const relay = { trigger: deps.trigger, listBindings: deps.listBindings };
+    const ctx = createContext(relaySecrets, relay);
     return relaySendMessage(
-      { client: { trigger } as never, tenantKey: 'team-A' },
+      { client: relay as never, tenantKey: 'team-A' },
       ctx,
       input as Parameters<typeof relaySendMessage>[2]
     );
   };
 
-  it('maps the input onto trigger and returns the posted timestamp as ts', async () => {
-    const trigger = jest.fn().mockResolvedValue({ ref: '1700.0001', tenantKey: 'team-A' });
+  it('forwards a channel id and returns Relay\'s resolved channel', async () => {
+    const trigger = jest.fn().mockResolvedValue({
+      ref: '1700.0001',
+      tenantKey: 'team-A',
+      channel: CHANNEL_ID,
+    });
+    const listBindings = jest.fn();
 
-    await expect(send({ channel: 'C123', text: 'hello' }, trigger)).resolves.toEqual({
+    await expect(
+      send({ channel: CHANNEL_ID, text: 'hello' }, { trigger, listBindings })
+    ).resolves.toEqual({
       ok: true,
-      channel: 'C123',
+      channel: CHANNEL_ID,
       ts: '1700.0001',
     });
     expect(trigger).toHaveBeenCalledWith({
       tenantKey: 'team-A',
-      channel: 'C123',
+      channel: CHANNEL_ID,
       message: 'hello',
     });
+    expect(listBindings).not.toHaveBeenCalled();
+  });
+
+  it('forwards a channel name and returns Relay\'s resolved channel id', async () => {
+    const trigger = jest.fn().mockResolvedValue({
+      ref: '1700.0003',
+      tenantKey: 'team-A',
+      channel: CHANNEL_ID,
+    });
+    const listBindings = jest.fn();
+
+    await expect(
+      send({ channel: '#general', text: 'hello' }, { trigger, listBindings })
+    ).resolves.toEqual({
+      ok: true,
+      channel: CHANNEL_ID,
+      ts: '1700.0003',
+    });
+    expect(trigger).toHaveBeenCalledWith({
+      tenantKey: 'team-A',
+      channel: '#general',
+      message: 'hello',
+    });
+    expect(listBindings).not.toHaveBeenCalled();
   });
 
   it('forwards threadTs when replying in a thread', async () => {
-    const trigger = jest.fn().mockResolvedValue({ ref: '1700.0002', tenantKey: 'team-A' });
+    const trigger = jest.fn().mockResolvedValue({
+      ref: '1700.0002',
+      tenantKey: 'team-A',
+      channel: CHANNEL_ID,
+    });
 
-    await send({ channel: 'C123', text: 'reply', threadTs: '1700.0001' }, trigger);
+    await send({ channel: CHANNEL_ID, text: 'reply', threadTs: '1700.0001' }, { trigger });
 
     expect(trigger).toHaveBeenCalledWith(expect.objectContaining({ threadTs: '1700.0001' }));
   });
@@ -101,15 +142,15 @@ describe('relaySendMessage', () => {
   it('restates a 403 as an unconnected channel', async () => {
     const trigger = jest.fn().mockRejectedValue(relayError(403));
 
-    await expect(send({ channel: 'C123', text: 'hello' }, trigger)).rejects.toThrow(
-      'Channel C123 is not connected. Connect it in the Elastic Slack app settings, then try again.'
+    await expect(send({ channel: CHANNEL_ID, text: 'hello' }, { trigger })).rejects.toThrow(
+      `Channel ${CHANNEL_ID} is not connected. Connect it in the Elastic Slack app settings.`
     );
   });
 
   it('restates a 409 as an uninstalled app', async () => {
     const trigger = jest.fn().mockRejectedValue(relayError(409));
 
-    await expect(send({ channel: 'C123', text: 'hello' }, trigger)).rejects.toThrow(
+    await expect(send({ channel: CHANNEL_ID, text: 'hello' }, { trigger })).rejects.toThrow(
       /no longer installed/
     );
   });
@@ -118,7 +159,7 @@ describe('relaySendMessage', () => {
     const cause = relayError(502);
     const trigger = jest.fn().mockRejectedValue(cause);
 
-    await expect(send({ channel: 'C123', text: 'hello' }, trigger)).rejects.toBe(cause);
+    await expect(send({ channel: CHANNEL_ID, text: 'hello' }, { trigger })).rejects.toBe(cause);
   });
 });
 
@@ -217,7 +258,7 @@ describe('relayListChannels', () => {
     const listBindings = jest.fn().mockRejectedValue(relayError(403));
 
     await expect(list({}, listBindings)).rejects.toThrow(
-      'This connector is not allowed to read the connected channels. Reconnect the Elastic Slack app, then try again.'
+      'Not allowed to read the connected channels. Reconnect the Elastic Slack app.'
     );
   });
 

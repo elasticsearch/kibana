@@ -636,7 +636,7 @@ export const SlackSendMessageInputSchema = lazySchema(() =>
       .string()
       .min(1)
       .describe(
-        'Conversation ID to send the message to (e.g. C... for channels, G... for private channels, D... for DMs). Use listChannels to browse available channels, or resolveChannelId when you know the channel name and need its ID.'
+        'Conversation ID (C.../G.../D...) or, on the Elastic Slack app, a connected channel name (e.g. "#general"). Use listChannels or resolveChannelId to look up an ID.'
       ),
     text: z.string().min(1).describe('The message text to send'),
     threadTs: z

@@ -232,7 +232,7 @@ describe('RelayClient', () => {
           channel: 'C123',
           message: 'hello',
         })
-      ).resolves.toEqual({ ref: '1700000000.000100', tenantKey: 'team-A' });
+      ).resolves.toEqual({ ref: '1700000000.000100', tenantKey: 'team-A', channel: 'C123' });
 
       expect(requestMock).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -310,7 +310,32 @@ describe('RelayClient', () => {
           channel: 'C123',
           message: 'hello',
         })
-      ).resolves.toEqual({ ref: '1700000000.000400', tenantKey: 'team-A' });
+      ).resolves.toEqual({ ref: '1700000000.000400', tenantKey: 'team-A', channel: 'C123' });
+    });
+
+    it('forwards a channel name and returns Relay\'s resolved channel id', async () => {
+      requestMock.mockResolvedValue({
+        status: 202,
+        data: { ref: '1700000000.000500', tenant_key: 'team-A', channel: 'C0123456789' },
+      } as never);
+
+      await expect(
+        createClient().trigger({
+          tenantKey: 'team-A',
+          channel: '#general',
+          message: 'hello',
+        })
+      ).resolves.toEqual({
+        ref: '1700000000.000500',
+        tenantKey: 'team-A',
+        channel: 'C0123456789',
+      });
+
+      expect(requestMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: { tenant_key: 'team-A', channel: '#general', message: 'hello' },
+        })
+      );
     });
   });
 
