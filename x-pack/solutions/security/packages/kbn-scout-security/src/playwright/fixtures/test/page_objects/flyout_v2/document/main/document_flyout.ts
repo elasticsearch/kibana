@@ -173,6 +173,7 @@ export class DocumentFlyout {
     const option = this.page.testSubj.locator(`userProfileSelectableOption-${username}`);
     await option.waitFor({ state: 'visible' });
     await option.click();
+    await option.and(this.page.locator('[aria-checked="true"]')).waitFor({ state: 'visible' });
   }
 
   /** Click the "Apply" button in the assignees panel. */
