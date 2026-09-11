@@ -6,7 +6,7 @@
  */
 
 import type { Observable } from 'rxjs';
-import { defer } from 'rxjs';
+import { defer, finalize } from 'rxjs';
 import type { HttpSetup } from '@kbn/core-http-browser';
 import { httpResponseIntoObservable } from '@kbn/sse-utils-client';
 import type { ChatEvent } from '@kbn/agent-builder-common';
@@ -117,7 +117,8 @@ export class ChatService {
       propagateEvents({
         eventsService: this.events,
         conversationId: payload.conversation_id,
-      })
+      }),
+      finalize(() => this.events.notifyStreamEnded(payload.conversation_id))
     );
   }
 }

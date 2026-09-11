@@ -6,4 +6,5 @@
  */
 
 export { EventsService } from './events_service';
+export { ConversationStreamService } from './conversation_stream_service';
 export { createPublicEventsContract } from './create_public_contract';

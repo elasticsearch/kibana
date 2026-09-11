@@ -6,11 +6,13 @@
  */
 
 import React from 'react';
+import { NEVER } from 'rxjs';
 import { KibanaContextProvider } from '@kbn/kibana-react-plugin/public';
 import { QueryClient, QueryClientProvider } from '@kbn/react-query';
 import type { ConversationAttachment } from '@kbn/agent-builder-common/attachments';
 import { AgentBuilderServicesContext } from '../context/agent_builder_services_context';
 import { StreamingProvider } from '../context/streaming/streaming_context';
+import { ConversationStreamService } from '../../services';
 import { FakeConversationProvider } from './fake_conversation_provider';
 import { createStorybookKibanaServices } from './kibana_services';
 import { createStorybookAgentBuilderServices } from './agent_builder_services';
@@ -21,6 +23,8 @@ const defaultAgentBuilderServices = createStorybookAgentBuilderServices();
 const defaultQueryClient = new QueryClient({
   defaultOptions: { queries: { retry: false, refetchOnWindowFocus: false } },
 });
+// Stories drive the reducer via `DevSseEmitter`, not real events, so a no-emit source is enough.
+const storybookStreamService = new ConversationStreamService({ getChatEvents$: () => NEVER });
 
 export interface AgentBuilderStorybookProviderProps {
   children: React.ReactNode;
@@ -45,7 +49,7 @@ export const AgentBuilderStorybookProvider: React.FC<AgentBuilderStorybookProvid
     <QueryClientProvider client={defaultQueryClient}>
       <KibanaContextProvider services={defaultKibanaServices}>
         <AgentBuilderServicesContext.Provider value={mergedServices}>
-          <StreamingProvider>
+          <StreamingProvider conversationStreamService={storybookStreamService}>
             <FakeConversationProvider
               conversationId={conversationId}
               agentId={agentId}

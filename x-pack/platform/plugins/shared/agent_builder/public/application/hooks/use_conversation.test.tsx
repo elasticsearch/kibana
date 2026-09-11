@@ -69,6 +69,7 @@ const renderUseIsUnpersistedConversation = ({
   mockUseStreamingContext.mockReturnValue({
     activeStreams: isStreaming ? new Map([['conversation-1', { type: 'send' }]]) : new Map(),
     byConversationId: {},
+    conversationStreamService: {} as never,
     mutateSendMessage: jest.fn(),
     mutateResumeRound: jest.fn(),
     cancelStream: jest.fn(),

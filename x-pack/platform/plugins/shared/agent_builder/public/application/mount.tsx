@@ -22,6 +22,7 @@ import { ActiveSpaceProvider } from './context/active_space_context';
 import { PageWrapper } from './page_wrapper';
 import { AppLeaveContext, type OnAppLeave } from './context/app_leave_context';
 import { StreamingProvider } from './context/streaming/streaming_context';
+import { ConversationStreamService } from '../services';
 
 export const mountApp = async ({
   core,
@@ -42,6 +43,7 @@ export const mountApp = async ({
     services.usageCollection?.components.ApplicationUsageTrackingProvider ?? React.Fragment;
   const kibanaServices = { ...core, plugins, appParams: { history } };
   const queryClient = new QueryClient();
+  const conversationStreamService = new ConversationStreamService(services.eventsService);
   await services.accessChecker.initAccess();
   const activeSpaceId = (await plugins.spaces?.getActiveSpace())?.id ?? DEFAULT_SPACE_ID;
 
@@ -57,7 +59,7 @@ export const mountApp = async ({
                     <RedirectAppLinks coreStart={core}>
                       <PageWrapper>
                         <Router history={history}>
-                          <StreamingProvider>
+                          <StreamingProvider conversationStreamService={conversationStreamService}>
                             <AgentBuilderRoutes />
                           </StreamingProvider>
                         </Router>

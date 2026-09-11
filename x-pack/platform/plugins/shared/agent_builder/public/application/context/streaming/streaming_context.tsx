@@ -23,6 +23,7 @@
 import React, { createContext, useCallback, useContext, useMemo, useState } from 'react';
 import produce from 'immer-v9';
 import type { ConversationRoundStep } from '@kbn/agent-builder-common';
+import type { ConversationStreamService } from '../../../services/events';
 import { useSendMessageMutation } from './use_send_message_mutation';
 import type { SendMessageVars } from './use_send_message_mutation';
 import { useResumeRoundMutation } from './use_resume_round_mutation';
@@ -30,6 +31,7 @@ import type { ResumeRoundVars } from './use_resume_round_mutation';
 import type { ActiveStream, StreamRecord } from './types';
 
 export interface StreamingContextValue {
+  conversationStreamService: ConversationStreamService;
   activeStreams: Map<string, ActiveStream>;
   byConversationId: Record<string, StreamRecord>;
   mutateSendMessage: (vars: SendMessageVars) => void;
@@ -44,7 +46,13 @@ const StreamingContext = createContext<StreamingContextValue | null>(null);
 
 const emptyRecord: StreamRecord = { errorSteps: [] };
 
-export const StreamingProvider = ({ children }: { children: React.ReactNode }) => {
+export const StreamingProvider = ({
+  conversationStreamService,
+  children,
+}: {
+  conversationStreamService: ConversationStreamService;
+  children: React.ReactNode;
+}) => {
   const [activeStreams, setActiveStreams] = useState<Map<string, ActiveStream>>(() => new Map());
   const [byConversationId, setByConversationId] = useState<Record<string, StreamRecord>>({});
 
@@ -181,6 +189,7 @@ export const StreamingProvider = ({ children }: { children: React.ReactNode }) =
 
   const value = useMemo<StreamingContextValue>(
     () => ({
+      conversationStreamService,
       activeStreams,
       byConversationId,
       mutateSendMessage,
@@ -191,6 +200,7 @@ export const StreamingProvider = ({ children }: { children: React.ReactNode }) =
       removeAllErrors,
     }),
     [
+      conversationStreamService,
       activeStreams,
       byConversationId,
       mutateSendMessage,
@@ -211,6 +221,11 @@ export const useStreamingContext = () => {
     throw new Error('useStreamingContext must be used within a StreamingProvider');
   }
   return context;
+};
+
+export const useConversationStreamService = (): ConversationStreamService => {
+  const { conversationStreamService } = useStreamingContext();
+  return conversationStreamService;
 };
 
 export const useStreamRecord = (conversationId: string | undefined): StreamRecord => {

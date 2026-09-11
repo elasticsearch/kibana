@@ -11,6 +11,7 @@ import React from 'react';
 import { Conversation } from './conversation';
 import { ConversationHeader } from './conversation_header/conversation_header';
 import { RoutedConversationsProvider } from '../../context/conversation/routed_conversations_provider';
+import { ConversationRenderModeProvider } from '../../context/conversation/conversation_render_mode_context';
 import { conversationBackgroundStyles, headerHeight } from './conversation.styles';
 
 export const AgentBuilderConversationsView: React.FC<{}> = () => {
@@ -42,15 +43,17 @@ export const AgentBuilderConversationsView: React.FC<{}> = () => {
   `;
 
   return (
-    <RoutedConversationsProvider>
-      <div css={containerStyles} data-test-subj="agentBuilderPageConversations">
-        <div css={headerStyles}>
-          <ConversationHeader />
+    <ConversationRenderModeProvider>
+      <RoutedConversationsProvider>
+        <div css={containerStyles} data-test-subj="agentBuilderPageConversations">
+          <div css={headerStyles}>
+            <ConversationHeader />
+          </div>
+          <div css={contentStyles}>
+            <Conversation />
+          </div>
         </div>
-        <div css={contentStyles}>
-          <Conversation />
-        </div>
-      </div>
-    </RoutedConversationsProvider>
+      </RoutedConversationsProvider>
+    </ConversationRenderModeProvider>
   );
 };
