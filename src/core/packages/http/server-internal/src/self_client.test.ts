@@ -49,7 +49,7 @@ const createClient = ({
   target = 'auto',
   getHttpConfig = jest.fn().mockReturnValue({
     ssl: { enabled: false, requestCert: false },
-    selfHttp: { ssl: {} },
+    selfHttp: { ssl: { verificationMode: 'full' } },
   } as HttpConfig),
   serverProtocol = 'http',
 }: {
@@ -247,7 +247,7 @@ describe('InternalHttpSelfScopedClient', () => {
       () =>
         ({
           ssl: { enabled: requestCert, requestCert },
-          selfHttp: { ssl: {} },
+          selfHttp: { ssl: { verificationMode: 'full' } },
         } as HttpConfig)
     );
     const { self } = createClient({ getHttpConfig });
@@ -277,7 +277,7 @@ describe('InternalHttpSelfScopedClient', () => {
       () =>
         ({
           ssl: { enabled: true, requestCert: false, certificate: localCertificate },
-          selfHttp: { ssl: {} },
+          selfHttp: { ssl: { verificationMode: 'full' } },
         } as HttpConfig)
     );
     const local = createClient({
@@ -298,7 +298,7 @@ describe('InternalHttpSelfScopedClient', () => {
 
     const publicConfig = jest.fn().mockReturnValue({
       ssl: { enabled: true, requestCert: false },
-      selfHttp: { ssl: { certificateAuthorities: ['public CA'] } },
+      selfHttp: { ssl: { verificationMode: 'full', certificateAuthorities: ['public CA'] } },
     } as HttpConfig);
     const publicTarget = createClient({ getHttpConfig: publicConfig });
 

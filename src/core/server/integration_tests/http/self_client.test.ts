@@ -60,7 +60,7 @@ const setupDeps = {
   userActivity: userActivityServiceMock.createInternalSetupContract(),
 };
 type TestHttpConfig = Omit<Partial<HttpConfigType>, 'selfHttp' | 'ssl' | 'versioned'> & {
-  selfHttp?: Partial<HttpConfigType['selfHttp']> & {
+  selfHttp?: Omit<Partial<HttpConfigType['selfHttp']>, 'ssl'> & {
     ssl?: Partial<HttpConfigType['selfHttp']['ssl']>;
   };
   ssl?: Partial<HttpConfigType['ssl']>;
@@ -555,6 +555,75 @@ describe('Http self client', () => {
         .expect(200);
 
       expect(response.body.url).toBe(`https://localhost:${TEST_PORT}/self/target_url`);
+    });
+  });
+
+  describe('selfHttp SSL verification mode', () => {
+    let server: HttpService;
+
+    afterEach(async () => {
+      await server?.stop();
+      http.globalAgent.destroy();
+      https.globalAgent.destroy();
+    });
+
+    const resolveTarget = async (
+      selfHttpSsl: NonNullable<TestHttpConfig['selfHttp']>['ssl'],
+      publicBaseUrlHost: string
+    ) => {
+      ({ server } = await startServer({
+        port: TEST_PORT,
+        publicBaseUrl: `https://${publicBaseUrlHost}:${TEST_PORT}`,
+        ssl: {
+          enabled: true,
+          certificate: KBN_CERT_PATH,
+          key: KBN_KEY_PATH,
+        },
+        selfHttp: { target: 'auto', ssl: selfHttpSsl },
+      }));
+
+      const response = await Supertest(`https://localhost:${TEST_PORT}`)
+        .get('/self/resolve_target')
+        .ca(readFileSync(CA_CERT_PATH))
+        .expect(200);
+
+      return response.body as { url?: string; error?: string };
+    };
+
+    it('rejects an untrusted certificate in full mode when no authorities are configured', async () => {
+      const body = await resolveTarget({ verificationMode: 'full' }, 'localhost');
+
+      expect(body.url).toBeUndefined();
+      expect(body.error).toBeDefined();
+    });
+
+    it('accepts an untrusted certificate in none mode when no authorities are configured', async () => {
+      const body = await resolveTarget({ verificationMode: 'none' }, 'localhost');
+
+      expect(body.error).toBeUndefined();
+      expect(body.url).toBe(`https://localhost:${TEST_PORT}/self/target_url`);
+    });
+
+    // KBN_CERT_PATH is issued for `localhost` with no `127.0.0.1` SAN, so addressing the
+    // self call by IP is what makes the hostname check the only thing that can fail.
+    it('rejects a hostname mismatch in full mode', async () => {
+      const body = await resolveTarget(
+        { verificationMode: 'full', certificateAuthorities: CA_CERT_PATH },
+        '127.0.0.1'
+      );
+
+      expect(body.url).toBeUndefined();
+      expect(body.error).toBeDefined();
+    });
+
+    it('accepts a hostname mismatch in certificate mode', async () => {
+      const body = await resolveTarget(
+        { verificationMode: 'certificate', certificateAuthorities: CA_CERT_PATH },
+        '127.0.0.1'
+      );
+
+      expect(body.error).toBeUndefined();
+      expect(body.url).toBe(`https://127.0.0.1:${TEST_PORT}/self/target_url`);
     });
   });
 });

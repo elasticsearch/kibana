@@ -82,6 +82,10 @@ const configSchema = schema.object(
       // Keep an eye on existing validation in src/platform/packages/shared/kbn-server-http-tools/src/ssl/ssl_config.ts
       // If this SSL validation starts becoming more complex we may want to share validation
       ssl: schema.object({
+        verificationMode: schema.oneOf(
+          [schema.literal('none'), schema.literal('certificate'), schema.literal('full')],
+          { defaultValue: 'full' as const }
+        ),
         certificateAuthorities: schema.maybe(
           schema.oneOf([schema.arrayOf(schema.string(), { maxSize: 100 }), schema.string()])
         ),
@@ -408,7 +412,10 @@ export class HttpConfig implements IHttpConfig {
   public publicBaseUrl?: string;
   public selfHttp: {
     target: 'auto' | 'local';
-    ssl: { certificateAuthorities?: string[] };
+    ssl: {
+      verificationMode: 'none' | 'certificate' | 'full';
+      certificateAuthorities?: string[];
+    };
   };
   public rewriteBasePath: boolean;
   public cdn: CdnConfig;
@@ -477,6 +484,7 @@ export class HttpConfig implements IHttpConfig {
     this.selfHttp = {
       target: rawHttpConfig.selfHttp.target,
       ssl: {
+        verificationMode: rawHttpConfig.selfHttp.ssl.verificationMode,
         certificateAuthorities: readCertificateAuthorities(
           rawHttpConfig.selfHttp.ssl?.certificateAuthorities
         ),
