@@ -71,14 +71,10 @@ apiTest.describe(
       await logsSynthtraceEsClient.clean();
     });
 
-    apiTest('returns a single log category when no params are specified', async ({ apiClient }) => {
+    apiTest('returns nothing when no params are specified', async ({ apiClient }) => {
       const alertContext = await fetchContext(apiClient, {});
 
-      expect(alertContext).toHaveLength(1);
-      const logCategories = getLogCategories(alertContext);
-      expect(logCategories.map(({ errorCategory }) => errorCategory)).toStrictEqual([
-        'Error message from container my-container-a',
-      ]);
+      expect(alertContext).toStrictEqual([]);
     });
 
     apiTest(
