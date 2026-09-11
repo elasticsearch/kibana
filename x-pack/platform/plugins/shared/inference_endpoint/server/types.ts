@@ -4,7 +4,7 @@
  * 2.0; you may not use this file except in compliance with the Elastic License
  * 2.0.
  */
-import type { InferenceProvider } from '@kbn/inference-endpoint-ui-common';
+import type { InferenceProvider } from '@kbn/inference-common';
 
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
 export interface InferenceEndpointPluginSetup {}

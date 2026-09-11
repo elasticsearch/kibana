@@ -8,4 +8,4 @@
 export const PLUGIN_ID = 'inferenceEndpoint';
 export const PLUGIN_NAME = 'inference-endpoint';
 
-export const INFERENCE_ENDPOINT_INTERNAL_API_VERSION = '1';
+export { INFERENCE_ENDPOINT_INTERNAL_API_VERSION } from '@kbn/inference-common';

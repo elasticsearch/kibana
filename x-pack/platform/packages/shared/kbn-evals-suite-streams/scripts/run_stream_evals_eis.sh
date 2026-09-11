@@ -29,7 +29,7 @@ Environment:
 Steps:
   - export KIBANA_EIS_CCM_API_KEY from Vault
   - node scripts/discover_eis_models.js (only if target/eis_models.json is missing)
-  - export KIBANA_TESTING_AI_CONNECTORS from generate_eis_connectors.js
+  - export KIBANA_TESTING_INFERENCE_ENDPOINTS from generate_eis_connectors.js
   - node scripts/evals start --suite streams ...
 
 When done: node scripts/evals stop
@@ -101,8 +101,8 @@ else
 fi
 
 GEN_CONNECTORS="$REPO_ROOT/x-pack/platform/packages/shared/kbn-evals/scripts/ci/generate_eis_connectors.js"
-echo "[run_stream_evals_eis] Generating KIBANA_TESTING_AI_CONNECTORS..."
-export KIBANA_TESTING_AI_CONNECTORS="$(node "$GEN_CONNECTORS")"
+echo "[run_stream_evals_eis] Generating KIBANA_TESTING_INFERENCE_ENDPOINTS..."
+export KIBANA_TESTING_INFERENCE_ENDPOINTS="$(node "$GEN_CONNECTORS")"
 
 echo "[run_stream_evals_eis] Starting evals (connector=$CONNECTOR_ID, grep=$GREP_PATTERN, workers=$STREAM_EVALS_WORKERS)..."
 node scripts/evals start --suite streams \

@@ -20,17 +20,17 @@ export interface AvailableConnectorEntry {
   source: 'env' | 'kibana.dev.yml';
 }
 
-export const parseConnectorsFromEnv = (): AvailableConnectorEntry[] => {
-  const raw = process.env.KIBANA_TESTING_AI_CONNECTORS;
-  if (!raw) {
-    return [];
-  }
+function parseEnvVar(envVarName: string): AvailableConnectorEntry[] {
+  const raw = process.env[envVarName];
+  if (!raw) return [];
 
   try {
-    const parsed = JSON.parse(Buffer.from(raw, 'base64').toString('utf-8')) as Record<
-      string,
-      { name?: string }
-    >;
+    let parsed: Record<string, { name?: string }>;
+    try {
+      parsed = JSON.parse(Buffer.from(raw, 'base64').toString('utf-8'));
+    } catch {
+      parsed = JSON.parse(raw);
+    }
     return Object.entries(parsed).map(([id, connector]) => ({
       id,
       name: connector?.name ?? id,
@@ -39,6 +39,21 @@ export const parseConnectorsFromEnv = (): AvailableConnectorEntry[] => {
   } catch {
     return [];
   }
+}
+
+/**
+ * Returns connectors from both `KIBANA_TESTING_INFERENCE_ENDPOINTS` (inference endpoints)
+ * and `KIBANA_TESTING_AI_CONNECTORS` (stack connectors). Inference endpoints are listed first;
+ * duplicates from the stack connector env var are excluded.
+ */
+export const parseConnectorsFromEnv = (): AvailableConnectorEntry[] => {
+  const inferenceEndpoints = parseEnvVar('KIBANA_TESTING_INFERENCE_ENDPOINTS');
+  const stackConnectors = parseEnvVar('KIBANA_TESTING_AI_CONNECTORS');
+
+  const seen = new Set(inferenceEndpoints.map((c) => c.id));
+  const deduped = stackConnectors.filter((c) => !seen.has(c.id));
+
+  return [...inferenceEndpoints, ...deduped];
 };
 
 interface KibanaDevYmlConnector {
@@ -75,9 +90,9 @@ export const parseConnectorsFromKibanaDevYml = (repoRoot: string): AvailableConn
 };
 
 /**
- * Returns all available connectors, merging from KIBANA_TESTING_AI_CONNECTORS
- * and kibana.dev.yml. Env connectors take precedence (listed first); duplicates
- * from kibana.dev.yml are excluded.
+ * Returns all available connectors, merging from KIBANA_TESTING_INFERENCE_ENDPOINTS,
+ * KIBANA_TESTING_AI_CONNECTORS, and kibana.dev.yml. Inference endpoints are listed first;
+ * duplicates from other sources are excluded.
  */
 export const getAllAvailableConnectors = (repoRoot: string): AvailableConnectorEntry[] => {
   const envConnectors = parseConnectorsFromEnv();
@@ -132,7 +147,7 @@ export const promptForConnector = async (
 
   if (connectors.length === 0) {
     throw new Error(
-      'No connectors available. Set KIBANA_TESTING_AI_CONNECTORS or run `node scripts/evals init`.'
+      'No connectors available. Set KIBANA_TESTING_INFERENCE_ENDPOINTS (inference endpoints) or KIBANA_TESTING_AI_CONNECTORS (stack connectors), or run `node scripts/evals init`.'
     );
   }
 
@@ -160,7 +175,7 @@ export const promptForProject = async (
 
   if (connectors.length === 0) {
     throw new Error(
-      'No connectors available. Set KIBANA_TESTING_AI_CONNECTORS or run `node scripts/evals init`.'
+      'No connectors available. Set KIBANA_TESTING_INFERENCE_ENDPOINTS (inference endpoints) or KIBANA_TESTING_AI_CONNECTORS (stack connectors), or run `node scripts/evals init`.'
     );
   }
 

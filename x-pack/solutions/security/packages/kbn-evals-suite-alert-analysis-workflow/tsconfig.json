@@ -13,7 +13,6 @@
     "@kbn/tooling-log",
     "@kbn/agent-builder-common",
     "@kbn/workflows",
-    "@kbn/core",
-    "@kbn/gen-ai-functional-testing"
+    "@kbn/core"
   ]
 }

@@ -79,10 +79,14 @@ function buildOpenrouterConnectorFromVault() {
 
   return {
     config: {
-      apiUrl: `${baseUrl}/chat/completions`,
-      defaultModel: TRIAGE_OPENROUTER_MODEL,
+      provider: 'openai',
+      taskType: 'chat_completion',
+      providerConfig: {
+        model_id: TRIAGE_OPENROUTER_MODEL,
+        url: `${baseUrl}/chat/completions`,
+      },
     },
-    secrets: { apiKey },
+    secrets: { providerSecrets: { api_key: apiKey } },
   };
 }
 

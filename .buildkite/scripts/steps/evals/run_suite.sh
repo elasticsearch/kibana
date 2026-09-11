@@ -157,7 +157,7 @@ if [[ "${FTR_EIS_CCM:-}" =~ ^(1|true)$ ]]; then
     export EIS_CONNECTORS_B64
 
     echo "--- Merging OpenRouter + EIS connectors"
-    export KIBANA_TESTING_AI_CONNECTORS="$(
+    export KIBANA_TESTING_INFERENCE_ENDPOINTS="$(
       node x-pack/platform/packages/shared/kbn-evals/scripts/ci/merge_ai_connectors.js
     )"
   fi
@@ -170,7 +170,7 @@ if [[ "${EVAL_FANOUT:-}" == "1" ]] && [[ -z "${EVAL_PROJECT:-}" ]]; then
     CONNECTOR_IDS="$(node x-pack/platform/packages/shared/kbn-evals/scripts/ci/get_connector_ids.js)"
 
     if [[ -z "${CONNECTOR_IDS:-}" ]]; then
-      echo "No connectors found in KIBANA_TESTING_AI_CONNECTORS; falling back to evaluation connector only"
+      echo "No connectors found in KIBANA_TESTING_INFERENCE_ENDPOINTS; falling back to evaluation connector only"
       if [[ -n "${EVAL_CONNECTOR_ID:-}" ]]; then
         export EVAL_PROJECT="${EVAL_CONNECTOR_ID}"
       fi

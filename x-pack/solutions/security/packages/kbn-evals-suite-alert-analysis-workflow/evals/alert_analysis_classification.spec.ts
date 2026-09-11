@@ -43,9 +43,13 @@ import { tags } from '@kbn/scout';
 import type { EsClient } from '@kbn/scout';
 import type { HttpHandler } from '@kbn/core/public';
 import type { ToolingLog } from '@kbn/tooling-log';
-import type { AvailableConnectorWithId } from '@kbn/gen-ai-functional-testing';
 import { agentBuilderDefaultAgentId } from '@kbn/agent-builder-common';
-import { selectEvaluators, type EvaluationDataset, type Example } from '@kbn/evals';
+import {
+  selectEvaluators,
+  type EvalConnector,
+  type EvaluationDataset,
+  type Example,
+} from '@kbn/evals';
 import { evaluate } from '../src/evaluate';
 import { runAlertAnalysisWorkflow } from '../src/workflow_task';
 import { configureAlertAnalysisWorkflow } from '../src/space_config';
@@ -87,7 +91,7 @@ evaluate.describe(
         log,
       }: {
         fetch: HttpHandler;
-        connector: AvailableConnectorWithId;
+        connector: EvalConnector;
         log: ToolingLog;
       }) => {
         // Point this space's alert-analysis workflow at the connector under test so the

@@ -17,6 +17,7 @@ project:
   owner: '@elastic/search-ml-ux'
   sourceRoot: x-pack/platform/packages/shared/ai-infra/inference-common
 dependsOn:
+  - '@kbn/config-schema'
   - '@kbn/sse-utils'
   - '@kbn/zod'
 tags:

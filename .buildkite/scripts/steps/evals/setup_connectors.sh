@@ -2,7 +2,7 @@
 
 set -euo pipefail
 
-# Generate KIBANA_TESTING_AI_CONNECTORS from OpenRouter (when needed).
+# Generate KIBANA_TESTING_INFERENCE_ENDPOINTS from OpenRouter (when needed).
 #
 # This script is sourced by run_suite.sh after the pre-command hook has
 # exported KBN_EVALS_CONFIG_B64 and EVAL_CONNECTOR_ID.
@@ -59,28 +59,28 @@ if [[ "$NEED_OPENROUTER_CONNECTORS" == "true" ]]; then
     exit 1
   fi
 
-  KIBANA_TESTING_AI_CONNECTORS="$(
+  KIBANA_TESTING_INFERENCE_ENDPOINTS="$(
     node x-pack/platform/packages/shared/kbn-evals/scripts/ci/generate_openrouter_connectors.js \
       --base-url "$OPENROUTER_BASE_URL" \
       --api-key "$OPENROUTER_API_KEY"
   )"
-  export KIBANA_TESTING_AI_CONNECTORS
+  export KIBANA_TESTING_INFERENCE_ENDPOINTS
 
-  if [[ -z "${KIBANA_TESTING_AI_CONNECTORS:-}" ]]; then
-    echo "ERROR: Failed to generate KIBANA_TESTING_AI_CONNECTORS (empty output)."
+  if [[ -z "${KIBANA_TESTING_INFERENCE_ENDPOINTS:-}" ]]; then
+    echo "ERROR: Failed to generate KIBANA_TESTING_INFERENCE_ENDPOINTS (empty output)."
     exit 1
   fi
 
   if [[ -n "${EVAL_CONNECTOR_ID:-}" ]] && [[ "${EVAL_CONNECTOR_ID}" == openrouter-* ]]; then
-    if ! node -e "const b=process.env.KIBANA_TESTING_AI_CONNECTORS||'';const s=Buffer.from(b,'base64').toString('utf8');const o=JSON.parse(s);const id=process.env.EVAL_CONNECTOR_ID;process.exit(Object.prototype.hasOwnProperty.call(o,id)?0:1);" ; then
+    if ! node -e "const b=process.env.KIBANA_TESTING_INFERENCE_ENDPOINTS||'';const s=Buffer.from(b,'base64').toString('utf8');const o=JSON.parse(s);const id=process.env.EVAL_CONNECTOR_ID;process.exit(Object.prototype.hasOwnProperty.call(o,id)?0:1);" ; then
       echo "ERROR: EVAL_CONNECTOR_ID ($EVAL_CONNECTOR_ID) is not present in generated connectors."
       echo "Sample generated connector ids:"
-      node -e "const b=process.env.KIBANA_TESTING_AI_CONNECTORS||'';const s=Buffer.from(b,'base64').toString('utf8');const o=JSON.parse(s);console.log(Object.keys(o).slice(0,20).join('\\n'));"
+      node -e "const b=process.env.KIBANA_TESTING_INFERENCE_ENDPOINTS||'';const s=Buffer.from(b,'base64').toString('utf8');const o=JSON.parse(s);console.log(Object.keys(o).slice(0,20).join('\\n'));"
       exit 1
     fi
   fi
 else
   echo "--- Skipping OpenRouter connector generation (only EIS models requested)"
-  KIBANA_TESTING_AI_CONNECTORS="$(printf '{}' | base64)"
-  export KIBANA_TESTING_AI_CONNECTORS
+  KIBANA_TESTING_INFERENCE_ENDPOINTS="$(printf '{}' | base64)"
+  export KIBANA_TESTING_INFERENCE_ENDPOINTS
 fi

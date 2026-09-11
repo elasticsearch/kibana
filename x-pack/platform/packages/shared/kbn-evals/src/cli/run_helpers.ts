@@ -133,7 +133,7 @@ export const ensureEvalInit = async (
     if (getAllAvailableConnectors(repoRoot).length === 0) {
       if (!isTTY()) {
         throw createFlagError(
-          'No connectors available. Set KIBANA_TESTING_AI_CONNECTORS or run with a TTY to use the setup wizard.'
+          'No connectors available. Set KIBANA_TESTING_INFERENCE_ENDPOINTS (inference endpoints) or KIBANA_TESTING_AI_CONNECTORS (stack connectors), or run with a TTY to use the setup wizard.'
         );
       }
     }
@@ -312,10 +312,10 @@ export const resolveEvalRunContext = async ({
       ? projects.some(isEisConnectorId)
       : getAllAvailableConnectors(repoRoot).some((c) => isEisConnectorId(c.id)));
 
-  if (requiresEisCcm && !process.env.KIBANA_TESTING_AI_CONNECTORS) {
+  if (requiresEisCcm && !process.env.KIBANA_TESTING_INFERENCE_ENDPOINTS) {
     const cached = readCachedEisConnectors();
     if (cached) {
-      process.env.KIBANA_TESTING_AI_CONNECTORS = Buffer.from(JSON.stringify(cached)).toString(
+      process.env.KIBANA_TESTING_INFERENCE_ENDPOINTS = Buffer.from(JSON.stringify(cached)).toString(
         'base64'
       );
       log.info('EIS connectors loaded from cache (~/.elastic/eis-connectors-cache.json)');

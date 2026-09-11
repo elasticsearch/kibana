@@ -9,12 +9,19 @@ import type { ScoutTestOptions } from '@kbn/scout';
 import { createPlaywrightConfig } from '@kbn/scout';
 import type { PlaywrightTestConfig } from '@playwright/test';
 import { defineConfig } from '@playwright/test';
-import type { AvailableConnectorWithId } from '@kbn/gen-ai-functional-testing';
-import { getAvailableConnectors } from '@kbn/gen-ai-functional-testing';
+import {
+  loadInferenceEndpoints,
+  type InferenceEndpointDefinition,
+} from '../utils/inference_endpoint_definition';
+import {
+  loadStackConnectors,
+  type EvalConnector,
+  type StackConnectorDefinition,
+} from '../utils/eval_connector';
 
 export interface EvaluationTestOptions extends ScoutTestOptions {
-  connectorParam: AvailableConnectorWithId;
-  evaluationConnectorParam: AvailableConnectorWithId;
+  connectorParam: EvalConnector;
+  evaluationConnectorParam: EvalConnector;
   repetitions: number;
   timeout?: number;
 }
@@ -43,8 +50,14 @@ export function createPlaywrightEvalsConfig({
     workers,
   });
 
-  // gets the connectors from either the env variable or kibana.yml/kibana.dev.yml
-  const connectors = getAvailableConnectors();
+  const inferenceEndpoints: InferenceEndpointDefinition[] = loadInferenceEndpoints();
+
+  const stackConnectors: StackConnectorDefinition[] = loadStackConnectors();
+
+  const inferenceEndpointIds = new Set(inferenceEndpoints.map((c) => c.id));
+  const uniqueStackConnectors = stackConnectors.filter((c) => !inferenceEndpointIds.has(c.id));
+
+  const allConnectors: EvalConnector[] = [...inferenceEndpoints, ...uniqueStackConnectors];
 
   const evaluationConnectorId = process.env.EVAL_CONNECTOR_ID
     ? String(process.env.EVAL_CONNECTOR_ID)
@@ -52,20 +65,18 @@ export function createPlaywrightEvalsConfig({
 
   if (!evaluationConnectorId) {
     throw new Error(
-      `process.env.EVAL_CONNECTOR_ID is required. Pick one from ${connectors
-        .map((connector) => connector.id)
+      `process.env.EVAL_CONNECTOR_ID is required. Pick one from ${allConnectors
+        .map((c) => c.id)
         .join(', ')}`
     );
   }
 
-  const evaluationConnector = connectors.find(
-    (connector) => connector.id === evaluationConnectorId
-  );
+  const evaluationConnector = allConnectors.find((c) => c.id === evaluationConnectorId);
 
   if (!evaluationConnector) {
     throw new Error(
-      `Evaluation connector id ${evaluationConnectorId} was not found, pick one from ${connectors
-        .map((connector) => connector.id)
+      `Evaluation connector id ${evaluationConnectorId} was not found, pick one from ${allConnectors
+        .map((c) => c.id)
         .join(', ')}`
     );
   }
@@ -84,7 +95,7 @@ export function createPlaywrightEvalsConfig({
     ) ?? [];
 
   // get just the 'local' project (for now)
-  const nextProjects = connectors.flatMap((connector) => {
+  const nextProjects = allConnectors.flatMap((connector) => {
     return (
       projects
         ?.filter((project) => project.name === 'local')

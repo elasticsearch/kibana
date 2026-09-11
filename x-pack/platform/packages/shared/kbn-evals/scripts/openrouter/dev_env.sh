@@ -28,15 +28,15 @@ if [[ -z "$API_KEY" ]]; then
   exit 1
 fi
 
-echo "Generating KIBANA_TESTING_AI_CONNECTORS from OpenRouter..."
-KIBANA_TESTING_AI_CONNECTORS="$(
+echo "Generating KIBANA_TESTING_INFERENCE_ENDPOINTS from OpenRouter..."
+KIBANA_TESTING_INFERENCE_ENDPOINTS="$(
   EVAL_MODEL_GROUPS= node x-pack/platform/packages/shared/kbn-evals/scripts/ci/generate_openrouter_connectors.js \
     --base-url "$BASE_URL" \
     --api-key "$API_KEY"
 )"
 
-if [[ -z "${KIBANA_TESTING_AI_CONNECTORS:-}" ]]; then
-  echo "Failed to generate KIBANA_TESTING_AI_CONNECTORS (empty output)."
+if [[ -z "${KIBANA_TESTING_INFERENCE_ENDPOINTS:-}" ]]; then
+  echo "Failed to generate KIBANA_TESTING_INFERENCE_ENDPOINTS (empty output)."
   exit 1
 fi
 
@@ -44,7 +44,7 @@ echo ""
 echo "# Paste/run these in your shell:"
 echo "export OPENROUTER_BASE_URL=\"$BASE_URL\""
 echo "export OPENROUTER_API_KEY=\"$API_KEY\""
-echo "export KIBANA_TESTING_AI_CONNECTORS=\"$KIBANA_TESTING_AI_CONNECTORS\""
+echo "export KIBANA_TESTING_INFERENCE_ENDPOINTS=\"$KIBANA_TESTING_INFERENCE_ENDPOINTS\""
 echo ""
 echo "# Then run a suite:"
 echo "# EVAL_CONNECTOR_ID=<one-of-the-generated-connector-ids> node scripts/evals run --suite agent-builder"

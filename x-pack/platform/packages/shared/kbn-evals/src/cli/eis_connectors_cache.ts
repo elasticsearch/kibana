@@ -9,7 +9,7 @@
  * TTL-based file cache for EIS (Elastic Inference Service) connector definitions.
  *
  * Stores the connector map at ~/.elastic/eis-connectors-cache.json as plain JSON
- * so that `evals start` can restore KIBANA_TESTING_AI_CONNECTORS without
+ * so that `evals start` can restore KIBANA_TESTING_INFERENCE_ENDPOINTS without
  * requiring a fresh `evals init` every shell session.
  *
  * The payload is deterministic and contains no secrets (secrets: {} is always
@@ -48,6 +48,16 @@ export const readCachedEisConnectors = (): Record<string, object> | undefined =>
 
     const age = Date.now() - cached.fetched_at_ms;
     if (age > TTL_MS) {
+      return undefined;
+    }
+
+    // Caches written before the switch to inference endpoints hold stack-connector
+    // shapes (no inferenceId); loading those would fail every run until the TTL
+    // expires, so treat them as a miss.
+    const hasStaleShape = Object.values(cached.connectors).some(
+      (connector) => typeof (connector as { inferenceId?: unknown }).inferenceId !== 'string'
+    );
+    if (hasStaleShape) {
       return undefined;
     }
 

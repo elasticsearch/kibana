@@ -7,9 +7,9 @@
 
 import type { BoundInferenceClient, Model } from '@kbn/inference-common';
 import type { HttpHandler } from '@kbn/core/public';
-import type { AvailableConnectorWithId } from '@kbn/gen-ai-functional-testing';
 import type { DatasetMaturity, Direction, Model as ScoreModel } from '@kbn/evals-common';
 import type { EsClient, ScoutWorkerFixtures } from '@kbn/scout';
+import type { EvalConnector } from './utils/eval_connector';
 import type { EvaluationCriterion } from './evaluators/criteria';
 import { type EvaluationReporter } from './utils/reporting/evaluation_reporter';
 import type {
@@ -276,16 +276,16 @@ export interface EvaluationSpecificWorkerFixtures {
   fetch: HttpHandler;
   workerExperimentId: WorkerExperimentIdRef;
   workerExecutionId: WorkerExecutionIdRef;
-  connector: AvailableConnectorWithId;
-  evaluationConnector: AvailableConnectorWithId;
+  connector: EvalConnector;
+  evaluationConnector: EvalConnector;
   /**
    * User-selected connector descriptors set per-project in the Playwright config.
    * These are Playwright options (`{ option: true }`) consumed by the `connector` /
    * `evaluationConnector` fixtures, which create/resolve the actual connectors.
    * They default to `undefined` and must be set per-project (see createPlaywrightEvalsConfig).
    */
-  connectorParam: AvailableConnectorWithId | undefined;
-  evaluationConnectorParam: AvailableConnectorWithId | undefined;
+  connectorParam: EvalConnector | undefined;
+  evaluationConnectorParam: EvalConnector | undefined;
   repetitions: number;
   reportDisplayOptions: ReportDisplayOptions;
   reportModelScore: EvaluationReporter;
@@ -301,7 +301,7 @@ export interface EvaluationWorkerFixtures extends ScoutWorkerFixtures {
   executorClient: EvalsExecutorClient;
   evaluators: DefaultEvaluators;
   fetch: HttpHandler;
-  connector: AvailableConnectorWithId;
-  evaluationConnector: AvailableConnectorWithId;
+  connector: EvalConnector;
+  evaluationConnector: EvalConnector;
   repetitions: number;
 }

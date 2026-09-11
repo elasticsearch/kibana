@@ -63,7 +63,9 @@ export const startCmd: Command<void> = {
     if (projects.length > 0) {
       log.info(`Models:    ${projects.join(', ')}`);
     } else {
-      log.info(`Models:    all (from KIBANA_TESTING_AI_CONNECTORS)`);
+      log.info(
+        `Models:    all (from KIBANA_TESTING_INFERENCE_ENDPOINTS / KIBANA_TESTING_AI_CONNECTORS)`
+      );
     }
     log.info(`Server:    ${skipServer ? 'skip (using existing)' : 'managed'}`);
     if (suite?.serverConfigSet) {

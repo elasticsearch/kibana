@@ -237,23 +237,31 @@ function buildOpenrouterChatRequest(connector, messages) {
   const config = connector.config && typeof connector.config === 'object' ? connector.config : {};
   const secrets =
     connector.secrets && typeof connector.secrets === 'object' ? connector.secrets : {};
+  const providerConfig =
+    config.providerConfig && typeof config.providerConfig === 'object' ? config.providerConfig : {};
+  const providerSecrets =
+    secrets.providerSecrets && typeof secrets.providerSecrets === 'object'
+      ? secrets.providerSecrets
+      : {};
 
-  const apiUrl = typeof config.apiUrl === 'string' ? config.apiUrl : '';
-  const defaultModel = typeof config.defaultModel === 'string' ? config.defaultModel : '';
-  const apiKey = typeof secrets.apiKey === 'string' ? secrets.apiKey : '';
+  const url = typeof providerConfig.url === 'string' ? providerConfig.url : '';
+  const modelId = typeof providerConfig.model_id === 'string' ? providerConfig.model_id : '';
+  const apiKey = typeof providerSecrets.api_key === 'string' ? providerSecrets.api_key : '';
 
-  if (!apiUrl || !defaultModel || !apiKey) {
-    throw new Error('OpenRouter connector is missing apiUrl, defaultModel, or apiKey');
+  if (!url || !modelId || !apiKey) {
+    throw new Error(
+      'OpenRouter connector is missing providerConfig.url, providerConfig.model_id, or providerSecrets.api_key'
+    );
   }
 
   return {
-    url: apiUrl,
+    url,
     headers: {
       'content-type': 'application/json',
       authorization: `Bearer ${apiKey}`,
     },
     body: {
-      model: defaultModel,
+      model: modelId,
       messages,
       temperature: 0.2,
       max_tokens: 800,

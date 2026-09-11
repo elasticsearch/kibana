@@ -32,6 +32,7 @@ dependsOn:
   - '@kbn/kibana-react-plugin'
   - '@kbn/cloud-plugin'
   - '@kbn/connector-schemas'
+  - '@kbn/inference-common'
   - '@kbn/ui-callout'
 tags:
   - shared-browser

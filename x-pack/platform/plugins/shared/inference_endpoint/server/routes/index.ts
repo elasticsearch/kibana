@@ -13,24 +13,12 @@ import type {
   InferenceTaskType,
 } from '@elastic/elasticsearch/lib/api/types';
 
+import { inferenceEndpointSchema } from '@kbn/inference-common/src/inference_endpoint_schema';
+
 import type { InferenceServicesGetResponse } from '../types';
 import { INFERENCE_ENDPOINT_INTERNAL_API_VERSION } from '../../common';
 import { inferenceEndpointExists } from '../lib/inference_endpoint_exists';
 import { unflattenObject } from '../utils/unflatten_object';
-
-const inferenceEndpointSchema = schema.object({
-  config: schema.object({
-    inferenceId: schema.string(),
-    provider: schema.string(),
-    taskType: schema.string(),
-    providerConfig: schema.any(),
-    taskTypeConfig: schema.maybe(schema.any()),
-    headers: schema.maybe(schema.recordOf(schema.string(), schema.string())),
-  }),
-  secrets: schema.object({
-    providerSecrets: schema.any(),
-  }),
-});
 
 export const getInferenceServicesRoute = (
   router: IRouter<RequestHandlerContext>,

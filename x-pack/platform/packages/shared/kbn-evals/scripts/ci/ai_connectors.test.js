@@ -23,9 +23,11 @@ describe('buildOpenrouterConnectorFromVault', () => {
 
     const connector = buildOpenrouterConnectorFromVault();
 
-    expect(connector.config.defaultModel).toBe(TRIAGE_OPENROUTER_MODEL);
-    expect(connector.config.apiUrl).toBe('https://openrouter.ai/api/v1/chat/completions');
-    expect(connector.secrets.apiKey).toBe('sk-test');
+    expect(connector.config.providerConfig.model_id).toBe(TRIAGE_OPENROUTER_MODEL);
+    expect(connector.config.providerConfig.url).toBe(
+      'https://openrouter.ai/api/v1/chat/completions'
+    );
+    expect(connector.secrets.providerSecrets.api_key).toBe('sk-test');
   });
 
   it('reads OpenRouter credentials from KBN_EVALS_CONFIG_B64', () => {
@@ -38,8 +40,8 @@ describe('buildOpenrouterConnectorFromVault', () => {
 
     const connector = buildOpenrouterConnectorFromVault();
 
-    expect(connector.config.defaultModel).toBe('google/gemini-3.7-flash');
-    expect(connector.secrets.apiKey).toBe('sk-vault');
+    expect(connector.config.providerConfig.model_id).toBe('google/gemini-3.7-flash');
+    expect(connector.secrets.providerSecrets.api_key).toBe('sk-vault');
   });
 
   it('throws when OpenRouter credentials are missing', () => {

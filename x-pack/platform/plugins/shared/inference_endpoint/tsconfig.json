@@ -16,7 +16,7 @@
   "kbn_references": [
     "@kbn/core",
     "@kbn/logging",
-    "@kbn/inference-endpoint-ui-common",
+    "@kbn/inference-common",
     "@kbn/config-schema",
     "@kbn/safer-lodash-set",
   ]

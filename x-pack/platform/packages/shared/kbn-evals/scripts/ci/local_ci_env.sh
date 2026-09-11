@@ -15,7 +15,7 @@ die() {
 # This file uses bash features (`[[ ]]`, here-strings, etc.), so sourcing it from zsh will behave poorly
 # and can terminate the session. Ensure we're running under bash.
 if [[ -z "${BASH_VERSION:-}" ]]; then
-  die "This script must be sourced from bash. Try: bash -lc 'source x-pack/platform/packages/shared/kbn-evals/scripts/ci/local_ci_env.sh x-pack/platform/packages/shared/kbn-evals/scripts/vault/config.json && env | rg \"^(OPENROUTER_|EVAL_|TRACING_ES_|TRACING_EXPORTERS|KIBANA_TESTING_AI_CONNECTORS)\"'"
+  die "This script must be sourced from bash. Try: bash -lc 'source x-pack/platform/packages/shared/kbn-evals/scripts/ci/local_ci_env.sh x-pack/platform/packages/shared/kbn-evals/scripts/vault/config.json && env | rg \"^(OPENROUTER_|EVAL_|TRACING_ES_|TRACING_EXPORTERS|KIBANA_TESTING_INFERENCE_ENDPOINTS)\"'"
 fi
 
 CONFIG_PATH="${1:-x-pack/platform/packages/shared/kbn-evals/scripts/vault/config.json}"
@@ -70,31 +70,31 @@ fi
 
 # NOTE: bash `set -e` does not reliably fail the script for errors inside `$(...)` in all contexts.
 # Generate into a variable, then explicitly validate it, so we never feed empty/invalid data into JSON.parse below.
-KIBANA_TESTING_AI_CONNECTORS="$(
+KIBANA_TESTING_INFERENCE_ENDPOINTS="$(
   EVAL_MODEL_GROUPS= node x-pack/platform/packages/shared/kbn-evals/scripts/ci/generate_openrouter_connectors.js \
     --base-url "$OPENROUTER_BASE_URL" \
     --api-key "$OPENROUTER_API_KEY"
 )"
-export KIBANA_TESTING_AI_CONNECTORS
+export KIBANA_TESTING_INFERENCE_ENDPOINTS
 
-if [[ -z "${KIBANA_TESTING_AI_CONNECTORS:-}" ]]; then
-  die "ERROR: Failed to generate KIBANA_TESTING_AI_CONNECTORS (empty output)."
+if [[ -z "${KIBANA_TESTING_INFERENCE_ENDPOINTS:-}" ]]; then
+  die "ERROR: Failed to generate KIBANA_TESTING_INFERENCE_ENDPOINTS (empty output)."
 fi
 
 # Print a safe summary (no secrets)
 CONNECTOR_COUNT="$(
-  node -e "const b=process.env.KIBANA_TESTING_AI_CONNECTORS||'';const s=Buffer.from(b,'base64').toString('utf8');const o=JSON.parse(s);console.log(Object.keys(o).length);"
+  node -e "const b=process.env.KIBANA_TESTING_INFERENCE_ENDPOINTS||'';const s=Buffer.from(b,'base64').toString('utf8');const o=JSON.parse(s);console.log(Object.keys(o).length);"
 )"
 
 if [[ "$EVAL_CONNECTOR_ID" == openrouter-* ]]; then
   EVAL_CONNECTOR_PRESENT="$(
-    node -e "const b=process.env.KIBANA_TESTING_AI_CONNECTORS||'';const s=Buffer.from(b,'base64').toString('utf8');const o=JSON.parse(s);const id=process.env.EVAL_CONNECTOR_ID||'';process.stdout.write(String(Boolean(id && Object.prototype.hasOwnProperty.call(o,id))));"
+    node -e "const b=process.env.KIBANA_TESTING_INFERENCE_ENDPOINTS||'';const s=Buffer.from(b,'base64').toString('utf8');const o=JSON.parse(s);const id=process.env.EVAL_CONNECTOR_ID||'';process.stdout.write(String(Boolean(id && Object.prototype.hasOwnProperty.call(o,id))));"
   )"
 
   if [[ "$EVAL_CONNECTOR_PRESENT" != "true" ]]; then
     echo "ERROR: evaluationConnectorId ($EVAL_CONNECTOR_ID) is not present in generated connectors." >&2
     echo "Sample generated connector ids:" >&2
-    node -e "const b=process.env.KIBANA_TESTING_AI_CONNECTORS||'';const s=Buffer.from(b,'base64').toString('utf8');const o=JSON.parse(s);console.log(Object.keys(o).slice(0,20).join('\\n'));"
+    node -e "const b=process.env.KIBANA_TESTING_INFERENCE_ENDPOINTS||'';const s=Buffer.from(b,'base64').toString('utf8');const o=JSON.parse(s);console.log(Object.keys(o).slice(0,20).join('\\n'));"
     die "evaluationConnectorId ($EVAL_CONNECTOR_ID) is not present in generated connectors."
   fi
 fi

@@ -2,20 +2,10 @@
   "extends": "@kbn/tsconfig-base/tsconfig.json",
   "compilerOptions": {
     "outDir": "target/types",
-    "types": [
-      "jest",
-      "node",
-      "react",
-      "@kbn/ambient-ui-types"
-    ]
+    "types": ["jest", "node", "react", "@kbn/ambient-ui-types"]
   },
-  "include": [
-    "**/*.ts",
-    "**/*.tsx"
-  ],
-  "exclude": [
-    "target/**/*"
-  ],
+  "include": ["**/*.ts", "**/*.tsx"],
+  "exclude": ["target/**/*"],
   "kbn_references": [
     "@kbn/i18n",
     "@kbn/i18n-react",
@@ -32,6 +22,7 @@
     "@kbn/kibana-react-plugin",
     "@kbn/cloud-plugin",
     "@kbn/connector-schemas",
+    "@kbn/inference-common",
     "@kbn/ui-callout"
   ]
 }

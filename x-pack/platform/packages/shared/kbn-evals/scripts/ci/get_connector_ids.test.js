@@ -15,7 +15,7 @@ function run(connectors, evalModelGroups) {
     encoding: 'utf8',
     env: {
       ...process.env,
-      KIBANA_TESTING_AI_CONNECTORS: JSON.stringify(connectors),
+      KIBANA_TESTING_INFERENCE_ENDPOINTS: JSON.stringify(connectors),
       EVAL_MODEL_GROUPS: evalModelGroups,
     },
   }).trim();
@@ -23,13 +23,15 @@ function run(connectors, evalModelGroups) {
 
 const OPENROUTER_GPT = {
   'openrouter-openai-gpt-5-4': {
-    config: { defaultModel: 'openai/gpt-5.4' },
+    provider: 'openai',
+    providerConfig: { model_id: 'openai/gpt-5.4' },
   },
 };
 
 const EIS_GPT = {
   'eis-openai-gpt-5-4': {
-    config: { providerConfig: { model_id: 'openai-gpt-5.4' } },
+    provider: 'elastic',
+    providerConfig: { model_id: 'openai-gpt-5.4' },
   },
 };
 
@@ -38,11 +40,15 @@ describe('get_connector_ids', () => {
     expect(run(OPENROUTER_GPT, 'openrouter/openai-gpt-5.4')).toBe('openrouter-openai-gpt-5-4');
   });
 
-  it('matches a native OpenRouter id against defaultModel', () => {
+  it('matches a native OpenRouter id against providerConfig.model_id', () => {
     expect(run(OPENROUTER_GPT, 'openai/gpt-5.4')).toBe('openrouter-openai-gpt-5-4');
   });
 
   it('still matches `eis/<modelId>` groups', () => {
     expect(run(EIS_GPT, 'eis/openai-gpt-5.4')).toBe('eis-openai-gpt-5-4');
+  });
+
+  it('does not match `eis/<modelId>` groups against non-EIS endpoint defs', () => {
+    expect(() => run(OPENROUTER_GPT, 'eis/openai/gpt-5.4')).toThrow();
   });
 });

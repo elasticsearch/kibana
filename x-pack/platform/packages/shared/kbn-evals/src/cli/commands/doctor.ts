@@ -51,19 +51,19 @@ export const doctorCmd: Command<void> = {
     const interactive = isTTY();
     const checks: CheckResult[] = [];
 
-    // --- Check: KIBANA_TESTING_AI_CONNECTORS ---
+    // --- Check: connectors (inference endpoints + stack connectors) ---
     const connectors = parseConnectorsFromEnv();
     if (connectors.length > 0) {
       checks.push({
-        label: 'KIBANA_TESTING_AI_CONNECTORS',
+        label: 'Connectors (env)',
         status: 'pass',
         detail: `${connectors.length} connector(s)`,
       });
     } else {
       checks.push({
-        label: 'KIBANA_TESTING_AI_CONNECTORS',
+        label: 'Connectors (env)',
         status: 'fail',
-        detail: 'not set',
+        detail: 'KIBANA_TESTING_INFERENCE_ENDPOINTS and KIBANA_TESTING_AI_CONNECTORS are not set',
         fix: async () => {
           log.info('Run `node scripts/evals init` to set up connectors.');
         },

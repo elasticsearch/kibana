@@ -471,6 +471,51 @@ node scripts/evals dataplex sync --dry-run   # Preview changes
 
 ## 4. Developer details
 
+### Connector definitions and inference endpoints
+
+Model definitions come from `KIBANA_TESTING_AI_CONNECTORS` (base64-encoded JSON, set by CI or exported by `node scripts/evals init`) or, locally, from `xpack.actions.preconfigured` in `config/kibana.dev.yml`.
+
+#### Inference endpoints vs. stack connectors
+
+- An **inference endpoint** is a pure Elasticsearch resource (`PUT _inference/{taskType}/{inferenceId}`), with no Kibana saved object behind it. The inference plugin resolves inference endpoint ids passed as connector ids, so evals binds the `inferenceClient` fixture directly to the endpoint.
+- An **endpoint definition** is an envelope entry with `actionTypeId: .inference` and a `config.inferenceId`. Its `config`/`secrets` are byte-for-byte the body of Kibana's `POST /internal/_inference/_add` wrapper around the ES API (`config.provider`, `config.taskType`, `config.inferenceId`, `config.providerConfig`, `secrets.providerSecrets`). Here `actionTypeId: .inference` is only the envelope's routing tag — no `.inference` stack connector is created.
+- A **stack connector** is an Actions saved object (`POST /api/actions/connector`). Evals creates stack connectors only for definitions with any other `actionTypeId` — non-LLM action targets such as the workflow suites' mock Slack/email connectors — and otherwise touches them only when reusing what already exists (preconfigured connectors, or anything under `KBN_EVALS_SKIP_CONNECTOR_SETUP`).
+
+#### Migrating `.gen-ai` definitions
+
+`.gen-ai` definitions are no longer recognized as LLM definitions. They are not rejected either: like any non-`.inference` definition they fall through the generic Actions path, which silently creates (or reuses) a **deprecated `.gen-ai` stack connector**. Such a run misattributes scores (results are recorded as if the model were an inference endpoint) and will break outright once the platform removes the connector type — replace stale local definitions instead of relying on the fallback.
+
+Endpoint-shaped replacement for a `kibana.dev.yml` `.gen-ai` definition (any OpenAI-compatible API, e.g. OpenRouter):
+
+```yaml
+# Before
+xpack.actions.preconfigured:
+  my-gpt:
+    name: My GPT
+    actionTypeId: .gen-ai
+    config:
+      apiUrl: https://openrouter.ai/api/v1/chat/completions
+      defaultModel: openai/gpt-4o
+    secrets:
+      apiKey: '<api key>'
+
+# After
+xpack.actions.preconfigured:
+  openrouter-openai-gpt-4o:
+    name: OpenRouter openai/gpt-4o
+    actionTypeId: .inference
+    config:
+      provider: openai
+      taskType: chat_completion
+      inferenceId: openrouter-openai-gpt-4o
+      providerConfig:
+        model_id: openai/gpt-4o
+        url: https://openrouter.ai/api/v1/chat/completions
+    secrets:
+      providerSecrets:
+        api_key: '<api key>'
+```
+
 ### Automated label sync
 
 `models:*` and `models:judge:*` labels are synced automatically:

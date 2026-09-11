@@ -5,7 +5,7 @@
  * 2.0.
  */
 
-import type { AvailableConnectorWithId } from '@kbn/gen-ai-functional-testing';
+import type { EvalConnector } from '@kbn/evals';
 import type { HttpHandler } from '@kbn/core/public';
 import type { ToolingLog } from '@kbn/tooling-log';
 import type { Client as EsClient } from '@elastic/elasticsearch';
@@ -29,7 +29,7 @@ evaluate.describe('Rule Creation Worker', { tag: tags.serverless.security.comple
       traceEsClient,
     }: {
       fetch: HttpHandler;
-      connector: AvailableConnectorWithId;
+      connector: EvalConnector;
       log: ToolingLog;
       ruleCreationClient: RuleCreationClient;
       traceEsClient: EsClient;

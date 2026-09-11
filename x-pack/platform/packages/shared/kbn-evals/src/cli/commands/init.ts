@@ -374,7 +374,7 @@ const listConnectorIds = (base64Payload: string): Array<{ id: string; name: stri
 export const runConnectorSetup = async (repoRoot: string, log: ToolingLog): Promise<void> => {
   if (!isTTY()) {
     throw new Error(
-      'No connectors available. Set KIBANA_TESTING_AI_CONNECTORS or run with a TTY to use the setup wizard.'
+      'No connectors available. Set KIBANA_TESTING_INFERENCE_ENDPOINTS (inference endpoints) or KIBANA_TESTING_AI_CONNECTORS (stack connectors), or run with a TTY to use the setup wizard.'
     );
   }
 
@@ -392,7 +392,7 @@ export const runConnectorSetup = async (repoRoot: string, log: ToolingLog): Prom
   }
   if (hasExistingConnectors) {
     choices.push({
-      name: `Already set (KIBANA_TESTING_AI_CONNECTORS has ${existingConnectors.length} connector(s))`,
+      name: `Already set (${existingConnectors.length} connector(s) found in env)`,
       value: 'existing',
     });
   }
@@ -440,7 +440,7 @@ export const runConnectorSetup = async (repoRoot: string, log: ToolingLog): Prom
   if (cachedConnectors) {
     const connectorEntries = Object.entries(cachedConnectors);
     const base64Payload = Buffer.from(JSON.stringify(cachedConnectors)).toString('base64');
-    process.env.KIBANA_TESTING_AI_CONNECTORS = base64Payload;
+    process.env.KIBANA_TESTING_INFERENCE_ENDPOINTS = base64Payload;
 
     log.info(`Using cached EIS connectors (${connectorEntries.length} connector(s)):`);
     connectorEntries.forEach(([id]) => log.info(`  - ${id}`));
@@ -479,8 +479,8 @@ export const runConnectorSetup = async (repoRoot: string, log: ToolingLog): Prom
   log.info('');
   log.info('Done! Run the following to export connectors to your shell:');
   log.info('');
-  log.info(`  export KIBANA_TESTING_AI_CONNECTORS="${base64Payload}"`);
-  process.env.KIBANA_TESTING_AI_CONNECTORS = base64Payload;
+  log.info(`  export KIBANA_TESTING_INFERENCE_ENDPOINTS="${base64Payload}"`);
+  process.env.KIBANA_TESTING_INFERENCE_ENDPOINTS = base64Payload;
   log.info('');
   log.info('Available connector IDs:');
   connectors.forEach((c) => log.info(`  - ${c.id}`));

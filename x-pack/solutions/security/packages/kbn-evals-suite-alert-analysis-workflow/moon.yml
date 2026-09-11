@@ -24,7 +24,6 @@ dependsOn:
   - '@kbn/agent-builder-common'
   - '@kbn/workflows'
   - '@kbn/core'
-  - '@kbn/gen-ai-functional-testing'
 tags:
   - functional-tests
   - package

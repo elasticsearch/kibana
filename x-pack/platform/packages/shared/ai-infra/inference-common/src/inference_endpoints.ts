@@ -6,6 +6,11 @@
  */
 
 /**
+ * Version of the internal inference endpoint HTTP API (`/internal/_inference/*`).
+ */
+export const INFERENCE_ENDPOINT_INTERNAL_API_VERSION = '1';
+
+/**
  * Constants for all default (preconfigured) inference endpoints.
  */
 export const defaultInferenceEndpoints = {

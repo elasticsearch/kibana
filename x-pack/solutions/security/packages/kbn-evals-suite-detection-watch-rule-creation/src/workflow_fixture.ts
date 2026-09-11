@@ -11,7 +11,7 @@
  * 2.0.
  */
 
-import type { AvailableConnectorWithId } from '@kbn/gen-ai-functional-testing';
+import type { EvalConnector } from '@kbn/evals';
 import type { HttpHandler } from '@kbn/core/public';
 import type { ToolingLog } from '@kbn/tooling-log';
 import {
@@ -30,7 +30,7 @@ export const ensureJudgeConnectorAccessible = async ({
   log,
 }: {
   fetch: HttpHandler;
-  connector: AvailableConnectorWithId;
+  connector: EvalConnector;
   log: ToolingLog;
 }): Promise<void> => {
   log.info(`Verifying AI connector: ${connector.name} (${connector.id})`);

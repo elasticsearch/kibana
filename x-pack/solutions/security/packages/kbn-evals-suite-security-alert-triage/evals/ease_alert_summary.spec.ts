@@ -24,7 +24,9 @@
 
 import { tags } from '@kbn/scout';
 import {
+  getConnectorActionTypeId,
   selectEvaluators,
+  type EvalConnector,
   type EvaluationDataset,
   type EvalsExecutorClient,
   type Example,
@@ -90,7 +92,7 @@ function createEvaluateEaseSummary({
   log,
 }: {
   fetch: HttpHandler;
-  connector: { id: string; actionTypeId: string };
+  connector: EvalConnector;
   executorClient: EvalsExecutorClient;
   log: ToolingLog;
 }) {
@@ -114,7 +116,7 @@ function createEvaluateEaseSummary({
           return callEaseSummary({
             fetch,
             connectorId: connector.id,
-            actionTypeId: connector.actionTypeId,
+            actionTypeId: getConnectorActionTypeId(connector),
             alertContext: (input as EaseSummaryExample['input']).alertContext,
             log,
           });

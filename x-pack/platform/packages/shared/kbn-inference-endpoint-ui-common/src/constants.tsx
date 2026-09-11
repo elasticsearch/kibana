@@ -10,6 +10,7 @@ import { EuiLink } from '@elastic/eui';
 import { DEFAULT_MODEL as BEDROCK_DEFAULT_MODEL } from '@kbn/connector-schemas/bedrock/constants';
 import { DEFAULT_MODEL as GEMINI_DEFAULT_MODEL } from '@kbn/connector-schemas/gemini/constants';
 import { DEFAULT_MODEL as OPENAI_DEFAULT_MODEL } from '@kbn/connector-schemas/openai/constants';
+import { SERVICE_SETTINGS, TASK_SETTINGS } from '@kbn/inference-common';
 import { GEMINI, DOCUMENTATION_BASE as DOCUMENTATION } from './translations';
 import type { InternalOverrideFieldsType } from './types/types';
 import { FieldType } from './types/types';
@@ -80,8 +81,7 @@ export const internalProviderKeys: Array<ServiceProviderKeys | string> = [
 
 export const MAX_NUMBER_OF_ALLOCATIONS = 'max_number_of_allocations';
 export const CONTEXT_WINDOW_LENGTH = 'contextWindowLength';
-export const SERVICE_SETTINGS = 'service_settings';
-export const TASK_SETTINGS = 'task_settings';
+export { SERVICE_SETTINGS, TASK_SETTINGS };
 export const TASK_TYPE_CONFIG = 'taskTypeConfig';
 export const PROVIDER_CONFIG = 'providerConfig';
 export const PROVIDER_SECRETS = 'providerSecrets';
