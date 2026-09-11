@@ -7,6 +7,7 @@
 
 import type { AuthenticatedUser, KibanaRequest, Logger } from '@kbn/core/server';
 import type { RunnableConfig } from '@langchain/core/runnables';
+import { v4 as uuidV4 } from 'uuid';
 import type { MigrationTaskItemsStats } from '../../../../../common/siem_migrations/model/common.gen';
 import {
   SiemMigrationStatus,
@@ -21,6 +22,7 @@ import type {
   MigrationDocument,
   ItemDocument,
 } from '../types';
+import type { SiemMigrationVendor } from '../../../../../common/siem_migrations/types';
 import type {
   SiemMigrationTaskEvaluateParams,
   SiemMigrationTaskStartParams,
@@ -277,6 +279,34 @@ export abstract class SiemMigrationsTaskClient<
       connectorId,
       langsmithOptions,
     });
+  }
+
+  /** Creates a single-invocation runner for direct graph execution (evals). No DB writes. */
+  async createInvoker(
+    connectorId: string,
+    opts: { abortController: AbortController; vendor: SiemMigrationVendor }
+  ): Promise<{ execute: (input: P, config?: RunnableConfig<C>) => Promise<O> }> {
+    const invokeId = uuidV4();
+    const invokeLogger = this.logger.get('invoke');
+    const runner = new this.TaskRunnerClass(
+      invokeId,
+      opts.vendor,
+      this.request,
+      this.currentUser,
+      opts.abortController,
+      this.data,
+      invokeLogger,
+      this.dependencies
+    );
+    await runner.setup(connectorId);
+    return {
+      execute: (input: P, config?: RunnableConfig<C>) =>
+        runner.executeTask(input, {
+          ...config,
+          signal: opts.abortController.signal,
+          metadata: { migrationId: invokeId, evalsInvoke: true },
+        }),
+    };
   }
 
   /** Returns if a migration is running or not */

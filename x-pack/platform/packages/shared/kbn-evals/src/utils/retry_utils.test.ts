@@ -5,7 +5,7 @@
  * 2.0.
  */
 
-import { withRetry } from './retry_utils';
+import { isRetryableNetworkError, withRetry } from './retry_utils';
 
 const fastRetryOptions = { minDelayMs: 1, maxDelayMs: 2, jitter: false } as const;
 
@@ -96,5 +96,43 @@ describe('withRetry', () => {
     await withRetry(fn, { ...fastRetryOptions, onRetry, label: 'upsert' });
     expect(onRetry).toHaveBeenCalledTimes(1);
     expect(onRetry).toHaveBeenCalledWith(expect.objectContaining({ attempt: 1, label: 'upsert' }));
+  });
+});
+
+describe('isRetryableNetworkError', () => {
+  it.each(['fetch failed', 'other side closed', 'socket hang up', 'terminated'])(
+    'recognizes the top-level transport message "%s"',
+    (message) => {
+      expect(isRetryableNetworkError(new Error(message))).toBe(true);
+    }
+  );
+
+  it.each(['ECONNRESET', 'ECONNREFUSED', 'EPIPE', 'UND_ERR_SOCKET'])(
+    'recognizes a transport code in the immediate cause: %s',
+    (code) => {
+      const cause = Object.assign(new Error('socket failure'), { code });
+      expect(isRetryableNetworkError(Object.assign(new Error('fetch failed'), { cause }))).toBe(
+        true
+      );
+    }
+  );
+
+  it('should not recognize unrelated errors', () => {
+    expect(isRetryableNetworkError(new Error('request failed'))).toBe(false);
+  });
+
+  it('should not recognize errors with an HTTP status', () => {
+    expect(isRetryableNetworkError(Object.assign(new Error('fetch failed'), { status: 500 }))).toBe(
+      false
+    );
+  });
+
+  it('should not retry caller cancellation in the immediate cause', () => {
+    const cause = Object.assign(new Error('The operation was aborted'), {
+      name: 'AbortError',
+    });
+    expect(isRetryableNetworkError(Object.assign(new Error('fetch failed'), { cause }))).toBe(
+      false
+    );
   });
 });

@@ -33,6 +33,7 @@ import { registerSiemRuleMigrationsDeleteRoute } from './delete';
 import { registerSiemRuleMigrationsIntegrationsStatsRoute } from './integrations_stats';
 import { registerSiemRuleMigrationsUpdateRoute } from './update';
 import { registerSiemRuleMigrationsUpdateIndexPatternRoute } from './update_index_pattern';
+import { registerSiemRuleMigrationsInvokeRoute } from './invoke';
 
 export const registerSiemRuleMigrationsRoutes = (
   router: SecuritySolutionPluginRouter,
@@ -95,5 +96,9 @@ export const registerSiemRuleMigrationsRoutes = (
     // Use the same experimental feature flag as the assistant model evaluation.
     // This route is not intended to be used by the end user, but rather for internal purposes.
     registerSiemRuleMigrationsEvaluateRoute(router, logger);
+  }
+
+  if (config.experimentalFeatures.siemMigrationsEvalsInvokeEnabled) {
+    registerSiemRuleMigrationsInvokeRoute(router, logger);
   }
 };

@@ -120,7 +120,7 @@ export function createEvaluateDataset({
     await executorClient.runExperiment(
       {
         datasets: [dataset],
-        concurrency: 3,
+        concurrency: 1, // dashboard migrations are memory-heavy; suite runs after rules eval leaving Kibana close to OOM (SocketError: other side closed)
         task: async ({ input }) => {
           if (!input) throw new Error('Missing input for task');
           totalExamples++;

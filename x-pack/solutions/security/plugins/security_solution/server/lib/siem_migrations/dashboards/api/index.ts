@@ -23,6 +23,7 @@ import { registerSiemDashboardMigrationsResourceUpsertRoute } from './resources/
 import { registerSiemDashboardMigrationsInstallRoute } from './install';
 import { registerSiemDashboardMigrationsGetDashboardsRoute } from './dashboards/get';
 import { registerSiemDashboardMigrationsDeleteRoute } from './delete';
+import { registerSiemDashboardMigrationsInvokeRoute } from './invoke';
 
 export const registerSiemDashboardMigrationsRoutes = (
   router: SecuritySolutionPluginRouter,
@@ -59,5 +60,9 @@ export const registerSiemDashboardMigrationsRoutes = (
     // Use the same experimental feature flag as the assistant model evaluation.
     // This route is not intended to be used by the end user, but rather for internal purposes.
     registerSiemDashboardMigrationsEvaluateRoute(router, logger);
+  }
+
+  if (config.experimentalFeatures.siemMigrationsEvalsInvokeEnabled) {
+    registerSiemDashboardMigrationsInvokeRoute(router, logger);
   }
 };

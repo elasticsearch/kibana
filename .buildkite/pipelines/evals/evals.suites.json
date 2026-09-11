@@ -325,7 +325,8 @@
       ],
       "ciLabels": [
         "evals:security-automatic-migrations"
-      ]
+      ],
+      "serverConfigSet": "evals_security_automatic_migrations"
     },
     {
       "id": "security-alerts-rag-regression",

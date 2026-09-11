@@ -90,14 +90,12 @@ function makeMigrationResult(
     dashboards: [
       {
         id: 'd1',
-        migration_id: 'test',
         original_dashboard: { id: 'orig1', title: 'Original Dashboard' },
         elastic_dashboard: {
           title: 'Test Dashboard',
           description: '',
           data: makeElasticDashboardData(panels),
         },
-        status: 'completed',
         translation_result: translationResult,
         comments: '',
       },
@@ -182,9 +180,7 @@ describe('extractEsqlQueries', () => {
       dashboards: [
         {
           id: 'd1',
-          migration_id: 'test',
           original_dashboard: {},
-          status: 'failed',
         },
       ],
       stats: {},
@@ -198,10 +194,8 @@ describe('extractEsqlQueries', () => {
       dashboards: [
         {
           id: 'd1',
-          migration_id: 'test',
           original_dashboard: {},
           elastic_dashboard: { data: 'not-json', title: 'T', description: '' },
-          status: 'completed',
         },
       ],
       stats: {},
@@ -247,7 +241,7 @@ describe('countTranslatedPanels', () => {
   it('returns 0 when no elastic_dashboard', () => {
     const result: MigrationResult = {
       migrationId: 'test',
-      dashboards: [{ id: 'd1', migration_id: 'test', original_dashboard: {}, status: 'failed' }],
+      dashboards: [{ id: 'd1', original_dashboard: {} }],
       stats: {},
     };
     expect(countTranslatedPanels(result)).toBe(0);

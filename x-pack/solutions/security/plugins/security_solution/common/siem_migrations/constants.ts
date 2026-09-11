@@ -45,6 +45,7 @@ export const SIEM_RULE_MIGRATION_RESOURCES_MISSING_PATH =
 export const SIEM_RULE_MIGRATION_MISSING_PRIVILEGES_PATH =
   `${SIEM_RULE_MIGRATIONS_PATH}/missing_privileges` as const;
 export const SIEM_RULE_MIGRATION_EVALUATE_PATH = `${SIEM_RULE_MIGRATIONS_PATH}/evaluate` as const;
+export const SIEM_RULE_MIGRATION_INVOKE_PATH = `${SIEM_RULE_MIGRATIONS_PATH}/_invoke` as const;
 
 export const LOOKUPS_INDEX_PREFIX = 'lookup_';
 

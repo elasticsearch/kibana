@@ -28,7 +28,6 @@ export const createTranslationCompletenessEvaluator = (): Evaluator<
     // translation_result is at the dashboard level in the new API response
     const results = output.dashboards.map((dashboard) => ({
       dashboardId: dashboard.id,
-      status: dashboard.status,
       translationResult: dashboard.translation_result,
       panelCount: parsePanels(dashboard).length,
     }));

@@ -5,9 +5,9 @@
  * 2.0.
  */
 
-import type { MigrationResult, TranslatedDashboard } from './migration_client';
+import type { MigrationResult, InvokeDashboardOutput } from './migration_client';
 
-export type { MigrationResult, TranslatedDashboard } from './migration_client';
+export type { MigrationResult, InvokeDashboardOutput } from './migration_client';
 
 /**
  * Represents a parsed Kibana panel extracted from the elastic_dashboard.data JSON string.
@@ -64,7 +64,7 @@ interface KibanaDashboardData {
  * Parses the elastic_dashboard.data JSON string and returns the array of Kibana panels.
  * Returns an empty array if data is missing, not valid JSON, or has no panelsJSON.
  */
-export function parsePanels(dashboard: TranslatedDashboard): KibanaPanel[] {
+export function parsePanels(dashboard: InvokeDashboardOutput): KibanaPanel[] {
   const rawData = dashboard.elastic_dashboard?.data;
   if (!rawData) {
     return [];

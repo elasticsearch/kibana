@@ -102,6 +102,14 @@ export const allowedExperimentalValues = Object.freeze({
   assistantModelEvaluation: false,
 
   /**
+   * Enables the dev-only `_invoke` endpoints for SIEM migration evals.
+   * Exposes POST /internal/siem_migrations/rules/_invoke and
+   * /dashboards/_invoke for use by kbn-evals-suite-security-automatic-migrations.
+   * Must remain off in production builds.
+   */
+  siemMigrationsEvalsInvokeEnabled: false,
+
+  /**
    * Enable resetting risk scores to zero for outdated entities
    */
   enableRiskScoreResetToZero: true,

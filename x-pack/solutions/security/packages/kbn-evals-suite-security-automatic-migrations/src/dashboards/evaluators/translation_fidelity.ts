@@ -19,7 +19,7 @@ export function createTranslationFidelityEvaluator(
     direction: 'maximize',
     evaluate: async ({ input, output, expected, metadata }): Promise<EvaluationResult> => {
       if (!output?.dashboards?.length) {
-        return { score: 0, label: 'FAIL', explanation: 'No translated dashboards in output' };
+        return { score: null, label: 'N/A', explanation: 'No translated dashboards in output' };
       }
 
       const sourceSpl = input?.original_dashboard_export?.result?.['eai:data'];

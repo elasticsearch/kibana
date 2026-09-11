@@ -157,6 +157,28 @@ describe('wrapKbnClientWithRetries', () => {
     expect(log.warning).not.toHaveBeenCalled();
   });
 
+  it('does NOT multiply network retries for retries:0 requests (httpHandlerFromKbnClient path)', async () => {
+    // `httpHandlerFromKbnClient` always calls `kbnClient.request({ retries: 0 })` and runs its
+    // own call-site-gated network retry loop. The wrapper must stay out of the way for those
+    // calls so an adapter-level opt-in is not multiplied by this outer retry layer.
+    const err = new Error('fetch failed');
+    const request = jest.fn().mockRejectedValue(err);
+    const inner = { request } as unknown as KbnClient;
+    const log = createLog();
+
+    const wrapped = wrapKbnClientWithRetries({ kbnClient: inner, log });
+
+    await expect(
+      wrapped.request({
+        path: '/x',
+        method: 'POST',
+        retries: 0,
+      } as Parameters<KbnClient['request']>[0])
+    ).rejects.toBe(err);
+    expect(request).toHaveBeenCalledTimes(1);
+    expect(log.warning).not.toHaveBeenCalled();
+  });
+
   it('still retries when params.retries is not 0', async () => {
     const request = jest
       .fn()

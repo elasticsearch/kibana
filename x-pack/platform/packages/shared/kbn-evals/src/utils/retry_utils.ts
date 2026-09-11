@@ -47,7 +47,20 @@ function sleep(ms: number): Promise<void> {
 }
 
 function toErrorMessage(error: unknown): string {
-  if (error instanceof Error) return error.message;
+  if (error instanceof Error) {
+    // Fold in error.cause so nested undici socket codes (ECONNRESET, UND_ERR_SOCKET, etc.)
+    // are visible to the retryable-pattern regex even when the top-level message is generic
+    // ("fetch failed"). Include both the cause message and its code property when present.
+    const causeMsg =
+      error.cause instanceof Error
+        ? error.cause.message
+        : error.cause != null
+        ? String(error.cause)
+        : '';
+    const causeCode: string = (error.cause as any)?.code ?? '';
+    const extras = [causeMsg, causeCode].filter(Boolean).join(' ');
+    return extras ? `${error.message} (${extras})` : error.message;
+  }
   try {
     return JSON.stringify(error);
   } catch {
@@ -63,6 +76,62 @@ export function getStatusCode(error: any): number | undefined {
     error?.meta?.status ??
     undefined
   );
+}
+
+/**
+ * Message shapes produced by known Node/Undici runtime failures that carry no structured
+ * code at the level where they surface (e.g. the `TypeError: fetch failed` that undici
+ * throws for any socket-level failure, or `terminated` mid-response). Matching these
+ * identifies the transport-failure class only; it never proves the request was unprocessed.
+ */
+const KNOWN_TRANSPORT_FAILURE_MESSAGES =
+  /fetch failed|other side closed|socket hang ?up|terminated|SocketError/i;
+
+const RETRYABLE_NETWORK_CODES =
+  /ECONNRESET|ECONNREFUSED|EPIPE|UND_ERR_SOCKET|UND_ERR_CONNECT_TIMEOUT/i;
+
+const CALLER_CANCELLATION_MESSAGES = /operation was aborted/i;
+
+/**
+ * Caller-initiated cancellation shapes: `AbortError` DOMException/Error (the default
+ * `AbortSignal.reason`), Node's `ABORT_ERR` code, and their wrapped messages. Cancellation
+ * is never a transient network failure, even when wrapped by another error type.
+ */
+function isCallerCancellation(error: Error): boolean {
+  if (error.name === 'AbortError') return true;
+  if ((error as { code?: unknown }).code === 'ABORT_ERR') return true;
+  return CALLER_CANCELLATION_MESSAGES.test(error.message);
+}
+
+/**
+ * Identifies a transient transport failure that may be retried when the caller has
+ * established replay safety. It does not prove that the request was unprocessed or that
+ * no response was received.
+ *
+ * Returns `true` when the error or its immediate cause contains a recognized transport/network
+ * failure. `KbnClientRequesterError` includes the underlying error message in its own message,
+ * so checking the top-level message and first cause covers the runtime shapes produced by the
+ * request path.
+ *
+ * Caller cancellation is checked on the wrapper and immediate cause and always wins. A numeric
+ * status on the top-level error means the server produced a response and is not a transport
+ * failure. TLS/auth, malformed-request, and unrelated errors are not recognized.
+ *
+ * A `true` result is necessary but not sufficient for a retry: the caller must separately
+ * opt in to network retries (e.g. `retryPolicy: { onNetworkError: true }`), and the
+ * `KBN_EVALS_NETWORK_RETRIES` budget must have retries remaining.
+ */
+export function isRetryableNetworkError(error: unknown): boolean {
+  if (!(error instanceof Error)) return false;
+  if (typeof (error as { status?: unknown }).status === 'number') return false;
+
+  const cause = error.cause instanceof Error ? error.cause : undefined;
+  if (isCallerCancellation(error) || (cause !== undefined && isCallerCancellation(cause))) {
+    return false;
+  }
+
+  const message = toErrorMessage(error);
+  return KNOWN_TRANSPORT_FAILURE_MESSAGES.test(message) || RETRYABLE_NETWORK_CODES.test(message);
 }
 
 function parseRetryAfterMsFromMessage(message: string): number | undefined {
@@ -124,7 +193,7 @@ function isRetryable(error: any): { retry: boolean; retryAfterMs?: number } {
       message
     )
   ) {
-    return { retry: true, retryAfterMs };
+    return { retry: true };
   }
 
   return { retry: false };

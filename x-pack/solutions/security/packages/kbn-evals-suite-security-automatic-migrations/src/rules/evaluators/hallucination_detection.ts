@@ -37,12 +37,13 @@ export const createHallucinationDetectionEvaluator = (
         `SOURCE ${sourceLabel.toUpperCase()} QUERY:\n${sourceQuery.slice(0, 3000)}\n\n` +
         `TRANSLATED ES|QL QUERY:\n${query.slice(0, 2000)}\n\n` +
         `Check if the ES|QL query introduces:\n` +
-        `- Field names not referenced or implied by the source\n` +
         `- Filter conditions, thresholds, or constants not in the source\n` +
-        `- Data sources or index patterns not derivable from the source\n` +
+        `- Data sources or index patterns clearly not derivable from the source\n` +
         `- Logic inversions (AND↔OR, negation flips)\n\n` +
-        `Note: Differences due to syntax translation (SPL→ES|QL or XML→ES|QL) are expected ` +
-        `and should NOT be flagged. Only flag genuinely invented content.\n\n` +
+        `Note: The following are expected and MUST NOT be flagged:\n` +
+        `- ECS field name equivalents (e.g. src_ip → source.ip, EventCode → winlog.event_id)\n` +
+        `- Syntax differences due to ${sourceLabel}→ES|QL translation\n` +
+        `- Index pattern selection based on source type/index names\n\n` +
         `Score YES if the ES|QL is faithful (no hallucinations). Score NO if it contains hallucinations.`,
     ]);
 
