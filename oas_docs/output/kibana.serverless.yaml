@@ -61412,11 +61412,11 @@ paths:
         - content: Kibana, Elastic Cloud Serverless
           name: product_name
   /api/risk_score/engine/saved_object/configure:
-    patch:
+    put:
       description: |-
         **Spaces method and path for this operation:**
 
-        <div><span class="operation-verb patch">patch</span>&nbsp;<span class="operation-path">/s/{space_id}/api/risk_score/engine/saved_object/configure</span></div>
+        <div><span class="operation-verb put">put</span>&nbsp;<span class="operation-path">/s/{space_id}/api/risk_score/engine/saved_object/configure</span></div>
 
         Refer to [Spaces](https://www.elastic.co/docs/deploy-manage/manage-spaces) for more information.
 

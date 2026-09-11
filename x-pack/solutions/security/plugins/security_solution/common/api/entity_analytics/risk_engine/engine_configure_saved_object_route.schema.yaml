@@ -5,7 +5,7 @@ info:
   description: These APIs allow the consumer to configure the Risk Engine Saved Object.
 paths:
   /api/risk_score/engine/saved_object/configure:
-    patch:
+    put:
       x-labels: [ess, serverless]
       x-codegen-enabled: true
       operationId: ConfigureRiskEngineSavedObject

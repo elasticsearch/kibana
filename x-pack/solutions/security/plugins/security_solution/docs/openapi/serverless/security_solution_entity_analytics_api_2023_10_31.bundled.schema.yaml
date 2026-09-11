@@ -1506,7 +1506,7 @@ paths:
       tags:
         - Security Entity Analytics API
   /api/risk_score/engine/saved_object/configure:
-    patch:
+    put:
       description: Configuring the Risk Engine Saved Object
       operationId: ConfigureRiskEngineSavedObject
       requestBody:

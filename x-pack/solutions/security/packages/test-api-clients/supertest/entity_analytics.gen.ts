@@ -168,7 +168,7 @@ If asset criticality records already exist for the specified entities, those rec
     kibanaSpace: string = 'default'
   ) {
     return supertest
-      .patch(getRouteUrlForSpace('/api/risk_score/engine/saved_object/configure', kibanaSpace))
+      .put(getRouteUrlForSpace('/api/risk_score/engine/saved_object/configure', kibanaSpace))
       .set('kbn-xsrf', 'true')
       .set(ELASTIC_HTTP_VERSION_HEADER, '2023-10-31')
       .set(X_ELASTIC_INTERNAL_ORIGIN_REQUEST, 'kibana')

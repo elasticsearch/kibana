@@ -15,7 +15,7 @@ export const RISK_ENGINE_SETTINGS_URL = `${RISK_ENGINE_URL}/settings` as const;
 
 // Public Risk Score routes
 export const PUBLIC_RISK_ENGINE_URL = `${PUBLIC_RISK_SCORE_URL}/engine` as const;
-export const RISK_ENGINE_SCHEDULE_NOW_URL = `${RISK_ENGINE_URL}/schedule_now` as const;
+export const RISK_ENGINE_SCHEDULE_NOW_URL = `${PUBLIC_RISK_ENGINE_URL}/schedule_now` as const;
 export const RISK_ENGINE_CLEANUP_URL = `${PUBLIC_RISK_ENGINE_URL}/dangerously_delete_data` as const;
 export const RISK_ENGINE_CONFIGURE_SO_URL =
   `${PUBLIC_RISK_ENGINE_URL}/saved_object/configure` as const;
