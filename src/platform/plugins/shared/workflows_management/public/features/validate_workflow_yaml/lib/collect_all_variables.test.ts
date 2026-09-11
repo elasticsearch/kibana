@@ -7,37 +7,10 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
-import { parseDocument } from 'yaml';
-import type { monaco } from '@kbn/monaco';
+import { LineCounter, parseDocument } from 'yaml';
 import type { WorkflowYaml } from '@kbn/workflows';
 import { WorkflowGraph } from '@kbn/workflows/graph';
 import { collectAllVariables } from './collect_all_variables';
-
-// Mock Monaco model
-const createMockModel = (value: string) => {
-  const lines = value.split('\n');
-
-  return {
-    getValue: () => value,
-    getPositionAt: (offset: number) => {
-      let line = 1;
-      let column = 1;
-      let currentOffset = 0;
-
-      for (let i = 0; i < lines.length; i++) {
-        const lineLength = lines[i].length + 1; // +1 for newline
-        if (currentOffset + lineLength > offset) {
-          column = offset - currentOffset + 1;
-          break;
-        }
-        currentOffset += lineLength;
-        line++;
-      }
-
-      return { lineNumber: line, column };
-    },
-  } as monaco.editor.ITextModel;
-};
 
 describe('collectAllVariables', () => {
   it('should collect mustache template variables', () => {
@@ -51,8 +24,8 @@ steps:
       other: "{{anotherVariable}}"
 `;
 
-    const model = createMockModel(yaml);
-    const yamlDocument = parseDocument(yaml);
+    const lineCounter = new LineCounter();
+    const yamlDocument = parseDocument(yaml, { lineCounter });
     const workflowDefinition: WorkflowYaml = {
       name: 'Test Workflow',
       version: '1',
@@ -71,7 +44,7 @@ steps:
     };
     const workflowGraph = WorkflowGraph.fromWorkflowDefinition(workflowDefinition);
 
-    const result = collectAllVariables(model, yamlDocument, workflowGraph);
+    const result = collectAllVariables(yaml, yamlDocument, lineCounter, workflowGraph);
 
     expect(result).toHaveLength(2);
     expect(result[0].key).toBe('myVariable');
@@ -90,8 +63,8 @@ steps:
       - name: Inner Step
         action: test`;
 
-    const model = createMockModel(yaml);
-    const yamlDocument = parseDocument(yaml);
+    const lineCounter = new LineCounter();
+    const yamlDocument = parseDocument(yaml, { lineCounter });
     const workflowDefinition: WorkflowYaml = {
       name: 'Test Workflow',
       version: '1',
@@ -113,7 +86,7 @@ steps:
     };
     const workflowGraph = WorkflowGraph.fromWorkflowDefinition(workflowDefinition);
 
-    const result = collectAllVariables(model, yamlDocument, workflowGraph);
+    const result = collectAllVariables(yaml, yamlDocument, lineCounter, workflowGraph);
 
     const foreachVariables = result.filter((v) => v.type === 'foreach');
     // With the proper foreach step structure, the function should detect the foreach variable
@@ -129,8 +102,8 @@ steps:
     params:
       value: "{{response.data.items[0].name}}"`;
 
-    const model = createMockModel(yaml);
-    const yamlDocument = parseDocument(yaml);
+    const lineCounter = new LineCounter();
+    const yamlDocument = parseDocument(yaml, { lineCounter });
     const workflowDefinition: WorkflowYaml = {
       name: 'Test Workflow',
       version: '1',
@@ -148,7 +121,7 @@ steps:
     };
     const workflowGraph = WorkflowGraph.fromWorkflowDefinition(workflowDefinition);
 
-    const result = collectAllVariables(model, yamlDocument, workflowGraph);
+    const result = collectAllVariables(yaml, yamlDocument, lineCounter, workflowGraph);
 
     expect(result).toHaveLength(1);
     expect(result[0].key).toBe('response.data.items[0].name');
@@ -162,8 +135,8 @@ steps:
     params:
       valid: "{{validVar}}"`;
 
-    const model = createMockModel(yaml);
-    const yamlDocument = parseDocument(yaml);
+    const lineCounter = new LineCounter();
+    const yamlDocument = parseDocument(yaml, { lineCounter });
     const workflowDefinition: WorkflowYaml = {
       name: 'Test Workflow',
       version: '1',
@@ -181,7 +154,7 @@ steps:
     };
     const workflowGraph = WorkflowGraph.fromWorkflowDefinition(workflowDefinition);
 
-    const result = collectAllVariables(model, yamlDocument, workflowGraph);
+    const result = collectAllVariables(yaml, yamlDocument, lineCounter, workflowGraph);
 
     // The regex pattern VARIABLE_REGEX_GLOBAL requires at least one character in the key
     expect(result).toHaveLength(1);
@@ -196,8 +169,8 @@ steps:
     params:
       value: "{{myVar}}"`;
 
-    const model = createMockModel(yaml);
-    const yamlDocument = parseDocument(yaml);
+    const lineCounter = new LineCounter();
+    const yamlDocument = parseDocument(yaml, { lineCounter });
     const workflowDefinition: WorkflowYaml = {
       name: 'Test Workflow',
       version: '1',
@@ -215,7 +188,7 @@ steps:
     };
     const workflowGraph = WorkflowGraph.fromWorkflowDefinition(workflowDefinition);
 
-    const result = collectAllVariables(model, yamlDocument, workflowGraph);
+    const result = collectAllVariables(yaml, yamlDocument, lineCounter, workflowGraph);
 
     expect(result).toHaveLength(1);
     expect(result[0]).toMatchObject({
@@ -237,8 +210,8 @@ steps:
       value: "{{var1}} and {{var2}} and {{var3}}"
 `;
 
-    const model = createMockModel(yaml);
-    const yamlDocument = parseDocument(yaml);
+    const lineCounter = new LineCounter();
+    const yamlDocument = parseDocument(yaml, { lineCounter });
     const workflowDefinition: WorkflowYaml = {
       name: 'Test Workflow',
       version: '1',
@@ -256,7 +229,7 @@ steps:
     };
     const workflowGraph = WorkflowGraph.fromWorkflowDefinition(workflowDefinition);
 
-    const result = collectAllVariables(model, yamlDocument, workflowGraph);
+    const result = collectAllVariables(yaml, yamlDocument, lineCounter, workflowGraph);
 
     expect(result).toHaveLength(3);
     expect(result.map((v) => v.key)).toEqual(['var1', 'var2', 'var3']);
@@ -279,8 +252,8 @@ steps:
           value: "{{thenVar}}"
 `;
 
-    const model = createMockModel(yaml);
-    const yamlDocument = parseDocument(yaml);
+    const lineCounter = new LineCounter();
+    const yamlDocument = parseDocument(yaml, { lineCounter });
     const workflowDefinition: WorkflowYaml = {
       name: 'Test Workflow',
       version: '1',
@@ -302,7 +275,7 @@ steps:
     };
     const workflowGraph = WorkflowGraph.fromWorkflowDefinition(workflowDefinition);
 
-    const result = collectAllVariables(model, yamlDocument, workflowGraph);
+    const result = collectAllVariables(yaml, yamlDocument, lineCounter, workflowGraph);
 
     expect(result).toHaveLength(2);
     expect(result.map((v) => v.key)).toContain('status');
@@ -320,8 +293,8 @@ steps:
       value2: "{{myVar}}"
 `;
 
-    const model = createMockModel(yaml);
-    const yamlDocument = parseDocument(yaml);
+    const lineCounter = new LineCounter();
+    const yamlDocument = parseDocument(yaml, { lineCounter });
     const workflowDefinition: WorkflowYaml = {
       name: 'Test Workflow',
       version: '1',
@@ -340,7 +313,7 @@ steps:
     };
     const workflowGraph = WorkflowGraph.fromWorkflowDefinition(workflowDefinition);
 
-    const result = collectAllVariables(model, yamlDocument, workflowGraph);
+    const result = collectAllVariables(yaml, yamlDocument, lineCounter, workflowGraph);
 
     expect(result).toHaveLength(2);
     expect(result[0].id).not.toBe(result[1].id);
@@ -359,8 +332,8 @@ steps:
       value: "{{activeVar}}"
 `;
 
-    const model = createMockModel(yaml);
-    const yamlDocument = parseDocument(yaml);
+    const lineCounter = new LineCounter();
+    const yamlDocument = parseDocument(yaml, { lineCounter });
     const workflowDefinition: WorkflowYaml = {
       name: 'Test Workflow',
       version: '1',
@@ -378,7 +351,7 @@ steps:
     };
     const workflowGraph = WorkflowGraph.fromWorkflowDefinition(workflowDefinition);
 
-    const result = collectAllVariables(model, yamlDocument, workflowGraph);
+    const result = collectAllVariables(yaml, yamlDocument, lineCounter, workflowGraph);
 
     expect(result).toHaveLength(1);
     expect(result[0].key).toBe('activeVar');
@@ -393,8 +366,8 @@ steps:
       # old value: "{{deprecatedVar}}"
       value: "{{currentVar}}"`;
 
-    const model = createMockModel(yaml);
-    const yamlDocument = parseDocument(yaml);
+    const lineCounter = new LineCounter();
+    const yamlDocument = parseDocument(yaml, { lineCounter });
     const workflowDefinition: WorkflowYaml = {
       name: 'Test Workflow',
       version: '1',
@@ -412,7 +385,7 @@ steps:
     };
     const workflowGraph = WorkflowGraph.fromWorkflowDefinition(workflowDefinition);
 
-    const result = collectAllVariables(model, yamlDocument, workflowGraph);
+    const result = collectAllVariables(yaml, yamlDocument, lineCounter, workflowGraph);
 
     expect(result).toHaveLength(1);
     expect(result[0].key).toBe('currentVar');
@@ -430,8 +403,8 @@ steps:
       value: "{{realVar1}} and {{realVar2}}"
 `;
 
-    const model = createMockModel(yaml);
-    const yamlDocument = parseDocument(yaml);
+    const lineCounter = new LineCounter();
+    const yamlDocument = parseDocument(yaml, { lineCounter });
     const workflowDefinition: WorkflowYaml = {
       name: 'Test Workflow',
       version: '1',
@@ -449,7 +422,7 @@ steps:
     };
     const workflowGraph = WorkflowGraph.fromWorkflowDefinition(workflowDefinition);
 
-    const result = collectAllVariables(model, yamlDocument, workflowGraph);
+    const result = collectAllVariables(yaml, yamlDocument, lineCounter, workflowGraph);
 
     expect(result).toHaveLength(2);
     expect(result.map((v) => v.key)).toEqual(['realVar1', 'realVar2']);
@@ -463,8 +436,8 @@ steps:
     params:
       value: "{{activeVar}}" # {{inlineCommentVar}}`;
 
-    const model = createMockModel(yaml);
-    const yamlDocument = parseDocument(yaml);
+    const lineCounter = new LineCounter();
+    const yamlDocument = parseDocument(yaml, { lineCounter });
     const workflowDefinition: WorkflowYaml = {
       name: 'Test Workflow',
       version: '1',
@@ -482,7 +455,7 @@ steps:
     };
     const workflowGraph = WorkflowGraph.fromWorkflowDefinition(workflowDefinition);
 
-    const result = collectAllVariables(model, yamlDocument, workflowGraph);
+    const result = collectAllVariables(yaml, yamlDocument, lineCounter, workflowGraph);
 
     expect(result).toHaveLength(1);
     expect(result[0].key).toBe('activeVar');

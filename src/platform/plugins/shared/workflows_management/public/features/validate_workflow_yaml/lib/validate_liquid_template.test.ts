@@ -7,32 +7,35 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
-import { parseDocument } from 'yaml';
+import { LineCounter, parseDocument } from 'yaml';
 import { validateLiquidTemplate } from './validate_liquid_template';
 
 describe('validateLiquidTemplate', () => {
   describe('valid templates', () => {
     it('returns empty array for valid liquid in a scalar', () => {
       const yaml = 'message: "Hello {{ name }} world"';
-      const doc = parseDocument(yaml);
+      const lineCounter = new LineCounter();
+      const doc = parseDocument(yaml, { lineCounter });
 
-      expect(validateLiquidTemplate(yaml, doc)).toEqual([]);
+      expect(validateLiquidTemplate(yaml, doc, lineCounter)).toEqual([]);
     });
 
     it('returns empty array for plain text without liquid', () => {
       const yaml = 'message: plain text';
-      const doc = parseDocument(yaml);
+      const lineCounter = new LineCounter();
+      const doc = parseDocument(yaml, { lineCounter });
 
-      expect(validateLiquidTemplate(yaml, doc)).toEqual([]);
+      expect(validateLiquidTemplate(yaml, doc, lineCounter)).toEqual([]);
     });
   });
 
   describe('error transformation', () => {
     it('returns YamlValidationResult with liquid-template owner for invalid filter', () => {
       const yaml = 'message: "Hello {{ name | unknownFilter }} world"';
-      const doc = parseDocument(yaml);
+      const lineCounter = new LineCounter();
+      const doc = parseDocument(yaml, { lineCounter });
 
-      const result = validateLiquidTemplate(yaml, doc);
+      const result = validateLiquidTemplate(yaml, doc, lineCounter);
 
       expect(result.length).toBeGreaterThan(0);
       expect(result[0]).toMatchObject({
@@ -47,9 +50,10 @@ describe('validateLiquidTemplate', () => {
 
     it('returns errors with line and column for invalid tag', () => {
       const yaml = 'line1: ok\nmessage: "{% unknownTag %}"';
-      const doc = parseDocument(yaml);
+      const lineCounter = new LineCounter();
+      const doc = parseDocument(yaml, { lineCounter });
 
-      const result = validateLiquidTemplate(yaml, doc);
+      const result = validateLiquidTemplate(yaml, doc, lineCounter);
 
       expect(result.length).toBeGreaterThan(0);
       expect(result[0]).toMatchObject({

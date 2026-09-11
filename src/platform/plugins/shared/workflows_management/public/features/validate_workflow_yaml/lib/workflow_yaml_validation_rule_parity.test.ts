@@ -7,7 +7,7 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
-import { parseDocument } from 'yaml';
+import { LineCounter, parseDocument } from 'yaml';
 import type { WorkflowValidationRuleId, WorkflowYaml } from '@kbn/workflows';
 import type { PublicTriggerDefinition } from '@kbn/workflows-extensions/public';
 import { z } from '@kbn/zod/v4';
@@ -132,10 +132,13 @@ const ruleParityCases: RuleParityCase[] = [
   {
     name: 'Liquid syntax errors',
     expectedRuleId: 'liquidSyntaxError',
-    getClientRuleIds: () =>
-      getClientRuleIds(
-        validateLiquidTemplate(INVALID_LIQUID_YAML, parseDocument(INVALID_LIQUID_YAML))
-      ),
+    getClientRuleIds: () => {
+      const lineCounter = new LineCounter();
+      const yamlDocument = parseDocument(INVALID_LIQUID_YAML, { lineCounter });
+      return getClientRuleIds(
+        validateLiquidTemplate(INVALID_LIQUID_YAML, yamlDocument, lineCounter)
+      );
+    },
     getServerRuleIds: () => getServerRuleIds(INVALID_LIQUID_YAML),
   },
   {

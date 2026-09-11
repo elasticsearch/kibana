@@ -7,15 +7,16 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
-import type { Document } from 'yaml';
+import type { Document, LineCounter } from 'yaml';
 import { validateLiquidYamlScalars } from './validate_liquid_yaml_scalars';
 import type { YamlValidationResult } from '../model/types';
 
 export function validateLiquidTemplate(
   yamlString: string,
-  yamlDocument: Document
+  yamlDocument: Document,
+  lineCounter: LineCounter
 ): YamlValidationResult[] {
-  return validateLiquidYamlScalars(yamlString, yamlDocument, null).filter(
+  return validateLiquidYamlScalars(yamlString, yamlDocument, lineCounter).filter(
     (result) => result.owner === 'liquid-template-validation'
   );
 }

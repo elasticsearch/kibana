@@ -7,7 +7,7 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
-import { parseDocument } from 'yaml';
+import { LineCounter, parseDocument } from 'yaml';
 import { DynamicStepContextSchema } from '@kbn/workflows';
 import { getSchemaAtPath } from '@kbn/workflows/common/utils/zod/get_schema_at_path';
 import { WorkflowGraph } from '@kbn/workflows/graph';
@@ -37,7 +37,8 @@ import {
 import { getWorkflowContextSchema } from '../../workflow_context/lib/get_workflow_context_schema';
 
 describe('validateLiquidForLoopCollections', () => {
-  const yamlDocument = parseDocument(FOR_LOOP_VALIDATION_YAML);
+  const lineCounter = new LineCounter();
+  const yamlDocument = parseDocument(FOR_LOOP_VALIDATION_YAML, { lineCounter });
   const model = createFakeMonacoModel(FOR_LOOP_VALIDATION_YAML);
   const workflowGraph = WorkflowGraph.fromWorkflowDefinition(forLoopValidationWorkflowDefinition);
 
@@ -47,7 +48,7 @@ describe('validateLiquidForLoopCollections', () => {
     results = validateLiquidForLoopCollections(
       FOR_LOOP_VALIDATION_YAML,
       yamlDocument,
-      model,
+      lineCounter,
       workflowGraph,
       forLoopValidationWorkflowDefinition
     );
@@ -81,10 +82,11 @@ steps:
     with:
       message: '{{ steps.only }}'
 `;
+    const plainLineCounter = new LineCounter();
     const plainResults = validateLiquidForLoopCollections(
       plainYaml,
-      parseDocument(plainYaml),
-      createFakeMonacoModel(plainYaml),
+      parseDocument(plainYaml, { lineCounter: plainLineCounter }),
+      plainLineCounter,
       workflowGraph,
       forLoopValidationWorkflowDefinition
     );
@@ -93,7 +95,8 @@ steps:
 
   it('reports collection error on block-folded message field with marker position', () => {
     const collectionPath = 'steps.non_existing_step';
-    const foldedDoc = parseDocument(FOR_LOOP_FOLDED_ONLY_YAML);
+    const foldedLineCounter = new LineCounter();
+    const foldedDoc = parseDocument(FOR_LOOP_FOLDED_ONLY_YAML, { lineCounter: foldedLineCounter });
     const foldedModel = createFakeMonacoModel(FOR_LOOP_FOLDED_ONLY_YAML);
     const foldedGraph = WorkflowGraph.fromWorkflowDefinition(forLoopFoldedOnlyWorkflowDefinition);
     const yamlOffset = FOR_LOOP_FOLDED_ONLY_YAML.indexOf(collectionPath);
@@ -102,7 +105,7 @@ steps:
     const foldedResults = validateLiquidForLoopCollections(
       FOR_LOOP_FOLDED_ONLY_YAML,
       foldedDoc,
-      foldedModel,
+      foldedLineCounter,
       foldedGraph,
       forLoopFoldedOnlyWorkflowDefinition
     );
@@ -115,14 +118,14 @@ steps:
   });
 
   it('reports nested inner collection error without error on valid outer collection', () => {
-    const nestedDoc = parseDocument(FOR_LOOP_NESTED_YAML);
-    const nestedModel = createFakeMonacoModel(FOR_LOOP_NESTED_YAML);
+    const nestedLineCounter = new LineCounter();
+    const nestedDoc = parseDocument(FOR_LOOP_NESTED_YAML, { lineCounter: nestedLineCounter });
     const nestedGraph = WorkflowGraph.fromWorkflowDefinition(forLoopNestedWorkflowDefinition);
 
     const nestedResults = validateLiquidForLoopCollections(
       FOR_LOOP_NESTED_YAML,
       nestedDoc,
-      nestedModel,
+      nestedLineCounter,
       nestedGraph,
       forLoopNestedWorkflowDefinition
     );
@@ -149,8 +152,10 @@ steps:
       severity: 'warning',
     });
 
-    const runtimeDoc = parseDocument(FOR_LOOP_RUNTIME_JSON_YAML);
-    const runtimeModel = createFakeMonacoModel(FOR_LOOP_RUNTIME_JSON_YAML);
+    const runtimeLineCounter = new LineCounter();
+    const runtimeDoc = parseDocument(FOR_LOOP_RUNTIME_JSON_YAML, {
+      lineCounter: runtimeLineCounter,
+    });
     const runtimeGraph = WorkflowGraph.fromWorkflowDefinition(forLoopRuntimeJsonWorkflowDefinition);
     const baseSchema = DynamicStepContextSchema.merge(
       getWorkflowContextSchema(forLoopRuntimeJsonWorkflowDefinition, runtimeDoc)
@@ -164,7 +169,7 @@ steps:
     const runtimeResults = validateLiquidForLoopCollections(
       FOR_LOOP_RUNTIME_JSON_YAML,
       runtimeDoc,
-      runtimeModel,
+      runtimeLineCounter,
       runtimeGraph,
       forLoopRuntimeJsonWorkflowDefinition
     );
@@ -176,14 +181,14 @@ steps:
   });
 
   it('maps ES|QL result cell collections to warning diagnostics', () => {
-    const esqlDoc = parseDocument(FOR_LOOP_ESQL_CELL_YAML);
-    const esqlModel = createFakeMonacoModel(FOR_LOOP_ESQL_CELL_YAML);
+    const esqlLineCounter = new LineCounter();
+    const esqlDoc = parseDocument(FOR_LOOP_ESQL_CELL_YAML, { lineCounter: esqlLineCounter });
     const esqlGraph = WorkflowGraph.fromWorkflowDefinition(forLoopEsqlCellWorkflowDefinition);
 
     const esqlResults = validateLiquidForLoopCollections(
       FOR_LOOP_ESQL_CELL_YAML,
       esqlDoc,
-      esqlModel,
+      esqlLineCounter,
       esqlGraph,
       forLoopEsqlCellWorkflowDefinition
     );
@@ -197,8 +202,10 @@ steps:
   });
 
   it('does not error when the collection resolves to a string literal via assign filters', () => {
-    const idiomDoc = parseDocument(FOR_LOOP_EMPTY_ARRAY_IDIOM_YAML);
-    const idiomModel = createFakeMonacoModel(FOR_LOOP_EMPTY_ARRAY_IDIOM_YAML);
+    const idiomLineCounter = new LineCounter();
+    const idiomDoc = parseDocument(FOR_LOOP_EMPTY_ARRAY_IDIOM_YAML, {
+      lineCounter: idiomLineCounter,
+    });
     const idiomGraph = WorkflowGraph.fromWorkflowDefinition(
       forLoopEmptyArrayIdiomWorkflowDefinition
     );
@@ -206,7 +213,7 @@ steps:
     const idiomResults = validateLiquidForLoopCollections(
       FOR_LOOP_EMPTY_ARRAY_IDIOM_YAML,
       idiomDoc,
-      idiomModel,
+      idiomLineCounter,
       idiomGraph,
       forLoopEmptyArrayIdiomWorkflowDefinition
     );

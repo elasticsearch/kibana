@@ -7,8 +7,7 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
-import type { Document } from 'yaml';
-import type { monaco } from '@kbn/monaco';
+import type { Document, LineCounter } from 'yaml';
 import type { WorkflowYaml } from '@kbn/workflows';
 import type { WorkflowGraph } from '@kbn/workflows/graph';
 import { validateLiquidYamlScalars } from './validate_liquid_yaml_scalars';
@@ -17,14 +16,14 @@ import type { YamlValidationResult } from '../model/types';
 export function validateLiquidForLoopCollections(
   yamlString: string,
   yamlDocument: Document,
-  model: monaco.editor.ITextModel,
+  lineCounter: LineCounter,
   workflowGraph: WorkflowGraph,
   workflowDefinition: WorkflowYaml
 ): YamlValidationResult[] {
   return validateLiquidYamlScalars(
     yamlString,
     yamlDocument,
-    model,
+    lineCounter,
     workflowGraph,
     workflowDefinition
   ).filter((result) => result.owner === 'variable-validation');

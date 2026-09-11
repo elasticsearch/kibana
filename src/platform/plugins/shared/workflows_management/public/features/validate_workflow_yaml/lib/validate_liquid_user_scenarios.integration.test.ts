@@ -7,7 +7,7 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
-import { parseDocument } from 'yaml';
+import { LineCounter, parseDocument } from 'yaml';
 import type { WorkflowYaml } from '@kbn/workflows';
 import { WorkflowGraph } from '@kbn/workflows/graph';
 import { matchAllVariables } from '@kbn/workflows-yaml';
@@ -22,14 +22,15 @@ interface ScenarioDefinition {
 }
 
 function assertScenarioPassesValidation(scenario: ScenarioDefinition): void {
-  const doc = parseDocument(scenario.yaml);
+  const lineCounter = new LineCounter();
+  const doc = parseDocument(scenario.yaml, { lineCounter });
   const model = createFakeMonacoModel(scenario.yaml);
   const graph = WorkflowGraph.fromWorkflowDefinition(scenario.definition);
 
   const collectionResults = validateLiquidForLoopCollections(
     scenario.yaml,
     doc,
-    model,
+    lineCounter,
     graph,
     scenario.definition
   );
@@ -55,7 +56,13 @@ function assertScenarioPassesValidation(scenario: ScenarioDefinition): void {
     };
   });
 
-  const variableResults = validateVariables(variableItems, graph, scenario.definition, doc, model);
+  const variableResults = validateVariables(
+    variableItems,
+    graph,
+    scenario.definition,
+    doc,
+    scenario.yaml
+  );
   const variableErrors = variableResults.filter((r) => r.severity === 'error');
   expect(variableErrors).toEqual([]);
 }
@@ -143,11 +150,18 @@ steps:
       consts: { items: [{ name: 'Alice' }, { name: 'Bob' }] },
       steps: [{ name: 'summarize', type: 'console', with: { message: 'x' } }],
     } satisfies WorkflowYaml;
-    const doc = parseDocument(yaml);
+    const lineCounter = new LineCounter();
+    const doc = parseDocument(yaml, { lineCounter });
     const model = createFakeMonacoModel(yaml);
     const graph = WorkflowGraph.fromWorkflowDefinition(definition);
 
-    const collectionResults = validateLiquidForLoopCollections(yaml, doc, model, graph, definition);
+    const collectionResults = validateLiquidForLoopCollections(
+      yaml,
+      doc,
+      lineCounter,
+      graph,
+      definition
+    );
     expect(collectionResults.filter((r) => r.severity === 'error')).toEqual([]);
 
     const match = matchAllVariables(yaml).find((m) => m.groups?.key === 'row.typo');
@@ -173,7 +187,7 @@ steps:
       graph,
       definition,
       doc,
-      model
+      yaml
     );
 
     const rowTypoResult = variableResults.find((r) => r.id === 'row.typo-var');

@@ -8,7 +8,6 @@
  */
 
 import type { Document } from 'yaml';
-import type { monaco } from '@kbn/monaco';
 import { DynamicStepContextSchema } from '@kbn/workflows';
 import type { WorkflowYaml } from '@kbn/workflows';
 import type { WorkflowGraph } from '@kbn/workflows/graph';
@@ -23,23 +22,6 @@ import { getValueAtYamlPath } from '../../workflow_context/lib/get_value_at_yaml
 import { getWorkflowContextSchema } from '../../workflow_context/lib/get_workflow_context_schema';
 import type { VariableItem, YamlValidationResult } from '../model/types';
 
-/**
- * If the variable item has no offset, try to compute it on the fly from the editor model.
- */
-function fallbackForOffsetValue(
-  variableItem: VariableItem,
-  yamlDocument?: Document | null,
-  model?: monaco.editor.ITextModel
-) {
-  if (yamlDocument && model) {
-    return model.getOffsetAt({
-      lineNumber: variableItem.startLineNumber,
-      column: variableItem.startColumn,
-    });
-  }
-  return undefined;
-}
-
 const ROOT_CACHE_KEY: unique symbol = Symbol('root');
 
 export function validateVariables(
@@ -47,7 +29,7 @@ export function validateVariables(
   workflowGraph: WorkflowGraph,
   workflowDefinition: WorkflowYaml,
   yamlDocument?: Document | null,
-  model?: monaco.editor.ITextModel
+  yamlString?: string
 ): YamlValidationResult[] {
   const errors: YamlValidationResult[] = [];
 
@@ -92,19 +74,18 @@ export function validateVariables(
         pathContextCache.set(pathContextKey, pathSchema);
       }
 
-      const variableOffset = offset ?? fallbackForOffsetValue(variableItem, yamlDocument, model);
       context = pathSchema;
-      if (yamlDocument != null && variableOffset !== undefined) {
-        const fullContextKey = `${pathContextKey}:${variableOffset}`;
+      if (yamlDocument != null && offset !== undefined) {
+        const fullContextKey = `${pathContextKey}:${offset}`;
         const cachedContext = fullContextCache.get(fullContextKey);
         if (cachedContext) {
           context = cachedContext;
         } else {
           context = getContextSchemaWithTemplateLocals(
             yamlDocument,
-            variableOffset,
+            offset,
             pathSchema,
-            model?.getValue()
+            yamlString
           );
           fullContextCache.set(fullContextKey, context);
         }

@@ -13,30 +13,6 @@ import { WorkflowGraph } from '@kbn/workflows/graph';
 import { collectAllVariables } from './collect_all_variables';
 import { validateVariables } from './validate_variables';
 
-type ValidationModel = Parameters<typeof collectAllVariables>[0];
-
-function createModel(value: string): ValidationModel {
-  const lineStarts = [0];
-  for (let index = 0; index < value.length; index++) {
-    if (value[index] === '\n') {
-      lineStarts.push(index + 1);
-    }
-  }
-
-  return {
-    getValue: () => value,
-    getPositionAt: (offset: number) => {
-      const lineIndex = lineStarts.findLastIndex((lineStart) => lineStart <= offset);
-      const lineStart = lineStarts[Math.max(lineIndex, 0)];
-      return {
-        lineNumber: Math.max(lineIndex, 0) + 1,
-        column: offset - lineStart + 1,
-      };
-    },
-    getOffsetAt: ({ lineNumber, column }) => lineStarts[lineNumber - 1] + column - 1,
-  } as ValidationModel;
-}
-
 describe('validateVariables data.map nested $map bindings', () => {
   it('treats custom nested $map item bindings as valid variables', () => {
     const yaml = `name: Data Map Validation
@@ -65,15 +41,14 @@ steps:
     const yamlDocument = YAML.parseDocument(yaml, { lineCounter, keepSourceTokens: true });
     const workflowDefinition = yamlDocument.toJSON() as WorkflowYaml;
     const workflowGraph = WorkflowGraph.fromWorkflowDefinition(workflowDefinition);
-    const model = createModel(yaml);
 
-    const variableItems = collectAllVariables(model, yamlDocument, workflowGraph);
+    const variableItems = collectAllVariables(yaml, yamlDocument, lineCounter, workflowGraph);
     const results = validateVariables(
       variableItems,
       workflowGraph,
       workflowDefinition,
       yamlDocument,
-      model
+      yaml
     );
 
     const labelResult = results.find((result) => 'key' in result && result.key === 'label.name');

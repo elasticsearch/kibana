@@ -7,9 +7,8 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
-import type { Document } from 'yaml';
+import type { Document, LineCounter } from 'yaml';
 import { visit } from 'yaml';
-import type { monaco } from '@kbn/monaco';
 import { getPathFromAncestors } from '@kbn/workflows/common/utils/yaml';
 import type { WorkflowGraph } from '@kbn/workflows/graph';
 import { matchAllVariables } from '@kbn/workflows-yaml';
@@ -69,11 +68,11 @@ function findScalarAtOffset(entries: ScalarEntry[], offset: number): ScalarEntry
 }
 
 export function collectAllVariables(
-  model: monaco.editor.ITextModel,
+  yamlString: string,
   yamlDocument: Document,
+  lineCounter: LineCounter,
   workflowGraph: WorkflowGraph
 ): VariableItem[] {
-  const yamlString = model.getValue();
   const scalarIndex = getScalarIndex(yamlDocument);
   const variableItems: VariableItem[] = [];
 
@@ -82,17 +81,17 @@ export function collectAllVariables(
     const entry = findScalarAtOffset(scalarIndex, startOffset);
     if (entry) {
       const endOffset = startOffset + (match[0].length ?? 0);
-      const startPosition = model.getPositionAt(startOffset);
-      const endPosition = model.getPositionAt(endOffset);
+      const startPosition = lineCounter.linePos(startOffset);
+      const endPosition = lineCounter.linePos(endOffset);
       const { path: yamlPath } = entry;
       const type =
         yamlPath.length > 1 && yamlPath[yamlPath.length - 1] === 'foreach' ? 'foreach' : 'regexp';
       variableItems.push({
-        id: `${match.groups.key}-${startPosition.lineNumber}-${startPosition.column}-${endPosition.lineNumber}-${endPosition.column}`,
-        startLineNumber: startPosition.lineNumber,
-        startColumn: startPosition.column,
-        endLineNumber: endPosition.lineNumber,
-        endColumn: endPosition.column,
+        id: `${match.groups.key}-${startPosition.line}-${startPosition.col}-${endPosition.line}-${endPosition.col}`,
+        startLineNumber: startPosition.line,
+        startColumn: startPosition.col,
+        endLineNumber: endPosition.line,
+        endColumn: endPosition.col,
         key: match.groups.key,
         type,
         yamlPath,
