@@ -211,6 +211,10 @@ export class InferenceConnector extends SubActionConnector<Config, Secrets> {
         meta: true,
         requestTimeout: 180_000,
         signal: params.signal,
+        // Compression must be disabled for streaming requests: the transport skips
+        // decompression when asStream is true, so a compressed response would be
+        // returned as raw bytes and fail to parse as SSE events.
+        compression: false,
         headers: {
           // always send a value for EIS
           'X-Elastic-Product-Use-Case': params.telemetryMetadata?.pluginId ?? 'inference',
