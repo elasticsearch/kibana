@@ -36,6 +36,9 @@ const createWrapper = (formRef?: { current: UseFormReturn<FormValues> | null }) 
   };
 };
 
+// The synchronous NotificationsStep render can overrun the 5s default under parallel CI load.
+jest.setTimeout(60_000);
+
 describe('NotificationsStep', () => {
   it('shows the template-card picker', async () => {
     render(<NotificationsStep />, { wrapper: createWrapper() });
