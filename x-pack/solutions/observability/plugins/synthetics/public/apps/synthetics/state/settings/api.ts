@@ -19,7 +19,7 @@ import {
   DynamicSettingsCodec,
   DynamicSettingsSaveCodec,
   LocationMonitorsType,
-} from '../../../../../common/runtime_types';
+} from '../../../../../common/runtime_types/zod/dynamic_settings';
 import { SYNTHETICS_API_URLS } from '../../../../../common/constants';
 import type { LocationMonitor } from '.';
 

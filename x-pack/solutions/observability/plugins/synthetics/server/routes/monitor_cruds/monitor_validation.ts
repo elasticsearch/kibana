@@ -4,10 +4,7 @@
  * 2.0; you may not use this file except in compliance with the Elastic License
  * 2.0.
  */
-import * as t from 'io-ts';
 import { i18n } from '@kbn/i18n';
-import { isLeft } from 'fp-ts/Either';
-import { formatErrors } from '@kbn/securitysolution-io-ts-utils';
 
 import { omit, isEmpty } from 'lodash';
 import { schema } from '@kbn/config-schema';
@@ -21,18 +18,13 @@ import type {
   SyntheticsMonitor,
 } from '../../../common/runtime_types';
 import {
-  BrowserFieldsCodec,
   CodeEditorMode,
   ConfigKey,
   FormMonitorType,
-  HTTPFieldsCodec,
-  ICMPFieldsCodec,
-  MonitorTypeCodec,
   MonitorTypeEnum,
-  ProjectMonitorCodec,
   type SyntheticsPrivateLocations,
-  TCPFieldsCodec,
 } from '../../../common/runtime_types';
+import { getZodMonitorCodecs } from './zod_monitor_codecs';
 
 import {
   ALLOWED_SCHEDULES_IN_MINUTES,
@@ -40,19 +32,6 @@ import {
   HEARTBEAT_BROWSER_MONITOR_TIMEOUT_OVERHEAD_SECONDS,
 } from '../../../common/constants/monitor_defaults';
 import { privateLocationCoversAllMonitorSpaces } from './monitor_locations_utils';
-
-type MonitorCodecType =
-  | typeof ICMPFieldsCodec
-  | typeof TCPFieldsCodec
-  | typeof HTTPFieldsCodec
-  | typeof BrowserFieldsCodec;
-
-const monitorTypeToCodecMap: Record<MonitorTypeEnum, MonitorCodecType> = {
-  [MonitorTypeEnum.ICMP]: ICMPFieldsCodec,
-  [MonitorTypeEnum.TCP]: TCPFieldsCodec,
-  [MonitorTypeEnum.HTTP]: HTTPFieldsCodec,
-  [MonitorTypeEnum.BROWSER]: BrowserFieldsCodec,
-};
 
 export interface ValidationResult {
   valid: boolean;
@@ -76,6 +55,9 @@ export class MonitorValidationError extends Error {
  * @param spaceId
  */
 export function validateMonitor(monitorFields: MonitorFields, spaceId: string): ValidationResult {
+  const { MonitorTypeCodec, formatZodErrors, monitorTypeToCodecMap, ICMPFieldsCodec } =
+    getZodMonitorCodecs();
+
   const { [ConfigKey.MONITOR_TYPE]: monitorType, [ConfigKey.KIBANA_SPACES]: kSpaces } =
     monitorFields;
 
@@ -92,13 +74,15 @@ export function validateMonitor(monitorFields: MonitorFields, spaceId: string): 
     };
   }
 
-  const decodedType = MonitorTypeCodec.decode(monitorType);
+  const decodedType = MonitorTypeCodec.safeParse(monitorType);
 
-  if (isLeft(decodedType)) {
+  if (!decodedType.success) {
     return {
       valid: false,
       reason: INVALID_TYPE_ERROR,
-      details: formatErrors(decodedType.left).join(' | '),
+      details: formatZodErrors(decodedType.error, { rootName: 'type', input: monitorType }).join(
+        ' | '
+      ),
       payload: monitorFields,
     };
   }
@@ -138,14 +122,14 @@ export function validateMonitor(monitorFields: MonitorFields, spaceId: string): 
     };
   }
 
-  const ExactSyntheticsMonitorCodec = t.exact(SyntheticsMonitorCodec);
-  const decodedMonitor = ExactSyntheticsMonitorCodec.decode(monitorFields);
+  const ExactSyntheticsMonitorCodec = SyntheticsMonitorCodec.strip();
+  const decodedMonitor = ExactSyntheticsMonitorCodec.safeParse(monitorFields);
 
-  if (isLeft(decodedMonitor)) {
+  if (!decodedMonitor.success) {
     return {
       valid: false,
       reason: INVALID_SCHEMA_ERROR(monitorType),
-      details: formatErrors(decodedMonitor.left).join(' | '),
+      details: formatZodErrors(decodedMonitor.error, { input: monitorFields }).join(' | '),
       payload: monitorFields,
     };
   }
@@ -202,17 +186,21 @@ export function validateMonitor(monitorFields: MonitorFields, spaceId: string): 
     reason: '',
     details: '',
     payload: monitorFields,
-    decodedMonitor: decodedMonitor.right,
+    decodedMonitor: decodedMonitor.data,
   };
 }
 
 export const normalizeAPIConfig = (monitor: CreateMonitorPayLoad) => {
+  const { MonitorTypeCodec, formatZodErrors } = getZodMonitorCodecs();
   const monitorType = monitor.type as MonitorTypeEnum;
-  const decodedType = MonitorTypeCodec.decode(monitorType);
+  const decodedType = MonitorTypeCodec.safeParse(monitorType);
 
-  if (isLeft(decodedType)) {
+  if (!decodedType.success) {
     return {
-      errorMessage: formatErrors(decodedType.left).join(' | '),
+      errorMessage: formatZodErrors(decodedType.error, {
+        rootName: 'type',
+        input: monitorType,
+      }).join(' | '),
     };
   }
 
@@ -383,15 +371,16 @@ export function validateProjectMonitor(
   publicLocations: Locations,
   privateLocations: SyntheticsPrivateLocations
 ): ValidationResult {
+  const { ProjectMonitorCodec, formatZodErrors } = getZodMonitorCodecs();
   const locationsError = validateLocation(monitorFields, publicLocations, privateLocations);
   // Cast it to ICMPCodec to satisfy typing. During runtime, correct codec will be used to decode.
-  const decodedMonitor = ProjectMonitorCodec.decode(monitorFields);
+  const decodedMonitor = ProjectMonitorCodec.safeParse(monitorFields);
 
-  if (isLeft(decodedMonitor)) {
+  if (!decodedMonitor.success) {
     return {
       valid: false,
       reason: INVALID_CONFIGURATION_ERROR,
-      details: [...formatErrors(decodedMonitor.left), locationsError]
+      details: [...formatZodErrors(decodedMonitor.error, { input: monitorFields }), locationsError]
         .filter((error) => error !== '' && error !== undefined)
         .join(' | '),
       payload: monitorFields,

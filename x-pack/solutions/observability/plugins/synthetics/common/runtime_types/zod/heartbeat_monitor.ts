@@ -5,9 +5,7 @@
  * 2.0.
  */
 
-export {
-  PrivateLocationAttributesCodec,
-  SyntheticsPrivateLocationsAttributesCodec,
-  type PrivateLocationAttributes,
-  type SyntheticsPrivateLocationsAttributes,
-} from '../../common/runtime_types/zod/private_location_attributes';
+import { z } from '@kbn/zod';
+
+/** Twin of `../heartbeat_monitor.ts` `MonitorOriginCodec`. */
+export const MonitorOriginCodec = z.literal('heartbeat');

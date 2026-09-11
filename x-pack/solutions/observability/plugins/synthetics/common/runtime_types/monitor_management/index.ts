@@ -12,6 +12,7 @@ export * from './monitor_meta_data';
 export * from './monitor_types';
 export * from './monitor_types_project';
 export * from './locations';
+export { isServiceLocationInvalid } from './is_service_location_invalid';
 export * from './synthetics_private_locations';
 export * from './synthetics_overview_status';
 export * from './synthetics_params';

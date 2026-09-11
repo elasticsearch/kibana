@@ -5,10 +5,16 @@
  * 2.0.
  */
 
-import { isRight } from 'fp-ts/Either';
 import * as t from 'io-ts';
 import { ObserverCodec } from './observer';
 import { ErrorStateCodec } from './error_state';
+import {
+  FullScreenshotType as ZodFullScreenshotType,
+  RefResultType as ZodRefResultType,
+  ScreenshotBlockDocType as ZodScreenshotBlockDocType,
+  ScreenshotImageBlobType as ZodScreenshotImageBlobType,
+  ScreenshotRefImageDataType as ZodScreenshotRefImageDataType,
+} from '../zod/ping';
 
 /**
  * This type has some overlap with the Ping type, but it helps avoid runtime type
@@ -129,7 +135,7 @@ export const FullScreenshotType = t.type({
 export type FullScreenshot = t.TypeOf<typeof FullScreenshotType>;
 
 export function isFullScreenshot(data: unknown): data is FullScreenshot {
-  return isRight(FullScreenshotType.decode(data));
+  return ZodFullScreenshotType.safeParse(data).success;
 }
 
 /**
@@ -159,7 +165,7 @@ export const RefResultType = t.type({
 export type RefResult = t.TypeOf<typeof RefResultType>;
 
 export function isRefResult(data: unknown): data is RefResult {
-  return isRight(RefResultType.decode(data));
+  return ZodRefResultType.safeParse(data).success;
 }
 
 /**
@@ -174,7 +180,7 @@ export const ScreenshotImageBlobType = t.type({
 export type ScreenshotImageBlob = t.TypeOf<typeof ScreenshotImageBlobType>;
 
 export function isScreenshotImageBlob(data: unknown): data is ScreenshotImageBlob {
-  return isRight(ScreenshotImageBlobType.decode(data));
+  return ZodScreenshotImageBlobType.safeParse(data).success;
 }
 
 /**
@@ -200,7 +206,7 @@ export interface ScreenshotBlockCache {
 }
 
 export function isScreenshotBlockDoc(data: unknown): data is ScreenshotBlockDoc {
-  return isRight(ScreenshotBlockDocType.decode(data));
+  return ZodScreenshotBlockDocType.safeParse(data).success;
 }
 
 export function isPendingBlock(data: unknown): data is PendingBlock {
@@ -221,7 +227,7 @@ export const ScreenshotRefImageDataType = t.type({
 export type ScreenshotRefImageData = t.TypeOf<typeof ScreenshotRefImageDataType>;
 
 export function isScreenshotRef(data: unknown): data is ScreenshotRefImageData {
-  return isRight(ScreenshotRefImageDataType.decode(data));
+  return ZodScreenshotRefImageDataType.safeParse(data).success;
 }
 
 export const SyntheticsJourneyApiResponseType = t.intersection([

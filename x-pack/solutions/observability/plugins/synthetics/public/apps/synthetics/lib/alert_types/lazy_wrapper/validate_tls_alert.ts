@@ -5,20 +5,19 @@
  * 2.0.
  */
 
-import { PathReporter } from 'io-ts/lib/PathReporter';
-import { isRight } from 'fp-ts/Either';
 import type { ValidationResult } from '@kbn/triggers-actions-ui-plugin/public';
-import { TLSParamsType } from '../../../../../../common/runtime_types/alerts/tls';
+import { TLSParamsType } from '../../../../../../common/runtime_types/zod/alerts';
+import { formatZodErrors } from '../../../../../../common/runtime_types/zod/format_errors';
 
 export function validateTLSAlertParams(ruleParams: any): ValidationResult {
   const errors: Record<string, any> = {};
-  const decoded = TLSParamsType.decode(ruleParams);
+  const decoded = TLSParamsType.safeParse(ruleParams);
 
-  if (!isRight(decoded)) {
+  if (!decoded.success) {
     return {
       errors: {
         typeCheckFailure: 'Provided parameters do not conform to the expected type.',
-        typeCheckParsingMessage: PathReporter.report(decoded),
+        typeCheckParsingMessage: formatZodErrors(decoded.error, { input: ruleParams }),
       },
     };
   }

@@ -16,7 +16,7 @@ import {
   SyntheticsParamsCodec,
   SyntheticsParamsReadonlyCodec,
   SyntheticsParamsReadonlyCodecList,
-} from '../../../../../common/runtime_types';
+} from '../../../../../common/runtime_types/zod/synthetics_params';
 import { apiService } from '../../../../utils/api_service/api_service';
 
 export const getGlobalParams = async (): Promise<SyntheticsParams[]> => {

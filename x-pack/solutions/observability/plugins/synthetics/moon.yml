@@ -46,7 +46,6 @@ dependsOn:
   - '@kbn/usage-collection-plugin'
   - '@kbn/kibana-react-plugin'
   - '@kbn/i18n-react'
-  - '@kbn/securitysolution-io-ts-utils'
   - '@kbn/es-query'
   - '@kbn/rule-data-utils'
   - '@kbn/core-http-browser'
@@ -142,6 +141,7 @@ dependsOn:
   - '@kbn/cps-server-utils'
   - '@kbn/observability-utils-server'
   - '@kbn/ui-callout'
+  - '@kbn/securitysolution-io-ts-utils'
 tags:
   - plugin
   - prod

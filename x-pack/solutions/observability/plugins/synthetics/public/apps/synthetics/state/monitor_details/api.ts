@@ -12,10 +12,8 @@ import type {
   PingsResponse,
   SyntheticsMonitorWithId,
 } from '../../../../../common/runtime_types';
-import {
-  EncryptedSyntheticsMonitorCodec,
-  PingsResponseType,
-} from '../../../../../common/runtime_types';
+import { EncryptedSyntheticsMonitorCodec } from '../../../../../common/runtime_types/zod/monitor_types';
+import { PingsResponseType } from '../../../../../common/runtime_types/zod/ping';
 import { INITIAL_REST_VERSION, SYNTHETICS_API_URLS } from '../../../../../common/constants';
 
 export interface MostRecentPingsRequest {

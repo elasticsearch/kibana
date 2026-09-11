@@ -5,7 +5,6 @@
  * 2.0.
  */
 import moment from 'moment';
-import { isRight } from 'fp-ts/Either';
 import Mustache from 'mustache';
 import type { IBasePath } from '@kbn/core/server';
 import type {
@@ -43,7 +42,7 @@ import type {
   SyntheticsCommonState,
   SyntheticsMonitorStatusAlertState,
 } from '../../common/runtime_types/alert_rules/common';
-import { SyntheticsCommonStateCodec } from '../../common/runtime_types/alert_rules/common';
+import { SyntheticsCommonStateCodec } from '../../common/runtime_types/zod/alert_rules_common';
 import {
   getSyntheticsErrorRouteFromMonitorId,
   getSyntheticsCertificatesRoute,
@@ -57,8 +56,8 @@ export const updateState = (
   meta?: SyntheticsCommonState['meta']
 ): SyntheticsCommonState => {
   const now = new Date().toISOString();
-  const decoded = SyntheticsCommonStateCodec.decode(state);
-  if (!isRight(decoded)) {
+  const decoded = SyntheticsCommonStateCodec.safeParse(state);
+  if (!decoded.success) {
     const triggerVal = isTriggeredNow ? now : undefined;
     return {
       firstCheckedAt: now,
@@ -78,7 +77,7 @@ export const updateState = (
     // to differentiate it from the `isTriggeredNow` param
     isTriggered: wasTriggered,
     lastResolvedAt,
-  } = decoded.right;
+  } = decoded.data;
 
   return {
     meta,

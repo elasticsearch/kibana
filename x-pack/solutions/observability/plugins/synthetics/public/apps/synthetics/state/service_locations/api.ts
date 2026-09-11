@@ -11,7 +11,7 @@ import type {
   ServiceLocationsApiResponse,
   ThrottlingOptions,
 } from '../../../../../common/runtime_types';
-import { ServiceLocationsApiResponseCodec } from '../../../../../common/runtime_types';
+import { ServiceLocationsApiResponseCodec } from '../../../../../common/runtime_types/zod/locations';
 import { apiService } from '../../../../utils/api_service';
 
 export const fetchServiceLocations = async (): Promise<{

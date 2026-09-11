@@ -6,7 +6,7 @@
  */
 
 import type { SyntheticsNetworkEventsApiResponse } from '../../../../../common/runtime_types';
-import { SyntheticsNetworkEventsApiResponseType } from '../../../../../common/runtime_types';
+import { SyntheticsNetworkEventsApiResponseType } from '../../../../../common/runtime_types/zod/network_events';
 import { SYNTHETICS_API_URLS } from '../../../../../common/constants';
 import { apiService } from '../../../../utils/api_service';
 import type { FetchNetworkEventsParams } from './actions';

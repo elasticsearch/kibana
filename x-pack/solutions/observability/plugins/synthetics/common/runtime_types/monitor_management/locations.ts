@@ -5,7 +5,6 @@
  * 2.0.
  */
 
-import { isLeft } from 'fp-ts/Either';
 import * as t from 'io-ts';
 import { tEnum } from '../../utils/t_enum';
 
@@ -120,9 +119,6 @@ export const LocationCodec = t.intersection([
 ]);
 
 export const LocationsCodec = t.array(LocationCodec);
-
-export const isServiceLocationInvalid = (location: MonitorServiceLocation) =>
-  isLeft(MonitorServiceLocationCodec.decode(location));
 
 export const ThrottlingOptionsCodec = t.interface({
   [BandwidthLimitKey.DOWNLOAD]: t.number,

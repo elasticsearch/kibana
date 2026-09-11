@@ -4,31 +4,32 @@
  * 2.0; you may not use this file except in compliance with the Elastic License
  * 2.0.
  */
-import * as t from 'io-ts';
+import { z } from '@kbn/zod';
 import type {
   SavedObjectModelTransformationFn,
   SavedObjectsModelVersion,
 } from '@kbn/core-saved-objects-server';
 import type { SyntheticsPrivateLocationsAttributes } from '../../../runtime_types/private_locations';
 
-export const PrivateLocationAttributesCodecLegacy = t.intersection([
-  t.interface({
-    label: t.string,
-    id: t.string,
-    agentPolicyId: t.string,
-    concurrentMonitors: t.number,
-  }),
-  t.partial({
-    tags: t.array(t.string),
-    /* Empty Lat lon was accidentally saved as an empty string instead of undefined or null
-     * Need a migration to fix */
-    geo: t.interface({ lat: t.union([t.string, t.number]), lon: t.union([t.string, t.number]) }),
-  }),
-]);
-export const SyntheticsPrivateLocationsAttributesCodecLegacy = t.type({
-  locations: t.array(PrivateLocationAttributesCodecLegacy),
+export const PrivateLocationAttributesCodecLegacy = z.looseObject({
+  label: z.string(),
+  id: z.string(),
+  agentPolicyId: z.string(),
+  concurrentMonitors: z.number(),
+  tags: z.array(z.string()).optional(),
+  /* Empty Lat lon was accidentally saved as an empty string instead of undefined or null
+   * Need a migration to fix */
+  geo: z
+    .looseObject({
+      lat: z.union([z.string(), z.number()]),
+      lon: z.union([z.string(), z.number()]),
+    })
+    .optional(),
 });
-export type SyntheticsPrivateLocationsAttributesLegacy = t.TypeOf<
+export const SyntheticsPrivateLocationsAttributesCodecLegacy = z.looseObject({
+  locations: z.array(PrivateLocationAttributesCodecLegacy),
+});
+export type SyntheticsPrivateLocationsAttributesLegacy = z.infer<
   typeof SyntheticsPrivateLocationsAttributesCodecLegacy
 >;
 

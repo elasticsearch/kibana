@@ -15,7 +15,7 @@ import type {
 import {
   OverviewStaleStatusCodec,
   PaginatedOverviewStatusCodec,
-} from '../../../../../common/runtime_types';
+} from '../../../../../common/runtime_types/zod/synthetics_overview_status';
 import { apiService } from '../../../../utils/api_service';
 
 export function toStatusOverviewQueryArgs(
