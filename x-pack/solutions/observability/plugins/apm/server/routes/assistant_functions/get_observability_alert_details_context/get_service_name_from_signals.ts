@@ -13,14 +13,14 @@ import type { AlertDetailsContextualInsightsHandlerQuery } from '@kbn/observabil
 import type { LogSourcesService } from '@kbn/logs-data-access-plugin/common/types';
 import { accessKnownApmEventFields } from '@kbn/apm-data-access-plugin/server/utils';
 import { SERVICE_NAME } from '@kbn/apm-types';
+import { ApmDocumentType } from '@kbn/apm-types';
+import { RollupInterval } from '@kbn/apm-types';
 import { maybe } from '../../../../common/utils/maybe';
 import { asMutableArray } from '../../../../common/utils/as_mutable_array';
-import { ApmDocumentType } from '../../../../common/document_type';
 import type {
   APMEventClient,
   APMEventESSearchRequest,
 } from '../../../lib/helpers/create_es_client/create_apm_event_client';
-import { RollupInterval } from '../../../../common/rollup';
 
 export async function getServiceNameFromSignals({
   query,

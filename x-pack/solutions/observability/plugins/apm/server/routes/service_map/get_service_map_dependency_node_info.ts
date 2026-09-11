@@ -14,7 +14,7 @@ import {
 import type { NodeStats } from '@kbn/apm-types';
 import { ProcessorEvent } from '@kbn/observability-plugin/common';
 import { rangeQuery } from '@kbn/observability-plugin/server';
-import { ApmDocumentType } from '../../../common/document_type';
+import { ApmDocumentType } from '@kbn/apm-types';
 import {
   SERVICE_NAME,
   SPAN_DESTINATION_SERVICE_RESOURCE,

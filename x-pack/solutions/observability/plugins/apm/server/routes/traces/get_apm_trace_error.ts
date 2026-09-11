@@ -8,6 +8,8 @@
 import { accessKnownApmEventFields } from '@kbn/apm-data-access-plugin/server/utils';
 import { type Error } from '@kbn/apm-types';
 import { rangeQuery, termQuery } from '@kbn/observability-plugin/server';
+import { ApmDocumentType } from '@kbn/apm-types';
+import { RollupInterval } from '@kbn/apm-types';
 import type { APMEventClient } from '../../lib/helpers/create_es_client/create_apm_event_client';
 import { compactMap } from '../../utils/compact_map';
 import {
@@ -30,8 +32,6 @@ import {
   TRANSACTION_ID,
 } from '../../../common/es_fields/apm';
 import { asMutableArray } from '../../../common/utils/as_mutable_array';
-import { ApmDocumentType } from '../../../common/document_type';
-import { RollupInterval } from '../../../common/rollup';
 
 export async function getApmTraceError(params: {
   apmEventClient: APMEventClient;

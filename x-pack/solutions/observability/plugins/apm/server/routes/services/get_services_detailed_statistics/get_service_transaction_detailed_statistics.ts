@@ -13,10 +13,10 @@ import {
   getDurationFieldForTransactions,
 } from '@kbn/apm-data-access-plugin/server/utils';
 import type { ServiceTransactionDetailedStatPeriodsResponse } from '@kbn/apm-api-shared';
+import type { ApmServiceTransactionDocumentType } from '@kbn/apm-types';
+import type { RollupInterval } from '@kbn/apm-types';
 import { calculateThroughputWithInterval } from '../../../lib/helpers/calculate_throughput';
-import type { ApmServiceTransactionDocumentType } from '../../../../common/document_type';
 import { SERVICE_NAME, TRANSACTION_TYPE } from '../../../../common/es_fields/apm';
-import type { RollupInterval } from '../../../../common/rollup';
 import { isDefaultTransactionType } from '../../../../common/transaction_types';
 import { nullifyEmptyRedMetricPoints } from '../../../../common/utils/red_metric_value_for_histogram_bucket';
 import { environmentQuery } from '../../../../common/utils/environment_query';

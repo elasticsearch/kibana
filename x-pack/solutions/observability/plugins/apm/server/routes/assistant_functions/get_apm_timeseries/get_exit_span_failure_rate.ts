@@ -7,14 +7,14 @@
 
 import type { QueryDslQueryContainer } from '@elastic/elasticsearch/lib/api/types';
 import { termQuery } from '@kbn/observability-plugin/server';
-import { ApmDocumentType } from '../../../../common/document_type';
+import { ApmDocumentType } from '@kbn/apm-types';
+import { RollupInterval } from '@kbn/apm-types';
 import {
   EVENT_OUTCOME,
   SPAN_DESTINATION_SERVICE_RESOURCE,
   SPAN_DESTINATION_SERVICE_RESPONSE_TIME_COUNT,
 } from '../../../../common/es_fields/apm';
 import { EventOutcome } from '../../../../common/event_outcome';
-import { RollupInterval } from '../../../../common/rollup';
 import type { APMEventClient } from '../../../lib/helpers/create_es_client/create_apm_event_client';
 import { fetchSeries } from './fetch_timeseries';
 

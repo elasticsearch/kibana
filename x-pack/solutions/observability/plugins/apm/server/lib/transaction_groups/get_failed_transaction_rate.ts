@@ -10,10 +10,10 @@ import {
   calculateFailedTransactionRate,
   getOutcomeAggregation,
 } from '@kbn/apm-data-access-plugin/server/utils';
+import type { ApmServiceTransactionDocumentType } from '@kbn/apm-types';
+import type { RollupInterval } from '@kbn/apm-types';
 import { getFailedTransactionRateTimeSeries } from '../helpers/transaction_error_rate';
-import type { ApmServiceTransactionDocumentType } from '../../../common/document_type';
 import { SERVICE_NAME, TRANSACTION_NAME, TRANSACTION_TYPE } from '../../../common/es_fields/apm';
-import type { RollupInterval } from '../../../common/rollup';
 import { environmentQuery } from '../../../common/utils/environment_query';
 import { getOffsetInMs } from '../../../common/utils/get_offset_in_ms';
 import type { Coordinate } from '../../../typings/timeseries';

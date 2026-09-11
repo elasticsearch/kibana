@@ -12,7 +12,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { useKibana } from '@kbn/kibana-react-plugin/public';
 import { type APIReturnType } from '@kbn/apm-api-shared';
-import { ApmDocumentType } from '../../../../common/document_type';
+import { ApmDocumentType } from '@kbn/apm-types';
 import type { ServiceListItem } from '../../../../common/service_inventory';
 import type { ServiceInventoryFieldName } from '../../../../common/service_inventory';
 import { useAnomalyDetectionJobsContext } from '../../../context/anomaly_detection_jobs/use_anomaly_detection_jobs_context';

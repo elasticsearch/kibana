@@ -8,7 +8,7 @@
 export const PLUGIN_ID = 'apmDataAccess';
 export const PLUGIN_NAME = 'apmDataAccess';
 
-export type { ApmDataSource, ApmDataSourceWithSummary } from './data_source';
+export type { ApmDataSource, ApmDataSourceWithSummary } from '@kbn/apm-types';
 export {
   ApmDocumentType,
   type ApmServiceTransactionDocumentType,

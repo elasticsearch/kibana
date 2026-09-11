@@ -7,8 +7,8 @@
 
 import type { Logger } from '@kbn/logging';
 import type { ServicesItemsResponse } from '@kbn/apm-api-shared';
-import type { ApmServiceTransactionDocumentType } from '../../../../common/document_type';
-import type { RollupInterval } from '../../../../common/rollup';
+import type { ApmServiceTransactionDocumentType } from '@kbn/apm-types';
+import type { RollupInterval } from '@kbn/apm-types';
 import type { ServiceGroup } from '../../../../common/service_groups';
 import type { APMEventClient } from '../../../lib/helpers/create_es_client/create_apm_event_client';
 import type { ApmAlertsClient } from '../../../lib/helpers/get_apm_alerts_client';

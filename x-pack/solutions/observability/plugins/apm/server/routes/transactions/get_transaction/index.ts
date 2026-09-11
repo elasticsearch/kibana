@@ -8,6 +8,8 @@
 import { rangeQuery, termQuery } from '@kbn/observability-plugin/server';
 import { accessKnownApmEventFields } from '@kbn/apm-data-access-plugin/server/utils';
 import type { Transaction } from '@kbn/apm-types';
+import { ApmDocumentType } from '@kbn/apm-types';
+import { RollupInterval } from '@kbn/apm-types';
 import { maybe } from '../../../../common/utils/maybe';
 import {
   TRACE_ID,
@@ -25,8 +27,6 @@ import {
 } from '../../../../common/es_fields/apm';
 import { asMutableArray } from '../../../../common/utils/as_mutable_array';
 import type { APMEventClient } from '../../../lib/helpers/create_es_client/create_apm_event_client';
-import { ApmDocumentType } from '../../../../common/document_type';
-import { RollupInterval } from '../../../../common/rollup';
 
 const requiredFields = asMutableArray([
   TRACE_ID,

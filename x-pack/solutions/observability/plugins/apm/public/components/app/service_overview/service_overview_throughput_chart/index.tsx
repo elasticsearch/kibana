@@ -9,6 +9,7 @@ import { EuiPanel, EuiTitle, EuiIconTip, EuiFlexItem, EuiFlexGroup } from '@elas
 import { i18n } from '@kbn/i18n';
 import React, { useEffect } from 'react';
 
+import { ApmDocumentType } from '@kbn/apm-types';
 import { useShouldShowAnomalyUi } from '../../../../hooks/use_should_show_anomaly_ui';
 import { usePreviousPeriodLabel } from '../../../../hooks/use_previous_period_text';
 import { isTimeComparison } from '../../../shared/time_comparison/get_comparison_options';
@@ -24,7 +25,6 @@ import { TimeseriesChartWithContext } from '../../../shared/charts/timeseries_ch
 import { getComparisonChartTheme } from '../../../shared/time_comparison/get_comparison_chart_theme';
 import { ChartType, getTimeSeriesColor } from '../../../shared/charts/helper/get_timeseries_color';
 import { usePreferredDataSourceAndBucketSize } from '../../../../hooks/use_preferred_data_source_and_bucket_size';
-import { ApmDocumentType } from '../../../../../common/document_type';
 import { useApmPluginContext } from '../../../../context/apm_plugin/use_apm_plugin_context';
 import { getThroughputScreenContext } from './get_throughput_screen_context';
 import { OpenInDiscover } from '../../../shared/links/discover_links/open_in_discover';

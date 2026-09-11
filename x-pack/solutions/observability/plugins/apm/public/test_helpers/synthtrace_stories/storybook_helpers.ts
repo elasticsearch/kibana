@@ -5,8 +5,8 @@
  * 2.0.
  */
 
-import { ApmDocumentType } from '../../../common/document_type';
-import { RollupInterval } from '../../../common/rollup';
+import { ApmDocumentType } from '@kbn/apm-types';
+import { RollupInterval } from '@kbn/apm-types';
 
 /** Minimal time_range_metadata response so usePreferredDataSourceAndBucketSize resolves. */
 export const TIME_RANGE_METADATA_DEFAULTS = {

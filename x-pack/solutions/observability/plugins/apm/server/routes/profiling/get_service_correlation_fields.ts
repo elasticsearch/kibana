@@ -5,14 +5,14 @@
  * 2.0.
  */
 import { rangeQuery } from '@kbn/observability-plugin/server';
-import type { ApmServiceTransactionDocumentType } from '../../../common/document_type';
+import type { ApmServiceTransactionDocumentType } from '@kbn/apm-types';
+import type { RollupInterval } from '@kbn/apm-types';
 import {
   CONTAINER_ID,
   HOST_HOSTNAME,
   HOST_NAME,
   SERVICE_NAME,
 } from '../../../common/es_fields/apm';
-import type { RollupInterval } from '../../../common/rollup';
 import { environmentQuery } from '../../../common/utils/environment_query';
 import type { APMEventClient } from '../../lib/helpers/create_es_client/create_apm_event_client';
 

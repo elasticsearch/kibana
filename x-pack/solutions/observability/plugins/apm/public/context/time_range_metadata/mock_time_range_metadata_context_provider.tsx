@@ -5,8 +5,8 @@
  * 2.0.
  */
 import React, { useMemo } from 'react';
-import { ApmDocumentType } from '../../../common/document_type';
-import { RollupInterval } from '../../../common/rollup';
+import { ApmDocumentType } from '@kbn/apm-types';
+import { RollupInterval } from '@kbn/apm-types';
 import type { TimeRangeMetadata } from '../../../common/time_range_metadata';
 import { mockApmApiCallResponse } from '../../services/rest/storybook_mock_http';
 

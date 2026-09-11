@@ -18,7 +18,7 @@ import { getEbtProps } from '@kbn/ebt-click';
 import { UI_SETTINGS } from '@kbn/data-plugin/common';
 import { i18n } from '@kbn/i18n';
 import React, { useEffect, useMemo } from 'react';
-import { ApmDocumentType } from '../../../../../common/document_type';
+import { ApmDocumentType } from '@kbn/apm-types';
 import type { Environment } from '../../../../../common/environment_rt';
 import { getTransactionType } from '../../../../context/apm_service/apm_service_context';
 import { useServiceTransactionTypesFetcher } from '../../../../context/apm_service/use_service_transaction_types_fetcher';

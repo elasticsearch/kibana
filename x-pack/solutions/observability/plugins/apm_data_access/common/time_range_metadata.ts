@@ -5,7 +5,7 @@
  * 2.0.
  */
 
-import type { ApmDataSource } from './data_source';
+import type { ApmDataSource } from '@kbn/apm-types';
 
 export interface TimeRangeMetadata {
   isUsingServiceDestinationMetrics: boolean;

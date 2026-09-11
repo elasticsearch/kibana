@@ -16,8 +16,8 @@ import type { APMEventClient } from '../../../lib/helpers/create_es_client/creat
 import type { ApmAlertsClient } from '../../../lib/helpers/get_apm_alerts_client';
 import type { ApmSloClient } from '../../../lib/helpers/get_apm_slo_client';
 import type { RandomSampler } from '../../../lib/helpers/get_random_sampler';
-import type { ApmServiceTransactionDocumentType } from '../../../../common/document_type';
-import type { RollupInterval } from '../../../../common/rollup';
+import type { ApmServiceTransactionDocumentType } from '@kbn/apm-types';
+import type { RollupInterval } from '@kbn/apm-types';
 
 jest.mock('./get_service_transaction_stats');
 jest.mock('./get_service_anomaly_scores');

@@ -9,6 +9,7 @@ import objectHash from 'object-hash';
 import type { QueryDslQueryContainer } from '@elastic/elasticsearch/lib/api/types';
 import { rangeQuery } from '@kbn/observability-plugin/server';
 import { RollupInterval } from '@kbn/apm-data-access-plugin/common';
+import { ApmDocumentType } from '@kbn/apm-types';
 import type { AgentName } from '../../../../typings/es_schemas/ui/fields/agent';
 import { getOffsetInMs } from '../../../../common/utils/get_offset_in_ms';
 import { ENVIRONMENT_NOT_DEFINED } from '../../../../common/environment_filter_values';
@@ -27,7 +28,6 @@ import {
 import { getBucketSize } from '../../../../common/utils/get_bucket_size';
 import { EventOutcome } from '../../../../common/event_outcome';
 import { NodeType } from '../../../../common/connections';
-import { ApmDocumentType } from '../../../../common/document_type';
 import { excludeRumExitSpansQuery } from '../exclude_rum_exit_spans_query';
 import type { APMEventClient } from '../../helpers/create_es_client/create_apm_event_client';
 import { getDocumentTypeFilterForServiceDestinationStatistics } from '../../helpers/spans/get_is_using_service_destination_metrics';

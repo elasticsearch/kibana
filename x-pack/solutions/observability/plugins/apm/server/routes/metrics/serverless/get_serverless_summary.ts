@@ -11,7 +11,8 @@ import type {
   AWSLambdaPriceFactor,
   ServerlessSummaryResponse,
 } from '@kbn/apm-api-shared';
-import { ApmDocumentType } from '../../../../common/document_type';
+import { ApmDocumentType } from '@kbn/apm-types';
+import { RollupInterval } from '@kbn/apm-types';
 import {
   FAAS_BILLED_DURATION,
   FAAS_DURATION,
@@ -22,7 +23,6 @@ import {
   METRIC_SYSTEM_TOTAL_MEMORY,
   SERVICE_NAME,
 } from '../../../../common/es_fields/apm';
-import { RollupInterval } from '../../../../common/rollup';
 import { environmentQuery } from '../../../../common/utils/environment_query';
 import type { APMEventClient } from '../../../lib/helpers/create_es_client/create_apm_event_client';
 import { computeUsageAvgScript } from './get_compute_usage_chart';

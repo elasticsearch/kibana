@@ -6,7 +6,7 @@
  */
 
 import { useMemo } from 'react';
-import { ApmDocumentType } from '../../common/document_type';
+import { ApmDocumentType } from '@kbn/apm-types';
 import type { LatencyAggregationType } from '../../common/latency_aggregation_types';
 import { isTimeComparison } from '../components/shared/time_comparison/get_comparison_options';
 import { useApmServiceContext } from '../context/apm_service/use_apm_service_context';

@@ -16,7 +16,8 @@ import type {
   ServiceTransactionGroupDetailedStatisticsResponse,
   ServiceTransactionGroupDetailedStat,
 } from '@kbn/apm-api-shared';
-import type { ApmTransactionDocumentType } from '../../../common/document_type';
+import type { ApmTransactionDocumentType } from '@kbn/apm-types';
+import type { RollupInterval } from '@kbn/apm-types';
 import { SERVICE_NAME, TRANSACTION_NAME, TRANSACTION_TYPE } from '../../../common/es_fields/apm';
 import type { LatencyAggregationType } from '../../../common/latency_aggregation_types';
 import { nullifyEmptyRedMetricPoints } from '../../../common/utils/red_metric_value_for_histogram_bucket';
@@ -25,7 +26,6 @@ import { getOffsetInMs } from '../../../common/utils/get_offset_in_ms';
 import { offsetPreviousPeriodCoordinates } from '../../../common/utils/offset_previous_period_coordinate';
 import type { APMEventClient } from '../../lib/helpers/create_es_client/create_apm_event_client';
 import { getLatencyAggregation, getLatencyValue } from '../../lib/helpers/latency_aggregation_type';
-import type { RollupInterval } from '../../../common/rollup';
 
 async function getServiceTransactionGroupDetailedStatistics({
   environment,

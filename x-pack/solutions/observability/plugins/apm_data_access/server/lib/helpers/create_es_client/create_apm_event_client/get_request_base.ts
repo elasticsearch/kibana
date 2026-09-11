@@ -10,8 +10,8 @@ import { ProcessorEvent } from '@kbn/apm-types-shared';
 import { uniq } from 'lodash';
 import { PROCESSOR_EVENT } from '@kbn/apm-types/es_fields';
 import type { APMIndices } from '@kbn/apm-sources-access-plugin/server';
+import type { ApmDataSource } from '@kbn/apm-types';
 import { getConfigForDocumentType, getProcessorEventForDocumentType } from '../document_type';
-import type { ApmDataSource } from '../../../../../common/data_source';
 
 const processorEventIndexMap = {
   [ProcessorEvent.transaction]: 'transaction',

@@ -7,8 +7,8 @@
 
 import type { z } from '@kbn/zod/v4';
 import { compact } from 'lodash';
-import { ApmDocumentType } from '../../../../common/document_type';
-import { RollupInterval } from '../../../../common/rollup';
+import { ApmDocumentType } from '@kbn/apm-types';
+import { RollupInterval } from '@kbn/apm-types';
 import type { filterOptionsSchema } from './custom_link_types';
 import { splitFilterValueByComma } from './helper';
 import type { APMEventClient } from '../../../lib/helpers/create_es_client/create_apm_event_client';

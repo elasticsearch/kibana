@@ -6,8 +6,8 @@
  */
 
 import { getBuckets } from './get_buckets';
-import { ApmDocumentType } from '../../../../common/document_type';
-import { RollupInterval } from '../../../../common/rollup';
+import { ApmDocumentType } from '@kbn/apm-types';
+import { RollupInterval } from '@kbn/apm-types';
 
 describe('get buckets', () => {
   let clientSpy: jest.Mock;

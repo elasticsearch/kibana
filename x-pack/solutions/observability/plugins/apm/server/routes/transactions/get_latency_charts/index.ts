@@ -8,7 +8,8 @@ import type { BoolQuery } from '@kbn/es-query';
 import { kqlQuery, rangeQuery, termQuery } from '@kbn/observability-plugin/server';
 import { getDurationFieldForTransactions } from '@kbn/apm-data-access-plugin/server/utils';
 import type { TransactionLatencyResponse } from '@kbn/apm-api-shared';
-import type { ApmServiceTransactionDocumentType } from '../../../../common/document_type';
+import type { ApmServiceTransactionDocumentType } from '@kbn/apm-types';
+import type { RollupInterval } from '@kbn/apm-types';
 import {
   FAAS_ID,
   SERVICE_NAME,
@@ -16,7 +17,6 @@ import {
   TRANSACTION_TYPE,
 } from '../../../../common/es_fields/apm';
 import type { LatencyAggregationType } from '../../../../common/latency_aggregation_types';
-import type { RollupInterval } from '../../../../common/rollup';
 import { environmentQuery } from '../../../../common/utils/environment_query';
 import { getOffsetInMs } from '../../../../common/utils/get_offset_in_ms';
 import { nullifyEmptyRedMetricPoints } from '../../../../common/utils/red_metric_value_for_histogram_bucket';

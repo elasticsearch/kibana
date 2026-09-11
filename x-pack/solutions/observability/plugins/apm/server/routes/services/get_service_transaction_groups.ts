@@ -12,7 +12,8 @@ import {
   getOutcomeAggregation,
   getDurationFieldForTransactions,
 } from '@kbn/apm-data-access-plugin/server/utils';
-import type { ApmTransactionDocumentType } from '../../../common/document_type';
+import type { ApmTransactionDocumentType } from '@kbn/apm-types';
+import type { RollupInterval } from '@kbn/apm-types';
 import {
   SERVICE_NAME,
   TRANSACTION_NAME,
@@ -20,7 +21,6 @@ import {
   TRANSACTION_TYPE,
 } from '../../../common/es_fields/apm';
 import type { LatencyAggregationType } from '../../../common/latency_aggregation_types';
-import type { RollupInterval } from '../../../common/rollup';
 import { environmentQuery } from '../../../common/utils/environment_query';
 import type { APMEventClient } from '../../lib/helpers/create_es_client/create_apm_event_client';
 import { getLatencyAggregation, getLatencyValue } from '../../lib/helpers/latency_aggregation_type';

@@ -13,7 +13,8 @@ import {
   getOutcomeAggregation,
   getDurationFieldForTransactions,
 } from '@kbn/apm-data-access-plugin/server/utils';
-import type { ApmDocumentType } from '../../../../common/document_type';
+import type { ApmDocumentType } from '@kbn/apm-types';
+import type { RollupInterval } from '@kbn/apm-types';
 import {
   AGENT_NAME,
   SERVICE_ENVIRONMENT,
@@ -23,7 +24,6 @@ import {
   TELEMETRY_SDK_NAME,
   TELEMETRY_SDK_LANGUAGE,
 } from '../../../../common/es_fields/apm';
-import type { RollupInterval } from '../../../../common/rollup';
 import type { ServiceGroup } from '../../../../common/service_groups';
 import { isDefaultTransactionType } from '../../../../common/transaction_types';
 import { environmentQuery } from '../../../../common/utils/environment_query';

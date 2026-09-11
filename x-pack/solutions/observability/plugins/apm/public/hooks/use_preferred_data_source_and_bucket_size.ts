@@ -7,8 +7,8 @@
 
 import { useMemo } from 'react';
 import { getPreferredBucketSizeAndDataSource } from '@kbn/apm-data-access-plugin/common';
-import type { ApmDataSourceWithSummary } from '../../common/data_source';
-import { ApmDocumentType } from '../../common/document_type';
+import type { ApmDataSourceWithSummary } from '@kbn/apm-types';
+import { ApmDocumentType } from '@kbn/apm-types';
 import { getBucketSize } from '../../common/utils/get_bucket_size';
 import { useTimeRangeMetadata } from '../context/time_range_metadata/use_time_range_metadata_context';
 

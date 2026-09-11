@@ -9,6 +9,8 @@ import { rangeQuery, kqlQuery, termQuery } from '@kbn/observability-plugin/serve
 import { accessKnownApmEventFields } from '@kbn/apm-data-access-plugin/server/utils';
 import type { Transaction } from '@kbn/apm-types';
 import type { ErrorSampleDetailsResponse } from '@kbn/apm-api-shared';
+import { ApmDocumentType } from '@kbn/apm-types';
+import { RollupInterval } from '@kbn/apm-types';
 import { asMutableArray } from '../../../../common/utils/as_mutable_array';
 import { maybe } from '../../../../common/utils/maybe';
 import {
@@ -42,8 +44,6 @@ import {
   ERROR_TYPE,
 } from '../../../../common/es_fields/apm';
 import { environmentQuery } from '../../../../common/utils/environment_query';
-import { ApmDocumentType } from '../../../../common/document_type';
-import { RollupInterval } from '../../../../common/rollup';
 import type { APMEventClient } from '../../../lib/helpers/create_es_client/create_apm_event_client';
 import { getTransaction } from '../../transactions/get_transaction';
 

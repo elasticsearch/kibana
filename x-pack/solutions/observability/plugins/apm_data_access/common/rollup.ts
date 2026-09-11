@@ -5,9 +5,4 @@
  * 2.0.
  */
 
-export enum RollupInterval {
-  OneMinute = '1m',
-  TenMinutes = '10m',
-  SixtyMinutes = '60m',
-  None = 'none',
-}
+export { RollupInterval } from '@kbn/apm-types';

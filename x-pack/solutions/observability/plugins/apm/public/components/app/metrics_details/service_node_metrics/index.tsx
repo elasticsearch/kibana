@@ -23,7 +23,7 @@ import { FormattedMessage } from '@kbn/i18n-react';
 import styled from '@emotion/styled';
 import React from 'react';
 import { truncate, unit } from '@kbn/apm-common';
-import { ApmDocumentType } from '../../../../../common/document_type';
+import { ApmDocumentType } from '@kbn/apm-types';
 import { getServiceNodeName, SERVICE_NODE_NAME_MISSING } from '../../../../../common/service_nodes';
 import { useApmPluginContext } from '../../../../context/apm_plugin/use_apm_plugin_context';
 import { useApmServiceContext } from '../../../../context/apm_service/use_apm_service_context';

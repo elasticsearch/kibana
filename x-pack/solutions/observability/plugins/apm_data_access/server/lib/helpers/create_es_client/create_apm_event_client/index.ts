@@ -25,8 +25,8 @@ import { type InspectResponse, type DataTier } from '@kbn/observability-shared-p
 import { unwrapEsResponse } from '@kbn/observability-utils-server/es/unwrap_es_response';
 import { excludeTiersQuery } from '@kbn/observability-utils-common/es/queries/exclude_tiers_query';
 import type { APMIndices } from '@kbn/apm-sources-access-plugin/server';
+import type { ApmDataSource } from '@kbn/apm-types';
 import { withApmSpan } from '../../../../utils';
-import type { ApmDataSource } from '../../../../../common/data_source';
 import { cancelEsRequestOnAbort } from '../cancel_es_request_on_abort';
 import { callAsyncWithDebug } from '../call_async_with_debug';
 import type { ProcessorEventOfDocumentType } from '../document_type';

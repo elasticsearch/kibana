@@ -8,6 +8,7 @@
 import type { CoreSetup, Logger } from '@kbn/core/server';
 import { getRollupIntervalForTimeRange } from '@kbn/apm-data-access-plugin/server/utils';
 import type { TraceMetrics } from '@kbn/observability-agent-builder-plugin/server/data_registry/data_registry_types';
+import { ApmDocumentType } from '@kbn/apm-types';
 import type { APMConfig } from '../..';
 import { getErrorSampleDetails } from '../../routes/errors/get_error_groups/get_error_sample_details';
 import { parseDatemath } from '../utils/time';
@@ -17,7 +18,6 @@ import { fetchExitSpanSamplesFromTraceIds } from '../../routes/service_map/fetch
 import { getConnectionStatsItems } from '../../lib/connections/get_connection_stats/get_connection_stats_items';
 import { getConnectionStats } from '../../lib/connections/get_connection_stats';
 import { getServicesItems } from '../../routes/services/get_services/get_services_items';
-import { ApmDocumentType } from '../../../common/document_type';
 import { ENVIRONMENT_ALL } from '../../../common/environment_filter_values';
 import { getExitSpanChangePoints, getServiceChangePoints } from './get_change_points';
 import { buildApmToolResources } from '../utils/build_apm_tool_resources';

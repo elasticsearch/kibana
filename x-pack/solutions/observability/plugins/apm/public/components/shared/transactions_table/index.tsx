@@ -15,7 +15,7 @@ import type { APIReturnType } from '@kbn/apm-api-shared';
 import { ALL_VALUE } from '@kbn/slo-schema';
 import type { ApmRuleType } from '@kbn/rule-data-utils';
 import { useKibana } from '@kbn/kibana-react-plugin/public';
-import { ApmDocumentType } from '../../../../common/document_type';
+import { ApmDocumentType } from '@kbn/apm-types';
 import type { LatencyAggregationType } from '../../../../common/latency_aggregation_types';
 import { getLatencyAggregationType } from '../../../../common/latency_aggregation_types';
 import { ENVIRONMENT_ALL } from '../../../../common/environment_filter_values';

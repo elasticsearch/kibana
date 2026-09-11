@@ -9,7 +9,7 @@ import type { ReactNode } from 'react';
 import React, { createContext } from 'react';
 import { useHistory } from 'react-router-dom';
 import type { History } from 'history';
-import { ApmDocumentType } from '../../../common/document_type';
+import { ApmDocumentType } from '@kbn/apm-types';
 import { getDefaultTransactionType } from '../../../common/transaction_types';
 import { useServiceTransactionTypesFetcher } from './use_service_transaction_types_fetcher';
 import { useServiceAgentFetcher } from './use_service_agent_fetcher';

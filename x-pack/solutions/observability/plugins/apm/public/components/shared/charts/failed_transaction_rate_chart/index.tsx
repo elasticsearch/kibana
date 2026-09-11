@@ -12,6 +12,7 @@ import React from 'react';
 import { EuiFlexGroup, EuiFlexItem, EuiIconTip } from '@elastic/eui';
 import type { APIReturnType } from '@kbn/apm-api-shared';
 import { unit } from '@kbn/apm-common';
+import { ApmDocumentType } from '@kbn/apm-types';
 import { useShouldShowAnomalyUi } from '../../../../hooks/use_should_show_anomaly_ui';
 import { usePreviousPeriodLabel } from '../../../../hooks/use_previous_period_text';
 import { isTimeComparison } from '../../time_comparison/get_comparison_options';
@@ -28,7 +29,6 @@ import { AnomalyDetectorType } from '../../../../../common/anomaly_detection/apm
 import { usePreferredServiceAnomalyTimeseries } from '../../../../hooks/use_preferred_service_anomaly_timeseries';
 import { ChartType, getTimeSeriesColor } from '../helper/get_timeseries_color';
 import { usePreferredDataSourceAndBucketSize } from '../../../../hooks/use_preferred_data_source_and_bucket_size';
-import { ApmDocumentType } from '../../../../../common/document_type';
 import { OpenInDiscover } from '../../links/discover_links/open_in_discover';
 import { APM_CHART_EBT_ELEMENTS } from '../ebt_constants';
 import { OpenAnomalies } from '../../links/machine_learning_links/open_anomalies';

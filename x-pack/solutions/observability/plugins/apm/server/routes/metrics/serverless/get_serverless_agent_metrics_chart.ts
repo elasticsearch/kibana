@@ -5,9 +5,9 @@
  * 2.0.
  */
 
+import type { ApmTransactionDocumentType } from '@kbn/apm-types';
+import type { RollupInterval } from '@kbn/apm-types';
 import type { APMConfig } from '../../..';
-import type { ApmTransactionDocumentType } from '../../../../common/document_type';
-import type { RollupInterval } from '../../../../common/rollup';
 import type { APMEventClient } from '../../../lib/helpers/create_es_client/create_apm_event_client';
 import { withApmSpan } from '../../../utils/with_apm_span';
 import { getMemoryChartData } from '../by_agent/shared/memory';
