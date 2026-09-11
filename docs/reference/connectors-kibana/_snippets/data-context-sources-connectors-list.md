@@ -31,6 +31,7 @@
 - [Jina Reader](/reference/connectors-kibana/jina-action-type.md): Convert web pages into markdown from their URL and search the web for better LLM grounding.
 - [Jira Cloud](/reference/connectors-kibana/jira-cloud-action-type.md): Search issues with JQL, retrieve project and issue details, and look up users in Jira Cloud.
 - [Kubernetes](/reference/connectors-kibana/kubernetes-action-type.md): Read and modify resources in a Kubernetes cluster through its REST API.
+- [Mattermost](/reference/connectors-kibana/mattermost-action-type.md): Browse Mattermost content with Agent Builder; after full registration, workflows can manage channels, memberships, posts, reactions, and users.
 - [Microsoft Teams](/reference/connectors-kibana/microsoft-teams-action-type.md): Search messages and browse teams, channels, and chats in Microsoft Teams.
 - [Monday.com](/reference/connectors-kibana/monday-com-action-type.md): Search boards, read and create items, post updates, and manage workspaces in Monday.com.
 - [New Relic](/reference/connectors-kibana/new-relic-action-type.md): Acknowledge and resolve AI issues, manage muting rules, and run NRQL queries.

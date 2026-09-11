@@ -2653,6 +2653,7 @@ src/platform/packages/shared/kbn-connector-specs/src/specs/inbound_webhook/** @e
 src/platform/packages/shared/kbn-connector-specs/src/specs/jenkins/** @elastic/workflows-eng
 src/platform/packages/shared/kbn-connector-specs/src/specs/jina/** @elastic/jinastic
 src/platform/packages/shared/kbn-connector-specs/src/specs/kubernetes/** @elastic/nightshift-context-and-research-team
+src/platform/packages/shared/kbn-connector-specs/src/specs/mattermost/** @elastic/workflows-eng
 src/platform/packages/shared/kbn-connector-specs/src/specs/microsoft_teams/** @elastic/workchat-eng
 src/platform/packages/shared/kbn-connector-specs/src/specs/misp/** @elastic/workflows-eng
 src/platform/packages/shared/kbn-connector-specs/src/specs/monday_com/** @elastic/workchat-eng

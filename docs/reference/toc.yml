@@ -115,6 +115,7 @@ toc:
           - file: connectors-kibana/jina-action-type.md
           - file: connectors-kibana/jira-cloud-action-type.md
           - file: connectors-kibana/kubernetes-action-type.md
+          - file: connectors-kibana/mattermost-action-type.md
           - file: connectors-kibana/microsoft-teams-action-type.md
           - file: connectors-kibana/monday-com-action-type.md
           - file: connectors-kibana/misp-action-type.md
