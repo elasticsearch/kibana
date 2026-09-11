@@ -53,6 +53,7 @@ import {
 
 import { AgentPolicyPackageBadge } from '../../../../components';
 import { UninstallCommandFlyout } from '../../../../../../components';
+import { ExperimentalFeaturesService } from '../../../../../../services';
 
 import type { ValidationResults } from '../agent_policy_validation';
 
@@ -67,6 +68,7 @@ import {
   DEFAULT_SELECT_VALUE,
   useFleetServerHostsOptions,
 } from './hooks';
+import { AgentBinaryDownloadSources } from './agent_binary_download_sources';
 import { SpaceSelector } from './space_selector';
 import { AgentPolicyAdvancedMonitoringOptions } from './advanced_monitoring';
 
@@ -96,6 +98,7 @@ export const AgentPolicyAdvancedOptionsContent: React.FunctionComponent<Props> =
   );
   const config = useConfig();
   const authz = useAuthz();
+  const { enableAgentPolicyMultipleDownloadSources } = ExperimentalFeaturesService.get();
   const maxAgentPoliciesWithInactivityTimeout =
     config.developer?.maxAgentPoliciesWithInactivityTimeout ??
     DEFAULT_MAX_AGENT_POLICIES_WITH_INACTIVITY_TIMEOUT;
@@ -830,31 +833,41 @@ export const AgentPolicyAdvancedOptionsContent: React.FunctionComponent<Props> =
           />
         }
       >
-        <EuiFormRow
-          fullWidth
-          error={
-            touchedFields.download_source_id && validation.download_source_id
-              ? validation.download_source_id
-              : null
-          }
-          isInvalid={Boolean(touchedFields.download_source_id && validation.download_source_id)}
-          isDisabled={disabled || isManagedOrAgentlessPolicy}
-          aria-label="download source options for agent binaries"
-        >
-          <EuiSuperSelect
-            disabled={disabled || isManagedOrAgentlessPolicy}
-            valueOfSelected={agentPolicy.download_source_id || DEFAULT_SELECT_VALUE}
-            fullWidth
+        {enableAgentPolicyMultipleDownloadSources ? (
+          <AgentBinaryDownloadSources
+            agentPolicy={agentPolicy}
+            updateAgentPolicy={updateAgentPolicy}
+            downloadSourceOptions={dataDownloadSourceOptions}
             isLoading={isLoadingDownloadSources}
-            onChange={(e) => {
-              updateAgentPolicy({
-                download_source_id: e !== DEFAULT_SELECT_VALUE ? e : null,
-              });
-            }}
-            options={dataDownloadSourceOptions}
-            data-test-subj="agentPolicyForm.downloadSource.select"
+            disabled={disabled || isManagedOrAgentlessPolicy}
           />
-        </EuiFormRow>
+        ) : (
+          <EuiFormRow
+            fullWidth
+            error={
+              touchedFields.download_source_id && validation.download_source_id
+                ? validation.download_source_id
+                : null
+            }
+            isInvalid={Boolean(touchedFields.download_source_id && validation.download_source_id)}
+            isDisabled={disabled || isManagedOrAgentlessPolicy}
+            aria-label="download source options for agent binaries"
+          >
+            <EuiSuperSelect
+              disabled={disabled || isManagedOrAgentlessPolicy}
+              valueOfSelected={agentPolicy.download_source_id || DEFAULT_SELECT_VALUE}
+              fullWidth
+              isLoading={isLoadingDownloadSources}
+              onChange={(e) => {
+                updateAgentPolicy({
+                  download_source_id: e !== DEFAULT_SELECT_VALUE ? e : null,
+                });
+              }}
+              options={dataDownloadSourceOptions}
+              data-test-subj="agentPolicyForm.downloadSource.select"
+            />
+          </EuiFormRow>
+        )}
       </EuiDescribedFormGroup>
       <EuiDescribedFormGroup
         fullWidth

@@ -132,6 +132,85 @@ export default function (providerContext: FtrProviderContext) {
       });
     });
 
+    describe('Download source with multiple hosts', () => {
+      let downloadSourceId: string;
+      let otherDownloadSourceId: string;
+      before(async () => {
+        const [res, otherRes] = await Promise.all([
+          apiClient.postDownloadSource({
+            name: `test multiple ${Date.now()}`,
+            host: 'https://test-multiple.fr',
+          }),
+          apiClient.postDownloadSource({
+            name: `test multiple other ${Date.now()}`,
+            host: 'https://test-multiple-other.fr',
+          }),
+        ]);
+        downloadSourceId = res.item.id;
+        otherDownloadSourceId = otherRes.item.id;
+
+        await Promise.all([
+          apiClient.putAgentPolicy(defaultSpacePolicy1.item.id, {
+            name: defaultSpacePolicy1.item.name,
+            namespace: defaultSpacePolicy1.item.namespace,
+            description: defaultSpacePolicy1.item.description,
+            download_source_ids: [downloadSourceId, otherDownloadSourceId],
+          }),
+          apiClient.putAgentPolicy(
+            spaceTest1Policy1.item.id,
+            {
+              name: spaceTest1Policy1.item.name,
+              namespace: spaceTest1Policy1.item.namespace,
+              description: spaceTest1Policy1.item.description,
+              download_source_ids: [downloadSourceId, otherDownloadSourceId],
+            },
+            TEST_SPACE_1
+          ),
+          apiClient.putAgentPolicy(allSpaceTestPolicy1.item.id, {
+            name: allSpaceTestPolicy1.item.name,
+            namespace: allSpaceTestPolicy1.item.namespace,
+            description: allSpaceTestPolicy1.item.description,
+            download_source_ids: [downloadSourceId, otherDownloadSourceId],
+          }),
+        ]);
+      });
+
+      it('should bump policies across all spaces on update', async () => {
+        const policiesResBefore = await fetchAllPolicies();
+
+        await apiClient.putDownloadSource(
+          { name: `test multiple update ${Date.now()}`, host: 'https://elastic.co' },
+          downloadSourceId
+        );
+
+        const policiesResAfter = await fetchAllPolicies();
+
+        for (const policyRes of policiesResBefore) {
+          const policyAfter = policiesResAfter.find((p) => p.item.id === policyRes.item.id);
+          expect(policyAfter?.item.revision).to.be.greaterThan(policyRes.item.revision);
+        }
+      });
+
+      it('should remove the deleted host from download_source_ids across spaces', async () => {
+        const policiesResBefore = await fetchAllPolicies();
+
+        for (const policyRes of policiesResBefore) {
+          expect(policyRes.item.download_source_ids).to.eql([
+            downloadSourceId,
+            otherDownloadSourceId,
+          ]);
+        }
+
+        await apiClient.deleteDownloadSource(downloadSourceId);
+
+        const policiesResAfter = await fetchAllPolicies();
+
+        for (const policyRes of policiesResAfter) {
+          expect(policyRes.item.download_source_ids).to.eql([otherDownloadSourceId]);
+        }
+      });
+    });
+
     describe('Fleet server host', () => {
       let fleetServerHostId: string;
       before(async () => {

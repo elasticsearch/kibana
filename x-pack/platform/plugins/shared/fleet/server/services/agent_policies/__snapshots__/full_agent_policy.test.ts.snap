@@ -5,6 +5,9 @@ Object {
   "agent": Object {
     "download": Object {
       "sourceURI": "http://default-registry.co",
+      "sources": Array [
+        "http://default-registry.co",
+      ],
     },
     "features": Object {},
     "monitoring": Object {
@@ -161,6 +164,9 @@ Object {
   "agent": Object {
     "download": Object {
       "sourceURI": "http://default-registry.co",
+      "sources": Array [
+        "http://default-registry.co",
+      ],
     },
     "features": Object {},
     "monitoring": Object {
@@ -320,6 +326,9 @@ Object {
   "agent": Object {
     "download": Object {
       "sourceURI": "http://default-registry.co",
+      "sources": Array [
+        "http://default-registry.co",
+      ],
     },
     "features": Object {},
     "monitoring": Object {
@@ -385,6 +394,9 @@ Object {
   "agent": Object {
     "download": Object {
       "sourceURI": "http://default-registry.co",
+      "sources": Array [
+        "http://default-registry.co",
+      ],
     },
     "features": Object {},
     "monitoring": Object {
@@ -464,6 +476,9 @@ Object {
   "agent": Object {
     "download": Object {
       "sourceURI": "http://default-registry.co",
+      "sources": Array [
+        "http://default-registry.co",
+      ],
     },
     "features": Object {},
     "monitoring": Object {

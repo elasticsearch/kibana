@@ -35,6 +35,7 @@ export interface NewAgentPolicy {
   data_output_id?: string | null;
   monitoring_output_id?: string | null;
   download_source_id?: string | null;
+  download_source_ids?: string[];
   fleet_server_host_id?: string | null;
   schema_version?: string;
   agent_features?: Array<{ name: string; enabled: boolean }>;
@@ -228,6 +229,7 @@ export interface FullAgentPolicyDownloadSecrets extends BaseSSLSecrets {
 
 export interface FullAgentPolicyDownload {
   sourceURI: string;
+  sources?: string[];
   ssl?: BaseSSLConfig;
   auth?: FullAgentPolicyDownloadAuth;
   secrets?: FullAgentPolicyDownloadSecrets;

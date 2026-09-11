@@ -39,6 +39,7 @@ const _allowedExperimentalValues = {
   enableOtlpOutput: false, // When enabled, OTLP output type is available for creation and management via the Fleet outputs API.
   enableIntegrationCollectionTiles: true, // When enabled, packages sharing a `group` id are collapsed into a single collection tile in the integrations marketplace.
   enableIntegrationTileClickToAdd: false, // When enabled, clicking an integration tile navigates directly to the add-integration page instead of the overview page.
+  enableAgentPolicyMultipleDownloadSources: false, // When enabled, agent policies accept an ordered list of agent binary download sources and the compiled policy emits `agent.download.sources`.
 };
 
 /**

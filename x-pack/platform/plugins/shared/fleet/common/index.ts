@@ -80,6 +80,8 @@ export {
   displayedAssetTypes,
   displayedAssetTypesLookup,
   CLOUD_ONBOARDING_DEPLOYMENT_API_ROOT,
+  // Download source constants
+  DEFAULT_DOWNLOAD_SOURCE_REFERENCE,
 } from './constants';
 export {
   // Route services

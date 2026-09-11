@@ -25,6 +25,7 @@ export const AGENT_POLICY_MAPPINGS = {
     data_output_id: { type: 'keyword' },
     description: { type: 'text' },
     download_source_id: { type: 'keyword' },
+    download_source_ids: { type: 'keyword' },
     fleet_server_host_id: { type: 'keyword' },
     inactivity_timeout: { type: 'integer' },
     is_default: { type: 'boolean' },

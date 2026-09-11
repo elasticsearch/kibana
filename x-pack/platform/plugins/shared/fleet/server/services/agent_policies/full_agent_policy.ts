@@ -124,7 +124,7 @@ export async function getFullAgentPolicy(
     dataOutput,
     fleetServerHost,
     monitoringOutput,
-    downloadSource,
+    downloadSources,
     downloadSourceProxy,
   } = await fetchRelatedSavedObjects(soClient, agentPolicy);
 
@@ -237,9 +237,9 @@ export async function getFullAgentPolicy(
   const fleetserverHostSecretReferences = fleetServerHost
     ? getFleetServerHostsSecretReferences(fleetServerHost)
     : [];
-  const downloadSourceSecretReferences = downloadSource
-    ? getDownloadSourceSecretReferences(downloadSource)
-    : [];
+  const downloadSourceSecretReferences = downloadSources.flatMap((ds) =>
+    getDownloadSourceSecretReferences(ds)
+  );
   // Only include package policy secret refs that appear inline as `$co.elastic.secret{<id>}`
   // placeholders in the compiled policy. Disabled inputs/policies, never-rendered secret vars,
   // and stale SO entries would otherwise make Fleet Server fetch ids nothing references.
@@ -311,7 +311,7 @@ export async function getFullAgentPolicy(
     ],
     revision: agentPolicy.revision,
     agent: {
-      download: getBinarySourceSettings(downloadSource, downloadSourceProxy, redactProxySecrets),
+      download: getBinarySourceSettings(downloadSources, downloadSourceProxy, redactProxySecrets),
       monitoring: getFullMonitoringSettings(agentPolicy, monitoringOutput),
       features,
       protection: {
@@ -945,46 +945,50 @@ function buildShipperQueueData(shipper: ShipperOutput) {
 }
 
 export function getBinarySourceSettings(
-  downloadSource: DownloadSource,
+  downloadSources: DownloadSource[],
   downloadSourceProxy: FleetProxy | undefined,
   redactProxySecrets = false
 ) {
+  const primarySource = downloadSources[0];
+  const { enableAgentPolicyMultipleDownloadSources } = appContextService.getExperimentalFeatures();
+
+  // sourceURI kept for backwards compat with agents that do not yet read `sources`
   const config: FullAgentPolicyDownload = {
-    sourceURI: downloadSource.host,
+    sourceURI: primarySource.host,
+    ...(enableAgentPolicyMultipleDownloadSources && {
+      sources: downloadSources.map((ds) => ds.host),
+    }),
   };
 
-  if (downloadSource?.ssl) {
+  if (primarySource?.ssl) {
     config.ssl = {
-      ...(downloadSource.ssl?.certificate_authorities && {
-        certificate_authorities: downloadSource.ssl.certificate_authorities,
+      ...(primarySource.ssl?.certificate_authorities && {
+        certificate_authorities: primarySource.ssl.certificate_authorities,
       }),
-      ...(downloadSource.ssl?.certificate && {
-        certificate: downloadSource.ssl.certificate,
+      ...(primarySource.ssl?.certificate && {
+        certificate: primarySource.ssl.certificate,
       }),
-      ...(downloadSource.ssl?.key &&
-        !downloadSource?.secrets?.ssl?.key && {
-          key: downloadSource.ssl.key,
+      ...(primarySource.ssl?.key &&
+        !primarySource?.secrets?.ssl?.key && {
+          key: primarySource.ssl.key,
         }),
     };
   }
 
-  if (downloadSource?.auth) {
+  if (primarySource?.auth) {
     const authConfig: FullAgentPolicyDownload['auth'] = {};
-    if (downloadSource.auth.username) {
-      authConfig.username = downloadSource.auth.username;
+    if (primarySource.auth.username) {
+      authConfig.username = primarySource.auth.username;
     }
-    if (
-      downloadSource.auth.password &&
-      typeof downloadSource?.secrets?.auth?.password !== 'object'
-    ) {
-      authConfig.password = downloadSource.auth.password;
+    if (primarySource.auth.password && typeof primarySource?.secrets?.auth?.password !== 'object') {
+      authConfig.password = primarySource.auth.password;
     }
-    if (downloadSource.auth.api_key && typeof downloadSource?.secrets?.auth?.api_key !== 'object') {
-      authConfig.api_key = downloadSource.auth.api_key;
+    if (primarySource.auth.api_key && typeof primarySource?.secrets?.auth?.api_key !== 'object') {
+      authConfig.api_key = primarySource.auth.api_key;
     }
     // Filter out empty headers (both key and value are empty)
-    if (downloadSource.auth.headers && downloadSource.auth.headers.length > 0) {
-      const filteredHeaders = downloadSource.auth.headers.filter(
+    if (primarySource.auth.headers && primarySource.auth.headers.length > 0) {
+      const filteredHeaders = primarySource.auth.headers.filter(
         (header) => header.key !== '' || header.value !== ''
       );
       if (filteredHeaders.length > 0) {
@@ -996,22 +1000,22 @@ export function getBinarySourceSettings(
     }
   }
 
-  if (downloadSource?.secrets) {
+  if (primarySource?.secrets) {
     const secretsConfig: FullAgentPolicyDownload['secrets'] = {};
 
-    if (downloadSource.secrets?.ssl?.key) {
+    if (primarySource.secrets?.ssl?.key) {
       secretsConfig.ssl = {
-        key: downloadSource.secrets.ssl.key,
+        key: primarySource.secrets.ssl.key,
       };
     }
 
-    if (downloadSource.secrets?.auth) {
+    if (primarySource.secrets?.auth) {
       const authSecretsConfig: NonNullable<FullAgentPolicyDownload['secrets']>['auth'] = {};
-      if (typeof downloadSource.secrets.auth.password === 'object') {
-        authSecretsConfig.password = downloadSource.secrets.auth.password;
+      if (typeof primarySource.secrets.auth.password === 'object') {
+        authSecretsConfig.password = primarySource.secrets.auth.password;
       }
-      if (typeof downloadSource.secrets.auth.api_key === 'object') {
-        authSecretsConfig.api_key = downloadSource.secrets.auth.api_key;
+      if (typeof primarySource.secrets.auth.api_key === 'object') {
+        authSecretsConfig.api_key = primarySource.secrets.auth.api_key;
       }
       if (Object.keys(authSecretsConfig).length > 0) {
         secretsConfig.auth = authSecretsConfig;

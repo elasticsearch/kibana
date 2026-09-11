@@ -1691,6 +1691,38 @@ describe('Agent policy', () => {
         { download_source_id: null }
       );
     });
+
+    it('should strip the deleted download source host from download_source_ids', async () => {
+      const soClient = createSavedObjectClientMock();
+      const esClient = elasticsearchServiceMock.createClusterClient().asInternalUser;
+      mockedDownloadSourceService.getDefaultDownloadSourceId.mockResolvedValue(
+        'default-download-source-id'
+      );
+      mockedAppContextService.getInternalUserSOClientWithoutSpaceExtension.mockReturnValue(
+        soClient
+      );
+      mockedAppContextService.getInternalUserSOClientForSpaceId.mockReturnValue(soClient);
+      soClient.find.mockResolvedValue({
+        saved_objects: [
+          {
+            id: 'test-ds-1',
+            attributes: {
+              download_source_id: 'ds-id-1',
+              download_source_ids: ['ds-id-1', 'ds-id-2', 'default-download-source-id'],
+            },
+          },
+        ],
+      } as any);
+
+      await agentPolicyService.removeDefaultSourceFromAll(esClient, 'default-download-source-id');
+
+      expect(mockedAgentPolicyServiceUpdate).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.anything(),
+        'test-ds-1',
+        { download_source_id: 'ds-id-1', download_source_ids: ['ds-id-1', 'ds-id-2'] }
+      );
+    });
   });
 
   describe('bumpAllAgentPoliciesForDownloadSource', () => {

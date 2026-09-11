@@ -98,6 +98,7 @@ export default async function ({ readConfigFile, log }: FtrConfigProviderContext
           enableSloTemplates: true,
           enableVersionSpecificPolicies: true,
           enableOpAMP: true,
+          enableAgentPolicyMultipleDownloadSources: true,
           installIntegrationsKnowledge: false,
           // Keep the legacy agentless APIs enabled here so the base suite exercises legacy behavior;
           // config.agentless_legacy_disabled.ts overrides this to true for the rejection tests.

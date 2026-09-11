@@ -76,6 +76,7 @@ export interface AgentPolicySOAttributes {
   data_output_id?: string | null;
   monitoring_output_id?: string | null;
   download_source_id?: string | null;
+  download_source_ids?: string[];
   fleet_server_host_id?: string | null;
   schema_version?: string;
   agent_features?: Array<{ name: string; enabled: boolean }>;

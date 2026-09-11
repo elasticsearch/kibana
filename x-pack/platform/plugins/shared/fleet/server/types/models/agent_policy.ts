@@ -96,6 +96,7 @@ export const AgentPolicyBaseSchema = {
   data_output_id: schema.maybe(schema.oneOf([schema.literal(null), schema.string()])),
   monitoring_output_id: schema.maybe(schema.oneOf([schema.literal(null), schema.string()])),
   download_source_id: schema.maybe(schema.oneOf([schema.literal(null), schema.string()])),
+  download_source_ids: schema.maybe(schema.arrayOf(schema.string(), { maxSize: 3 })),
   fleet_server_host_id: schema.maybe(schema.oneOf([schema.literal(null), schema.string()])),
   agent_features: schema.maybe(
     schema.arrayOf(
@@ -650,6 +651,7 @@ export const FullAgentPolicyResponseSchema = schema.object(
         }),
         download: schema.object({
           sourceURI: schema.string(),
+          sources: schema.maybe(schema.arrayOf(schema.string(), { maxSize: 3 })),
           ssl: schema.maybe(BaseSSLSchema),
           auth: schema.maybe(
             schema.object({

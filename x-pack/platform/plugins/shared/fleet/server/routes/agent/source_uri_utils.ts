@@ -5,22 +5,45 @@
  * 2.0.
  */
 
+import { DEFAULT_DOWNLOAD_SOURCE_REFERENCE } from '../../constants';
 import { downloadSourceService } from '../../services';
 import type { AgentPolicy, DownloadSource } from '../../types';
 import { FleetError, DownloadSourceNotFound } from '../../errors';
 
-export const getDownloadSourceForAgentPolicy = async (
+export const getDownloadSourcesForAgentPolicy = async (
   agentPolicy: AgentPolicy
-): Promise<DownloadSource> => {
+): Promise<DownloadSource[]> => {
   const defaultDownloadSourceId = await downloadSourceService.getDefaultDownloadSourceId();
 
   if (!defaultDownloadSourceId) {
     throw new FleetError('Default download source host is not setup');
   }
-  const downloadSourceId: string = agentPolicy.download_source_id || defaultDownloadSourceId;
-  const downloadSource = await downloadSourceService.get(downloadSourceId);
-  if (!downloadSource) {
-    throw new DownloadSourceNotFound(`Download source host not found ${downloadSourceId}`);
-  }
-  return downloadSource;
+
+  const ids =
+    agentPolicy.download_source_ids && agentPolicy.download_source_ids.length > 0
+      ? agentPolicy.download_source_ids
+      : agentPolicy.download_source_id
+      ? [agentPolicy.download_source_id]
+      : [defaultDownloadSourceId];
+
+  const sources = await Promise.all(
+    ids.map(async (id) => {
+      const resolvedId = id === DEFAULT_DOWNLOAD_SOURCE_REFERENCE ? defaultDownloadSourceId : id;
+      const source = await downloadSourceService.get(resolvedId);
+      if (!source) {
+        throw new DownloadSourceNotFound(`Download source host not found ${resolvedId}`);
+      }
+      return source;
+    })
+  );
+
+  return sources;
+};
+
+/** @deprecated Use getDownloadSourcesForAgentPolicy instead */
+export const getDownloadSourceForAgentPolicy = async (
+  agentPolicy: AgentPolicy
+): Promise<DownloadSource> => {
+  const [primary] = await getDownloadSourcesForAgentPolicy(agentPolicy);
+  return primary;
 };
