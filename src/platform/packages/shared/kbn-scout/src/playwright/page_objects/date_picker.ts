@@ -23,6 +23,12 @@ const DATE_UNIT_LABELS: Record<DateUnitSelector, string> = {
   [DateUnitSelector.Hours]: 'Hours',
 };
 
+const MS_PER_DATE_UNIT: Record<DateUnitSelector, number> = {
+  [DateUnitSelector.Seconds]: 1_000,
+  [DateUnitSelector.Minutes]: 60_000,
+  [DateUnitSelector.Hours]: 3_600_000,
+};
+
 export interface RefreshConfig {
   interval: string;
   units: string;
@@ -459,26 +465,28 @@ export class DatePicker {
 
   async getRefreshConfig(): Promise<RefreshConfig> {
     if (await this.isNewDateRangePicker()) {
-      await this.openDateRangePickerSettingsPanel();
+      const button = this.page.testSubj.locator('dateRangePickerControlButton');
+      const intervalMsAttr = await button.getAttribute('data-refresh-interval');
+      const intervalUnitAttr = await button.getAttribute('data-refresh-interval-unit');
+      const isPausedAttr = await button.getAttribute('data-refresh-paused');
 
-      const interval =
-        (await this.page.testSubj
-          .locator('dateRangePickerAutoRefreshIntervalCount')
-          .getAttribute('value')) ?? '';
-      const unit = (await this.page.testSubj
-        .locator('dateRangePickerAutoRefreshIntervalUnit')
-        .inputValue()) as DateUnitSelector;
-      const toggleChecked =
-        (await this.page.testSubj
-          .locator('dateRangePickerAutoRefreshToggle')
-          .getAttribute('aria-checked')) === 'true';
+      if (intervalMsAttr === null || intervalUnitAttr === null || isPausedAttr === null) {
+        throw new Error(`Refresh config was requested but not found`);
+      }
 
-      await this.closeDateRangePickerSettingsPanel();
+      const unit = Object.hasOwn(DATE_UNIT_LABELS, intervalUnitAttr ?? '')
+        ? (intervalUnitAttr as DateUnitSelector)
+        : DateUnitSelector.Seconds;
+
+      const interval = Math.round(Number(intervalMsAttr) / MS_PER_DATE_UNIT[unit]);
+      if (!Number.isInteger(interval) || interval <= 0) {
+        throw new Error(`Unexpected data-refresh-interval value: "${intervalMsAttr}"`);
+      }
 
       return {
-        interval,
+        interval: String(interval),
         units: DATE_UNIT_LABELS[unit],
-        isPaused: !toggleChecked,
+        isPaused: isPausedAttr !== 'false',
       };
     }
 

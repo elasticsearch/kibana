@@ -882,6 +882,26 @@ describe('DateRangePickerControl', () => {
       );
 
       expect(screen.queryByTestId('dateRangePickerAutoRefreshButton')).not.toBeInTheDocument();
+      const button = screen.getByTestId('dateRangePickerControlButton');
+      expect(button).not.toHaveAttribute('data-refresh-interval');
+      expect(button).not.toHaveAttribute('data-refresh-interval-unit');
+      expect(button).not.toHaveAttribute('data-refresh-paused');
+    });
+
+    it('exposes `settings.autoRefresh` as concrete DOM attributes on the control button', () => {
+      renderWithEuiTheme(
+        <DateRangePicker
+          {...defaultProps}
+          onRefresh={onRefresh}
+          settings={{ ...autoRefreshSettings }}
+        />
+      );
+
+      const { intervalMs, intervalDisplayUnit, isPaused } = autoRefreshSettings.autoRefresh;
+      const button = screen.getByTestId('dateRangePickerControlButton');
+      expect(button).toHaveAttribute('data-refresh-interval', String(intervalMs));
+      expect(button).toHaveAttribute('data-refresh-interval-unit', intervalDisplayUnit);
+      expect(button).toHaveAttribute('data-refresh-paused', String(isPaused));
     });
 
     it('does not render the auto-refresh append control when `onRefresh` is absent', () => {

@@ -321,6 +321,9 @@ export function DateRangePickerControl() {
               `}
               data-test-subj="dateRangePickerControlButton"
               data-date-range={`${timeRange.start} to ${timeRange.end}`}
+              data-refresh-interval={settings.autoRefresh?.intervalMs}
+              data-refresh-interval-unit={settings.autoRefresh?.intervalDisplayUnit}
+              data-refresh-paused={settings.autoRefresh?.isPaused}
               buttonRef={buttonRef}
               aria-label={collapsed ? accessibleDisplayText : undefined}
               onClick={onButtonClick}
