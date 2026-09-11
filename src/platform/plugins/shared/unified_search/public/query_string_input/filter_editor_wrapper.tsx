@@ -99,7 +99,7 @@ export const FilterEditorWrapper = React.memo(function FilterEditorWrapper({
         setNewFilter(emptyFilter);
       }
     };
-    if (indexPatterns) {
+    if (indexPatterns?.length) {
       fetchDataViews();
     }
   }, [data.dataViews, indexPatterns, onLocalFilterCreate, onLocalFilterUpdate, isPinned]);
