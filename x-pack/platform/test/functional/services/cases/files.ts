@@ -26,15 +26,15 @@ export function CasesFilesTableServiceProvider({ getService, getPageObject }: Ft
       await testSubjects.click('case-view-attach-menu-file');
       await find.byCssSelector('[aria-label="Upload a file"]');
 
-      // upload a file
+      // upload a file — the upload button only enables once the picker has
+      // registered the selected file, so wait for that before clicking
       await common.setFileInputPath(fileInputPath);
-      await testSubjects.click('uploadButton');
+      await testSubjects.clickWhenNotDisabled('uploadButton');
 
-      // hide the upload notification
-      await (await find.byCssSelector('[data-test-subj="toastCloseButton"]')).click();
-
-      // wait for the modal (and its overlay mask) to be removed so the caller's next click isn't intercepted
-      await testSubjects.missingOrFail('cases-files-add-modal');
+      // the modal (and its overlay mask) is removed only after the upload's
+      // createAttachments call resolves, so its removal is the true "upload
+      // committed" signal and keeps the caller's next click from being intercepted
+      await testSubjects.missingOrFail('cases-files-add-modal', { timeout: 120_000 });
     },
 
     async searchByFileName(fileName: string) {
