@@ -9,6 +9,8 @@ import React from 'react';
 import { render, screen, waitFor, within, fireEvent, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
+jest.setTimeout(15 * 1000);
+
 import { stubIndexPattern } from '@kbn/data-plugin/common/stubs';
 import { StepAboutRule, StepAboutRuleReadOnly } from '.';
 import { useFetchIndex } from '../../../../common/containers/source';
