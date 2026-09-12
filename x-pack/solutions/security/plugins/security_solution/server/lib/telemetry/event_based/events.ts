@@ -52,6 +52,13 @@ export const DETECTION_RULE_UPGRADE_EVENT: EventTypeOpts<RuleUpgradeTelemetry> =
       type: 'boolean',
       _meta: { description: 'True if base version exists for this rule' },
     },
+    hasRuleTypeChange: {
+      type: 'boolean',
+      _meta: {
+        description:
+          "True if the rule's type was force-set to the target version's value during this upgrade",
+      },
+    },
     finalResult: {
       type: 'keyword',
       _meta: { description: 'Overall outcome: SUCCESS | SKIP | ERROR' },
@@ -254,6 +261,13 @@ export const DETECTION_RULE_BULK_UPGRADE_EVENT: EventTypeOpts<RuleBulkUpgradeTel
               'Number of successfully updated rules with no conflicts in bulk update request',
           },
         },
+        numOfRulesWithRuleTypeChange: {
+          type: 'long',
+          _meta: {
+            description:
+              'Number of successfully updated rules with a rule type change in bulk update request',
+          },
+        },
       },
     },
     errorUpdates: {
@@ -296,6 +310,13 @@ export const DETECTION_RULE_BULK_UPGRADE_EVENT: EventTypeOpts<RuleBulkUpgradeTel
               'Number of rules with no conflicts that failed to update in bulk update request',
           },
         },
+        numOfRulesWithRuleTypeChange: {
+          type: 'long',
+          _meta: {
+            description:
+              'Number of rules with a rule type change that failed to update in bulk update request',
+          },
+        },
       },
     },
     skippedUpdates: {
@@ -336,6 +357,13 @@ export const DETECTION_RULE_BULK_UPGRADE_EVENT: EventTypeOpts<RuleBulkUpgradeTel
           _meta: {
             description:
               'Number of rules with no conflicts that were skipped during bulk update request',
+          },
+        },
+        numOfRulesWithRuleTypeChange: {
+          type: 'long',
+          _meta: {
+            description:
+              'Number of rules with a rule type change that were skipped during bulk update request',
           },
         },
       },

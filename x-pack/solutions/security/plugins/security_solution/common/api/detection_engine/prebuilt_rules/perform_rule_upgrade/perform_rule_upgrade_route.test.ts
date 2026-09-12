@@ -400,6 +400,45 @@ describe('Perform Rule Upgrade Route Schemas', () => {
       expect(result.data).toEqual(validResponse);
     });
 
+    test('validates a skipped rule with a rule type change', () => {
+      const response = {
+        ...validResponse,
+        results: {
+          updated: [],
+          skipped: [
+            {
+              rule_id: 'rule-1',
+              reason: 'CONFLICT',
+              conflict: 'SOLVABLE',
+              rule_type_change: { current: 'query', target: 'esql' },
+            },
+          ],
+        },
+      };
+      const result = PerformRuleUpgradeResponseBody.safeParse(response);
+      expectParseSuccess(result);
+      expect(result.data).toEqual(response);
+    });
+
+    test('rejects a rule type change with an unknown rule type', () => {
+      const response = {
+        ...validResponse,
+        results: {
+          updated: [],
+          skipped: [
+            {
+              rule_id: 'rule-1',
+              reason: 'CONFLICT',
+              conflict: 'SOLVABLE',
+              rule_type_change: { current: 'query', target: 'unknown' },
+            },
+          ],
+        },
+      };
+      const result = PerformRuleUpgradeResponseBody.safeParse(response);
+      expectParseError(result);
+    });
+
     test('rejects missing required fields', () => {
       const propsToDelete = Object.keys(validResponse);
       const expectedType = { summary: 'object', results: 'object', errors: 'array' } as const;

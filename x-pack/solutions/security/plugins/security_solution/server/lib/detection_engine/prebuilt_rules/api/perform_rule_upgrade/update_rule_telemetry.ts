@@ -13,6 +13,7 @@ import {
   DETECTION_RULE_UPGRADE_EVENT,
   DETECTION_RULE_BULK_UPGRADE_EVENT,
 } from '../../../../telemetry/event_based/events';
+import { hasRuleTypeChanged } from './get_rule_type_change';
 
 interface BasicDiffInfo {
   conflict: ThreeWayDiffConflict;
@@ -35,6 +36,7 @@ export interface RuleUpgradeTelemetry {
   ruleId: string;
   ruleName: string;
   hasBaseVersion: boolean;
+  hasRuleTypeChange: boolean;
   updatedFieldsSummary: {
     count: number;
     nonSolvableConflictsCount: number;
@@ -55,6 +57,7 @@ interface BulkUpgradeSummary {
   numOfNonSolvableConflicts: number;
   numOfSolvableConflicts: number;
   numOfNoConflicts: number;
+  numOfRulesWithRuleTypeChange: number;
 }
 export interface RuleBulkUpgradeTelemetry {
   successfulUpdates: BulkUpgradeSummary;
@@ -183,6 +186,7 @@ function calculateBulkUpdateSummary(
   let numOfNoConflicts = 0;
   let numOfCustomizedRules = 0;
   let numOfNonCustomizedRules = 0;
+  let numOfRulesWithRuleTypeChange = 0;
 
   ruleIds.forEach((ruleId) => {
     const ruleUpgradeContext = ruleUpgradeContextsMap.get(ruleId);
@@ -201,6 +205,10 @@ function calculateBulkUpdateSummary(
       numOfCustomizedRules++;
     } else {
       numOfNonCustomizedRules++;
+    }
+
+    if (hasRuleTypeChanged(fieldsDiff.type)) {
+      numOfRulesWithRuleTypeChange++;
     }
 
     if (diffs.some((d) => d.conflict === ThreeWayDiffConflict.NON_SOLVABLE)) {
@@ -223,6 +231,7 @@ function calculateBulkUpdateSummary(
     numOfNonSolvableConflicts,
     numOfSolvableConflicts,
     numOfNoConflicts,
+    numOfRulesWithRuleTypeChange,
   };
 }
 
@@ -281,6 +290,7 @@ function createRuleUpdateTelemetryEvent({
     ruleId,
     ruleName,
     hasBaseVersion,
+    hasRuleTypeChange: hasRuleTypeChanged(fieldsDiff.type),
     updatedFieldsSummary: {
       count: updatedFieldsTotal.length,
       nonSolvableConflictsCount: updatedFieldsWithNonSolvableConflicts.length,

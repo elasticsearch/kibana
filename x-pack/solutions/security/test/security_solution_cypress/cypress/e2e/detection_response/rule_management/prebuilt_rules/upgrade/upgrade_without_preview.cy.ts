@@ -429,7 +429,7 @@ describe(
         }
       });
 
-      it('disables "Update selected rules" button', () => {
+      it('upgrades selected non-customized type-changed rules, skipping customized type-changed rules', () => {
         setUpRuleUpgrades({
           currentRuleAssets: [PREBUILT_RULE_ASSET_A, PREBUILT_RULE_ASSET_B],
           rulePatches: [
@@ -446,6 +446,32 @@ describe(
           'Custom Query Non-Customized Prebuilt Rule A',
           'Custom Query Prebuilt Rule B',
         ]);
+
+        // Rule A's type change is a solvable conflict (the rule is not customized),
+        // so the button must be enabled and the upgrade goes through the conflicts modal.
+        cy.get(UPGRADE_SELECTED_RULES_BUTTON).click();
+        cy.get(CONFLICTS_MODAL_UPGRADE_RULES_WITH_CONFLICTS).click();
+
+        assertUpgradeRequestIsComplete([PREBUILT_RULE_ASSET_A]);
+        assertRuleUpgradeSuccessToastShown([PREBUILT_RULE_ASSET_A]);
+        assertRulesNotPresentInRuleUpdatesTable([PREBUILT_RULE_ASSET_A, NEW_PREBUILT_RULE_ASSET_A]);
+        expectRulesInTable(RULES_UPDATES_TABLE, ['Custom Query Prebuilt Rule B']);
+      });
+
+      it('disables "Update selected rules" button when only customized type-changed rules are selected', () => {
+        setUpRuleUpgrades({
+          currentRuleAssets: [PREBUILT_RULE_ASSET_A, PREBUILT_RULE_ASSET_B],
+          rulePatches: [
+            {
+              rule_id: PREBUILT_RULE_ID_B,
+              tags: ['customized'],
+            },
+          ],
+          newRuleAssets: [NEW_PREBUILT_RULE_ASSET_A, NEW_PREBUILT_RULE_ASSET_B],
+        });
+        visitRulesUpgradeTable();
+
+        selectRulesByName(['Custom Query Prebuilt Rule B']);
         cy.get(UPGRADE_SELECTED_RULES_BUTTON).should('be.disabled');
       });
     });

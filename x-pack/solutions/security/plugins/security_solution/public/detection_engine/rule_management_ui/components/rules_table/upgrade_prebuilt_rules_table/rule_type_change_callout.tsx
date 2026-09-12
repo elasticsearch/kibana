@@ -21,7 +21,11 @@ export function RuleTypeChangeCallout({
   hasCustomizations,
 }: RuleTypeChangeCalloutProps): JSX.Element {
   return (
-    <EuiCallOut title={RULE_TYPE_CHANGE_CALLOUT_TITLE} color="danger" iconType="warning">
+    <EuiCallOut
+      title={RULE_TYPE_CHANGE_CALLOUT_TITLE}
+      color={hasCustomizations ? 'danger' : 'warning'}
+      iconType="warning"
+    >
       <p>
         {hasCustomizations
           ? RULE_TYPE_CHANGE_WITH_CUSTOMIZATIONS_CALLOUT_DESCRIPTION

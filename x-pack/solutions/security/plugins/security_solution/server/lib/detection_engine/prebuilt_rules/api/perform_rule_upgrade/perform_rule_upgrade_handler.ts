@@ -39,6 +39,7 @@ import { PREBUILT_RULES_UPGRADE_BATCH_SIZE } from '../../constants';
 import { createPrebuiltRuleObjectsClient } from '../../logic/rule_objects/prebuilt_rule_objects_client';
 import { upgradePrebuiltRules } from '../../logic/rule_objects/upgrade_prebuilt_rules';
 import { createModifiedPrebuiltRuleAssets } from './create_upgradeable_rules_payload';
+import { getRuleTypeChange } from './get_rule_type_change';
 import { validatePerformRuleUpgradeRequest } from './validate_perform_rule_upgrade_request';
 import type { RuleSignatureId, RuleVersion } from '../../../../../../common/api/detection_engine';
 import { zipRuleVersions } from '../../logic/rule_versions/zip_rule_versions';
@@ -193,6 +194,7 @@ export const performRuleUpgradeHandler = async (
               rule_id: targetRule.rule_id,
               reason: SkipRuleUpgradeReasonEnum.CONFLICT,
               conflict,
+              rule_type_change: getRuleTypeChange(ruleDiff.fields),
             });
 
             ruleUpgradeContextsMap.set(targetRule.rule_id, {

@@ -18,7 +18,10 @@ import type { UpgradeConflictResolution } from '../../../../../../common/api/det
 import { UpgradeConflictResolutionEnum } from '../../../../../../common/api/detection_engine/prebuilt_rules';
 import { convertRuleToDiffable } from '../../../../../../common/detection_engine/prebuilt_rules/diff/convert_rule_to_diffable';
 import type { PrebuiltRuleAsset } from '../../model/rule_assets/prebuilt_rule_asset';
-import { assertPickVersionIsTarget } from './assert_pick_version_is_target';
+import {
+  assertPickVersionIsTarget,
+  assertPickVersionIsTargetOrMerged,
+} from './assert_pick_version_is_target';
 import { FIELD_NAMES_BY_RULE_TYPE_MAP } from './create_props_to_rule_type_map';
 import { calculateThreeWayRuleFieldsDiff } from '../../logic/diff/calculation/calculate_three_way_rule_fields_diff';
 import { convertPrebuiltRuleAssetToRuleResponse } from '../../../rule_management/logic/detection_rules_client/converters/convert_prebuilt_rule_asset_to_rule_response';
@@ -63,11 +66,22 @@ export const createModifiedPrebuiltRuleAssets = ({
             }
 
             const { current, target } = upgradeableRule;
-            if (current.type !== target.type) {
-              assertPickVersionIsTarget({ ruleId, requestBody });
-            }
-
             const isCustomized = isRuleCustomized(current);
+
+            if (current.type !== target.type) {
+              if (isCustomized) {
+                // Merging field-by-field across two different rule schemas is ambiguous
+                // for a customized rule, so it requires 'pick_version' to be 'TARGET'
+                // everywhere.
+                assertPickVersionIsTarget({ ruleId, requestBody });
+              } else {
+                // For a non-customized rule, the merged value of every diffable field
+                // equals the target value, so 'MERGED' is equivalent to 'TARGET' and both
+                // are allowed. 'BASE' and 'CURRENT' stay forbidden - they would mix the
+                // target rule type with field values from a different rule type's schema.
+                assertPickVersionIsTargetOrMerged({ ruleId, requestBody });
+              }
+            }
 
             const calculatedRuleDiff = calculateThreeWayRuleFieldsDiff(
               {

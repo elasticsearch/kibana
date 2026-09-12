@@ -291,6 +291,72 @@ export default ({ getService }: FtrProviderContext): void => {
               });
             });
           });
+
+          describe('rule type change conflicts', () => {
+            it('reports a SOLVABLE conflict on `type` for a non-customized type-changed rule', async () => {
+              await setUpRuleUpgrade({
+                assets: [
+                  {
+                    installed: {
+                      rule_id: 'query-rule',
+                      type: 'query',
+                      version: 1,
+                    },
+                    patch: {},
+                    upgrade: {
+                      rule_id: 'query-rule',
+                      type: 'saved_query',
+                      version: 2,
+                    },
+                  },
+                ],
+                removeInstalledAssets: !withHistoricalVersions,
+                deps,
+              });
+
+              const fieldsDiff = await fetchFirstPrebuiltRuleUpgradeReviewDiff(supertest);
+
+              expect(fieldsDiff.fields.type).toMatchObject({
+                conflict: 'SOLVABLE',
+                has_update: true,
+              });
+              expect(fieldsDiff).toMatchObject({
+                num_fields_with_non_solvable_conflicts: 0,
+              });
+            });
+
+            it('reports a NON_SOLVABLE conflict on `type` for a customized type-changed rule', async () => {
+              await setUpRuleUpgrade({
+                assets: [
+                  {
+                    installed: {
+                      rule_id: 'query-rule',
+                      type: 'query',
+                      version: 1,
+                    },
+                    patch: {
+                      rule_id: 'query-rule',
+                      name: 'Customized name',
+                    },
+                    upgrade: {
+                      rule_id: 'query-rule',
+                      type: 'saved_query',
+                      version: 2,
+                    },
+                  },
+                ],
+                removeInstalledAssets: !withHistoricalVersions,
+                deps,
+              });
+
+              const fieldsDiff = await fetchFirstPrebuiltRuleUpgradeReviewDiff(supertest);
+
+              expect(fieldsDiff.fields.type).toMatchObject({
+                conflict: 'NON_SOLVABLE',
+              });
+              expect(fieldsDiff.num_fields_with_non_solvable_conflicts).toBeGreaterThanOrEqual(1);
+            });
+          });
         }
       );
     }

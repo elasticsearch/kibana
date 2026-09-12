@@ -128,7 +128,12 @@ export function usePrebuiltRulesUpgradeState(
         rulesResolvedValues[ruleUpgradeInfo.rule_id] ?? {}
       );
 
-      const hasRuleTypeChange = Boolean(ruleUpgradeInfo.diff.fields.type);
+      // `type` is excluded from the generic per-field loop above by
+      // NON_UPGRADEABLE_DIFFABLE_FIELDS_SET, so its conflict must be read directly here.
+      const ruleTypeConflict = ruleUpgradeInfo.diff.fields.type?.conflict;
+      const hasRuleTypeConflict =
+        ruleTypeConflict !== undefined && ruleTypeConflict !== ThreeWayDiffConflict.NONE;
+      const hasNonSolvableRuleTypeConflict = ruleTypeConflict === ThreeWayDiffConflict.NON_SOLVABLE;
       const hasFieldConflicts = Object.values(fieldsUpgradeState).some(
         ({ state: fieldState }) =>
           fieldState === FieldUpgradeStateEnum.SolvableConflict ||
@@ -143,10 +148,10 @@ export function usePrebuiltRulesUpgradeState(
         conflict: getWorstConflictLevelAmongFields(ruleUpgradeInfo.diff.fields),
         fieldsUpgradeState,
         hasUnresolvedConflicts: isRulesCustomizationEnabled
-          ? hasRuleTypeChange || hasFieldConflicts
+          ? hasRuleTypeConflict || hasFieldConflicts
           : false,
         hasNonSolvableUnresolvedConflicts: isRulesCustomizationEnabled
-          ? hasRuleTypeChange || hasNonSolvableFieldConflicts
+          ? hasNonSolvableRuleTypeConflict || hasNonSolvableFieldConflicts
           : false,
       };
     }

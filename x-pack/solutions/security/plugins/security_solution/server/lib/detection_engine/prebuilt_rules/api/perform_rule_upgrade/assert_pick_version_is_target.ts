@@ -15,10 +15,50 @@ interface AssertRuleTypeMatchProps {
 }
 
 /*
- * Assert that, in the case where the rule is undergoing a rule type change,
+ * Assert that, in the case where a customized rule is undergoing a rule type change,
  * the pick_version value is set to 'TARGET' at all levels (global, rule-specific and field-specific)
  */
 export const assertPickVersionIsTarget = ({ requestBody, ruleId }: AssertRuleTypeMatchProps) => {
+  const pickVersions = collectPickVersions(requestBody, ruleId);
+
+  const allPickVersionsAreTarget = pickVersions.every((version) => version === 'TARGET');
+
+  // If pick_version is provided at any levels, they must all be set to 'TARGET'
+  if (!allPickVersionsAreTarget) {
+    throw new Error(
+      `Rule update for rule ${ruleId} has a rule type change. All 'pick_version' values for rule must match 'TARGET'`
+    );
+  }
+};
+
+/*
+ * Assert that, in the case where a non-customized rule is undergoing a rule type change,
+ * the pick_version value is set to 'TARGET' or 'MERGED' at all levels (global, rule-specific
+ * and field-specific). For a non-customized rule the merged value of every field equals the
+ * target value, so 'MERGED' is equivalent to 'TARGET'. 'BASE' and 'CURRENT' stay forbidden:
+ * they would mix the target rule type with field values from a different rule type's schema.
+ */
+export const assertPickVersionIsTargetOrMerged = ({
+  requestBody,
+  ruleId,
+}: AssertRuleTypeMatchProps) => {
+  const pickVersions = collectPickVersions(requestBody, ruleId);
+
+  const allPickVersionsAreTargetOrMerged = pickVersions.every(
+    (version) => version === 'TARGET' || version === 'MERGED'
+  );
+
+  if (!allPickVersionsAreTargetOrMerged) {
+    throw new Error(
+      `Rule update for rule ${ruleId} has a rule type change. All 'pick_version' values for rule must match 'TARGET' or 'MERGED'`
+    );
+  }
+};
+
+function collectPickVersions(
+  requestBody: PerformRuleUpgradeRequestBody,
+  ruleId: string
+): Array<PickVersionValues | 'RESOLVED'> {
   const pickVersions: Array<PickVersionValues | 'RESOLVED'> = [];
 
   if (requestBody.mode === 'SPECIFIC_RULES') {
@@ -37,12 +77,5 @@ export const assertPickVersionIsTarget = ({ requestBody, ruleId }: AssertRuleTyp
     pickVersions.push(requestBody.pick_version ?? 'MERGED');
   }
 
-  const allPickVersionsAreTarget = pickVersions.every((version) => version === 'TARGET');
-
-  // If pick_version is provided at any levels, they must all be set to 'TARGET'
-  if (!allPickVersionsAreTarget) {
-    throw new Error(
-      `Rule update for rule ${ruleId} has a rule type change. All 'pick_version' values for rule must match 'TARGET'`
-    );
-  }
-};
+  return pickVersions;
+}

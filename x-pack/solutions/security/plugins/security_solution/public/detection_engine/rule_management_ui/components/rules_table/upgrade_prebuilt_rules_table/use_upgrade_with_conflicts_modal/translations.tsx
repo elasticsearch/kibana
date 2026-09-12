@@ -8,7 +8,8 @@
 import React from 'react';
 import { i18n } from '@kbn/i18n';
 import { FormattedMessage } from '@kbn/i18n-react';
-import { EuiCallOut, EuiLink } from '@elastic/eui';
+import { EuiLink } from '@elastic/eui';
+import { KbnWarningCallout } from '@kbn/ui-callout';
 import { useKibana } from '../../../../../../common/lib/kibana';
 
 export const UPGRADE_CONFLICTS_MODAL_TITLE = i18n.translate(
@@ -57,14 +58,35 @@ export const RULES_WITH_NON_SOLVABLE_CONFLICTS_TOTAL = (
   />
 );
 
-export const RULES_WITH_SOLVABLE_CONFLICTS_TOTAL = (numOfRulesWithSolvableConflicts: number) => (
-  <FormattedMessage
-    id="xpack.securitySolution.detectionEngine.upgradeConflictsModal.rulesWithSolvableConflictsTotal"
-    defaultMessage="Rules with auto-resolved conflicts: {numOfRulesWithSolvableConflictsStrong}"
-    values={{
-      numOfRulesWithSolvableConflictsStrong: <strong>{numOfRulesWithSolvableConflicts}</strong>,
-    }}
-  />
+export const RULES_WITH_SOLVABLE_CONFLICTS_TOTAL = ({
+  numOfRulesWithSolvableConflicts,
+  numOfRulesWithRuleTypeChange,
+}: {
+  numOfRulesWithSolvableConflicts: number;
+  numOfRulesWithRuleTypeChange: number;
+}) => (
+  <>
+    <FormattedMessage
+      id="xpack.securitySolution.detectionEngine.upgradeConflictsModal.rulesWithSolvableConflictsTotal"
+      defaultMessage="Rules with auto-resolved conflicts: {numOfRulesWithSolvableConflictsStrong}"
+      values={{
+        numOfRulesWithSolvableConflictsStrong: <strong>{numOfRulesWithSolvableConflicts}</strong>,
+      }}
+    />
+    {numOfRulesWithRuleTypeChange > 0 && (
+      <>
+        {' '}
+        <FormattedMessage
+          id="xpack.securitySolution.detectionEngine.upgradeConflictsModal.rulesWithSolvableConflictsRuleTypeChangeSubset"
+          defaultMessage="({numOfRulesWithRuleTypeChangeStrong} unmodified {numOfRulesWithRuleTypeChange, plural, =1 {rule with a rule type change} other {rules with rule type changes}})"
+          values={{
+            numOfRulesWithRuleTypeChange,
+            numOfRulesWithRuleTypeChangeStrong: <strong>{numOfRulesWithRuleTypeChange}</strong>,
+          }}
+        />
+      </>
+    )}
+  </>
 );
 
 export const RULES_WITHOUT_CONFLICTS_TOTAL = (numOfRulesWithoutConflicts: number) => (
@@ -103,9 +125,11 @@ const ACCEPT_SOLVABLE_CONFLICTS_WARNING = i18n.translate(
 export const RULES_WITH_AUTO_RESOLVED_CONFLICTS_GUIDANCE = ({
   numOfRulesWithSolvableConflicts,
   numOfRulesWithoutConflicts,
+  numOfRulesWithRuleTypeChange,
 }: {
   numOfRulesWithSolvableConflicts: number;
   numOfRulesWithoutConflicts: number;
+  numOfRulesWithRuleTypeChange: number;
 }) => {
   const docsUrl = useKibana().services.docLinks.links.securitySolution.resolvePrebuiltRuleConflicts;
 
@@ -154,10 +178,25 @@ export const RULES_WITH_AUTO_RESOLVED_CONFLICTS_GUIDANCE = ({
               }}
             />
           </li>
-          <EuiCallOut
+          <KbnWarningCallout
             title={ACCEPT_SOLVABLE_CONFLICTS_WARNING}
-            color="warning"
-            iconType="warning"
+            data-test-subj="upgradeConflictsModalSolvableConflictsWarning"
+            text={
+              numOfRulesWithRuleTypeChange > 0 ? (
+                <p data-test-subj="upgradeConflictsModalRuleTypeChangeWarning">
+                  <FormattedMessage
+                    id="xpack.securitySolution.detectionEngine.upgradeConflictsModal.rulesWithRuleTypeChangeWarning"
+                    defaultMessage="Auto-resolved conflicts include a rule type change for {numOfRulesWithRuleTypeChangeStrong} unmodified {numOfRulesWithRuleTypeChange, plural, =1 {rule} other {rules}}. A rule type change can affect how the rule’s actions and exceptions are executed."
+                    values={{
+                      numOfRulesWithRuleTypeChange,
+                      numOfRulesWithRuleTypeChangeStrong: (
+                        <strong>{numOfRulesWithRuleTypeChange}</strong>
+                      ),
+                    }}
+                  />
+                </p>
+              ) : undefined
+            }
           />
         </ul>
       </div>

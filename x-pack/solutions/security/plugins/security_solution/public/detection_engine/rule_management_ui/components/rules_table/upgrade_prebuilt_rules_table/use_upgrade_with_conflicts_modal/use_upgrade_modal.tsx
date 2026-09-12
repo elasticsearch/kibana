@@ -34,6 +34,7 @@ export function useUpgradeWithConflictsModal(): UseUpgradeWithConflictsModalResu
     numOfRulesWithoutConflicts: 0,
     numOfRulesWithSolvableConflicts: 0,
     numOfRulesWithNonSolvableConflicts: 0,
+    numOfRulesWithRuleTypeChange: 0,
   });
 
   const confirmConflictsUpgrade = useCallback(

@@ -558,5 +558,155 @@ export default ({ getService }: FtrProviderContext): void => {
         });
       }
     });
+
+    describe('with rule type changes', () => {
+      beforeEach(async () => {
+        await setUpRuleUpgrade({
+          assets: [
+            {
+              installed: {
+                type: 'query',
+                name: 'Initial name',
+                rule_id: 'rule_1',
+                version: 1,
+              },
+              patch: {},
+              upgrade: {
+                type: 'saved_query',
+                name: 'Initial name',
+                rule_id: 'rule_1',
+                version: 2,
+              },
+            },
+            {
+              installed: {
+                type: 'query',
+                name: 'Initial name',
+                rule_id: 'rule_2',
+                version: 1,
+              },
+              patch: {},
+              upgrade: {
+                type: 'query',
+                name: 'Updated name',
+                rule_id: 'rule_2',
+                version: 2,
+              },
+            },
+          ],
+          deps,
+        });
+      });
+
+      it('reports the non-customized type-changed rule as a SOLVABLE skip under a dry run', async () => {
+        const response = await performUpgradePrebuiltRules(es, supertest, {
+          mode: ModeEnum.SPECIFIC_RULES,
+          rules: [
+            { rule_id: 'rule_1', revision: 0, version: 2, pick_version: 'MERGED' },
+            { rule_id: 'rule_2', revision: 0, version: 2, pick_version: 'MERGED' },
+          ],
+          dry_run: true,
+          on_conflict: 'SKIP',
+        });
+
+        expect(response.results.skipped).toContainEqual(
+          expect.objectContaining({
+            rule_id: 'rule_1',
+            reason: 'CONFLICT',
+            conflict: 'SOLVABLE',
+            rule_type_change: { current: 'query', target: 'saved_query' },
+          })
+        );
+      });
+
+      it('upgrades the non-customized type-changed rule under UPGRADE_SOLVABLE, leaving the ordinary rule intact', async () => {
+        const response = await performUpgradePrebuiltRules(es, supertest, {
+          mode: ModeEnum.SPECIFIC_RULES,
+          rules: [
+            { rule_id: 'rule_1', revision: 0, version: 2, pick_version: 'MERGED' },
+            { rule_id: 'rule_2', revision: 0, version: 2, pick_version: 'MERGED' },
+          ],
+          on_conflict: 'UPGRADE_SOLVABLE',
+        });
+
+        expect(response.summary).toMatchObject({
+          total: 2,
+          succeeded: 2,
+          skipped: 0,
+          failed: 0,
+        });
+
+        const [{ body: upgradedRule1 }, { body: upgradedRule2 }] = await Promise.all([
+          detectionsApi.readRule({ query: { rule_id: 'rule_1' } }),
+          detectionsApi.readRule({ query: { rule_id: 'rule_2' } }),
+        ]);
+
+        expect(upgradedRule1).toMatchObject({ type: 'saved_query', version: 2 });
+        expect(upgradedRule2).toMatchObject({ type: 'query', version: 2 });
+      });
+
+      describe('when the type-changed rule is customized', () => {
+        beforeEach(async () => {
+          await setUpRuleUpgrade({
+            assets: {
+              installed: {
+                type: 'query',
+                name: 'Initial name',
+                rule_id: 'rule_1',
+                version: 1,
+              },
+              patch: {
+                rule_id: 'rule_1',
+                name: 'Customized name',
+              },
+              upgrade: {
+                type: 'saved_query',
+                name: 'Updated name',
+                rule_id: 'rule_1',
+                version: 2,
+              },
+            },
+            deps,
+          });
+        });
+
+        it('reports it as a NON_SOLVABLE skip under a dry run', async () => {
+          const response = await performUpgradePrebuiltRules(es, supertest, {
+            mode: ModeEnum.SPECIFIC_RULES,
+            rules: [{ rule_id: 'rule_1', revision: 1, version: 2, pick_version: 'MERGED' }],
+            dry_run: true,
+            on_conflict: 'SKIP',
+          });
+
+          expect(response.results.skipped).toContainEqual(
+            expect.objectContaining({
+              rule_id: 'rule_1',
+              reason: 'CONFLICT',
+              conflict: 'NON_SOLVABLE',
+              rule_type_change: { current: 'query', target: 'saved_query' },
+            })
+          );
+        });
+
+        it('still fails under UPGRADE_SOLVABLE, leaving the rule untouched', async () => {
+          const response = await performUpgradePrebuiltRules(es, supertest, {
+            mode: ModeEnum.SPECIFIC_RULES,
+            rules: [{ rule_id: 'rule_1', revision: 1, version: 2, pick_version: 'MERGED' }],
+            on_conflict: 'UPGRADE_SOLVABLE',
+          });
+
+          expect(response.summary).toMatchObject({
+            succeeded: 0,
+            failed: 1,
+          });
+          expect(response.errors).toHaveLength(1);
+
+          const { body: rule1 } = await detectionsApi.readRule({
+            query: { rule_id: 'rule_1' },
+          });
+          expect(rule1).toMatchObject({ type: 'query', version: 1 });
+        });
+      });
+    });
   });
 };

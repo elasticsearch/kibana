@@ -94,6 +94,111 @@ describe('sendRuleUpdateTelemetryEvents', () => {
     expect(payload.updatedFieldsWithSolvableConflicts).toEqual(['name']);
     expect(payload.updatedFieldsWithNonSolvableConflicts).toEqual([]);
     expect(payload.updatedFieldsWithNoConflicts).toEqual([]);
+    expect(payload.hasRuleTypeChange).toBe(false);
+  });
+
+  describe('hasRuleTypeChange', () => {
+    test.each([
+      [ThreeWayDiffOutcome.StockValueCanUpdate, true],
+      [ThreeWayDiffOutcome.CustomizedValueCanUpdate, true],
+      [ThreeWayDiffOutcome.MissingBaseCanUpdate, true],
+      [ThreeWayDiffOutcome.CustomizedValueSameUpdate, false],
+      [ThreeWayDiffOutcome.StockValueNoUpdate, false],
+      [ThreeWayDiffOutcome.CustomizedValueNoUpdate, false],
+      [ThreeWayDiffOutcome.MissingBaseNoUpdate, false],
+    ])('reports %s as hasRuleTypeChange=%s', (diffOutcome, expected) => {
+      const analytics = mockAnalytics();
+      const logger = mockLogger();
+
+      sendRuleUpdateTelemetryEvents(
+        analytics,
+        new Map([
+          [
+            'r1',
+            createMockRuleUpdateContext({
+              ruleId: 'r1',
+              fieldsDiff: {
+                type: {
+                  conflict: ThreeWayDiffConflict.SOLVABLE,
+                  diff_outcome: diffOutcome,
+                },
+              },
+            }),
+          ],
+        ]),
+        [{ rule_id: 'r1' }],
+        [],
+        [],
+        logger
+      );
+
+      const [, payload] = (analytics.reportEvent as jest.Mock).mock.calls[0];
+      expect(payload.hasRuleTypeChange).toBe(expected);
+    });
+
+    test('reports false when type key is absent from fieldsDiff', () => {
+      const analytics = mockAnalytics();
+      const logger = mockLogger();
+
+      sendRuleUpdateTelemetryEvents(
+        analytics,
+        new Map([
+          [
+            'r1',
+            createMockRuleUpdateContext({
+              ruleId: 'r1',
+              fieldsDiff: {
+                name: {
+                  conflict: ThreeWayDiffConflict.SOLVABLE,
+                  diff_outcome: ThreeWayDiffOutcome.StockValueCanUpdate,
+                },
+              },
+            }),
+          ],
+        ]),
+        [{ rule_id: 'r1' }],
+        [],
+        [],
+        logger
+      );
+
+      const [, payload] = (analytics.reportEvent as jest.Mock).mock.calls[0];
+      expect(payload.hasRuleTypeChange).toBe(false);
+    });
+
+    test('is reported for SUCCESS, ERROR, and SKIP outcomes alike', () => {
+      const analytics = mockAnalytics();
+      const logger = mockLogger();
+
+      const typeChangedCtx = createMockRuleUpdateContext({
+        fieldsDiff: {
+          type: {
+            conflict: ThreeWayDiffConflict.SOLVABLE,
+            diff_outcome: ThreeWayDiffOutcome.StockValueCanUpdate,
+          },
+        },
+      });
+
+      sendRuleUpdateTelemetryEvents(
+        analytics,
+        new Map([
+          ['success1', typeChangedCtx],
+          ['error1', typeChangedCtx],
+          ['skip1', typeChangedCtx],
+        ]),
+        [{ rule_id: 'success1' }],
+        [{ item: { rule_id: 'error1' } }],
+        [{ rule_id: 'skip1' }],
+        logger
+      );
+
+      expect(analytics.reportEvent).toHaveBeenCalledTimes(3);
+      const payloads = (analytics.reportEvent as jest.Mock).mock.calls.map(([, p]) => p);
+
+      for (const payload of payloads) {
+        expect(payload.hasRuleTypeChange).toBe(true);
+      }
+    });
   });
 
   test('ignores fields that are not updatable outcomes', () => {
@@ -396,6 +501,7 @@ describe('sendRuleBulkUpgradeTelemetryEvent', () => {
         numOfNonSolvableConflicts: 0,
         numOfSolvableConflicts: 1,
         numOfNoConflicts: 1,
+        numOfRulesWithRuleTypeChange: 0,
       },
       errorUpdates: {
         totalNumberOfRules: 0,
@@ -404,6 +510,7 @@ describe('sendRuleBulkUpgradeTelemetryEvent', () => {
         numOfNonSolvableConflicts: 0,
         numOfSolvableConflicts: 0,
         numOfNoConflicts: 0,
+        numOfRulesWithRuleTypeChange: 0,
       },
       skippedUpdates: {
         totalNumberOfRules: 0,
@@ -412,6 +519,7 @@ describe('sendRuleBulkUpgradeTelemetryEvent', () => {
         numOfNonSolvableConflicts: 0,
         numOfSolvableConflicts: 0,
         numOfNoConflicts: 0,
+        numOfRulesWithRuleTypeChange: 0,
       },
     });
   });
@@ -489,6 +597,7 @@ describe('sendRuleBulkUpgradeTelemetryEvent', () => {
       numOfNonSolvableConflicts: 1, // r1
       numOfSolvableConflicts: 1, // r2
       numOfNoConflicts: 1, // r3
+      numOfRulesWithRuleTypeChange: 0,
     });
   });
 
@@ -555,6 +664,7 @@ describe('sendRuleBulkUpgradeTelemetryEvent', () => {
         numOfNonSolvableConflicts: 0,
         numOfSolvableConflicts: 1,
         numOfNoConflicts: 0,
+        numOfRulesWithRuleTypeChange: 0,
       },
       errorUpdates: {
         totalNumberOfRules: 1,
@@ -563,6 +673,7 @@ describe('sendRuleBulkUpgradeTelemetryEvent', () => {
         numOfNonSolvableConflicts: 1,
         numOfSolvableConflicts: 0,
         numOfNoConflicts: 0,
+        numOfRulesWithRuleTypeChange: 0,
       },
       skippedUpdates: {
         totalNumberOfRules: 1,
@@ -571,6 +682,7 @@ describe('sendRuleBulkUpgradeTelemetryEvent', () => {
         numOfNonSolvableConflicts: 0,
         numOfSolvableConflicts: 0,
         numOfNoConflicts: 1,
+        numOfRulesWithRuleTypeChange: 0,
       },
     });
   });
@@ -593,6 +705,7 @@ describe('sendRuleBulkUpgradeTelemetryEvent', () => {
         numOfNonSolvableConflicts: 0,
         numOfSolvableConflicts: 0,
         numOfNoConflicts: 0,
+        numOfRulesWithRuleTypeChange: 0,
       },
       errorUpdates: {
         totalNumberOfRules: 0,
@@ -601,6 +714,7 @@ describe('sendRuleBulkUpgradeTelemetryEvent', () => {
         numOfNonSolvableConflicts: 0,
         numOfSolvableConflicts: 0,
         numOfNoConflicts: 0,
+        numOfRulesWithRuleTypeChange: 0,
       },
       skippedUpdates: {
         totalNumberOfRules: 0,
@@ -609,6 +723,7 @@ describe('sendRuleBulkUpgradeTelemetryEvent', () => {
         numOfNonSolvableConflicts: 0,
         numOfSolvableConflicts: 0,
         numOfNoConflicts: 0,
+        numOfRulesWithRuleTypeChange: 0,
       },
     });
   });
@@ -653,6 +768,7 @@ describe('sendRuleBulkUpgradeTelemetryEvent', () => {
         numOfNonSolvableConflicts: 0,
         numOfSolvableConflicts: 1, // existing-rule has solvable conflict
         numOfNoConflicts: 0,
+        numOfRulesWithRuleTypeChange: 0,
       },
       errorUpdates: {
         totalNumberOfRules: 0, // non-existing-error is skipped
@@ -661,6 +777,7 @@ describe('sendRuleBulkUpgradeTelemetryEvent', () => {
         numOfNonSolvableConflicts: 0,
         numOfSolvableConflicts: 0,
         numOfNoConflicts: 0,
+        numOfRulesWithRuleTypeChange: 0,
       },
       skippedUpdates: {
         totalNumberOfRules: 0, // non-existing-skip is skipped
@@ -669,6 +786,7 @@ describe('sendRuleBulkUpgradeTelemetryEvent', () => {
         numOfNonSolvableConflicts: 0,
         numOfSolvableConflicts: 0,
         numOfNoConflicts: 0,
+        numOfRulesWithRuleTypeChange: 0,
       },
     });
 
@@ -801,6 +919,7 @@ describe('sendRuleBulkUpgradeTelemetryEvent', () => {
         numOfNonSolvableConflicts: 3, // Rules 1-3
         numOfSolvableConflicts: 3, // Rules 4-6
         numOfNoConflicts: 4, // Rules 7-10
+        numOfRulesWithRuleTypeChange: 0,
       },
       errorUpdates: {
         totalNumberOfRules: 5,
@@ -809,6 +928,7 @@ describe('sendRuleBulkUpgradeTelemetryEvent', () => {
         numOfNonSolvableConflicts: 0,
         numOfSolvableConflicts: 5, // All error rules have solvable conflicts
         numOfNoConflicts: 0,
+        numOfRulesWithRuleTypeChange: 0,
       },
       skippedUpdates: {
         totalNumberOfRules: 3,
@@ -817,6 +937,7 @@ describe('sendRuleBulkUpgradeTelemetryEvent', () => {
         numOfNonSolvableConflicts: 0,
         numOfSolvableConflicts: 0,
         numOfNoConflicts: 3, // All skip rules have no conflicts
+        numOfRulesWithRuleTypeChange: 0,
       },
     });
   });
@@ -887,6 +1008,7 @@ describe('sendRuleBulkUpgradeTelemetryEvent', () => {
         numOfNonSolvableConflicts: 0,
         numOfSolvableConflicts: 1, // customized-1
         numOfNoConflicts: 1, // non-customized-1
+        numOfRulesWithRuleTypeChange: 0,
       },
       errorUpdates: {
         totalNumberOfRules: 1,
@@ -895,6 +1017,7 @@ describe('sendRuleBulkUpgradeTelemetryEvent', () => {
         numOfNonSolvableConflicts: 1, // customized-2
         numOfSolvableConflicts: 0,
         numOfNoConflicts: 0,
+        numOfRulesWithRuleTypeChange: 0,
       },
       skippedUpdates: {
         totalNumberOfRules: 0,
@@ -903,7 +1026,119 @@ describe('sendRuleBulkUpgradeTelemetryEvent', () => {
         numOfNonSolvableConflicts: 0,
         numOfSolvableConflicts: 0,
         numOfNoConflicts: 0,
+        numOfRulesWithRuleTypeChange: 0,
       },
+    });
+  });
+
+  describe('numOfRulesWithRuleTypeChange', () => {
+    test('counts rules whose type field can update, ignoring rules without a type change', () => {
+      const analytics = mockAnalytics();
+      const logger = mockLogger();
+
+      const ruleContextsMap = new Map([
+        [
+          'r1',
+          createMockRuleUpdateContext({
+            ruleId: 'r1',
+            fieldsDiff: {
+              type: {
+                conflict: ThreeWayDiffConflict.SOLVABLE,
+                diff_outcome: ThreeWayDiffOutcome.StockValueCanUpdate,
+              },
+            },
+          }),
+        ],
+        [
+          'r2',
+          createMockRuleUpdateContext({
+            ruleId: 'r2',
+            fieldsDiff: {
+              type: {
+                conflict: ThreeWayDiffConflict.NONE,
+                diff_outcome: ThreeWayDiffOutcome.StockValueNoUpdate,
+              },
+            },
+          }),
+        ],
+        [
+          'r3',
+          createMockRuleUpdateContext({
+            ruleId: 'r3',
+            fieldsDiff: {
+              name: {
+                conflict: ThreeWayDiffConflict.NONE,
+                diff_outcome: ThreeWayDiffOutcome.StockValueCanUpdate,
+              },
+            },
+          }),
+        ],
+      ]);
+
+      sendRuleBulkUpgradeTelemetryEvent(
+        analytics,
+        ruleContextsMap,
+        [{ rule_id: 'r1' }, { rule_id: 'r2' }, { rule_id: 'r3' }],
+        [],
+        [],
+        logger
+      );
+
+      const [, payload] = (analytics.reportEvent as jest.Mock).mock.calls[0];
+
+      expect(payload.successfulUpdates.totalNumberOfRules).toBe(3);
+      expect(payload.successfulUpdates.numOfRulesWithRuleTypeChange).toBe(1);
+    });
+
+    test('counts a rule with a non-solvable type change conflict (before the early return)', () => {
+      const analytics = mockAnalytics();
+      const logger = mockLogger();
+
+      const ruleContextsMap = new Map([
+        [
+          'r1',
+          createMockRuleUpdateContext({
+            ruleId: 'r1',
+            fieldsDiff: {
+              name: {
+                conflict: ThreeWayDiffConflict.NON_SOLVABLE,
+                diff_outcome: ThreeWayDiffOutcome.CustomizedValueCanUpdate,
+              },
+              type: {
+                conflict: ThreeWayDiffConflict.NON_SOLVABLE,
+                diff_outcome: ThreeWayDiffOutcome.StockValueCanUpdate,
+              },
+            },
+          }),
+        ],
+      ]);
+
+      sendRuleBulkUpgradeTelemetryEvent(
+        analytics,
+        ruleContextsMap,
+        [{ rule_id: 'r1' }],
+        [],
+        [],
+        logger
+      );
+
+      const [, payload] = (analytics.reportEvent as jest.Mock).mock.calls[0];
+
+      expect(payload.successfulUpdates.numOfNonSolvableConflicts).toBe(1);
+      expect(payload.successfulUpdates.numOfRulesWithRuleTypeChange).toBe(1);
+    });
+
+    test('reports 0 on all three summaries for an empty rule-id list', () => {
+      const analytics = mockAnalytics();
+      const logger = mockLogger();
+
+      sendRuleBulkUpgradeTelemetryEvent(analytics, new Map(), [], [], [], logger);
+
+      const [, payload] = (analytics.reportEvent as jest.Mock).mock.calls[0];
+
+      expect(payload.successfulUpdates.numOfRulesWithRuleTypeChange).toBe(0);
+      expect(payload.errorUpdates.numOfRulesWithRuleTypeChange).toBe(0);
+      expect(payload.skippedUpdates.numOfRulesWithRuleTypeChange).toBe(0);
     });
   });
 });

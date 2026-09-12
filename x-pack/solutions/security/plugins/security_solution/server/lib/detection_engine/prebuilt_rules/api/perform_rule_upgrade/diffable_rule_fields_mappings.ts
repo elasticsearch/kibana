@@ -123,6 +123,17 @@ const SUBFIELD_MAPPING: Record<string, string> = {
   index: 'index_patterns',
   data_view_id: 'data_view_id',
   saved_id: 'saved_query_id',
+  // 'query' rules always produce an InlineKqlQuery for the 'kql_query' diffable group, so these
+  // subfields are always present there. 'saved_query' rules referencing a saved search (no inline
+  // override) produce a SavedKqlQuery instead, which has neither `query`, `language`, nor
+  // `filters`. Without an explicit mapping here, the generic "diffableField IS the value"
+  // fallback below would return the whole kql_query object (e.g. { type: 'saved_query',
+  // saved_query_id }) as the PrebuiltRuleAsset's `query`/`language`/`filters` value, which fails
+  // schema validation. Mapping them lets `get()` correctly resolve to `undefined` when the
+  // subfield is absent, matching these fields' optional-for-saved_query semantics.
+  query: 'query',
+  language: 'language',
+  filters: 'filters',
   event_category_override: 'event_category_override',
   tiebreaker_field: 'tiebreaker_field',
   timestamp_field: 'timestamp_field',

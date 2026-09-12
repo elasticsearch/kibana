@@ -7,7 +7,12 @@
 
 import { z } from '@kbn/zod/v4';
 import { mapValues } from 'lodash';
-import { AggregatedPrebuiltRuleError, DiffableAllFields, ThreeWayDiffConflict } from '../model';
+import {
+  AggregatedPrebuiltRuleError,
+  DiffableAllFields,
+  DiffableRuleTypes,
+  ThreeWayDiffConflict,
+} from '../model';
 import { RequiredFieldInput, RuleObjectId, RuleSignatureId, RuleVersion } from '../../model';
 import { PrebuiltRulesFilter } from '../common/prebuilt_rules_filter';
 
@@ -150,11 +155,23 @@ export const RuleUpToDateSkipReason = z.object({
   rule_id: z.string(),
 });
 
+export type RuleTypeChange = z.infer<typeof RuleTypeChange>;
+export const RuleTypeChange = z.object({
+  current: DiffableRuleTypes,
+  target: DiffableRuleTypes,
+});
+
 export type UpgradeConflictSkipReason = z.infer<typeof UpgradeConflictSkipReason>;
 export const UpgradeConflictSkipReason = z.object({
   reason: z.literal(SkipRuleUpgradeReasonEnum.CONFLICT),
   rule_id: z.string(),
   conflict: z.nativeEnum(ThreeWayDiffConflict),
+  /**
+   * Present when the target version changes the rule type. For a non-customized rule
+   * the type change is a SOLVABLE conflict that auto-resolves to the target type,
+   * so consumers need this explicit signal to warn about it.
+   */
+  rule_type_change: RuleTypeChange.optional(),
 });
 
 export type SkippedRuleUpgrade = z.infer<typeof SkippedRuleUpgrade>;

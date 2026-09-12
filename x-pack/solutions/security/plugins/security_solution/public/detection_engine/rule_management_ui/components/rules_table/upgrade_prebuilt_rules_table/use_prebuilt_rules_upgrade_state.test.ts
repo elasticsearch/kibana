@@ -10,6 +10,7 @@ import { useAppToasts } from '../../../../../common/hooks/use_app_toasts';
 import {
   type RuleResponse,
   type RuleUpgradeInfoForReview,
+  type ThreeWayDiff,
   ThreeWayDiffConflict,
   ThreeWayDiffOutcome,
   ThreeWayMergeOutcome,
@@ -215,6 +216,165 @@ describe('usePrebuiltRulesUpgradeState', () => {
           fieldsUpgradeState: {
             name: { state: FieldUpgradeStateEnum.Accepted, resolvedValue: 'resolved' },
           },
+        }),
+      });
+    });
+  });
+
+  describe('rule type change conflict gating', () => {
+    const typeFieldDiff = (conflict: ThreeWayDiffConflict): ThreeWayDiff<'saved_query'> => ({
+      base_version: 'saved_query',
+      current_version: 'saved_query',
+      target_version: 'saved_query',
+      merged_version: 'saved_query',
+      diff_outcome: ThreeWayDiffOutcome.StockValueCanUpdate,
+      merge_outcome: ThreeWayMergeOutcome.Target,
+      has_base_version: true,
+      has_update: true,
+      conflict,
+    });
+
+    it('reports hasUnresolvedConflicts: true and hasNonSolvableUnresolvedConflicts: false when type has a SOLVABLE conflict and no other field conflicts', () => {
+      const ruleUpgradeInfosMock: RuleUpgradeInfoForReview[] = [
+        createRuleUpgradeInfoMock({
+          diff: {
+            num_fields_with_updates: 1,
+            num_fields_with_conflicts: 0,
+            num_fields_with_non_solvable_conflicts: 0,
+            fields: {
+              type: typeFieldDiff(ThreeWayDiffConflict.SOLVABLE),
+            },
+          },
+        }),
+      ];
+
+      const { result } = renderHook(usePrebuiltRulesUpgradeState, {
+        initialProps: ruleUpgradeInfosMock,
+        wrapper: TestProviders,
+      });
+
+      expect(result.current.rulesUpgradeState).toEqual({
+        'test-rule-id-1': expect.objectContaining({
+          hasUnresolvedConflicts: true,
+          hasNonSolvableUnresolvedConflicts: false,
+          fieldsUpgradeState: {},
+        }),
+      });
+    });
+
+    it('reports hasUnresolvedConflicts: true and hasNonSolvableUnresolvedConflicts: true when type has a NON_SOLVABLE conflict and no other field conflicts', () => {
+      const ruleUpgradeInfosMock: RuleUpgradeInfoForReview[] = [
+        createRuleUpgradeInfoMock({
+          diff: {
+            num_fields_with_updates: 1,
+            num_fields_with_conflicts: 1,
+            num_fields_with_non_solvable_conflicts: 1,
+            fields: {
+              type: typeFieldDiff(ThreeWayDiffConflict.NON_SOLVABLE),
+            },
+          },
+        }),
+      ];
+
+      const { result } = renderHook(usePrebuiltRulesUpgradeState, {
+        initialProps: ruleUpgradeInfosMock,
+        wrapper: TestProviders,
+      });
+
+      expect(result.current.rulesUpgradeState).toEqual({
+        'test-rule-id-1': expect.objectContaining({
+          hasUnresolvedConflicts: true,
+          hasNonSolvableUnresolvedConflicts: true,
+        }),
+      });
+    });
+
+    it('reports both flags false when type has a NONE conflict and no other field conflicts', () => {
+      const ruleUpgradeInfosMock: RuleUpgradeInfoForReview[] = [
+        createRuleUpgradeInfoMock({
+          diff: {
+            num_fields_with_updates: 0,
+            num_fields_with_conflicts: 0,
+            num_fields_with_non_solvable_conflicts: 0,
+            fields: {
+              type: typeFieldDiff(ThreeWayDiffConflict.NONE),
+            },
+          },
+        }),
+      ];
+
+      const { result } = renderHook(usePrebuiltRulesUpgradeState, {
+        initialProps: ruleUpgradeInfosMock,
+        wrapper: TestProviders,
+      });
+
+      expect(result.current.rulesUpgradeState).toEqual({
+        'test-rule-id-1': expect.objectContaining({
+          hasUnresolvedConflicts: false,
+          hasNonSolvableUnresolvedConflicts: false,
+        }),
+      });
+    });
+
+    it('reports both flags false when there is no type key in diff.fields', () => {
+      const ruleUpgradeInfosMock: RuleUpgradeInfoForReview[] = [
+        createRuleUpgradeInfoMock({
+          diff: {
+            num_fields_with_updates: 0,
+            num_fields_with_conflicts: 0,
+            num_fields_with_non_solvable_conflicts: 0,
+            fields: {},
+          },
+        }),
+      ];
+
+      const { result } = renderHook(usePrebuiltRulesUpgradeState, {
+        initialProps: ruleUpgradeInfosMock,
+        wrapper: TestProviders,
+      });
+
+      expect(result.current.rulesUpgradeState).toEqual({
+        'test-rule-id-1': expect.objectContaining({
+          hasUnresolvedConflicts: false,
+          hasNonSolvableUnresolvedConflicts: false,
+        }),
+      });
+    });
+
+    it('reports hasNonSolvableUnresolvedConflicts: true when type has a SOLVABLE conflict but another field has a NON_SOLVABLE conflict', () => {
+      const ruleUpgradeInfosMock: RuleUpgradeInfoForReview[] = [
+        createRuleUpgradeInfoMock({
+          diff: {
+            num_fields_with_updates: 2,
+            num_fields_with_conflicts: 1,
+            num_fields_with_non_solvable_conflicts: 1,
+            fields: {
+              type: typeFieldDiff(ThreeWayDiffConflict.SOLVABLE),
+              name: {
+                base_version: 'base',
+                current_version: 'current',
+                target_version: 'target',
+                merged_version: 'target',
+                diff_outcome: ThreeWayDiffOutcome.StockValueCanUpdate,
+                merge_outcome: ThreeWayMergeOutcome.Merged,
+                has_base_version: true,
+                has_update: true,
+                conflict: ThreeWayDiffConflict.NON_SOLVABLE,
+              },
+            },
+          },
+        }),
+      ];
+
+      const { result } = renderHook(usePrebuiltRulesUpgradeState, {
+        initialProps: ruleUpgradeInfosMock,
+        wrapper: TestProviders,
+      });
+
+      expect(result.current.rulesUpgradeState).toEqual({
+        'test-rule-id-1': expect.objectContaining({
+          hasUnresolvedConflicts: true,
+          hasNonSolvableUnresolvedConflicts: true,
         }),
       });
     });
