@@ -136,7 +136,7 @@ export class SavedObjectsTable extends Component<SavedObjectsTableProps, SavedOb
       activeQuery: props.initialQuery ?? Query.parse(''),
       selectedSavedObjects: [],
       isShowingImportFlyout: false,
-      isSearching: false,
+      isSearching: true,
       filteredItemCount: 0,
       isShowingRelationships: false,
       relationshipObject: undefined,
