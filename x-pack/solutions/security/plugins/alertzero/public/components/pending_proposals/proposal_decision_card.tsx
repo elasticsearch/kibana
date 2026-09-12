@@ -13,6 +13,7 @@ import {
   EuiCodeBlock,
   EuiFlexGroup,
   EuiFlexItem,
+  EuiMarkdownFormat,
   EuiPanel,
   EuiSpacer,
   EuiText,
@@ -89,9 +90,9 @@ export const ProposalDecisionCard: React.FC<ProposalDecisionCardProps> = ({
       {proposal.comment ? (
         <>
           <EuiSpacer size="s" />
-          <EuiText size="s">
-            <p>{proposal.comment}</p>
-          </EuiText>
+          <EuiMarkdownFormat textSize="s" data-test-subj="alertZeroProposalComment">
+            {proposal.comment}
+          </EuiMarkdownFormat>
         </>
       ) : null}
 

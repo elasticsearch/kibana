@@ -1,0 +1,75 @@
+version: "1"
+name: Edit detection rule query
+description: >
+  AlertZero action: replaces the query of an existing detection rule. Executed by
+  the investigation proposal gate once an analyst approves, so the change is
+  attributed to the approver.
+enabled: true
+tags:
+  # Generic tag every action workflow carries, so the catalog can be
+  # discovered by tag rather than a hardcoded list.
+  - action
+  - alertzero
+consts:
+  # Self-describing catalog metadata, read back by the proposals service when a
+  # proposal referencing this workflow is created or rendered. Metadata has to
+  # live under `consts`: unknown top-level keys are stripped by the schema.
+  actionMetadata:
+    name: Edit detection rule query
+    description: Replaces the query of an existing detection rule, leaving every other field as is.
+    category: configure
+    impact: medium
+    reversible: true
+    approvalPolicy: always-gate
+triggers:
+  - type: manual
+    inputs:
+      properties:
+        actionInput:
+          type: object
+          description: >
+            Rule identity and the new query. Only `query` is patched: the patch
+            step overwrites every field it receives and a YAML object cannot omit
+            a key conditionally, so accepting optional fields here would blank
+            out whatever the proposer left unset.
+          properties:
+            id:
+              type: string
+              maxLength: 512
+              description: >-
+                Saved-object id of the rule, so the patch lands on the exact rule
+                incarnation the proposal was built against.
+            query:
+              type: string
+              maxLength: 65536
+              description: New query, written in the rule's own language.
+          required:
+            - id
+            - query
+      required:
+        - actionInput
+      additionalProperties: false
+outputs:
+  - name: id
+    type: string
+  - name: name
+    type: string
+  - name: query
+    type: string
+steps:
+  - name: patch_rule
+    type: security.patchRule
+    with:
+      patch:
+        id: "{{ inputs.actionInput.id }}"
+        query: "{{ inputs.actionInput.query }}"
+
+  # `workflow.execute` declares its output as unknown, so the parent falls back
+  # to a heuristic read of the last step unless the child emits explicitly.
+  - name: emit_result
+    type: workflow.output
+    status: completed
+    with:
+      id: "{{ steps.patch_rule.output.id }}"
+      name: "{{ steps.patch_rule.output.name }}"
+      query: "{{ steps.patch_rule.output.query }}"

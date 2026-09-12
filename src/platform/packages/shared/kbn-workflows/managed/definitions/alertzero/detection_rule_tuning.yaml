@@ -28,3 +28,5 @@ steps:
     type: workflow.executeAsync
     with:
       workflow-id: system-security-rule-tuning-worker
+      inputs:
+        autonomy_level: "{{ consts.worker_settings.autonomy }}"

@@ -23,7 +23,7 @@ export const ALERTZERO_WORKER_DETECTION_RULE_TUNING_WORKFLOW = {
   id: ALERTZERO_WORKER_DETECTION_RULE_TUNING_WORKFLOW_ID,
   management: ALERTZERO_WORKER_MANAGEMENT,
   pluginId: ALERTZERO_MANAGED_WORKFLOW_PLUGIN_ID,
-  version: 4,
+  version: 5,
   yamlTemplate: (values: ScheduledWorkerTemplateValues): string =>
     renderScheduledWorkerYaml(DETECTION_RULE_TUNING_YAML, values),
 } as const satisfies ManagedWorkflowDefinition<ScheduledWorkerTemplateValues>;

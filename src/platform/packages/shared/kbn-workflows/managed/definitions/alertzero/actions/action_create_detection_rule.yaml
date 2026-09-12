@@ -17,7 +17,7 @@ consts:
   actionMetadata:
     name: Create detection rule
     description: Creates a new, disabled custom query detection rule.
-    category: tune
+    category: configure
     impact: low
     reversible: true
     approvalPolicy: always-gate
