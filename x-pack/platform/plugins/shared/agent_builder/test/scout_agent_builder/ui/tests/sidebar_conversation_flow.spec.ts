@@ -23,62 +23,60 @@ test.describe(
       await deleteAllConversationsFromEs(esClient);
     });
 
-    test('embeddable sidebar conversation flow', async ({ page, pageObjects, llmProxy }) => {
-      await test.step('shows initial state', async () => {
-        await pageObjects.agentBuilder.prepareEmbeddableSidebar();
-        await expect(page.testSubj.locator('agentBuilderEmbeddableMenuButton')).toBeVisible();
-        await expect(page.testSubj.locator('agentBuilderConversationInputForm')).toBeVisible();
+    test('shows initial state', async ({ page, pageObjects }) => {
+      await pageObjects.agentBuilder.prepareEmbeddableSidebar();
+      await expect(page.testSubj.locator('agentBuilderEmbeddableMenuButton')).toBeVisible();
+      await expect(page.testSubj.locator('agentBuilderConversationInputForm')).toBeVisible();
+    });
+
+    test('sends a message and receives a response', async ({ page, pageObjects, llmProxy }) => {
+      const MOCKED_INPUT = 'hello from the sidebar';
+      const MOCKED_RESPONSE = 'This is the sidebar response';
+      const MOCKED_TITLE = 'Sidebar Flow Test';
+
+      await pageObjects.agentBuilder.prepareEmbeddableSidebarWithNewChat();
+      await setupAgentDirectAnswer({
+        proxy: llmProxy,
+        title: MOCKED_TITLE,
+        response: MOCKED_RESPONSE,
       });
+      await pageObjects.agentBuilder.typeMessage(MOCKED_INPUT);
+      await pageObjects.agentBuilder.sendMessage();
+      await llmProxy.waitForAllInterceptorsToHaveBeenCalled();
+      await expect(page.testSubj.locator('agentBuilderRoundResponse')).toContainText(
+        MOCKED_RESPONSE
+      );
+    });
 
-      await test.step('sends a message and receives a response', async () => {
-        const MOCKED_INPUT = 'hello from the sidebar';
-        const MOCKED_RESPONSE = 'This is the sidebar response';
-        const MOCKED_TITLE = 'Sidebar Flow Test';
+    test('can start a new chat from the menu', async ({ page, pageObjects }) => {
+      await pageObjects.agentBuilder.prepareEmbeddableSidebar();
+      await pageObjects.agentBuilder.openEmbeddableMenu();
+      await pageObjects.agentBuilder.clickEmbeddableNewChatButton();
+      await expect(page.testSubj.locator('agentBuilderConversationInputForm')).toBeVisible();
+      await expect(page.testSubj.locator('agentBuilderRoundResponse')).toHaveCount(0);
+    });
 
-        await pageObjects.agentBuilder.prepareEmbeddableSidebarWithNewChat();
-        await setupAgentDirectAnswer({
-          proxy: llmProxy,
-          title: MOCKED_TITLE,
-          response: MOCKED_RESPONSE,
-        });
-        await pageObjects.agentBuilder.typeMessage(MOCKED_INPUT);
-        await pageObjects.agentBuilder.sendMessage();
-        await llmProxy.waitForAllInterceptorsToHaveBeenCalled();
-        await expect(async () => {
-          await expect(page.testSubj.locator('agentBuilderRoundResponse')).toContainText(
-            MOCKED_RESPONSE
-          );
-        }).toPass({ timeout: 120_000 });
+    test('can send a message after starting a new conversation from the menu', async ({
+      page,
+      pageObjects,
+      llmProxy,
+    }) => {
+      const MOCKED_INPUT = 'message after new chat';
+      const MOCKED_RESPONSE = 'Response after new chat';
+      const MOCKED_TITLE = 'Post New Chat Conversation';
+
+      await pageObjects.agentBuilder.prepareEmbeddableSidebarWithNewChat();
+      await setupAgentDirectAnswer({
+        proxy: llmProxy,
+        title: MOCKED_TITLE,
+        response: MOCKED_RESPONSE,
       });
-
-      await test.step('can start a new chat from the menu', async () => {
-        await pageObjects.agentBuilder.prepareEmbeddableSidebar();
-        await pageObjects.agentBuilder.openEmbeddableMenu();
-        await pageObjects.agentBuilder.clickEmbeddableNewChatButton();
-        await expect(page.testSubj.locator('agentBuilderConversationInputForm')).toBeVisible();
-        await expect(page.testSubj.locator('agentBuilderRoundResponse')).toHaveCount(0);
-      });
-
-      await test.step('can send a message after starting a new conversation from the menu', async () => {
-        const MOCKED_INPUT = 'message after new chat';
-        const MOCKED_RESPONSE = 'Response after new chat';
-        const MOCKED_TITLE = 'Post New Chat Conversation';
-
-        await pageObjects.agentBuilder.prepareEmbeddableSidebarWithNewChat();
-        await setupAgentDirectAnswer({
-          proxy: llmProxy,
-          title: MOCKED_TITLE,
-          response: MOCKED_RESPONSE,
-        });
-        await pageObjects.agentBuilder.typeMessage(MOCKED_INPUT);
-        await pageObjects.agentBuilder.sendMessage();
-        await llmProxy.waitForAllInterceptorsToHaveBeenCalled();
-        await expect(async () => {
-          await expect(page.testSubj.locator('agentBuilderRoundResponse')).toContainText(
-            MOCKED_RESPONSE
-          );
-        }).toPass({ timeout: 120_000 });
-      });
+      await pageObjects.agentBuilder.typeMessage(MOCKED_INPUT);
+      await pageObjects.agentBuilder.sendMessage();
+      await llmProxy.waitForAllInterceptorsToHaveBeenCalled();
+      await expect(page.testSubj.locator('agentBuilderRoundResponse')).toContainText(
+        MOCKED_RESPONSE
+      );
     });
   }
 );
