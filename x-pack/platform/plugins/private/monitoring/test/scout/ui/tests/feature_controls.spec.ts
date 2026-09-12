@@ -21,8 +21,7 @@ import { test, CUSTOM_ROLES } from '../fixtures';
 const ENABLED_SPACE_ID = 'monitoring_fc_ui_enabled_space';
 const DISABLED_SPACE_ID = 'monitoring_fc_ui_disabled_space';
 
-// Failing: See https://github.com/elastic/kibana/issues/272171
-test.describe.skip('Stack Monitoring feature controls', { tag: tags.stateful.classic }, () => {
+test.describe('Stack Monitoring feature controls', { tag: tags.stateful.classic }, () => {
   test.beforeAll(async ({ apiServices }) => {
     await apiServices.spaces.create({ id: ENABLED_SPACE_ID, disabledFeatures: [] });
     await apiServices.spaces.create({
