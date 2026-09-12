@@ -75,7 +75,7 @@ exports[
 | \`name\` | string | required | The name of the action policy. (min length: 1, max length: 256) |
 | \`description\` | string | required | A description of the action policy. (max length: 1024) |
 | \`destinations\` | { type: \\"workflow\\", ... }[] | required | The list of destinations. At least one is required. (min items: 1, max items: 10) |
-| \`matcher\` | object | optional | Criteria that determine which alerts this policy notifies on. Set \`tags\` to match rules that have any of those tags, and/or \`expression\` to a KQL query against alert data. When both are omitted or empty, the policy matches all alerts. |
+| \`matcher\` | object | optional | Selects the alerts this policy applies to. Set \`tags\` to match alerts from rules with those tags. Set \`expression\` to a KQL query, which will be evaluated against each alert. <br/><br/> If you set both \`tags\` and \`expression\`, an alert must match the tags and the expression for the policy to apply. When \`matcher\` is \`null\`, or when both \`tags\` and \`expression\` are empty, the policy applies to all alerts. |
 | \`group_by\` | string[] | optional | The fields used to group alerts. (max items: 16) |
 | \`tags\` | string[] | optional | Tags for categorizing the action policy. (max items: 20) |
 | \`grouping_mode\` | \\"per_episode\\" \\\\| \\"all\\" \\\\| \\"per_field\\" | optional | The grouping mode for alert notifications. |

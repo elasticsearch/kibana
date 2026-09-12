@@ -9,16 +9,16 @@ import { z } from '@kbn/zod/v4';
 import { MAX_KQL_LENGTH } from './constants';
 
 export const POLICY_MATCHER_TAGS_DESCRIPTION =
-  'Rule tags this policy should match. The policy applies to alerts from rules that have at least one of these tags. Omit or set to `null` if you do not want to filter by tags.';
+  "Rule tags this policy should match. The policy applies to alerts from any rule that has at least one of these tags. `matcher.tags` is separate from the policy's own `tags` field, which is used to organize and filter action policies. Omit `matcher.tags` or set it to `null` to match on `matcher.expression` alone.";
 
 export const POLICY_MATCHER_EXPRESSION_DESCRIPTION =
-  'KQL query evaluated against alert data. Common fields include `rule.id`, `rule.name`, `rule.tags`, `episode_status`, and `severity`. Rule query columns live under `data.*` (for example `data.host.name`). Omit or set to `null` if you do not want an additional query.';
+  "A KQL query that's evaluated against each alert. Supported fields are: `episode_id`, `episode_status`, `group_hash`, `last_event_timestamp`, `severity`, `rule.id`, `rule.name`, `rule.tags`, and your rule's query output columns under `data.*` (for example, `data.host.name`). Referencing other fields won't work. Omit `matcher.expression` or set it to `null` to match on `tags` alone.";
 
 export const POLICY_MATCHER_DESCRIPTION =
-  'Criteria that determine which alerts this policy notifies on. Set `tags` to match rules that have any of those tags, and/or `expression` to a KQL query against alert data. When both are omitted or empty, the policy matches all alerts.';
+  'Selects the alerts this policy applies to. Set `tags` to match alerts from rules with those tags. Set `expression` to a KQL query, which will be evaluated against each alert. <br/><br/> If you set both `tags` and `expression`, an alert must match the tags and the expression for the policy to apply. When `matcher` is `null`, or when both `tags` and `expression` are empty, the policy applies to all alerts.';
 
 export const POLICY_MATCHER_UPDATE_DESCRIPTION =
-  'Criteria that determine which alerts this policy notifies on. Set `tags` to match rules that have any of those tags, and/or `expression` to a KQL query against alert data. The matcher is replaced as a whole: omitted fields are not kept from the existing matcher. To change `tags` without dropping an existing `expression`, include that same `expression` value in the request. Set `matcher` to `null` to match all alerts.';
+  'Selects the alerts this policy applies to. Set `tags` to match alerts from rules with those tags. Set `expression` to a KQL query, which will be evaluated against each alert. <br/><br/> If you set both `tags` and `expression`, an alert must match the tags and the expression for the policy to apply. When `matcher` is `null`, or when both `tags` and `expression` are empty, the policy applies to all alerts. <br/><br/> Updating `matcher` replaces it entirely: to change `tags` without dropping `expression`, resend the current `expression` value.';
 
 export const policyMatcherSchema = z.object({
   tags: z
