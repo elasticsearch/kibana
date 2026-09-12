@@ -102,29 +102,30 @@ describe('CasesWebhookActionConnectorFields renders', () => {
       { wrapper: customQueryProviderWrapper }
     );
 
+    // All steps mount in a single tree (toggled via CSS display), so wait once
+    // for the form to settle, then assert synchronously.
     expect(await screen.findByTestId('authNone')).toBeInTheDocument();
-    expect(await screen.findByTestId('authBasic')).toBeInTheDocument();
-    expect(await screen.findByTestId('authSSL')).toBeInTheDocument();
-    expect(await screen.findByTestId('webhookUserInput')).toBeInTheDocument();
-    expect(await screen.findByTestId('webhookPasswordInput')).toBeInTheDocument();
-    expect(await screen.findByTestId('webhookHeadersKeyInput')).toBeInTheDocument();
-    expect(await screen.findByTestId('webhookHeadersValueInput')).toBeInTheDocument();
-    expect(await screen.findByTestId('webhookCreateMethodSelect')).toBeInTheDocument();
-    expect(await screen.findByTestId('webhookCreateUrlText')).toBeInTheDocument();
-    expect(await screen.findByTestId('webhookCreateIncidentJson')).toBeInTheDocument();
-    expect(await screen.findByTestId('createIncidentResponseKeyText')).toBeInTheDocument();
-    expect(await screen.findByTestId('getIncidentUrlInput')).toBeInTheDocument();
-    expect(
-      await screen.findByTestId('getIncidentResponseExternalTitleKeyText')
-    ).toBeInTheDocument();
-    expect(await screen.findByTestId('viewIncidentUrlInput')).toBeInTheDocument();
-    expect(await screen.findByTestId('webhookUpdateMethodSelect')).toBeInTheDocument();
-    expect(await screen.findByTestId('updateIncidentUrlInput')).toBeInTheDocument();
-    expect(await screen.findByTestId('webhookUpdateIncidentJson')).toBeInTheDocument();
-    expect(await screen.findByTestId('webhookCreateCommentMethodSelect')).toBeInTheDocument();
-    expect(await screen.findByTestId('createCommentUrlInput')).toBeInTheDocument();
-    expect(await screen.findByTestId('webhookCreateCommentJson')).toBeInTheDocument();
-  });
+    expect(screen.getByTestId('authBasic')).toBeInTheDocument();
+    expect(screen.getByTestId('authSSL')).toBeInTheDocument();
+    expect(screen.getByTestId('webhookUserInput')).toBeInTheDocument();
+    expect(screen.getByTestId('webhookPasswordInput')).toBeInTheDocument();
+    expect(screen.getByTestId('webhookHeadersKeyInput')).toBeInTheDocument();
+    expect(screen.getByTestId('webhookHeadersValueInput')).toBeInTheDocument();
+    expect(screen.getByTestId('webhookCreateMethodSelect')).toBeInTheDocument();
+    expect(screen.getByTestId('webhookCreateUrlText')).toBeInTheDocument();
+    expect(screen.getByTestId('webhookCreateIncidentJson')).toBeInTheDocument();
+    expect(screen.getByTestId('createIncidentResponseKeyText')).toBeInTheDocument();
+    expect(screen.getByTestId('getIncidentUrlInput')).toBeInTheDocument();
+    expect(screen.getByTestId('getIncidentResponseExternalTitleKeyText')).toBeInTheDocument();
+    expect(screen.getByTestId('viewIncidentUrlInput')).toBeInTheDocument();
+    expect(screen.getByTestId('webhookUpdateMethodSelect')).toBeInTheDocument();
+    expect(screen.getByTestId('updateIncidentUrlInput')).toBeInTheDocument();
+    expect(screen.getByTestId('webhookUpdateIncidentJson')).toBeInTheDocument();
+    expect(screen.getByTestId('webhookCreateCommentMethodSelect')).toBeInTheDocument();
+    expect(screen.getByTestId('createCommentUrlInput')).toBeInTheDocument();
+    expect(screen.getByTestId('webhookCreateCommentJson')).toBeInTheDocument();
+    // Rendering the full 4-step form under parallel CI load can exceed jest's 5s default.
+  }, 15000);
 
   it('Add comment to case section is rendered only when the toggle button is on', async () => {
     const incompleteActionConnector = {
