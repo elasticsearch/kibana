@@ -16,9 +16,23 @@ import { TraceWaterfall } from '.';
 import { traceSample } from './mock/trace_sample';
 import { traceUnprocessedOtelSample } from './mock/trace_unprocessed_otel_sample';
 
-const stories: Meta = {
+interface StoryArgs {
+  engine?: 'dom' | 'charts';
+}
+
+const stories: Meta<StoryArgs> = {
   title: 'shared/TraceWaterfall/UnifiedTraceWaterfall',
   component: TraceWaterfall,
+  argTypes: {
+    engine: {
+      control: 'radio',
+      options: ['dom', 'charts'],
+      description: 'Rendering engine — DOM (default) or elastic-charts canvas (spike)',
+    },
+  },
+  args: {
+    engine: 'dom',
+  },
 };
 
 export default stories;
@@ -45,13 +59,20 @@ const createDeepNestedTraceItems = (count: number): TraceItem[] => {
   });
 };
 
-export const DeepNestedChildren600: StoryFn<{}> = () => {
-  return <TraceWaterfall traceItems={createDeepNestedTraceItems(DEEP_NESTED_NODE_COUNT)} />;
-};
-
-export const ManyChildren: StoryFn<{}> = () => {
+export const DeepNestedChildren600: StoryFn<StoryArgs> = ({ engine }) => {
   return (
     <TraceWaterfall
+      traceItems={createDeepNestedTraceItems(DEEP_NESTED_NODE_COUNT)}
+      engine={engine}
+    />
+  );
+};
+
+export const ManyChildren: StoryFn<StoryArgs> = ({ engine }) => {
+  return (
+    <TraceWaterfall
+      onClick={action('onClick')}
+      onErrorClick={action('onErrorClick')}
       traceItems={[
         {
           id: '1',
@@ -80,11 +101,12 @@ export const ManyChildren: StoryFn<{}> = () => {
             docType: 'span' as const,
           })),
       ]}
+      engine={engine}
     />
   );
 };
 
-export const ExampleClockSkew: StoryFn<{}> = () => {
+export const ExampleClockSkew: StoryFn<StoryArgs> = ({ engine }) => {
   return (
     <TraceWaterfall
       onClick={action('onClick')}
@@ -126,10 +148,12 @@ export const ExampleClockSkew: StoryFn<{}> = () => {
           docType: 'span',
         },
       ]}
+      engine={engine}
     />
   );
 };
-export const Example: StoryFn<{}> = () => {
+
+export const Example: StoryFn<StoryArgs> = ({ engine }) => {
   return (
     <TraceWaterfall
       traceItems={[
@@ -184,11 +208,12 @@ export const Example: StoryFn<{}> = () => {
         },
       ]}
       contextSpanIds={['41b39c13ec0166a8']}
+      engine={engine}
     />
   );
 };
 
-export const ExampleWithServiceLegend: StoryFn<{}> = () => {
+export const ExampleWithServiceLegend: StoryFn<StoryArgs> = ({ engine }) => {
   return (
     <TraceWaterfall
       traceItems={[
@@ -242,11 +267,12 @@ export const ExampleWithServiceLegend: StoryFn<{}> = () => {
       ]}
       contextSpanIds={['41b39c13ec0166a8']}
       showLegend
+      engine={engine}
     />
   );
 };
 
-export const ExampleWithTypeLegend: StoryFn<{}> = () => {
+export const ExampleWithTypeLegend: StoryFn<StoryArgs> = ({ engine }) => {
   return (
     <TraceWaterfall
       traceItems={[
@@ -304,10 +330,12 @@ export const ExampleWithTypeLegend: StoryFn<{}> = () => {
       contextSpanIds={['41b39c13ec0166a8']}
       serviceName="frontend"
       showLegend
+      engine={engine}
     />
   );
 };
-export const HiddenAccordionExample: StoryFn<{}> = () => {
+
+export const HiddenAccordionExample: StoryFn<StoryArgs> = ({ engine }) => {
   const traceItems = traceUnprocessedOtelSample.map(
     (item) =>
       ({
@@ -329,10 +357,12 @@ export const HiddenAccordionExample: StoryFn<{}> = () => {
       showAccordion={false}
       contextSpanIds={['99e36adf40935241']}
       onClick={() => {}}
+      engine={engine}
     />
   );
 };
-export const OpenTelemetryExample: StoryFn<{}> = () => {
+
+export const OpenTelemetryExample: StoryFn<StoryArgs> = ({ engine }) => {
   const traceItems = traceUnprocessedOtelSample.map(
     (item) =>
       ({
@@ -348,10 +378,10 @@ export const OpenTelemetryExample: StoryFn<{}> = () => {
         docType: 'span',
       } as TraceItem)
   );
-  return <TraceWaterfall traceItems={traceItems} />;
+  return <TraceWaterfall traceItems={traceItems} engine={engine} />;
 };
 
-export const APMExample: StoryFn<{}> = () => {
+export const APMExample: StoryFn<StoryArgs> = ({ engine }) => {
   const traceItems = traceSample.traceItems.traceDocs.map(
     (item) =>
       ({
@@ -368,10 +398,10 @@ export const APMExample: StoryFn<{}> = () => {
       } as TraceItem)
   );
 
-  return <TraceWaterfall traceItems={traceItems} />;
+  return <TraceWaterfall traceItems={traceItems} engine={engine} />;
 };
 
-export const CompositeSpanExample: StoryFn<{}> = () => {
+export const CompositeSpanExample: StoryFn<StoryArgs> = ({ engine }) => {
   return (
     <TraceWaterfall
       traceItems={[
@@ -406,6 +436,7 @@ export const CompositeSpanExample: StoryFn<{}> = () => {
           docType: 'span',
         },
       ]}
+      engine={engine}
     />
   );
 };

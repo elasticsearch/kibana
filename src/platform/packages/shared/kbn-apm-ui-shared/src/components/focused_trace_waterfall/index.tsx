@@ -23,6 +23,7 @@ type FocusedTrace = APIReturnType<'GET /internal/apm/unified_traces/{traceId}/su
 interface Props {
   items: FocusedTrace;
   isEmbeddable?: boolean;
+  engine?: 'dom' | 'charts';
   onErrorClick?: (params: { traceId: string; docId: string }) => void;
   getServiceBadgeHref?: WaterfallGetServiceBadgeHref;
   getErrorMarkerHref?: WaterfallGetErrorMarkerHref;
@@ -76,6 +77,7 @@ function getTraceItems(items: NonNullable<FocusedTrace['traceItems']>) {
 
 export function FocusedTraceWaterfall({
   items,
+  engine,
   onErrorClick,
   isEmbeddable,
   getServiceBadgeHref,
@@ -94,6 +96,7 @@ export function FocusedTraceWaterfall({
         traceItems={traceItems}
         showAccordion={false}
         contextSpanIds={contextSpanIds}
+        engine={engine}
         onErrorClick={onErrorClick}
         isEmbeddable={isEmbeddable}
         getServiceBadgeHref={getServiceBadgeHref}

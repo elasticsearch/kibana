@@ -11,15 +11,30 @@ import type { Meta, StoryFn } from '@storybook/react';
 import React from 'react';
 import { FocusedTraceWaterfall } from '.';
 
-const stories: Meta<any> = {
+interface StoryArgs {
+  engine?: 'dom' | 'charts';
+}
+
+const stories: Meta<StoryArgs> = {
   title: 'shared/TraceWaterfall/FocusedTraceWaterfall',
   component: FocusedTraceWaterfall,
+  argTypes: {
+    engine: {
+      control: 'radio',
+      options: ['dom', 'charts'],
+      description: 'Rendering engine — DOM (default) or elastic-charts canvas (spike)',
+    },
+  },
+  args: {
+    engine: 'dom',
+  },
 };
 export default stories;
 
-export const FocusedIdIsRoot: StoryFn<any> = () => {
+export const FocusedIdIsRoot: StoryFn<StoryArgs> = ({ engine }) => {
   return (
     <FocusedTraceWaterfall
+      engine={engine}
       items={{
         traceItems: {
           rootDoc: {
@@ -69,9 +84,10 @@ export const FocusedIdIsRoot: StoryFn<any> = () => {
   );
 };
 
-export const ParentIdIsRoot: StoryFn<any> = () => {
+export const ParentIdIsRoot: StoryFn<StoryArgs> = ({ engine }) => {
   return (
     <FocusedTraceWaterfall
+      engine={engine}
       items={{
         traceItems: {
           rootDoc: {
@@ -132,9 +148,10 @@ export const ParentIdIsRoot: StoryFn<any> = () => {
   );
 };
 
-export const FocusedWithParent: StoryFn<any> = () => {
+export const FocusedWithParent: StoryFn<StoryArgs> = ({ engine }) => {
   return (
     <FocusedTraceWaterfall
+      engine={engine}
       items={{
         traceItems: {
           rootDoc: {
@@ -195,9 +212,10 @@ export const FocusedWithParent: StoryFn<any> = () => {
   );
 };
 
-export const FocusedWithMultipleChildren: StoryFn<any> = () => {
+export const FocusedWithMultipleChildren: StoryFn<StoryArgs> = ({ engine }) => {
   return (
     <FocusedTraceWaterfall
+      engine={engine}
       items={{
         traceItems: {
           rootDoc: {

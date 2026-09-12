@@ -15,6 +15,7 @@ export type FullTraceWaterfallProps = {
   traceId: string;
   rangeFrom: string;
   rangeTo: string;
+  engine?: 'dom' | 'charts';
   serviceName?: string;
   scrollElement?: Element;
   onNodeClick?: (nodeSpanId: string) => void;

@@ -78,6 +78,7 @@ const configSchema = schema.object({
     // to be removed in https://github.com/elastic/kibana/issues/221904
     profilingIntegrationAvailable: schema.boolean({ defaultValue: false }),
     ruleFormV2Enabled: schema.boolean({ defaultValue: false }),
+    traceChartEngine: schema.boolean({ defaultValue: false }),
   }),
   serverless: schema.object({
     enabled: offeringBasedSchema({
@@ -99,6 +100,9 @@ export const config: PluginConfigDescriptor<APMConfig> = {
     deprecateFromRoot('apm_oss.enabled', '8.0.0', { level: 'warning' }),
     unusedFromRoot('apm_oss.fleetMode', { level: 'warning' }),
     unusedFromRoot('apm_oss.indexPattern', { level: 'warning' }),
+    renameFromRoot('apm_oss.traceChartEngine', 'xpack.apm.featureFlags.traceChartEngine', {
+      level: 'warning',
+    }),
     renameFromRoot('xpack.apm.maxServiceEnvironments', `uiSettings.overrides[${maxSuggestions}]`, {
       level: 'warning',
     }),

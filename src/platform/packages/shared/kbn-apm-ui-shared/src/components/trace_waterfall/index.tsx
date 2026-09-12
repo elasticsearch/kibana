@@ -17,7 +17,7 @@ import type {
   WaterfallGetServiceBadgeHref,
 } from '@kbn/apm-types';
 import { APP_MAIN_SCROLL_CONTAINER_ID } from '@kbn/core-chrome-layout-constants';
-import React, { useCallback, useMemo, useRef, useState } from 'react';
+import React, { lazy, Suspense, useCallback, useMemo, useRef, useState } from 'react';
 import type { ListRowProps, ListRowRenderer } from 'react-virtualized';
 import {
   AutoSizer,
@@ -32,6 +32,12 @@ import { ScrollToOriginButton } from './scroll_to_origin_button';
 import { ACCORDION_HEIGHT, BORDER_THICKNESS, TraceItemRow } from './trace_item_row';
 import { TraceWarning } from './trace_warning';
 import type { OnErrorClick, OnNodeClick } from './trace_waterfall_context';
+import type { WaterfallEngine } from './use_waterfall_engine';
+import { useWaterfallEngine } from './use_waterfall_engine';
+
+const ChartsTraceWaterfall = lazy(() =>
+  import('./engines/charts').then((m) => ({ default: m.ChartsTraceWaterfall }))
+);
 import { TraceWaterfallContextProvider, useTraceWaterfallContext } from './trace_waterfall_context';
 import { useScrollToOrigin } from './use_scroll_to_origin';
 import type { TraceWaterfallItem } from './use_trace_waterfall';
@@ -75,6 +81,16 @@ interface BaseTraceWaterfallProps {
     errorBadge: { element: string };
     serviceBadge: { element: string };
   };
+  /**
+   * Rendering engine:
+   * - `'dom'` (default): existing react-virtualized row list.
+   * - `'charts'`: elastic-charts `<Trace>` canvas (experimental spike).
+   *
+   * Can also be toggled live without a rebuild via:
+   *   URL: `?traceWaterfallEngine=charts`
+   *   localStorage: `apm.traceWaterfall.engine`
+   */
+  engine?: WaterfallEngine;
 }
 
 /** Default: 'window' (page scroll). Use 'parent' for flyout. */
@@ -116,6 +132,8 @@ export function TraceWaterfall(props: TraceWaterfallProps) {
     props.scrollStrategy === 'parent' ? props.scrollToContextOnMount : undefined;
   const exceedMax = traceDocsTotal > maxTraceItems;
 
+  const resolvedEngine = useWaterfallEngine(props.engine);
+
   return (
     <TraceWaterfallContextProvider
       traceItems={traceItems}
@@ -153,7 +171,13 @@ export function TraceWaterfall(props: TraceWaterfallProps) {
         </>
       )}
       <TraceWarning>
-        <TraceWaterfallComponent />
+        {resolvedEngine === 'charts' ? (
+          <Suspense fallback={null}>
+            <ChartsTraceWaterfall />
+          </Suspense>
+        ) : (
+          <TraceWaterfallComponent />
+        )}
       </TraceWarning>
       {children}
     </TraceWaterfallContextProvider>

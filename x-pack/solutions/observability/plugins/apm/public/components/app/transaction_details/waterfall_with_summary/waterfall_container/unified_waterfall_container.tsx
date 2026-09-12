@@ -17,6 +17,7 @@ import { useErrorClickHandler } from './use_error_click_handler';
 import { useGetErrorMarkerHrefFromRouter } from './use_get_error_marker_href_from_router';
 import { useGetServiceBadgeHrefFromRouter } from './use_get_service_badge_href_from_router';
 import { useKibana } from '../../../../../context/kibana_context/use_kibana';
+import { useApmPluginContext } from '../../../../../context/apm_plugin/use_apm_plugin_context';
 
 interface Props {
   traceItems: TraceItem[];
@@ -68,6 +69,7 @@ export function UnifiedWaterfallContainer({
     services: { apmShared },
   } = useKibana();
   const TraceWaterfall = useMemo(() => apmShared.TraceWaterfall, [apmShared.TraceWaterfall]);
+  const { config } = useApmPluginContext();
   const history = useHistory();
   const handleErrorClick = useErrorClickHandler(traceItems);
   const getServiceBadgeHref = useGetServiceBadgeHrefFromRouter();
@@ -86,6 +88,7 @@ export function UnifiedWaterfallContainer({
       <TraceWaterfall
         traceItems={traceItems}
         errors={errors}
+        engine={config.featureFlags.traceChartEngine ? 'charts' : undefined}
         onClick={handleNodeClick}
         onErrorClick={handleErrorClick}
         getServiceBadgeHref={getServiceBadgeHref}

@@ -40,7 +40,7 @@ export function TraceWaterfallFlyout({
   contextSpanIds,
 }: Props) {
   const { callApmApi } = getApmInternalServices();
-  const { core } = useApmPluginContext();
+  const { core, config } = useApmPluginContext();
   const { start, end } = useTimeRange({ rangeFrom, rangeTo });
   const getErrorMarkerHref = useGetErrorMarkerHrefFromRouter();
   const { dataView, apmIndices } = useAdHocApmDataView();
@@ -118,6 +118,7 @@ export function TraceWaterfallFlyout({
           traceId={traceId}
           rangeFrom={start}
           rangeTo={end}
+          engine={config.featureFlags.traceChartEngine ? 'charts' : undefined}
           core={core}
           contextSpanIds={contextSpanIds}
           callApmApi={callApmApi}

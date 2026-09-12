@@ -24,6 +24,7 @@ export function TraceWaterfallWithFetching({
   traceId,
   rangeFrom,
   rangeTo,
+  engine,
   serviceName,
   scrollElement,
   onNodeClick,
@@ -81,6 +82,7 @@ export function TraceWaterfallWithFetching({
       onClick={onNodeClick}
       scrollElement={scrollElement}
       {...scrollProps}
+      engine={engine}
       isEmbeddable
       showLegend
       serviceName={serviceName}
