@@ -1843,6 +1843,7 @@
     "@kbn/evals-suite-lead-generation": "workspace:*",
     "@kbn/evals-suite-llm-tasks": "workspace:*",
     "@kbn/evals-suite-ml": "workspace:*",
+    "@kbn/evals-suite-nightshift-investigations": "workspace:*",
     "@kbn/evals-suite-observability-ai": "workspace:*",
     "@kbn/evals-suite-pci-compliance": "workspace:*",
     "@kbn/evals-suite-security-ai-rules": "workspace:*",

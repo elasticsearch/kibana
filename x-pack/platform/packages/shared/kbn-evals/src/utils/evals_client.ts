@@ -176,10 +176,14 @@ const mapStatsResponse = (
   };
 };
 
+/**
+ * Omits absent filters rather than sending them as undefined, which reaches the route as an empty
+ * string and filters every score out. An unfiltered read has to mean "no filter", not "match ''".
+ */
 const buildExperimentQuery = (options?: GetExperimentFilters) => ({
-  suite_id: options?.suiteId,
-  model_id: options?.taskModelId,
-  execution_id: options?.executionId,
+  ...(options?.suiteId ? { suite_id: options.suiteId } : {}),
+  ...(options?.taskModelId ? { model_id: options.taskModelId } : {}),
+  ...(options?.executionId ? { execution_id: options.executionId } : {}),
 });
 
 const VERSIONED_HEADERS = { 'elastic-api-version': API_VERSIONS.internal.v1 };

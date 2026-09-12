@@ -304,6 +304,31 @@ describe('EvalsClient', () => {
     );
   });
 
+  it('getExperimentScores omits filters it was not given', async () => {
+    const kbnClient = createMockKbnClient();
+    const log = createLog();
+    kbnClient.request.mockResolvedValue(asKbnResponse({ scores: [], total: 0 }));
+    const client = new EvalsClient(kbnClient, log);
+
+    await client.getExperimentScores('experiment-123');
+
+    // Sending them as undefined reaches the route as `suite_id=`, which matches no score at all.
+    expect(kbnClient.request).toHaveBeenCalledWith(expect.objectContaining({ query: {} }));
+  });
+
+  it('getExperimentScores passes the filters it was given', async () => {
+    const kbnClient = createMockKbnClient();
+    const log = createLog();
+    kbnClient.request.mockResolvedValue(asKbnResponse({ scores: [], total: 0 }));
+    const client = new EvalsClient(kbnClient, log);
+
+    await client.getExperimentScores('experiment-123', { suiteId: 'my-suite' });
+
+    expect(kbnClient.request).toHaveBeenCalledWith(
+      expect.objectContaining({ query: { suite_id: 'my-suite' } })
+    );
+  });
+
   it('getExperimentScores returns [] and logs when response exceeds MAX_SCORES_PER_QUERY', async () => {
     const kbnClient = createMockKbnClient();
     const log = createLog();

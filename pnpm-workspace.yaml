@@ -1275,6 +1275,7 @@ packages:
   - 'x-pack/platform/packages/shared/kbn-evals-extensions'
   - 'x-pack/platform/packages/shared/kbn-evals-runner'
   - 'x-pack/platform/packages/shared/kbn-evals-suite-alerting-v2'
+  - 'x-pack/platform/packages/shared/kbn-evals-suite-nightshift-investigations'
   - 'x-pack/platform/packages/shared/kbn-evals-suite-significant-events'
   - 'x-pack/platform/packages/shared/kbn-evals-suite-smoke-tests'
   - 'x-pack/platform/packages/shared/kbn-evals-suite-streams'

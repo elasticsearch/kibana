@@ -1086,6 +1086,7 @@ x-pack/platform/packages/shared/kbn-evals-common @elastic/nightshift-context-and
 x-pack/platform/packages/shared/kbn-evals-extensions @elastic/nightshift-context-and-research-team @elastic/security-genai-research-and-development
 x-pack/platform/packages/shared/kbn-evals-runner @elastic/nightshift-context-and-research-team
 x-pack/platform/packages/shared/kbn-evals-suite-alerting-v2 @elastic/rna-project-team
+x-pack/platform/packages/shared/kbn-evals-suite-nightshift-investigations @elastic/nightshift-context-and-research-team @elastic/nightshift-investigations-team
 x-pack/platform/packages/shared/kbn-evals-suite-significant-events @elastic/nightshift-sre-agent-team
 x-pack/platform/packages/shared/kbn-evals-suite-smoke-tests @elastic/nightshift-context-and-research-team
 x-pack/platform/packages/shared/kbn-evals-suite-streams @elastic/streams-ui

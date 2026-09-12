@@ -1,0 +1,10 @@
+{
+  "type": "functional-tests",
+  "id": "@kbn/evals-suite-nightshift-investigations",
+  "owner": [
+    "@elastic/nightshift-context-and-research-team",
+    "@elastic/nightshift-investigations-team"
+  ],
+  "group": "platform",
+  "visibility": "shared"
+}

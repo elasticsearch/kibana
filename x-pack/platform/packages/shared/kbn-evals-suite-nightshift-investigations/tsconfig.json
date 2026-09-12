@@ -1,0 +1,18 @@
+{
+  "extends": "@kbn/tsconfig-base/tsconfig.json",
+  "compilerOptions": {
+    "outDir": "target/types",
+    "types": ["jest", "node", "@kbn/ambient-common-types"]
+  },
+  "include": ["**/*.ts"],
+  "exclude": ["target/**/*"],
+  "kbn_references": [
+    "@kbn/dev-cli-errors",
+    "@kbn/dev-cli-runner",
+    "@kbn/es-snapshot-loader",
+    "@kbn/evals",
+    "@kbn/kibana-api-cli",
+    "@kbn/scout",
+    "@kbn/tooling-log"
+  ]
+}
