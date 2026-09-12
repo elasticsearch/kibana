@@ -42,11 +42,12 @@ export class TestSubjects extends FtrService {
    * still doesn't exist the promise will resolve with `false`.
    *
    * This method is intended to quickly answer the question "does this testSubject exist". Its
-   * 2.5 second timeout responds quickly, making it a good candidate for putting inside
-   * `retry.waitFor()` loops.
+   * 1.5 second default timeout keeps it responsive, making it a good candidate for putting inside
+   * `retry.waitFor()` loops. Callers that need to assert existence should use `existOrFail`
+   * instead, which uses a 2-minute timeout and throws on failure.
    *
    * When `options.timeout` is not passed the `timeouts.waitForExists` config is used as
-   * the timeout. The default value for that config is currently 2.5 seconds (in ms).
+   * the timeout. The default value for that config is currently 1.5 seconds (in ms).
    *
    * If the element is hidden it is not treated as "existing", unless `options.allowHidden`
    * is set to `true`.

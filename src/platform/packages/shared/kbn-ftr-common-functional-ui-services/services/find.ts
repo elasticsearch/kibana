@@ -284,22 +284,28 @@ export class FindService extends FtrService {
     timeout: number = this.WAIT_FOR_EXISTS_TIME
   ): Promise<boolean> {
     this.log.debug(`Find.existsByDisplayedByCssSelector('${selector}') with timeout=${timeout}`);
+    // Use 0ms implicit wait so each findElements call returns immediately rather than
+    // blocking for the full timeout. driver.wait() provides the outer patience via
+    // efficient 200ms polling, avoiding one multi-second blocking IPC round-trip.
+    await this._withTimeout(0);
     try {
-      await this.retry.tryForTime(timeout, async () => {
-        // make sure that the find timeout is not longer than the retry timeout
-        await this._withTimeout(Math.min(timeout, this.WAIT_FOR_EXISTS_TIME));
-        const elements = await this.driver.findElements(By.css(selector));
-        await this._withTimeout(this.defaultFindTimeout);
-        const displayed = await this.filterElementIsDisplayed(this.wrapAll(elements));
-        if (displayed.length === 0) {
-          throw new Error(`${selector} is not displayed`);
+      await this.driver.wait(async () => {
+        try {
+          const elements = await this.driver.findElements(By.css(selector));
+          if (elements.length === 0) return null;
+          const displayed = await this.filterElementIsDisplayed(this.wrapAll(elements));
+          return displayed.length > 0 || null;
+        } catch {
+          // stale element or transient error — retry on next poll
+          return null;
         }
-      });
-    } catch (err) {
-      await this._withTimeout(this.defaultFindTimeout);
+      }, timeout);
+      return true;
+    } catch {
       return false;
+    } finally {
+      await this._withTimeout(this.defaultFindTimeout);
     }
-    return true;
   }
 
   public async existsByCssSelector(
@@ -307,9 +313,21 @@ export class FindService extends FtrService {
     timeout: number = this.WAIT_FOR_EXISTS_TIME
   ): Promise<boolean> {
     this.log.debug(`Find.existsByCssSelector('${selector}') with timeout=${timeout}`);
-    return await this.exists(async (drive) => {
-      return this.wrapAll(await drive.findElements(By.css(selector)));
-    }, timeout);
+    // Use 0ms implicit wait so each findElements call returns immediately rather than
+    // blocking for the full timeout. driver.wait() provides the outer patience via
+    // efficient 200ms polling, avoiding one multi-second blocking IPC round-trip.
+    await this._withTimeout(0);
+    try {
+      await this.driver.wait(async () => {
+        const elements = await this.driver.findElements(By.css(selector));
+        return elements.length > 0 || null;
+      }, timeout);
+      return true;
+    } catch {
+      return false;
+    } finally {
+      await this._withTimeout(this.defaultFindTimeout);
+    }
   }
 
   public async existsByXpath(

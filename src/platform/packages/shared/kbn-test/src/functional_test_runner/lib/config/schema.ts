@@ -151,11 +151,14 @@ export const schema = Joi.object()
         // appear. Because there are many times when we expect it to not be there, we don't want
         // to wait the full amount of time, or it would greatly slow our tests down. We used to have
         // this value at 1 second, but this caused flakiness because sometimes the element was deemed missing
-        // only because the page hadn't finished loading.
-        // The best path forward it to prefer functions like `testSubjects.existOrFail` or
+        // only because the page hadn't finished loading. The value was then raised to 2.5 seconds to
+        // address that flakiness. 1.5 seconds is the current compromise: each call that returns false
+        // (element not present) waits at most this long, keeping test suites faster while still
+        // tolerating reasonable page-load latency.
+        // The best path forward is to prefer functions like `testSubjects.existOrFail` or
         // `testSubjects.missingOrFail` instead of just the `exists` checks, and be deterministic about
         // where your user is and what they should click next.
-        waitForExists: Joi.number().default(2500),
+        waitForExists: Joi.number().default(1500),
       })
       .default(),
 
