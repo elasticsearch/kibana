@@ -7,6 +7,13 @@
 
 import { i18n } from '@kbn/i18n';
 
+export type AdvancedSettingCategory =
+  | 'performance'
+  | 'product_features'
+  | 'logs'
+  | 'configs'
+  | 'others';
+
 interface AdvancedPolicySchemaType {
   key: string;
   first_supported_version: string;

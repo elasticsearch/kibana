@@ -81,6 +81,40 @@ describe('Policy Advanced Settings section', () => {
     expect(getByTestId(testSubj.warningCallout));
   });
 
+  it('should show search and filters when expanded', async () => {
+    const { getByTestId } = await render(true);
+
+    expect(getByTestId(testSubj.search)).toBeInTheDocument();
+    expect(getByTestId(testSubj.osFilter)).toBeInTheDocument();
+  });
+
+  it('should filter settings when search query is entered', async () => {
+    await render(true);
+
+    const searchInput = renderResult.getByTestId(testSubj.search);
+    await userEvent.type(searchInput, 'logging.file');
+
+    const linuxLoggingRow = renderResult.queryByTestId(
+      testSubj.settingRowTestSubjects('linux.advanced.logging.file').container
+    );
+    expect(linuxLoggingRow).toBeInTheDocument();
+
+    const unrelatedRow = renderResult.queryByTestId(
+      testSubj.settingRowTestSubjects('linux.advanced.agent.connection_delay').container
+    );
+    expect(unrelatedRow).not.toBeInTheDocument();
+  });
+
+  it('should show empty state when filters match no settings', async () => {
+    await render(true);
+
+    const searchInput = renderResult.getByTestId(testSubj.search);
+    await userEvent.type(searchInput, 'nonexistentSettingKey12345');
+
+    expect(renderResult.getByTestId(testSubj.emptyState)).toBeInTheDocument();
+    expect(renderResult.getByText('No settings match your filters.')).toBeInTheDocument();
+  });
+
   it('should render all advanced options', async () => {
     const fieldsWithDefaultValues = [
       'mac.advanced.capture_env_vars',

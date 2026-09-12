@@ -149,6 +149,9 @@ export const getPolicySettingsFormTestSubjects = (
       showHideButton: advancedSectionTestSubj('showButton'),
       settingsContainer: advancedSectionTestSubj('settings'),
       warningCallout: advancedSectionTestSubj('warning'),
+      search: advancedSectionTestSubj('search'),
+      osFilter: advancedSectionTestSubj('osFilter'),
+      emptyState: advancedSectionTestSubj('emptyState'),
       settingRowTestSubjects: (settingKeyPath: string) => {
         const testSubjForSetting = advancedSectionTestSubj.withPrefix(settingKeyPath);
 
