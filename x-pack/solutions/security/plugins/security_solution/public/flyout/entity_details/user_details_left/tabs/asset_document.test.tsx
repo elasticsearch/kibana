@@ -17,6 +17,8 @@ import { TABLE_TAB_CONTENT_TEST_ID } from '../../../document_details/right/tabs/
 import { JSON_TAB_CONTENT_TEST_ID } from '../../../../flyout_v2/shared/components/json_tab';
 import { PREFIX } from '../../../shared/test_ids';
 
+jest.mock('@kbn/unified-doc-viewer-plugin/public');
+
 describe('AssetDocumentTab', () => {
   it('renders', () => {
     const { getByTestId } = render(
