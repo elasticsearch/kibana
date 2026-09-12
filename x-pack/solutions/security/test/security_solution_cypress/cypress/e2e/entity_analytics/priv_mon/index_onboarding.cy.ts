@@ -25,8 +25,6 @@ import { ENTITY_ANALYTICS_PRIVILEGED_USER_MONITORING_URL } from '../../../urls/n
 
 const sourceIndexName = 'test_index';
 
-// Failing: See https://github.com/elastic/kibana/issues/237554
-// Failing: See https://github.com/elastic/kibana/issues/237553
 describe(
   'Privileged User Monitoring - Index onboarding',
   {
@@ -48,6 +46,7 @@ describe(
     before(() => {
       cy.task('esArchiverLoad', { archiveName: 'linux_process' });
       deletePrivMonEngine(); // Just in case another test left it behind
+      deleteIndex(sourceIndexName); // and in case another spec leaked the shared index name
 
       createIndex(sourceIndexName, {
         user: {
