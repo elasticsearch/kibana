@@ -24,6 +24,16 @@ export const useCanRunTestManually = () => {
   return !!(capabilities?.save || capabilities?.canRunTestManually);
 };
 
+/**
+ * Whether the current user can manage Synthetics/Uptime alert rules. True when
+ * they can edit Synthetics (write) OR have been granted the `canManageRules`
+ * sub-feature.
+ */
+export const useCanManageRules = () => {
+  const capabilities = useKibana().services?.application?.capabilities.uptime;
+  return !!(capabilities?.save || capabilities?.canManageRules);
+};
+
 export const useCanUsePublicLocationsPermission = (): boolean =>
   !!(useKibana().services?.application?.capabilities.uptime.elasticManagedLocationsEnabled ?? true);
 

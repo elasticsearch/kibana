@@ -24,7 +24,7 @@ import {
 } from '../../../state/alert_rules/selectors';
 import { selectMonitorListState } from '../../../state';
 import { getDynamicSettingsAction } from '../../../state/settings/actions';
-import { useSyntheticsSettingsContext } from '../../../contexts';
+import { useCanManageRules } from '../../../../../hooks/use_capabilities';
 import { ConfigKey } from '../../../../../../common/runtime_types';
 
 export const AlertingCallout = ({ isAlertingEnabled }: { isAlertingEnabled?: boolean }) => {
@@ -37,7 +37,7 @@ export const AlertingCallout = ({ isAlertingEnabled }: { isAlertingEnabled?: boo
   const hasDefaultConnector = !settings || !isEmpty(settings?.defaultConnectors);
   const defaultRuleEnabled = settings?.defaultTLSRuleEnabled || settings?.defaultStatusRuleEnabled;
 
-  const { canSave } = useSyntheticsSettingsContext();
+  const canManageRules = useCanManageRules();
 
   const {
     data: { monitors },
@@ -60,7 +60,7 @@ export const AlertingCallout = ({ isAlertingEnabled }: { isAlertingEnabled?: boo
   const showCallout = !hasDefaultConnector && hasAlertingConfigured && defaultRuleEnabled;
   const hasDefaultRules =
     !rulesLoaded || Boolean(defaultRules?.statusRule && defaultRules?.tlsRule);
-  const missingRules = !hasDefaultRules && !canSave;
+  const missingRules = !hasDefaultRules && !canManageRules;
 
   useEffect(() => {
     if (!settings) {

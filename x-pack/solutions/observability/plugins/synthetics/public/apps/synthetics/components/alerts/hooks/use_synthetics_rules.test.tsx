@@ -37,10 +37,6 @@ jest.mock('@kbn/kibana-react-plugin/public', () => ({
   useKibana: jest.fn(),
 }));
 
-jest.mock('../../../contexts', () => ({
-  useSyntheticsSettingsContext: jest.fn(),
-}));
-
 jest.mock('@kbn/response-ops-rule-form/flyout', () => ({
   RuleFormFlyout: () => <div data-test-subj="rule-form-flyout">Rule Form Flyout</div>,
 }));
@@ -52,10 +48,23 @@ const mockUseSelector = redux.useSelector as jest.MockedFunction<typeof redux.us
 const kibanaModule = require('@kbn/kibana-react-plugin/public');
 const mockUseKibana = kibanaModule.useKibana as jest.MockedFunction<any>;
 
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const contextsModule = require('../../../contexts');
-const mockUseSyntheticsSettingsContext =
-  contextsModule.useSyntheticsSettingsContext as jest.MockedFunction<any>;
+const mockUptimeCapabilities = (overrides: { save?: boolean; canManageRules?: boolean } = {}) => ({
+  services: {
+    application: {
+      capabilities: {
+        uptime: {
+          save: true,
+          canManageRules: false,
+          ...overrides,
+        },
+      },
+    },
+    triggersActionsUi: {
+      ruleTypeRegistry: {},
+      actionTypeRegistry: {},
+    },
+  },
+});
 
 describe('useSyntheticsRules', () => {
   const baseMockState = {
@@ -128,18 +137,7 @@ describe('useSyntheticsRules', () => {
     (redux.useDispatch as jest.Mock).mockReturnValue(mockDispatch);
 
     // Default mock implementations
-    mockUseKibana.mockReturnValue({
-      services: {
-        triggersActionsUi: {
-          ruleTypeRegistry: {},
-          actionTypeRegistry: {},
-        },
-      },
-    } as any);
-
-    mockUseSyntheticsSettingsContext.mockReturnValue({
-      canSave: true,
-    } as any);
+    mockUseKibana.mockReturnValue(mockUptimeCapabilities());
 
     // Setup default mock selectors
     setupMockSelectors(baseMockState);
@@ -161,10 +159,8 @@ describe('useSyntheticsRules', () => {
     });
   });
 
-  it('dispatches enableDefaultAlertingSilentlyAction when canSave is true and popover opens', () => {
-    mockUseSyntheticsSettingsContext.mockReturnValue({
-      canSave: true,
-    } as any);
+  it('dispatches enableDefaultAlertingSilentlyAction when the user can save and popover opens', () => {
+    mockUseKibana.mockReturnValue(mockUptimeCapabilities({ save: true }));
 
     const stateWithoutRules = createState({
       defaultAlerting: {
@@ -188,10 +184,33 @@ describe('useSyntheticsRules', () => {
     );
   });
 
-  it('dispatches getDefaultAlertingAction when canSave is false and popover opens', () => {
-    mockUseSyntheticsSettingsContext.mockReturnValue({
-      canSave: false,
-    } as any);
+  it('dispatches enableDefaultAlertingSilentlyAction when the user can manage rules and popover opens', () => {
+    mockUseKibana.mockReturnValue(mockUptimeCapabilities({ save: false, canManageRules: true }));
+
+    const stateWithoutRules = createState({
+      defaultAlerting: {
+        data: undefined,
+        loading: false,
+        success: null,
+      },
+    }) as any;
+
+    setupMockSelectors(stateWithoutRules);
+
+    renderHook(() => useSyntheticsRules(true), {
+      wrapper: TestWrapper,
+    });
+
+    expect(mockDispatch).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: enableDefaultAlertingSilentlyAction.get().type,
+        meta: { dispatchedAt: expect.any(Number) },
+      })
+    );
+  });
+
+  it('dispatches getDefaultAlertingAction when the user cannot manage rules and popover opens', () => {
+    mockUseKibana.mockReturnValue(mockUptimeCapabilities({ save: false, canManageRules: false }));
 
     const stateWithoutRules = createState({
       defaultAlerting: {

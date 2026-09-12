@@ -234,6 +234,23 @@ describe('ToggleAlertFlyoutButton', () => {
     expect(editTlsRuleButton).not.toHaveAttribute('disabled');
   });
 
+  it('enables edit status rule when the user has canManageRules but not save', async () => {
+    const user = userEvent.setup();
+    render(<ToggleAlertFlyoutButton />, {
+      state: baseMockState,
+      core: makeSyntheticsPermissionsCore({ save: false, canManageRules: true }),
+    });
+
+    const button = screen.getByTestId('syntheticsAlertsRulesButton');
+    await user.click(button);
+    await waitForEuiPopoverOpen();
+
+    const statusRuleMenuItem = screen.getByTestId('manageStatusRuleName');
+    await user.click(statusRuleMenuItem);
+    const editStatusRuleButton = await waitFor(() => screen.getByTestId('editDefaultStatusRule'));
+    expect(editStatusRuleButton).not.toHaveAttribute('disabled');
+  });
+
   describe('tooltip content', () => {
     it('shows no permissions tooltip for status rule when user does not have write permissions', async () => {
       mockUseSyntheticsRules.mockReturnValue({

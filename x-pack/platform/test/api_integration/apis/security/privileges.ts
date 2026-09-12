@@ -310,6 +310,7 @@ export default function ({ getService }: FtrProviderContext) {
         'elastic_managed_locations_enabled',
         'can_manage_private_locations',
         'can_read_param_values',
+        'can_manage_rules',
       ],
       securitySolutionAssistant: [
         'all',

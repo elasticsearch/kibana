@@ -31,6 +31,7 @@ import { syntheticsApiKeyObjectType } from './saved_objects/service_api_key';
 
 export const PRIVATE_LOCATION_WRITE_API = 'private-location-write';
 export const MONITOR_RUN_MANUALLY_API = 'monitor-run-manually';
+export const WRITE_SYNTHETICS_DEFAULT_RULES_API = 'write_synthetics_default_rules';
 
 const alertingFeatures = SYNTHETICS_ALERTING_FEATURES;
 
@@ -111,6 +112,39 @@ const canReadParamsPrivilege: SubFeaturePrivilegeGroupConfig = {
       /* Field level access is enforced for the VALUE of the param.
        * The api is still accessible for SO operations to users without this privilege */
       api: [],
+    },
+  ],
+};
+
+const canManageRulesPrivilege: SubFeaturePrivilegeGroupConfig = {
+  groupType: 'independent',
+  privileges: [
+    {
+      id: 'can_manage_rules',
+      name: i18n.translate('xpack.synthetics.features.canManageRules.label', {
+        defaultMessage: 'Can manage rules',
+      }),
+      // `includeIn: 'none'` — never granted implicitly. Default-alerting write
+      // routes accept EITHER `uptime-write` (which base `all` already has, so
+      // existing roles keep working) OR this `write_synthetics_default_rules`
+      // privilege. Alerting grants match base `all` so a read-only role can
+      // create, update, delete, enable, run, and backfill Synthetics/Uptime
+      // rules without monitor, settings, parameter, or private-location writes.
+      includeIn: 'none',
+      api: [WRITE_SYNTHETICS_DEFAULT_RULES_API],
+      savedObject: {
+        all: [],
+        read: [],
+      },
+      alerting: {
+        rule: {
+          all: alertingFeatures,
+          enable: alertingFeatures,
+          manual_run: alertingFeatures,
+          manage_rule_settings: alertingFeatures,
+        },
+      },
+      ui: ['canManageRules'],
     },
   ],
 };
@@ -231,6 +265,16 @@ export const syntheticsFeature = {
         defaultMessage: 'This feature allows you to read global parameters values',
       }),
       privilegeGroups: [canReadParamsPrivilege],
+    },
+    {
+      name: i18n.translate('xpack.synthetics.features.app.rules', {
+        defaultMessage: 'Alert rules',
+      }),
+      description: i18n.translate('xpack.synthetics.features.app.rules.description', {
+        defaultMessage:
+          'Create, update, delete, enable, disable, run, and backfill Synthetics and Uptime alert rules, including the default status and TLS rules. This does not grant permission to create or edit monitors.',
+      }),
+      privilegeGroups: [canManageRulesPrivilege],
     },
   ],
 };
