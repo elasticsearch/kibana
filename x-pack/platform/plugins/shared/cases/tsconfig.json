@@ -103,6 +103,7 @@
     "@kbn/securitysolution-es-utils",
     "@kbn/response-ops-retry-service",
     "@kbn/openapi-generator",
+    "@kbn/deeplinks-workflows",
     "@kbn/workflows-extensions",
     "@kbn/workflows",
     "@kbn/workflows-management-plugin",
@@ -125,6 +126,7 @@
     "@kbn/ai-assistant-common",
     "@kbn/management-settings-ids",
     "@kbn/core-http-common",
+    "@kbn/workflows-ui",
   ],
   "exclude": ["target/**/*"]
 }

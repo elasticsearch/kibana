@@ -8,6 +8,7 @@
 import type { UnifiedAttachmentTypeSetup } from '@kbn/cases-plugin/server';
 import { SECURITY_EVENT_ATTACHMENT_TYPE } from '@kbn/cases-plugin/common';
 import { SecurityEventAttachmentPayloadSchema } from '../../../common/cases/attachments/event';
+import { validateEventWorkflowTargets } from './workflow_validation';
 
 /**
  * Server-side `security.event` unified attachment registration. The cases
@@ -17,4 +18,5 @@ import { SecurityEventAttachmentPayloadSchema } from '../../../common/cases/atta
 export const getEventAttachmentType = (): UnifiedAttachmentTypeSetup => ({
   id: SECURITY_EVENT_ATTACHMENT_TYPE,
   schema: SecurityEventAttachmentPayloadSchema,
+  workflow: { validateTargets: validateEventWorkflowTargets },
 });

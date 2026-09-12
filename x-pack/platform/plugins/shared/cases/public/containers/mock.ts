@@ -782,6 +782,17 @@ export const getUserAction = (
         ...overrides,
       };
 
+    case UserActionTypes.workflow:
+      return {
+        ...commonProperties,
+        type: UserActionTypes.workflow,
+        payload: {
+          workflow: { id: 'wf-1', name: 'My Workflow', executionId: 'exec-1' },
+          origin: { type: 'cases.case', id: basicCaseId },
+        },
+        ...overrides,
+      };
+
     default:
       return {
         ...commonProperties,

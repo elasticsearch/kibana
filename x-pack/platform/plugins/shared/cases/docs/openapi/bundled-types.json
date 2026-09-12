@@ -3067,7 +3067,8 @@
               "status",
               "tags",
               "title",
-              "user"
+              "user",
+              "workflow"
             ],
             "example": "create_case"
           }
@@ -5209,7 +5210,7 @@
       },
       "template_write_request": {
         "title": "Template write request",
-        "description": "The body for creating or fully replacing a case template. Server-managed attributes (author, usage statistics, field summaries, version flags) are computed and cannot be set.\n\nResource limits (enforced on write; a violation returns `400`): an owner may have at most 200 templates per space, and a definition may declare at most 200 fields. Version history is intentionally uncapped. A single stored extended-field value may not exceed 30000 UTF-8 bytes.\n",
+        "description": "The body for creating or fully replacing a case template. Server-managed attributes (author, usage statistics, field summaries, version flags) are computed and cannot be set.\n\nResource limits (enforced on write; a violation returns `400`): an owner may have at most 200 templates per space, and a definition may declare at most 200 fields. Version history is intentionally uncapped. A single stored extended-field value may not exceed 30000 UTF-8 bytes. The YAML `definition` string itself may not exceed 30000 characters (enforced on create, update, and `dry_run`).\n",
         "type": "object",
         "required": [
           "owner",
@@ -5227,6 +5228,7 @@
           },
           "definition": {
             "type": "string",
+            "maxLength": 30000,
             "description": "The template definition as a YAML string: case defaults (name, severity, category, tags, assignees, connector, settings) and a `fields` array of inline field definitions or `$ref` entries pointing into the owner's field library. Stored field values appear on cases under `extended_fields` keys shaped `<field_name>_as_<storage_type>`.\n",
             "example": "name: Security incident\nseverity: high\ntags: [security]\nfields:\n  - name: priority\n    label: Priority\n    type: keyword\n    control: SELECT_BASIC\n    metadata:\n      options: [low, medium, high]\n      default: medium\n  - $ref: risk_score\n"
           },
@@ -6253,6 +6255,80 @@
           }
         }
       },
+      "payload_workflow": {
+        "type": "object",
+        "description": "The payload for a workflow user action, recorded when a user runs a workflow from a case.",
+        "properties": {
+          "workflow": {
+            "type": "object",
+            "description": "Identifies the workflow that was run.",
+            "required": [
+              "id",
+              "name",
+              "executionId"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "description": "The workflow ID."
+              },
+              "name": {
+                "type": "string",
+                "description": "The workflow name at the time the run was triggered."
+              },
+              "executionId": {
+                "type": "string",
+                "description": "The execution ID returned by the Workflows engine."
+              }
+            }
+          },
+          "origin": {
+            "type": "object",
+            "description": "The context from which the workflow was triggered.",
+            "required": [
+              "type",
+              "id"
+            ],
+            "properties": {
+              "type": {
+                "type": "string",
+                "description": "The origin type.",
+                "enum": [
+                  "cases.case",
+                  "cases.observable",
+                  "cases.observables",
+                  "cases.attachment",
+                  "cases.attachments"
+                ]
+              },
+              "id": {
+                "type": "string",
+                "description": "The primary identifier of the case, observable, or attachment from which the workflow was triggered."
+              },
+              "attachmentType": {
+                "type": "string",
+                "description": "For generic attachment origins, the normalized registered attachment type."
+              },
+              "index": {
+                "type": "string",
+                "description": "For document-backed attachment origins, the Elasticsearch index the document lives in."
+              },
+              "count": {
+                "type": "number",
+                "description": "For bulk attachment or observable origins, the number of selected targets."
+              },
+              "typeKey": {
+                "type": "string",
+                "description": "For observable origins, the observable type key."
+              },
+              "value": {
+                "type": "string",
+                "description": "For observable origins, the observable value."
+              }
+            }
+          }
+        }
+      },
       "user_actions_find_response_properties": {
         "type": "object",
         "required": [
@@ -6356,6 +6432,9 @@
               },
               {
                 "$ref": "#/components/schemas/payload_user_comment"
+              },
+              {
+                "$ref": "#/components/schemas/payload_workflow"
               }
             ]
           },
@@ -6382,7 +6461,8 @@
               "severity",
               "status",
               "tags",
-              "title"
+              "title",
+              "workflow"
             ],
             "example": "create_case"
           }

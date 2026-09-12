@@ -22,6 +22,7 @@ import { createCustomFieldsUserActionBuilder } from './custom_fields/custom_fiel
 import { createObservablesUserActionBuilder } from './observables';
 import { createExtendedFieldsUserActionBuilder } from './extended_fields';
 import { createTemplateUserActionBuilder } from './template';
+import { createWorkflowUserActionBuilder } from './workflow';
 
 export const builderMap: UserActionBuilderMap = {
   create_case: createCaseUserActionBuilder,
@@ -40,4 +41,5 @@ export const builderMap: UserActionBuilderMap = {
   observables: createObservablesUserActionBuilder,
   extended_fields: createExtendedFieldsUserActionBuilder,
   template: createTemplateUserActionBuilder,
+  workflow: createWorkflowUserActionBuilder,
 };

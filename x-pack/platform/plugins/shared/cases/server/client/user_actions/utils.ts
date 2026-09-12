@@ -135,10 +135,38 @@ const combineExtractors =
     extractors.flatMap((extractor) => extractor(payload));
 
 /**
+ * Extracts free-text-searchable content from a workflow user-action payload.
+ * The workflow name is the primary human-visible label on every row. For observable
+ * origins the value is also rendered, so it is included. IDs (`workflow.id`,
+ * `workflow.executionId`, `origin.attachmentType`) are opaque identifiers and are
+ * excluded, consistent with the rationale for the excluded types listed below.
+ *
+ * Must be defensive against undecoded payloads: `findWithSearch` calls `findAll` with
+ * `decode: false`, so io-ts has not validated `payload.workflow` before this runs.
+ */
+const extractWorkflowContent: SearchableContentExtractor = (payload) => {
+  const workflow = payload.workflow as Record<string, unknown> | undefined;
+  const origin = payload.origin as Record<string, unknown> | undefined;
+  const texts: string[] = [];
+
+  const name = asString(workflow?.name);
+  if (name) texts.push(name);
+
+  // Observable origins render the observable value in the activity row (`workflow.tsx:98-110`).
+  const value = asString(origin?.value);
+  if (value) texts.push(value);
+
+  return texts;
+};
+
+/**
  * Maps a user action type to the function that pulls its free-text-searchable
- * content out of the payload. Types not present here (e.g. `connector`,
- * `pushed`, `settings`, `status`, `observables`, `template`) either carry no
- * meaningful free text or only reference IDs, so they're excluded from search.
+ * content out of the payload. Types not present here either carry no meaningful
+ * free text or only reference IDs, so they're excluded from search:
+ *   - `connector`, `pushed`, `settings`, `status`, `observables`, `template`: no free text
+ *   - `delete_case`: no payload
+ * `workflow` is indexed but narrowly: only `workflow.name` and, for observable origins,
+ * the rendered observable value (IDs are excluded — see `extractWorkflowContent`).
  *
  * `comment` also covers file attachments (both the unified `file` type and
  * the legacy `.files` externalReference type), whose file name(s) are
@@ -154,6 +182,7 @@ const SEARCHABLE_CONTENT_EXTRACTORS: Partial<Record<UserActionType, SearchableCo
   [UserActionTypes.assignees]: extractAssignees,
   [UserActionTypes.customFields]: extractCustomFields,
   [UserActionTypes.extended_fields]: extractExtendedFields,
+  [UserActionTypes.workflow]: extractWorkflowContent,
   [UserActionTypes.create_case]: combineExtractors(
     extractField('title'),
     extractField('description'),

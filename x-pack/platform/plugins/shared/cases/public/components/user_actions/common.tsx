@@ -7,45 +7,21 @@
 
 import React from 'react';
 import type { EuiCommentProps } from '@elastic/eui';
-import { EuiFlexGroup, EuiFlexItem } from '@elastic/eui';
+import { EuiFlexItem } from '@elastic/eui';
 
-import type { SnakeToCamelCase } from '../../../common/types';
-import type { UserActionAction, ConnectorUserAction } from '../../../common/types/domain';
+import type { UserActionAction } from '../../../common/types/domain';
 import { UserActionActions } from '../../../common/types/domain';
 import { UserActionTimestamp } from './timestamp';
 import type { UserActionBuilder, UserActionBuilderArgs } from './types';
-import { UserActionCopyLink } from './copy_link';
 import { UserActionMoveToReference } from './move_to_reference';
 import { HoverableUserWithAvatarResolver } from '../user_profiles/hoverable_user_with_avatar_resolver';
 import { getUserActionAriaLabel } from './user_actions_aria_labels';
-
-interface Props {
-  userAction: SnakeToCamelCase<ConnectorUserAction>;
-  handleOutlineComment: (id: string) => void;
-}
+import { UserActionContentToolbar } from './content_toolbar';
 
 const showMoveToReference = (
   action: UserActionAction,
   commentId: string | null
 ): commentId is string => action === UserActionActions.update && commentId != null;
-
-const CommentListActions: React.FC<Props> = React.memo(({ userAction, handleOutlineComment }) => (
-  <EuiFlexGroup responsive={false}>
-    <EuiFlexItem grow={false}>
-      <UserActionCopyLink id={userAction.id} />
-    </EuiFlexItem>
-    {showMoveToReference(userAction.action, userAction.commentId) && (
-      <EuiFlexItem grow={false}>
-        <UserActionMoveToReference
-          id={userAction.commentId}
-          outlineComment={handleOutlineComment}
-        />
-      </EuiFlexItem>
-    )}
-  </EuiFlexGroup>
-));
-
-CommentListActions.displayName = 'CommentListActions';
 
 type BuilderArgs = Pick<
   UserActionBuilderArgs,
@@ -53,6 +29,12 @@ type BuilderArgs = Pick<
 > & {
   label: EuiCommentProps['event'];
   icon: EuiCommentProps['timelineAvatar'];
+  /**
+   * Extra control appended after copy-link / move-to-reference (e.g. a document-flyout button).
+   * Pass the raw node returned by `renderAttachmentAction` — it wraps BUTTON actions in their
+   * own `EuiFlexItem`, so this slot must NOT add another wrapper.
+   */
+  documentAction?: React.ReactNode;
 };
 
 export const createCommonUpdateUserActionBuilder = ({
@@ -61,6 +43,7 @@ export const createCommonUpdateUserActionBuilder = ({
   label,
   icon,
   handleOutlineComment,
+  documentAction,
 }: BuilderArgs): ReturnType<UserActionBuilder> => {
   return {
     build: () => [
@@ -77,10 +60,7 @@ export const createCommonUpdateUserActionBuilder = ({
         timelineAvatar: icon,
         timelineAvatarAriaLabel: getUserActionAriaLabel(userAction.type),
         actions: (
-          <EuiFlexGroup responsive={false}>
-            <EuiFlexItem grow={false}>
-              <UserActionCopyLink id={userAction.id} />
-            </EuiFlexItem>
+          <UserActionContentToolbar id={userAction.id}>
             {showMoveToReference(userAction.action, userAction.commentId) && (
               <EuiFlexItem grow={false}>
                 <UserActionMoveToReference
@@ -89,7 +69,8 @@ export const createCommonUpdateUserActionBuilder = ({
                 />
               </EuiFlexItem>
             )}
-          </EuiFlexGroup>
+            {documentAction}
+          </UserActionContentToolbar>
         ),
       },
     ],

@@ -8,8 +8,10 @@
 import type { UnifiedAttachmentTypeSetup } from '@kbn/cases-plugin/server';
 import { SECURITY_ALERT_ATTACHMENT_TYPE } from '@kbn/cases-plugin/common';
 import { SecurityAlertAttachmentPayloadSchema } from '../../../common/cases/attachments/alert';
+import { validateAlertWorkflowTargets } from './workflow_validation';
 
 export const securityAlertAttachmentType: UnifiedAttachmentTypeSetup = {
   id: SECURITY_ALERT_ATTACHMENT_TYPE,
   schema: SecurityAlertAttachmentPayloadSchema,
+  workflow: { validateTargets: validateAlertWorkflowTargets },
 };

@@ -2023,6 +2023,7 @@ components:
             - tags
             - title
             - user
+            - workflow
           example: create_case
   schemas:
     assignees:
@@ -4394,6 +4395,61 @@ components:
               type: string
               enum:
                 - user
+    payload_workflow:
+      type: object
+      description: The payload for a workflow user action, recorded when a user runs a workflow from a case.
+      properties:
+        workflow:
+          type: object
+          description: Identifies the workflow that was run.
+          required:
+            - id
+            - name
+            - executionId
+          properties:
+            id:
+              type: string
+              description: The workflow ID.
+            name:
+              type: string
+              description: The workflow name at the time the run was triggered.
+            executionId:
+              type: string
+              description: The execution ID returned by the Workflows engine.
+        origin:
+          type: object
+          description: The context from which the workflow was triggered.
+          required:
+            - type
+            - id
+          properties:
+            type:
+              type: string
+              description: The origin type.
+              enum:
+                - cases.case
+                - cases.observable
+                - cases.observables
+                - cases.attachment
+                - cases.attachments
+            id:
+              type: string
+              description: The primary identifier of the case, observable, or attachment from which the workflow was triggered.
+            attachmentType:
+              type: string
+              description: For generic attachment origins, the normalized registered attachment type.
+            index:
+              type: string
+              description: For document-backed attachment origins, the Elasticsearch index the document lives in.
+            count:
+              type: number
+              description: For bulk attachment or observable origins, the number of selected targets.
+            typeKey:
+              type: string
+              description: For observable origins, the observable type key.
+            value:
+              type: string
+              description: For observable origins, the observable value.
     user_actions_find_response_properties:
       type: object
       required:
@@ -4459,6 +4515,7 @@ components:
             - $ref: '#/components/schemas/payload_tags'
             - $ref: '#/components/schemas/payload_title'
             - $ref: '#/components/schemas/payload_user_comment'
+            - $ref: '#/components/schemas/payload_workflow'
         version:
           type: string
           example: WzM1ODg4LDFd
@@ -4482,6 +4539,7 @@ components:
             - status
             - tags
             - title
+            - workflow
           example: create_case
     add_case_file_request:
       title: Add case file request properties

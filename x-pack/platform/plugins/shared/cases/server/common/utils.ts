@@ -244,10 +244,17 @@ export const getIDsAndIndicesAsArrays = (
 
   if ('attachmentId' in comment) {
     const metadataIndex = getIndexFromMetadata(comment.metadata);
-    return {
-      ids: toStringArray(comment.attachmentId),
-      indices: toStringArray(metadataIndex),
-    };
+    const ids = toStringArray(comment.attachmentId);
+    // A scalar metadata.index broadcasts to every id; only an array is paired 1-to-1.
+    // Previously toStringArray converted a scalar to a 1-element array, so a scalar 'i1'
+    // against ids ['a','b'] produced a mismatched-length pair and was dropped by callers.
+    // The broadcast is the intentional semantic — match the behaviour of
+    // `getAndValidateIndexedAttachmentInfo` in validate_attachment_ids.ts.
+    const isBroadcast = typeof metadataIndex === 'string' && metadataIndex.length > 0;
+    const indices = isBroadcast
+      ? ids.map(() => metadataIndex as string)
+      : toStringArray(metadataIndex);
+    return { ids, indices };
   }
 
   return {

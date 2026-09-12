@@ -10,6 +10,8 @@ import { EuiCommentList } from '@elastic/eui';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import copy from 'copy-to-clipboard';
+import { AttachmentActionType } from '../../client/attachment_framework/types';
+import { renderAttachmentAction } from './attachment_action';
 
 import { UserActionActions } from '../../../common/types/domain';
 import { createCommonUpdateUserActionBuilder } from './common';
@@ -118,5 +120,91 @@ describe('createCommonUpdateUserActionBuilder ', () => {
 
     await userEvent.click(screen.getByLabelText('Highlight the referenced comment'));
     expect(handleOutlineComment).toHaveBeenCalled();
+  });
+
+  it('renders the documentAction after the copy-link button when provided', () => {
+    const userAction = getUserAction('title', UserActionActions.update, {
+      createdBy: { profileUid: userProfiles[0].uid },
+    });
+    const builder = createCommonUpdateUserActionBuilder({
+      userProfiles: userProfilesMap,
+      userAction,
+      label,
+      icon: 'dot',
+      handleOutlineComment,
+      documentAction: (
+        <button type="button" data-test-subj="doc-action-btn">
+          {'Open document'}
+        </button>
+      ),
+    });
+
+    render(
+      <TestProviders>
+        <EuiCommentList comments={builder.build()} />
+      </TestProviders>
+    );
+
+    expect(screen.getByTestId('doc-action-btn')).toBeInTheDocument();
+    // Copy link still present
+    expect(screen.getByLabelText('Copy reference link')).toBeInTheDocument();
+  });
+
+  it('does not render the documentAction slot when not provided', () => {
+    const userAction = getUserAction('title', UserActionActions.update, {
+      createdBy: { profileUid: userProfiles[0].uid },
+    });
+    const builder = createCommonUpdateUserActionBuilder({
+      userProfiles: userProfilesMap,
+      userAction,
+      label,
+      icon: 'dot',
+      handleOutlineComment,
+    });
+
+    render(
+      <TestProviders>
+        <EuiCommentList comments={builder.build()} />
+      </TestProviders>
+    );
+
+    expect(screen.queryByTestId('doc-action-btn')).not.toBeInTheDocument();
+    // Copy link still present without the extra action
+    expect(screen.getByLabelText('Copy reference link')).toBeInTheDocument();
+  });
+
+  it('renders a BUTTON-typed document action alongside the copy-link button', () => {
+    // `renderAttachmentAction` returns an `EuiFlexItem` for BUTTON actions. Passing it directly
+    // as `documentAction` must render the action button and keep the copy-link button.
+    const userAction = getUserAction('title', UserActionActions.update, {
+      createdBy: { profileUid: userProfiles[0].uid },
+    });
+    const builder = createCommonUpdateUserActionBuilder({
+      userProfiles: userProfilesMap,
+      userAction,
+      label,
+      icon: 'dot',
+      handleOutlineComment,
+      documentAction: renderAttachmentAction(
+        {
+          type: AttachmentActionType.BUTTON,
+          label: 'Open alert',
+          iconType: 'popout',
+          onClick: jest.fn(),
+        },
+        'doc-action-test-subj'
+      ),
+    });
+
+    render(
+      <TestProviders>
+        <EuiCommentList comments={builder.build()} />
+      </TestProviders>
+    );
+
+    // The BUTTON action renders as an aria-labelled button.
+    expect(screen.getByLabelText('Open alert')).toBeInTheDocument();
+    // Copy link still present alongside the document action.
+    expect(screen.getByLabelText('Copy reference link')).toBeInTheDocument();
   });
 });

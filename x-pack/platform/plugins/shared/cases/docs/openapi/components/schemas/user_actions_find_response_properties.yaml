@@ -48,6 +48,7 @@ properties:
       - $ref: 'payload_tags.yaml'
       - $ref: 'payload_title.yaml'
       - $ref: 'payload_user_comment.yaml'
+      - $ref: 'payload_workflow.yaml'
   version:
     type: string
     example: WzM1ODg4LDFd
@@ -71,4 +72,5 @@ properties:
       - status
       - tags
       - title
+      - workflow
     example: create_case

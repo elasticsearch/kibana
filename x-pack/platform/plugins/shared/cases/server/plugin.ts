@@ -237,15 +237,24 @@ export class CasePlugin
             management: plugins.workflowsManagement.management,
             logger: this.logger,
             audit: plugins.security.audit,
-            getWorkflowRunAuthorizer: async (request) => {
-              const [{ savedObjects }] = await core.getStartServices();
-              return this.clientFactory.createWorkflowRunAuthorizer({
-                request,
-                savedObjectsService: savedObjects,
-              });
-            },
+            attachmentTypeRegistry: this.unifiedAttachmentTypeRegistry,
           })
         : undefined;
+
+    // Resolves a request-scoped workflow run context. Defined here and threaded directly into
+    // the route so that `getCasesWorkflowRunContext` does not need to live on `CaseRequestContext`
+    // (which would expose it to all ~20 plugins that depend on the `cases` context).
+    const getWorkflowRunContext = workflowRunService
+      ? async (request: KibanaRequest) => {
+          const [coreStart] = await core.getStartServices();
+          return this.clientFactory.createWorkflowRunContext({
+            request,
+            scopedClusterClient: coreStart.elasticsearch.client.asScoped(request).asCurrentUser,
+            savedObjectsService: coreStart.savedObjects,
+            clientSource: 'rest_api',
+          });
+        }
+      : undefined;
 
     registerRoutes({
       router,
@@ -258,7 +267,9 @@ export class CasePlugin
         ...getInternalRoutes(
           this.userProfileService,
           this.caseConfig,
-          workflowRunService ? { service: workflowRunService, getSpaceId } : undefined
+          workflowRunService && getWorkflowRunContext
+            ? { service: workflowRunService, getSpaceId, getWorkflowRunContext }
+            : undefined
         ),
       ],
       logger: this.logger,

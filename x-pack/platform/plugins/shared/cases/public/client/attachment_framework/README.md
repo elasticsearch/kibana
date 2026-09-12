@@ -45,6 +45,9 @@ export const registerCaseAttachments = (cases?: CasesServerSetup): void => {
     // `false` excludes the type from workflow steps.
     // A narrower Zod object, typically the by-reference arm, is also valid.
     workflowSchema: false,
+    // Opts this type into workflow-run origins. Reference types use attachmentId by default;
+    // value types use the Cases attachment saved-object id.
+    workflow: {},
   });
 };
 ```
@@ -71,6 +74,9 @@ export const registerMyAttachment = (cases: CasesPublicSetup): void => {
         children: LazyWidgetBody,
       }),
       getRemovalActivity: () => ({ event: 'removed a widget' }),
+      workflow: {
+        getActivityLabel: ({ workflowName }) => <>ran {workflowName} on a widget</>,
+      },
     })
   );
 };
@@ -78,7 +84,7 @@ export const registerMyAttachment = (cases: CasesPublicSetup): void => {
 
 Call this from public `setup` via `plugins.cases`. Wrap the object in `defineAttachment` so renderer props are inferred from `schema` at the call site. The registry then stores a widened type so many registrations can share one map.
 
-Import UI types from `@kbn/cases-plugin/public`: `UnifiedValueAttachmentViewProps`, `UnifiedReferenceAttachmentViewProps`, `UnifiedHybridAttachmentViewProps`, `AttachmentActionType`. Import type ids from `@kbn/cases-plugin/common` when Cases owns the constant.
+Import UI types from `@kbn/cases-plugin/public`: `UnifiedValueAttachmentViewProps`, `UnifiedReferenceAttachmentViewProps`, `UnifiedHybridAttachmentViewProps`, `AttachmentActionType`, `AttachmentAction`, `DocumentActionProps`. Import type ids from `@kbn/cases-plugin/common` when Cases owns the constant.
 
 `getLabel`, `event`, and `deleteSuccessToast` strings need `i18n.translate`. The snippet above skips that for brevity.
 
@@ -94,6 +100,8 @@ Import UI types from `@kbn/cases-plugin/public`: `UnifiedValueAttachmentViewProp
 | `getCreationActivity(props)` | yes | Activity-row create event. |
 | `getRemovalActivity(props)` | no | Activity-row delete event. |
 | `getAttachmentList(props?)` | no | Case-view table/tab (`AttachmentList`). |
+| `workflow.getActivityLabel(props)` | no | Opts the public registration into attachment workflow activity rendering. Receives the linked workflow name and an optional bulk count. |
+| `getDocumentAction(props)` | no | Control that opens the ES document this type points at, rendered from activity rows that reference the document but are not the attachment's own row (e.g. workflow runs). Return `null` when the target can't be resolved. |
 
 `getCreationActivity` may return:
 

@@ -20,7 +20,6 @@ import { getUsers } from './users';
 import type { GetConnectorsRequest, UserActionFind, UserActionGet, GetUsersRequest } from './types';
 import { find } from './find';
 import type { CasesClient } from '../client';
-
 /**
  * API for interacting the actions performed by a user when interacting with the cases entities.
  */

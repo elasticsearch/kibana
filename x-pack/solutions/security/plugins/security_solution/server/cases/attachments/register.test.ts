@@ -20,6 +20,7 @@ import { TimelineAttachmentPayloadSchema } from '../../../common/cases/attachmen
 import { SecurityEventAttachmentPayloadSchema } from '../../../common/cases/attachments/event';
 import { EntityAttachmentPayloadSchema } from '../../../common/cases/attachments/entity';
 import { EntityType } from '@kbn/entity-store/common';
+import { validateEventWorkflowTargets } from './workflow_validation';
 
 // Reproduces the path:message summary that `parseUnifiedAttachmentWithSchema`
 // in `@kbn/cases-plugin` builds at the write boundary. Keeping this assertion
@@ -58,6 +59,7 @@ describe('registerCaseAttachments', () => {
     expect(framework.registerAttachment).toHaveBeenCalledWith({
       id: SECURITY_EVENT_ATTACHMENT_TYPE,
       schema: SecurityEventAttachmentPayloadSchema,
+      workflow: { validateTargets: validateEventWorkflowTargets },
     });
   });
 

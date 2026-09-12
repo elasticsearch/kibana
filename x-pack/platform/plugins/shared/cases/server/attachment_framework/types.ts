@@ -23,6 +23,33 @@ export type UnifiedAttachmentState = Pick<UnifiedAttachmentPayload, 'type' | 'me
     | Pick<UnifiedValueAttachmentPayload, 'data'>
   );
 
+export interface WorkflowAttachmentTarget {
+  id: string;
+  index?: string;
+}
+
+export interface WorkflowAttachmentResolverContext {
+  attachment: UnifiedAttachmentState;
+  savedObjectId: string;
+}
+
+export interface WorkflowAttachmentValidationContext {
+  targets: readonly WorkflowAttachmentTarget[];
+  inputs: Record<string, unknown>;
+}
+
+/** Enables an attachment type as a workflow origin with optional target resolution and validation. */
+export interface AttachmentWorkflowDefinition {
+  /**
+   * Resolves the attachment targets that may be named by a workflow origin.
+   * Reference attachments default to their `attachmentId`; value attachments default to
+   * their Cases attachment saved-object id.
+   */
+  getTargets?: (context: WorkflowAttachmentResolverContext) => readonly WorkflowAttachmentTarget[];
+  /** Applies attachment-specific input/target alignment after Cases membership checks. */
+  validateTargets?: (context: WorkflowAttachmentValidationContext) => void;
+}
+
 export interface UnifiedAttachmentType
   extends Omit<PersistableState<UnifiedAttachmentState>, 'migrations' | 'inject' | 'extract'> {
   id: string;
@@ -33,6 +60,7 @@ export interface UnifiedAttachmentType
    * `schema` if it is a Zod object; when `false`, the type is excluded.
    */
   workflowSchema?: z.ZodObject | false;
+  workflow?: AttachmentWorkflowDefinition;
 }
 
 export interface UnifiedAttachmentTypeSetup
@@ -44,6 +72,7 @@ export interface UnifiedAttachmentTypeSetup
   /** Full-payload zod schema. Sole validation source for unified attachments. */
   schema: z.ZodType;
   workflowSchema?: z.ZodObject | false;
+  workflow?: AttachmentWorkflowDefinition;
 }
 
 export interface AttachmentFramework {

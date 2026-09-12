@@ -15,5 +15,6 @@ describe('security.event attachment type', () => {
 
     expect(eventAttachmentType.id).toBe(SECURITY_EVENT_ATTACHMENT_TYPE);
     expect(eventAttachmentType.schema).toBe(SecurityEventAttachmentPayloadSchema);
+    expect(eventAttachmentType.workflow?.validateTargets).toBeDefined();
   });
 });

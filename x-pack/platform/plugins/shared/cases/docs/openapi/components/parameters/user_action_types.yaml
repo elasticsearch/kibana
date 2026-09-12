@@ -21,4 +21,5 @@ schema:
       - tags
       - title
       - user
+      - workflow
     example: create_case

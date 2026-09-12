@@ -10,21 +10,29 @@ import {
   WorkflowsManagementOperationPrivileges,
 } from '@kbn/workflows';
 import { createCasesClientMock } from '../../../client/mocks';
+import type { CasesWorkflowOperations } from '../../../client/workflows/operations';
 import type { CasesWorkflowRunService } from '../../../workflows/execution/service';
 import { createRunWorkflowRoute, runCaseWorkflowParamsSchema } from './run_workflow';
 
 describe('run workflow route', () => {
   const casesClient = createCasesClientMock();
+  const workflowOperations: jest.Mocked<CasesWorkflowOperations> = {
+    ensureAuthorizedToRunWorkflow: jest.fn(),
+    preflightWorkflowExecution: jest.fn(),
+    recordWorkflowExecution: jest.fn(),
+  };
   const service = {
     run: jest.fn(),
   } as unknown as jest.Mocked<CasesWorkflowRunService>;
   const getSpaceId = jest.fn().mockReturnValue('space-1');
-  const route = createRunWorkflowRoute({ service, getSpaceId });
+  const getWorkflowRunContext = jest.fn().mockResolvedValue({ casesClient, workflowOperations });
+  const route = createRunWorkflowRoute({ service, getSpaceId, getWorkflowRunContext });
 
   beforeEach(() => {
     jest.clearAllMocks();
     service.run.mockResolvedValue({
       workflowExecutionId: 'execution-1',
+      activityStatus: 'succeeded',
     });
   });
 
@@ -54,11 +62,7 @@ describe('run workflow route', () => {
       },
     };
     const response = { ok: jest.fn() };
-    const context = {
-      cases: {
-        getCasesClient: jest.fn().mockResolvedValue(casesClient),
-      },
-    };
+    const context = {};
 
     await route.handler({
       context,
@@ -72,11 +76,13 @@ describe('run workflow route', () => {
       request,
       context,
       casesClient,
+      workflowOperations,
       spaceId: 'space-1',
     });
     expect(response.ok).toHaveBeenCalledWith({
       body: {
         workflowExecutionId: 'execution-1',
+        activityStatus: 'succeeded',
       },
     });
   });

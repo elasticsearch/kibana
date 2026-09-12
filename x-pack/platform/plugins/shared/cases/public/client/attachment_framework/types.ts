@@ -119,6 +119,24 @@ export interface UnifiedHybridAttachmentViewProps<
   data?: Data;
 }
 
+export interface DocumentActionProps {
+  /** Scoping id for DOM ids and test subjects — the id of the hosting activity row. */
+  id: string;
+  /** ES `_id` of the target document. */
+  documentId: string;
+  /** ES index the document lives in. Absent when the origin was never enriched. */
+  index?: string;
+}
+
+export interface WorkflowActivityLabelProps {
+  workflowName: React.ReactNode;
+  count?: number;
+}
+
+export interface AttachmentWorkflow {
+  getActivityLabel: (props: WorkflowActivityLabelProps) => React.ReactNode;
+}
+
 export interface AttachmentType<Props> {
   id: string;
   getIcon: (props: Props) => EuiCommentProps['timelineAvatar'];
@@ -128,6 +146,17 @@ export interface AttachmentType<Props> {
   getAttachmentList?: (
     props?: CommonAttachmentListViewProps
   ) => AttachmentList<CommonAttachmentListViewProps>;
+  /**
+   * Returns a control that opens the ES document this attachment type points at, for
+   * activity rows that reference the document but are not the attachment's own row
+   * (e.g. a workflow run recorded against `cases.attachment`).
+   *
+   * Return `null` when the target cannot be resolved (e.g. no `index`). Types whose
+   * documents have no flyout should omit this method entirely.
+   */
+  getDocumentAction?: (props: DocumentActionProps) => AttachmentAction | null;
+  /** Enables this registered type to render workflow activity labels. */
+  workflow?: AttachmentWorkflow;
 }
 
 interface UnifiedAttachmentSchema {

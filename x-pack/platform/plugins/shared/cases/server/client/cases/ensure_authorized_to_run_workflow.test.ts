@@ -8,16 +8,11 @@
 import { WriteOperations } from '../../authorization';
 import { CASE_SAVED_OBJECT } from '../../../common/constants';
 import { mockCases } from '../../mocks';
-import { createCasesClientMockArgs } from '../../client/mocks';
-import { ensureAuthorizedToRunWorkflow } from './authorize_workflow_run';
+import { createCasesClientMockArgs } from '../mocks';
+import { ensureAuthorizedToRunWorkflow } from './ensure_authorized_to_run_workflow';
 
 describe('ensureAuthorizedToRunWorkflow', () => {
-  const args = createCasesClientMockArgs();
-  const deps = {
-    authorization: args.authorization,
-    caseService: args.services.caseService,
-    logger: args.logger,
-  };
+  const clientArgs = createCasesClientMockArgs();
   const caseA = mockCases[0];
   const caseB = mockCases[1];
 
@@ -26,13 +21,13 @@ describe('ensureAuthorizedToRunWorkflow', () => {
   });
 
   it('authorizes using the updateCase privilege (cases:<owner>/updateCase) with a workflow-run audit action', async () => {
-    args.services.caseService.getCases.mockResolvedValue({
+    clientArgs.services.caseService.getCases.mockResolvedValue({
       saved_objects: [caseA],
     });
 
-    await ensureAuthorizedToRunWorkflow({ ids: [caseA.id] }, deps);
+    await ensureAuthorizedToRunWorkflow({ ids: [caseA.id] }, clientArgs);
 
-    expect(args.authorization.ensureAuthorized).toHaveBeenCalledWith({
+    expect(clientArgs.authorization.ensureAuthorized).toHaveBeenCalledWith({
       // The operation reuses WriteOperations.UpdateCase as the privilege name so the
       // cases:<owner>/updateCase privilege string controls access, but overrides the audit
       // action to `case_workflow_run_authz` (access, not change) to avoid writing a
@@ -47,16 +42,26 @@ describe('ensureAuthorizedToRunWorkflow', () => {
     });
   });
 
+  it('returns the authorized entities so callers can skip a redundant getCases fetch', async () => {
+    clientArgs.services.caseService.getCases.mockResolvedValue({
+      saved_objects: [caseA],
+    });
+
+    const entities = await ensureAuthorizedToRunWorkflow({ ids: [caseA.id] }, clientArgs);
+
+    expect(entities).toEqual([{ id: caseA.id, owner: caseA.attributes.owner }]);
+  });
+
   it('issues a single authorization call carrying all entities for multi-case requests', async () => {
-    args.services.caseService.getCases.mockResolvedValue({
+    clientArgs.services.caseService.getCases.mockResolvedValue({
       saved_objects: [caseA, caseB],
     });
 
-    await ensureAuthorizedToRunWorkflow({ ids: [caseA.id, caseB.id] }, deps);
+    const entities = await ensureAuthorizedToRunWorkflow({ ids: [caseA.id, caseB.id] }, clientArgs);
 
-    expect(args.services.caseService.getCases).toHaveBeenCalledTimes(1);
-    expect(args.authorization.ensureAuthorized).toHaveBeenCalledTimes(1);
-    expect(args.authorization.ensureAuthorized).toHaveBeenCalledWith(
+    expect(clientArgs.services.caseService.getCases).toHaveBeenCalledTimes(1);
+    expect(clientArgs.authorization.ensureAuthorized).toHaveBeenCalledTimes(1);
+    expect(clientArgs.authorization.ensureAuthorized).toHaveBeenCalledWith(
       expect.objectContaining({
         entities: expect.arrayContaining([
           { id: caseA.id, owner: caseA.attributes.owner },
@@ -64,15 +69,21 @@ describe('ensureAuthorizedToRunWorkflow', () => {
         ]),
       })
     );
+    expect(entities).toEqual(
+      expect.arrayContaining([
+        { id: caseA.id, owner: caseA.attributes.owner },
+        { id: caseB.id, owner: caseB.attributes.owner },
+      ])
+    );
   });
 
   it('propagates authorization failures', async () => {
-    args.services.caseService.getCases.mockResolvedValue({
+    clientArgs.services.caseService.getCases.mockResolvedValue({
       saved_objects: [caseA],
     });
-    args.authorization.ensureAuthorized.mockRejectedValue(new Error('not authorized'));
+    clientArgs.authorization.ensureAuthorized.mockRejectedValue(new Error('not authorized'));
 
-    await expect(ensureAuthorizedToRunWorkflow({ ids: [caseA.id] }, deps)).rejects.toThrow(
+    await expect(ensureAuthorizedToRunWorkflow({ ids: [caseA.id] }, clientArgs)).rejects.toThrow(
       'not authorized'
     );
   });
@@ -86,16 +97,16 @@ describe('ensureAuthorizedToRunWorkflow', () => {
       type: 'cases',
       error: { statusCode: 404, error: 'Not Found', message: 'Saved object not found' },
     };
-    args.services.caseService.getCases.mockResolvedValue({
+    clientArgs.services.caseService.getCases.mockResolvedValue({
       saved_objects: [soError],
-    } as unknown as Awaited<ReturnType<typeof args.services.caseService.getCases>>);
+    } as unknown as Awaited<ReturnType<typeof clientArgs.services.caseService.getCases>>);
 
     // ensureAuthorized({ entities: [] }) passes vacuously — the explicit guard rejects
     // with 403 before calling ensureAuthorized, so the authorization mock is never called.
-    await expect(ensureAuthorizedToRunWorkflow({ ids: ['missing-case'] }, deps)).rejects.toThrow(
-      'Unauthorized to run workflow on case'
-    );
-    expect(args.authorization.ensureAuthorized).not.toHaveBeenCalled();
+    await expect(
+      ensureAuthorizedToRunWorkflow({ ids: ['missing-case'] }, clientArgs)
+    ).rejects.toThrow('Unauthorized to run workflow on case');
+    expect(clientArgs.authorization.ensureAuthorized).not.toHaveBeenCalled();
   });
 
   it('rejects with forbidden (not not-found) when the batch is mixed (some found, some missing)', async () => {
@@ -107,14 +118,14 @@ describe('ensureAuthorizedToRunWorkflow', () => {
       type: 'cases',
       error: { statusCode: 404, error: 'Not Found', message: 'Saved object not found' },
     };
-    args.services.caseService.getCases.mockResolvedValue({
+    clientArgs.services.caseService.getCases.mockResolvedValue({
       saved_objects: [caseA, soError],
-    } as unknown as Awaited<ReturnType<typeof args.services.caseService.getCases>>);
+    } as unknown as Awaited<ReturnType<typeof clientArgs.services.caseService.getCases>>);
 
     await expect(
-      ensureAuthorizedToRunWorkflow({ ids: [caseA.id, 'missing-case'] }, deps)
+      ensureAuthorizedToRunWorkflow({ ids: [caseA.id, 'missing-case'] }, clientArgs)
     ).rejects.toThrow('Unauthorized to run workflow on case');
     // ensureAuthorized must NOT be called — the forbidden must fire before privilege check.
-    expect(args.authorization.ensureAuthorized).not.toHaveBeenCalled();
+    expect(clientArgs.authorization.ensureAuthorized).not.toHaveBeenCalled();
   });
 });

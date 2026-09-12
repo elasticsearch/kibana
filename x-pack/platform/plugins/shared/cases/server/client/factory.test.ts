@@ -53,6 +53,26 @@ describe('CasesClientFactory', () => {
     );
   });
 
+  it('creates a workflow run context with a client and request-scoped operations', async () => {
+    const casesClient = {};
+    createCasesClientMocked.mockReturnValue(casesClient);
+    const scopedClusterClient = coreStart.elasticsearch.client.asScoped(request).asCurrentUser;
+
+    const context = await casesClientFactory.createWorkflowRunContext({
+      request,
+      savedObjectsService: coreStart.savedObjects,
+      scopedClusterClient,
+      clientSource: 'rest_api',
+    });
+
+    expect(context.casesClient).toBe(casesClient);
+    expect(context.workflowOperations).toEqual({
+      ensureAuthorizedToRunWorkflow: expect.any(Function),
+      preflightWorkflowExecution: expect.any(Function),
+      recordWorkflowExecution: expect.any(Function),
+    });
+  });
+
   describe('user info', () => {
     it('constructs the user info from user profiles', async () => {
       const scopedClusterClient = coreStart.elasticsearch.client.asScoped(request).asCurrentUser;

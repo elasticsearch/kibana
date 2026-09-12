@@ -24,6 +24,7 @@ import { CustomFieldsUserActionBuilder } from './builders/custom_fields';
 import { ObservablesUserActionBuilder } from './builders/observables';
 import { ExtendedFieldsUserActionBuilder } from './builders/extended_fields';
 import { TemplateUserActionBuilder } from './builders/template';
+import { WorkflowUserActionBuilder } from './builders/workflow';
 
 const builderMap = {
   assignees: AssigneesUserActionBuilder,
@@ -43,6 +44,7 @@ const builderMap = {
   observables: ObservablesUserActionBuilder,
   extended_fields: ExtendedFieldsUserActionBuilder,
   template: TemplateUserActionBuilder,
+  workflow: WorkflowUserActionBuilder,
 };
 
 export class BuilderFactory {

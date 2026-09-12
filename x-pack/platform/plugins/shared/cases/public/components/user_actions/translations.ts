@@ -157,3 +157,7 @@ export const SYNCED_ALERTS_WITH_CLOSE_REASON = (count: number) =>
     values: { count },
     defaultMessage: 'and synced {count, plural, =1 {# alert} other {# alerts}} with close reason',
   });
+
+export const WORKFLOW_RAN = i18n.translate('xpack.cases.caseView.userActions.workflowRan', {
+  defaultMessage: 'ran a workflow',
+});

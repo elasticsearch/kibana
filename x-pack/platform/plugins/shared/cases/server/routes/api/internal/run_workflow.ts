@@ -12,7 +12,8 @@ import {
   INTERNAL_CASE_WORKFLOW_RUN_URL,
   MAX_CASE_WORKFLOW_RUN_ID_LENGTH,
 } from '../../../../common/constants';
-import { RunCaseWorkflowRequestSchema } from '../../../../common/types/api/workflow/v1';
+import { RunCaseWorkflowRequestSchema } from '../../../../common/types/api/workflow/latest';
+import type { CasesWorkflowRunContext } from '../../../client/workflows/operations';
 import type { CasesWorkflowRunService } from '../../../workflows/execution/service';
 import { createCasesRoute } from '../create_cases_route';
 
@@ -26,9 +27,19 @@ export const runCaseWorkflowParamsSchema = schema.object({
 interface RunWorkflowRouteDeps {
   service: CasesWorkflowRunService;
   getSpaceId: (request: KibanaRequest) => string;
+  /**
+   * Resolves a request-scoped Cases client and workflow operations object. This is injected
+   * rather than read from `context.cases` to avoid exposing workflow run capabilities to all
+   * plugins that depend on the `cases` request context.
+   */
+  getWorkflowRunContext: (request: KibanaRequest) => Promise<CasesWorkflowRunContext>;
 }
 
-export const createRunWorkflowRoute = ({ service, getSpaceId }: RunWorkflowRouteDeps) =>
+export const createRunWorkflowRoute = ({
+  service,
+  getSpaceId,
+  getWorkflowRunContext,
+}: RunWorkflowRouteDeps) =>
   createCasesRoute({
     method: 'post',
     path: INTERNAL_CASE_WORKFLOW_RUN_URL,
@@ -40,10 +51,10 @@ export const createRunWorkflowRoute = ({ service, getSpaceId }: RunWorkflowRoute
     //    `all` does NOT implicitly grant it, so admins must explicitly assign the sub-privilege.
     //
     // 2. Handler-level (inside CasesWorkflowRunService): `cases:<owner>/updateCase` — checked
-    //    by `ensureAuthorizedToRunWorkflow` in `workflows/execution/authorize_workflow_run.ts`.
-    //    This is owner-scoped and cannot be declared statically on the route (which is why
-    //    `DEFAULT_CASES_ROUTE_SECURITY` opts out for most other Cases routes). It ensures the
-    //    caller can only trigger workflows for the authorized cases within the current space.
+    //    by the internal workflow authorization helper. This is owner-scoped and cannot be
+    //    declared statically on the route (which is why `DEFAULT_CASES_ROUTE_SECURITY` opts out
+    //    for all other Cases routes). It ensures the caller can only trigger workflows for the
+    //    authorized cases within the current space.
     security: {
       authz: {
         requiredPrivileges: [...WorkflowsManagementOperationPrivileges.execute],
@@ -59,8 +70,7 @@ export const createRunWorkflowRoute = ({ service, getSpaceId }: RunWorkflowRoute
       description: 'Runs a workflow with server-owned execution metadata for the authorized cases.',
     },
     handler: async ({ context, request, response }) => {
-      const caseContext = await context.cases;
-      const casesClient = await caseContext.getCasesClient();
+      const { casesClient, workflowOperations } = await getWorkflowRunContext(request);
       const { workflow_id: workflowId } = request.params;
       const result = await service.run({
         workflowId,
@@ -68,6 +78,7 @@ export const createRunWorkflowRoute = ({ service, getSpaceId }: RunWorkflowRoute
         request,
         context,
         casesClient,
+        workflowOperations,
         spaceId: getSpaceId(request),
       });
 

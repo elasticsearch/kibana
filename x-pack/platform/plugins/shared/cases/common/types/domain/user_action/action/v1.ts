@@ -31,6 +31,7 @@ export const UserActionTypes = {
   // Object.keys(updatedAttributes), which is used in getUserActionItemByDifference.
   extended_fields: 'extended_fields',
   template: 'template',
+  workflow: 'workflow',
 } as const;
 
 type UserActionActionTypeKeys = keyof typeof UserActionTypes;

@@ -8,6 +8,7 @@
 import type { KibanaRequest } from '@kbn/core/server';
 import type { UserProfileService } from '../../services';
 import type { CasesWorkflowRunService } from '../../workflows/execution/service';
+import type { CasesWorkflowRunContext } from '../../client/workflows/operations';
 import { getConnectorsRoute } from './internal/get_connectors';
 import { getCaseUserActionStatsRoute } from './internal/get_case_user_actions_stats';
 import { bulkCreateAttachmentsRoute } from './internal/bulk_create_attachments';
@@ -39,6 +40,7 @@ export const getInternalRoutes = (
   workflowRun?: {
     service: CasesWorkflowRunService;
     getSpaceId: (request: KibanaRequest) => string;
+    getWorkflowRunContext: (request: KibanaRequest) => Promise<CasesWorkflowRunContext>;
   }
 ) =>
   [

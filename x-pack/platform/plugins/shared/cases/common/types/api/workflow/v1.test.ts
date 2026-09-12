@@ -8,6 +8,8 @@
 import {
   CASES_WORKFLOW_EXECUTION_METADATA_SCHEMA_VERSION,
   CASES_WORKFLOW_EXECUTION_SOURCE,
+  MAX_ATTACHMENT_ID_LENGTH,
+  MAX_ATTACHMENT_TYPE_LENGTH,
   MAX_CASES_PER_WORKFLOW_RUN,
   MAX_WORKFLOW_INPUTS_BYTES,
 } from '../../../constants';
@@ -122,22 +124,72 @@ describe('RunCaseWorkflowRequestSchema', () => {
     ).toBe(true);
   });
 
-  it('accepts a cases.alert origin', () => {
+  it('accepts a cases.attachment origin', () => {
     expect(
       RunCaseWorkflowRequestSchema.safeParse({
         ...validBody,
-        origin: { type: 'cases.alert', caseId: 'case-1', alertId: 'alert-1' },
+        origin: {
+          type: 'cases.attachment',
+          caseId: 'case-1',
+          attachmentType: 'security.alert',
+          attachmentId: 'alert-1',
+        },
       }).success
     ).toBe(true);
   });
 
-  it('accepts a cases.alerts origin', () => {
+  it('accepts a cases.attachments origin', () => {
     expect(
       RunCaseWorkflowRequestSchema.safeParse({
         ...validBody,
-        origin: { type: 'cases.alerts', caseId: 'case-1' },
+        origin: {
+          type: 'cases.attachments',
+          caseId: 'case-1',
+          attachmentType: 'security.alert',
+          attachmentIds: ['alert-1'],
+        },
       }).success
     ).toBe(true);
+  });
+
+  it.each(['cases.alert', 'cases.alerts', 'cases.event'])(
+    'rejects legacy request origin %s',
+    (type) => {
+      expect(
+        RunCaseWorkflowRequestSchema.safeParse({
+          ...validBody,
+          origin: { type, caseId: 'case-1' },
+        }).success
+      ).toBe(false);
+    }
+  );
+
+  it.each([
+    [
+      'attachment type',
+      {
+        type: 'cases.attachment',
+        caseId: 'case-1',
+        attachmentType: 'a'.repeat(MAX_ATTACHMENT_TYPE_LENGTH + 1),
+        attachmentId: 'attachment-1',
+      },
+    ],
+    [
+      'attachment id',
+      {
+        type: 'cases.attachment',
+        caseId: 'case-1',
+        attachmentType: 'custom.reference',
+        attachmentId: 'a'.repeat(MAX_ATTACHMENT_ID_LENGTH + 1),
+      },
+    ],
+  ])('rejects an oversized %s', (_label, origin) => {
+    expect(
+      RunCaseWorkflowRequestSchema.safeParse({
+        ...validBody,
+        origin,
+      }).success
+    ).toBe(false);
   });
 
   it('rejects unknown keys on cases.case (strict per-variant)', () => {

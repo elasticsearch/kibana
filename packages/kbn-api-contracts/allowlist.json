@@ -18,6 +18,22 @@
       "oasdiffId": "response-body-one-of-added"
     },
     {
+      "path": "/api/cases/{caseId}/user_actions/_find",
+      "method": "get",
+      "reason": "Intentional response union extension: workflow execution user actions are now recorded in case activity and returned by the user actions API. Existing response variants are unchanged.",
+      "approvedBy": "@elastic/kibana-cases",
+      "oasdiffId": "response-property-one-of-added",
+      "prUrl": "https://github.com/elastic/kibana/pull/287992"
+    },
+    {
+      "path": "/api/cases/{caseId}/user_actions/_find",
+      "method": "get",
+      "reason": "Intentional response enum extension: workflow execution user actions are now returned with the new workflow activity type.",
+      "approvedBy": "@elastic/kibana-cases",
+      "oasdiffId": "response-property-enum-value-added",
+      "prUrl": "https://github.com/elastic/kibana/pull/287992"
+    },
+    {
       "path": "/api/fleet/outputs",
       "method": "get",
       "reason": "Nullable shipper/ssl fields now use allOf+$ref with nullable:true (OAS 3.0 canonical form) instead of inline objects. Kafka connection_type/username/password became optional to match runtime behavior. Coordinated with provider team.",

@@ -2475,6 +2475,94 @@ export const PayloadUserComment = lazySchema(() =>
 );
 export type PayloadUserComment = z.infer<typeof PayloadUserComment>;
 
+/**
+ * The payload for a workflow user action, recorded when a user runs a workflow from a case.
+ */
+export const PayloadWorkflow = lazySchema(() =>
+  z.object({
+    /**
+     * Identifies the workflow that was run.
+     */
+    workflow: z
+      .object({
+        /**
+         * The workflow ID.
+         */
+        id: z.string().describe('The workflow ID.'),
+        /**
+         * The workflow name at the time the run was triggered.
+         */
+        name: z.string().describe('The workflow name at the time the run was triggered.'),
+        /**
+         * The execution ID returned by the Workflows engine.
+         */
+        executionId: z.string().describe('The execution ID returned by the Workflows engine.'),
+      })
+      .optional()
+      .describe('Identifies the workflow that was run.'),
+    /**
+     * The context from which the workflow was triggered.
+     */
+    origin: z
+      .object({
+        /**
+         * The origin type.
+         */
+        type: z
+          .enum([
+            'cases.case',
+            'cases.observable',
+            'cases.observables',
+            'cases.attachment',
+            'cases.attachments',
+          ])
+          .describe('The origin type.'),
+        /**
+         * The primary identifier of the case, observable, or attachment from which the workflow was triggered.
+         */
+        id: z
+          .string()
+          .describe(
+            'The primary identifier of the case, observable, or attachment from which the workflow was triggered.'
+          ),
+        /**
+         * For generic attachment origins, the normalized registered attachment type.
+         */
+        attachmentType: z
+          .string()
+          .optional()
+          .describe('For generic attachment origins, the normalized registered attachment type.'),
+        /**
+         * For document-backed attachment origins, the Elasticsearch index the document lives in.
+         */
+        index: z
+          .string()
+          .optional()
+          .describe(
+            'For document-backed attachment origins, the Elasticsearch index the document lives in.'
+          ),
+        /**
+         * For bulk attachment or observable origins, the number of selected targets.
+         */
+        count: z
+          .number()
+          .optional()
+          .describe('For bulk attachment or observable origins, the number of selected targets.'),
+        /**
+         * For observable origins, the observable type key.
+         */
+        typeKey: z.string().optional().describe('For observable origins, the observable type key.'),
+        /**
+         * For observable origins, the observable value.
+         */
+        value: z.string().optional().describe('For observable origins, the observable value.'),
+      })
+      .optional()
+      .describe('The context from which the workflow was triggered.'),
+  })
+);
+export type PayloadWorkflow = z.infer<typeof PayloadWorkflow>;
+
 export const UserActionsFindResponseProperties = lazySchema(() =>
   z.object({
     action: Actions,
@@ -2502,6 +2590,7 @@ export const UserActionsFindResponseProperties = lazySchema(() =>
       PayloadTags,
       PayloadTitle,
       PayloadUserComment,
+      PayloadWorkflow,
     ]),
     version: z.string(),
     /**
@@ -2525,6 +2614,7 @@ export const UserActionsFindResponseProperties = lazySchema(() =>
         'status',
         'tags',
         'title',
+        'workflow',
       ])
       .describe('The type of action.'),
   })
