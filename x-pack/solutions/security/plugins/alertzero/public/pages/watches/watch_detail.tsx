@@ -5,7 +5,8 @@
  * 2.0.
  */
 
-import React, { useMemo } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { css } from '@emotion/react';
 import {
   EuiButton,
   EuiButtonEmpty,
@@ -13,79 +14,30 @@ import {
   EuiFlexGroup,
   EuiFlexItem,
   EuiLoadingSpinner,
-  EuiSpacer,
-  EuiSwitch,
   EuiText,
+  useEuiTheme,
 } from '@elastic/eui';
 import { useHistory, useParams } from 'react-router-dom';
 import { isHttpFetchError } from '@kbn/core-http-browser';
-import type { Worker } from '@kbn/alertzero-common';
 import { useAlertZeroDocTitle } from '../../hooks/use_alertzero_doc_title';
 import { useWatch } from '../../hooks/use_watches_api';
-import { useUpdateWorker, useWorkers } from '../../hooks/use_workers_api';
-import { AutonomySlider } from './components/autonomy_slider';
-import { ScheduleIntervalField } from './components/schedule_interval_field';
-import { SettingsSection } from './components/settings_section';
-import { WorkerSkillsTable } from './components/worker_skills_table';
+import { useWorkers } from '../../hooks/use_workers_api';
 import { WatchesSectionLayout } from './components/watches_section_layout';
+import { WorkerSettingsPanel } from './components/worker_settings_panel';
+import {
+  useWorkerScrollSpy,
+  WatchWorkersSummaryRail,
+  workerSectionDomId,
+} from './components/watch_workers_summary_rail';
 import * as i18n from './translations';
 import * as settingsI18n from './settings_translations';
-import { workerName } from './workers/translations';
 
-const WorkerSettingsCard: React.FC<{ worker: Worker }> = ({ worker }) => {
-  const { mutate: updateWorker } = useUpdateWorker();
-  const settingsLocked = worker.state === 'unavailable';
-
-  return (
-    <SettingsSection
-      title={workerName(worker.id, worker.name)}
-      subtitle={
-        settingsLocked
-          ? settingsI18n.WORKER_SETTINGS_UNAVAILABLE
-          : settingsI18n.WORKER_SECTION_SUBTITLE
-      }
-      data-test-subj={`alertZeroWatchWorkerSection-${worker.id}`}
-    >
-      <EuiSwitch
-        label={settingsI18n.ENABLED_SWITCH_LABEL}
-        checked={worker.enabled}
-        disabled={settingsLocked}
-        onChange={(event) =>
-          updateWorker({ workerId: worker.id, patch: { enabled: event.target.checked } })
-        }
-        data-test-subj={`alertZeroWorkerEnabledSwitch-${worker.id}`}
-      />
-      <EuiSpacer size="m" />
-      <AutonomySlider
-        current={worker.settings.autonomy}
-        isDisabled={settingsLocked}
-        onChange={(autonomyLevel) =>
-          updateWorker({ workerId: worker.id, patch: { autonomyLevel } })
-        }
-      />
-      {/* Only schedule-driven Workers project an interval; the others are alert- or
-          event-triggered and own no schedule to configure. */}
-      {worker.settings.scheduleInterval != null ? (
-        <>
-          <EuiSpacer size="m" />
-          <ScheduleIntervalField
-            current={worker.settings.scheduleInterval}
-            isDisabled={settingsLocked}
-            onChange={(scheduleInterval) =>
-              updateWorker({ workerId: worker.id, patch: { scheduleInterval } })
-            }
-          />
-        </>
-      ) : null}
-      <EuiSpacer size="m" />
-      <WorkerSkillsTable skills={worker.skills} />
-    </SettingsSection>
-  );
-};
+const RAIL_NARROW_BREAKPOINT_PX = 1020;
 
 export const WatchDetailPage: React.FC = () => {
   const history = useHistory();
   const { watchId } = useParams<{ watchId: string }>();
+  const { euiTheme } = useEuiTheme();
   const { data, isLoading, error, refetch } = useWatch(watchId);
   const {
     data: workersData,
@@ -100,6 +52,64 @@ export const WatchDetailPage: React.FC = () => {
   const members = useMemo(
     () => (workersData?.workers ?? []).filter((worker) => worker.watchIds.includes(watchId)),
     [workersData?.workers, watchId]
+  );
+
+  const workerIds = useMemo(() => members.map((worker) => worker.id), [members]);
+  const isMultiWorker = members.length > 1;
+
+  // Track which Workers the reader has collapsed (default: all expanded) and which is active in
+  // the summary rail. Both reset when navigating to another Watch.
+  const [collapsedWorkerIds, setCollapsedWorkerIds] = useState<Set<string>>(() => new Set());
+  const [activeWorkerId, setActiveWorkerId] = useState<string | null>(null);
+
+  useEffect(() => {
+    setCollapsedWorkerIds(new Set());
+    setActiveWorkerId(null);
+  }, [watchId]);
+
+  const effectiveActiveWorkerId = activeWorkerId ?? members[0]?.id ?? null;
+
+  const handleToggleWorker = useCallback((workerId: string, isOpen: boolean) => {
+    setCollapsedWorkerIds((current) => {
+      const next = new Set(current);
+      if (isOpen) {
+        next.delete(workerId);
+      } else {
+        next.add(workerId);
+      }
+      return next;
+    });
+    if (isOpen) {
+      setActiveWorkerId(workerId);
+    }
+  }, []);
+
+  useWorkerScrollSpy(workerIds, isMultiWorker, setActiveWorkerId);
+
+  const layoutStyles = useMemo(
+    () => ({
+      twoColumn: css`
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 300px;
+        gap: ${euiTheme.size.l};
+        align-items: start;
+        max-width: 1180px;
+        margin-inline: auto;
+        @media (max-width: ${RAIL_NARROW_BREAKPOINT_PX}px) {
+          grid-template-columns: minmax(0, 1fr);
+        }
+      `,
+      railColumn: css`
+        min-width: 0;
+        @media (max-width: ${RAIL_NARROW_BREAKPOINT_PX}px) {
+          order: -1;
+        }
+      `,
+      workerSection: css`
+        scroll-margin-top: ${euiTheme.size.xl};
+      `,
+    }),
+    [euiTheme]
   );
 
   const hasCurrentWatch = watch?.id === watchId;
@@ -147,9 +157,64 @@ export const WatchDetailPage: React.FC = () => {
 
   const intro = settingsI18n.watchIntro(watch.id);
 
+  const renderWorkers = () => {
+    if (workersError) {
+      return (
+        <EuiEmptyPrompt
+          iconType="error"
+          title={<h2>{i18n.WORKERS_LOAD_ERROR_TITLE}</h2>}
+          body={<p>{i18n.WORKERS_LOAD_ERROR_BODY}</p>}
+          actions={<EuiButtonEmpty onClick={() => refetchWorkers()}>{i18n.RETRY}</EuiButtonEmpty>}
+          data-test-subj="alertZeroWatchWorkersLoadError"
+        />
+      );
+    }
+
+    if (workersLoading && members.length === 0) {
+      return <EuiLoadingSpinner size="m" aria-label={i18n.LOADING_WATCH} />;
+    }
+
+    if (members.length === 0) {
+      return (
+        <EuiEmptyPrompt
+          iconType="visTagCloud"
+          title={<h2>{settingsI18n.WORKERS_EMPTY_TITLE}</h2>}
+          body={<p>{settingsI18n.WORKERS_EMPTY_BODY}</p>}
+          data-test-subj="alertZeroWatchWorkersEmpty"
+        />
+      );
+    }
+
+    return (
+      <div css={layoutStyles.twoColumn}>
+        <EuiFlexGroup direction="column" gutterSize="m" responsive={false}>
+          {members.map((worker) => (
+            <EuiFlexItem key={worker.id} grow={false}>
+              <section
+                id={workerSectionDomId(worker.id)}
+                css={layoutStyles.workerSection}
+                data-test-subj={`alertZeroWatchWorkerSection-${worker.id}`}
+              >
+                <WorkerSettingsPanel
+                  worker={worker}
+                  isAccordion={isMultiWorker}
+                  isExpanded={!collapsedWorkerIds.has(worker.id)}
+                  onToggle={handleToggleWorker}
+                />
+              </section>
+            </EuiFlexItem>
+          ))}
+        </EuiFlexGroup>
+        <div css={layoutStyles.railColumn}>
+          <WatchWorkersSummaryRail workers={members} activeWorkerId={effectiveActiveWorkerId} />
+        </div>
+      </div>
+    );
+  };
+
   return (
     <WatchesSectionLayout active={watchId} title={watch.name}>
-      <EuiFlexGroup direction="column" gutterSize="xl" responsive={false}>
+      <EuiFlexGroup direction="column" gutterSize="l" responsive={false}>
         {intro ? (
           <EuiFlexItem grow={false}>
             <EuiText size="s" color="subdued" data-test-subj="alertZeroWatchIntro">
@@ -158,35 +223,7 @@ export const WatchDetailPage: React.FC = () => {
           </EuiFlexItem>
         ) : null}
 
-        <EuiFlexItem grow={false}>
-          <SettingsSection
-            title={settingsI18n.WORKERS_SECTION_TITLE}
-            subtitle={settingsI18n.WORKERS_SECTION_SUBTITLE}
-            data-test-subj="alertZeroWatchWorkersSection"
-          >
-            {workersError ? (
-              <EuiEmptyPrompt
-                iconType="error"
-                title={<h2>{i18n.WORKERS_LOAD_ERROR_TITLE}</h2>}
-                body={<p>{i18n.WORKERS_LOAD_ERROR_BODY}</p>}
-                actions={
-                  <EuiButtonEmpty onClick={() => refetchWorkers()}>{i18n.RETRY}</EuiButtonEmpty>
-                }
-                data-test-subj="alertZeroWatchWorkersLoadError"
-              />
-            ) : workersLoading && members.length === 0 ? (
-              <EuiLoadingSpinner size="m" aria-label={i18n.LOADING_WATCH} />
-            ) : (
-              <EuiFlexGroup direction="column" gutterSize="l" responsive={false}>
-                {members.map((worker) => (
-                  <EuiFlexItem key={worker.id} grow={false}>
-                    <WorkerSettingsCard worker={worker} />
-                  </EuiFlexItem>
-                ))}
-              </EuiFlexGroup>
-            )}
-          </SettingsSection>
-        </EuiFlexItem>
+        <EuiFlexItem grow={false}>{renderWorkers()}</EuiFlexItem>
       </EuiFlexGroup>
     </WatchesSectionLayout>
   );

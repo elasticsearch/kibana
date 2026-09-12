@@ -462,6 +462,74 @@ export const STATUS_DEGRADED = i18n.translate(
 );
 
 /* -------------------------------------------------------------------------- */
+/* Workers summary rail (two-column Worker layout)                            */
+/* -------------------------------------------------------------------------- */
+
+export const WORKERS_RAIL_HEADING = i18n.translate(
+  'xpack.alertzero.watches.settings.rail.heading',
+  {
+    defaultMessage: 'Workers in this Watch',
+  }
+);
+
+export const RAIL_STATUS_ENABLED = i18n.translate(
+  'xpack.alertzero.watches.settings.rail.status.enabled',
+  {
+    defaultMessage: 'Enabled',
+  }
+);
+
+export const RAIL_STATUS_DISABLED = i18n.translate(
+  'xpack.alertzero.watches.settings.rail.status.disabled',
+  {
+    defaultMessage: 'Disabled',
+  }
+);
+
+export const RAIL_STATUS_PAUSED = i18n.translate(
+  'xpack.alertzero.watches.settings.rail.status.paused',
+  {
+    defaultMessage: 'Paused',
+  }
+);
+
+export const RAIL_STATUS_UNAVAILABLE = i18n.translate(
+  'xpack.alertzero.watches.settings.rail.status.unavailable',
+  {
+    defaultMessage: 'Unavailable',
+  }
+);
+
+export const RAIL_STATUS_DEGRADED = i18n.translate(
+  'xpack.alertzero.watches.settings.rail.status.degraded',
+  {
+    defaultMessage: 'Degraded',
+  }
+);
+
+export const RAIL_LAST_RUN = i18n.translate('xpack.alertzero.watches.settings.rail.lastRun', {
+  defaultMessage: 'Last run',
+});
+
+export const RAIL_AUTONOMY = i18n.translate('xpack.alertzero.watches.settings.rail.autonomy', {
+  defaultMessage: 'Autonomy',
+});
+
+export const WORKERS_EMPTY_TITLE = i18n.translate(
+  'xpack.alertzero.watches.settings.workers.empty.title',
+  {
+    defaultMessage: 'No Workers in this Watch',
+  }
+);
+
+export const WORKERS_EMPTY_BODY = i18n.translate(
+  'xpack.alertzero.watches.settings.workers.empty.body',
+  {
+    defaultMessage: 'This Watch has no Workers yet.',
+  }
+);
+
+/* -------------------------------------------------------------------------- */
 /* Approval gates                                                             */
 /* -------------------------------------------------------------------------- */
 

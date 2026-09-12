@@ -42,6 +42,20 @@ const mockUseWatch = jest.mocked(useWatch);
 const mockUseWorkers = jest.mocked(useWorkers);
 const mockUseUpdateWorker = jest.mocked(useUpdateWorker);
 
+// jsdom ships neither IntersectionObserver nor scrollIntoView; the two-column layout's scroll-spy
+// and rail navigation depend on both.
+class IntersectionObserverMock {
+  observe = jest.fn();
+  unobserve = jest.fn();
+  disconnect = jest.fn();
+  takeRecords = jest.fn(() => []);
+  root = null;
+  rootMargin = '';
+  thresholds: number[] = [];
+}
+
+global.IntersectionObserver = IntersectionObserverMock as unknown as typeof IntersectionObserver;
+
 const createWorker = (
   overrides: Partial<Worker> & Pick<Worker, 'id' | 'name' | 'watchIds'>
 ): Worker => ({
@@ -124,13 +138,13 @@ const renderWatch = (watchId: string, workers: Worker[]) => {
 describe('WatchDetailPage', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    window.HTMLElement.prototype.scrollIntoView = jest.fn();
   });
 
-  it('shows Floor Workers with per-Worker enablement and autonomy, and no Watch switch', () => {
+  it('shows Floor Workers with per-Worker enablement and autonomy, and the summary rail for multi-Worker Watches', () => {
     renderWatch(SYSTEM_SECURITY_WATCH_FLOOR_ID, [...floorWorkers, darkWorker]);
 
-    expect(screen.queryByTestId('alertZeroWatchEnabledSwitch')).not.toBeInTheDocument();
-    expect(screen.getByTestId('alertZeroWatchWorkersSection')).toBeInTheDocument();
+    expect(screen.getByTestId('alertZeroWatchWorkersRail')).toBeInTheDocument();
     expect(
       screen.getByTestId(
         `alertZeroWatchWorkerSection-${SYSTEM_SECURITY_WORKER_FLOOR_ALERT_TRIAGE_ID}`
@@ -234,9 +248,10 @@ describe('WatchDetailPage', () => {
       ...detectionWorkers,
     ]);
 
-    expect(screen.getByTestId('alertZeroWatchWorkersSection')).toBeInTheDocument();
+    expect(screen.getByTestId('alertZeroWatchWorkersEmpty')).toBeInTheDocument();
     expect(screen.queryByTestId('alertZeroWatchWorkersLoadError')).not.toBeInTheDocument();
     expect(screen.queryByTestId(/alertZeroWatchWorkerSection-/)).not.toBeInTheDocument();
+    expect(screen.queryByTestId('alertZeroWatchWorkersRail')).not.toBeInTheDocument();
   });
 
   it('shows Detection Workers with per-Worker enablement and autonomy', () => {
@@ -259,5 +274,44 @@ describe('WatchDetailPage', () => {
         `alertZeroWatchWorkerSection-${SYSTEM_SECURITY_WORKER_FLOOR_ALERT_TRIAGE_ID}`
       )
     ).not.toBeInTheDocument();
+  });
+
+  it('renders Worker settings in accordions for multi-Worker Watches and a static panel for a single-Worker Watch', () => {
+    renderWatch(SYSTEM_SECURITY_WATCH_FLOOR_ID, floorWorkers);
+
+    for (const worker of floorWorkers) {
+      expect(screen.getByTestId(`alertZeroWatchWorkerAccordion-${worker.id}`)).toBeInTheDocument();
+    }
+    expect(
+      screen.getByTestId(
+        `alertZeroWatchWorkerAccordion-${SYSTEM_SECURITY_WORKER_FLOOR_ATTACK_DISCOVERY_ID}`
+      )
+    ).toBeInTheDocument();
+
+    // A Watch with exactly one Worker has no accordion chrome — its settings are a static panel.
+    renderWatch(SYSTEM_SECURITY_WATCH_DARK_ID, [darkWorker]);
+    expect(
+      screen.queryByTestId(
+        `alertZeroWatchWorkerAccordion-${SYSTEM_SECURITY_WORKER_DARK_CONTINUOUS_THREAT_HUNT_ID}`
+      )
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByTestId(
+        `alertZeroWatchWorkerSection-${SYSTEM_SECURITY_WORKER_DARK_CONTINUOUS_THREAT_HUNT_ID}`
+      )
+    ).toBeInTheDocument();
+  });
+
+  it('renders a summary rail card per member and marks the first as active', () => {
+    renderWatch(SYSTEM_SECURITY_WATCH_FLOOR_ID, floorWorkers);
+
+    const [first, second] = floorWorkers;
+    expect(screen.getByTestId(`alertZeroWatchWorkerSummary-${first.id}`)).toHaveAttribute(
+      'aria-current',
+      'true'
+    );
+    expect(screen.getByTestId(`alertZeroWatchWorkerSummary-${second.id}`)).not.toHaveAttribute(
+      'aria-current'
+    );
   });
 });
