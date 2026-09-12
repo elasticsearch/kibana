@@ -17,9 +17,19 @@ import {
   useEuiTheme,
 } from '@elastic/eui';
 import { css } from '@emotion/react';
+import { useKibanaTimeZone } from '../../hooks/use_kibana_time_zone';
 
-const getAlertZeroGreeting = (): string => {
-  const hour = new Date().getHours();
+/**
+ * `timeZone` rather than `new Date().getHours()`: the OS timezone is not
+ * necessarily the one Kibana renders in, and greeting someone "good evening" at
+ * 10am is the visible cost of assuming it is.
+ */
+const getAlertZeroGreeting = (timeZone?: string): string => {
+  const hour = Number(
+    new Intl.DateTimeFormat('en-US', { hour: 'numeric', hour12: false, timeZone }).format(
+      new Date()
+    )
+  );
 
   if (hour < 12) {
     return i18n.translate('xpack.alertzero.hero.morningGreetingDescription', {
@@ -41,17 +51,28 @@ const getAlertZeroGreeting = (): string => {
 const getAlertZeroHeroTitle = ({
   isQueueEmpty,
   isLoading,
+  hasError,
   hasNeedsAction,
   eventCount,
 }: {
   isQueueEmpty: boolean;
   isLoading: boolean;
+  hasError: boolean;
   hasNeedsAction: boolean;
   eventCount: number;
 }): string => {
   if (isLoading) {
     return i18n.translate('xpack.alertzero.hero.checkingTitle', {
       defaultMessage: 'Looking into your data...',
+    });
+  }
+
+  // Before every count-bearing branch. A failed count arrives as zero, which is
+  // indistinguishable from "nothing to do" — and claiming the queue is clear over
+  // a queue that is not is the worst thing this header can say.
+  if (hasError) {
+    return i18n.translate('xpack.alertzero.hero.countUnavailableTitle', {
+      defaultMessage: "Your action count couldn't be loaded",
     });
   }
 
@@ -78,6 +99,8 @@ const getAlertZeroHeroTitle = ({
 export interface AlertZeroPageHeaderProps {
   isQueueEmpty?: boolean;
   isLoading?: boolean;
+  /** The count could not be fetched, so `eventCount` says nothing about reality. */
+  hasError?: boolean;
   eventCount?: number;
 }
 /**
@@ -91,12 +114,15 @@ export interface AlertZeroPageHeaderProps {
 export const AlertZeroPageHeader: React.FC<AlertZeroPageHeaderProps> = ({
   isQueueEmpty = false,
   isLoading = false,
+  hasError = false,
   eventCount = 0,
 }) => {
   const { euiTheme } = useEuiTheme();
+  const timeZone = useKibanaTimeZone();
   const title = getAlertZeroHeroTitle({
     isQueueEmpty,
     isLoading,
+    hasError,
     hasNeedsAction: eventCount > 0,
     eventCount,
   });
@@ -155,7 +181,9 @@ export const AlertZeroPageHeader: React.FC<AlertZeroPageHeaderProps> = ({
           <EuiFlexItem grow={false}>
             <EuiTitle size="m" css={{ fontWeight: 500 }}>
               <h1>
-                <span style={{ color: euiTheme.colors.mediumShade }}>{getAlertZeroGreeting()}</span>{' '}
+                <span style={{ color: euiTheme.colors.mediumShade }}>
+                  {getAlertZeroGreeting(timeZone)}
+                </span>{' '}
                 <span>{title}</span>
               </h1>
             </EuiTitle>

@@ -34,5 +34,7 @@ export const queryKeys = {
     list: (conversationId?: string) =>
       [...queryKeys.proposals.all, 'list', conversationId ?? 'any'] as const,
     detail: (id: string | undefined) => [...queryKeys.proposals.all, 'detail', id] as const,
+    chartsSummary: (windowHours: number, bucketMinutes: number) =>
+      [...queryKeys.proposals.all, 'charts-summary', windowHours, bucketMinutes] as const,
   },
 };

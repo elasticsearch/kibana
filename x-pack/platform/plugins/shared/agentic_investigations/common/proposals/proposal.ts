@@ -8,6 +8,7 @@
 import type { ActionMetadata } from '@kbn/workflows';
 import { actionCategorySchema, actionImpactSchema } from '@kbn/workflows';
 import { z } from '@kbn/zod/v4';
+import { MAX_CHARTS_SUMMARY_BUCKETS } from './constants';
 
 /**
  * A proposal terminates at `approved` when it carries no action; only
@@ -219,6 +220,42 @@ export interface ProposalsListResponse {
 export interface ListByWindowQuery {
   includeStatuses: ProposalStatus[];
   decidedWithinHours: number;
+}
+
+export const proposalChartsSummaryQuerySchema = z
+  .object({
+    /** The 168h ceiling keeps the ES|QL queries cheap. */
+    windowHours: z.coerce.number().int().min(1).max(168).default(24),
+    /** The 5 minute floor bounds the response size. */
+    bucketMinutes: z.coerce.number().int().min(5).max(1440).default(30),
+  })
+  /**
+   * The two bounds are independently valid but not jointly: 168h at 5-minute
+   * granularity is ~2 000 buckets, and one row per (bucket, category) crosses
+   * the ES|QL result ceiling. Rejecting is the honest answer — a truncated
+   * result silently drops the newest buckets rather than erroring.
+   */
+  .refine(
+    ({ windowHours, bucketMinutes }) =>
+      Math.ceil((windowHours * 60) / bucketMinutes) <= MAX_CHARTS_SUMMARY_BUCKETS,
+    {
+      message:
+        `windowHours and bucketMinutes must not resolve to more than ` +
+        `${MAX_CHARTS_SUMMARY_BUCKETS} buckets`,
+    }
+  );
+export type ProposalChartsSummaryQuery = z.infer<typeof proposalChartsSummaryQuerySchema>;
+
+export interface ProposalChartsSummaryBucket {
+  /** Unix ms, start of the bucket. */
+  timestamp: number;
+  /** Per category, how many proposals were created but not yet decided at the bucket end. */
+  counts: Record<string, number>;
+}
+
+export interface ProposalChartsSummaryResponse {
+  /** One entry per slot, zero-filled, oldest first. */
+  buckets: ProposalChartsSummaryBucket[];
 }
 
 /** Terminal states: a decided or executed proposal can no longer be acted on. */

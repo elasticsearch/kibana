@@ -62,6 +62,9 @@ const searchHit = (document: ProposalDocument, id = 'proposal-1') => ({
   _primary_term: 1,
 });
 
+/** An empty ES|QL result, which every `chartsSummary` query defaults to. */
+const emptyEsql = () => ({ columns: [], values: [] });
+
 const createStorage = (document?: ProposalDocument) => {
   const hits = document ? [searchHit(document)] : [];
   return {
@@ -69,9 +72,11 @@ const createStorage = (document?: ProposalDocument) => {
     search: jest.fn().mockResolvedValue({
       hits: { hits, total: { value: hits.length } },
     }),
+    esql: jest.fn().mockResolvedValue(emptyEsql()),
   } as unknown as jest.Mocked<ProposalsStorageClient> & {
     index: jest.Mock;
     search: jest.Mock;
+    esql: jest.Mock;
   };
 };
 
@@ -848,6 +853,213 @@ describe('ProposalsService', () => {
       expect(proposals[0]).not.toHaveProperty('categoryRank');
       expect(proposals[0]).not.toHaveProperty('impactRank');
       expect(proposals[0]).not.toHaveProperty('confidenceRank');
+    });
+  });
+
+  describe('chartsSummary', () => {
+    /**
+     * A 2h window at 30m granularity anchored to a fixed clock: five buckets at
+     * 10:00, 10:30, 11:00, 11:30 and 12:00, the last one still open at 12:10.
+     */
+    const NOW = '2026-09-11T12:10:00.000Z';
+    const WINDOW_START = Date.parse('2026-09-11T10:00:00.000Z');
+    const BUCKET_MS = 30 * 60 * 1000;
+    const chartsQuery = { windowHours: 2, bucketMinutes: 30 };
+
+    /** Column order deliberately differs from the STATS order, to exercise by-name lookup. */
+    const byCategory = (field: string, rows: Array<[string, number]>) => ({
+      columns: [{ name: field }, { name: 'category' }],
+      values: rows.map(([category, count]) => [count, category]),
+    });
+
+    const byIdxAndCategory = (field: string, rows: Array<[number, string, number]>) => ({
+      columns: [{ name: field }, { name: 'idx' }, { name: 'category' }],
+      values: rows.map(([idx, category, count]) => [count, idx, category]),
+    });
+
+    /** The four queries resolve in the order the service issues them. */
+    const mockEsql = (
+      storage: ReturnType<typeof createStorage>,
+      {
+        anchor,
+        opens,
+        closes,
+        expiries,
+      }: {
+        anchor?: object;
+        opens?: object;
+        closes?: object;
+        expiries?: object;
+      }
+    ) => {
+      storage.esql
+        .mockResolvedValueOnce(anchor ?? emptyEsql())
+        .mockResolvedValueOnce(opens ?? emptyEsql())
+        .mockResolvedValueOnce(closes ?? emptyEsql())
+        .mockResolvedValueOnce(expiries ?? emptyEsql());
+    };
+
+    const issuedQueries = (storage: ReturnType<typeof createStorage>): string[] =>
+      storage.esql.mock.calls.map(([args]) => args.pipeline.toRequest().query as string);
+
+    const esqlError = (type: string, reason: string) =>
+      Object.assign(new Error(reason), { meta: { body: { error: { type, reason } } } });
+
+    beforeEach(() => {
+      jest.useFakeTimers({ now: new Date(NOW) });
+    });
+
+    afterEach(() => {
+      jest.useRealTimers();
+    });
+
+    it('should seed a running sum from the anchor and move it with opens and closes', async () => {
+      const storage = createStorage();
+      mockEsql(storage, {
+        anchor: byCategory('anchor', [['contain', 2]]),
+        opens: byIdxAndCategory('opens', [[1, 'contain', 3]]),
+        closes: byIdxAndCategory('closes', [[3, 'contain', 1]]),
+      });
+      const { service } = createService(storage);
+
+      const { buckets } = await service.chartsSummary(chartsQuery, SPACE_ID);
+
+      expect(buckets.map((b) => b.counts.contain)).toEqual([2, 5, 5, 4, 4]);
+    });
+
+    it('should include the current partial bucket', async () => {
+      const storage = createStorage();
+      const { service } = createService(storage);
+
+      const { buckets } = await service.chartsSummary(chartsQuery, SPACE_ID);
+
+      expect(buckets).toHaveLength(5);
+      expect(buckets.map((b) => b.timestamp)).toEqual(
+        [0, 1, 2, 3, 4].map((i) => WINDOW_START + i * BUCKET_MS)
+      );
+    });
+
+    it('should clamp at zero rather than report a negative count', async () => {
+      const storage = createStorage();
+      mockEsql(storage, { closes: byIdxAndCategory('closes', [[0, 'contain', 2]]) });
+      const { service } = createService(storage);
+
+      const { buckets } = await service.chartsSummary(chartsQuery, SPACE_ID);
+
+      expect(buckets.map((b) => b.counts.contain)).toEqual([0, 0, 0, 0, 0]);
+    });
+
+    it('should close a proposal at the bucket it expired in', async () => {
+      const storage = createStorage();
+      mockEsql(storage, {
+        anchor: byCategory('anchor', [['contain', 1]]),
+        expiries: byIdxAndCategory('expiries', [[2, 'contain', 1]]),
+      });
+      const { service } = createService(storage);
+
+      const { buckets } = await service.chartsSummary(chartsQuery, SPACE_ID);
+
+      expect(buckets.map((b) => b.counts.contain)).toEqual([1, 1, 0, 0, 0]);
+    });
+
+    /**
+     * The regression this guards: a request-time `expiresAt > NOW()` filter would
+     * erase an expired proposal from the buckets in which it was genuinely open,
+     * so the same past bucket would answer differently on every refetch.
+     */
+    it('should not filter any query on request-time expiry', async () => {
+      const storage = createStorage();
+      const { service } = createService(storage);
+
+      await service.chartsSummary(chartsQuery, SPACE_ID);
+
+      for (const query of issuedQueries(storage)) {
+        expect(query).not.toMatch(/expiresAt\s*>\s*NOW\(\)/i);
+      }
+    });
+
+    it('should give action-less proposals a category so they are counted', async () => {
+      const storage = createStorage();
+      mockEsql(storage, { anchor: byCategory('anchor', [['uncategorized', 4]]) });
+      const { service } = createService(storage);
+
+      const { buckets } = await service.chartsSummary(chartsQuery, SPACE_ID);
+
+      for (const query of issuedQueries(storage)) {
+        expect(query).toContain('COALESCE(category');
+      }
+      expect(buckets.at(-1)?.counts).toEqual({ uncategorized: 4 });
+    });
+
+    it('should ask for no more rows than Elasticsearch will return', async () => {
+      const storage = createStorage();
+      const { service } = createService(storage);
+
+      await service.chartsSummary(chartsQuery, SPACE_ID);
+
+      // A larger LIMIT is capped to the truncation max rather than honoured, so
+      // asking for one only hides that the newest buckets were dropped.
+      for (const query of issuedQueries(storage)) {
+        const limit = Number(query.match(/LIMIT\s+(\d+)\s*$/)?.[1]);
+        expect(limit).toBeLessThanOrEqual(10000);
+      }
+    });
+
+    it('should warn when a query comes back at the truncation ceiling', async () => {
+      const storage = createStorage();
+      mockEsql(storage, {
+        opens: {
+          columns: [{ name: 'opens' }, { name: 'idx' }, { name: 'category' }],
+          values: Array.from({ length: 10000 }, () => [1, 0, 'contain']),
+        },
+      });
+      const { service, logger } = createService(storage);
+
+      await service.chartsSummary(chartsQuery, SPACE_ID);
+
+      expect(logger.warn).toHaveBeenCalledWith(expect.stringContaining('truncation ceiling'));
+    });
+
+    it('should return zero buckets when the mapping has not caught up', async () => {
+      const storage = createStorage();
+      storage.esql.mockRejectedValue(
+        esqlError('verification_exception', 'line 1:20: Unknown column [expiresAt]')
+      );
+      const { service, logger } = createService(storage);
+
+      const { buckets } = await service.chartsSummary(chartsQuery, SPACE_ID);
+
+      expect(buckets).toHaveLength(5);
+      expect(buckets.every((b) => Object.keys(b.counts).length === 0)).toBe(true);
+      expect(logger.warn).toHaveBeenCalledWith(expect.stringContaining('unknown column'));
+    });
+
+    /**
+     * Swallowing these would render a flat line of zeroes with a 200, which reads
+     * as a healthy empty dashboard rather than as the broken query it is.
+     */
+    it('should rethrow a verification error that is not an unknown column', async () => {
+      const storage = createStorage();
+      storage.esql.mockRejectedValue(
+        esqlError('verification_exception', 'line 1:8: Unknown function [DATE_DIFFF]')
+      );
+      const { service } = createService(storage);
+
+      await expect(service.chartsSummary(chartsQuery, SPACE_ID)).rejects.toThrow(
+        'Unknown function'
+      );
+    });
+
+    it('should rethrow an infrastructure error', async () => {
+      const storage = createStorage();
+      storage.esql.mockRejectedValue(
+        esqlError('search_phase_execution_exception', 'all shards failed')
+      );
+      const { service } = createService(storage);
+
+      await expect(service.chartsSummary(chartsQuery, SPACE_ID)).rejects.toThrow(
+        'all shards failed'
+      );
     });
   });
 });

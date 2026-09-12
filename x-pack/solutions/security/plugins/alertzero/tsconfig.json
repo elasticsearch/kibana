@@ -37,5 +37,6 @@
     "@kbn/core-http-server-mocks",
     "@kbn/std",
     "@kbn/core-security-server",
+    "@kbn/charts-theme",
   ]
 }
