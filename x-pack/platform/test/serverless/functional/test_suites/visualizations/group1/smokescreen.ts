@@ -687,6 +687,15 @@ export default function ({ getService, getPageObjects }: FtrProviderContext) {
     });
 
     it('should allow to change index pattern', async () => {
+      await PageObjects.visualize.navigateToNewVisualization();
+      await PageObjects.visualize.clickVisType('lens');
+      await PageObjects.lens.goToTimeRange();
+      await PageObjects.lens.configureDimension({
+        dimension: 'lnsXY_yDimensionPanel > lns-empty-dimension',
+        operation: 'average',
+        field: 'bytes',
+      });
+
       let indexPatternString;
       if (config.get('esTestCluster.ccs')) {
         indexPatternString = 'ftr-remote:log*';
