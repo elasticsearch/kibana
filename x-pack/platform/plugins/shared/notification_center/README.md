@@ -177,6 +177,81 @@ list route **annotates** each item with `isRead` and returns the same order to e
 - Callers with no user profile (API keys, headless consumers) get the list with `isRead` absent
   rather than a 403. The mark routes reject them, since there is no read state to write.
 
+### Unread status
+
+`GET /internal/notification_center/notifications/_unread_status` returns `{ hasUnread: boolean }`
+for the caller's profile-scoped read state. It accepts no query parameters and resolves read state
+against the same newest collapsed representative per `notification_id` that the list route uses.
+
+The first request initializes `readAllBefore` through the same path as the list, so inherited
+backlog does not appear as unread. A caller without a user profile receives `403`; a user-storage
+read or initialization failure returns `500` rather than a misleading `false`. A document whose
+`_source` fails validation counts as unread: it already passed the horizon filter, and a badge
+that wrongly shows a dot costs one click, while one that hides unread notifications is never
+noticed.
+
+v1 renders a dot, so a boolean is all the badge needs. The route is named for the status rather
+than the count so that adding `unreadCount` to the response later does not rename it.
+
+#### Sized for polling
+
+This endpoint is the badge's only freshness signal, so it is deliberately cheaper than the list
+route rather than a variation on it:
+
+- `readAllBefore` is pushed into the query as `range: { '@timestamp': { gt: readAllBefore } }`.
+  Backing indices that predate the marker are dropped in the `can_match` phase, so a user who
+  caught up recently searches recent shards instead of the whole 180-day retention window. This
+  encodes the read-state invariant that nothing at or before the marker can be unread; overrides
+  only ever postdate the marker, so none are lost to the filter.
+- The page is `overrideCount + 1` collapsed groups. `size: 1` is **not** sufficient: the newest
+  post-horizon group is the one the user most likely just clicked, and reading only that group
+  reports `hasUnread: false` while older unread groups remain. Each collapsed group is a distinct
+  `notification_id`, so at most `overrideCount` of them can be suppressed as read, and one more
+  than that guarantees an unread group surfaces if any exists. `_mark_all_read` clears the
+  overrides, so this is a single document in the steady state.
+- Resolving overrides in the application rather than as `must_not` clauses keeps the read-state
+  rules in `isReadAt` alone. The DSL equivalent is up to `MAX_OVERRIDES` bool clauses rebuilt on
+  every poll, and it duplicates semantics that can then drift.
+
+To show a number instead of a dot, pick a display cap, request `cap + overrideCount + 1` groups,
+and count the unread ones instead of returning on the first. Report `min(count, cap)` with a
+`capped` flag so the badge can render "10+" without ever paying to count past the cap. Prefer that
+over an exact total: an uncapped count pays the fetch and parse cost of the full result set on
+every poll, for every user.
+
+### Client integration: the bell badge (not yet built)
+
+Freshness is **poll-only**. `submit()` is a server setup-contract method, usually called from a
+task-manager task on an arbitrary Kibana node; the public and server halves of this plugin are
+separate bundles in separate processes, and Kibana core has no server-to-browser push channel.
+There is no way for a write to invalidate a React Query cache key in a user's browser.
+
+SSE (`@kbn/sse-utils-server`) does not change this. An SSE connection is pinned to the node that
+accepted it, so a `submit()` on another node still needs a cross-node bus to reach the subscriber.
+That moves the polling to the server and adds a long-lived connection per tab per user.
+
+The intended client shape:
+
+```ts
+useQuery({
+  queryKey: ['notificationCenter', 'unreadStatus'],
+  refetchInterval: 60_000,
+  // Hidden tabs stop polling; focus makes the badge feel fresh on return.
+  refetchIntervalInBackground: false,
+  refetchOnWindowFocus: true,
+});
+```
+
+- Invalidate `['notificationCenter', 'unreadStatus']` after `_mark_read` and `_mark_all_read`.
+  Those are the user's own actions and cover most badge transitions with no polling latency.
+- Render the dot on `hasUnread`; no badge otherwise.
+- A `403` means the caller has no user profile and never will on this session: stop polling rather
+  than retrying. A `500` is a user-storage failure and is worth a bounded retry, but the badge
+  should stay hidden rather than asserting "nothing unread".
+- Polling this endpoint is what stamps a new user's `readAllBefore`, so the bell mounting silently
+  marks the inherited backlog read. Anything the user should actually see must be submitted after
+  their first page load.
+
 ## Submitting notifications (`forType`)
 
 The server **setup** contract exposes `forType(ref)`, which binds a submitter to a registered

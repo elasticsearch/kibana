@@ -7,6 +7,7 @@
 
 import type { NotificationRouteDeps } from './route_deps';
 import { registerGetNotificationsRoute } from './get_notifications';
+import { registerGetUnreadStatusRoute } from './get_unread_status';
 import { registerMarkReadRoute } from './mark_read';
 import { registerMarkAllReadRoute } from './mark_all_read';
 
@@ -14,6 +15,7 @@ export type { NotificationCenterCoreSetup, NotificationRouteDeps } from './route
 
 export const registerNotificationRoutes = (deps: NotificationRouteDeps): void => {
   registerGetNotificationsRoute(deps);
+  registerGetUnreadStatusRoute(deps);
   registerMarkReadRoute(deps);
   registerMarkAllReadRoute(deps);
 };

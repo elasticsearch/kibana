@@ -16,6 +16,7 @@ export const INTERNAL_HEADERS = {
 // dependency on the plugin package. Keep these in sync with the plugin's `common/routes.ts`
 // and `server/storage/notification_data_stream.ts`.
 export const GET_NOTIFICATIONS_PATH = 'internal/notification_center/notifications';
+export const GET_UNREAD_STATUS_PATH = 'internal/notification_center/notifications/_unread_status';
 export const MARK_READ_PATH = 'internal/notification_center/notifications/_mark_read';
 export const MARK_ALL_READ_PATH = 'internal/notification_center/notifications/_mark_all_read';
 

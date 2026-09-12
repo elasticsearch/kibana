@@ -17,6 +17,7 @@ import {
   notificationDataStreamDefinition,
 } from '../storage/notification_data_stream';
 import { queryNotifications } from '../lib/query_notifications';
+import { queryUnreadStatus } from '../lib/query_unread_status';
 import type { NotificationReadState } from '../lib/read_state';
 import { cleanupExpiredNotifications } from '../cleanup_task/cleanup_expired_notifications';
 
@@ -154,6 +155,21 @@ describe('queryNotifications [integration]', () => {
       ['old-error', true],
       ['old-info', true],
     ]);
+  });
+
+  it('reports unread status from the same read state as the list', async () => {
+    const result = await queryUnreadStatus(
+      { dataStreams, logger },
+      {
+        overrides: {
+          'recent-warning': { read: true, markedAt: new Date().toISOString() },
+        },
+        readAllBefore: daysAgo(3),
+      }
+    );
+
+    // `recent-warning` is the newest group but is overridden as read, so the scan looks past it.
+    expect(result).toEqual({ hasUnread: true });
   });
 
   it('leaves items unannotated when there is no read state', async () => {
