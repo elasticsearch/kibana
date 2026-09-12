@@ -393,12 +393,14 @@ describe('capabilitiesSwitcher', () => {
       {
         space.solution = 'oblt';
 
-        // It should disable securitySolution features
-        // which corresponds to feature_3
+        // It should disable enterpriseSearch and securitySolution features
+        // which correspond to feature_1 and feature_3
         const result = await switcher(request, capabilities, false);
 
         const expectedCapabilities = buildCapabilities();
 
+        expectedCapabilities.feature_1.bar = false;
+        expectedCapabilities.feature_1.foo = false;
         expectedCapabilities.feature_3.bar = false;
         expectedCapabilities.feature_3.foo = false;
 

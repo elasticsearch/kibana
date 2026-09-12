@@ -73,6 +73,7 @@ export function withSpaceSolutionDisabledFeatures(
     ]).filter((featureId) => !enabledFeaturesPerSolution.es.includes(featureId));
   } else if (spaceSolution === 'oblt') {
     disabledFeatureKeysFromSolution = getFeatureIdsForCategories(features, [
+      'enterpriseSearch',
       'securitySolution',
       'workplaceai',
     ]).filter((featureId) => !enabledFeaturesPerSolution.oblt.includes(featureId));
