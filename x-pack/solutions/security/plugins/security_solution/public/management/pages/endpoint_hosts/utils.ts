@@ -7,24 +7,8 @@
 
 import dateMath from '@kbn/datemath';
 import moment from 'moment';
-import type { HostInfo, HostMetadata } from '../../../../common/endpoint/types';
 
-export const isPolicyOutOfDate = (
-  reported: HostMetadata['Endpoint']['policy']['applied'],
-  current: HostInfo['policy_info']
-): boolean => {
-  if (!current || !reported.id) {
-    return false; // we don't know, can't declare it out-of-date
-  }
-  return !(
-    reported.id === current.endpoint.id && // endpoint package policy not reassigned
-    current.agent.configured.id === current.agent.applied.id && // agent policy wasn't reassigned and not-yet-applied
-    // all revisions match up
-    reported.version >= current.agent.applied.revision &&
-    reported.version >= current.agent.configured.revision &&
-    reported.endpoint_policy_version >= current.endpoint.revision
-  );
-};
+export { isPolicyOutOfDate } from '../../../../common/endpoint/service/policy/rollout_status';
 
 export const getIsInvalidDateRange = ({
   startDate,

@@ -16,11 +16,12 @@ import { SettingCardHeader } from './setting_card';
 import type { PolicyFormComponentCommonProps } from '../types';
 import type {
   ImmutableArray,
-  UIPolicyConfig,
   Immutable,
+  UIPolicyConfig,
 } from '../../../../../../../common/endpoint/types';
 import { ProtectionModes } from '../../../../../../../common/endpoint/types';
-import type { MacPolicyProtection, LinuxPolicyProtection, PolicyProtection } from '../../../types';
+import { setProtectionModeAndPopup } from '../../../../../../../common/endpoint/models/policy_config_helpers';
+import type { PolicyProtection } from '../../../types';
 import { useLicense } from '../../../../../../common/hooks/use_license';
 
 const DETECT_LABEL = i18n.translate('xpack.securitySolution.endpoint.policy.details.detect', {
@@ -141,36 +142,14 @@ const ProtectionRadio = React.memo(
     const handleRadioChange = useCallback(() => {
       const newPayload = cloneDeep(policy);
 
-      for (const os of osList) {
-        if (os === 'windows') {
-          newPayload[os][protection].mode = protectionMode;
-        } else if (os === 'mac') {
-          newPayload[os][protection as MacPolicyProtection].mode = protectionMode;
-        } else if (os === 'linux') {
-          newPayload[os][protection as LinuxPolicyProtection].mode = protectionMode;
-        }
-        if (isPlatinumPlus) {
-          if (os === 'windows') {
-            if (protectionMode === ProtectionModes.prevent) {
-              newPayload[os].popup[protection].enabled = true;
-            } else {
-              newPayload[os].popup[protection].enabled = false;
-            }
-          } else if (os === 'mac') {
-            if (protectionMode === ProtectionModes.prevent) {
-              newPayload[os].popup[protection as MacPolicyProtection].enabled = true;
-            } else {
-              newPayload[os].popup[protection as MacPolicyProtection].enabled = false;
-            }
-          } else if (os === 'linux') {
-            if (protectionMode === ProtectionModes.prevent) {
-              newPayload[os].popup[protection as LinuxPolicyProtection].enabled = true;
-            } else {
-              newPayload[os].popup[protection as LinuxPolicyProtection].enabled = false;
-            }
-          }
-        }
-      }
+      setProtectionModeAndPopup({
+        policy: newPayload,
+        protection,
+        osList,
+        mode: protectionMode,
+        syncPopupEnabled: isPlatinumPlus,
+        popupEnabled: protectionMode === ProtectionModes.prevent,
+      });
 
       onChange({ isValid: true, updatedPolicy: newPayload });
     }, [isPlatinumPlus, onChange, osList, policy, protection, protectionMode]);

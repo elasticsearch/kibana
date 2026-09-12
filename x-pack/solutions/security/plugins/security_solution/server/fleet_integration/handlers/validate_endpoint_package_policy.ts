@@ -9,7 +9,10 @@ import moment from 'moment';
 
 import type { NewPackagePolicyInput } from '@kbn/fleet-plugin/common';
 import { EndpointIntegrationFleetError } from './errors';
-import { getControlledArtifactCutoffDate } from '../../../common/endpoint/utils/controlled_artifact_rollout';
+import {
+  classifyGlobalManifestVersion,
+  isPinnedGlobalManifestVersion,
+} from '../../../common/endpoint/utils/global_manifest_version';
 import { DeviceControlAccessLevel } from '../../../common/endpoint/types';
 
 export const validateEndpointPackagePolicy = (
@@ -32,22 +35,22 @@ export const validateEndpointPackagePolicy = (
   if (input?.config?.policy?.value?.global_manifest_version) {
     const globalManifestVersion = input.config.policy.value.global_manifest_version;
 
-    if (globalManifestVersion !== 'latest') {
-      const parsedDate = moment.utc(globalManifestVersion, 'YYYY-MM-DD', true);
-      if (!parsedDate.isValid()) {
+    const manifestStatus = classifyGlobalManifestVersion(globalManifestVersion);
+    if (isPinnedGlobalManifestVersion(manifestStatus)) {
+      if (manifestStatus === 'invalid_format') {
         throw createManifestVersionError(
           'Invalid date format. Use "latest" or "YYYY-MM-DD" format. UTC time.'
         );
       }
 
-      const maxAllowedDate = getControlledArtifactCutoffDate();
-      if (parsedDate.startOf('day').isBefore(maxAllowedDate.clone().startOf('day'))) {
+      if (manifestStatus === 'too_old') {
         throw createManifestVersionError(
           'Global manifest version is too far in the past. Please use either "latest" or a date within the last 18 months. The earliest valid date is October 1, 2023, in UTC time.'
         );
       }
-      const minAllowedDate = moment.utc().subtract(1, 'day');
-      if (parsedDate.isAfter(minAllowedDate)) {
+
+      if (manifestStatus === 'in_future') {
+        const minAllowedDate = moment.utc().subtract(1, 'day');
         throw createManifestVersionError(
           `Global manifest version cannot be in the future. Latest selectable date is ${minAllowedDate.format(
             'MMMM DD, YYYY'

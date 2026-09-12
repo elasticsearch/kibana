@@ -19,6 +19,7 @@
     "@kbn/agent-builder-common",
     "@kbn/tooling-log",
     "@kbn/test",
-    "@kbn/security-solution-plugin"
+    "@kbn/security-solution-plugin",
+    "@kbn/fleet-plugin"
   ]
 }

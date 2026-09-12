@@ -434,7 +434,7 @@ export const policyFactoryWithSupportedFeatures = (
         supported: true,
       },
       behavior_protection: {
-        ...policy.windows.behavior_protection,
+        ...policy.mac.behavior_protection,
         supported: true,
       },
       memory_protection: {
@@ -445,7 +445,7 @@ export const policyFactoryWithSupportedFeatures = (
     linux: {
       ...policy.linux,
       behavior_protection: {
-        ...policy.windows.behavior_protection,
+        ...policy.linux.behavior_protection,
         supported: true,
       },
       memory_protection: {

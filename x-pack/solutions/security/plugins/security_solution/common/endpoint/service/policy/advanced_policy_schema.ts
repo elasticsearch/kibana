@@ -7,7 +7,7 @@
 
 import { i18n } from '@kbn/i18n';
 
-interface AdvancedPolicySchemaType {
+export interface AdvancedPolicySchemaType {
   key: string;
   first_supported_version: string;
   last_supported_version?: string;

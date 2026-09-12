@@ -23,6 +23,7 @@ import {
   METADATA_TRANSFORMS_STATUS_INTERNAL_ROUTE,
 } from '../../../../common/endpoint/constants';
 import { withEndpointAuthz } from '../with_endpoint_authz';
+import { ENDPOINT_METADATA_LIST_REQUIRED_AUTHZ } from '../../../../common/endpoint/service/authz';
 
 export function registerEndpointRoutes(
   router: SecuritySolutionPluginRouter,
@@ -48,7 +49,7 @@ export function registerEndpointRoutes(
         },
       },
       withEndpointAuthz(
-        { all: ['canReadSecuritySolution'] },
+        ENDPOINT_METADATA_LIST_REQUIRED_AUTHZ,
         logger,
         getMetadataListRequestHandler(endpointAppContext, logger)
       )
@@ -94,7 +95,7 @@ export function registerEndpointRoutes(
         validate: false,
       },
       withEndpointAuthz(
-        { all: ['canReadSecuritySolution'] },
+        ENDPOINT_METADATA_LIST_REQUIRED_AUTHZ,
         logger,
         getMetadataTransformStatsHandler(endpointAppContext, logger)
       )

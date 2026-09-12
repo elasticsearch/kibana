@@ -8,6 +8,9 @@
 import type { PolicyConfig } from '../types';
 import { ProtectionModes, AntivirusRegistrationModes } from '../types';
 
+export const ANTIVIRUS_REGISTRATION_ENABLED_PATH =
+  'windows.antivirus_registration.enabled' as const;
+
 /** Calculates and updates Antivirus Registration `enabled` state based on the `mode` set by user
  * and by malware protection level in case antivirus registration mode is set to sync with malware.
  *

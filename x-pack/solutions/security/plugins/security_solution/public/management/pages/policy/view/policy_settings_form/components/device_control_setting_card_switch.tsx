@@ -12,7 +12,7 @@ import { cloneDeep } from 'lodash';
 import { useTestIdGenerator } from '../../../../../hooks/use_test_id_generator';
 import type { PolicyFormComponentCommonProps } from '../types';
 import type { ImmutableArray } from '../../../../../../../common/endpoint/types';
-import { DeviceControlAccessLevel as DeviceControlAccessLevelEnum } from '../../../../../../../common/endpoint/types';
+import { setDeviceControlSwitch } from '../../../../../../../common/endpoint/models/policy_config_helpers';
 import type { DeviceControlOSes } from '../../../types';
 
 export interface DeviceControlSettingCardSwitchProps extends PolicyFormComponentCommonProps {
@@ -37,48 +37,7 @@ export const DeviceControlSettingCardSwitch = React.memo(
     const handleSwitchChange = useCallback<EuiSwitchProps['onChange']>(
       (event) => {
         const newPayload = cloneDeep(policy);
-
-        if (event.target.checked === false) {
-          // Disable device control for Windows and Mac
-          newPayload.windows.device_control = {
-            enabled: false,
-            usb_storage: DeviceControlAccessLevelEnum.audit,
-          };
-          newPayload.windows.popup.device_control = {
-            enabled: false,
-            message: newPayload.windows.popup.device_control?.message || '',
-          };
-
-          newPayload.mac.device_control = {
-            enabled: false,
-            usb_storage: DeviceControlAccessLevelEnum.audit,
-          };
-          newPayload.mac.popup.device_control = {
-            enabled: false,
-            message: newPayload.mac.popup.device_control?.message || '',
-          };
-        } else {
-          // Enable device control for Windows and Mac
-          newPayload.windows.device_control = {
-            enabled: true,
-            usb_storage: DeviceControlAccessLevelEnum.deny_all,
-          };
-          newPayload.windows.popup = newPayload.windows.popup || {};
-          newPayload.windows.popup.device_control = {
-            enabled: true,
-            message: newPayload.windows.popup.device_control?.message || '',
-          };
-
-          newPayload.mac.device_control = {
-            enabled: true,
-            usb_storage: DeviceControlAccessLevelEnum.deny_all,
-          };
-          newPayload.mac.popup = newPayload.mac.popup || {};
-          newPayload.mac.popup.device_control = {
-            enabled: true,
-            message: newPayload.mac.popup.device_control?.message || '',
-          };
-        }
+        setDeviceControlSwitch(newPayload, event.target.checked);
 
         onChange({
           isValid: true,

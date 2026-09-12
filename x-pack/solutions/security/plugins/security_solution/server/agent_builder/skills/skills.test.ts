@@ -7,6 +7,7 @@
 
 import { platformCoreTools } from '@kbn/agent-builder-common';
 import { validateSkillDefinition } from '@kbn/agent-builder-server/skills/type_definition';
+import { createMockEndpointAppContext } from '../../endpoint/mocks';
 import { threatHuntingSkill } from './threat_hunting';
 import { alertAnalysisSkill } from './alert_analysis';
 import { alertTriageSkill, ALERT_TRIAGE_TOOL_ID } from './alert_triage';
@@ -17,6 +18,14 @@ import {
   automaticMigrationRulesUpdateMigrationSkill,
   automaticMigrationRulesDeleteMigrationSkill,
 } from './siem_migration';
+import { createElasticDefendPolicyManagementSkill } from './elastic_defend_policy_management';
+
+const endpointAppContextService = createMockEndpointAppContext().service;
+const getStartServices = jest.fn();
+const elasticDefendPolicyManagementSkill = createElasticDefendPolicyManagementSkill({
+  endpointAppContextService,
+  getStartServices,
+});
 
 const ALL_SKILLS = [
   threatHuntingSkill,
@@ -27,6 +36,7 @@ const ALL_SKILLS = [
   automaticMigrationRulesStopMigrationSkill,
   automaticMigrationRulesUpdateMigrationSkill,
   automaticMigrationRulesDeleteMigrationSkill,
+  elasticDefendPolicyManagementSkill,
 ];
 
 describe('Security Skills', () => {
