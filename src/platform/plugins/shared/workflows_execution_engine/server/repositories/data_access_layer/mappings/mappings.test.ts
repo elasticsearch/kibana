@@ -7,6 +7,7 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
+import type { MappingProperty, MappingTypeMapping } from '@elastic/elasticsearch/lib/api/types';
 import { WORKFLOWS_STEP_EXECUTIONS_INDEX_MAPPINGS } from './step_executions_mappings';
 import { WORKFLOWS_EXECUTIONS_INDEX_MAPPINGS } from './workflow_executions_mappings';
 
@@ -82,6 +83,74 @@ describe('WORKFLOWS_STEP_EXECUTIONS_INDEX_MAPPINGS', () => {
       },
     });
   });
+
+  it('keeps `managed` available for document-level security', () => {
+    const properties = WORKFLOWS_STEP_EXECUTIONS_INDEX_MAPPINGS.properties ?? {};
+    expect(properties.managed).toEqual({ type: 'boolean' });
+  });
+});
+
+function deriveEsAllowlistEntry(name: string, prop: MappingProperty): string | null {
+  if ('enabled' in prop && prop.enabled === false) {
+    return null;
+  }
+  if ('properties' in prop && prop.properties) {
+    return `${name}.*`;
+  }
+  if ('type' in prop && (prop.type === 'object' || prop.type === 'nested')) {
+    return `${name}.*`;
+  }
+  return name;
+}
+
+function deriveAllowlist(mappings: MappingTypeMapping): string[] {
+  const properties = mappings.properties ?? {};
+  return Object.entries(properties)
+    .map(([name, prop]) => deriveEsAllowlistEntry(name, prop))
+    .filter((entry): entry is string => entry !== null)
+    .sort();
+}
+
+describe('ES FLS allowlist cross-repo sync', () => {
+  it('matches the field allowlist in KibanaWorkflowsImplicitPrivilegesProvider', () => {
+    const javaGrantedFields = [
+      'spaceId',
+      'id',
+      'workflowId',
+      'managed',
+      'managedBy',
+      'originManagedWorkflowId',
+      'managedVersion',
+      'status',
+      'createdAt',
+      'isTestRun',
+      'stepId',
+      'createdBy',
+      'executedBy',
+      'startedAt',
+      'finishedAt',
+      'duration',
+      'triggeredBy',
+      'eventChainDepth',
+      'eventChainVisitedWorkflowIds',
+      'dispatchEventId',
+      'concurrencyGroupKey',
+      'version',
+      'stepType',
+      'workflowRunId',
+      'usage.*',
+      'stepUsage.*',
+      'hitl.*',
+    ].sort();
+
+    const derived = [
+      ...new Set([
+        ...deriveAllowlist(WORKFLOWS_EXECUTIONS_INDEX_MAPPINGS),
+        ...deriveAllowlist(WORKFLOWS_STEP_EXECUTIONS_INDEX_MAPPINGS),
+      ]),
+    ].sort();
+    expect(derived).toEqual(javaGrantedFields);
+  });
 });
 
 describe('WORKFLOWS_EXECUTIONS_INDEX_MAPPINGS', () => {
@@ -104,6 +173,11 @@ describe('WORKFLOWS_EXECUTIONS_INDEX_MAPPINGS', () => {
       properties: {},
     });
     expect(properties.version).toEqual({ type: 'long' });
+  });
+
+  it('keeps `managed` available for document-level security', () => {
+    const properties = WORKFLOWS_EXECUTIONS_INDEX_MAPPINGS.properties ?? {};
+    expect(properties.managed).toEqual({ type: 'boolean' });
   });
 
   it('does not carry an `hitl` envelope — HITL audit lives on the step doc', () => {

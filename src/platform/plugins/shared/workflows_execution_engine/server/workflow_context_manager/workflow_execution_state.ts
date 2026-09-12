@@ -321,6 +321,7 @@ export class WorkflowExecutionState {
       workflowId: this.workflowExecution.workflowId,
       spaceId: this.workflowExecution.spaceId,
       isTestRun: Boolean(this.workflowExecution.isTestRun),
+      managed: Boolean(this.workflowExecution.managed),
     } as StepExecutionMetadata;
     this.stepExecutions.set(id, newStep);
     this.stepDocumentsChanges.set(id, newStep);

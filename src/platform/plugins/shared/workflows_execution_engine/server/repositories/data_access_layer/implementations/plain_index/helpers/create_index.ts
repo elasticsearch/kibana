@@ -38,12 +38,12 @@ export const createIndexWithMappings = async ({
 
     logger?.debug(`Creating index ${indexName} with mappings`);
 
-    // Create the index with proper mappings
     await retryTransientEsErrors(
       () =>
         esClient.indices.create({
           index: indexName,
           mappings,
+          settings: { index: { hidden: true } },
         }),
       { logger }
     );
@@ -85,21 +85,25 @@ export const createOrUpdateIndex = async ({
         logger,
       });
     } else {
-      // Index exists, check if we need to update mappings
-      try {
-        await retryTransientEsErrors(
-          () =>
-            esClient.indices.putMapping({
-              index: indexName,
-              ...mappings,
-            }),
-          { logger }
-        );
-        logger?.debug(`Updated mappings for existing index ${indexName}`);
-      } catch (mappingError) {
-        logger?.warn(`Failed to update mappings for index ${indexName}: ${mappingError.message}`);
-        // Continue - the index exists and can be used
-      }
+      // Apply the dynamic hidden setting to indices from earlier Kibana versions.
+      await retryTransientEsErrors(
+        () =>
+          esClient.indices.putMapping({
+            index: indexName,
+            ...mappings,
+          }),
+        { logger }
+      );
+      logger.debug(`Updated mappings for existing index ${indexName}`);
+      await retryTransientEsErrors(
+        () =>
+          esClient.indices.putSettings({
+            index: indexName,
+            settings: { index: { hidden: true } },
+          }),
+        { logger }
+      );
+      logger.debug(`Applied hidden setting for existing index ${indexName}`);
     }
   } catch (error) {
     logger?.error(`Failed to create or update index ${indexName}: ${error}`);

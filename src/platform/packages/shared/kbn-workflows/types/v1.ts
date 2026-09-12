@@ -248,6 +248,9 @@ export interface EsWorkflowStepExecution {
   /** Specific step execution instance state. Used by loops, retries, etc to track execution context. */
   state?: Record<string, unknown>;
 
+  /** Whether this step belongs to a managed workflow execution. */
+  managed?: boolean;
+
   /**
    * Optional Human-In-The-Loop audit envelope, populated only by
    * HITL-aware steps (today: `wait_for_input`). Both the wrapper and

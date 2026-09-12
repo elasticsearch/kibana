@@ -23,6 +23,7 @@ export const WORKFLOWS_STEP_EXECUTIONS_INDEX_MAPPINGS = {
     stepType: mappings.keyword(),
     workflowRunId: mappings.keyword(),
     workflowId: mappings.keyword(),
+    managed: mappings.boolean(),
     status: mappings.keyword(),
     // Optional Human-In-The-Loop audit envelope, populated only by
     // HITL-aware steps (today: `wait_for_input`). Nested under `hitl`

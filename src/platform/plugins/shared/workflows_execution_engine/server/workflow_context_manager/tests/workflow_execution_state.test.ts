@@ -145,6 +145,7 @@ describe('WorkflowExecutionState', () => {
       stepExecutionIndex: 0,
       globalExecutionIndex: 0,
       isTestRun: false,
+      managed: false,
     } as Partial<EsWorkflowStepExecution>);
     expect(stepExecutionRepository.bulkUpsert).not.toHaveBeenCalled();
   });
@@ -177,6 +178,31 @@ describe('WorkflowExecutionState', () => {
         workflowId: 'test-workflow-id',
         isTestRun: true,
       })
+    );
+  });
+
+  it('should set managed on step execution from workflow execution', () => {
+    const state = new WorkflowExecutionState(
+      {
+        id: 'test-workflow-execution-id',
+        workflowId: 'test-workflow-id',
+        status: ExecutionStatus.RUNNING,
+        startedAt: '2025-08-05T20:00:00.000Z',
+        isTestRun: false,
+        managed: true,
+      } as EsWorkflowExecution,
+      workflowExecutionRepository
+    );
+
+    state.upsertStep({
+      id: 'fake-id',
+      stepId: 'test-step',
+      status: ExecutionStatus.RUNNING,
+      startedAt: '2025-08-05T20:00:00.000Z',
+    } as EsWorkflowStepExecution);
+
+    expect(state.getLatestStepExecution('test-step')).toEqual(
+      expect.objectContaining({ managed: true })
     );
   });
 

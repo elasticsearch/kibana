@@ -14,6 +14,7 @@ const createEsClientMock = () => ({
     exists: jest.fn(),
     create: jest.fn(),
     putMapping: jest.fn(),
+    putSettings: jest.fn(),
   },
 });
 
@@ -40,6 +41,7 @@ describe('createIndexWithMappings', () => {
     expect(esClient.indices.create).toHaveBeenCalledWith({
       index: '.test-index',
       mappings: { properties: {} },
+      settings: { index: { hidden: true } },
     });
   });
 
@@ -112,10 +114,11 @@ describe('createOrUpdateIndex', () => {
     expect(esClient.indices.create).toHaveBeenCalled();
   });
 
-  it('updates mappings when index already exists', async () => {
+  it('updates mappings and applies hidden setting when index already exists', async () => {
     const esClient = createEsClientMock();
     esClient.indices.exists.mockResolvedValue(true);
     esClient.indices.putMapping.mockResolvedValue({});
+    esClient.indices.putSettings.mockResolvedValue({});
     const logger = createLoggerMock();
 
     await createOrUpdateIndex({
@@ -129,13 +132,18 @@ describe('createOrUpdateIndex', () => {
       index: '.test-index',
       properties: { id: { type: 'keyword' } },
     });
+    expect(esClient.indices.putSettings).toHaveBeenCalledWith({
+      index: '.test-index',
+      settings: { index: { hidden: true } },
+    });
     expect(esClient.indices.create).not.toHaveBeenCalled();
   });
 
-  it('continues if putMapping fails', async () => {
+  it('rethrows if putMapping fails', async () => {
     const esClient = createEsClientMock();
     esClient.indices.exists.mockResolvedValue(true);
     esClient.indices.putMapping.mockRejectedValue(new Error('mapping conflict'));
+    esClient.indices.putSettings.mockResolvedValue({});
     const logger = createLoggerMock();
 
     await expect(
@@ -145,8 +153,25 @@ describe('createOrUpdateIndex', () => {
         mappings: { properties: {} },
         logger: logger as any,
       })
-    ).resolves.toBeUndefined();
-    expect(logger.warn).toHaveBeenCalledWith(expect.stringContaining('mapping conflict'));
+    ).rejects.toThrow('mapping conflict');
+    expect(esClient.indices.putSettings).not.toHaveBeenCalled();
+  });
+
+  it('rethrows if putSettings fails', async () => {
+    const esClient = createEsClientMock();
+    esClient.indices.exists.mockResolvedValue(true);
+    esClient.indices.putMapping.mockResolvedValue({});
+    esClient.indices.putSettings.mockRejectedValue(new Error('settings error'));
+    const logger = createLoggerMock();
+
+    await expect(
+      createOrUpdateIndex({
+        esClient: esClient as any,
+        indexName: '.test-index',
+        mappings: { properties: {} },
+        logger: logger as any,
+      })
+    ).rejects.toThrow('settings error');
   });
 
   it('rethrows errors from index existence check', async () => {

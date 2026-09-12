@@ -17,6 +17,7 @@ import type {
   AlertingServerSetup,
 } from '@kbn/alerting-plugin/server';
 import type { CustomRequestHandlerContext, IRouter } from '@kbn/core/server';
+import type { DataViewsServerPluginStart } from '@kbn/data-views-plugin/server';
 import type { FeaturesPluginSetup } from '@kbn/features-plugin/server';
 
 import type { InboxPluginSetup } from '@kbn/inbox-plugin/server';
@@ -70,13 +71,17 @@ export interface WorkflowsServerPluginStartDeps {
   spaces: SpacesPluginStart;
   workflowsExtensions: WorkflowsExtensionsServerPluginStart;
   licensing: LicensingPluginStart;
+  dataViews: DataViewsServerPluginStart;
 }
+
+export type WorkflowsManagementRequestHandlerContext = Promise<void>;
 
 export type WorkflowsRequestHandlerContext = CustomRequestHandlerContext<{
   workflows: WorkflowsApiRequestHandlerContext;
   actions: ActionsApiRequestHandlerContext;
   alerting: AlertingApiRequestHandlerContext;
   licensing: LicensingApiRequestHandlerContext;
+  workflowsManagement: WorkflowsManagementRequestHandlerContext;
 }>;
 
 export type WorkflowsRouter = IRouter<WorkflowsRequestHandlerContext>;

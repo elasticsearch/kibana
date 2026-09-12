@@ -59,6 +59,8 @@ const withServerlessAvailabilityCheck =
         },
       });
     }
+    // Access the lazy context to start the per-space data-view bootstrap.
+    await context.workflowsManagement;
     return handler(context, request, response);
   };
 
