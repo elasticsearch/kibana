@@ -248,6 +248,7 @@ export class BlocklistValidator extends BaseValidator {
       await this.removeInvalidPolicyIds(item); // instead of validateByPolicyItem
 
       // usual validators from pre-create
+      this.validateEntryValueCharacters(item); // trims first, so dedup sees normalized values
       (item.entries as BlocklistConditionEntry[]) = removeDuplicateEntryValues(
         item.entries as BlocklistConditionEntry[]
       );
@@ -261,6 +262,7 @@ export class BlocklistValidator extends BaseValidator {
   ): Promise<CreateExceptionListItemOptions> {
     await this.validateHasWritePrivilege();
 
+    this.validateEntryValueCharacters(item); // trims first, so dedup sees normalized values
     (item.entries as BlocklistConditionEntry[]) = removeDuplicateEntryValues(
       item.entries as BlocklistConditionEntry[]
     );
@@ -308,6 +310,7 @@ export class BlocklistValidator extends BaseValidator {
 
     await this.validateHasWritePrivilege();
 
+    this.validateEntryValueCharacters(updatedItem); // trims first, so dedup sees normalized values
     (_updatedItem.entries as BlocklistConditionEntry[]) = removeDuplicateEntryValues(
       _updatedItem.entries as BlocklistConditionEntry[]
     );

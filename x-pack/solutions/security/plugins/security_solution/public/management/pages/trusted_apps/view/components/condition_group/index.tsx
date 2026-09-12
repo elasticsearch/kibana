@@ -53,6 +53,8 @@ export interface ConditionGroupProps {
   isAndDisabled?: boolean;
   /** called when any of the entries is visited (triggered via `onBlur` DOM event) */
   onVisited?: ConditionEntryInputProps['onVisited'];
+  entryValidations?: ConditionEntryInputProps['validation'][];
+  showRequiredErrors?: boolean;
   'data-test-subj'?: string;
 }
 export const ConditionGroup = memo<ConditionGroupProps>(
@@ -64,6 +66,8 @@ export const ConditionGroup = memo<ConditionGroupProps>(
     onAndClicked,
     isAndDisabled,
     onVisited,
+    entryValidations,
+    showRequiredErrors,
     'data-test-subj': dataTestSubj,
   }) => {
     const getTestId = useTestIdGenerator(dataTestSubj);
@@ -93,6 +97,8 @@ export const ConditionGroup = memo<ConditionGroupProps>(
                 onRemove={onEntryRemove}
                 onChange={onEntryChange}
                 onVisited={onVisited}
+                validation={entryValidations?.[index]}
+                showRequiredError={showRequiredErrors}
                 data-test-subj={getTestId(`entry${index}`)}
               />
             ))}

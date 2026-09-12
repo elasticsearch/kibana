@@ -10,7 +10,11 @@ import { screen, cleanup, act, fireEvent, getByTestId, waitFor } from '@testing-
 import userEvent from '@testing-library/user-event';
 import { waitForEuiPopoverOpen } from '@elastic/eui/lib/test/rtl';
 import type { TrustedAppEntryTypes } from '@kbn/securitysolution-utils';
-import { OperatingSystem, ConditionEntryField } from '@kbn/securitysolution-utils';
+import {
+  CONTROL_CHARACTER_ERROR,
+  OperatingSystem,
+  ConditionEntryField,
+} from '@kbn/securitysolution-utils';
 import { ENDPOINT_ARTIFACT_LISTS } from '@kbn/securitysolution-list-constants';
 import { stubIndexPattern } from '@kbn/data-plugin/common/stubs';
 import { useFetchIndex } from '../../../../../common/containers/source';
@@ -158,10 +162,14 @@ describe('Trusted apps form', () => {
     return renderResult.getByTestId(`${dataTestSub}-conditionsBuilder-group1-andConnector`);
   };
   const getAllValidationErrors = (): HTMLElement[] => {
-    return Array.from(renderResult.container.querySelectorAll('.euiFormErrorText'));
+    return Array.from(
+      renderResult.container.querySelectorAll('.euiFormErrorText, [data-test-subj$="-valueError"]')
+    );
   };
   const getAllValidationWarnings = (): HTMLElement[] => {
-    return Array.from(renderResult.container.querySelectorAll('.euiFormHelpText'));
+    return Array.from(
+      renderResult.container.querySelectorAll('.euiFormHelpText, [data-test-subj$="-valueWarning"]')
+    );
   };
 
   const getAdvancedModeToggle = (): HTMLButtonElement => {
@@ -400,6 +408,80 @@ describe('Trusted apps form', () => {
         formProps.item = { ...formProps.item, ...propsItem };
         render();
         expect(screen.getByText(INPUT_ERRORS.wildcardPathWarning(0))).not.toBeNull();
+      });
+    });
+
+    describe('invisible character validation', () => {
+      it('validates the trimmed value instead of warning about edge whitespace', () => {
+        formProps.item = createItem({
+          entries: [createEntry(ConditionEntryField.PATH, 'match', ' malformed-path ')],
+        });
+        rerender();
+
+        const condition = getCondition();
+        expect(getByTestId(condition, `${condition.dataset.testSubj}-value`)).not.toHaveAttribute(
+          'aria-invalid',
+          'true'
+        );
+        expect(condition).toContainElement(renderResult.getByText(INPUT_ERRORS.pathWarning(0)));
+      });
+
+      it('shows an invalid-hash error for a padded invalid hash', () => {
+        formProps.item = createItem({
+          entries: [createEntry(ConditionEntryField.HASH, 'match', ' not-a-hash ')],
+        });
+        rerender();
+
+        expect(renderResult.getByText(INPUT_ERRORS.invalidHash(0))).toBeInTheDocument();
+        expect(formProps.onChange).toHaveBeenLastCalledWith(
+          expect.objectContaining({ isValid: false })
+        );
+      });
+
+      it('blocks submission for an interior control character', async () => {
+        formProps.item = createItem({
+          name: 'Trusted app',
+          entries: [createEntry(ConditionEntryField.PATH, 'match', 'C:\\Elastic\tEndpoint.exe')],
+        });
+        rerender();
+
+        await userEvent.type(getNameField(), ' ');
+
+        expect(renderResult.getByText(CONTROL_CHARACTER_ERROR)).toBeInTheDocument();
+        expect(formProps.onChange).toHaveBeenLastCalledWith(
+          expect.objectContaining({ isValid: false })
+        );
+      });
+
+      it('keeps an edge-whitespace value submit-eligible', async () => {
+        formProps.item = createItem({
+          name: 'Trusted app',
+          entries: [createEntry(ConditionEntryField.PATH, 'match', ' C:\\Elastic\\Endpoint.exe')],
+        });
+        rerender();
+
+        await userEvent.type(getNameField(), ' ');
+
+        expect(formProps.onChange).toHaveBeenLastCalledWith(
+          expect.objectContaining({ isValid: true })
+        );
+      });
+
+      it('trims a non-empty value on blur through the form change path', () => {
+        formProps.item = createItem({
+          entries: [createEntry(ConditionEntryField.PATH, 'match', ' C:\\Elastic\\Endpoint.exe ')],
+        });
+        rerender();
+
+        fireEvent.blur(getConditionValue(getCondition()));
+
+        expect(formProps.onChange).toHaveBeenCalledWith(
+          expect.objectContaining({
+            item: expect.objectContaining({
+              entries: [expect.objectContaining({ value: 'C:\\Elastic\\Endpoint.exe' })],
+            }),
+          })
+        );
       });
     });
 
@@ -755,7 +837,9 @@ describe('Trusted apps form', () => {
       setTextFieldValue(getConditionValue(getCondition()), '');
       rerenderWithLatestProps();
 
-      expect(renderResult.getByText(INPUT_ERRORS.noDuplicateField(ConditionEntryField.HASH)));
+      expect(
+        renderResult.getAllByText(INPUT_ERRORS.noDuplicateField(ConditionEntryField.HASH))
+      ).toHaveLength(2);
     });
 
     it('should validate multiple errors in form', async () => {

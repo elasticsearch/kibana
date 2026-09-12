@@ -96,7 +96,7 @@ export const HostIsolationExceptionsForm = memo<ArtifactFormComponentProps>(
       (event: React.ChangeEvent<HTMLInputElement>) => {
         const ip = event.target.value;
 
-        if (!isValidIPv4OrCIDR(ip)) {
+        if (!isValidIPv4OrCIDR(ip.trim())) {
           setHasIpError(true);
         } else {
           setHasIpError(false);
@@ -112,6 +112,31 @@ export const HostIsolationExceptionsForm = memo<ArtifactFormComponentProps>(
         });
       },
       [ipEntry, notifyOfChange]
+    );
+
+    const handleOnIpBlur = useCallback(
+      (event: React.FocusEvent<HTMLInputElement>) => {
+        if (!hasBeenInputIpVisited) {
+          setHasBeenInputIpVisited(true);
+        }
+
+        const trimmedIp = event.target.value.trim();
+        if (trimmedIp === event.target.value) {
+          return;
+        }
+
+        event.target.value = trimmedIp;
+        setHasIpError(!isValidIPv4OrCIDR(trimmedIp));
+        notifyOfChange({
+          entries: [
+            {
+              ...ipEntry,
+              value: trimmedIp,
+            },
+          ],
+        });
+      },
+      [hasBeenInputIpVisited, ipEntry, notifyOfChange]
     );
 
     const handleEffectedPolicyOnChange: EffectedPolicySelectProps['onChange'] = useCallback(
@@ -178,12 +203,19 @@ export const HostIsolationExceptionsForm = memo<ArtifactFormComponentProps>(
             required={hasBeenInputIpVisited}
             maxLength={256}
             data-test-subj="hostIsolationExceptions-form-ip-input"
-            onBlur={() => !hasBeenInputIpVisited && setHasBeenInputIpVisited(true)}
+            onBlur={handleOnIpBlur}
             disabled={disabled}
           />
         </EuiFormRow>
       ),
-      [disabled, exception.entries, handleOnIpChange, hasBeenInputIpVisited, hasIpError]
+      [
+        disabled,
+        exception.entries,
+        handleOnIpBlur,
+        handleOnIpChange,
+        hasBeenInputIpVisited,
+        hasIpError,
+      ]
     );
 
     const descriptionInput = useMemo(

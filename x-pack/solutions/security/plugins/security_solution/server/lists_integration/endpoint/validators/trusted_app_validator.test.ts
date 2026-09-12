@@ -7,6 +7,7 @@
 
 import { httpServerMock } from '@kbn/core-http-server-mocks';
 import type { CreateExceptionListItemOptions } from '@kbn/lists-plugin/server';
+import type { ExceptionListItemSchema } from '@kbn/securitysolution-io-ts-list-types';
 import { ENDPOINT_ARTIFACT_LISTS } from '@kbn/securitysolution-list-constants';
 import { createMockEndpointAppContextService } from '../../../endpoint/mocks';
 import { TrustedAppValidator } from './trusted_app_validator';
@@ -123,6 +124,26 @@ describe('Endpoint Exceptions API validations', () => {
       await expect(
         validator.validatePreCreateItem(buildItem(signerEntry('a'.repeat(4097))))
       ).rejects.toThrow(/maximum length of \[4096\]/);
+    });
+
+    it('trims edge whitespace on create and then validates the cleaned hash', async () => {
+      const item = buildItem(hashEntry(` ${'a'.repeat(64)} `));
+
+      await expect(validator.validatePreCreateItem(item)).resolves.toBeDefined();
+      expect(item.entries[0]).toEqual(expect.objectContaining({ value: 'a'.repeat(64) }));
+    });
+
+    it('rejects a nested control character on update', async () => {
+      await expect(
+        validator.validatePreUpdateItem(
+          {
+            ...buildItem(signerEntry('Elastic\u0000')),
+            _version: undefined,
+            id: 'trusted-app-id',
+          },
+          {} as ExceptionListItemSchema
+        )
+      ).rejects.toThrow(/control characters in fields: subject_name/);
     });
 
     it('accepts an advanced-mode field at the 1024 character limit', async () => {

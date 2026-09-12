@@ -24,6 +24,8 @@ export const LogicalConditionBuilder = memo<LogicalConditionBuilderProps>(
     onEntryRemove,
     onEntryChange,
     onVisited,
+    entryValidations,
+    showRequiredErrors,
     'data-test-subj': dataTestSubj,
   }) => {
     const getTestId = useTestIdGenerator(dataTestSubj);
@@ -42,6 +44,8 @@ export const LogicalConditionBuilder = memo<LogicalConditionBuilderProps>(
               onAndClicked={onAndClicked}
               isAndDisabled={isAndDisabled}
               onVisited={onVisited}
+              entryValidations={entryValidations}
+              showRequiredErrors={showRequiredErrors}
               data-test-subj={getTestId('group1')}
             />
           )}

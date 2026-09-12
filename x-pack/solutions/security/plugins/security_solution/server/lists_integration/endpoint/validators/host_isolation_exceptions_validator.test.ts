@@ -62,6 +62,21 @@ describe('Endpoint Exceptions API validations', () => {
       await expect(promise).rejects.toThrow(EndpointArtifactExceptionValidationError);
       await expect(promise).rejects.toThrow(/maximum length of \[64\]/);
     });
+
+    it('trims edge whitespace on create', async () => {
+      const item = buildCreateItem(' 10.0.0.1 ');
+
+      await expect(validator.validatePreCreateItem(item)).resolves.toEqual(
+        expect.objectContaining({ listId: ENDPOINT_ARTIFACT_LISTS.hostIsolationExceptions.id })
+      );
+      expect(item.entries[0]).toEqual(expect.objectContaining({ value: '10.0.0.1' }));
+    });
+
+    it('rejects a control character on create', async () => {
+      await expect(
+        validator.validatePreCreateItem(buildCreateItem('10.0.0.1\u0000'))
+      ).rejects.toThrow(/control characters in fields: destination\.ip/);
+    });
   });
 
   // -----------------------------------------------------------------------------

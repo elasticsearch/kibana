@@ -143,6 +143,8 @@ export class HostIsolationExceptionsValidator extends BaseValidator {
   }
 
   private async validateHostIsolationData(item: ExceptionItemLikeOptions): Promise<void> {
+    this.validateEntryValueCharacters(item);
+
     try {
       HostIsolationBasicDataSchema.validate(item);
       HostIsolationDataSchema.validate(item);

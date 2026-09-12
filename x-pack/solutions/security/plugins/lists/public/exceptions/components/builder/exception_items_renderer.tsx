@@ -464,6 +464,7 @@ export const ExceptionBuilderComponent = ({
                 indexPattern={indexPatterns}
                 isOnlyItem={exceptions.length === 1}
                 key={getExceptionListItemId(exceptionListItem, index)}
+                listId={listId}
                 listType={listType}
                 onChangeExceptionItem={handleExceptionItemChange}
                 onDeleteExceptionItem={handleDeleteExceptionItem}

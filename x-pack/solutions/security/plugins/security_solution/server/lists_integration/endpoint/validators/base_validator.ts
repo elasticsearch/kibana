@@ -9,7 +9,11 @@ import type { KibanaRequest, Logger } from '@kbn/core/server';
 import { schema } from '@kbn/config-schema';
 import { isEqual } from 'lodash/fp';
 import type { ExceptionListItemSchema } from '@kbn/securitysolution-io-ts-list-types';
-import { OperatingSystem } from '@kbn/securitysolution-utils';
+import {
+  OperatingSystem,
+  hasControlCharacters,
+  trimInputValues,
+} from '@kbn/securitysolution-utils';
 
 import { i18n } from '@kbn/i18n';
 import {} from '@kbn/lists-plugin/server/services/exception_lists/exception_list_client_types';
@@ -91,6 +95,13 @@ const ITEM_CANNOT_BE_MANAGED_IN_CURRENT_SPACE_MESSAGE = (spaceIds: string[]): st
       itemOwnerSpaces: spaceIds.join(', '),
     },
   });
+
+interface EndpointArtifactEntryValue {
+  field: string;
+  type: string;
+  value?: string | string[];
+  entries?: EndpointArtifactEntryValue[];
+}
 
 export const BasicEndpointExceptionDataSchema = schema.object(
   {
@@ -184,6 +195,47 @@ export class BaseValidator {
       BasicEndpointExceptionDataSchema.validate(item);
     } catch (error) {
       throw new EndpointArtifactExceptionValidationError(error.message);
+    }
+  }
+
+  /**
+   * Trims edge whitespace from `match`/`match_any`/`wildcard` entry values in place (the Endpoint
+   * matches these literally) and rejects values that still contain control characters.
+   */
+  protected validateEntryValueCharacters(item: ExceptionItemLikeOptions): void {
+    const controlCharacterFields = new Set<string>();
+
+    const inspectEntries = (entries: EndpointArtifactEntryValue[]): void => {
+      entries.forEach((entry) => {
+        if (entry.type === 'nested') {
+          inspectEntries(entry.entries ?? []);
+          return;
+        }
+
+        if (!['match', 'match_any', 'wildcard'].includes(entry.type) || entry.value === undefined) {
+          return;
+        }
+
+        entry.value = trimInputValues(entry.value);
+
+        if (hasControlCharacters(entry.value)) {
+          controlCharacterFields.add(entry.field);
+        }
+      });
+    };
+
+    inspectEntries(item.entries as EndpointArtifactEntryValue[]);
+
+    if (controlCharacterFields.size) {
+      throw new EndpointArtifactExceptionValidationError(
+        i18n.translate(
+          'xpack.securitySolution.endpointArtifactValidation.invalidEntryValuesErrorMessage',
+          {
+            defaultMessage: 'Invalid entry values: control characters in fields: {fields}',
+            values: { fields: i18n.formatList('unit', [...controlCharacterFields]) },
+          }
+        )
+      );
     }
   }
 

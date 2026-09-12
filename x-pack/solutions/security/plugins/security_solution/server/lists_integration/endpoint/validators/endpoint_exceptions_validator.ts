@@ -53,12 +53,14 @@ export class EndpointExceptionsValidator extends BaseValidator {
       await this.removeInvalidPolicyIds(item); // instead of validateByPolicyItem
 
       // usual validators from pre-create
+      this.validateEntryValueCharacters(item);
       await this.validateCanCreateByPolicyArtifacts(item);
     });
   }
 
   async validatePreCreateItem(item: CreateExceptionListItemOptions) {
     await this.validateHasWritePrivilege();
+    this.validateEntryValueCharacters(item);
 
     if (await this.endpointAppContext.isEndpointExceptionsPerPolicyEnabled()) {
       await this.validateCanCreateByPolicyArtifacts(item);
@@ -78,6 +80,7 @@ export class EndpointExceptionsValidator extends BaseValidator {
     const updatedItem = _updatedItem as ExceptionItemLikeOptions;
 
     await this.validateHasWritePrivilege();
+    this.validateEntryValueCharacters(updatedItem);
 
     if (await this.endpointAppContext.isEndpointExceptionsPerPolicyEnabled()) {
       try {

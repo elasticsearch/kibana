@@ -58,10 +58,14 @@ import {
   OperatorComponent,
 } from '@kbn/securitysolution-autocomplete';
 import {
+  CONTROL_CHARACTER_ERROR,
   OperatingSystem,
   WILDCARD_WARNING,
+  hasControlCharacters,
+  trimInputValues,
   validatePotentialWildcardInput,
 } from '@kbn/securitysolution-utils';
+import { ENDPOINT_ARTIFACT_LISTS } from '@kbn/securitysolution-list-constants';
 import type { DataViewBase, DataViewFieldBase } from '@kbn/es-query';
 import type { AutocompleteStart } from '@kbn/kql/public';
 import type { HttpStart } from '@kbn/core/public';
@@ -83,6 +87,7 @@ export interface EntryItemProps {
   indexPattern: DataViewBase;
   showLabel: boolean;
   osTypes?: OsTypeArray;
+  listId?: string;
   listType: ExceptionListType;
   onChange: (arg: BuilderEntry, i: number) => void;
   onlyShowListOperators?: boolean;
@@ -103,6 +108,7 @@ export const BuilderEntryItem: React.FC<EntryItemProps> = ({
   httpService,
   indexPattern,
   osTypes,
+  listId,
   listType,
   onChange,
   onlyShowListOperators = false,
@@ -131,6 +137,24 @@ export const BuilderEntryItem: React.FC<EntryItemProps> = ({
     [setWarningsExist]
   );
 
+  // Endpoint artifact values are matched literally by the Endpoint agent, so edge whitespace is
+  // trimmed and control characters are flagged. Detection/rule exception values are left untouched.
+  const isEndpointArtifactBuilder =
+    listType === ExceptionListTypeEnum.ENDPOINT_EVENTS ||
+    listType === ExceptionListTypeEnum.ENDPOINT_BLOCKLISTS ||
+    (listType === ExceptionListTypeEnum.ENDPOINT &&
+      (listId === ENDPOINT_ARTIFACT_LISTS.trustedApps.id ||
+        listId === ENDPOINT_ARTIFACT_LISTS.endpointExceptions.id));
+
+  const getControlCharacterWarning = (value?: string | string[]): string | undefined =>
+    isEndpointArtifactBuilder && hasControlCharacters(value) ? CONTROL_CHARACTER_ERROR : undefined;
+
+  const normalizeValue = useCallback(
+    <T extends string | string[]>(value: T): T =>
+      isEndpointArtifactBuilder ? (trimInputValues(value) as T) : value,
+    [isEndpointArtifactBuilder]
+  );
+
   const handleFieldChange = useCallback(
     ([newField]: DataViewFieldBase[]): void => {
       const { updatedEntry, index } = getEntryOnFieldChange(entry, newField);
@@ -151,29 +175,29 @@ export const BuilderEntryItem: React.FC<EntryItemProps> = ({
 
   const handleFieldMatchValueChange = useCallback(
     (newField: string): void => {
-      const { updatedEntry, index } = getEntryOnMatchChange(entry, newField);
+      const { updatedEntry, index } = getEntryOnMatchChange(entry, normalizeValue(newField));
 
       onChange(updatedEntry, index);
     },
-    [onChange, entry]
+    [onChange, entry, normalizeValue]
   );
 
   const handleFieldMatchAnyValueChange = useCallback(
     (newField: string[]): void => {
-      const { updatedEntry, index } = getEntryOnMatchAnyChange(entry, newField);
+      const { updatedEntry, index } = getEntryOnMatchAnyChange(entry, normalizeValue(newField));
 
       onChange(updatedEntry, index);
     },
-    [onChange, entry]
+    [onChange, entry, normalizeValue]
   );
 
   const handleFieldWildcardValueChange = useCallback(
     (newField: string): void => {
-      const { updatedEntry, index } = getEntryOnWildcardChange(entry, newField);
+      const { updatedEntry, index } = getEntryOnWildcardChange(entry, normalizeValue(newField));
 
       onChange(updatedEntry, index);
     },
-    [onChange, entry]
+    [onChange, entry, normalizeValue]
   );
 
   const handleFieldListValueChange = useCallback(
@@ -426,9 +450,9 @@ export const BuilderEntryItem: React.FC<EntryItemProps> = ({
     switch (type) {
       case OperatorTypeEnum.MATCH:
         const value = typeof entry.value === 'string' ? entry.value : undefined;
-        const fieldMatchWarning = /[*?]/.test(value ?? '')
-          ? getWildcardWithIsOperatorWarning()
-          : undefined;
+        const fieldMatchWarning =
+          getControlCharacterWarning(value) ??
+          (/[*?]/.test(value ?? '') ? getWildcardWithIsOperatorWarning() : undefined);
         return (
           <AutocompleteFieldMatchComponent
             autocompleteService={autocompleteService}
@@ -451,6 +475,7 @@ export const BuilderEntryItem: React.FC<EntryItemProps> = ({
         );
       case OperatorTypeEnum.MATCH_ANY:
         const values: string[] = Array.isArray(entry.value) ? entry.value : [];
+        const matchAnyWarning = getControlCharacterWarning(values);
         return (
           <AutocompleteFieldMatchAnyComponent
             autocompleteService={autocompleteService}
@@ -467,6 +492,8 @@ export const BuilderEntryItem: React.FC<EntryItemProps> = ({
             isClearable={false}
             indexPattern={indexPattern}
             onError={handleError}
+            onWarning={handleWarning}
+            warning={matchAnyWarning}
             onChange={handleFieldMatchAnyValueChange}
             isRequired
             aria-label={ariaLabel}
@@ -475,8 +502,9 @@ export const BuilderEntryItem: React.FC<EntryItemProps> = ({
         );
       case OperatorTypeEnum.WILDCARD:
         const wildcardValue = typeof entry.value === 'string' ? entry.value : undefined;
-        let actualWarning: React.ReactNode | string | undefined;
-        if (listType !== 'detection' && listType !== 'rule_default') {
+        let actualWarning: React.ReactNode | string | undefined =
+          getControlCharacterWarning(wildcardValue);
+        if (!actualWarning && listType !== 'detection' && listType !== 'rule_default') {
           let os: OperatingSystem = OperatingSystem.WINDOWS;
           if (osTypes) {
             [os] = osTypes as OperatingSystem[];

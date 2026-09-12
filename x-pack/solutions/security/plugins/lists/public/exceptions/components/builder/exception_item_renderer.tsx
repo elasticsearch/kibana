@@ -55,6 +55,7 @@ interface BuilderExceptionListItemProps {
   indexPattern: DataViewBase;
   andLogicIncluded: boolean;
   isOnlyItem: boolean;
+  listId?: string;
   listType: ExceptionListType;
   onDeleteExceptionItem: (item: ExceptionsBuilderExceptionItem, index: number) => void;
   onChangeExceptionItem: (item: ExceptionsBuilderExceptionItem, index: number) => void;
@@ -78,6 +79,7 @@ export const BuilderExceptionListItemComponent = React.memo<BuilderExceptionList
     exceptionItemIndex,
     indexPattern,
     isOnlyItem,
+    listId,
     listType,
     andLogicIncluded,
     onDeleteExceptionItem,
@@ -150,6 +152,7 @@ export const BuilderExceptionListItemComponent = React.memo<BuilderExceptionList
                           entry={item}
                           httpService={httpService}
                           indexPattern={indexPattern}
+                          listId={listId}
                           listType={listType}
                           onChange={handleEntryChange}
                           onlyShowListOperators={onlyShowListOperators}

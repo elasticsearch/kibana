@@ -215,6 +215,8 @@ export class TrustedDeviceValidator extends BaseValidator {
   }
 
   private async validateTrustedDeviceData(item: ExceptionItemLikeOptions): Promise<void> {
+    this.validateEntryValueCharacters(item);
+
     try {
       TrustedDeviceBasicDataSchema.validate(item);
     } catch (error) {

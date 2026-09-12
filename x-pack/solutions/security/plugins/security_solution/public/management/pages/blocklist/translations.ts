@@ -6,6 +6,7 @@
  */
 
 import { i18n } from '@kbn/i18n';
+import { CONTROL_CHARACTER_ERROR } from '@kbn/securitysolution-utils';
 import type { BlocklistConditionEntryField } from '@kbn/securitysolution-utils';
 
 export const DETAILS_HEADER = i18n.translate('xpack.securitySolution.blocklist.details.header', {
@@ -132,6 +133,7 @@ export const ERRORS = {
   INVALID_HASH: i18n.translate('xpack.securitySolution.blocklist.errors.values.invalidHash', {
     defaultMessage: 'Invalid hash value',
   }),
+  CONTROL_CHARACTER: CONTROL_CHARACTER_ERROR,
   INVALID_PATH: i18n.translate('xpack.securitySolution.blocklist.warnings.values.invalidPath', {
     defaultMessage: 'Path may be formed incorrectly; verify value',
   }),

@@ -113,6 +113,87 @@ describe('When using Artifacts Exceptions BaseValidator', () => {
     await expect(initValidator()._validateBasicData(exceptionLikeItem)).resolves.toBeUndefined();
   });
 
+  describe('entry value character validation', () => {
+    it('accepts clean values and ignores non-value-bearing entries', () => {
+      exceptionLikeItem.entries = [
+        {
+          field: 'process.executable.caseless',
+          type: 'match',
+          operator: 'included',
+          value: 'C:\\Program Files\\Elastic\\endpoint.exe',
+        },
+        { field: 'event.category', type: 'exists', operator: 'included' },
+      ] as ExceptionItemLikeOptions['entries'];
+
+      expect(() => initValidator()._validateEntryValueCharacters(exceptionLikeItem)).not.toThrow();
+    });
+
+    it('trims edge whitespace and rejects remaining control characters', () => {
+      exceptionLikeItem.entries = [
+        {
+          field: 'process.executable.caseless',
+          type: 'wildcard',
+          operator: 'included',
+          value: ' C:\\Elastic\\*.exe',
+        },
+        {
+          field: 'process.Ext.code_signature',
+          type: 'nested',
+          entries: [
+            {
+              field: 'subject_name',
+              type: 'match_any',
+              operator: 'included',
+              value: [' Elastic ', 'bad\u0085signer'],
+            },
+          ],
+        },
+      ] as ExceptionItemLikeOptions['entries'];
+
+      expect(() => initValidator()._validateEntryValueCharacters(exceptionLikeItem)).toThrow(
+        /control characters in fields: subject_name/
+      );
+      expect(exceptionLikeItem.entries[0]).toEqual(
+        expect.objectContaining({ value: 'C:\\Elastic\\*.exe' })
+      );
+      expect(
+        (exceptionLikeItem.entries[1] as { entries: Array<{ value: string[] }> }).entries[0].value
+      ).toEqual(['Elastic', 'bad\u0085signer']);
+    });
+
+    it('accepts a value after trimming edge whitespace', () => {
+      exceptionLikeItem.entries = [
+        {
+          field: 'process.executable.caseless',
+          type: 'match',
+          operator: 'included',
+          value: ' C:\\Program Files\\Elastic\\endpoint.exe ',
+        },
+      ] as ExceptionItemLikeOptions['entries'];
+
+      expect(() => initValidator()._validateEntryValueCharacters(exceptionLikeItem)).not.toThrow();
+      expect(exceptionLikeItem.entries[0]).toEqual(
+        expect.objectContaining({ value: 'C:\\Program Files\\Elastic\\endpoint.exe' })
+      );
+    });
+
+    it('does not echo a rejected value', () => {
+      const rejectedValue = 'private-value\u0000';
+      exceptionLikeItem.entries = [
+        {
+          field: 'user.name',
+          type: 'match',
+          operator: 'included',
+          value: rejectedValue,
+        },
+      ] as ExceptionItemLikeOptions['entries'];
+
+      expect(() => initValidator()._validateEntryValueCharacters(exceptionLikeItem)).toThrow(
+        expect.not.stringContaining(rejectedValue)
+      );
+    });
+  });
+
   it.each([
     [
       'name is empty',

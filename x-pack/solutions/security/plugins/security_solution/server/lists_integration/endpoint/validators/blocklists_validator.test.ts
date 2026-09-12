@@ -7,6 +7,7 @@
 
 import { httpServerMock } from '@kbn/core-http-server-mocks';
 import type { CreateExceptionListItemOptions } from '@kbn/lists-plugin/server';
+import type { ExceptionListItemSchema } from '@kbn/securitysolution-io-ts-list-types';
 import { ENDPOINT_ARTIFACT_LISTS } from '@kbn/securitysolution-list-constants';
 import { BlocklistValidator } from './blocklist_validator';
 import { createMockEndpointAppContextService } from '../../../endpoint/mocks';
@@ -128,6 +129,39 @@ describe('Blocklists API validations', () => {
       await expect(
         validator.validatePreCreateItem(buildItem(signerMatchEntry('a'.repeat(4097))))
       ).rejects.toThrow(/maximum length of \[4096\]/);
+    });
+
+    it('trims an edge-whitespace match_any array member on create', async () => {
+      const item = buildItem(filePathEntry([' C:\\Elastic\\endpoint.exe ', '\tbad']));
+
+      await expect(validator.validatePreCreateItem(item)).resolves.toBeDefined();
+      expect(item.entries[0]).toEqual(
+        expect.objectContaining({ value: ['C:\\Elastic\\endpoint.exe', 'bad'] })
+      );
+    });
+
+    it('deduplicates values that only differ by edge whitespace', async () => {
+      const item = buildItem(
+        filePathEntry([' C:\\Elastic\\endpoint.exe ', 'C:\\Elastic\\endpoint.exe'])
+      );
+
+      await expect(validator.validatePreCreateItem(item)).resolves.toBeDefined();
+      expect(item.entries[0]).toEqual(
+        expect.objectContaining({ value: ['C:\\Elastic\\endpoint.exe'] })
+      );
+    });
+
+    it('rejects a nested match_any control character on update', async () => {
+      await expect(
+        validator.validatePreUpdateItem(
+          {
+            ...buildItem(signerEntry(['Elastic', 'bad\rname'])),
+            _version: undefined,
+            id: 'blocklist-id',
+          },
+          {} as ExceptionListItemSchema
+        )
+      ).rejects.toThrow(/control characters in fields: subject_name/);
     });
   });
   // -----------------------------------------------------------------------------

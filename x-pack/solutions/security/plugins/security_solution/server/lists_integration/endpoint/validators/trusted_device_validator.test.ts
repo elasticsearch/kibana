@@ -240,6 +240,19 @@ describe('Endpoint Trusted Device API validations', () => {
         trustedDeviceValidator.validatePreCreateItem(buildItem(['a'.repeat(4097)]))
       ).rejects.toThrow(/maximum length of \[4096\]/);
     });
+
+    it('trims edge whitespace on create', async () => {
+      const item = buildItem(' DESKTOP-1 ');
+
+      await expect(trustedDeviceValidator.validatePreCreateItem(item)).resolves.toBeDefined();
+      expect(item.entries[0]).toEqual(expect.objectContaining({ value: 'DESKTOP-1' }));
+    });
+
+    it('rejects a control character on create', async () => {
+      await expect(
+        trustedDeviceValidator.validatePreCreateItem(buildItem('DESKTOP\u0000-1'))
+      ).rejects.toThrow(/control characters in fields: host\.name/);
+    });
   });
 
   it('should initialize', () => {

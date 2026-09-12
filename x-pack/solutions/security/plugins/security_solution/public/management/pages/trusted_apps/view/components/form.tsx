@@ -35,6 +35,8 @@ import {
   hasEntryEscaping,
 } from '@kbn/securitysolution-list-utils';
 import {
+  CONTROL_CHARACTER_ERROR,
+  hasControlCharacters,
   hasSimpleExecutableName,
   validateHasWildcardWithWrongOperator,
   isPathValid,
@@ -133,6 +135,12 @@ interface ValidationResult {
     [key in keyof NewTrustedApp]: FieldValidationState;
   }>;
 
+  entryResults: Array<{
+    errors: React.ReactNode[];
+    warnings: React.ReactNode[];
+    requiredError?: React.ReactNode;
+  }>;
+
   /**  Additional Warning callout after submit */
   showWildcardWithWrongOperatorCalloutAndConfirmModal?: boolean;
   showUnnecessaryEscapingCalloutAndConfirmModal?: boolean;
@@ -165,11 +173,21 @@ const addResultToValidation = (
   validation.result[field]!.isInvalid = true;
 };
 
+const addEntryResultToValidation = (
+  validation: ValidationResult,
+  index: number,
+  type: 'warnings' | 'errors',
+  resultValue: React.ReactNode
+) => {
+  validation.entryResults[index][type].push(resultValue);
+};
+
 export const validateValues = (values: ArtifactFormComponentProps['item']): ValidationResult => {
   let isValid: ValidationResult['isValid'] = true;
   const validation: ValidationResult = {
     isValid,
     result: {},
+    entryResults: values.entries.map(() => ({ errors: [], warnings: [] })),
   };
 
   // Name field
@@ -202,40 +220,59 @@ export const validateValues = (values: ArtifactFormComponentProps['item']): Vali
     if (duplicated.length) {
       isValid = false;
       duplicated.forEach((field: ConditionEntryField) => {
-        addResultToValidation(
-          validation,
-          'entries',
-          'errors',
-          INPUT_ERRORS.noDuplicateField(field)
-        );
+        values.entries.forEach((entry, index) => {
+          if (entry.field === field) {
+            addEntryResultToValidation(
+              validation,
+              index,
+              'errors',
+              INPUT_ERRORS.noDuplicateField(field)
+            );
+          }
+        });
       });
     }
     values.entries.forEach((entry, index) => {
+      const entryValue = (entry as TrustedAppConditionEntry).value;
+
+      if (!entry.field || !entryValue.trim()) {
+        isValid = false;
+        validation.entryResults[index].requiredError = INPUT_ERRORS.mustHaveValue(index);
+        return;
+      }
+
+      if (hasControlCharacters(entryValue)) {
+        isValid = false;
+        addEntryResultToValidation(validation, index, 'errors', CONTROL_CHARACTER_ERROR);
+        return;
+      }
+
+      const trimmedValue = entryValue.trim();
       const isValidPathEntry = isPathValid({
         os,
         field: entry.field as AllConditionEntryFields,
         type: entry.type as EntryTypes,
-        value: (entry as TrustedAppConditionEntry).value,
+        value: trimmedValue,
       });
 
       if (
         validateHasWildcardWithWrongOperator({
           operator: entry.type as EntryTypes,
-          value: (entry as TrustedAppConditionEntry).value,
+          value: trimmedValue,
         })
       ) {
         if (entry.field === ConditionEntryField.PATH) {
           validation.showWildcardWithWrongOperatorCalloutAndConfirmModal = true;
-          addResultToValidation(
+          addEntryResultToValidation(
             validation,
-            'entries',
+            index,
             'warnings',
             INPUT_ERRORS.wildcardWithWrongOperatorWarning(index)
           );
         } else {
-          addResultToValidation(
+          addEntryResultToValidation(
             validation,
-            'entries',
+            index,
             'warnings',
             INPUT_ERRORS.wildcardWithWrongField(index)
           );
@@ -246,34 +283,33 @@ export const validateValues = (values: ArtifactFormComponentProps['item']): Vali
         validation.showUnnecessaryEscapingCalloutAndConfirmModal = true;
       }
 
-      if (!entry.field || !(entry as TrustedAppConditionEntry).value.trim()) {
+      if (entry.field === ConditionEntryField.HASH && !isValidHash(trimmedValue)) {
         isValid = false;
-        addResultToValidation(validation, 'entries', 'errors', INPUT_ERRORS.mustHaveValue(index));
-      } else if (
-        entry.field === ConditionEntryField.HASH &&
-        !isValidHash((entry as TrustedAppConditionEntry).value)
-      ) {
-        isValid = false;
-        addResultToValidation(validation, 'entries', 'errors', INPUT_ERRORS.invalidHash(index));
+        addEntryResultToValidation(validation, index, 'errors', INPUT_ERRORS.invalidHash(index));
       } else if (!isValidPathEntry) {
-        addResultToValidation(validation, 'entries', 'warnings', INPUT_ERRORS.pathWarning(index));
+        addEntryResultToValidation(validation, index, 'warnings', INPUT_ERRORS.pathWarning(index));
       } else if (
         isValidPathEntry &&
         !hasSimpleExecutableName({
           os,
-          value: (entry as TrustedAppConditionEntry).value,
+          value: trimmedValue,
           type: entry.type as EntryTypes,
         })
       ) {
         if (entry.type === 'wildcard') {
-          addResultToValidation(
+          addEntryResultToValidation(
             validation,
-            'entries',
+            index,
             'warnings',
             INPUT_ERRORS.wildcardPathWarning(index)
           );
         } else {
-          addResultToValidation(validation, 'entries', 'warnings', INPUT_ERRORS.pathWarning(index));
+          addEntryResultToValidation(
+            validation,
+            index,
+            'warnings',
+            INPUT_ERRORS.pathWarning(index)
+          );
         }
       }
     });
@@ -1031,6 +1067,8 @@ export const TrustedAppsForm = memo<ArtifactFormComponentProps>(
                 onEntryRemove={handleEntryRemove}
                 onEntryChange={handleEntryChange}
                 onVisited={handleConditionBuilderOnVisited}
+                entryValidations={validationResult.entryResults}
+                showRequiredErrors={visited.entries}
                 data-test-subj={getTestId('conditionsBuilder')}
               />
             </>

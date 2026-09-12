@@ -7,6 +7,7 @@
 
 import { httpServerMock } from '@kbn/core-http-server-mocks';
 import type { CreateExceptionListItemOptions } from '@kbn/lists-plugin/server';
+import type { ExceptionListItemSchema } from '@kbn/securitysolution-io-ts-list-types';
 import { ENDPOINT_ARTIFACT_LISTS } from '@kbn/securitysolution-list-constants';
 import { createMockEndpointAppContextService } from '../../../endpoint/mocks';
 import { EventFilterValidator } from './event_filter_validator';
@@ -57,6 +58,46 @@ describe('Endpoint Exceptions API validations', () => {
       await expect(validator.validatePreCreateItem(buildItem('a'.repeat(1025)))).rejects.toThrow(
         /maximum length of \[1024\]/
       );
+    });
+
+    it('trims edge whitespace on create', async () => {
+      const item = buildItem('process.executable');
+      item.entries = [
+        {
+          field: 'process.executable',
+          type: 'wildcard',
+          operator: 'included',
+          value: '/opt/Elastic/*\u00A0',
+        },
+      ];
+
+      await expect(validator.validatePreCreateItem(item)).resolves.toBeDefined();
+      expect(item.entries[0]).toEqual(expect.objectContaining({ value: '/opt/Elastic/*' }));
+    });
+
+    it('rejects a control character in a nested entry on update', async () => {
+      const item = buildItem('process.parent');
+      item.entries = [
+        {
+          field: 'process.parent',
+          type: 'nested',
+          entries: [
+            {
+              field: 'name',
+              type: 'match',
+              operator: 'included',
+              value: 'endpoint\u007F',
+            },
+          ],
+        },
+      ];
+
+      await expect(
+        validator.validatePreUpdateItem(
+          { ...item, _version: undefined, id: 'event-filter-id' },
+          {} as ExceptionListItemSchema
+        )
+      ).rejects.toThrow(/control characters in fields: name/);
     });
   });
   // -----------------------------------------------------------------------------

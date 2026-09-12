@@ -110,6 +110,7 @@ export class EventFilterValidator extends BaseValidator {
   }
 
   private async validateEventFilterData(item: ExceptionItemLikeOptions): Promise<void> {
+    this.validateEntryValueCharacters(item);
     await this.validateBasicData(item);
 
     try {
