@@ -22,7 +22,10 @@ import { css } from '@emotion/react';
 import { i18n } from '@kbn/i18n';
 import type { ViewMode } from '@kbn/presentation-publishing';
 import type { CustomizePanelActionApi } from '../../../ui_actions/customize_panel_action';
-import { isApiCompatibleWithCustomizePanelAction } from '../../../ui_actions/customize_panel_action';
+import {
+  apiUsesInlinePanelSettings,
+  isApiCompatibleWithCustomizePanelAction,
+} from '../../../ui_actions/customize_panel_action';
 import { openCustomizePanelFlyout } from '../../../ui_actions/customize_panel_action/open_customize_panel';
 
 export const PresentationPanelTitle = ({
@@ -43,7 +46,10 @@ export const PresentationPanelTitle = ({
   titleHighlight?: string | string[];
 }) => {
   const { euiTheme } = useEuiTheme();
-  const isEditableTitle = viewMode === 'edit' && isApiCompatibleWithCustomizePanelAction(api);
+  const isEditableTitle =
+    viewMode === 'edit' &&
+    isApiCompatibleWithCustomizePanelAction(api) &&
+    !apiUsesInlinePanelSettings(api);
 
   const onClick = useCallback(() => {
     openCustomizePanelFlyout({

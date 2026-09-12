@@ -34,6 +34,7 @@ import type { Action } from '@kbn/ui-actions-plugin/public';
 import { IncompatibleActionError } from '@kbn/ui-actions-plugin/public';
 import { openCustomizePanelFlyout } from './open_customize_panel';
 import { ACTION_CUSTOMIZE_PANEL } from './constants';
+import { apiUsesInlinePanelSettings } from './inline_panel_settings';
 
 export type CustomizePanelActionApi = CanAccessViewMode &
   IsCustomizable &
@@ -72,6 +73,11 @@ export class CustomizePanelAction implements Action<EmbeddableApiContext> {
 
   public async isCompatible({ embeddable }: EmbeddableApiContext) {
     if (!isApiCompatibleWithCustomizePanelAction(embeddable)) return false;
+    // Lens and Links move panel settings into their type editor, so hide the hover gear in edit mode.
+    // View mode still offers this action so users can change a custom time range.
+    if (getInheritedViewMode(embeddable) === 'edit' && apiUsesInlinePanelSettings(embeddable)) {
+      return false;
+    }
     // It should be possible to customize just the time range in View mode
     return (
       getInheritedViewMode(embeddable) === 'edit' ||

@@ -31,6 +31,13 @@ import {
 } from '@elastic/eui';
 import { css, keyframes } from '@emotion/react';
 
+import {
+  PanelEditorHeader,
+  PanelSettingsForm,
+  PanelSettingsLayerHeader,
+  type PanelSettingsApi,
+} from '@kbn/embeddable-plugin/public';
+
 import { LINKS_HORIZONTAL_LAYOUT, LINKS_VERTICAL_LAYOUT } from '../../../common/constants';
 import type { LinksLayoutType } from '../../../common/types';
 import { focusMainFlyout } from '../../editor/links_editor_tools';
@@ -64,6 +71,7 @@ export interface LinksEditorProps {
   parentDashboardId?: string;
   isByReference: boolean;
   flyoutId: string; // used to manage the focus of this flyout after individual link editor flyout is closed
+  panelSettingsApi?: PanelSettingsApi;
 }
 
 export const LinksEditor = ({
@@ -75,6 +83,7 @@ export const LinksEditor = ({
   parentDashboardId,
   isByReference,
   flyoutId,
+  panelSettingsApi,
 }: LinksEditorProps) => {
   const toasts = coreServices.notifications.toasts;
   const isMounted = useMountedState();
@@ -86,6 +95,7 @@ export const LinksEditor = ({
   const [isSaving, setIsSaving] = useState(false);
   const [orderedLinks, setOrderedLinks] = useState<ResolvedLink[]>([]);
   const [saveByReference, setSaveByReference] = useState(isByReference);
+  const [isPanelSettingsOpen, setIsPanelSettingsOpen] = useState(false);
 
   const isEditingExisting = initialLinks || isByReference;
 
@@ -157,81 +167,97 @@ export const LinksEditor = ({
     <>
       <div css={styles.flyoutStyles} ref={editLinkFlyoutRef} />
       <EuiFlyoutHeader hasBorder>
-        <EuiFlexGroup alignItems="center">
-          <EuiFlexItem grow={false}>
-            <EuiTitle size="s" data-test-subj="links--panelEditor--title">
-              <h2>
-                {isEditingExisting
-                  ? LinksStrings.editor.panelEditor.getEditFlyoutTitle()
-                  : LinksStrings.editor.panelEditor.getCreateFlyoutTitle()}
-              </h2>
-            </EuiTitle>
-          </EuiFlexItem>
-        </EuiFlexGroup>
+        {panelSettingsApi ? (
+          isPanelSettingsOpen ? (
+            <PanelSettingsLayerHeader onBack={() => setIsPanelSettingsOpen(false)} />
+          ) : (
+            <PanelEditorHeader
+              api={panelSettingsApi}
+              onOpenSettings={() => setIsPanelSettingsOpen(true)}
+              titleTestSubj="links--panelEditor--title"
+            />
+          )
+        ) : (
+          <EuiFlexGroup alignItems="center">
+            <EuiFlexItem grow={false}>
+              <EuiTitle size="s" data-test-subj="links--panelEditor--title">
+                <h2>
+                  {isEditingExisting
+                    ? LinksStrings.editor.panelEditor.getEditFlyoutTitle()
+                    : LinksStrings.editor.panelEditor.getUntitledPanelTitle()}
+                </h2>
+              </EuiTitle>
+            </EuiFlexItem>
+          </EuiFlexGroup>
+        )}
       </EuiFlyoutHeader>
       <EuiFlyoutBody css={styles.bodyStyles}>
-        <EuiForm fullWidth>
-          <EuiFormRow label={LinksStrings.editor.panelEditor.getLayoutSettingsTitle()}>
-            <EuiButtonGroup
-              options={layoutOptions}
-              buttonSize="compressed"
-              idSelected={currentLayout}
-              onChange={(id) => {
-                setCurrentLayout(id as LinksLayoutType);
-              }}
-              legend={LinksStrings.editor.panelEditor.getLayoutSettingsLegend()}
-            />
-          </EuiFormRow>
-          <EuiFormRow label={LinksStrings.editor.panelEditor.getLinksTitle()}>
-            {/* Needs to be surrounded by a div rather than a fragment so the EuiFormRow can respond
+        {isPanelSettingsOpen && panelSettingsApi ? (
+          <PanelSettingsForm api={panelSettingsApi} />
+        ) : (
+          <EuiForm fullWidth>
+            <EuiFormRow label={LinksStrings.editor.panelEditor.getLayoutSettingsTitle()}>
+              <EuiButtonGroup
+                options={layoutOptions}
+                buttonSize="compressed"
+                idSelected={currentLayout}
+                onChange={(id) => {
+                  setCurrentLayout(id as LinksLayoutType);
+                }}
+                legend={LinksStrings.editor.panelEditor.getLayoutSettingsLegend()}
+              />
+            </EuiFormRow>
+            <EuiFormRow label={LinksStrings.editor.panelEditor.getLinksTitle()}>
+              {/* Needs to be surrounded by a div rather than a fragment so the EuiFormRow can respond
                 to the focus of the inner elements */}
-            <div>
-              {hasZeroLinks ? (
-                <LinksEditorEmptyPrompt addLink={() => addOrEditLink()} />
-              ) : (
-                <>
-                  <EuiDragDropContext onDragEnd={onDragEnd}>
-                    <EuiDroppable
-                      css={styles.droppableStyles}
-                      droppableId="linksDroppableLinksArea"
-                      data-test-subj="links--panelEditor--linksAreaDroppable"
+              <div>
+                {hasZeroLinks ? (
+                  <LinksEditorEmptyPrompt addLink={() => addOrEditLink()} />
+                ) : (
+                  <>
+                    <EuiDragDropContext onDragEnd={onDragEnd}>
+                      <EuiDroppable
+                        css={styles.droppableStyles}
+                        droppableId="linksDroppableLinksArea"
+                        data-test-subj="links--panelEditor--linksAreaDroppable"
+                      >
+                        {orderedLinks.map((link, idx) => (
+                          <EuiDraggable
+                            spacing="m"
+                            index={idx}
+                            key={link.id}
+                            draggableId={link.id}
+                            customDragHandle={true}
+                            hasInteractiveChildren={true}
+                            data-test-subj={`links--panelEditor--draggableLink`}
+                          >
+                            {(provided) => (
+                              <LinksEditorSingleLink
+                                link={link}
+                                editLink={() => addOrEditLink(link)}
+                                deleteLink={() => deleteLink(link.id)}
+                                dragHandleProps={provided.dragHandleProps ?? undefined} // casting `null` to `undefined`
+                              />
+                            )}
+                          </EuiDraggable>
+                        ))}
+                      </EuiDroppable>
+                    </EuiDragDropContext>
+                    <EuiButtonEmpty
+                      flush="left"
+                      size="s"
+                      iconType="plusCircle"
+                      onClick={() => addOrEditLink()}
+                      data-test-subj="links--panelEditor--addLinkBtn"
                     >
-                      {orderedLinks.map((link, idx) => (
-                        <EuiDraggable
-                          spacing="m"
-                          index={idx}
-                          key={link.id}
-                          draggableId={link.id}
-                          customDragHandle={true}
-                          hasInteractiveChildren={true}
-                          data-test-subj={`links--panelEditor--draggableLink`}
-                        >
-                          {(provided) => (
-                            <LinksEditorSingleLink
-                              link={link}
-                              editLink={() => addOrEditLink(link)}
-                              deleteLink={() => deleteLink(link.id)}
-                              dragHandleProps={provided.dragHandleProps ?? undefined} // casting `null` to `undefined`
-                            />
-                          )}
-                        </EuiDraggable>
-                      ))}
-                    </EuiDroppable>
-                  </EuiDragDropContext>
-                  <EuiButtonEmpty
-                    flush="left"
-                    size="s"
-                    iconType="plusCircle"
-                    onClick={() => addOrEditLink()}
-                    data-test-subj="links--panelEditor--addLinkBtn"
-                  >
-                    {LinksStrings.editor.getAddButtonLabel()}
-                  </EuiButtonEmpty>
-                </>
-              )}
-            </div>
-          </EuiFormRow>
-        </EuiForm>
+                      {LinksStrings.editor.getAddButtonLabel()}
+                    </EuiButtonEmpty>
+                  </>
+                )}
+              </div>
+            </EuiFormRow>
+          </EuiForm>
+        )}
       </EuiFlyoutBody>
       <EuiFlyoutFooter>
         <EuiFlexGroup responsive={false} justifyContent="spaceBetween">

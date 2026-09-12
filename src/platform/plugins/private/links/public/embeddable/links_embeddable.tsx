@@ -140,6 +140,7 @@ export const getLinksEmbeddableFactory = () => {
         blockingError$,
         defaultTitle$,
         defaultDescription$,
+        usesInlinePanelSettings: true,
         isEditingEnabled: () => Boolean(blockingError$.value === undefined),
         getTypeDisplayName: () => DISPLAY_NAME,
         saveToLibrary: async (newTitle: string) => {
@@ -170,7 +171,14 @@ export const getLinksEmbeddableFactory = () => {
                   layout: layout$.getValue(),
                   links: resolvedLinks$.getValue(),
                   title: titleManager.api.title$.getValue() ?? defaultTitle$.getValue(),
+                  hide_title: titleManager.api.hideTitle$.getValue(),
+                  hide_border: titleManager.api.hideBorder$.getValue(),
                   refId,
+                },
+                panelSettingsApi: {
+                  ...titleManager.api,
+                  defaultTitle$,
+                  defaultDescription$,
                 },
                 parentDashboard: parentApi,
                 onCompleteEdit: async (newState) => {
@@ -205,6 +213,7 @@ export const getLinksEmbeddableFactory = () => {
             },
             flyoutProps: {
               'data-test-subj': 'links--panelEditor--flyout',
+              hideCloseButton: true,
             },
           });
         },

@@ -16,7 +16,7 @@ import type {
 } from '@kbn/presentation-publishing';
 import { apiHasAppContext, apiPublishesDisabledActionIds } from '@kbn/presentation-publishing';
 import { noop } from 'lodash';
-import { EmbeddableStateTransfer } from '@kbn/embeddable-plugin/public';
+import { EmbeddableStateTransfer, type PanelSettingsApi } from '@kbn/embeddable-plugin/public';
 import { i18n } from '@kbn/i18n';
 import { BehaviorSubject } from 'rxjs';
 import type { Filter } from '@kbn/es-query';
@@ -109,13 +109,14 @@ export function initializeEditApi(
   searchContextApi: SearchContextConfig['api'],
   isTextBasedLanguage: (currentState: LensRuntimeState) => boolean,
   startDependencies: LensEmbeddableStartServices,
-  parentApi?: unknown
+  parentApi?: unknown,
+  panelSettingsApi?: PanelSettingsApi
 ): {
   api: HasSupportedTriggers &
     PublishesDisabledActionIds &
     HasEditCapabilities &
     HasReadOnlyCapabilities &
-    PublishesViewMode & { uuid: string } & LensHasEditPanel;
+    PublishesViewMode & { uuid: string } & LensHasEditPanel & { usesInlinePanelSettings: true };
 } {
   const supportedTriggers = getSupportedTriggers(getState, startDependencies.visualizationMap);
   const isManaged = (currentState: LensRuntimeState) => {
@@ -215,7 +216,8 @@ export function initializeEditApi(
     startDependencies,
     navigateToLensEditor,
     uuid,
-    parentApi
+    parentApi,
+    panelSettingsApi
   );
 
   /**
@@ -292,6 +294,7 @@ export function initializeEditApi(
     api: {
       uuid,
       viewMode$,
+      usesInlinePanelSettings: true,
       getTypeDisplayName: () =>
         i18n.translate('xpack.lens.embeddableDisplayName', {
           defaultMessage: 'visualization',

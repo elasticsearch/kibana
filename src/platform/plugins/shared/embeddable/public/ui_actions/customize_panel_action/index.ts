@@ -10,3 +10,16 @@
 export * from './customize_panel_action';
 export * from './custom_time_range_badge';
 export * from './cps_usage_overrides_badge';
+export { PanelEditorHeader, PanelSettingsLayerHeader } from './panel_editor_chrome';
+export { PanelSettingsForm } from './panel_settings_form';
+export type {
+  PanelSettingsApi,
+  PanelSettingsSnapshot,
+  UsesInlinePanelSettings,
+} from './inline_panel_settings';
+export {
+  apiUsesInlinePanelSettings,
+  snapshotPanelSettings,
+  restorePanelSettings,
+  commitPanelTitle,
+} from './inline_panel_settings';

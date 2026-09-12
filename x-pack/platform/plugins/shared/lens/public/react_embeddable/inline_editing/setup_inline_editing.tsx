@@ -5,7 +5,12 @@
  * 2.0.
  */
 
-import { EmbeddableStateTransfer } from '@kbn/embeddable-plugin/public';
+import {
+  EmbeddableStateTransfer,
+  snapshotPanelSettings,
+  restorePanelSettings,
+  type PanelSettingsApi,
+} from '@kbn/embeddable-plugin/public';
 import React from 'react';
 import type {
   GetStateType,
@@ -53,7 +58,8 @@ export function prepareInlineEditPanel(
     skipAppLeave?: boolean
   ) => () => Promise<void>,
   uuid?: string,
-  parentApi?: unknown
+  parentApi?: unknown,
+  panelSettingsApi?: PanelSettingsApi
 ) {
   return async function getConfigPanel({
     closeFlyout,
@@ -112,6 +118,10 @@ export function prepareInlineEditPanel(
       panelManagementApi.isEditingEnabled() &&
       navigateToLensEditor;
 
+    const panelSettingsSnapshot = panelSettingsApi
+      ? snapshotPanelSettings(panelSettingsApi)
+      : undefined;
+
     return (
       <Component
         closeFlyout={closeFlyout}
@@ -137,6 +147,9 @@ export function prepareInlineEditPanel(
         displayFlyoutHeader
         isNewPanel={panelManagementApi.isNewPanel()}
         onCancel={() => {
+          if (panelSettingsApi && panelSettingsSnapshot) {
+            restorePanelSettings(panelSettingsApi, panelSettingsSnapshot);
+          }
           panelManagementApi.onStopEditing(
             true,
             // DSL/form based charts are created via the full editor, so there's
@@ -163,6 +176,7 @@ export function prepareInlineEditPanel(
         isReadOnly={panelManagementApi.canShowConfig() && !panelManagementApi.isEditingEnabled()}
         parentApi={parentApi}
         applyButtonLabel={applyButtonLabel}
+        panelSettingsApi={panelSettingsApi}
       />
     );
   };

@@ -37,6 +37,7 @@ export async function onVisualizationsEdit(refId: string) {
     },
     flyoutProps: {
       'data-test-subj': 'links--panelEditor--flyout',
+      hideCloseButton: true,
     },
   });
 }

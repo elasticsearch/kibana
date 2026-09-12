@@ -51,17 +51,25 @@ export const addLinksPanelAction: ActionDefinition<EmbeddableApiContext> = {
           onCompleteEdit: async (newState) => {
             if (!newState) return;
 
-            const { layout, links, title, refId } = newState;
+            const { layout, links, title, description, hide_title, hide_border, refId } = newState;
 
             function serializeState() {
+              const titleState = {
+                ...(title !== undefined ? { title } : {}),
+                ...(description !== undefined ? { description } : {}),
+                ...(hide_title !== undefined ? { hide_title } : {}),
+                ...(hide_border !== undefined ? { hide_border } : {}),
+              };
+
               if (refId !== undefined) {
                 return {
-                  ...(title !== undefined ? { title } : {}),
+                  ...titleState,
                   ref_id: refId,
                 };
               }
 
               return {
+                ...titleState,
                 layout,
                 links: serializeResolvedLinks(links ?? []),
               };
@@ -77,6 +85,7 @@ export const addLinksPanelAction: ActionDefinition<EmbeddableApiContext> = {
       flyoutProps: {
         'data-test-subj': 'links--panelEditor--flyout',
         isResizable: false,
+        hideCloseButton: true,
       },
     });
   },

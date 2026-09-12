@@ -85,3 +85,18 @@ export {
   ADD_PANEL_VISUALIZATION_GROUP,
   ADD_PANEL_LEGACY_GROUP,
 } from './ui_actions/add_panel_groups';
+
+export {
+  PanelEditorHeader,
+  PanelSettingsLayerHeader,
+  PanelSettingsForm,
+  apiUsesInlinePanelSettings,
+  snapshotPanelSettings,
+  restorePanelSettings,
+  commitPanelTitle,
+} from './ui_actions/customize_panel_action';
+export type {
+  PanelSettingsApi,
+  PanelSettingsSnapshot,
+  UsesInlinePanelSettings,
+} from './ui_actions/customize_panel_action';

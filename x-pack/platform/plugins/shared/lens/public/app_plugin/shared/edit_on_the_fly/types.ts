@@ -5,6 +5,7 @@
  * 2.0.
  */
 import type { CoreStart } from '@kbn/core/public';
+import type { PanelSettingsApi } from '@kbn/embeddable-plugin/public';
 import type { PublishingSubject } from '@kbn/presentation-publishing';
 import type {
   TypedLensSerializedState,
@@ -34,6 +35,8 @@ export interface FlyoutWrapperProps {
   applyButtonLabel?: string;
   /** Tooltip to show when Apply button is disabled */
   applyButtonDisabledTooltip?: string;
+  /** Panel title/settings API when editing from a dashboard */
+  panelSettingsApi?: PanelSettingsApi;
 }
 
 /** Callback for updating the visualization and datasources state. */
@@ -101,6 +104,8 @@ export interface EditConfigPanelProps {
   parentApi?: unknown;
   /** Text for the apply button. Defaults to "Apply and close" */
   applyButtonLabel?: string;
+  /** Panel title/settings API when editing from a dashboard */
+  panelSettingsApi?: PanelSettingsApi;
 }
 
 export interface LayerConfigurationProps {

@@ -9,8 +9,18 @@
 
 import React from 'react';
 import { v4 as uuidv4 } from 'uuid';
+import { BehaviorSubject } from 'rxjs';
 
-import { apiPublishesSavedObjectId } from '@kbn/presentation-publishing';
+import {
+  apiPublishesSavedObjectId,
+  initializeTitleManager,
+  type SerializedTitles,
+} from '@kbn/presentation-publishing';
+import {
+  restorePanelSettings,
+  snapshotPanelSettings,
+  type PanelSettingsApi,
+} from '@kbn/embeddable-plugin/public';
 
 import type { LinksLayoutType } from '../../common/types';
 import LinksEditor from '../components/editor/links_editor';
@@ -18,44 +28,77 @@ import { serializeResolvedLinks } from '../lib/resolve_links';
 import { linksClient, runSaveToLibrary } from '../links_client';
 import type { ResolvedLink } from '../types';
 
-export interface EditorState {
-  description?: string;
+export interface EditorState extends SerializedTitles {
   layout?: LinksLayoutType;
   links?: ResolvedLink[];
   refId?: string;
-  title?: string;
   error?: Error;
 }
+
+const getTitleStateFromApi = (api: PanelSettingsApi): SerializedTitles => ({
+  title: api.title$?.getValue(),
+  description: api.description$?.getValue(),
+  hide_title: api.hideTitle$?.getValue(),
+  hide_border: api.hideBorder$?.getValue(),
+});
 
 export function getEditorFlyout({
   initialState,
   parentDashboard,
   onCompleteEdit,
   closeFlyout,
+  panelSettingsApi,
 }: {
   initialState?: EditorState;
   parentDashboard?: unknown;
   onCompleteEdit?: (newState?: EditorState) => void;
   closeFlyout: () => void;
+  panelSettingsApi?: PanelSettingsApi;
 }) {
   const flyoutId = `linksEditorFlyout-${uuidv4()}`;
+  const localTitleManager = initializeTitleManager({
+    title: initialState?.title,
+    description: initialState?.description,
+    hide_title: initialState?.hide_title,
+    hide_border: initialState?.hide_border,
+  });
+  const settingsApi: PanelSettingsApi = panelSettingsApi ?? {
+    ...localTitleManager.api,
+    defaultTitle$: new BehaviorSubject(initialState?.title),
+    defaultDescription$: new BehaviorSubject(initialState?.description),
+  };
+  const panelSettingsSnapshot = snapshotPanelSettings(settingsApi);
+
+  const mergeTitleState = (state: EditorState): EditorState => ({
+    ...state,
+    ...getTitleStateFromApi(settingsApi),
+  });
+
   return (
     <LinksEditor
       flyoutId={flyoutId}
       initialLinks={initialState?.links}
       initialLayout={initialState?.layout}
+      panelSettingsApi={settingsApi}
       onClose={() => {
+        restorePanelSettings(settingsApi, panelSettingsSnapshot);
         onCompleteEdit?.(undefined);
         closeFlyout();
       }}
       onSaveToLibrary={async (newLinks: ResolvedLink[], newLayout: LinksLayoutType) => {
-        const newState = {
+        const newState = mergeTitleState({
           ...initialState,
           links: newLinks,
           layout: newLayout,
-        };
+        });
         if (initialState?.refId) {
-          const { refId, ...updateState } = newState;
+          const {
+            refId,
+            hide_title: _hideTitle,
+            hide_border: _hideBorder,
+            error: _error,
+            ...updateState
+          } = newState;
           const original = await linksClient.get(initialState.refId); // get the original library item so we can perform a full update
           await linksClient.update(initialState.refId, {
             ...original.data,
@@ -73,11 +116,11 @@ export function getEditorFlyout({
         }
       }}
       onAddToDashboard={(newLinks: ResolvedLink[], newLayout: LinksLayoutType) => {
-        const newState = {
+        const newState = mergeTitleState({
           ...initialState,
           links: newLinks,
           layout: newLayout,
-        };
+        });
         onCompleteEdit?.(newState);
         closeFlyout();
       }}

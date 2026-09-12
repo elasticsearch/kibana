@@ -16,11 +16,13 @@ import { EuiIconLegend } from '@kbn/chart-icons';
 import { useMemoCss } from '@kbn/css-utils/public/use_memo_css';
 import type { VisualizationToolbarProps } from '@kbn/lens-common';
 import { FlyoutContainer } from './flyout_container';
+import { usePanelSettingsToolbarAction } from './panel_settings_toolbar_context';
 
-type Options = 'legend' | 'style' | 'filters';
+type ContentOptions = 'legend' | 'style' | 'filters';
+type Options = ContentOptions | 'panelSettings';
 
 type ToolbarOption = EuiButtonGroupOptionProps & { id: Options; label: string };
-const baseToolbarOptions: ToolbarOption[] = [
+const baseToolbarOptions: Array<EuiButtonGroupOptionProps & { id: ContentOptions; label: string }> = [
   {
     id: 'legend',
     label: i18n.translate('xpack.lens.flyoutToolbar.legend.title', {
@@ -69,12 +71,21 @@ export function FlyoutToolbar<S>({
 }) {
   const [isFlyoutVisible, setFlyoutVisible] = useState(false);
   const [idSelected, setIdSelected] = useState<Options | ''>('');
+  const panelSettingsAction = usePanelSettingsToolbarAction();
 
   // Filter out toolbar options that don't have corresponding content components
-  const toolbarOptions = useMemo(
-    () => baseToolbarOptions.filter((option) => !!contentMap[option.id]),
-    [contentMap]
-  );
+  const toolbarOptions = useMemo(() => {
+    const options: ToolbarOption[] = baseToolbarOptions.filter((option) => !!contentMap[option.id]);
+    if (panelSettingsAction) {
+      options.push({
+        id: 'panelSettings',
+        label: panelSettingsAction.label,
+        iconType: 'gear',
+        toolTipContent: panelSettingsAction.label,
+      });
+    }
+    return options;
+  }, [contentMap, panelSettingsAction]);
 
   const flyoutToolbarStyles = useMemoCss(styles);
 
@@ -83,11 +94,19 @@ export function FlyoutToolbar<S>({
     : '';
 
   const handleOptionChange = (id: string) => {
+    if (id === 'panelSettings') {
+      panelSettingsAction?.onOpen();
+      return;
+    }
     setIdSelected(id as Options);
     setFlyoutVisible(true);
   };
 
-  const FlyoutContent = idSelected ? contentMap[idSelected] : null;
+  const FlyoutContent = idSelected && idSelected !== 'panelSettings' ? contentMap[idSelected] : null;
+
+  if (toolbarOptions.length === 0) {
+    return null;
+  }
 
   return (
     <div

@@ -5,7 +5,7 @@
  * 2.0.
  */
 
-import React from 'react';
+import React, { useState } from 'react';
 import {
   EuiButtonEmpty,
   EuiButtonIcon,
@@ -28,6 +28,12 @@ import { css } from '@emotion/react';
 import { i18n } from '@kbn/i18n';
 import { FormattedMessage } from '@kbn/i18n-react';
 import { DRAG_DROP_EXTRA_TARGETS_WIDTH, DRAG_DROP_EXTRA_TARGETS_PADDING } from '@kbn/lens-common';
+import {
+  PanelEditorHeader,
+  PanelSettingsForm,
+  PanelSettingsLayerHeader,
+} from '@kbn/embeddable-plugin/public';
+import { PanelSettingsToolbarContext } from '../../../shared_components/panel_settings_toolbar_context';
 import type { FlyoutWrapperProps } from './types';
 
 const applyAndCloseLabel = i18n.translate('xpack.lens.config.applyFlyoutLabel', {
@@ -52,10 +58,45 @@ export const FlyoutWrapper = ({
   isReadOnly,
   applyButtonLabel = applyAndCloseLabel,
   applyButtonDisabledTooltip,
+  panelSettingsApi,
 }: FlyoutWrapperProps) => {
   const { euiTheme } = useEuiTheme();
+  const [isPanelSettingsOpen, setIsPanelSettingsOpen] = useState(false);
+  const showInlinePanelChrome = Boolean(panelSettingsApi) && !isReadOnly;
+
+  const untitledVisualizationLabel = i18n.translate(
+    'xpack.lens.config.untitledVisualizationLabel',
+    {
+      defaultMessage: 'Untitled visualization',
+    }
+  );
+
+  const panelSettingsLabel = i18n.translate('xpack.lens.config.panelSettingsLabel', {
+    defaultMessage: 'Panel settings',
+  });
+
+  const panelSettingsToolbarAction = showInlinePanelChrome
+    ? {
+        onOpen: () => setIsPanelSettingsOpen(true),
+        label: panelSettingsLabel,
+      }
+    : null;
+
+  const closeButton = (
+    <EuiFlexItem grow={false}>
+      <EuiToolTip content={closeConfigurationLabel} disableScreenReaderOutput>
+        <EuiButtonIcon
+          color="text"
+          iconType="cross"
+          onClick={onCancel}
+          data-test-subj="euiFlyoutCloseButton"
+          aria-label={closeConfigurationLabel}
+        />
+      </EuiToolTip>
+    </EuiFlexItem>
+  );
   return (
-    <>
+    <PanelSettingsToolbarContext.Provider value={panelSettingsToolbarAction}>
       {isInlineFlyoutVisible && displayFlyoutHeader && (
         <EuiFlyoutHeader
           hasBorder={false}
@@ -66,59 +107,65 @@ export const FlyoutWrapper = ({
           data-test-subj="editFlyoutHeader"
         >
           {/* Header row 1: Title + close (same onCancel as footer Cancel) */}
-          <EuiFlexGroup justifyContent="spaceBetween" alignItems="center" responsive={false}>
-            <EuiFlexItem grow={false}>
-              <EuiTitle size="xs" data-test-subj="inlineEditingFlyoutLabel">
-                <h2>
-                  <EuiFlexGroup alignItems="center" responsive={false} gutterSize="xs">
-                    <EuiFlexItem grow={false}>
-                      {i18n.translate('xpack.lens.config.showVisualizationLabel', {
-                        defaultMessage: 'Configuration',
-                      })}
-                    </EuiFlexItem>
-                    <EuiFlexItem grow={false}>
-                      <EuiToolTip
-                        title={i18n.translate('xpack.lens.config.experimentalLabelDataview.title', {
-                          defaultMessage: 'Technical preview',
+          {showInlinePanelChrome && panelSettingsApi ? (
+            isPanelSettingsOpen ? (
+              <PanelSettingsLayerHeader onBack={() => setIsPanelSettingsOpen(false)} />
+            ) : (
+              <PanelEditorHeader
+                api={panelSettingsApi}
+                onOpenSettings={() => setIsPanelSettingsOpen(true)}
+                untitledTitle={untitledVisualizationLabel}
+                hideSettingsButton
+              />
+            )
+          ) : (
+            <EuiFlexGroup justifyContent="spaceBetween" alignItems="center" responsive={false}>
+              <EuiFlexItem grow={false}>
+                <EuiTitle size="xs" data-test-subj="inlineEditingFlyoutLabel">
+                  <h2>
+                    <EuiFlexGroup alignItems="center" responsive={false} gutterSize="xs">
+                      <EuiFlexItem grow={false}>
+                        {i18n.translate('xpack.lens.config.showVisualizationLabel', {
+                          defaultMessage: 'Configuration',
                         })}
-                        content={i18n.translate(
-                          'xpack.lens.config.experimentalLabelDataview.content',
-                          {
-                            defaultMessage:
-                              'Inline editing currently offers limited configuration options.',
-                          }
-                        )}
-                      >
-                        <EuiBetaBadge
-                          tabIndex={0}
-                          label=""
-                          iconType="flask"
-                          size="s"
-                          css={css`
-                            vertical-align: middle;
-                          `}
-                        />
-                      </EuiToolTip>
-                    </EuiFlexItem>
-                  </EuiFlexGroup>
-                </h2>
-              </EuiTitle>
-            </EuiFlexItem>
-            <EuiFlexItem grow={false}>
-              <EuiToolTip content={closeConfigurationLabel} disableScreenReaderOutput>
-                <EuiButtonIcon
-                  color="text"
-                  iconType="cross"
-                  onClick={onCancel}
-                  data-test-subj="euiFlyoutCloseButton"
-                  aria-label={closeConfigurationLabel}
-                />
-              </EuiToolTip>
-            </EuiFlexItem>
-          </EuiFlexGroup>
-          <EuiSpacer size="xs" />
+                      </EuiFlexItem>
+                      <EuiFlexItem grow={false}>
+                        <EuiToolTip
+                          title={i18n.translate(
+                            'xpack.lens.config.experimentalLabelDataview.title',
+                            {
+                              defaultMessage: 'Technical preview',
+                            }
+                          )}
+                          content={i18n.translate(
+                            'xpack.lens.config.experimentalLabelDataview.content',
+                            {
+                              defaultMessage:
+                                'Inline editing currently offers limited configuration options.',
+                            }
+                          )}
+                        >
+                          <EuiBetaBadge
+                            tabIndex={0}
+                            label=""
+                            iconType="flask"
+                            size="s"
+                            css={css`
+                              vertical-align: middle;
+                            `}
+                          />
+                        </EuiToolTip>
+                      </EuiFlexItem>
+                    </EuiFlexGroup>
+                  </h2>
+                </EuiTitle>
+              </EuiFlexItem>
+              {closeButton}
+            </EuiFlexGroup>
+          )}
+          {!isPanelSettingsOpen ? <EuiSpacer size="xs" /> : null}
           {/* Header row 2: Edit in Lens and button groups */}
-          {(navigateToLensEditor || toolbar) && (
+          {!isPanelSettingsOpen && (navigateToLensEditor || toolbar || showInlinePanelChrome) && (
             <>
               <EuiFlexGroup
                 gutterSize="xs"
@@ -148,7 +195,7 @@ export const FlyoutWrapper = ({
             </>
           )}
           {/* Header row 3: Layer tabs */}
-          {layerTabs ? (
+          {!isPanelSettingsOpen && layerTabs ? (
             <div
               // Adding negative margin to compensate for EuiFlyout header padding
               css={css({
@@ -204,7 +251,17 @@ export const FlyoutWrapper = ({
           }
         `}
       >
-        {children}
+        {isPanelSettingsOpen && panelSettingsApi ? (
+          <div
+            css={css`
+              padding: ${euiTheme.size.base};
+            `}
+          >
+            <PanelSettingsForm api={panelSettingsApi} />
+          </div>
+        ) : (
+          children
+        )}
       </EuiFlyoutBody>
       {isInlineFlyoutVisible && (
         <EuiFlyoutFooter>
@@ -247,6 +304,6 @@ export const FlyoutWrapper = ({
           </EuiFlexGroup>
         </EuiFlyoutFooter>
       )}
-    </>
+    </PanelSettingsToolbarContext.Provider>
   );
 };

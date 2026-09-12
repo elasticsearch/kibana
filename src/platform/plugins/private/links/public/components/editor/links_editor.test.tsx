@@ -76,7 +76,7 @@ describe('LinksEditor', () => {
     const onClose = jest.fn();
     renderEditor({ onClose });
     expect(screen.getByTestId('links--panelEditor--title')).toHaveTextContent(
-      LinksStrings.editor.panelEditor.getCreateFlyoutTitle()
+      LinksStrings.editor.panelEditor.getUntitledPanelTitle()
     );
     expect(screen.getByTestId('links--panelEditor--emptyPrompt')).toBeInTheDocument();
     expect(screen.getByTestId('links--panelEditor--saveBtn')).toBeDisabled();

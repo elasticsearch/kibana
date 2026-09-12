@@ -15,6 +15,8 @@ import {
   selectVisualization,
 } from '../../state_management';
 import { useEditorFrameService } from '../editor_frame_service_context';
+import { FlyoutToolbar } from '../../shared_components/flyout_toolbar';
+import { usePanelSettingsToolbarAction } from '../../shared_components/panel_settings_toolbar_context';
 
 export const VisualizationToolbarWrapper = memo(function VisualizationToolbar({
   framePublicAPI,
@@ -28,6 +30,7 @@ export const VisualizationToolbarWrapper = memo(function VisualizationToolbar({
   const visualizationState = useLensSelector(selectVisualizationState);
 
   const { visualizationMap } = useEditorFrameService();
+  const panelSettingsAction = usePanelSettingsToolbarAction();
 
   const activeVisualization = lensVisualization.activeId
     ? visualizationMap[lensVisualization.activeId]
@@ -49,13 +52,35 @@ export const VisualizationToolbarWrapper = memo(function VisualizationToolbar({
   );
 
   if (!activeVisualization || !visualizationState) {
-    return null;
+    if (!panelSettingsAction) {
+      return null;
+    }
+    return (
+      <FlyoutToolbar
+        frame={framePublicAPI}
+        state={undefined}
+        setState={() => {}}
+        contentMap={{}}
+        isInlineEditing={isInlineEditing}
+      />
+    );
   }
 
   const { FlyoutToolbarComponent } = activeVisualization;
 
   if (!FlyoutToolbarComponent) {
-    return null;
+    if (!panelSettingsAction) {
+      return null;
+    }
+    return (
+      <FlyoutToolbar
+        frame={framePublicAPI}
+        state={visualizationState.state}
+        setState={setVisualizationState}
+        contentMap={{}}
+        isInlineEditing={isInlineEditing}
+      />
+    );
   }
 
   return FlyoutToolbarComponent({

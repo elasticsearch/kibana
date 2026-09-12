@@ -7,11 +7,12 @@
 
 import React from 'react';
 import type { EmbeddablePublicDefinition } from '@kbn/embeddable-plugin/public';
-import { initializeTitleManager } from '@kbn/presentation-publishing';
-import { initializeStateApi } from '@kbn/presentation-publishing';
-import { merge } from 'rxjs';
+import type { PanelSettingsApi } from '@kbn/embeddable-plugin/public';
+import { initializeTitleManager, initializeStateApi } from '@kbn/presentation-publishing';
+import type { PublishesWritableUnifiedSearch } from '@kbn/presentation-publishing';
 import { LENS_EMBEDDABLE_TYPE, type LensRuntimeState } from '@kbn/lens-common';
 import type { LensApi, LensWireAPIConfig } from '@kbn/lens-common-2';
+import { merge } from 'rxjs';
 
 import { loadEmbeddableData } from './data_loader';
 import { isTextBasedLanguage, deserializeState } from './helper';
@@ -101,6 +102,16 @@ export const createLensEmbeddableFactory = (
         services
       );
 
+      const panelSettingsApi: PanelSettingsApi = {
+        ...titleManager.api,
+        defaultTitle$: dashboardConfig.api.defaultTitle$,
+        defaultDescription$: dashboardConfig.api.defaultDescription$,
+        timeRange$: searchContextConfig.api.timeRange$,
+        setTimeRange: (searchContextConfig.api as PublishesWritableUnifiedSearch).setTimeRange,
+        isCompatibleWithUnifiedSearch: searchContextConfig.api.isCompatibleWithUnifiedSearch,
+        parentApi,
+      };
+
       const editConfig = initializeEditApi(
         uuid,
         initialRuntimeState,
@@ -111,7 +122,8 @@ export const createLensEmbeddableFactory = (
         searchContextConfig.api,
         isTextBasedLanguage,
         services,
-        parentApi
+        parentApi,
+        panelSettingsApi
       );
 
       const integrationsConfig = initializeIntegrations(getLatestState);

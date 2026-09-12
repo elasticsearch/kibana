@@ -56,6 +56,10 @@ export const LinksStrings = {
         i18n.translate('links.panelEditor.createFlyoutTitle', {
           defaultMessage: 'Create links panel',
         }),
+      getUntitledPanelTitle: () =>
+        i18n.translate('links.panelEditor.untitledPanelTitle', {
+          defaultMessage: 'Untitled panel',
+        }),
       getEditFlyoutTitle: () =>
         i18n.translate('links.panelEditor.editFlyoutTitle', {
           defaultMessage: 'Edit links panel',
