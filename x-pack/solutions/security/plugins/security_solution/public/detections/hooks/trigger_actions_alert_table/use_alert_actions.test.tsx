@@ -91,27 +91,48 @@ describe('useBulkAlertActionItems', () => {
       });
     };
 
-    it('forwards runtimeFields derived from runtimeMappings when isSelectAllChecked', async () => {
+    it('forwards runtimeMappings (with script preserved) when isSelectAllChecked', async () => {
+      // This is the core regression test: prior code projected to [name, type] only,
+      // discarding the Painless script. The fix sends the full mapping verbatim.
+      const script = { source: "emit(doc['first'].value + ' ' + doc['last'].value)" };
       await invokeOpenAction({
         runtimeMappings: {
-          object_name: { type: 'keyword' },
+          display_name: { type: 'keyword', script },
           event_count: { type: 'long' },
         },
       });
 
       expect(updateAlertStatus).toHaveBeenCalledWith(
         expect.objectContaining({
-          runtimeFields: { object_name: 'keyword', event_count: 'long' },
+          runtimeMappings: {
+            display_name: { type: 'keyword', script },
+            event_count: { type: 'long' },
+          },
         })
       );
     });
 
-    it('passes runtimeFields as undefined when runtimeMappings is not provided', async () => {
+    it('passes runtimeMappings as undefined when runtimeMappings is not provided', async () => {
       await invokeOpenAction();
 
       expect(updateAlertStatus).toHaveBeenCalledWith(
         expect.objectContaining({
-          runtimeFields: undefined,
+          runtimeMappings: undefined,
+        })
+      );
+    });
+
+    it('drops composite and lookup types from runtimeMappings before forwarding', async () => {
+      await invokeOpenAction({
+        runtimeMappings: {
+          valid: { type: 'keyword' },
+          bad: { type: 'composite', fields: {} },
+        },
+      });
+
+      expect(updateAlertStatus).toHaveBeenCalledWith(
+        expect.objectContaining({
+          runtimeMappings: { valid: { type: 'keyword' } },
         })
       );
     });

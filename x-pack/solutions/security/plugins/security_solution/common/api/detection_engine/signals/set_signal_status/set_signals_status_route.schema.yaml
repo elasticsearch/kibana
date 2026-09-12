@@ -153,6 +153,40 @@ components:
         - geo_point
       description: >-
         The data type for the runtime field type. Determines how the field value is indexed and queried.
+
+    RuntimeFieldMapping:
+      type: object
+      description: >-
+        A single runtime field mapping to be attached verbatim to the
+        `_update_by_query` as `runtime_mappings`. Allows the close query to
+        reference fields that are not natively mapped on the alerts index but
+        are evaluatable at query time by Elasticsearch — for example, scripted
+        fields defined on a data view.
+      required: [type]
+      properties:
+        type:
+          $ref: '#/components/schemas/RuntimeFieldType'
+        script:
+          type: object
+          additionalProperties: false
+          description: >-
+            Painless script that Elasticsearch evaluates for each candidate
+            document. Only inline scripts (`source`) are accepted — stored
+            scripts, parameterised scripts (`params`), and non-default `lang`
+            values are not supported. The server rejects any extra properties
+            with a 400 to avoid silently changing runtime field semantics.
+          required: [source]
+          properties:
+            source:
+              type: string
+              description: Painless script source to execute.
+              maxLength: 10000
+        format:
+          type: string
+          description: >-
+            Optional format string for date runtime fields (e.g.
+            `strict_date_optional_time`).
+          maxLength: 100
     SetAlertsStatusByIdsBase:
       type: object
       properties:
@@ -221,6 +255,24 @@ components:
             the query as `runtime_mappings`. Use this to reference fields stored on the
             alert `_source` that are not part of the Elastic Common Schema (ECS) of the alerts index mapping,
             for example, custom fields that the rule's source index defined when the alerts were created.
+        runtime_mappings:
+          type: object
+          maxProperties: 100
+          additionalProperties:
+            $ref: '#/components/schemas/RuntimeFieldMapping'
+          description: >-
+            Optional map of runtime field name to runtime field mapping.
+            For each entry the server forwards `type`, `script.source`, and
+            `format` to the underlying `_update_by_query` as `runtime_mappings`,
+            so the close query can match fields not natively mapped on the
+            alerts index (e.g. data view runtime fields with Painless scripts).
+            Unlike `runtime_fields`, the caller-supplied Painless script is
+            preserved and executed by Elasticsearch at query time.
+            The server always sets `on_script_error: continue` regardless of
+            any value supplied by the caller, so a single alert that causes a
+            script error is skipped rather than aborting the entire close.
+            Limited to 100 unique field names combined with `runtime_fields`;
+            larger maps are rejected.
       required: [query, status]
 
     CloseAlertsByQuery:
@@ -255,6 +307,24 @@ components:
             example, runtime fields the rule's source index defined at the
             time the alerts were created. Limited to 100 entries per
             request; larger maps are rejected.
+        runtime_mappings:
+          type: object
+          maxProperties: 100
+          additionalProperties:
+            $ref: '#/components/schemas/RuntimeFieldMapping'
+          description: >-
+            Optional map of runtime field name to runtime field mapping.
+            For each entry the server forwards `type`, `script.source`, and
+            `format` to the underlying `_update_by_query` as `runtime_mappings`,
+            so the close query can match fields not natively mapped on the
+            alerts index (e.g. data view runtime fields with Painless scripts).
+            Unlike `runtime_fields`, the caller-supplied Painless script is
+            preserved and executed by Elasticsearch at query time.
+            The server always sets `on_script_error: continue` regardless of
+            any value supplied by the caller, so a single alert that causes a
+            script error is skipped rather than aborting the entire close.
+            Limited to 100 unique field names combined with `runtime_fields`;
+            larger maps are rejected.
       required: [query, status]
 
     SetAlertsStatusByQuery:

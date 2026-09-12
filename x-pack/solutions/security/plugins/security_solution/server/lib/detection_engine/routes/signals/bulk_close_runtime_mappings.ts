@@ -7,7 +7,17 @@
 
 import type { estypes } from '@elastic/elasticsearch';
 
-import type { RuntimeFieldType } from '../../../../../common/api/detection_engine/signals/set_signal_status/set_signals_status_route.gen';
+import type {
+  RuntimeFieldType,
+  RuntimeFieldMapping,
+} from '../../../../../common/api/detection_engine/signals/set_signal_status/set_signals_status_route.gen';
+
+/**
+ * The subset of `MappingRuntimeFields` accepted on the bulk-close route via
+ * `runtime_mappings`. Keyed by field name; values carry only the properties the
+ * route schema validates (`type`, `script.source`, `format`).
+ */
+export type BulkCloseRuntimeMappings = Record<string, RuntimeFieldMapping>;
 
 /**
  * Upper bound on `runtime_fields` entries accepted per request. Each entry
@@ -86,4 +96,59 @@ export const buildRuntimeMappingsFromFieldTypes = (
   return Object.fromEntries(
     entries.map(([name, type]) => [name, buildSourceReadingRuntimeField(name, type)])
   );
+};
+
+/**
+ * Merge caller-synthesised (`runtime_fields`) and caller-verbatim
+ * (`runtime_mappings`) runtime field inputs into a single
+ * `runtime_mappings` object for attachment to the `_update_by_query`.
+ *
+ * Passthrough entries (from `runtime_mappings`) take precedence on key
+ * collision — they carry the full mapping semantics (script, format, …)
+ * and the synthesised `_source` reader is the fallback. Nothing sends both
+ * today, but the precedence rule ensures correctness if they ever overlap.
+ *
+ * `on_script_error: 'continue'` is stamped on every passthrough entry for
+ * the same reason it is set on synthesised fields: one alert whose value
+ * throws inside the Painless script should be skipped rather than aborting
+ * the whole `_update_by_query`. The value is never read from the request
+ * body.
+ *
+ * `script.params` and `lang` are intentionally not forwarded — the
+ * `RuntimeFieldMapping` schema accepts only `{ source }` on the script
+ * object and rejects any extra properties with a Zod 400 before this
+ * function is called. Callers (e.g. `toBulkCloseRuntimeMappings` on the
+ * client) should drop entries whose script contains unsupported properties
+ * rather than relying on server-side rejection.
+ *
+ * Returns `undefined` when both inputs are empty/missing so callers can
+ * pass the result straight to ES without an empty `runtime_mappings: {}`.
+ */
+export const mergeBulkCloseRuntimeMappings = (
+  synthesized: estypes.MappingRuntimeFields | undefined,
+  passthrough: BulkCloseRuntimeMappings | undefined
+): estypes.MappingRuntimeFields | undefined => {
+  const passthroughEntries = passthrough ? Object.entries(passthrough) : [];
+  const passthroughMapped: estypes.MappingRuntimeFields = Object.fromEntries(
+    passthroughEntries.map(([name, mapping]) => {
+      const field: estypes.MappingRuntimeField & { on_script_error?: 'fail' | 'continue' } = {
+        type: mapping.type as estypes.MappingRuntimeFieldType,
+        // on_script_error is only meaningful (and safe to send) when a script is present.
+        // ES ignores it for scriptless fields in practice, but omitting it keeps the payload
+        // clean and avoids any future ES validation that might reject the property without a script.
+        ...(mapping.script
+          ? {
+              on_script_error: 'continue',
+              script: { source: mapping.script.source },
+            }
+          : {}),
+        ...(mapping.format ? { format: mapping.format } : {}),
+      };
+      return [name, field];
+    })
+  );
+
+  // Merge: passthrough wins on collision.
+  const merged: estypes.MappingRuntimeFields = { ...synthesized, ...passthroughMapped };
+  return Object.keys(merged).length > 0 ? merged : undefined;
 };

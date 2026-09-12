@@ -13,6 +13,7 @@ import {
   updateAlertStatusByIds,
   updateAlertStatusByQuery,
 } from '../../../../detections/containers/detection_engine/alerts/api';
+import type { BulkCloseRuntimeMappings } from './runtime_mappings_for_bulk_close';
 
 export interface UpdatedAlertsResponse {
   updated: number;
@@ -25,24 +26,38 @@ interface UpdatedAlertsProps {
   signalIds?: string[];
   signal?: AbortSignal;
   reason?: AlertClosingReason;
+  /**
+   * Optional map of field name to ES runtime field type. The server synthesizes
+   * a `_source[fieldName]`-reading runtime field for each entry. Use this for
+   * fields that are present on the alert `_source` but not in the alerts index
+   * mapping — for example, runtime fields from a rule's source index that the
+   * alerting framework copied onto the alert at rule-execution time.
+   *
+   * For data view runtime fields (including scripted fields), prefer
+   * `runtimeMappings` instead — it preserves the full mapping (type + script)
+   * so Elasticsearch evaluates the caller's Painless rather than falling back to
+   * a `_source` read. Using this param for a scripted runtime field discards the
+   * script and causes the close query to match a different set of alerts than the
+   * grid displayed.
+   */
   runtimeFields?: Record<string, RuntimeFieldType>;
+  /**
+   * Optional verbatim runtime field mappings forwarded directly to the
+   * `_update_by_query` as `runtime_mappings`. Use this instead of `runtimeFields`
+   * when closing via a data view runtime field: the full mapping (including any
+   * Painless `script.source`) is preserved, so the close query operates on the
+   * same set of alerts that the grid matched.
+   *
+   * Build this from `dataView.getRuntimeMappings()` using
+   * {@link toBulkCloseRuntimeMappings} from `runtime_mappings_for_bulk_close.ts`.
+   */
+  runtimeMappings?: BulkCloseRuntimeMappings;
 }
 
 /**
  * Update alert status by query or signalIds.
- *  Either query or signalIds must be provided
+ * Either query or signalIds must be provided.
  * `signalIds` is the preferred way to update alerts because it is more cost effective on Serverless.
- *
- * @param status to update to('open' / 'closed' / 'acknowledged')
- * @param index index to be updated
- * @param query optional query object to update alerts by query.
- * @param signalIds optional signalIds to update alerts by signalIds.
- * @param signal to cancel request
- * @param reason to specify the reason of the status update
- * @param runtimeFields optional map of field name to ES runtime field type.
- *   The server synthesizes `_source`-reading runtime fields for each entry
- *   and attaches them to the underlying `_update_by_query` so the close
- *   filter can match fields not natively mapped on the alerts index.
  *
  * @throws An error if response is not OK
  */
@@ -53,6 +68,7 @@ export const updateAlertStatus = async ({
   signal,
   reason,
   runtimeFields,
+  runtimeMappings,
 }: UpdatedAlertsProps): Promise<UpdatedAlertsResponse> => {
   if (signalIds && signalIds.length > 0) {
     const { updated } = await updateAlertStatusByIds({ status, signalIds, signal, reason });
@@ -68,6 +84,7 @@ export const updateAlertStatus = async ({
       signal,
       reason,
       runtimeFields,
+      runtimeMappings,
     });
     return {
       updated: updated ?? 0,

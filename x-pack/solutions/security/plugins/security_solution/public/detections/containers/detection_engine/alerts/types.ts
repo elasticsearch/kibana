@@ -8,6 +8,7 @@
 import type { AlertClosingReason } from '../../../../../common/types';
 import type { Status } from '../../../../../common/api/detection_engine';
 import type { RuntimeFieldType } from '../../../../../common/api/detection_engine/signals/set_signal_status/set_signals_status_route.gen';
+import type { BulkCloseRuntimeMappings } from '../../../../common/components/toolbar/bulk_actions/runtime_mappings_for_bulk_close';
 
 export interface BasicSignals {
   signal: AbortSignal;
@@ -46,14 +47,26 @@ export interface UpdateAlertStatusByQueryProps {
   signal?: AbortSignal;
   reason?: AlertClosingReason;
   /**
-   * Optional map of field name to ES runtime field type. Server synthesizes
-   * a `_source`-reading runtime field per entry and attaches it to the
-   * underlying `_update_by_query` so the close filter can reference fields
-   * that aren't natively mapped on the alerts index (e.g. runtime fields
-   * defined on the rule's source index — workaround for
-   * elastic/security-ml#677).
+   * Optional map of field name to ES runtime field type. The server synthesizes
+   * a `_source[fieldName]`-reading runtime field per entry and attaches it to
+   * the underlying `_update_by_query`. Use this for rule-source runtime fields
+   * whose values the alerting framework copied onto the alert `_source` at
+   * rule-execution time (e.g. the ML workaround from elastic/security-ml#677).
+   *
+   * For data view runtime fields (including scripted fields), prefer
+   * `runtimeMappings` instead — it preserves the full mapping so the query
+   * operates on the same set of alerts the grid matched.
    */
   runtimeFields?: Record<string, RuntimeFieldType>;
+  /**
+   * Optional verbatim runtime field mappings forwarded directly to the
+   * `_update_by_query` as `runtime_mappings`. Preserves the caller's Painless
+   * script (if any) so Elasticsearch evaluates it at query time rather than
+   * falling back to a `_source` read.
+   *
+   * Build from `dataView.getRuntimeMappings()` via `toBulkCloseRuntimeMappings`.
+   */
+  runtimeMappings?: BulkCloseRuntimeMappings;
 }
 
 export interface UpdateAlertStatusByIdsProps {

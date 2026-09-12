@@ -21,8 +21,8 @@ import type {
 } from '@kbn/grouping/src';
 import { parseGroupingQuery } from '@kbn/grouping/src';
 import type { estypes } from '@elastic/elasticsearch';
-import type { TableIdLiteral } from '@kbn/securitysolution-data-table';
 import type { RunTimeMappings } from '@kbn/timelines-plugin/common/search_strategy';
+import type { TableIdLiteral } from '@kbn/securitysolution-data-table';
 import { PageScope } from '../../../data_view_manager/constants';
 import { useDataView } from '../../../data_view_manager/hooks/use_data_view';
 import type { GroupTakeActionItems } from './types';
@@ -77,7 +77,7 @@ interface OwnProps {
   pageSize: number;
   parentGroupingFilter?: string;
   renderChildComponent: GroupChildComponentRenderer<AlertsGroupingAggregation>;
-  runtimeMappings: RunTimeMappings;
+  runtimeMappings?: RunTimeMappings;
   selectedGroup: string;
   setPageIndex: (newIndex: number) => void;
   setPageSize: (newSize: number) => void;
@@ -333,11 +333,14 @@ export const GroupedSubLevelComponent: React.FC<AlertsTableComponentProps> = ({
         tableId,
         groupBucket,
         closePopover,
+        // Forward the page-scoped data view runtime mappings so the group-level
+        // status update can resolve fields not natively mapped on the alerts index.
+        runtimeMappings,
       };
 
       return groupTakeActionItems?.(takeActionParams);
     },
-    [defaultFilters, getGlobalQuery, groupTakeActionItems, selectedGroup, tableId]
+    [defaultFilters, getGlobalQuery, groupTakeActionItems, selectedGroup, tableId, runtimeMappings]
   );
 
   const onChangeGroupsItemsPerPage = useCallback(

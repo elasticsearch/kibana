@@ -12,6 +12,7 @@ import type { AlertsTablePropsWithRef } from '@kbn/response-ops-alerts-table/typ
 import type { TableId } from '@kbn/securitysolution-data-table';
 import type { EuiContextMenuPanelItemDescriptor } from '@elastic/eui';
 import type { GroupingBucket } from '@kbn/grouping/src';
+import type { MappingRuntimeFields } from '@elastic/elasticsearch/lib/api/types';
 import type { PageScope } from '../../../data_view_manager/constants';
 import type { AlertsUserProfilesData } from '../../configurations/security_solution_detections/fetch_page_context';
 import type { Status } from '../../../../common/api/detection_engine';
@@ -108,4 +109,10 @@ export type GroupTakeActionItems = (props: {
    * Callback to close the containing popover menu
    */
   closePopover: () => void;
+  /**
+   * Runtime mappings from the active data view, forwarded to the status-update
+   * request so the close query can reference fields not natively mapped on the
+   * alerts index (e.g. scripted data view runtime fields).
+   */
+  runtimeMappings?: MappingRuntimeFields;
 }) => JSX.Element | undefined;

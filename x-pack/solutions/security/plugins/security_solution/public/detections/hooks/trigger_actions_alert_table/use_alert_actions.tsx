@@ -16,17 +16,9 @@ import type { MappingRuntimeFields } from '@elastic/elasticsearch/lib/api/types'
 import type { TableId } from '@kbn/securitysolution-data-table';
 import { useBulkClosingReasonItems } from '@kbn/response-ops-detections-close-reason';
 import type { AlertClosingReason } from '../../../../common/types';
-import {
-  RuntimeFieldTypeEnum,
-  type RuntimeFieldType,
-} from '../../../../common/api/detection_engine/signals/set_signal_status/set_signals_status_route.gen';
 import { APM_USER_INTERACTIONS } from '../../../common/lib/apm/constants';
-
-// Derived from the server's Zod enum so this stays in sync if new types are added.
-// Filters out ES-only types ('composite', 'lookup') that the server schema does not accept,
-// preventing a Zod validation 400 from failing the entire bulk-close request.
-const SUPPORTED_RUNTIME_FIELD_TYPES = new Set<string>(Object.values(RuntimeFieldTypeEnum));
 import { updateAlertStatus } from '../../../common/components/toolbar/bulk_actions/update_alerts';
+import { toBulkCloseRuntimeMappings } from '../../../common/components/toolbar/bulk_actions/runtime_mappings_for_bulk_close';
 import { useAppToasts } from '../../../common/hooks/use_app_toasts';
 import { useStartTransaction } from '../../../common/lib/apm/use_start_transaction';
 import type { AlertWorkflowStatus } from '../../../common/types';
@@ -60,13 +52,14 @@ export const useBulkAlertActionItems = ({
   const { hasAlertsUpdate } = useAlertsPrivileges();
   const { startTransaction } = useStartTransaction();
 
-  const runtimeFields = useMemo(() => {
-    if (!runtimeMappings) return undefined;
-    const entries = Object.entries(runtimeMappings)
-      .filter(([, field]) => SUPPORTED_RUNTIME_FIELD_TYPES.has(field.type))
-      .map(([name, field]) => [name, field.type] as [string, RuntimeFieldType]);
-    return entries.length > 0 ? Object.fromEntries(entries) : undefined;
-  }, [runtimeMappings]);
+  // Convert data view runtime mappings to the narrower shape the route accepts,
+  // preserving each field's type and Painless script so the close query can
+  // evaluate scripted fields at query time rather than falling back to a
+  // _source read (which misses scripted/computed values entirely).
+  const bulkCloseRuntimeMappings = useMemo(
+    () => toBulkCloseRuntimeMappings(runtimeMappings),
+    [runtimeMappings]
+  );
 
   const { addSuccess, addError, addWarning } = useAppToasts();
 
@@ -156,7 +149,10 @@ export const useBulkAlertActionItems = ({
             query,
             signalIds: ids,
             reason,
-            runtimeFields,
+            // runtimeMappings is only used by the query path (select-all). When ids is
+            // defined the by-IDs path is taken and this prop is ignored — that path
+            // doesn't send a filter query, so runtime mappings aren't needed.
+            runtimeMappings: bulkCloseRuntimeMappings,
           });
 
           setAlertLoading(false);
@@ -189,7 +185,7 @@ export const useBulkAlertActionItems = ({
       to,
       refetchProp,
       promptAlertCloseConfirmation,
-      runtimeFields,
+      bulkCloseRuntimeMappings,
     ]
   );
 
