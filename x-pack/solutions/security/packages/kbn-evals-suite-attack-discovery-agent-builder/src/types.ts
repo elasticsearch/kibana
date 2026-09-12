@@ -45,7 +45,7 @@ export interface AttackDiscoveryAgentBuilderMetadata extends Record<string, unkn
     | 'multiple-alert-sets'
     | 'scenario-registry';
   scenarioKey?: string;
-  seedProfile?: 'clean';
+  seedProfile?: 'clean' | 'dense';
 }
 
 export type AttackDiscoveryAgentBuilderExample = Example<

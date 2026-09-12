@@ -10,13 +10,14 @@ import {
   AD2_CLEAN_SCENARIOS,
   type Ad2CleanScenarioKey,
 } from './clean_scenarios';
+import { AD2_DENSE_SCENARIO_KEYS, AD2_DENSE_SCENARIOS } from './dense_scenarios';
 import { AD2_SCENARIO_ID_PREFIX } from './constants';
 import { buildScenarioDocuments } from './build_documents';
 import type { Ad2ScenarioDefinition, Ad2SeedPlan, Ad2SeedProfile } from './types';
 
 export const listAd2ScenarioKeys = (profile: Ad2SeedProfile = 'clean'): readonly string[] => {
-  if (profile === 'clean') {
-    return AD2_CLEAN_SCENARIO_KEYS;
+  if (profile === 'dense') {
+    return AD2_DENSE_SCENARIO_KEYS;
   }
   return AD2_CLEAN_SCENARIO_KEYS;
 };
@@ -25,8 +26,8 @@ export const getAd2Scenario = (
   scenarioKey: string,
   profile: Ad2SeedProfile = 'clean'
 ): Ad2ScenarioDefinition | undefined => {
-  if (profile !== 'clean') {
-    return undefined;
+  if (profile === 'dense') {
+    return AD2_DENSE_SCENARIOS[scenarioKey];
   }
   return AD2_CLEAN_SCENARIOS[scenarioKey as Ad2CleanScenarioKey];
 };

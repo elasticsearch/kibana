@@ -5,7 +5,19 @@
  * 2.0.
  */
 
-export type Ad2SeedProfile = 'clean';
+/**
+ * Seed profiles.
+ *
+ * `clean` is four hand-written chains (16 alerts) used by the per-chain
+ * provided-alerts datasets.
+ *
+ * `dense` seeds a larger alert population so discovery counts are measured at
+ * a realistic volume rather than on four alerts. It exists because a triage
+ * model that looks good correlating 4 alerts is not shown to correlate 90+;
+ * volume is the variable under test, so it must be a committed input rather
+ * than whatever happened to sit in a live index on the day.
+ */
+export type Ad2SeedProfile = 'clean' | 'dense';
 
 export type Ad2ScenarioOs = 'windows' | 'linux' | 'macos';
 
