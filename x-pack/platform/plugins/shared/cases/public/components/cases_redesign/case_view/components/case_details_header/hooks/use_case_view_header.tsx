@@ -5,7 +5,7 @@
  * 2.0.
  */
 
-import { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import moment from 'moment-timezone';
 import type { AppHeaderMetadataItems, AppHeaderTitle } from '@kbn/app-header';
 import type { CaseSeverity, CaseStatuses } from '../../../../../../../common/types/domain';
@@ -30,6 +30,8 @@ import {
 } from '../../../../translations';
 import { getBadges } from '../utils/header_badges';
 import { getMenu } from '../utils/header_menu';
+import { useRunCaseWorkflow } from '../../../../../workflows/use_run_case_workflow';
+import { RunCaseWorkflowModal } from '../../../../../workflows/run_case_workflow_modal';
 
 interface UseCaseViewHeaderArgs {
   caseData: CaseUI;
@@ -52,6 +54,18 @@ export const useCaseViewHeader = ({
   const { data: caseConnectors } = useGetCaseConnectors(caseData.id);
   const { mutate: deleteCases } = useDeleteCases();
   const { addToChat, summarizeCase, isAddToChatAvailable } = useAddCaseToChat(caseData);
+
+  const {
+    canRunWorkflow,
+    isModalOpen: isRunWorkflowModalOpen,
+    openModal: openRunWorkflowModal,
+    closeModal: closeRunWorkflowModal,
+    inputs: workflowInputs,
+    runWorkflow,
+    showSuccessToast: showWorkflowSuccessToast,
+    filterWorkflow: workflowFilterWorkflow,
+    sortWorkflow: workflowSortWorkflow,
+  } = useRunCaseWorkflow({ caseData });
 
   const [isDeleteModalVisible, setIsDeleteModalVisible] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -178,9 +192,12 @@ export const useCaseViewHeader = ({
         onOpenSettings,
         onCopyId,
         onOpenDeleteModal,
+        runWorkflow: { canRunWorkflow, onOpen: openRunWorkflowModal },
       }),
     [
       addToChat,
+      canRunWorkflow,
+      openRunWorkflowModal,
       summarizeCase,
       isAddToChatAvailable,
       permissions,
@@ -193,6 +210,17 @@ export const useCaseViewHeader = ({
       onOpenDeleteModal,
     ]
   );
+
+  const runWorkflowModal = isRunWorkflowModalOpen ? (
+    <RunCaseWorkflowModal
+      inputs={workflowInputs}
+      runWorkflow={runWorkflow}
+      showSuccessToast={showWorkflowSuccessToast}
+      filterWorkflow={workflowFilterWorkflow}
+      sortWorkflow={workflowSortWorkflow}
+      onClose={closeRunWorkflowModal}
+    />
+  ) : null;
 
   // Delete
   const onConfirmDeletion = useCallback(() => {
@@ -209,6 +237,7 @@ export const useCaseViewHeader = ({
     backHref,
     badges,
     menu,
+    runWorkflowModal,
     isDeleteModalVisible,
     setIsDeleteModalVisible,
     onConfirmDeletion,

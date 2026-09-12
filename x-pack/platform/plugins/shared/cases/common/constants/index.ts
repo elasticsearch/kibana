@@ -196,6 +196,7 @@ export const MAX_TAGS_PER_CASE = 200 as const;
 export const MAX_DELETE_IDS_LENGTH = 100 as const;
 export const MAX_SUGGESTED_PROFILES = 10 as const;
 export const MAX_CASES_TO_UPDATE = 100 as const;
+export const MAX_CASES_PER_WORKFLOW_RUN = 10 as const;
 export const MAX_BULK_CREATE_ATTACHMENTS = 100 as const;
 export const MAX_USER_ACTIONS_PER_CASE = 10000 as const;
 export const MAX_PERSISTABLE_STATE_AND_EXTERNAL_REFERENCES = 100 as const;

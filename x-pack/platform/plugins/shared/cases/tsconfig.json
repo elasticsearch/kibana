@@ -106,6 +106,7 @@
     "@kbn/deeplinks-workflows",
     "@kbn/workflows-extensions",
     "@kbn/workflows",
+    "@kbn/workflows-ui",
     "@kbn/workflows-management-plugin",
     "@kbn/agent-builder-plugin",
     "@kbn/agent-builder-common",

@@ -8,7 +8,12 @@
  */
 
 export { RunWorkflowPanel } from './run_workflow_panel';
-export type { RunWorkflowPanelProps, WorkflowRunInputs } from './run_workflow_panel';
+export type {
+  RunWorkflowExecutor,
+  RunWorkflowExecutorParams,
+  RunWorkflowPanelProps,
+  WorkflowRunInputs,
+} from './run_workflow_panel';
 export { RunWorkflowInputsModal } from './run_workflow_inputs_modal';
 export type { RunWorkflowInputsModalProps } from './run_workflow_inputs_modal';
 export { requiresUserSuppliedInputs } from './run_workflow_panel_helpers';

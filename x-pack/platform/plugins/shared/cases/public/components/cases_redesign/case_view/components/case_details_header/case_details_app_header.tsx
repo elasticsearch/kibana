@@ -46,6 +46,7 @@ export const CaseDetailsAppHeader: FC<CaseDetailsAppHeaderProps> = ({
     backHref,
     badges,
     menu,
+    runWorkflowModal,
     isDeleteModalVisible,
     setIsDeleteModalVisible,
     onConfirmDeletion,
@@ -82,6 +83,7 @@ export const CaseDetailsAppHeader: FC<CaseDetailsAppHeaderProps> = ({
         metadata={metadata}
       />
       {closeCaseModal}
+      {runWorkflowModal}
       {isDeleteModalVisible && (
         <ConfirmDeleteCaseModal
           totalCasesToBeDeleted={1}

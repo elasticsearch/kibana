@@ -20,6 +20,9 @@ import { useCasesToast } from '../../common/use_cases_toast';
 import { AttachmentActionType } from '../../client/attachment_framework/types';
 import { KibanaServices } from '../../common/lib/kibana';
 import { ApplyTemplateModal } from './apply_template_modal';
+import { useRunCaseWorkflow } from '../workflows/use_run_case_workflow';
+import { RunCaseWorkflowModal } from '../workflows/run_case_workflow_modal';
+import * as workflowI18n from '../workflows/translations';
 
 interface CaseViewActions {
   caseData: CaseUI;
@@ -36,6 +39,18 @@ const ActionsComponent: React.FC<CaseViewActions> = ({ caseData, currentExternal
   const buttonRef = React.useRef<HTMLAnchorElement>(null);
 
   const isTemplatesV2Enabled = KibanaServices.getConfig()?.templates?.enabled ?? false;
+
+  const {
+    canRunWorkflow,
+    isModalOpen: isRunWorkflowModalOpen,
+    openModal: openRunWorkflowModal,
+    closeModal: closeRunWorkflowModal,
+    inputs: workflowInputs,
+    runWorkflow,
+    showSuccessToast: showWorkflowSuccessToast,
+    filterWorkflow: workflowFilterWorkflow,
+    sortWorkflow: workflowSortWorkflow,
+  } = useRunCaseWorkflow({ caseData });
 
   const openModal = useCallback(() => {
     setIsModalVisible(true);
@@ -55,6 +70,16 @@ const ActionsComponent: React.FC<CaseViewActions> = ({ caseData, currentExternal
 
   const propertyActions = useMemo(
     () => [
+      ...(canRunWorkflow
+        ? [
+            {
+              type: AttachmentActionType.BUTTON as const,
+              iconType: 'play',
+              label: workflowI18n.RUN_WORKFLOW,
+              onClick: openRunWorkflowModal,
+            },
+          ]
+        : []),
       {
         type: AttachmentActionType.BUTTON as const,
         iconType: 'copy',
@@ -97,6 +122,8 @@ const ActionsComponent: React.FC<CaseViewActions> = ({ caseData, currentExternal
         : []),
     ],
     [
+      canRunWorkflow,
+      openRunWorkflowModal,
       permissions.delete,
       openModal,
       openApplyTemplateModal,
@@ -137,6 +164,16 @@ const ActionsComponent: React.FC<CaseViewActions> = ({ caseData, currentExternal
       {isApplyTemplateModalVisible ? (
         <ApplyTemplateModal caseData={caseData} onClose={closeApplyTemplateModal} />
       ) : null}
+      {isRunWorkflowModalOpen && (
+        <RunCaseWorkflowModal
+          inputs={workflowInputs}
+          runWorkflow={runWorkflow}
+          showSuccessToast={showWorkflowSuccessToast}
+          filterWorkflow={workflowFilterWorkflow}
+          sortWorkflow={workflowSortWorkflow}
+          onClose={closeRunWorkflowModal}
+        />
+      )}
     </EuiFlexItem>
   );
 };

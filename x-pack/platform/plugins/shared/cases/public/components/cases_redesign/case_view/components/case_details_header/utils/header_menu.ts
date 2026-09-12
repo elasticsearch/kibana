@@ -11,6 +11,7 @@ import type { CasesPermissions } from '../../../../../../../common';
 import * as i18n from '../../../../../case_view/translations';
 import * as commonI18n from '../../../../../../common/translations';
 import { ADD_TO_CHAT, SUMMARIZE_CASE } from '../../../../../../agent_builder/translations';
+import * as workflowI18n from '../../../../../workflows/translations';
 
 interface ExternalIncident {
   externalUrl?: string | null;
@@ -31,6 +32,8 @@ interface GetMenuArgs {
   onOpenSettings: (anchor: HTMLElement) => void;
   onCopyId: () => Promise<void>;
   onOpenDeleteModal: () => void;
+  /** When provided, adds a "Run workflow" item gated on `canRunWorkflow`. */
+  runWorkflow?: { canRunWorkflow: boolean; onOpen: () => void };
 }
 
 export const getMenu = ({
@@ -43,6 +46,7 @@ export const getMenu = ({
   onOpenSettings,
   onCopyId,
   onOpenDeleteModal,
+  runWorkflow,
 }: GetMenuArgs): AppHeaderMenu => {
   const items = [
     {
@@ -53,6 +57,18 @@ export const getMenu = ({
       testId: 'case-refresh',
       order: 100,
     },
+    ...(runWorkflow?.canRunWorkflow
+      ? [
+          {
+            id: 'runWorkflow',
+            label: workflowI18n.RUN_WORKFLOW,
+            iconType: 'play' as const,
+            run: () => runWorkflow.onOpen(),
+            testId: 'case-run-workflow-button',
+            order: 150,
+          },
+        ]
+      : []),
     ...(permissions.update && hasCaseSettings
       ? [
           {

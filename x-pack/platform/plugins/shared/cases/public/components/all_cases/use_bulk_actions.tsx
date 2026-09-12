@@ -24,6 +24,8 @@ import { useAssigneesAction } from '../actions/assignees/use_assignees_action';
 import { EditAssigneesFlyout } from '../actions/assignees/edit_assignees_flyout';
 import { useCloseCaseModal } from './use_close_case_modal';
 import { useCanSyncCloseReasonToAlerts } from './use_can_sync_close_reason_to_alerts';
+import { useRunWorkflowAction } from '../actions/run_workflow/use_run_workflow_action';
+import { RunCaseWorkflowModal } from '../workflows/run_case_workflow_modal';
 import * as i18n from './translations';
 
 interface UseBulkActionsProps {
@@ -72,6 +74,11 @@ export const useBulkActions = ({
 
   const assigneesAction = useAssigneesAction({
     isDisabled: false,
+    onAction,
+    onActionSuccess,
+  });
+
+  const runWorkflowAction = useRunWorkflowAction({
     onAction,
     onActionSuccess,
   });
@@ -141,6 +148,10 @@ export const useBulkActions = ({
       });
     }
 
+    if (runWorkflowAction.canRunWorkflow) {
+      mainPanelItems.push(runWorkflowAction.getAction(selectedCases));
+    }
+
     if (canUpdate) {
       mainPanelItems.push(tagsAction.getAction(selectedCases));
     }
@@ -180,6 +191,7 @@ export const useBulkActions = ({
     canAssign,
     deleteAction,
     isDisabled,
+    runWorkflowAction,
     selectedCases,
     severityAction,
     statusActions,
@@ -196,6 +208,9 @@ export const useBulkActions = ({
             onCancel={deleteAction.onCloseModal}
             onConfirm={deleteAction.onConfirmDeletion}
           />
+        ) : null}
+        {runWorkflowAction.isModalVisible ? (
+          <RunCaseWorkflowModal {...runWorkflowAction.modalProps} />
         ) : null}
         {closeCaseModal}
       </>

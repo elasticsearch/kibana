@@ -32,6 +32,8 @@ import { useCopyIDAction } from '../actions/copy_id/use_copy_id_action';
 import { useShouldDisableStatus } from '../actions/status/use_should_disable_status';
 import { useCloseCaseModal } from './use_close_case_modal';
 import { useCanSyncCloseReasonToAlerts } from './use_can_sync_close_reason_to_alerts';
+import { useRunWorkflowAction } from '../actions/run_workflow/use_run_workflow_action';
+import { RunCaseWorkflowModal } from '../workflows/run_case_workflow_modal';
 
 export const ActionColumnComponent: React.FC<{ theCase: CaseUI; disableActions: boolean }> = ({
   theCase,
@@ -82,6 +84,11 @@ export const ActionColumnComponent: React.FC<{ theCase: CaseUI; disableActions: 
 
   const assigneesAction = useAssigneesAction({
     isDisabled: false,
+    onAction: closePopover,
+    onActionSuccess: refreshCases,
+  });
+
+  const runWorkflowAction = useRunWorkflowAction({
     onAction: closePopover,
     onActionSuccess: refreshCases,
   });
@@ -173,6 +180,10 @@ export const ActionColumnComponent: React.FC<{ theCase: CaseUI; disableActions: 
       });
     }
 
+    if (runWorkflowAction.canRunWorkflow) {
+      mainPanelItems.push(runWorkflowAction.getAction([theCase]));
+    }
+
     if (canUpdate) {
       mainPanelItems.push(tagsAction.getAction([theCase]));
     }
@@ -210,6 +221,7 @@ export const ActionColumnComponent: React.FC<{ theCase: CaseUI; disableActions: 
     canUpdate,
     copyIDAction,
     deleteAction,
+    runWorkflowAction,
     severityAction,
     statusAction,
     statusActions,
@@ -277,6 +289,9 @@ export const ActionColumnComponent: React.FC<{ theCase: CaseUI; disableActions: 
           onSaveAssignees={assigneesAction.onSaveAssignees}
           focusButtonRef={buttonRef}
         />
+      ) : null}
+      {runWorkflowAction.isModalVisible ? (
+        <RunCaseWorkflowModal {...runWorkflowAction.modalProps} focusButtonRef={buttonRef} />
       ) : null}
       {closeCaseModal}
     </>
