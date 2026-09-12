@@ -138,25 +138,23 @@ export const ComponentTemplatesSelector = ({
         isInitialized.current === false
       ) {
         // Once the components are fetched, we check the ones previously selected
-        // from the prop "defaultValue" passed.
-        const nextComponentsSelected = defaultValue
-          .map((name) => components.find((comp) => comp.name === name))
-          .filter(Boolean) as ComponentTemplateListItem[];
+        // from the prop "defaultValue" passed. Templates that do not exist (allowed through
+        // "ignore_missing_component_templates") get a placeholder entry so that the
+        // "defaultValue" order is preserved.
+        const nextComponentsSelected: ComponentTemplateListItem[] = defaultValue.map(
+          (name) =>
+            components.find((comp) => comp.name === name) ?? {
+              name,
+              usedBy: [],
+              hasMappings: false,
+              hasAliases: false,
+              hasSettings: false,
+              isManaged: false,
+            }
+        );
 
-        // Add the non-existing templates from the "defaultValue" prop
-        const missingDefaultComponents: ComponentTemplateListItem[] = defaultValue
-          .filter((name) => !components.find((comp) => comp.name === name))
-          .map((name) => ({
-            name,
-            usedBy: [],
-            hasMappings: false,
-            hasAliases: false,
-            hasSettings: false,
-            isManaged: false,
-          }));
-
-        setComponentsSelected([...nextComponentsSelected, ...missingDefaultComponents]);
-        onChange([...nextComponentsSelected, ...missingDefaultComponents].map(({ name }) => name));
+        setComponentsSelected(nextComponentsSelected);
+        onChange(nextComponentsSelected.map(({ name }) => name));
         isInitialized.current = true;
       } else {
         onChange(componentsSelected.map(({ name }) => name));
