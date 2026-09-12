@@ -1311,7 +1311,7 @@ const getCasesAndAssigneesToNotifyForAssignment = (
     // assignee unequal to the legacy uid-only record, so a deep diff would flag every retained
     // assignee on a pre-rollout case as newly added and re-notify them.
     const alreadyAssignedUids = new Set(originalCaseSO.attributes.assignees.map(({ uid }) => uid));
-    const addedAssignees = (updatedCase.attributes.assignees ?? []).filter(
+    const addedAssignees = (updatedCase.attributes?.assignees ?? []).filter(
       ({ uid }) => !alreadyAssignedUids.has(uid)
     );
 

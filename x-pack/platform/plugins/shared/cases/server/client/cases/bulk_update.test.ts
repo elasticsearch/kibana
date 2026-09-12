@@ -266,6 +266,17 @@ describe('update', () => {
       expect(clientArgs.services.notificationService.bulkNotifyAssignees).not.toHaveBeenCalled();
     });
 
+    it('does not throw when a bulk-update response entry omits attributes', async () => {
+      clientArgs.services.caseService.patchCases.mockResolvedValue({
+        saved_objects: [{ ...mockCases[0], attributes: undefined }],
+      } as never);
+
+      const result = await bulkUpdate(cases, clientArgs, casesClientMock);
+
+      expect(result).toBeDefined();
+      expect(clientArgs.services.notificationService.bulkNotifyAssignees).toHaveBeenCalledWith([]);
+    });
+
     it('does not notify if the case is patched with the same assignee', async () => {
       expect.assertions(2);
 
