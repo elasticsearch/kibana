@@ -109,7 +109,7 @@ exports[`extend index management ilm summary extension should render a phase def
     class="euiFlexGroup emotion-euiFlexGroup-responsive-wrap-m-flexStart-stretch-row"
   >
     <div
-      class="euiFlexItem emotion-euiFlexItem-grow-1-IndexLifecycleSummary"
+      class="euiFlexItem emotion-euiFlexItem-grow-1-description"
     >
       <div
         class="euiPanel euiPanel--plain euiPanel--paddingMedium emotion-euiPanel-m-m-plain-hasBorder"
@@ -232,7 +232,7 @@ exports[`extend index management ilm summary extension should render a phase def
       </div>
     </div>
     <div
-      class="euiFlexItem emotion-euiFlexItem-grow-3-IndexLifecycleSummary"
+      class="euiFlexItem emotion-euiFlexItem-grow-3-description"
     >
       <div
         class="euiPanel euiPanel--plain euiPanel--paddingMedium emotion-euiPanel-m-m-plain-hasBorder"
@@ -281,7 +281,7 @@ exports[`extend index management ilm summary extension should render a step info
     class="euiFlexGroup emotion-euiFlexGroup-responsive-wrap-m-flexStart-stretch-row"
   >
     <div
-      class="euiFlexItem emotion-euiFlexItem-grow-1-IndexLifecycleSummary"
+      class="euiFlexItem emotion-euiFlexItem-grow-1-description"
     >
       <div
         class="euiPanel euiPanel--plain euiPanel--paddingMedium emotion-euiPanel-m-m-plain-hasBorder"
@@ -404,7 +404,7 @@ exports[`extend index management ilm summary extension should render a step info
       </div>
     </div>
     <div
-      class="euiFlexItem emotion-euiFlexItem-grow-3-IndexLifecycleSummary"
+      class="euiFlexItem emotion-euiFlexItem-grow-3-description"
     >
       <div
         class="euiPanel euiPanel--plain euiPanel--paddingMedium emotion-euiPanel-m-m-plain-hasBorder"
@@ -449,7 +449,7 @@ exports[`extend index management ilm summary extension should render an error pa
     class="euiFlexGroup emotion-euiFlexGroup-responsive-wrap-m-flexStart-stretch-row"
   >
     <div
-      class="euiFlexItem emotion-euiFlexItem-grow-1-IndexLifecycleSummary"
+      class="euiFlexItem emotion-euiFlexItem-grow-1-description"
     >
       <div
         class="euiPanel euiPanel--plain euiPanel--paddingMedium emotion-euiPanel-m-m-plain-hasBorder"
@@ -572,7 +572,7 @@ exports[`extend index management ilm summary extension should render an error pa
       </div>
     </div>
     <div
-      class="euiFlexItem emotion-euiFlexItem-grow-3-IndexLifecycleSummary"
+      class="euiFlexItem emotion-euiFlexItem-grow-3-description"
     >
       <div
         class="euiPanel euiPanel--danger euiPanel--paddingMedium emotion-euiPanel-m-m-danger"
@@ -618,7 +618,7 @@ exports[`extend index management ilm summary extension should render the tab whe
     class="euiFlexGroup emotion-euiFlexGroup-responsive-wrap-m-flexStart-stretch-row"
   >
     <div
-      class="euiFlexItem emotion-euiFlexItem-grow-1-IndexLifecycleSummary"
+      class="euiFlexItem emotion-euiFlexItem-grow-1-description"
     >
       <div
         class="euiPanel euiPanel--plain euiPanel--paddingMedium emotion-euiPanel-m-m-plain-hasBorder"
@@ -740,7 +740,7 @@ exports[`extend index management ilm summary extension should render the tab whe
       </div>
     </div>
     <div
-      class="euiFlexItem emotion-euiFlexItem-grow-3-IndexLifecycleSummary"
+      class="euiFlexItem emotion-euiFlexItem-grow-3-description"
     />
   </div>
 </div>

@@ -109,7 +109,7 @@ describe('TitleWithBadge component', () => {
 
     expect(renderedTitle.container.textContent).toMatch('Welcome! 5');
     expect(render(titleComponent).container.innerHTML).toMatchInlineSnapshot(
-      `"Welcome! <span class=\\"euiNotificationBadge css-1vhwzp6-floatTopRight css-syjyv5-euiNotificationBadge-m-subdued\\">5</span>"`
+      `"Welcome! <span class=\\"euiNotificationBadge css-4a6p8m-floatTopRight css-syjyv5-euiNotificationBadge-m-subdued\\">5</span>"`
     );
   });
 });

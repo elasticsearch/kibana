@@ -3,7 +3,7 @@
 exports[`<CodeEditor /> hint element should be tabable 1`] = `
 <div
   aria-label="Code Editor, activate edit mode"
-  class="css-139h7n7-keyboardHint-renderPrompt"
+  class="css-1299t9-keyboardHint"
   data-code-hint-status="active"
   data-test-subj="codeEditorHint"
   id="1234"

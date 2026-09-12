@@ -14,7 +14,7 @@ describe('<Loading />', () => {
     const { container } = render(<Loading />);
     expect(container.firstChild).toMatchInlineSnapshot(`
       <div
-        class="canvasLoading css-rut3xs-loadingStyles"
+        class="canvasLoading css-1bn8xt9-loadingStyles"
       >
         <span
           aria-hidden="true"
@@ -29,7 +29,7 @@ describe('<Loading />', () => {
     const { container } = render(<Loading animated />);
     expect(container.firstChild).toMatchInlineSnapshot(`
       <div
-        class="canvasLoading css-rut3xs-loadingStyles"
+        class="canvasLoading css-1bn8xt9-loadingStyles"
       >
         <span
           aria-label="Loading"

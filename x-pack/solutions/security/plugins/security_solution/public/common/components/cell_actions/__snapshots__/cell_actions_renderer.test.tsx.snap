@@ -8,7 +8,7 @@ exports[`cell actions renderer rendering it renders theCellActionsRenderer 1`] =
     tabindex="-1"
   >
     <span
-      class="css-jlsvsc-ProviderContentWrapper e1p0plmv0"
+      class="css-1s7tdhk-ProviderContentWrapper e14kwmf30"
       data-test-subj="render-content-some-field"
     >
       <span

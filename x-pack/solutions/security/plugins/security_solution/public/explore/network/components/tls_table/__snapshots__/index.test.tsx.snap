@@ -97,7 +97,7 @@ exports[`Tls Table Component Rendering it renders the default Domains table 1`] 
     data-test-subj="table-tls-loading-false"
   >
     <header
-      class="toggle-expand siemHeaderSection css-125xqyz-header"
+      class="toggle-expand siemHeaderSection css-qibzrl-header"
       data-test-subj="header-section"
     >
       <div

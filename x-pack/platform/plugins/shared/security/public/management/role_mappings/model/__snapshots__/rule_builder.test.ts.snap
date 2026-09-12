@@ -1,9 +1,9 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`generateRulesFromRaw "field" does not support a value of () => null 1`] = `"Invalid value type for field. Expected one of null, string, number, or boolean, but found function ()."`;
+exports[`generateRulesFromRaw "field" does not support a value of ()=>null 1`] = `"Invalid value type for field. Expected one of null, string, number, or boolean, but found function ()."`;
 
 exports[`generateRulesFromRaw "field" does not support a value of [object Object] 1`] = `"Invalid value type for field. Expected one of null, string, number, or boolean, but found object ({})."`;
 
-exports[`generateRulesFromRaw "field" does not support a value of [object Object],,,() => null 1`] = `"Invalid value type for field. Expected one of null, string, number, or boolean, but found object ([{},null,[],null])."`;
+exports[`generateRulesFromRaw "field" does not support a value of [object Object],,,()=>null 1`] = `"Invalid value type for field. Expected one of null, string, number, or boolean, but found object ([{},null,[],null])."`;
 
 exports[`generateRulesFromRaw "field" does not support a value of undefined 1`] = `"Invalid value type for field. Expected one of null, string, number, or boolean, but found undefined ()."`;

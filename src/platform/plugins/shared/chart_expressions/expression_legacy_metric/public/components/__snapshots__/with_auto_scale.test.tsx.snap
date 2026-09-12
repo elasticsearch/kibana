@@ -10,7 +10,7 @@ exports[`AutoScale withAutoScale renders 1`] = `
         Object {
           "insert": [Function],
           "inserted": Object {
-            "4vd3s2-autoScaleWrapperStyle": true,
+            "g6ust1-autoScaleWrapperStyle": true,
           },
           "key": "css",
           "nonce": undefined,
@@ -46,14 +46,14 @@ exports[`AutoScale withAutoScale renders 1`] = `
       isStringTag={true}
       serialized={
         Object {
-          "name": "4vd3s2-autoScaleWrapperStyle",
+          "name": "g6ust1-autoScaleWrapperStyle",
           "next": undefined,
-          "styles": "display:flex;justify-content:center;align-items:center;max-width:100%;max-height:100%;overflow:hidden;line-height:1.5;;label:autoScaleWrapperStyle;",
+          "styles": "display:flex;justify-content:center;align-items:center;max-width:100%;max-height:100%;overflow:hidden;line-height:1.5;;label:autoScaleWrapperStyle",
         }
       }
     />
     <div
-      className="css-4vd3s2-autoScaleWrapperStyle"
+      className="css-g6ust1-autoScaleWrapperStyle"
     >
       <div
         style={

@@ -17,7 +17,7 @@ exports[`<ExportApp /> renders as expected 1`] = `
         </div>
       </div>
       <div
-        class="canvasExport__stageContent css-17hzfsv-ExportApp"
+        class="canvasExport__stageContent css-1lj4qx-pageElementCount"
         data-shared-items-count="3"
       >
         <div>
@@ -46,7 +46,7 @@ exports[`<ExportApp /> renders as expected 2`] = `
         </div>
       </div>
       <div
-        class="canvasExport__stageContent css-17hzfsv-ExportApp"
+        class="canvasExport__stageContent css-1lj4qx-pageElementCount"
         data-shared-items-count="4"
       >
         <div>

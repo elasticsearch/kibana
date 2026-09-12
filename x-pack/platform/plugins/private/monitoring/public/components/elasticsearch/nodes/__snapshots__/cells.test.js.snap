@@ -2,7 +2,7 @@
 
 exports[`Node Listing Metric Cell should format N/A as the metric for an offline node 1`] = `
 <div
-  class="css-m7x7w3-offlineStyle"
+  class="css-wzn4as-offlineStyle"
 >
   N/A
 </div>

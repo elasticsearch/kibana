@@ -4,16 +4,16 @@ exports[`Apply and Cancel change btns enabled when there are changes 1`] = `
 <div>
   <div>
     <div
-      class="eui-scrollBar css-n64vsg-InputControlVis"
+      class="eui-scrollBar css-y7fsuy-stagingButtons"
     >
       <div
-        class="css-7edsv3-icvContainerStyles"
+        class="css-ubh23m-icvContainerStyles"
       >
         <div
           class="euiFlexGroup emotion-euiFlexGroup-responsive-wrap-m-flexStart-stretch-row"
         >
           <div
-            class="euiFlexItem emotion-euiFlexItem-grow-1-InputControlVis"
+            class="euiFlexItem emotion-euiFlexItem-grow-1"
             data-test-subj="inputControlItem"
           >
             <span
@@ -169,16 +169,16 @@ exports[`Clear btns enabled when there are values 1`] = `
 <div>
   <div>
     <div
-      class="eui-scrollBar css-n64vsg-InputControlVis"
+      class="eui-scrollBar css-y7fsuy-stagingButtons"
     >
       <div
-        class="css-7edsv3-icvContainerStyles"
+        class="css-ubh23m-icvContainerStyles"
       >
         <div
           class="euiFlexGroup emotion-euiFlexGroup-responsive-wrap-m-flexStart-stretch-row"
         >
           <div
-            class="euiFlexItem emotion-euiFlexItem-grow-1-InputControlVis"
+            class="euiFlexItem emotion-euiFlexItem-grow-1"
             data-test-subj="inputControlItem"
           >
             <span
@@ -335,16 +335,16 @@ exports[`Renders list control 1`] = `
 <div>
   <div>
     <div
-      class="eui-scrollBar css-n64vsg-InputControlVis"
+      class="eui-scrollBar css-y7fsuy-stagingButtons"
     >
       <div
-        class="css-7edsv3-icvContainerStyles"
+        class="css-ubh23m-icvContainerStyles"
       >
         <div
           class="euiFlexGroup emotion-euiFlexGroup-responsive-wrap-m-flexStart-stretch-row"
         >
           <div
-            class="euiFlexItem emotion-euiFlexItem-grow-1-InputControlVis"
+            class="euiFlexItem emotion-euiFlexItem-grow-1"
             data-test-subj="inputControlItem"
           >
             <span
@@ -502,16 +502,16 @@ exports[`Renders range control 1`] = `
 <div>
   <div>
     <div
-      class="eui-scrollBar css-n64vsg-InputControlVis"
+      class="eui-scrollBar css-y7fsuy-stagingButtons"
     >
       <div
-        class="css-7edsv3-icvContainerStyles"
+        class="css-ubh23m-icvContainerStyles"
       >
         <div
           class="euiFlexGroup emotion-euiFlexGroup-responsive-wrap-m-flexStart-stretch-row"
         >
           <div
-            class="euiFlexItem emotion-euiFlexItem-grow-1-InputControlVis"
+            class="euiFlexItem emotion-euiFlexItem-grow-1"
             data-test-subj="inputControlItem"
           >
             <div

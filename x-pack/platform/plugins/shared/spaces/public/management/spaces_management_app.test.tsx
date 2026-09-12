@@ -127,7 +127,7 @@ describe('spacesManagementApp', () => {
     expect(container).toMatchInlineSnapshot(`
       <div>
         <div
-          class="css-qvyf25-redirectAppLinksStyles"
+          class="css-12574bb-redirectAppLinksStyles"
           data-test-subj="kbnRedirectAppLink"
         >
           Spaces Page: {"capabilities":{"catalogue":{},"management":{},"navLinks":{}},"notifications":{"toasts":{},"feedback":{},"tours":{}},"spacesManager":{"onActiveSpaceChange$":{}},"serverBasePath":"","history":{"action":"PUSH","length":1,"location":{"pathname":"/","search":"","hash":""}},"maxSpaces":1000,"allowSolutionVisibility":true,"isServerless":false}
@@ -154,7 +154,7 @@ describe('spacesManagementApp', () => {
     expect(container).toMatchInlineSnapshot(`
       <div>
         <div
-          class="css-qvyf25-redirectAppLinksStyles"
+          class="css-12574bb-redirectAppLinksStyles"
           data-test-subj="kbnRedirectAppLink"
         >
           Spaces Create Page: {"capabilities":{"catalogue":{},"management":{},"navLinks":{}},"notifications":{"toasts":{},"feedback":{},"tours":{}},"spacesManager":{"onActiveSpaceChange$":{}},"history":{"action":"PUSH","length":1,"location":{"pathname":"/create","search":"","hash":""}},"http":{"spaceId":"default","basePath":{"basePath":"","serverBasePath":"","assetsHrefBase":""},"anonymousPaths":{},"externalUrl":{},"staticAssets":{}},"overlays":{"banners":{}},"allowFeatureVisibility":true,"allowSolutionVisibility":true,"eventTracker":{"analytics":{}},"isCpsTierEligible":false}
@@ -187,7 +187,7 @@ describe('spacesManagementApp', () => {
     expect(container).toMatchInlineSnapshot(`
       <div>
         <div
-          class="css-qvyf25-redirectAppLinksStyles"
+          class="css-12574bb-redirectAppLinksStyles"
           data-test-subj="kbnRedirectAppLink"
         >
           Spaces Edit Page: {"capabilities":{"catalogue":{},"management":{},"navLinks":{}},"serverBasePath":"","http":{"spaceId":"default","basePath":{"basePath":"","serverBasePath":"","assetsHrefBase":""},"anonymousPaths":{},"externalUrl":{},"staticAssets":{}},"overlays":{"banners":{}},"notifications":{"toasts":{},"feedback":{},"tours":{}},"userProfile":{},"theme":{"theme$":{}},"i18n":{},"logger":{"context":[]},"spacesManager":{"onActiveSpaceChange$":{}},"spaceId":"some-space","history":{"action":"PUSH","length":1,"location":{"pathname":"/edit/some-space","search":"","hash":""}},"allowFeatureVisibility":true,"allowSolutionVisibility":true,"enableSecurityLink":"https://www.elastic.co/docs/deploy-manage/security/set-up-minimal-security#_enable_es_security_features"}

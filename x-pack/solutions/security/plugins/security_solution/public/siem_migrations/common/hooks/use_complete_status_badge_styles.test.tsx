@@ -37,7 +37,7 @@ describe('useCompleteBadgeStyles', () => {
 
     const { result } = renderHook(() => useCompleteBadgeStyles());
     expect(result.current.styles).toMatchInlineSnapshot(
-      `"background-color:#000;color:#222;text-decoration:none;;label:useCompleteBadgeStyles;"`
+      `"background-color:#000;color:#222;text-decoration:none;label:isDarkMode"`
     );
   });
 
@@ -46,7 +46,7 @@ describe('useCompleteBadgeStyles', () => {
 
     const { result } = renderHook(() => useCompleteBadgeStyles());
     expect(result.current.styles).toMatchInlineSnapshot(
-      `"background-color:#111;color:#333;text-decoration:none;;label:useCompleteBadgeStyles;"`
+      `"background-color:#111;color:#333;text-decoration:none;label:isDarkMode"`
     );
   });
 });

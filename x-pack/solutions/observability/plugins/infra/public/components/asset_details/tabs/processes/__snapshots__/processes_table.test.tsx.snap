@@ -168,7 +168,7 @@ Object {
             </tr>
           </thead>
           <tbody
-            class="css-x41dah-ProcessesTable"
+            class="css-13v7qks-visibleColumns"
           >
             <tr
               class="euiTableRow emotion-euiTableRow-desktop"
@@ -232,7 +232,7 @@ Object {
                     class="euiTableCellContent__text"
                   >
                     <div
-                      class="css-10w4zy3-CodeLine"
+                      class="css-10uu5zv-CodeLine"
                     >
                       <code>
                         /some/test/command here 3
@@ -453,7 +453,7 @@ Object {
           </tr>
         </thead>
         <tbody
-          class="css-x41dah-ProcessesTable"
+          class="css-13v7qks-visibleColumns"
         >
           <tr
             class="euiTableRow emotion-euiTableRow-desktop"
@@ -517,7 +517,7 @@ Object {
                   class="euiTableCellContent__text"
                 >
                   <div
-                    class="css-10w4zy3-CodeLine"
+                    class="css-10uu5zv-CodeLine"
                   >
                     <code>
                       /some/test/command here 3

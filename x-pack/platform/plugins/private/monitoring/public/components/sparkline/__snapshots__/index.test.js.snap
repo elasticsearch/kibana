@@ -3,7 +3,7 @@
 exports[`Sparkline component does not show tooltip initially 1`] = `
 <div>
   <div
-    className="css-9ufo15-Sparkline"
+    className="css-eb3zl6-Sparkline"
   />
 </div>
 `;

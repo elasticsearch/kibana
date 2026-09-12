@@ -1,8 +1,6 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[
-  `RequestTrialExtension component should display when enterprise license is not active and trial has been used 1`
-] = `
+exports[`RequestTrialExtension component should display when enterprise license is not active and trial has been used 1`] = `
 <DocumentFragment>
   <div
     class="euiFlexItem emotion-euiFlexItem-grow-1"
@@ -79,9 +77,7 @@ exports[
 </DocumentFragment>
 `;
 
-exports[
-  `RequestTrialExtension component should display when license is active and trial has been used 1`
-] = `
+exports[`RequestTrialExtension component should display when license is active and trial has been used 1`] = `
 <DocumentFragment>
   <div
     class="euiFlexItem emotion-euiFlexItem-grow-1"
@@ -158,9 +154,7 @@ exports[
 </DocumentFragment>
 `;
 
-exports[
-  `RequestTrialExtension component should display when license is not active and trial has been used 1`
-] = `
+exports[`RequestTrialExtension component should display when license is not active and trial has been used 1`] = `
 <DocumentFragment>
   <div
     class="euiFlexItem emotion-euiFlexItem-grow-1"
@@ -237,9 +231,7 @@ exports[
 </DocumentFragment>
 `;
 
-exports[
-  `RequestTrialExtension component should display when platinum license is not active and trial has been used 1`
-] = `
+exports[`RequestTrialExtension component should display when platinum license is not active and trial has been used 1`] = `
 <DocumentFragment>
   <div
     class="euiFlexItem emotion-euiFlexItem-grow-1"

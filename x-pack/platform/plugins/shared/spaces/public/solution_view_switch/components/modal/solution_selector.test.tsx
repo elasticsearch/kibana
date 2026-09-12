@@ -5,6 +5,7 @@
  * 2.0.
  */
 
+import { waitForEuiPopoverOpen } from '@elastic/eui/lib/test/rtl';
 import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import React from 'react';
@@ -22,6 +23,7 @@ describe('SolutionSelector', () => {
 
     // Open the EuiSuperSelect popover
     await user.click(screen.getByTestId('solutionViewSwitchSelect'));
+    await waitForEuiPopoverOpen();
     // Pick an option
     await user.click(await screen.findByText('Observability'));
 

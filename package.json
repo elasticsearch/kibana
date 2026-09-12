@@ -1671,6 +1671,7 @@
     "zod-to-json-schema": "3.25.0"
   },
   "devDependencies": {
+    "@ampproject/remapping": "2.3.0",
     "@apidevtools/swagger-parser": "12.1.0",
     "@axe-core/playwright": "4.13.0",
     "@babel/core": "7.29.7",
@@ -2019,6 +2020,7 @@
     "@storybook/theming": "8.6.18",
     "@storybook/types": "8.6.18",
     "@swc/core": "1.15.40",
+    "@swc/jest": "0.2.39",
     "@swc/plugin-emotion": "14.15.0",
     "@testing-library/dom": "10.4.1",
     "@testing-library/jest-dom": "7.0.1",
@@ -2217,6 +2219,7 @@
     "lightningcss": "1.33.0",
     "listr2": "8.2.5",
     "lmdb": "3.5.6",
+    "magic-string": "0.30.21",
     "marge": "1.0.1",
     "meow": "14.1.0",
     "mini-css-extract-plugin": "2.9.1",

@@ -6,6 +6,7 @@
  */
 
 import { act, fireEvent, render } from '@testing-library/react';
+import { waitForEuiPopoverOpen } from '@elastic/eui/lib/test/rtl';
 import React from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { createMemoryHistory } from 'history';
@@ -115,6 +116,7 @@ const renderTransaction = async (transaction: Record<string, any>) => {
   await act(async () => {
     fireEvent.click(rendered.getByText('Investigate'));
   });
+  await waitForEuiPopoverOpen();
 
   return rendered;
 };

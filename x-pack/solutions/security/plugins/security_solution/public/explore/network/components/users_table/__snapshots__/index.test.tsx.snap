@@ -60,7 +60,7 @@ exports[`Users Table Component Rendering it renders the default Users table 1`] 
   data-test-subj="table-users-loading-false"
 >
   <header
-    class="toggle-expand siemHeaderSection css-125xqyz-header"
+    class="toggle-expand siemHeaderSection css-qibzrl-header"
     data-test-subj="header-section"
   >
     <div
@@ -483,7 +483,7 @@ exports[`Users Table Component Rendering it renders the default Users table 1`] 
                 class="euiTableCellContent emotion-euiTableCellContent-wrapText"
               >
                 <span
-                  class="css-16x51zl-EmptyWrapper"
+                  class="css-c6a0f4"
                 >
                   —
                 </span>
@@ -496,7 +496,7 @@ exports[`Users Table Component Rendering it renders the default Users table 1`] 
                 class="euiTableCellContent emotion-euiTableCellContent-wrapText"
               >
                 <span
-                  class="css-16x51zl-EmptyWrapper"
+                  class="css-c6a0f4"
                 >
                   —
                 </span>

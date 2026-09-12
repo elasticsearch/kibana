@@ -40,7 +40,7 @@ exports[`it renders with custom logo 1`] = `
             class="emotion-euiTextColor-subdued"
           >
             <h1
-              class="css-aruir-headerStyles"
+              class="css-lizfsz-headerStyles"
               tabindex="-1"
             >
               Select your space
@@ -54,7 +54,7 @@ exports[`it renders with custom logo 1`] = `
           class="euiSpacer euiSpacer--xl emotion-euiSpacer-xl"
         />
         <div
-          class="css-9yumq1-spacesLoadingSpinnerStyles"
+          class="css-qgtzcc-spacesLoadingSpinnerStyles"
           data-test-subj="spacesLoadingSpinner"
         >
           <span

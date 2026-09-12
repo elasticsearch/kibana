@@ -2,22 +2,22 @@
 
 exports[`OverwrittenSessionPage renders as expected 1`] = `
 <div
-  class="css-1tawash-kbnFullScreenBgCss"
+  class="css-kdghhb-fullScreenGraphicsFadeIn"
   data-test-subj="secAuthenticationStatePage"
 >
   <header
-    class="css-1w0q1qu-AuthenticationStatePage"
+    class="css-1mci6ga-padding"
     data-test-subj="secAuthenticationStatePageHeader"
   >
     <div
-      class="css-1a7zelw-AuthenticationStatePage"
+      class="css-1ajt5j3-padding"
       data-test-subj="secAuthenticationStatePageContent"
     >
       <div
         class="euiSpacer euiSpacer--xxl emotion-euiSpacer-xxl"
       />
       <span
-        class="css-1rux1qp-AuthenticationStatePage"
+        class="css-paotks-padding"
         data-test-subj="secAuthenticationStatePageLogo"
       >
         <span
@@ -33,7 +33,7 @@ exports[`OverwrittenSessionPage renders as expected 1`] = `
     </div>
   </header>
   <div
-    class="css-1a7zelw-AuthenticationStatePage"
+    class="css-1ajt5j3-padding"
   >
     <div
       class="euiSpacer euiSpacer--xl emotion-euiSpacer-xl"

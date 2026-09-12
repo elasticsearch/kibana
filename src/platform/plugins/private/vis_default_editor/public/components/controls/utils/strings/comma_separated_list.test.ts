@@ -14,8 +14,8 @@ describe('utils parseCommaSeparatedList()', () => {
     expect(parseCommaSeparatedList(0)).toEqual([]);
     expect(parseCommaSeparatedList(1)).toEqual(['1']);
     expect(parseCommaSeparatedList({})).toEqual(['[object Object]']);
-    expect(parseCommaSeparatedList(() => {})).toEqual(['() => {}']);
-    expect(parseCommaSeparatedList((a: any, b: any) => b)).toEqual(['(a', 'b) => b']);
+    expect(parseCommaSeparatedList(() => {})).toEqual(['()=>{}']);
+    expect(parseCommaSeparatedList((a: any, b: any) => b)).toEqual(['(a', 'b)=>b']);
     expect(parseCommaSeparatedList(/foo/)).toEqual(['/foo/']);
     expect(parseCommaSeparatedList(null)).toEqual([]);
     expect(parseCommaSeparatedList(undefined)).toEqual([]);

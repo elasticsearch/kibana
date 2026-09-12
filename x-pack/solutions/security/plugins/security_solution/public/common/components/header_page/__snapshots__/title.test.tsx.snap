@@ -12,11 +12,11 @@ exports[`Title it renders title 1`] = `
 }
 
 <h1
-  class="euiTitle css-1tgxtfm-Header-euiTitle-l e1mvi39w1"
+  class="euiTitle css-1tgxtfm-Header-euiTitle-l ex2433o0"
   data-test-subj="header-page-title"
 >
   <span
-    class="css-80vzk8-TitleWrapper e1mvi39w0"
+    class="css-80vzk8-TitleWrapper ex2433o1"
   >
     <span
       class="euiToolTipAnchor emotion-euiToolTipAnchor-block"

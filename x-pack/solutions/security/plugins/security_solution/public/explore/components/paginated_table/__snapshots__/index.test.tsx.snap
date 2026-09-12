@@ -85,7 +85,7 @@ exports[`Paginated Table Component rendering it renders the default load more ta
       data-test-subj="paginated-table-loading-false"
     >
       <header
-        class="toggle-expand siemHeaderSection css-125xqyz-header"
+        class="toggle-expand siemHeaderSection css-qibzrl-header"
         data-test-subj="header-section"
       >
         <div

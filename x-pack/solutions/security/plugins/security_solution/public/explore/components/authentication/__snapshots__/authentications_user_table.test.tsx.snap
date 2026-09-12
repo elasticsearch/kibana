@@ -40,7 +40,7 @@ exports[`Authentication User Table Component rendering it renders the user authe
   data-test-subj="table-users-authentications-loading-false"
 >
   <header
-    class="toggle-expand siemHeaderSection css-125xqyz-header"
+    class="toggle-expand siemHeaderSection css-qibzrl-header"
     data-test-subj="header-section"
   >
     <div

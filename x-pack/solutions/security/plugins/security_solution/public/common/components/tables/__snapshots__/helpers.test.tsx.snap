@@ -2,7 +2,7 @@
 
 exports[`Table Helpers #RowItemOverflow it returns correctly against snapshot 1`] = `
 <div
-  class="css-19lowmu-subtext"
+  class="css-du0w0-subtext"
 >
   <div
     class="euiPopover emotion-euiPopover-inline-block"
@@ -27,7 +27,7 @@ exports[`Table Helpers OverflowField it renders 1`] = `
     id="generated-id-wrapper"
   >
     <span
-      class="css-1mvq9d1-MoreRowItems e1v2bxdw1"
+      class="css-1mvq9d1-MoreRowItems egsoc9f4"
       data-euiicon-type="boxesVertical"
     />
   </span>

@@ -215,7 +215,7 @@ async function runConfigs(
   let active = 0;
   let index = 0;
 
-  // Staggered warmup: start 1 process to populate the shared Babel transform
+  // Staggered warmup: start 1 process to populate the shared Jest transform
   // cache (data/jest-cache) with common imports (EUI, React, etc.) before
   // launching the remaining processes. This avoids redundant cold compilations
   // when multiple processes start simultaneously with an empty cache.

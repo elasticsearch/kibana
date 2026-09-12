@@ -56,18 +56,17 @@ exports[`CustomTimelineDataGridBody should render exactly as snapshots 1`] = `
       data-eui="EuiAutoSizer"
     >
       <div
-        class="variable__list"
+        class="variable__list css-paf392-InnerComp"
         style="position: relative; height: 600px; width: 1000px; overflow: auto; will-change: transform; direction: ltr;"
       >
         <div
-          class="custom__grid__rows--container"
-          css="[object Object]"
+          class="custom__grid__rows--container css-79elbk"
           data-test-subj="customGridRowsContainer"
           style="height: 0px; width: 100%;"
         >
           <div
             aria-rowindex="2"
-            css="[object Object]"
+            class="css-dd4uuw-InnerComp"
             role="row"
             style="position: absolute; left: 0px; top: 0px; height: 0px; width: 100%;"
           >
@@ -94,7 +93,7 @@ exports[`CustomTimelineDataGridBody should render exactly as snapshots 1`] = `
           </div>
           <div
             aria-rowindex="3"
-            css="[object Object]"
+            class="css-dd4uuw-InnerComp"
             role="row"
             style="position: absolute; left: 0px; top: 0px; height: 0px; width: 100%;"
           >

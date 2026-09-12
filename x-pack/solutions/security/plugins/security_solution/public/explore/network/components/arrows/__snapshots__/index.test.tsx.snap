@@ -2,7 +2,7 @@
 
 exports[`arrows ArrowBody renders correctly against snapshot 1`] = `
 <span
-  class="css-1yrmg49-ArrowBody e1do9oav0"
+  class="css-1yrmg49-ArrowBody ett86g80"
   height="3"
 />
 `;

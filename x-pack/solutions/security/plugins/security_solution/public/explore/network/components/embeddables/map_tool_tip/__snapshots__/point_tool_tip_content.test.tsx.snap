@@ -2,7 +2,7 @@
 
 exports[`PointToolTipContent renders correctly against snapshot 1`] = `
 <dl
-  class="euiDescriptionList emotion-euiDescriptionList-row-left-baseStyles-DescriptionListStyled"
+  class="euiDescriptionList emotion-euiDescriptionList-row-left-baseStyles"
   data-type="row"
 >
   <dt
@@ -14,7 +14,7 @@ exports[`PointToolTipContent renders correctly against snapshot 1`] = `
     class="euiDescriptionList__description emotion-euiDescriptionList__description-row-normal"
   >
     <span
-      class="euiFlexGroup emotion-euiFlexGroup-responsive-none-flexStart-center-row-DefaultFieldRendererComponent"
+      class="euiFlexGroup emotion-euiFlexGroup-responsive-none-flexStart-center-row"
       data-test-subj="DefaultFieldRendererComponent"
     >
       <div
@@ -35,7 +35,7 @@ exports[`PointToolTipContent renders correctly against snapshot 1`] = `
                     tabindex="-1"
                   >
                     <span
-                      class="css-jlsvsc-ProviderContentWrapper e1p0plmv0"
+                      class="css-1s7tdhk-ProviderContentWrapper e14kwmf30"
                       data-test-subj="render-content-host.name"
                     >
                       <span

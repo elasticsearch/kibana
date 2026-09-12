@@ -36,7 +36,7 @@ exports[`ScopeExpression renders when empty list of filter IDs is supplied 1`] =
     class="euiFlexItem emotion-euiFlexItem-growZero"
   >
     <button
-      class="euiExpression emotion-euiExpression-isClickable-success-ScopeExpression"
+      class="euiExpression emotion-euiExpression-isClickable-success"
     >
       <span
         class="euiExpression__description emotion-euiExpression__description-success-isUppercase"
@@ -89,7 +89,7 @@ exports[`ScopeExpression renders when enabled set to false 1`] = `
     class="euiFlexItem emotion-euiFlexItem-growZero"
   >
     <button
-      class="euiExpression emotion-euiExpression-isClickable-success-ScopeExpression"
+      class="euiExpression emotion-euiExpression-isClickable-success"
     >
       <span
         class="euiExpression__description emotion-euiExpression__description-success-isUppercase"
@@ -168,7 +168,7 @@ exports[`ScopeExpression renders when filter ID and type supplied 1`] = `
     class="euiFlexItem emotion-euiFlexItem-growZero"
   >
     <button
-      class="euiExpression emotion-euiExpression-isClickable-success-ScopeExpression"
+      class="euiExpression emotion-euiExpression-isClickable-success"
     >
       <span
         class="euiExpression__description emotion-euiExpression__description-success-isUppercase"
@@ -247,7 +247,7 @@ exports[`ScopeExpression renders when no filter ID or type supplied 1`] = `
     class="euiFlexItem emotion-euiFlexItem-growZero"
   >
     <button
-      class="euiExpression emotion-euiExpression-isClickable-success-ScopeExpression"
+      class="euiExpression emotion-euiExpression-isClickable-success"
     >
       <span
         class="euiExpression__description emotion-euiExpression__description-success-isUppercase"

@@ -24,7 +24,6 @@ const IGNORED_FOLDERS = ['.buildkite/'];
 const IGNORED_PATHS = [
   THIS_PATH,
   'src/platform/packages/shared/kbn-test/src/jest/run_check_jest_configs_cli.ts',
-  'src/platform/packages/shared/kbn-test/src/jest/transforms/babel/transformer_config.js',
   'x-pack/solutions/observability/plugins/observability_onboarding/e2e/playwright/playwright.config.ts',
   'x-pack/solutions/security/test/cloud_security_posture_functional/config.base.ts',
   'x-pack/solutions/observability/plugins/apm/test/scenarios/agent_config.ts',

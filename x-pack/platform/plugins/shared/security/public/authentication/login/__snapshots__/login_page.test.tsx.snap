@@ -2,14 +2,14 @@
 
 exports[`LoginPage disabled form states renders CTA and browser settings warning when cookies are disabled, document is embedded inside iframe, and cross-origin cookies are allowed 1`] = `
 <div
-  class="css-1ca3nia-kbnFullScreenBgCss"
+  class="css-1av65hl-fullScreenGraphicsFadeIn"
   data-test-subj="loginForm"
 >
   <header
-    class="css-1uhsdzt-LoginPage"
+    class="css-18p0ypx-padding"
   >
     <div
-      class="css-145su9k-LoginPage-LoginPage"
+      class="css-18h45yv-loginWelcomeStyle-contentHeaderStyles"
     >
       <span
         class="loginWelcome__logo"
@@ -28,7 +28,7 @@ exports[`LoginPage disabled form states renders CTA and browser settings warning
     </div>
   </header>
   <div
-    class="css-145su9k-LoginPage-LoginPage"
+    class="css-18h45yv-loginWelcomeStyle-contentHeaderStyles"
   >
     <div
       class="euiFlexGroup emotion-euiFlexGroup-responsive-l-flexStart-stretch-row"
@@ -74,14 +74,14 @@ exports[`LoginPage disabled form states renders CTA and browser settings warning
 
 exports[`LoginPage disabled form states renders CTA and cross-origin cookie warning when cookies are disabled, document is embedded inside iframe, and cross-origin cookies are blocked 1`] = `
 <div
-  class="css-1ca3nia-kbnFullScreenBgCss"
+  class="css-1av65hl-fullScreenGraphicsFadeIn"
   data-test-subj="loginForm"
 >
   <header
-    class="css-1uhsdzt-LoginPage"
+    class="css-18p0ypx-padding"
   >
     <div
-      class="css-145su9k-LoginPage-LoginPage"
+      class="css-18h45yv-loginWelcomeStyle-contentHeaderStyles"
     >
       <span
         class="loginWelcome__logo"
@@ -100,7 +100,7 @@ exports[`LoginPage disabled form states renders CTA and cross-origin cookie warn
     </div>
   </header>
   <div
-    class="css-145su9k-LoginPage-LoginPage"
+    class="css-18h45yv-loginWelcomeStyle-contentHeaderStyles"
   >
     <div
       class="euiFlexGroup emotion-euiFlexGroup-responsive-l-flexStart-stretch-row"
@@ -146,14 +146,14 @@ exports[`LoginPage disabled form states renders CTA and cross-origin cookie warn
 
 exports[`LoginPage disabled form states renders as expected when a connection to ES is not available 1`] = `
 <div
-  class="css-1ca3nia-kbnFullScreenBgCss"
+  class="css-1av65hl-fullScreenGraphicsFadeIn"
   data-test-subj="loginForm"
 >
   <header
-    class="css-1uhsdzt-LoginPage"
+    class="css-18p0ypx-padding"
   >
     <div
-      class="css-145su9k-LoginPage-LoginPage"
+      class="css-18h45yv-loginWelcomeStyle-contentHeaderStyles"
     >
       <span
         class="loginWelcome__logo"
@@ -172,7 +172,7 @@ exports[`LoginPage disabled form states renders as expected when a connection to
     </div>
   </header>
   <div
-    class="css-145su9k-LoginPage-LoginPage"
+    class="css-18h45yv-loginWelcomeStyle-contentHeaderStyles"
   >
     <div
       class="euiFlexGroup emotion-euiFlexGroup-responsive-l-flexStart-stretch-row"
@@ -208,14 +208,14 @@ exports[`LoginPage disabled form states renders as expected when a connection to
 
 exports[`LoginPage disabled form states renders as expected when an unknown loginState layout is provided 1`] = `
 <div
-  class="css-1ca3nia-kbnFullScreenBgCss"
+  class="css-1av65hl-fullScreenGraphicsFadeIn"
   data-test-subj="loginForm"
 >
   <header
-    class="css-1uhsdzt-LoginPage"
+    class="css-18p0ypx-padding"
   >
     <div
-      class="css-145su9k-LoginPage-LoginPage"
+      class="css-18h45yv-loginWelcomeStyle-contentHeaderStyles"
     >
       <span
         class="loginWelcome__logo"
@@ -234,7 +234,7 @@ exports[`LoginPage disabled form states renders as expected when an unknown logi
     </div>
   </header>
   <div
-    class="css-145su9k-LoginPage-LoginPage"
+    class="css-18h45yv-loginWelcomeStyle-contentHeaderStyles"
   >
     <div
       class="euiFlexGroup emotion-euiFlexGroup-responsive-l-flexStart-stretch-row"
@@ -270,14 +270,14 @@ exports[`LoginPage disabled form states renders as expected when an unknown logi
 
 exports[`LoginPage disabled form states renders as expected when login is not enabled 1`] = `
 <div
-  class="css-1ca3nia-kbnFullScreenBgCss"
+  class="css-1av65hl-fullScreenGraphicsFadeIn"
   data-test-subj="loginForm"
 >
   <header
-    class="css-1uhsdzt-LoginPage"
+    class="css-18p0ypx-padding"
   >
     <div
-      class="css-das9jl-LoginPage"
+      class="css-c2wr7u-loginWelcomeStyle"
     >
       <span
         class="loginWelcome__logo"
@@ -296,7 +296,7 @@ exports[`LoginPage disabled form states renders as expected when login is not en
     </div>
   </header>
   <div
-    class="css-das9jl-LoginPage"
+    class="css-c2wr7u-loginWelcomeStyle"
   >
     <div
       class="euiFlexGroup emotion-euiFlexGroup-responsive-l-flexStart-stretch-row"
@@ -332,14 +332,14 @@ exports[`LoginPage disabled form states renders as expected when login is not en
 
 exports[`LoginPage disabled form states renders as expected when secure connection is required but not present 1`] = `
 <div
-  class="css-1ca3nia-kbnFullScreenBgCss"
+  class="css-1av65hl-fullScreenGraphicsFadeIn"
   data-test-subj="loginForm"
 >
   <header
-    class="css-1uhsdzt-LoginPage"
+    class="css-18p0ypx-padding"
   >
     <div
-      class="css-145su9k-LoginPage-LoginPage"
+      class="css-18h45yv-loginWelcomeStyle-contentHeaderStyles"
     >
       <span
         class="loginWelcome__logo"
@@ -358,7 +358,7 @@ exports[`LoginPage disabled form states renders as expected when secure connecti
     </div>
   </header>
   <div
-    class="css-145su9k-LoginPage-LoginPage"
+    class="css-18h45yv-loginWelcomeStyle-contentHeaderStyles"
   >
     <div
       class="euiFlexGroup emotion-euiFlexGroup-responsive-l-flexStart-stretch-row"
@@ -394,14 +394,14 @@ exports[`LoginPage disabled form states renders as expected when secure connecti
 
 exports[`LoginPage disabled form states renders as expected when xpack is not available 1`] = `
 <div
-  class="css-1ca3nia-kbnFullScreenBgCss"
+  class="css-1av65hl-fullScreenGraphicsFadeIn"
   data-test-subj="loginForm"
 >
   <header
-    class="css-1uhsdzt-LoginPage"
+    class="css-18p0ypx-padding"
   >
     <div
-      class="css-145su9k-LoginPage-LoginPage"
+      class="css-18h45yv-loginWelcomeStyle-contentHeaderStyles"
     >
       <span
         class="loginWelcome__logo"
@@ -420,7 +420,7 @@ exports[`LoginPage disabled form states renders as expected when xpack is not av
     </div>
   </header>
   <div
-    class="css-145su9k-LoginPage-LoginPage"
+    class="css-18h45yv-loginWelcomeStyle-contentHeaderStyles"
   >
     <div
       class="euiFlexGroup emotion-euiFlexGroup-responsive-l-flexStart-stretch-row"
@@ -456,14 +456,14 @@ exports[`LoginPage disabled form states renders as expected when xpack is not av
 
 exports[`LoginPage disabled form states renders warning when cookies are disabled and document is not embedded inside iframe 1`] = `
 <div
-  class="css-1ca3nia-kbnFullScreenBgCss"
+  class="css-1av65hl-fullScreenGraphicsFadeIn"
   data-test-subj="loginForm"
 >
   <header
-    class="css-1uhsdzt-LoginPage"
+    class="css-18p0ypx-padding"
   >
     <div
-      class="css-145su9k-LoginPage-LoginPage"
+      class="css-18h45yv-loginWelcomeStyle-contentHeaderStyles"
     >
       <span
         class="loginWelcome__logo"
@@ -482,7 +482,7 @@ exports[`LoginPage disabled form states renders warning when cookies are disable
     </div>
   </header>
   <div
-    class="css-145su9k-LoginPage-LoginPage"
+    class="css-18h45yv-loginWelcomeStyle-contentHeaderStyles"
   >
     <div
       class="euiFlexGroup emotion-euiFlexGroup-responsive-l-flexStart-stretch-row"
@@ -518,14 +518,14 @@ exports[`LoginPage disabled form states renders warning when cookies are disable
 
 exports[`LoginPage enabled form state renders as expected 1`] = `
 <div
-  class="css-1ca3nia-kbnFullScreenBgCss"
+  class="css-1av65hl-fullScreenGraphicsFadeIn"
   data-test-subj="loginForm"
 >
   <header
-    class="css-1uhsdzt-LoginPage"
+    class="css-18p0ypx-padding"
   >
     <div
-      class="css-das9jl-LoginPage"
+      class="css-c2wr7u-loginWelcomeStyle"
     >
       <span
         class="loginWelcome__logo"
@@ -544,7 +544,7 @@ exports[`LoginPage enabled form state renders as expected 1`] = `
     </div>
   </header>
   <div
-    class="css-das9jl-LoginPage"
+    class="css-c2wr7u-loginWelcomeStyle"
   >
     <div
       class="euiFlexGroup emotion-euiFlexGroup-responsive-l-flexStart-stretch-row"
@@ -702,14 +702,14 @@ exports[`LoginPage enabled form state renders as expected 1`] = `
 
 exports[`LoginPage enabled form state renders as expected when loginAssistanceMessage is set 1`] = `
 <div
-  class="css-1ca3nia-kbnFullScreenBgCss"
+  class="css-1av65hl-fullScreenGraphicsFadeIn"
   data-test-subj="loginForm"
 >
   <header
-    class="css-1uhsdzt-LoginPage"
+    class="css-18p0ypx-padding"
   >
     <div
-      class="css-das9jl-LoginPage"
+      class="css-c2wr7u-loginWelcomeStyle"
     >
       <span
         class="loginWelcome__logo"
@@ -728,7 +728,7 @@ exports[`LoginPage enabled form state renders as expected when loginAssistanceMe
     </div>
   </header>
   <div
-    class="css-das9jl-LoginPage"
+    class="css-c2wr7u-loginWelcomeStyle"
   >
     <div
       class="euiFlexGroup emotion-euiFlexGroup-responsive-l-flexStart-stretch-row"
@@ -737,7 +737,7 @@ exports[`LoginPage enabled form state renders as expected when loginAssistanceMe
         class="euiFlexItem emotion-euiFlexItem-grow-1"
       >
         <div
-          class="css-tkrk4n-assistanceCss"
+          class="css-1jqf2m-assistanceCss"
           data-test-subj="loginAssistanceMessage"
         >
           <hr
@@ -905,14 +905,14 @@ exports[`LoginPage enabled form state renders as expected when loginAssistanceMe
 
 exports[`LoginPage enabled form state renders as expected when loginHelp is set 1`] = `
 <div
-  class="css-1ca3nia-kbnFullScreenBgCss"
+  class="css-1av65hl-fullScreenGraphicsFadeIn"
   data-test-subj="loginForm"
 >
   <header
-    class="css-1uhsdzt-LoginPage"
+    class="css-18p0ypx-padding"
   >
     <div
-      class="css-das9jl-LoginPage"
+      class="css-c2wr7u-loginWelcomeStyle"
     >
       <span
         class="loginWelcome__logo"
@@ -931,7 +931,7 @@ exports[`LoginPage enabled form state renders as expected when loginHelp is set 
     </div>
   </header>
   <div
-    class="css-das9jl-LoginPage"
+    class="css-c2wr7u-loginWelcomeStyle"
   >
     <div
       class="euiFlexGroup emotion-euiFlexGroup-responsive-l-flexStart-stretch-row"
@@ -1103,14 +1103,14 @@ exports[`LoginPage enabled form state renders as expected when loginHelp is set 
 
 exports[`LoginPage page renders as expected 1`] = `
 <div
-  class="css-1ca3nia-kbnFullScreenBgCss"
+  class="css-1av65hl-fullScreenGraphicsFadeIn"
   data-test-subj="loginForm"
 >
   <header
-    class="css-1uhsdzt-LoginPage"
+    class="css-18p0ypx-padding"
   >
     <div
-      class="css-das9jl-LoginPage"
+      class="css-c2wr7u-loginWelcomeStyle"
     >
       <span
         class="loginWelcome__logo"
@@ -1129,7 +1129,7 @@ exports[`LoginPage page renders as expected 1`] = `
     </div>
   </header>
   <div
-    class="css-das9jl-LoginPage"
+    class="css-c2wr7u-loginWelcomeStyle"
   >
     <div
       class="euiFlexGroup emotion-euiFlexGroup-responsive-l-flexStart-stretch-row"
@@ -1287,14 +1287,14 @@ exports[`LoginPage page renders as expected 1`] = `
 
 exports[`LoginPage page renders with custom branding 1`] = `
 <div
-  class="css-1ca3nia-kbnFullScreenBgCss"
+  class="css-1av65hl-fullScreenGraphicsFadeIn"
   data-test-subj="loginForm"
 >
   <header
-    class="css-1uhsdzt-LoginPage"
+    class="css-18p0ypx-padding"
   >
     <div
-      class="css-das9jl-LoginPage"
+      class="css-c2wr7u-loginWelcomeStyle"
     >
       <span
         class="loginWelcome__logo"
@@ -1320,7 +1320,7 @@ exports[`LoginPage page renders with custom branding 1`] = `
     </div>
   </header>
   <div
-    class="css-das9jl-LoginPage"
+    class="css-c2wr7u-loginWelcomeStyle"
   >
     <div
       class="euiFlexGroup emotion-euiFlexGroup-responsive-l-flexStart-stretch-row"

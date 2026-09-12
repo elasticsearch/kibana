@@ -45,7 +45,7 @@ exports[`Header renders 1`] = `
           </a>
           <a
             aria-label="Elastic home"
-            class="css-4ghmd2-logoCss"
+            class="css-r0ozzh-logoCss"
             data-test-subj="logo"
             href="/test/app/home"
           >
@@ -58,7 +58,7 @@ exports[`Header renders 1`] = `
             <svg
               aria-hidden="true"
               aria-labelledby="elasticMark"
-              class="css-1nenti5-logoMarkCss"
+              class="css-4lbjay-logoMarkCss"
               data-test-subj="logoMark"
               fill="none"
               height="19"
@@ -91,10 +91,10 @@ exports[`Header renders 1`] = `
           class="euiHeaderSectionItem emotion-euiHeaderSectionItem"
         >
           <div
-            class="css-1kcq09z-rightGroup"
+            class="css-1kizdyw-rightGroup"
           >
             <div
-              class="css-12qq8z7-helpSlot"
+              class="css-t9e3g0-helpSlot"
               data-test-subj="chromeNextGlobalHeaderHelp"
             >
               <span
@@ -112,7 +112,7 @@ exports[`Header renders 1`] = `
                       aria-expanded="false"
                       aria-haspopup="true"
                       aria-label="Help menu"
-                      class="css-2ijv7t-headerButtonBaseStyles-squareStyles-headerButtonBorderedStyles-HeaderActionButton"
+                      class="css-1bhuz6c-headerButtonBaseStyles-squareStyles-headerButtonBorderedStyles"
                       data-test-subj="chromeNextGlobalHeaderHelpButton"
                       style="--header-btn-border: #485975; --header-btn-hover: rgba(255,255,255, 0.08); --header-btn-focus: #61A2FF; border-radius: 4px;"
                       type="button"
@@ -128,7 +128,7 @@ exports[`Header renders 1`] = `
               </span>
             </div>
             <div
-              class="css-ghaac-actionsSlot"
+              class="css-150lav9-actionsSlot"
               data-test-subj="chromeNextGlobalHeaderActions"
             />
           </div>

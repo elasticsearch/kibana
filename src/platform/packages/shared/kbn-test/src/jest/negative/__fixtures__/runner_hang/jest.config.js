@@ -22,7 +22,7 @@ module.exports = {
   moduleFileExtensions: ['ts', 'tsx', 'js', 'json'],
   transform: {
     '^.+\\.(js|mjs|tsx?)$':
-      '<rootDir>/src/platform/packages/shared/kbn-test/src/jest/transforms/babel/index.js',
+      '<rootDir>/src/platform/packages/shared/kbn-test/src/jest/transforms/swc/index.js',
   },
   transformIgnorePatterns: ['[/\\\\]node_modules[/\\\\]'],
 };

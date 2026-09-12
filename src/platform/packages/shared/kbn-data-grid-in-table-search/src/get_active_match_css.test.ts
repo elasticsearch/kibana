@@ -34,9 +34,9 @@ describe('getActiveMatchCss', () => {
     expect(activeMatchCss.styles).toContain(
       `.${HIGHLIGHT_CLASS_NAME}[${CELL_MATCH_INDEX_ATTRIBUTE}='3']`
     );
-    expect(activeMatchCss.styles).toContain('color:active-color!important');
-    expect(activeMatchCss.styles).toContain('background-color:active-background!important');
-    expect(activeMatchCss.styles).toContain('border:2px solid active-border!important');
+    expect(activeMatchCss.styles).toContain('color:active-color !important');
+    expect(activeMatchCss.styles).toContain('background-color:active-background !important');
+    expect(activeMatchCss.styles).toContain('border:2px solid active-border !important');
     expect(activeMatchCss.styles).not.toContain('regular-color');
     expect(activeMatchCss.styles).not.toContain('regular-background');
   });

@@ -2,7 +2,7 @@
 
 exports[`VisualizationNoResults should render according to snapshot 1`] = `
 <div
-  class="visError css-11g73pl-visContainerStyle"
+  class="visError css-gg1u9o-visContainerStyle"
   data-test-subj="visNoResult"
 >
   <div

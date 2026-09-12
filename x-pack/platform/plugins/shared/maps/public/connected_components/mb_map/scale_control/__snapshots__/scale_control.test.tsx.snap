@@ -27,8 +27,8 @@ exports[`isFullScreen 1`] = `
         Object {
           "insert": [Function],
           "inserted": Object {
-            "1hok13p-mapScaleControlStyles-ScaleControl": true,
-            "5ojysv-mapScaleControlStyles-mapScaleControlFullScreenStyles-ScaleControl": true,
+            "ord6ld-mapScaleControlStyles-mapScaleControlFullScreenStyles": true,
+            "q0tqsj-mapScaleControlStyles": true,
           },
           "key": "css",
           "nonce": undefined,
@@ -64,14 +64,14 @@ exports[`isFullScreen 1`] = `
       isStringTag={true}
       serialized={
         Object {
-          "name": "5ojysv-mapScaleControlStyles-mapScaleControlFullScreenStyles-ScaleControl",
+          "name": "ord6ld-mapScaleControlStyles-mapScaleControlFullScreenStyles",
           "next": undefined,
-          "styles": "position:absolute;z-index:1000;left:12px;bottom:12px;pointer-events:none;color:#1D2A3E;border-left:2px solid #1D2A3E99;border-bottom:2px solid #1D2A3E99;text-align:right;background-color:#F6F9FC;padding-left:4px;padding-right:4px;;label:mapScaleControlStyles;;;bottom:calc(24px * 2);;label:mapScaleControlFullScreenStyles;;;;label:ScaleControl;;",
+          "styles": "position:absolute;z-index:1000;left:12px;bottom:12px;pointer-events:none;color:#1D2A3E;border-left:2px solid #1D2A3E99;border-bottom:2px solid #1D2A3E99;text-align:right;background-color:#F6F9FC;padding-left:4px;padding-right:4px;;label:mapScaleControlStyles;;bottom:calc(24px * 2);;label:mapScaleControlFullScreenStyles;;",
         }
       }
     />
     <div
-      className="css-5ojysv-mapScaleControlStyles-mapScaleControlFullScreenStyles-ScaleControl"
+      className="css-ord6ld-mapScaleControlStyles-mapScaleControlFullScreenStyles"
       style={
         Object {
           "width": "62.7474245034397px",
@@ -111,7 +111,7 @@ exports[`render 1`] = `
         Object {
           "insert": [Function],
           "inserted": Object {
-            "1hok13p-mapScaleControlStyles-ScaleControl": true,
+            "q0tqsj-mapScaleControlStyles": true,
           },
           "key": "css",
           "nonce": undefined,
@@ -147,14 +147,14 @@ exports[`render 1`] = `
       isStringTag={true}
       serialized={
         Object {
-          "name": "1hok13p-mapScaleControlStyles-ScaleControl",
+          "name": "q0tqsj-mapScaleControlStyles",
           "next": undefined,
-          "styles": "position:absolute;z-index:1000;left:12px;bottom:12px;pointer-events:none;color:#1D2A3E;border-left:2px solid #1D2A3E99;border-bottom:2px solid #1D2A3E99;text-align:right;background-color:#F6F9FC;padding-left:4px;padding-right:4px;;label:mapScaleControlStyles;;;;;label:ScaleControl;;",
+          "styles": "position:absolute;z-index:1000;left:12px;bottom:12px;pointer-events:none;color:#1D2A3E;border-left:2px solid #1D2A3E99;border-bottom:2px solid #1D2A3E99;text-align:right;background-color:#F6F9FC;padding-left:4px;padding-right:4px;;label:mapScaleControlStyles;;;",
         }
       }
     />
     <div
-      className="css-1hok13p-mapScaleControlStyles-ScaleControl"
+      className="css-q0tqsj-mapScaleControlStyles"
       style={
         Object {
           "width": "62.7474245034397px",

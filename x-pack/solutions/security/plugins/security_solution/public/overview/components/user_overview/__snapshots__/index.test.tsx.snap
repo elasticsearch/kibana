@@ -39,7 +39,7 @@ exports[`User Summary Component it renders the default User Summary 1`] = `
   data-test-subj="hoverVisibilityContainer"
 >
   <div
-    class="euiFlexGroup e1v2bxdw0 emotion-euiFlexGroup-responsive-m-flexStart-stretch-row-OverviewWrapper"
+    class="euiFlexGroup egsoc9f5 emotion-euiFlexGroup-responsive-m-flexStart-stretch-row-OverviewWrapper"
     data-test-subj="user-overview"
   >
     <span
@@ -65,7 +65,7 @@ exports[`User Summary Component it renders the default User Summary 1`] = `
       class="euiFlexItem emotion-euiFlexItem-grow-1"
     >
       <dl
-        class="euiDescriptionList emotion-euiDescriptionList-row-left-baseStyles-DescriptionListStyled"
+        class="euiDescriptionList emotion-euiDescriptionList-row-left-baseStyles"
         data-type="row"
       >
         <dt
@@ -77,7 +77,7 @@ exports[`User Summary Component it renders the default User Summary 1`] = `
           class="euiDescriptionList__description emotion-euiDescriptionList__description-row-normal"
         >
           <span
-            class="euiFlexGroup emotion-euiFlexGroup-responsive-none-flexStart-center-row-DefaultFieldRendererComponent"
+            class="euiFlexGroup emotion-euiFlexGroup-responsive-none-flexStart-center-row"
             data-test-subj="DefaultFieldRendererComponent"
           >
             <div
@@ -90,7 +90,7 @@ exports[`User Summary Component it renders the default User Summary 1`] = `
                   tabindex="-1"
                 >
                   <span
-                    class="css-jlsvsc-ProviderContentWrapper e1p0plmv0"
+                    class="css-1s7tdhk-ProviderContentWrapper e14kwmf30"
                     data-test-subj="render-content-user.id"
                   >
                     <span
@@ -122,7 +122,7 @@ exports[`User Summary Component it renders the default User Summary 1`] = `
           class="euiDescriptionList__description emotion-euiDescriptionList__description-row-normal"
         >
           <span
-            class="euiFlexGroup emotion-euiFlexGroup-responsive-none-flexStart-center-row-DefaultFieldRendererComponent"
+            class="euiFlexGroup emotion-euiFlexGroup-responsive-none-flexStart-center-row"
             data-test-subj="DefaultFieldRendererComponent"
           >
             <div
@@ -135,7 +135,7 @@ exports[`User Summary Component it renders the default User Summary 1`] = `
                   tabindex="-1"
                 >
                   <span
-                    class="css-jlsvsc-ProviderContentWrapper e1p0plmv0"
+                    class="css-1s7tdhk-ProviderContentWrapper e14kwmf30"
                     data-test-subj="render-content-user.domain"
                   >
                     <span
@@ -164,7 +164,7 @@ exports[`User Summary Component it renders the default User Summary 1`] = `
       class="euiFlexItem emotion-euiFlexItem-grow-1"
     >
       <dl
-        class="euiDescriptionList emotion-euiDescriptionList-row-left-baseStyles-DescriptionListStyled"
+        class="euiDescriptionList emotion-euiDescriptionList-row-left-baseStyles"
         data-type="row"
       >
         <dt
@@ -203,7 +203,7 @@ exports[`User Summary Component it renders the default User Summary 1`] = `
       class="euiFlexItem emotion-euiFlexItem-grow-1"
     >
       <dl
-        class="euiDescriptionList emotion-euiDescriptionList-row-left-baseStyles-DescriptionListStyled"
+        class="euiDescriptionList emotion-euiDescriptionList-row-left-baseStyles"
         data-type="row"
       >
         <dt
@@ -215,7 +215,7 @@ exports[`User Summary Component it renders the default User Summary 1`] = `
           class="euiDescriptionList__description emotion-euiDescriptionList__description-row-normal"
         >
           <span
-            class="euiFlexGroup emotion-euiFlexGroup-responsive-none-flexStart-center-row-DefaultFieldRendererComponent"
+            class="euiFlexGroup emotion-euiFlexGroup-responsive-none-flexStart-center-row"
             data-test-subj="DefaultFieldRendererComponent"
           >
             <div
@@ -228,7 +228,7 @@ exports[`User Summary Component it renders the default User Summary 1`] = `
                   tabindex="-1"
                 >
                   <span
-                    class="css-jlsvsc-ProviderContentWrapper e1p0plmv0"
+                    class="css-1s7tdhk-ProviderContentWrapper e14kwmf30"
                     data-test-subj="render-content-host.os.name"
                   >
                     <span
@@ -260,7 +260,7 @@ exports[`User Summary Component it renders the default User Summary 1`] = `
           class="euiDescriptionList__description emotion-euiDescriptionList__description-row-normal"
         >
           <span
-            class="euiFlexGroup emotion-euiFlexGroup-responsive-none-flexStart-center-row-DefaultFieldRendererComponent"
+            class="euiFlexGroup emotion-euiFlexGroup-responsive-none-flexStart-center-row"
             data-test-subj="DefaultFieldRendererComponent"
           >
             <div
@@ -273,7 +273,7 @@ exports[`User Summary Component it renders the default User Summary 1`] = `
                   tabindex="-1"
                 >
                   <span
-                    class="css-jlsvsc-ProviderContentWrapper e1p0plmv0"
+                    class="css-1s7tdhk-ProviderContentWrapper e14kwmf30"
                     data-test-subj="render-content-host.os.family"
                   >
                     <span
@@ -305,7 +305,7 @@ exports[`User Summary Component it renders the default User Summary 1`] = `
           class="euiDescriptionList__description emotion-euiDescriptionList__description-row-normal"
         >
           <span
-            class="euiFlexGroup emotion-euiFlexGroup-responsive-none-flexStart-center-row-DefaultFieldRendererComponent"
+            class="euiFlexGroup emotion-euiFlexGroup-responsive-none-flexStart-center-row"
             data-test-subj="DefaultFieldRendererComponent"
           >
             <div
@@ -318,7 +318,7 @@ exports[`User Summary Component it renders the default User Summary 1`] = `
                   tabindex="-1"
                 >
                   <span
-                    class="css-jlsvsc-ProviderContentWrapper e1p0plmv0"
+                    class="css-1s7tdhk-ProviderContentWrapper e14kwmf30"
                     data-test-subj="render-content-host.ip"
                   >
                     <span
@@ -415,14 +415,14 @@ exports[`User Summary Component it renders the panel view User Summary 1`] = `
   data-test-subj="hoverVisibilityContainer"
 >
   <div
-    class="euiFlexGroup e1v2bxdw0 emotion-euiFlexGroup-m-flexStart-stretch-column-OverviewWrapper"
+    class="euiFlexGroup egsoc9f5 emotion-euiFlexGroup-m-flexStart-stretch-column-OverviewWrapper"
     data-test-subj="user-overview"
   >
     <div
       class="euiFlexItem emotion-euiFlexItem-grow-1"
     >
       <dl
-        class="euiDescriptionList emotion-euiDescriptionList-row-left-baseStyles-DescriptionListStyled"
+        class="euiDescriptionList emotion-euiDescriptionList-row-left-baseStyles"
         data-type="row"
       >
         <dt
@@ -434,7 +434,7 @@ exports[`User Summary Component it renders the panel view User Summary 1`] = `
           class="euiDescriptionList__description emotion-euiDescriptionList__description-row-normal"
         >
           <span
-            class="euiFlexGroup emotion-euiFlexGroup-responsive-none-flexStart-center-row-DefaultFieldRendererComponent"
+            class="euiFlexGroup emotion-euiFlexGroup-responsive-none-flexStart-center-row"
             data-test-subj="DefaultFieldRendererComponent"
           >
             <div
@@ -447,7 +447,7 @@ exports[`User Summary Component it renders the panel view User Summary 1`] = `
                   tabindex="-1"
                 >
                   <span
-                    class="css-jlsvsc-ProviderContentWrapper e1p0plmv0"
+                    class="css-1s7tdhk-ProviderContentWrapper e14kwmf30"
                     data-test-subj="render-content-user.id"
                   >
                     <span
@@ -479,7 +479,7 @@ exports[`User Summary Component it renders the panel view User Summary 1`] = `
           class="euiDescriptionList__description emotion-euiDescriptionList__description-row-normal"
         >
           <span
-            class="euiFlexGroup emotion-euiFlexGroup-responsive-none-flexStart-center-row-DefaultFieldRendererComponent"
+            class="euiFlexGroup emotion-euiFlexGroup-responsive-none-flexStart-center-row"
             data-test-subj="DefaultFieldRendererComponent"
           >
             <div
@@ -492,7 +492,7 @@ exports[`User Summary Component it renders the panel view User Summary 1`] = `
                   tabindex="-1"
                 >
                   <span
-                    class="css-jlsvsc-ProviderContentWrapper e1p0plmv0"
+                    class="css-1s7tdhk-ProviderContentWrapper e14kwmf30"
                     data-test-subj="render-content-user.domain"
                   >
                     <span
@@ -521,7 +521,7 @@ exports[`User Summary Component it renders the panel view User Summary 1`] = `
       class="euiFlexItem emotion-euiFlexItem-grow-1"
     >
       <dl
-        class="euiDescriptionList emotion-euiDescriptionList-row-left-baseStyles-DescriptionListStyled"
+        class="euiDescriptionList emotion-euiDescriptionList-row-left-baseStyles"
         data-type="row"
       >
         <dt
@@ -560,7 +560,7 @@ exports[`User Summary Component it renders the panel view User Summary 1`] = `
       class="euiFlexItem emotion-euiFlexItem-grow-1"
     >
       <dl
-        class="euiDescriptionList emotion-euiDescriptionList-row-left-baseStyles-DescriptionListStyled"
+        class="euiDescriptionList emotion-euiDescriptionList-row-left-baseStyles"
         data-type="row"
       >
         <dt
@@ -572,7 +572,7 @@ exports[`User Summary Component it renders the panel view User Summary 1`] = `
           class="euiDescriptionList__description emotion-euiDescriptionList__description-row-normal"
         >
           <span
-            class="euiFlexGroup emotion-euiFlexGroup-responsive-none-flexStart-center-row-DefaultFieldRendererComponent"
+            class="euiFlexGroup emotion-euiFlexGroup-responsive-none-flexStart-center-row"
             data-test-subj="DefaultFieldRendererComponent"
           >
             <div
@@ -585,7 +585,7 @@ exports[`User Summary Component it renders the panel view User Summary 1`] = `
                   tabindex="-1"
                 >
                   <span
-                    class="css-jlsvsc-ProviderContentWrapper e1p0plmv0"
+                    class="css-1s7tdhk-ProviderContentWrapper e14kwmf30"
                     data-test-subj="render-content-host.os.name"
                   >
                     <span
@@ -617,7 +617,7 @@ exports[`User Summary Component it renders the panel view User Summary 1`] = `
           class="euiDescriptionList__description emotion-euiDescriptionList__description-row-normal"
         >
           <span
-            class="euiFlexGroup emotion-euiFlexGroup-responsive-none-flexStart-center-row-DefaultFieldRendererComponent"
+            class="euiFlexGroup emotion-euiFlexGroup-responsive-none-flexStart-center-row"
             data-test-subj="DefaultFieldRendererComponent"
           >
             <div
@@ -630,7 +630,7 @@ exports[`User Summary Component it renders the panel view User Summary 1`] = `
                   tabindex="-1"
                 >
                   <span
-                    class="css-jlsvsc-ProviderContentWrapper e1p0plmv0"
+                    class="css-1s7tdhk-ProviderContentWrapper e14kwmf30"
                     data-test-subj="render-content-host.os.family"
                   >
                     <span
@@ -662,7 +662,7 @@ exports[`User Summary Component it renders the panel view User Summary 1`] = `
           class="euiDescriptionList__description emotion-euiDescriptionList__description-row-normal"
         >
           <span
-            class="euiFlexGroup emotion-euiFlexGroup-responsive-none-flexStart-center-row-DefaultFieldRendererComponent"
+            class="euiFlexGroup emotion-euiFlexGroup-responsive-none-flexStart-center-row"
             data-test-subj="DefaultFieldRendererComponent"
           >
             <div
@@ -675,7 +675,7 @@ exports[`User Summary Component it renders the panel view User Summary 1`] = `
                   tabindex="-1"
                 >
                   <span
-                    class="css-jlsvsc-ProviderContentWrapper e1p0plmv0"
+                    class="css-1s7tdhk-ProviderContentWrapper e14kwmf30"
                     data-test-subj="render-content-host.ip"
                   >
                     <span

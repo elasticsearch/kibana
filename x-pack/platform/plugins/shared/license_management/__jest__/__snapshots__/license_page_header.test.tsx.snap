@@ -3,38 +3,38 @@
 exports[`LicenseStatus component should display display warning is expired 1`] = `
 <DocumentFragment>
   <div
-    class="css-pw0na0-root-root-root-root-root"
+    class="css-zkj008-root"
     data-test-subj="appHeader"
   >
     <div
-      class="css-1ww9q0e-primaryRow-primaryRow-primaryRow"
+      class="css-1bb256e-primaryRow"
     >
       <div
-        class="css-856hcb-titleCluster"
+        class="css-1put8yh-titleCluster"
       >
         <div
-          class="css-1cqdmpr-titleGroup"
+          class="css-eg0b7t-titleGroup"
         >
           <div
-            class="css-p0ahs1-wrapper"
+            class="css-154m2kl"
           >
             <div
-              class="css-1hi0jzn-titleWrapper-titleOffsetStyle-Title"
+              class="css-1trvrwr-titleWrapper-titleOffsetStyle"
             >
               <h1
                 class="euiTitle emotion-euiTitle-s"
               >
                 <span
-                  class="css-brsrfa-titleFrame"
+                  class="css-1lv2mba-titleFrame"
                 >
                   <span
                     aria-hidden="true"
-                    class="css-gbhrtv-titleSizer"
+                    class="css-17v8vwb-titleSizer"
                   >
                     Your Platinum license has expired
                   </span>
                   <span
-                    class="css-zgy7p9-titleText-readContent"
+                    class="css-t9u6rw-titleText"
                     data-test-subj="appHeaderTitle"
                   >
                     Your Platinum license has expired
@@ -67,24 +67,24 @@ exports[`LicenseStatus component should display display warning is expired 1`] =
             </div>
           </div>
           <div
-            class="titleActionsReveal css-19se5e4-titleActionsReveal"
+            class="titleActionsReveal css-1oeh8gv-titleActionsReveal"
           />
         </div>
         <div
           aria-hidden="true"
-          class="css-ph3hxu-titleClusterSpacer"
+          class="css-8yzqxk-titleClusterSpacer"
         />
       </div>
       <div
-        class="css-1ddjbeg-trailingSlot"
+        class="css-m8xpyo-trailingSlot"
       />
     </div>
     <div
-      class="css-1fe2fv4-secondaryContentRow"
+      class="css-122rsq3-secondaryContentRow"
       data-test-subj="appHeaderDescription"
     >
       <div
-        class="euiText emotion-euiText-xs-euiTextColor-subdued-AppHeaderDescription"
+        class="euiText emotion-euiText-xs-euiTextColor-subdued"
       >
         <p>
           Your license expired on 
@@ -101,38 +101,38 @@ exports[`LicenseStatus component should display display warning is expired 1`] =
 exports[`LicenseStatus component should display normally when license is active 1`] = `
 <DocumentFragment>
   <div
-    class="css-pw0na0-root-root-root-root-root"
+    class="css-zkj008-root"
     data-test-subj="appHeader"
   >
     <div
-      class="css-1ww9q0e-primaryRow-primaryRow-primaryRow"
+      class="css-1bb256e-primaryRow"
     >
       <div
-        class="css-856hcb-titleCluster"
+        class="css-1put8yh-titleCluster"
       >
         <div
-          class="css-1cqdmpr-titleGroup"
+          class="css-eg0b7t-titleGroup"
         >
           <div
-            class="css-p0ahs1-wrapper"
+            class="css-154m2kl"
           >
             <div
-              class="css-1hi0jzn-titleWrapper-titleOffsetStyle-Title"
+              class="css-1trvrwr-titleWrapper-titleOffsetStyle"
             >
               <h1
                 class="euiTitle emotion-euiTitle-s"
               >
                 <span
-                  class="css-brsrfa-titleFrame"
+                  class="css-1lv2mba-titleFrame"
                 >
                   <span
                     aria-hidden="true"
-                    class="css-gbhrtv-titleSizer"
+                    class="css-17v8vwb-titleSizer"
                   >
                     Your Gold license is active
                   </span>
                   <span
-                    class="css-zgy7p9-titleText-readContent"
+                    class="css-t9u6rw-titleText"
                     data-test-subj="appHeaderTitle"
                   >
                     Your Gold license is active
@@ -165,24 +165,24 @@ exports[`LicenseStatus component should display normally when license is active 
             </div>
           </div>
           <div
-            class="titleActionsReveal css-19se5e4-titleActionsReveal"
+            class="titleActionsReveal css-1oeh8gv-titleActionsReveal"
           />
         </div>
         <div
           aria-hidden="true"
-          class="css-ph3hxu-titleClusterSpacer"
+          class="css-8yzqxk-titleClusterSpacer"
         />
       </div>
       <div
-        class="css-1ddjbeg-trailingSlot"
+        class="css-m8xpyo-trailingSlot"
       />
     </div>
     <div
-      class="css-1fe2fv4-secondaryContentRow"
+      class="css-122rsq3-secondaryContentRow"
       data-test-subj="appHeaderDescription"
     >
       <div
-        class="euiText emotion-euiText-xs-euiTextColor-subdued-AppHeaderDescription"
+        class="euiText emotion-euiText-xs-euiTextColor-subdued"
       >
         <p>
           Your license will expire on October 12, 2099 8:00 PM EDT

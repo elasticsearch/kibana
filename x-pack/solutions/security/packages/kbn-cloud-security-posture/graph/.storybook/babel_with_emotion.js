@@ -6,8 +6,7 @@
  */
 
 // CommonJS so Node's native .ts loader doesn't load this file in ES module
-// scope (which would break the require.resolve below). Mirrors the pattern in
-// src/platform/packages/shared/kbn-test/src/jest/transforms/babel/index.js.
+// scope (which would break the require.resolve below).
 
 const babelJest = require('babel-jest');
 

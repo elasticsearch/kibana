@@ -2,7 +2,7 @@
 
 exports[`Overview Network Stat Data rendering it renders the default OverviewNetworkStats 1`] = `
 <div
-  class="css-1m8wnsx-NetworkStatsContainer es3qi1j4"
+  class="css-at2f52-NetworkStatsContainer e18y1ert0"
   data-test-subj="overview-network-stats"
 >
   <hr
@@ -72,7 +72,7 @@ exports[`Overview Network Stat Data rendering it renders the default OverviewNet
                   class="euiFlexItem emotion-euiFlexItem-growZero"
                 >
                   <div
-                    class="css-8kb6u7-ProgressContainer e1vv032p0"
+                    class="css-1272s1i-ProgressContainer e1b5w38h0"
                   >
                     <div
                       aria-atomic="true"
@@ -108,7 +108,7 @@ exports[`Overview Network Stat Data rendering it renders the default OverviewNet
         class="euiAccordion__children emotion-euiAccordion__children"
       >
         <div
-          class="css-16yqqti-AccordionContent es3qi1j0"
+          class="css-16yqqti-AccordionContent e18y1ert4"
         >
           <div
             class="euiFlexGroup emotion-euiFlexGroup-responsive-s-spaceBetween-stretch-row"
@@ -120,18 +120,18 @@ exports[`Overview Network Stat Data rendering it renders the default OverviewNet
                 class="euiText emotion-euiText-s-euiTextColor-subdued"
               >
                 <div
-                  class="css-1v9m46b-MoveItLeftTitle es3qi1j3"
+                  class="css-10s1bcn-MoveItLeftTitle e18y1ert1"
                 >
                   Socket
                 </div>
               </div>
             </div>
             <div
-              class="euiFlexItem es3qi1j1 emotion-euiFlexItem-growZero-NoMarginTopFlexItem"
+              class="euiFlexItem e18y1ert3 emotion-euiFlexItem-growZero-NoMarginTopFlexItem"
               data-test-subj="network-stat-auditbeatSocket"
             >
               <div
-                class="css-kme1xc-MoveItLeft es3qi1j2"
+                class="css-kme1xc-MoveItLeft e18y1ert2"
               >
                 <div
                   class="euiFlexGroup emotion-euiFlexGroup-none-spaceBetween-center-row"
@@ -149,7 +149,7 @@ exports[`Overview Network Stat Data rendering it renders the default OverviewNet
                     class="euiFlexItem emotion-euiFlexItem-growZero"
                   >
                     <div
-                      class="css-8kb6u7-ProgressContainer e1vv032p0"
+                      class="css-1272s1i-ProgressContainer e1b5w38h0"
                     >
                       <div
                         aria-atomic="true"
@@ -242,7 +242,7 @@ exports[`Overview Network Stat Data rendering it renders the default OverviewNet
                   class="euiFlexItem emotion-euiFlexItem-growZero"
                 >
                   <div
-                    class="css-8kb6u7-ProgressContainer e1vv032p0"
+                    class="css-1272s1i-ProgressContainer e1b5w38h0"
                   >
                     <div
                       aria-atomic="true"
@@ -278,7 +278,7 @@ exports[`Overview Network Stat Data rendering it renders the default OverviewNet
         class="euiAccordion__children emotion-euiAccordion__children"
       >
         <div
-          class="css-16yqqti-AccordionContent es3qi1j0"
+          class="css-16yqqti-AccordionContent e18y1ert4"
         >
           <div
             class="euiFlexGroup emotion-euiFlexGroup-responsive-s-spaceBetween-stretch-row"
@@ -290,18 +290,18 @@ exports[`Overview Network Stat Data rendering it renders the default OverviewNet
                 class="euiText emotion-euiText-s-euiTextColor-subdued"
               >
                 <div
-                  class="css-1v9m46b-MoveItLeftTitle es3qi1j3"
+                  class="css-10s1bcn-MoveItLeftTitle e18y1ert1"
                 >
                   Cisco
                 </div>
               </div>
             </div>
             <div
-              class="euiFlexItem es3qi1j1 emotion-euiFlexItem-growZero-NoMarginTopFlexItem"
+              class="euiFlexItem e18y1ert3 emotion-euiFlexItem-growZero-NoMarginTopFlexItem"
               data-test-subj="network-stat-filebeatCisco"
             >
               <div
-                class="css-kme1xc-MoveItLeft es3qi1j2"
+                class="css-kme1xc-MoveItLeft e18y1ert2"
               >
                 <div
                   class="euiFlexGroup emotion-euiFlexGroup-none-spaceBetween-center-row"
@@ -319,7 +319,7 @@ exports[`Overview Network Stat Data rendering it renders the default OverviewNet
                     class="euiFlexItem emotion-euiFlexItem-growZero"
                   >
                     <div
-                      class="css-8kb6u7-ProgressContainer e1vv032p0"
+                      class="css-1272s1i-ProgressContainer e1b5w38h0"
                     >
                       <div
                         aria-atomic="true"
@@ -351,18 +351,18 @@ exports[`Overview Network Stat Data rendering it renders the default OverviewNet
                 class="euiText emotion-euiText-s-euiTextColor-subdued"
               >
                 <div
-                  class="css-1v9m46b-MoveItLeftTitle es3qi1j3"
+                  class="css-10s1bcn-MoveItLeftTitle e18y1ert1"
                 >
                   Netflow
                 </div>
               </div>
             </div>
             <div
-              class="euiFlexItem es3qi1j1 emotion-euiFlexItem-growZero-NoMarginTopFlexItem"
+              class="euiFlexItem e18y1ert3 emotion-euiFlexItem-growZero-NoMarginTopFlexItem"
               data-test-subj="network-stat-filebeatNetflow"
             >
               <div
-                class="css-kme1xc-MoveItLeft es3qi1j2"
+                class="css-kme1xc-MoveItLeft e18y1ert2"
               >
                 <div
                   class="euiFlexGroup emotion-euiFlexGroup-none-spaceBetween-center-row"
@@ -380,7 +380,7 @@ exports[`Overview Network Stat Data rendering it renders the default OverviewNet
                     class="euiFlexItem emotion-euiFlexItem-growZero"
                   >
                     <div
-                      class="css-8kb6u7-ProgressContainer e1vv032p0"
+                      class="css-1272s1i-ProgressContainer e1b5w38h0"
                     >
                       <div
                         aria-atomic="true"
@@ -412,18 +412,18 @@ exports[`Overview Network Stat Data rendering it renders the default OverviewNet
                 class="euiText emotion-euiText-s-euiTextColor-subdued"
               >
                 <div
-                  class="css-1v9m46b-MoveItLeftTitle es3qi1j3"
+                  class="css-10s1bcn-MoveItLeftTitle e18y1ert1"
                 >
                   Palo Alto Networks
                 </div>
               </div>
             </div>
             <div
-              class="euiFlexItem es3qi1j1 emotion-euiFlexItem-growZero-NoMarginTopFlexItem"
+              class="euiFlexItem e18y1ert3 emotion-euiFlexItem-growZero-NoMarginTopFlexItem"
               data-test-subj="network-stat-filebeatPanw"
             >
               <div
-                class="css-kme1xc-MoveItLeft es3qi1j2"
+                class="css-kme1xc-MoveItLeft e18y1ert2"
               >
                 <div
                   class="euiFlexGroup emotion-euiFlexGroup-none-spaceBetween-center-row"
@@ -441,7 +441,7 @@ exports[`Overview Network Stat Data rendering it renders the default OverviewNet
                     class="euiFlexItem emotion-euiFlexItem-growZero"
                   >
                     <div
-                      class="css-8kb6u7-ProgressContainer e1vv032p0"
+                      class="css-1272s1i-ProgressContainer e1b5w38h0"
                     >
                       <div
                         aria-atomic="true"
@@ -473,18 +473,18 @@ exports[`Overview Network Stat Data rendering it renders the default OverviewNet
                 class="euiText emotion-euiText-s-euiTextColor-subdued"
               >
                 <div
-                  class="css-1v9m46b-MoveItLeftTitle es3qi1j3"
+                  class="css-10s1bcn-MoveItLeftTitle e18y1ert1"
                 >
                   Suricata
                 </div>
               </div>
             </div>
             <div
-              class="euiFlexItem es3qi1j1 emotion-euiFlexItem-growZero-NoMarginTopFlexItem"
+              class="euiFlexItem e18y1ert3 emotion-euiFlexItem-growZero-NoMarginTopFlexItem"
               data-test-subj="network-stat-filebeatSuricata"
             >
               <div
-                class="css-kme1xc-MoveItLeft es3qi1j2"
+                class="css-kme1xc-MoveItLeft e18y1ert2"
               >
                 <div
                   class="euiFlexGroup emotion-euiFlexGroup-none-spaceBetween-center-row"
@@ -502,7 +502,7 @@ exports[`Overview Network Stat Data rendering it renders the default OverviewNet
                     class="euiFlexItem emotion-euiFlexItem-growZero"
                   >
                     <div
-                      class="css-8kb6u7-ProgressContainer e1vv032p0"
+                      class="css-1272s1i-ProgressContainer e1b5w38h0"
                     >
                       <div
                         aria-atomic="true"
@@ -534,18 +534,18 @@ exports[`Overview Network Stat Data rendering it renders the default OverviewNet
                 class="euiText emotion-euiText-s-euiTextColor-subdued"
               >
                 <div
-                  class="css-1v9m46b-MoveItLeftTitle es3qi1j3"
+                  class="css-10s1bcn-MoveItLeftTitle e18y1ert1"
                 >
                   Zeek
                 </div>
               </div>
             </div>
             <div
-              class="euiFlexItem es3qi1j1 emotion-euiFlexItem-growZero-NoMarginTopFlexItem"
+              class="euiFlexItem e18y1ert3 emotion-euiFlexItem-growZero-NoMarginTopFlexItem"
               data-test-subj="network-stat-filebeatZeek"
             >
               <div
-                class="css-kme1xc-MoveItLeft es3qi1j2"
+                class="css-kme1xc-MoveItLeft e18y1ert2"
               >
                 <div
                   class="euiFlexGroup emotion-euiFlexGroup-none-spaceBetween-center-row"
@@ -563,7 +563,7 @@ exports[`Overview Network Stat Data rendering it renders the default OverviewNet
                     class="euiFlexItem emotion-euiFlexItem-growZero"
                   >
                     <div
-                      class="css-8kb6u7-ProgressContainer e1vv032p0"
+                      class="css-1272s1i-ProgressContainer e1b5w38h0"
                     >
                       <div
                         aria-atomic="true"
@@ -656,7 +656,7 @@ exports[`Overview Network Stat Data rendering it renders the default OverviewNet
                   class="euiFlexItem emotion-euiFlexItem-growZero"
                 >
                   <div
-                    class="css-8kb6u7-ProgressContainer e1vv032p0"
+                    class="css-1272s1i-ProgressContainer e1b5w38h0"
                   >
                     <div
                       aria-atomic="true"
@@ -692,7 +692,7 @@ exports[`Overview Network Stat Data rendering it renders the default OverviewNet
         class="euiAccordion__children emotion-euiAccordion__children"
       >
         <div
-          class="css-16yqqti-AccordionContent es3qi1j0"
+          class="css-16yqqti-AccordionContent e18y1ert4"
         >
           <div
             class="euiFlexGroup emotion-euiFlexGroup-responsive-s-spaceBetween-stretch-row"
@@ -704,18 +704,18 @@ exports[`Overview Network Stat Data rendering it renders the default OverviewNet
                 class="euiText emotion-euiText-s-euiTextColor-subdued"
               >
                 <div
-                  class="css-1v9m46b-MoveItLeftTitle es3qi1j3"
+                  class="css-10s1bcn-MoveItLeftTitle e18y1ert1"
                 >
                   DNS
                 </div>
               </div>
             </div>
             <div
-              class="euiFlexItem es3qi1j1 emotion-euiFlexItem-growZero-NoMarginTopFlexItem"
+              class="euiFlexItem e18y1ert3 emotion-euiFlexItem-growZero-NoMarginTopFlexItem"
               data-test-subj="network-stat-packetbeatDNS"
             >
               <div
-                class="css-kme1xc-MoveItLeft es3qi1j2"
+                class="css-kme1xc-MoveItLeft e18y1ert2"
               >
                 <div
                   class="euiFlexGroup emotion-euiFlexGroup-none-spaceBetween-center-row"
@@ -733,7 +733,7 @@ exports[`Overview Network Stat Data rendering it renders the default OverviewNet
                     class="euiFlexItem emotion-euiFlexItem-growZero"
                   >
                     <div
-                      class="css-8kb6u7-ProgressContainer e1vv032p0"
+                      class="css-1272s1i-ProgressContainer e1b5w38h0"
                     >
                       <div
                         aria-atomic="true"
@@ -765,18 +765,18 @@ exports[`Overview Network Stat Data rendering it renders the default OverviewNet
                 class="euiText emotion-euiText-s-euiTextColor-subdued"
               >
                 <div
-                  class="css-1v9m46b-MoveItLeftTitle es3qi1j3"
+                  class="css-10s1bcn-MoveItLeftTitle e18y1ert1"
                 >
                   Flow
                 </div>
               </div>
             </div>
             <div
-              class="euiFlexItem es3qi1j1 emotion-euiFlexItem-growZero-NoMarginTopFlexItem"
+              class="euiFlexItem e18y1ert3 emotion-euiFlexItem-growZero-NoMarginTopFlexItem"
               data-test-subj="network-stat-packetbeatFlow"
             >
               <div
-                class="css-kme1xc-MoveItLeft es3qi1j2"
+                class="css-kme1xc-MoveItLeft e18y1ert2"
               >
                 <div
                   class="euiFlexGroup emotion-euiFlexGroup-none-spaceBetween-center-row"
@@ -794,7 +794,7 @@ exports[`Overview Network Stat Data rendering it renders the default OverviewNet
                     class="euiFlexItem emotion-euiFlexItem-growZero"
                   >
                     <div
-                      class="css-8kb6u7-ProgressContainer e1vv032p0"
+                      class="css-1272s1i-ProgressContainer e1b5w38h0"
                     >
                       <div
                         aria-atomic="true"
@@ -826,18 +826,18 @@ exports[`Overview Network Stat Data rendering it renders the default OverviewNet
                 class="euiText emotion-euiText-s-euiTextColor-subdued"
               >
                 <div
-                  class="css-1v9m46b-MoveItLeftTitle es3qi1j3"
+                  class="css-10s1bcn-MoveItLeftTitle e18y1ert1"
                 >
                   TLS
                 </div>
               </div>
             </div>
             <div
-              class="euiFlexItem es3qi1j1 emotion-euiFlexItem-growZero-NoMarginTopFlexItem"
+              class="euiFlexItem e18y1ert3 emotion-euiFlexItem-growZero-NoMarginTopFlexItem"
               data-test-subj="network-stat-packetbeatTLS"
             >
               <div
-                class="css-kme1xc-MoveItLeft es3qi1j2"
+                class="css-kme1xc-MoveItLeft e18y1ert2"
               >
                 <div
                   class="euiFlexGroup emotion-euiFlexGroup-none-spaceBetween-center-row"
@@ -855,7 +855,7 @@ exports[`Overview Network Stat Data rendering it renders the default OverviewNet
                     class="euiFlexItem emotion-euiFlexItem-growZero"
                   >
                     <div
-                      class="css-8kb6u7-ProgressContainer e1vv032p0"
+                      class="css-1272s1i-ProgressContainer e1b5w38h0"
                     >
                       <div
                         aria-atomic="true"

@@ -15,7 +15,7 @@ exports[`<KibanaPrivileges> renders without crashing 1`] = `
       >
         <span
           aria-hidden="true"
-          class="css-t0tl5b-CollapsiblePanelTitle"
+          class="css-1196zwi-CollapsiblePanelTitle"
           data-euiicon-type="logoKibana"
         />
          

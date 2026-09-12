@@ -2,14 +2,14 @@
 
 exports[`DateRangePicker renders 1`] = `
 <div
-  class="css-1e8rkcj-containerStyles-DateRangePickerLayout"
+  class="css-1k1pkml-containerStyles"
 >
   <div
     class="euiPopover emotion-euiPopover-inline"
     data-test-subj="dateRangePickerPopoverTriggerWrapper"
   >
     <div
-      class="css-1wuttf3-DateRangePickerControl"
+      class="css-1u8qly9"
       data-test-subj="dateRangePickerControlWrapper"
     >
       <div
@@ -37,7 +37,7 @@ exports[`DateRangePicker renders 1`] = `
             id="generated-id-wrapper"
           >
             <button
-              class="euiButtonEmpty euiFormControlButton emotion-euiButtonDisplay-euiButtonEmpty-m-empty-text-euiFormControlButton-compressed-fullWidth-DateRangePickerControl"
+              class="euiButtonEmpty euiFormControlButton emotion-euiButtonDisplay-euiButtonEmpty-m-empty-text-euiFormControlButton-compressed-fullWidth-onClick"
               data-date-range="now-20m to now"
               data-test-subj="dateRangePickerControlButton"
               type="button"
@@ -47,25 +47,25 @@ exports[`DateRangePicker renders 1`] = `
               >
                 <span>
                   <span
-                    class="eui-textTruncate css-rbdo33-root"
+                    class="eui-textTruncate css-vyatu5-root"
                     data-test-subj="dateRangePickerValueDisplay"
                   >
                     <span
-                      class="css-1i6t4lm-part"
+                      class="css-qp5lpo-part"
                       data-test-subj="dateRangePickerDisplayPart"
                     >
                       Last
                     </span>
                      
                     <span
-                      class="css-1i6t4lm-part"
+                      class="css-qp5lpo-part"
                       data-test-subj="dateRangePickerDisplayPart"
                     >
                       20
                     </span>
                      
                     <span
-                      class="css-1i6t4lm-part"
+                      class="css-qp5lpo-part"
                       data-test-subj="dateRangePickerDisplayPart"
                     >
                       minutes

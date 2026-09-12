@@ -6,7 +6,7 @@ exports[`Embeddable it renders 1`] = `
   data-test-subj="siemEmbeddable"
 >
   <div
-    class="euiPanel euiPanel--plain e1x7l1i0 emotion-euiPanel-grow-m-plain-hasBorder-Panel"
+    class="euiPanel euiPanel--plain e1p1yxmc0 emotion-euiPanel-grow-m-plain-hasBorder-Panel"
   >
     <p>
       Test content

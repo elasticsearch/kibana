@@ -9,6 +9,7 @@
 
 import type { DataTableCompareToolbarBtn } from './data_table_document_selection';
 import React from 'react';
+import { waitForEuiPopoverOpen } from '@elastic/eui/lib/test/rtl';
 import userEvent from '@testing-library/user-event';
 import {
   buildSelectedDocsState,
@@ -474,6 +475,7 @@ describe('document selection', () => {
           const menuButton = await screen.findByRole('button', { name: /Selected/ });
 
           await userEvent.click(menuButton);
+          await waitForEuiPopoverOpen();
 
           return screen.queryByTestId('unifiedDataTableCompareSelectedDocuments');
         },

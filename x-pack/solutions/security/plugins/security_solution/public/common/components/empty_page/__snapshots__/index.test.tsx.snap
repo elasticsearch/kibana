@@ -2,7 +2,7 @@
 
 exports[`EmptyPage component renders actions with descriptions 1`] = `
 <div
-  class="euiPanel euiPanel--transparent euiEmptyPrompt e1h6ddlx0 emotion-euiPanel-m-transparent-euiEmptyPrompt-vertical-EmptyPrompt"
+  class="euiPanel euiPanel--transparent euiEmptyPrompt emkfseg0 emotion-euiPanel-m-transparent-euiEmptyPrompt-vertical-EmptyPrompt"
 >
   <div
     class="euiEmptyPrompt__main emotion-euiEmptyPrompt__main-vertical-l"
@@ -91,7 +91,7 @@ exports[`EmptyPage component renders actions with descriptions 1`] = `
 
 exports[`EmptyPage component renders actions without descriptions 1`] = `
 <div
-  class="euiPanel euiPanel--transparent euiEmptyPrompt e1h6ddlx0 emotion-euiPanel-m-transparent-euiEmptyPrompt-vertical-EmptyPrompt"
+  class="euiPanel euiPanel--transparent euiEmptyPrompt emkfseg0 emotion-euiPanel-m-transparent-euiEmptyPrompt-vertical-EmptyPrompt"
 >
   <div
     class="euiEmptyPrompt__main emotion-euiEmptyPrompt__main-vertical-l"

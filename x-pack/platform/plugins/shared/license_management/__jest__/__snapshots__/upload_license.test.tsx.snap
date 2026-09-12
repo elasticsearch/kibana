@@ -3,20 +3,20 @@
 exports[`UploadLicense should display a modal when license requires acknowledgement 1`] = `
 <DocumentFragment>
   <div
-    class="css-pw0na0-root-root-root-root-root"
+    class="css-zkj008-root"
     data-test-subj="appHeader"
   >
     <div
-      class="css-1ti6rga-primaryRow-primaryRow-primaryRow"
+      class="css-t797kc-primaryRow"
     >
       <div
-        class="css-856hcb-titleCluster"
+        class="css-1put8yh-titleCluster"
       >
         <div
-          class="css-1cqdmpr-titleGroup"
+          class="css-eg0b7t-titleGroup"
         >
           <div
-            class="css-p0ahs1-wrapper"
+            class="css-154m2kl"
           >
             <span
               class="euiToolTipAnchor emotion-euiToolTipAnchor-inlineBlock"
@@ -38,22 +38,22 @@ exports[`UploadLicense should display a modal when license requires acknowledgem
               </a>
             </span>
             <div
-              class="css-xzqk95-titleWrapper-Title"
+              class="css-fsoqfw-titleWrapper"
             >
               <h1
                 class="euiTitle emotion-euiTitle-s"
               >
                 <span
-                  class="css-brsrfa-titleFrame"
+                  class="css-1lv2mba-titleFrame"
                 >
                   <span
                     aria-hidden="true"
-                    class="css-gbhrtv-titleSizer"
+                    class="css-17v8vwb-titleSizer"
                   >
                     Upload your license
                   </span>
                   <span
-                    class="css-zgy7p9-titleText-readContent"
+                    class="css-t9u6rw-titleText"
                     data-test-subj="appHeaderTitle"
                   >
                     Upload your license
@@ -63,16 +63,16 @@ exports[`UploadLicense should display a modal when license requires acknowledgem
             </div>
           </div>
           <div
-            class="titleActionsReveal css-19se5e4-titleActionsReveal"
+            class="titleActionsReveal css-1oeh8gv-titleActionsReveal"
           />
         </div>
         <div
           aria-hidden="true"
-          class="css-ph3hxu-titleClusterSpacer"
+          class="css-8yzqxk-titleClusterSpacer"
         />
       </div>
       <div
-        class="css-1ddjbeg-trailingSlot"
+        class="css-m8xpyo-trailingSlot"
       />
     </div>
   </div>
@@ -185,20 +185,20 @@ exports[`UploadLicense should display a modal when license requires acknowledgem
 exports[`UploadLicense should display an error when ES says license is expired 1`] = `
 <DocumentFragment>
   <div
-    class="css-pw0na0-root-root-root-root-root"
+    class="css-zkj008-root"
     data-test-subj="appHeader"
   >
     <div
-      class="css-1ti6rga-primaryRow-primaryRow-primaryRow"
+      class="css-t797kc-primaryRow"
     >
       <div
-        class="css-856hcb-titleCluster"
+        class="css-1put8yh-titleCluster"
       >
         <div
-          class="css-1cqdmpr-titleGroup"
+          class="css-eg0b7t-titleGroup"
         >
           <div
-            class="css-p0ahs1-wrapper"
+            class="css-154m2kl"
           >
             <span
               class="euiToolTipAnchor emotion-euiToolTipAnchor-inlineBlock"
@@ -220,22 +220,22 @@ exports[`UploadLicense should display an error when ES says license is expired 1
               </a>
             </span>
             <div
-              class="css-xzqk95-titleWrapper-Title"
+              class="css-fsoqfw-titleWrapper"
             >
               <h1
                 class="euiTitle emotion-euiTitle-s"
               >
                 <span
-                  class="css-brsrfa-titleFrame"
+                  class="css-1lv2mba-titleFrame"
                 >
                   <span
                     aria-hidden="true"
-                    class="css-gbhrtv-titleSizer"
+                    class="css-17v8vwb-titleSizer"
                   >
                     Upload your license
                   </span>
                   <span
-                    class="css-zgy7p9-titleText-readContent"
+                    class="css-t9u6rw-titleText"
                     data-test-subj="appHeaderTitle"
                   >
                     Upload your license
@@ -245,16 +245,16 @@ exports[`UploadLicense should display an error when ES says license is expired 1
             </div>
           </div>
           <div
-            class="titleActionsReveal css-19se5e4-titleActionsReveal"
+            class="titleActionsReveal css-1oeh8gv-titleActionsReveal"
           />
         </div>
         <div
           aria-hidden="true"
-          class="css-ph3hxu-titleClusterSpacer"
+          class="css-8yzqxk-titleClusterSpacer"
         />
       </div>
       <div
-        class="css-1ddjbeg-trailingSlot"
+        class="css-m8xpyo-trailingSlot"
       />
     </div>
   </div>
@@ -411,20 +411,20 @@ exports[`UploadLicense should display an error when ES says license is expired 1
 exports[`UploadLicense should display an error when ES says license is invalid 1`] = `
 <DocumentFragment>
   <div
-    class="css-pw0na0-root-root-root-root-root"
+    class="css-zkj008-root"
     data-test-subj="appHeader"
   >
     <div
-      class="css-1ti6rga-primaryRow-primaryRow-primaryRow"
+      class="css-t797kc-primaryRow"
     >
       <div
-        class="css-856hcb-titleCluster"
+        class="css-1put8yh-titleCluster"
       >
         <div
-          class="css-1cqdmpr-titleGroup"
+          class="css-eg0b7t-titleGroup"
         >
           <div
-            class="css-p0ahs1-wrapper"
+            class="css-154m2kl"
           >
             <span
               class="euiToolTipAnchor emotion-euiToolTipAnchor-inlineBlock"
@@ -446,22 +446,22 @@ exports[`UploadLicense should display an error when ES says license is invalid 1
               </a>
             </span>
             <div
-              class="css-xzqk95-titleWrapper-Title"
+              class="css-fsoqfw-titleWrapper"
             >
               <h1
                 class="euiTitle emotion-euiTitle-s"
               >
                 <span
-                  class="css-brsrfa-titleFrame"
+                  class="css-1lv2mba-titleFrame"
                 >
                   <span
                     aria-hidden="true"
-                    class="css-gbhrtv-titleSizer"
+                    class="css-17v8vwb-titleSizer"
                   >
                     Upload your license
                   </span>
                   <span
-                    class="css-zgy7p9-titleText-readContent"
+                    class="css-t9u6rw-titleText"
                     data-test-subj="appHeaderTitle"
                   >
                     Upload your license
@@ -471,16 +471,16 @@ exports[`UploadLicense should display an error when ES says license is invalid 1
             </div>
           </div>
           <div
-            class="titleActionsReveal css-19se5e4-titleActionsReveal"
+            class="titleActionsReveal css-1oeh8gv-titleActionsReveal"
           />
         </div>
         <div
           aria-hidden="true"
-          class="css-ph3hxu-titleClusterSpacer"
+          class="css-8yzqxk-titleClusterSpacer"
         />
       </div>
       <div
-        class="css-1ddjbeg-trailingSlot"
+        class="css-m8xpyo-trailingSlot"
       />
     </div>
   </div>
@@ -637,20 +637,20 @@ exports[`UploadLicense should display an error when ES says license is invalid 1
 exports[`UploadLicense should display an error when submitting invalid JSON 1`] = `
 <DocumentFragment>
   <div
-    class="css-pw0na0-root-root-root-root-root"
+    class="css-zkj008-root"
     data-test-subj="appHeader"
   >
     <div
-      class="css-1ti6rga-primaryRow-primaryRow-primaryRow"
+      class="css-t797kc-primaryRow"
     >
       <div
-        class="css-856hcb-titleCluster"
+        class="css-1put8yh-titleCluster"
       >
         <div
-          class="css-1cqdmpr-titleGroup"
+          class="css-eg0b7t-titleGroup"
         >
           <div
-            class="css-p0ahs1-wrapper"
+            class="css-154m2kl"
           >
             <span
               class="euiToolTipAnchor emotion-euiToolTipAnchor-inlineBlock"
@@ -672,22 +672,22 @@ exports[`UploadLicense should display an error when submitting invalid JSON 1`] 
               </a>
             </span>
             <div
-              class="css-xzqk95-titleWrapper-Title"
+              class="css-fsoqfw-titleWrapper"
             >
               <h1
                 class="euiTitle emotion-euiTitle-s"
               >
                 <span
-                  class="css-brsrfa-titleFrame"
+                  class="css-1lv2mba-titleFrame"
                 >
                   <span
                     aria-hidden="true"
-                    class="css-gbhrtv-titleSizer"
+                    class="css-17v8vwb-titleSizer"
                   >
                     Upload your license
                   </span>
                   <span
-                    class="css-zgy7p9-titleText-readContent"
+                    class="css-t9u6rw-titleText"
                     data-test-subj="appHeaderTitle"
                   >
                     Upload your license
@@ -697,16 +697,16 @@ exports[`UploadLicense should display an error when submitting invalid JSON 1`] 
             </div>
           </div>
           <div
-            class="titleActionsReveal css-19se5e4-titleActionsReveal"
+            class="titleActionsReveal css-1oeh8gv-titleActionsReveal"
           />
         </div>
         <div
           aria-hidden="true"
-          class="css-ph3hxu-titleClusterSpacer"
+          class="css-8yzqxk-titleClusterSpacer"
         />
       </div>
       <div
-        class="css-1ddjbeg-trailingSlot"
+        class="css-m8xpyo-trailingSlot"
       />
     </div>
   </div>
@@ -863,20 +863,20 @@ exports[`UploadLicense should display an error when submitting invalid JSON 1`] 
 exports[`UploadLicense should display error when ES returns error 1`] = `
 <DocumentFragment>
   <div
-    class="css-pw0na0-root-root-root-root-root"
+    class="css-zkj008-root"
     data-test-subj="appHeader"
   >
     <div
-      class="css-1ti6rga-primaryRow-primaryRow-primaryRow"
+      class="css-t797kc-primaryRow"
     >
       <div
-        class="css-856hcb-titleCluster"
+        class="css-1put8yh-titleCluster"
       >
         <div
-          class="css-1cqdmpr-titleGroup"
+          class="css-eg0b7t-titleGroup"
         >
           <div
-            class="css-p0ahs1-wrapper"
+            class="css-154m2kl"
           >
             <span
               class="euiToolTipAnchor emotion-euiToolTipAnchor-inlineBlock"
@@ -898,22 +898,22 @@ exports[`UploadLicense should display error when ES returns error 1`] = `
               </a>
             </span>
             <div
-              class="css-xzqk95-titleWrapper-Title"
+              class="css-fsoqfw-titleWrapper"
             >
               <h1
                 class="euiTitle emotion-euiTitle-s"
               >
                 <span
-                  class="css-brsrfa-titleFrame"
+                  class="css-1lv2mba-titleFrame"
                 >
                   <span
                     aria-hidden="true"
-                    class="css-gbhrtv-titleSizer"
+                    class="css-17v8vwb-titleSizer"
                   >
                     Upload your license
                   </span>
                   <span
-                    class="css-zgy7p9-titleText-readContent"
+                    class="css-t9u6rw-titleText"
                     data-test-subj="appHeaderTitle"
                   >
                     Upload your license
@@ -923,16 +923,16 @@ exports[`UploadLicense should display error when ES returns error 1`] = `
             </div>
           </div>
           <div
-            class="titleActionsReveal css-19se5e4-titleActionsReveal"
+            class="titleActionsReveal css-1oeh8gv-titleActionsReveal"
           />
         </div>
         <div
           aria-hidden="true"
-          class="css-ph3hxu-titleClusterSpacer"
+          class="css-8yzqxk-titleClusterSpacer"
         />
       </div>
       <div
-        class="css-1ddjbeg-trailingSlot"
+        class="css-m8xpyo-trailingSlot"
       />
     </div>
   </div>

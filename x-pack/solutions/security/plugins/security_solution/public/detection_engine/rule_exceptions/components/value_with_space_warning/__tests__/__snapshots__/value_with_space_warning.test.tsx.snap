@@ -7,7 +7,7 @@ exports[`ValueWithSpaceWarning should not render if value is falsy 1`] = `<div /
 exports[`ValueWithSpaceWarning should render if showSpaceWarning is truthy 1`] = `
 <div>
   <div
-    class="css-mwb0ig-Container ejh5q6j0"
+    class="css-mwb0ig-Container e1uepjbj0"
   >
     <span
       class="euiToolTipAnchor emotion-euiToolTipAnchor-inlineBlock"

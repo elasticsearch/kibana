@@ -54,9 +54,11 @@ describe('index_patterns/field_capabilities/field_capabilities', () => {
 
     sandbox
       .stub(callFieldCapsApiNS, 'callFieldCapsApi')
-      .callsFake(async () => ({ body: esResponse }));
-    sandbox.stub(readFieldCapsResponseNS, 'readFieldCapsResponse').returns(fieldsFromFieldCaps);
-    sandbox.stub(mergeOverridesNS, 'mergeOverrides').callsFake(mergeOverrides);
+      .value(sinon.stub().callsFake(async () => ({ body: esResponse })));
+    sandbox
+      .stub(readFieldCapsResponseNS, 'readFieldCapsResponse')
+      .value(sinon.stub().returns(fieldsFromFieldCaps));
+    sandbox.stub(mergeOverridesNS, 'mergeOverrides').value(sinon.stub().callsFake(mergeOverrides));
   };
 
   describe('calls `callFieldCapsApi()`', () => {

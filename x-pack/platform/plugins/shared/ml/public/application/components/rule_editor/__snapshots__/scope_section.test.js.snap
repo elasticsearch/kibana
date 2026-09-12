@@ -157,7 +157,7 @@ exports[`ScopeSection renders when enabled with no scope supplied 1`] = `
       class="euiFlexItem emotion-euiFlexItem-growZero"
     >
       <button
-        class="euiExpression emotion-euiExpression-isClickable-success-ScopeExpression"
+        class="euiExpression emotion-euiExpression-isClickable-success"
       >
         <span
           class="euiExpression__description emotion-euiExpression__description-success-isUppercase"
@@ -282,7 +282,7 @@ exports[`ScopeSection renders when enabled with scope supplied 1`] = `
       class="euiFlexItem emotion-euiFlexItem-growZero"
     >
       <button
-        class="euiExpression emotion-euiExpression-isClickable-success-ScopeExpression"
+        class="euiExpression emotion-euiExpression-isClickable-success"
       >
         <span
           class="euiExpression__description emotion-euiExpression__description-success-isUppercase"
