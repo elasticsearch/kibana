@@ -89,10 +89,12 @@ viewer:
         - feature_actions.read
         - feature_builtInAlerts.read
         - feature_osquery.read
-        - feature_discover_v2.all
-        - feature_dashboard_v2.all
-        - feature_maps_v2.all
-        - feature_visualize_v2.all
+        # Read-only now that Dashboard/Discover are assignable. `.all` was inert while those
+        # features were hidden; SIEM `read` already composedOf the same read privileges.
+        - feature_discover_v2.read
+        - feature_dashboard_v2.read
+        - feature_maps_v2.read
+        - feature_visualize_v2.read
         - feature_savedQueryManagement.all
         - feature_agentBuilder.read
         - feature_workflowsManagement.read
@@ -337,8 +339,9 @@ t1_analyst:
         - feature_builtInAlerts.read
         - feature_osquery.read
         - feature_osquery.run_saved_queries
-        - feature_discover_v2.all
-        - feature_dashboard_v2.all
+        # Same as viewer: SIEM `read` only composedOf Dashboard/Discover read.
+        - feature_discover_v2.read
+        - feature_dashboard_v2.read
         - feature_maps_v2.all
         - feature_visualize_v2.all
         - feature_savedQueryManagement.all
@@ -442,8 +445,9 @@ t2_analyst:
         - feature_builtInAlerts.read
         - feature_osquery.read
         - feature_osquery.run_saved_queries
-        - feature_discover_v2.all
-        - feature_dashboard_v2.all
+        # Same as viewer: SIEM `read` only composedOf Dashboard/Discover read.
+        - feature_discover_v2.read
+        - feature_dashboard_v2.read
         - feature_maps_v2.all
         - feature_visualize_v2.all
         - feature_savedQueryManagement.all

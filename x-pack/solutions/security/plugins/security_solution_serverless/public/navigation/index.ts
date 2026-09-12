@@ -11,12 +11,16 @@ import type { Services } from '../common/services';
 import { subscribeBreadcrumbs } from './breadcrumbs';
 import { registerSolutionNavigation } from './navigation';
 import { enableManagementCardsLanding } from './management_cards';
+import { subscribeDashboardOnlyLanding } from './redirect_dashboard_only_landing';
 
 export const startNavigation = (
   services: Services,
   productTypes: SecurityProductTypes
 ): Subscription => {
+  const landingSubscription = subscribeDashboardOnlyLanding(services);
   registerSolutionNavigation(services, productTypes);
   subscribeBreadcrumbs(services);
-  return enableManagementCardsLanding(services);
+  const managementSubscription = enableManagementCardsLanding(services);
+  landingSubscription.add(managementSubscription);
+  return landingSubscription;
 };
