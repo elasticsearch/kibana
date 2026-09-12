@@ -5,6 +5,7 @@
  * 2.0.
  */
 
+import { esql } from '@elastic/esql';
 import { isEqual } from 'lodash';
 import { v4 as uuidv4 } from 'uuid';
 import { asyncMapWithLimit } from '@kbn/std';
@@ -19,7 +20,10 @@ import {
 } from '@kbn/workflows';
 import type { WorkflowsServerPluginSetup } from '@kbn/workflows-management-plugin/server';
 import type { ActionMetadata } from '@kbn/workflows';
-import { PROPOSALS_RESUME_CHANNEL } from '../../../common/proposals/constants';
+import {
+  PROPOSALS_RESUME_CHANNEL,
+  PROPOSAL_UNCATEGORIZED,
+} from '../../../common/proposals/constants';
 import type {
   ApproveProposalRequest,
   CreateProposalRequest,
@@ -28,6 +32,9 @@ import type {
   ListProposalsQuery,
   ListProposalsResponse,
   Proposal,
+  ProposalChartsSummaryBucket,
+  ProposalChartsSummaryQuery,
+  ProposalChartsSummaryResponse,
   ProposalsListResponse,
   ProposalStatus,
   ProposalUser,
@@ -44,6 +51,16 @@ import {
 } from './errors';
 
 type WorkflowsManagementApi = WorkflowsServerPluginSetup['management'];
+
+/**
+ * Elasticsearch's `esql.query.result_truncation_max_size` default. A LIMIT above
+ * this is capped to it rather than honoured, so asking for more is not a way to
+ * avoid truncation — bounding the row count is (see MAX_CHARTS_SUMMARY_BUCKETS).
+ */
+const ESQL_RESULT_TRUNCATION_MAX_SIZE = 10000;
+
+/** One row per category; generous enough that truncation implies a bug. */
+const ESQL_CATEGORY_ROW_LIMIT = 1000;
 
 /** The parts of an action workflow definition this service reads. */
 interface ActionWorkflowDefinition {
@@ -248,6 +265,173 @@ export class ProposalsService {
   }
 
   /**
+   * Open-proposal counts per bucket. A proposal counts as open at bucket T if it
+   * was created at or before the end of T and had neither been decided nor
+   * expired by the start of T+1.
+   *
+   * An anchor count seeds a running sum that opens, closes and expiries then
+   * move, which is what keeps this to four queries instead of one per bucket.
+   *
+   * Expiry is treated as a fourth event stream rather than as a `WHERE` filter.
+   * Filtering on `expiresAt > NOW()` would evaluate a *request-time* predicate
+   * against every historical bucket, so a proposal that has since expired would
+   * be erased from its own past — the same past bucket would return a different
+   * value on each refetch.
+   */
+  async chartsSummary(
+    { windowHours, bucketMinutes }: ProposalChartsSummaryQuery,
+    spaceId: string
+  ): Promise<ProposalChartsSummaryResponse> {
+    const now = Date.now();
+    const bucketMs = bucketMinutes * 60 * 1000;
+    const windowStartMs = Math.floor((now - windowHours * 60 * 60 * 1000) / bucketMs) * bucketMs;
+    const windowStartIso = new Date(windowStartMs).toISOString();
+    // +1 so the window always ends at or after `now` even after flooring.
+    const bucketCount = Math.floor((now - windowStartMs) / bucketMs) + 1;
+
+    const zeroBuckets = (): ProposalChartsSummaryResponse => ({
+      buckets: Array.from({ length: bucketCount }, (_, i) => ({
+        timestamp: windowStartMs + i * bucketMs,
+        counts: {},
+      })),
+    });
+
+    let anchorResponse;
+    let opensResponse;
+    let closesResponse;
+    let expiriesResponse;
+    try {
+      [anchorResponse, opensResponse, closesResponse, expiriesResponse] = await Promise.all([
+        // TODO(#19258): once `supersededBy` exists, add `AND supersededBy IS NULL`
+        // to all four queries, so a superseded proposal is not counted alongside
+        // its replacement.
+        //
+        // `COALESCE(category, …)` in every query: a proposal with no action has no
+        // category, and a bare `BY category` would drop it from the aggregation —
+        // and, under `drop_null_columns`, drop the column outright when no row has
+        // one, zeroing the whole chart.
+        this.deps.storage.esql({
+          pipeline: esql`WHERE spaceId == ${{ spaceId }}
+          AND createdAt < TO_DATETIME(${{ wsAnchorCreated: windowStartIso }})
+          AND (decidedAt IS NULL OR decidedAt >= TO_DATETIME(${{
+            wsAnchorDecided: windowStartIso,
+          }}))
+          AND (expiresAt IS NULL OR expiresAt >= TO_DATETIME(${{
+            wsAnchorExpires: windowStartIso,
+          }}))
+        | EVAL category = COALESCE(category, ${{ anchorUncategorized: PROPOSAL_UNCATEGORIZED }})
+        | STATS anchor = COUNT(*) BY category
+        | LIMIT ${ESQL_CATEGORY_ROW_LIMIT}`,
+        }),
+
+        this.deps.storage.esql({
+          pipeline: esql`WHERE spaceId == ${{ spaceId }}
+          AND createdAt >= TO_DATETIME(${{ wsOpensFilter: windowStartIso }})
+        | EVAL idx = FLOOR(DATE_DIFF("minutes", TO_DATETIME(${{
+          wsOpensDiff: windowStartIso,
+        }}), createdAt) / ${{ bucketMinutes }})
+        | EVAL category = COALESCE(category, ${{ opensUncategorized: PROPOSAL_UNCATEGORIZED }})
+        | STATS opens = COUNT(*) BY idx, category
+        | SORT idx ASC
+        | LIMIT ${ESQL_RESULT_TRUNCATION_MAX_SIZE}`,
+        }),
+
+        this.deps.storage.esql({
+          pipeline: esql`WHERE spaceId == ${{ spaceId }}
+          AND decidedAt IS NOT NULL
+          AND decidedAt >= TO_DATETIME(${{ wsClosesFilter: windowStartIso }})
+        | EVAL idx = FLOOR(DATE_DIFF("minutes", TO_DATETIME(${{
+          wsClosesDiff: windowStartIso,
+        }}), decidedAt) / ${{ bucketMinutes }})
+        | EVAL category = COALESCE(category, ${{ closesUncategorized: PROPOSAL_UNCATEGORIZED }})
+        | STATS closes = COUNT(*) BY idx, category
+        | SORT idx ASC
+        | LIMIT ${ESQL_RESULT_TRUNCATION_MAX_SIZE}`,
+        }),
+
+        // `decidedAt IS NULL` so a proposal that expired and was later decided is
+        // decremented once, by the closes query, rather than by both.
+        this.deps.storage.esql({
+          pipeline: esql`WHERE spaceId == ${{ spaceId }}
+          AND decidedAt IS NULL
+          AND expiresAt IS NOT NULL
+          AND expiresAt >= TO_DATETIME(${{ wsExpiriesFilter: windowStartIso }})
+          AND expiresAt <= NOW()
+        | EVAL idx = FLOOR(DATE_DIFF("minutes", TO_DATETIME(${{
+          wsExpiriesDiff: windowStartIso,
+        }}), expiresAt) / ${{ bucketMinutes }})
+        | EVAL category = COALESCE(category, ${{ expiriesUncategorized: PROPOSAL_UNCATEGORIZED }})
+        | STATS expiries = COUNT(*) BY idx, category
+        | SORT idx ASC
+        | LIMIT ${ESQL_RESULT_TRUNCATION_MAX_SIZE}`,
+        }),
+      ]);
+    } catch (error) {
+      // An index created outside the storage adapter can be missing a field this
+      // queries, which ES|QL rejects rather than treating as null. Read *that*
+      // case as "no data" so the UI flatlines instead of 500ing. Every other
+      // verification failure is a genuine query defect and must propagate:
+      // swallowing it would render a healthy-looking dashboard of zeroes.
+      if (isEsqlUnknownColumnError(error)) {
+        this.deps.logger.warn(
+          `chartsSummary: ES|QL reported an unknown column — returning zero buckets. ` +
+            `Recreate the index via the proposals write path to fix the mapping. Error: ${error.message}`
+        );
+        return zeroBuckets();
+      }
+      throw error;
+    }
+
+    this.warnIfTruncated(opensResponse, 'opens');
+    this.warnIfTruncated(closesResponse, 'closes');
+    this.warnIfTruncated(expiriesResponse, 'expiries');
+
+    const anchorByCat = parseEsqlCountByCategory(anchorResponse, 'anchor');
+    const opensByIdxAndCat = parseEsqlCountByIdxAndCategory(opensResponse, 'opens');
+    const closesByIdxAndCat = parseEsqlCountByIdxAndCategory(closesResponse, 'closes');
+    const expiriesByIdxAndCat = parseEsqlCountByIdxAndCategory(expiriesResponse, 'expiries');
+
+    const runningSums: Record<string, number> = { ...anchorByCat };
+    const buckets: ProposalChartsSummaryBucket[] = [];
+
+    for (let i = 0; i < bucketCount; i++) {
+      const timestamp = windowStartMs + i * bucketMinutes * 60_000;
+
+      for (const [cat, count] of Object.entries(opensByIdxAndCat[i] ?? {})) {
+        runningSums[cat] = (runningSums[cat] ?? 0) + count;
+      }
+      for (const [cat, count] of Object.entries(closesByIdxAndCat[i] ?? {})) {
+        // Clamped because a close whose open the anchor missed would drive this
+        // negative, and a negative open count is worse than an undercount.
+        runningSums[cat] = Math.max(0, (runningSums[cat] ?? 0) - count);
+      }
+      for (const [cat, count] of Object.entries(expiriesByIdxAndCat[i] ?? {})) {
+        runningSums[cat] = Math.max(0, (runningSums[cat] ?? 0) - count);
+      }
+
+      buckets.push({ timestamp, counts: { ...runningSums } });
+    }
+
+    return { buckets };
+  }
+
+  /**
+   * Elasticsearch caps an ES|QL result set at `esql.query.result_truncation_max_size`
+   * whatever LIMIT the query asked for, and drops the tail of the sort — here, the
+   * most recent buckets. The schema's bucket ceiling should keep this unreachable,
+   * so a hit means an unexpectedly wide category vocabulary.
+   */
+  private warnIfTruncated(response: { values: unknown[] }, label: string): void {
+    if (response.values.length >= ESQL_RESULT_TRUNCATION_MAX_SIZE) {
+      this.deps.logger.warn(
+        `chartsSummary: the ${label} query returned ${response.values.length} rows, at or above ` +
+          `the ES|QL truncation ceiling of ${ESQL_RESULT_TRUNCATION_MAX_SIZE}. The most recent ` +
+          `buckets may be undercounted.`
+      );
+    }
+  }
+
+  /**
    * Records the approval and then releases the gating workflow. Order matters:
    * the workflow only ever receives a boolean, so anything durable has to be
    * written first.
@@ -340,7 +524,14 @@ export class ProposalsService {
       );
     }
 
-    const updated: StoredProposalRecord = { ...proposal, status, executionError };
+    const updated: StoredProposalRecord = {
+      ...proposal,
+      status,
+      executionError,
+      // Only writeDecision stamps decidedAt otherwise, so a proposal a workflow
+      // terminated would read as open forever.
+      ...(isTerminal(status) && !proposal.decidedAt ? { decidedAt: new Date().toISOString() } : {}),
+    };
     const { id: _id, ...document } = updated;
 
     await this.deps.storage.index({
@@ -692,8 +883,72 @@ const sameInput = (
   stored: Record<string, unknown> | undefined
 ): boolean => isEqual(submitted ?? {}, stored ?? {});
 
+/**
+ * Narrow on purpose. ES|QL raises `verification_exception` for every query it
+ * refuses to plan — a renamed field, an unsupported function, a bad cast. Only
+ * the unknown-column case means "the mapping has not caught up yet"; treating
+ * the rest as no-data would turn a broken query into a silent flat line.
+ */
+const isEsqlUnknownColumnError = (error: unknown): boolean => {
+  const body =
+    (error as { meta?: { body?: { error?: { type?: string; reason?: string } } } })?.meta?.body
+      ?.error ?? (error as { body?: { error?: { type?: string; reason?: string } } })?.body?.error;
+
+  if (body?.type !== 'verification_exception') return false;
+
+  const detail = `${body.reason ?? ''} ${(error as { message?: string })?.message ?? ''}`;
+  return /unknown column/i.test(detail);
+};
+
 const isVersionConflict = (error: unknown): boolean => {
   const status = (error as { statusCode?: number; meta?: { statusCode?: number } })?.statusCode;
   const metaStatus = (error as { meta?: { statusCode?: number } })?.meta?.statusCode;
   return status === 409 || metaStatus === 409;
+};
+
+/**
+ * Columns are looked up by name, not position: `drop_null_columns: true` (the
+ * adapter default) shifts the offsets when a column comes back entirely null.
+ */
+const parseEsqlCountByCategory = (
+  response: { columns: Array<{ name: string }>; values: Array<unknown[]> },
+  countField: string
+): Record<string, number> => {
+  const colIdx = response.columns.findIndex((c) => c.name === countField);
+  const catIdx = response.columns.findIndex((c) => c.name === 'category');
+  if (colIdx === -1 || catIdx === -1) return {};
+
+  const result: Record<string, number> = {};
+  for (const row of response.values) {
+    const category = row[catIdx] as string | null;
+    const count = row[colIdx] as number | null;
+    if (category) result[category] = count ?? 0;
+  }
+  return result;
+};
+
+/** Same by-name lookup as above. Rows with a negative or non-finite `idx` are dropped. */
+const parseEsqlCountByIdxAndCategory = (
+  response: { columns: Array<{ name: string }>; values: Array<unknown[]> },
+  countField: string
+): Record<number, Record<string, number>> => {
+  const idxCol = response.columns.findIndex((c) => c.name === 'idx');
+  const catCol = response.columns.findIndex((c) => c.name === 'category');
+  const cntCol = response.columns.findIndex((c) => c.name === countField);
+  if (idxCol === -1 || catCol === -1 || cntCol === -1) return {};
+
+  const result: Record<number, Record<string, number>> = {};
+  for (const row of response.values) {
+    const rawIdx = row[idxCol] as number | null;
+    const category = row[catCol] as string | null;
+    const count = row[cntCol] as number | null;
+
+    if (rawIdx === null || rawIdx === undefined || !Number.isFinite(rawIdx) || !category) continue;
+    const idx = Math.floor(rawIdx);
+    if (idx < 0) continue;
+
+    if (!result[idx]) result[idx] = {};
+    result[idx][category] = count ?? 0;
+  }
+  return result;
 };

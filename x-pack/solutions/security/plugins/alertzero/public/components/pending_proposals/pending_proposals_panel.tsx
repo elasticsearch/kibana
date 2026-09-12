@@ -5,28 +5,13 @@
  * 2.0.
  */
 
-import React, { useCallback, useState } from 'react';
-import {
-  EuiConfirmModal,
-  EuiEmptyPrompt,
-  EuiLoadingSpinner,
-  EuiSpacer,
-  EuiText,
-  EuiTitle,
-  useGeneratedHtmlId,
-} from '@elastic/eui';
+import React from 'react';
+import { EuiEmptyPrompt, EuiLoadingSpinner, EuiSpacer, EuiText, EuiTitle } from '@elastic/eui';
 import { KbnDangerCallout } from '@kbn/ui-callout';
-import type {
-  DismissReason,
-  ProposalWithMetadata,
-} from '@kbn/agentic-investigations-plugin/common';
-import {
-  useApproveProposal,
-  useDismissProposal,
-  usePendingProposals,
-} from '../../hooks/use_proposals_api';
-import { DismissProposalModal } from './dismiss_proposal_modal';
+import { usePendingProposals } from '../../hooks/use_proposals_api';
+import { useProposalDecisions } from '../../hooks/use_proposal_decisions';
 import { ProposalDecisionCard } from './proposal_decision_card';
+import { ProposalDecisionModals } from './proposal_decision_modals';
 import * as i18n from './translations';
 
 export interface PendingProposalsPanelProps {
@@ -48,44 +33,9 @@ export const PendingProposalsPanel: React.FC<PendingProposalsPanelProps> = ({
   hideWhenEmpty = false,
 }) => {
   const { data, isLoading, error } = usePendingProposals(conversationId);
-  const approve = useApproveProposal();
-  const dismiss = useDismissProposal();
-  const approveModalTitleId = useGeneratedHtmlId();
-
-  const [pendingApproval, setPendingApproval] = useState<ProposalWithMetadata | undefined>();
-  const [pendingDismissal, setPendingDismissal] = useState<ProposalWithMetadata | undefined>();
+  const decisions = useProposalDecisions();
 
   const proposals = data?.proposals ?? [];
-  const isBusy = approve.isLoading || dismiss.isLoading;
-  const decisionFailed = approve.isError || dismiss.isError;
-
-  const onConfirmApproval = useCallback(() => {
-    if (!pendingApproval) {
-      return;
-    }
-    // Submitting the input we rendered lets the API refuse an approval that no
-    // longer matches the stored proposal.
-    approve.mutate(
-      {
-        id: pendingApproval.id,
-        body: { actionInput: pendingApproval.actionInput },
-      },
-      { onSettled: () => setPendingApproval(undefined) }
-    );
-  }, [approve, pendingApproval]);
-
-  const onConfirmDismissal = useCallback(
-    ({ dismissReason, rationale }: { dismissReason: DismissReason; rationale: string }) => {
-      if (!pendingDismissal) {
-        return;
-      }
-      dismiss.mutate(
-        { id: pendingDismissal.id, body: { dismissReason, rationale } },
-        { onSettled: () => setPendingDismissal(undefined) }
-      );
-    },
-    [dismiss, pendingDismissal]
-  );
 
   if (isLoading) {
     return <EuiLoadingSpinner size="l" aria-label={i18n.LOADING} />;
@@ -114,7 +64,7 @@ export const PendingProposalsPanel: React.FC<PendingProposalsPanelProps> = ({
         </>
       ) : null}
 
-      {decisionFailed ? (
+      {decisions.decisionFailed ? (
         <>
           <KbnDangerCallout announceOnMount title={i18n.DECISION_FAILED} />
           <EuiSpacer size="s" />
@@ -126,41 +76,15 @@ export const PendingProposalsPanel: React.FC<PendingProposalsPanelProps> = ({
           <ProposalDecisionCard
             proposal={proposal}
             isSelected={proposal.id === selectedProposalId}
-            isBusy={isBusy}
-            onApprove={setPendingApproval}
-            onDismiss={setPendingDismissal}
+            isBusy={decisions.isBusy}
+            onApprove={decisions.requestApproval}
+            onDismiss={decisions.requestDismissal}
           />
           <EuiSpacer size="m" />
         </React.Fragment>
       ))}
 
-      {pendingApproval ? (
-        <EuiConfirmModal
-          title={i18n.APPROVE_MODAL_TITLE}
-          aria-labelledby={approveModalTitleId}
-          titleProps={{ id: approveModalTitleId }}
-          onCancel={() => setPendingApproval(undefined)}
-          onConfirm={onConfirmApproval}
-          cancelButtonText={i18n.CANCEL}
-          confirmButtonText={i18n.APPROVE_CONFIRM}
-          buttonColor="primary"
-          isLoading={approve.isLoading}
-          data-test-subj="alertZeroApproveProposalModal"
-        >
-          <EuiText size="s">
-            <p>{pendingApproval.action?.name ?? pendingApproval.actionWorkflowId}</p>
-            <p>{i18n.APPROVE_RUNS_AS_YOU}</p>
-          </EuiText>
-        </EuiConfirmModal>
-      ) : null}
-
-      {pendingDismissal ? (
-        <DismissProposalModal
-          proposalId={pendingDismissal.id}
-          onClose={() => setPendingDismissal(undefined)}
-          onConfirm={onConfirmDismissal}
-        />
-      ) : null}
+      <ProposalDecisionModals decisions={decisions} />
     </div>
   );
 };

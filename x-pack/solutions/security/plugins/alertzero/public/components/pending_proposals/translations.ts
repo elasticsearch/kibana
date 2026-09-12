@@ -82,6 +82,39 @@ export const DECISION_FAILED = i18n.translate('xpack.alertzero.pendingProposals.
   defaultMessage: 'The decision could not be recorded. Reload the queue and try again.',
 });
 
+/**
+ * Pre-translated per-status labels. A `Record` over `ProposalStatus` (not
+ * `Record<string, …>`) so adding a status upstream is a compile error here
+ * rather than a silently blank badge at runtime. Colors live next to
+ * `IMPACT_COLORS` in the card file.
+ *
+ * 'pending' is included for completeness; in practice pending proposals render
+ * the Approve / Dismiss buttons rather than this label.
+ */
+export const PROPOSAL_STATUS_LABELS: Record<
+  'pending' | 'approved' | 'executing' | 'succeeded' | 'failed' | 'dismissed',
+  string
+> = {
+  pending: i18n.translate('xpack.alertzero.pendingProposals.status.pending', {
+    defaultMessage: 'Pending',
+  }),
+  approved: i18n.translate('xpack.alertzero.pendingProposals.status.approved', {
+    defaultMessage: 'Approved',
+  }),
+  executing: i18n.translate('xpack.alertzero.pendingProposals.status.executing', {
+    defaultMessage: 'Running',
+  }),
+  succeeded: i18n.translate('xpack.alertzero.pendingProposals.status.succeeded', {
+    defaultMessage: 'Done',
+  }),
+  failed: i18n.translate('xpack.alertzero.pendingProposals.status.failed', {
+    defaultMessage: 'Failed',
+  }),
+  dismissed: i18n.translate('xpack.alertzero.pendingProposals.status.dismissed', {
+    defaultMessage: 'Dismissed',
+  }),
+};
+
 export const DISMISS_REASON_LABELS: Record<string, string> = {
   wrong: i18n.translate('xpack.alertzero.pendingProposals.dismissReason.wrong', {
     defaultMessage: 'Wrong',

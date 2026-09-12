@@ -20,6 +20,29 @@ export const PROPOSALS_INTERNAL_URL = `${AGENTIC_INVESTIGATIONS_INTERNAL_URL}/pr
 export const PROPOSAL_BY_ID_URL = `${PROPOSALS_INTERNAL_URL}/{id}` as const;
 export const PROPOSAL_APPROVE_URL = `${PROPOSALS_INTERNAL_URL}/{id}/approve` as const;
 export const PROPOSAL_DISMISS_URL = `${PROPOSALS_INTERNAL_URL}/{id}/dismiss` as const;
+export const PROPOSAL_CHARTS_SUMMARY_URL = `${PROPOSALS_INTERNAL_URL}/charts-summary` as const;
+
+/**
+ * Stand-in category for a proposal that carries no action and therefore has no
+ * category of its own. Substituted on the read path rather than at write time:
+ * the category vocabulary belongs to the solution that authored the action, so
+ * the stored document keeps `category` absent. Without this, action-less
+ * proposals fall out of every `BY category` aggregation and are invisible to
+ * both the charts and the header count that reads from them.
+ */
+export const PROPOSAL_UNCATEGORIZED = 'uncategorized' as const;
+
+/**
+ * Ceiling on `windowHours * 60 / bucketMinutes`.
+ *
+ * Elasticsearch caps any ES|QL result set at `esql.query.result_truncation_max_size`
+ * (10 000 by default) regardless of the LIMIT the query asks for — a user-supplied
+ * limit is capped to the max rather than honoured. The per-bucket queries emit one
+ * row per (bucket, category) and sort by bucket ascending, so a truncated result
+ * loses the *most recent* buckets silently. Capping bucket count here keeps the
+ * row count under that ceiling for any realistic number of categories.
+ */
+export const MAX_CHARTS_SUMMARY_BUCKETS = 1000;
 
 /**
  * UI capabilities. Capabilities are namespaced by feature id rather than by

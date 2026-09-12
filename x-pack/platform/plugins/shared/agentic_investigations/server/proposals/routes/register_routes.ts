@@ -11,6 +11,7 @@ import { registerCreateProposalRoute } from './create_proposal';
 import { registerDismissProposalRoute } from './dismiss_proposal';
 import { registerGetProposalRoute } from './get_proposal';
 import { registerListProposalsRoute } from './list_proposals';
+import { registerProposalStatsRoute } from './proposal_charts_summary';
 
 export const registerRoutes = (deps: RouteDependencies) => {
   registerCreateProposalRoute(deps);
@@ -18,4 +19,5 @@ export const registerRoutes = (deps: RouteDependencies) => {
   registerGetProposalRoute(deps);
   registerApproveProposalRoute(deps);
   registerDismissProposalRoute(deps);
+  registerProposalStatsRoute(deps);
 };

@@ -34,5 +34,16 @@ export const queryKeys = {
     list: (conversationId?: string) =>
       [...queryKeys.proposals.all, 'list', conversationId ?? 'any'] as const,
     detail: (id: string | undefined) => [...queryKeys.proposals.all, 'detail', id] as const,
+    chartsSummary: (windowHours: number, bucketMinutes: number) =>
+      [...queryKeys.proposals.all, 'charts-summary', windowHours, bucketMinutes] as const,
+    /**
+     * The AlertZero grouped route (`GET /internal/alertzero/proposals`). A separate leaf from
+     * `list`: different endpoint, different response shape — sharing a key would let this hook
+     * surface a flat payload with no `groups`. Nesting under `proposals.*` means the existing
+     * `useApproveProposal`/`useDismissProposal` invalidations refresh this cache on every
+     * decision for free.
+     */
+    groupedList: (windowHours: number) =>
+      [...queryKeys.proposals.all, 'grouped-list', windowHours] as const,
   },
 };

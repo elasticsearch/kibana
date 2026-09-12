@@ -18,7 +18,8 @@ import {
   EuiText,
   EuiTitle,
 } from '@elastic/eui';
-import type { ProposalWithMetadata } from '@kbn/agentic-investigations-plugin/common';
+import { isDecided } from '@kbn/agentic-investigations-plugin/common';
+import type { ProposalItem } from '../../../common/proposals/list';
 import * as i18n from './translations';
 
 const IMPACT_COLORS: Record<string, string> = {
@@ -28,12 +29,26 @@ const IMPACT_COLORS: Record<string, string> = {
   critical: 'danger',
 };
 
+const DECISION_BADGE_COLORS: Record<string, string> = {
+  approved: 'success',
+  executing: 'success',
+  succeeded: 'success',
+  failed: 'danger',
+  dismissed: 'hollow',
+};
+
 export interface ProposalDecisionCardProps {
-  proposal: ProposalWithMetadata;
+  /**
+   * `ProposalItem` is a widened superset of `ProposalWithMetadata` (only adds
+   * an optional `conversationTitle`). The per-conversation panel passes plain
+   * `ProposalWithMetadata` and still type-checks because the extra field is
+   * optional — preferred over a sibling prop that could disagree with `proposal`.
+   */
+  proposal: ProposalItem;
   isSelected?: boolean;
   isBusy?: boolean;
-  onApprove: (proposal: ProposalWithMetadata) => void;
-  onDismiss: (proposal: ProposalWithMetadata) => void;
+  onApprove: (proposal: ProposalItem) => void;
+  onDismiss: (proposal: ProposalItem) => void;
 }
 
 /**
@@ -50,6 +65,9 @@ export const ProposalDecisionCard: React.FC<ProposalDecisionCardProps> = ({
 }) => {
   const [showInput, setShowInput] = useState(false);
   const actionName = proposal.action?.name ?? proposal.actionWorkflowId;
+  // Derived from data, not a prop: a prop can disagree with the stored status,
+  // the data cannot disagree with itself.
+  const decided = isDecided(proposal.status);
 
   return (
     <EuiPanel
@@ -58,6 +76,15 @@ export const ProposalDecisionCard: React.FC<ProposalDecisionCardProps> = ({
       color={isSelected ? 'primary' : 'plain'}
       data-test-subj={`alertZeroProposalCard-${proposal.id}`}
     >
+      {proposal.conversationTitle ? (
+        <>
+          <EuiText size="xs" color="subdued" data-test-subj="alertZeroProposalConversationTitle">
+            <p>{proposal.conversationTitle}</p>
+          </EuiText>
+          <EuiSpacer size="xs" />
+        </>
+      ) : null}
+
       <EuiFlexGroup gutterSize="s" alignItems="center" wrap>
         <EuiFlexItem>
           <EuiTitle size="xxs">
@@ -125,30 +152,40 @@ export const ProposalDecisionCard: React.FC<ProposalDecisionCardProps> = ({
       ) : null}
 
       <EuiSpacer size="m" />
-      <EuiFlexGroup gutterSize="s">
-        <EuiFlexItem grow={false}>
-          <EuiButton
-            size="s"
-            fill
-            isDisabled={proposal.expired || isBusy}
-            onClick={() => onApprove(proposal)}
-            data-test-subj="alertZeroProposalApprove"
-          >
-            {i18n.APPROVE}
-          </EuiButton>
-        </EuiFlexItem>
-        <EuiFlexItem grow={false}>
-          <EuiButtonEmpty
-            size="s"
-            color="danger"
-            isDisabled={isBusy}
-            onClick={() => onDismiss(proposal)}
-            data-test-subj="alertZeroProposalDismiss"
-          >
-            {i18n.DISMISS}
-          </EuiButtonEmpty>
-        </EuiFlexItem>
-      </EuiFlexGroup>
+
+      {decided ? (
+        <EuiBadge
+          color={DECISION_BADGE_COLORS[proposal.status] ?? 'hollow'}
+          data-test-subj="alertZeroProposalDecision"
+        >
+          {i18n.PROPOSAL_STATUS_LABELS[proposal.status] ?? proposal.status}
+        </EuiBadge>
+      ) : (
+        <EuiFlexGroup gutterSize="s">
+          <EuiFlexItem grow={false}>
+            <EuiButton
+              size="s"
+              fill
+              isDisabled={proposal.expired || isBusy}
+              onClick={() => onApprove(proposal)}
+              data-test-subj="alertZeroProposalApprove"
+            >
+              {i18n.APPROVE}
+            </EuiButton>
+          </EuiFlexItem>
+          <EuiFlexItem grow={false}>
+            <EuiButtonEmpty
+              size="s"
+              color="danger"
+              isDisabled={isBusy}
+              onClick={() => onDismiss(proposal)}
+              data-test-subj="alertZeroProposalDismiss"
+            >
+              {i18n.DISMISS}
+            </EuiButtonEmpty>
+          </EuiFlexItem>
+        </EuiFlexGroup>
+      )}
     </EuiPanel>
   );
 };
