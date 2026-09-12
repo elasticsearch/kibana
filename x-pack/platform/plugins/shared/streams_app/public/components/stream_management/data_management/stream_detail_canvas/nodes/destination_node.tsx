@@ -43,6 +43,7 @@ export function DestinationNode({ data, selected, dragging }: NodeProps<Destinat
         >
           <EuiText
             size="xs"
+            data-test-subj="streamsCanvasNodeTitle"
             css={css`
               flex: 1 1 auto;
               min-width: 0;

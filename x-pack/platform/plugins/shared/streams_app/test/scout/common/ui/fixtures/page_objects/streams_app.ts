@@ -214,17 +214,15 @@ export class StreamsApp {
   }
 
   /**
-   * Click near the top of a node card so the floating toolbar (bottom-center)
-   * cannot intercept the pointer when a node sits toward the bottom of the pane.
+   * Click the node title so the hit point scales with the React Flow zoom and
+   * stays clear of the floating toolbar (bottom-center), even when `fitView`
+   * shrinks the card to `MIN_ZOOM`.
    */
   async clickCanvasNode(
     node: Locator,
     options: { button?: 'left' | 'right'; modifiers?: Array<'Shift'> } = {}
   ) {
-    await node.click({
-      position: { x: 24, y: 16 },
-      ...options,
-    });
+    await node.getByTestId('streamsCanvasNodeTitle').click(options);
   }
 
   async rightClickCanvasNode(node: Locator) {

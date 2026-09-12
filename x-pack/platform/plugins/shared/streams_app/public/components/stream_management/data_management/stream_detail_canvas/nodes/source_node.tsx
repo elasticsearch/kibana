@@ -86,7 +86,7 @@ export function SourceNode({ data, selected, dragging }: NodeProps<SourceNodeTyp
               overflow: hidden;
             `}
           >
-            <EuiText size="s">
+            <EuiText size="s" data-test-subj="streamsCanvasNodeTitle">
               <strong>{data.title}</strong>
             </EuiText>
             <EuiText size="s" color="subdued">
