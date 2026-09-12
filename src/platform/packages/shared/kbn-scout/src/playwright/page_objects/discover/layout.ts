@@ -724,22 +724,17 @@ export abstract class LayoutMixin extends SaveMixin {
    * `value` is the selectable item value when it differs from the visible label.
    */
   async chooseBreakdownField(field: string, value = field) {
+    const selectable = this.page.testSubj.locator('unifiedHistogramBreakdownSelectorSelectable');
     await this.page.testSubj.click('unifiedHistogramBreakdownSelectorButton');
-    await this.page.testSubj.waitForSelector('unifiedHistogramBreakdownSelectorSelectable', {
-      state: 'visible',
-    });
+    await selectable.waitFor({ state: 'visible' });
     await this.page.testSubj.fill('unifiedHistogramBreakdownSelectorSelectorSearch', field);
-    await expect(
-      this.page.testSubj.locator('unifiedHistogramBreakdownSelectorSelectable')
-    ).toHaveAttribute('data-is-searching', 'false');
-    await this.page
-      .locator(
-        `[data-test-subj="unifiedHistogramBreakdownSelectorSelectable"] .euiSelectableListItem[value="${value}"]`
-      )
-      .click();
-    await this.page.testSubj.waitForSelector('unifiedHistogramBreakdownSelectorSelectable', {
-      state: 'hidden',
+    // The list is virtualised; clicking while EUI is still filtering misses the option
+    // and leaves the popover open.
+    await selectable.and(this.page.locator('[data-is-searching="false"]')).waitFor({
+      state: 'attached',
     });
+    await selectable.locator(`.euiSelectableListItem[value="${value}"]`).click();
+    await selectable.waitFor({ state: 'hidden' });
   }
 
   /**
@@ -766,17 +761,23 @@ export abstract class LayoutMixin extends SaveMixin {
 
   async showChart() {
     const showButton = this.page.testSubj.locator('dscShowHistogramButton');
+    const hideButton = this.page.testSubj.locator('dscHideHistogramButton');
+    // The toggle renders as exactly one of these; wait for it to mount before
+    // probing so a slow post-navigation render can't make the guard silently no-op.
+    await expect(showButton.or(hideButton)).toBeVisible();
     if (await showButton.isVisible()) {
       await showButton.click();
-      await this.waitUntilTabIsLoaded();
+      await expect(this.getHistogramChart()).toBeVisible();
     }
   }
 
   async hideChart() {
+    const showButton = this.page.testSubj.locator('dscShowHistogramButton');
     const hideButton = this.page.testSubj.locator('dscHideHistogramButton');
+    await expect(showButton.or(hideButton)).toBeVisible();
     if (await hideButton.isVisible()) {
       await hideButton.click();
-      await this.waitUntilTabIsLoaded();
+      await expect(this.getHistogramChart()).toBeHidden();
     }
   }
 
