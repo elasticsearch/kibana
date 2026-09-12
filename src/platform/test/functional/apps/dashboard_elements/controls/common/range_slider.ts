@@ -190,8 +190,10 @@ export default function ({ getService, getPageObjects }: FtrProviderContext) {
 
       it('applies filter from the first control on the second control', async () => {
         const secondId = (await dashboardControls.getAllControlIds())[1];
-        await dashboardControls.rangeSliderWaitForLoading(secondId);
-        await dashboardControls.validateRange('placeholder', secondId, '100', '1000');
+        await retry.try(async () => {
+          await dashboardControls.rangeSliderWaitForLoading(secondId);
+          await dashboardControls.validateRange('placeholder', secondId, '100', '1000');
+        });
         await dashboard.clearUnsavedChanges();
       });
 

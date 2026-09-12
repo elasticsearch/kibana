@@ -190,33 +190,33 @@ export function IndexManagementPageProvider({ getService, getPageObjects }: FtrP
     },
 
     async expectIndexIsDeleted(indexName: string) {
-      try {
-        const table = await find.byCssSelector('table');
-        const rows = await table.findAllByTestSubject('indexTableRow');
+      await retry.waitFor(`index ${indexName} to be removed from the table`, async () => {
+        try {
+          const table = await find.byCssSelector('table');
+          const rows = await table.findAllByTestSubject('indexTableRow');
 
-        const indexNames = await Promise.all(
-          rows.map(async (row) => {
-            try {
-              return await (
-                await row.findByTestSubject('indexTableIndexNameLink')
-              ).getVisibleText();
-            } catch (error) {
-              // If the current row is stale, it has already been removed
-              if (error.name === 'StaleElementReferenceError') return undefined;
-              throw error; // Rethrow unexpected errors
-            }
-          })
-        ).then((names) => names.filter((name) => name !== undefined));
+          const indexNames = await Promise.all(
+            rows.map(async (row) => {
+              try {
+                return await (
+                  await row.findByTestSubject('indexTableIndexNameLink')
+                ).getVisibleText();
+              } catch (error) {
+                // If the current row is stale, it has already been removed
+                if (error.name === 'StaleElementReferenceError') return undefined;
+                throw error;
+              }
+            })
+          ).then((names) => names.filter((name) => name !== undefined));
 
-        expect(indexNames.includes(indexName)).to.be(false);
-      } catch (error) {
-        if (error.name === 'StaleElementReferenceError') {
-          // If the table itself is stale, it means all rows have been removed
-          return; // Pass the test since the table is gone
-        } else {
-          throw error; // Rethrow unexpected errors
+          return !indexNames.includes(indexName);
+        } catch (error) {
+          if (error.name === 'StaleElementReferenceError') {
+            return true; // Table is gone, so index is deleted
+          }
+          throw error;
         }
-      }
+      });
     },
     async manageIndex(indexName: string) {
       const id = `checkboxSelectIndex-${indexName}`;
