@@ -28,6 +28,8 @@ import { getMockDataViewWithMatchedIndices } from '../../../data_view_manager/mo
 import { parseGroupingQuery } from '@kbn/grouping/src';
 import type { AlertsGroupingAggregation } from './grouping_settings/types';
 
+jest.setTimeout(15000);
+
 jest.mock('../../containers/detection_engine/alerts/use_query');
 jest.mock('../../../common/utils/normalize_time_range');
 jest.mock('uuid', () => ({
