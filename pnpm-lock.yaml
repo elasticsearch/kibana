@@ -116,8 +116,6 @@ overrides:
   vega-util: 2.1.0
   vscode-languageserver-types: 3.17.5
 
-pnpmfileChecksum: sha256-JL9Z/8IecLxwanP1rhrhbsvFTvupuyak+iLixXT5Rmk=
-
 importers:
 
   .:
@@ -4552,13 +4550,13 @@ importers:
         version: 2.6.5
       redux-devtools-extension:
         specifier: 2.13.8
-        version: 2.13.8
+        version: 2.13.8(redux@5.0.1)
       redux-saga:
         specifier: 1.3.0
         version: 1.3.0
       redux-thunk-v2:
         specifier: npm:redux-thunk@2.4.2
-        version: redux-thunk@2.4.2
+        version: redux-thunk@2.4.2(redux@5.0.1)
       redux-toolkit-v1:
         specifier: npm:@reduxjs/toolkit@1.9.7
         version: '@reduxjs/toolkit@1.9.7(react-redux@9.2.0(@types/react@18.2.79)(react@18.2.0)(redux@5.0.1))(react@18.2.0)'
@@ -4795,11 +4793,11 @@ importers:
         specifier: 7.29.8
         version: 7.29.8
       '@cypress/grep':
-        specifier: 5.1.0
-        version: 5.1.0(@babel/core@7.29.7(supports-color@10.2.2))(cypress@15.12.0)(supports-color@10.2.2)
+        specifier: 7.0.0
+        version: 7.0.0(@babel/core@7.29.7(supports-color@10.2.2))(cypress@15.21.1)(supports-color@10.2.2)
       '@cypress/webpack-preprocessor':
-        specifier: 6.0.2
-        version: 6.0.2(@babel/core@7.29.7(supports-color@10.2.2))(@babel/preset-env@7.29.7(@babel/core@7.29.7(supports-color@10.2.2))(supports-color@10.2.2))(babel-loader@9.2.1(@babel/core@7.29.7(supports-color@10.2.2))(webpack@5.96.1))(supports-color@10.2.2)(webpack@5.96.1)
+        specifier: 8.0.0
+        version: 8.0.0(@babel/core@7.29.7(supports-color@10.2.2))(@babel/preset-env@7.29.7(@babel/core@7.29.7(supports-color@10.2.2))(supports-color@10.2.2))(babel-loader@9.2.1(@babel/core@7.29.7(supports-color@10.2.2))(webpack@5.96.1))(supports-color@10.2.2)(webpack@5.96.1)
       '@elastic/eslint-plugin-eui':
         specifier: 3.0.0
         version: 3.0.0(eslint@8.57.0(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3)
@@ -6169,29 +6167,29 @@ importers:
         specifier: 3.0.7
         version: 3.0.7
       cypress:
-        specifier: 15.12.0
-        version: 15.12.0
+        specifier: 15.21.1
+        version: 15.21.1
       cypress-axe:
         specifier: 1.7.0
-        version: 1.7.0(axe-core@4.13.0)(cypress@15.12.0)
+        version: 1.7.0(axe-core@4.13.0)(cypress@15.21.1)
       cypress-data-session:
-        specifier: 2.8.7
-        version: 2.8.7(supports-color@10.2.2)
+        specifier: 3.0.0
+        version: 3.0.0(supports-color@10.2.2)
       cypress-file-upload:
         specifier: 5.0.8
-        version: 5.0.8(cypress@15.12.0)
+        version: 5.0.8(cypress@15.21.1)
       cypress-multi-reporters:
         specifier: 2.0.5
         version: 2.0.5(mocha@11.3.0)(supports-color@10.2.2)
       cypress-network-idle:
-        specifier: 1.15.0
-        version: 1.15.0
+        specifier: 2.0.1
+        version: 2.0.1
       cypress-real-events:
         specifier: 1.15.0
-        version: 1.15.0(cypress@15.12.0)
+        version: 1.15.0(cypress@15.21.1)
       cypress-recurse:
-        specifier: 1.37.1
-        version: 1.37.1
+        specifier: 1.37.2
+        version: 1.37.2
       dependency-cruiser:
         specifier: 17.0.1
         version: 17.0.1
@@ -6217,8 +6215,8 @@ importers:
         specifier: 1.6.0
         version: 1.6.0
       eslint-plugin-cypress:
-        specifier: 3.6.0
-        version: 3.6.0(eslint@8.57.0(supports-color@10.2.2))
+        specifier: 7.0.1
+        version: 7.0.1(@typescript-eslint/parser@8.60.0(eslint@8.57.0(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3))(eslint@8.57.0(supports-color@10.2.2))
       eslint-plugin-depend:
         specifier: 0.12.0
         version: 0.12.0
@@ -6277,8 +6275,8 @@ importers:
         specifier: 10.1.0
         version: 10.1.0(node-fetch@2.7.0)(supports-color@10.2.2)
       find-cypress-specs:
-        specifier: 1.54.6
-        version: 1.54.6(@babel/core@7.29.7(supports-color@10.2.2))(supports-color@10.2.2)
+        specifier: 1.54.12
+        version: 1.54.12(@babel/core@7.29.7(supports-color@10.2.2))(supports-color@10.2.2)
       fix-esm:
         specifier: 1.0.1
         version: 1.0.1(supports-color@10.2.2)
@@ -9538,17 +9536,17 @@ packages:
       express:
         optional: true
 
-  '@actions/core@1.11.1':
-    resolution: {integrity: sha512-hXJCSrkwfA46Vd9Z3q4cpEpHB1rL5NG04+/rbqW9d3+CSvtB1tYe8UTpAlixa1vj0m/ULglfEK2UKxMGxCxv5A==}
+  '@actions/core@2.0.3':
+    resolution: {integrity: sha512-Od9Thc3T1mQJYddvVPM4QGiLUewdh+3txmDYHHxoNdkqysR1MbCT+rFOtNUxYAz+7+6RIsqipVahY2GJqGPyxA==}
 
-  '@actions/exec@1.1.1':
-    resolution: {integrity: sha512-+sCcHHbVdk93a0XT19ECtO/gIXoxvdsgQLzb2fE2/5sIZmWQuluYyjPQtrtTHdU1YzTZ7bAPN4sITq2xi1679w==}
+  '@actions/exec@2.0.0':
+    resolution: {integrity: sha512-k8ngrX2voJ/RIN6r9xB82NVqKpnMRtxDoiO+g3olkIUpQNqjArXrCQceduQZCQj3P3xm32pChRLqRrtXTlqhIw==}
 
-  '@actions/http-client@2.2.3':
-    resolution: {integrity: sha512-mx8hyJi/hjFvbPokCg4uRd4ZX78t+YyRPtnKWwIl+RzNaVuFpQHfmlGVfsKEJN8LwTCvL+DfVgAM04XaHkm6bA==}
+  '@actions/http-client@3.0.2':
+    resolution: {integrity: sha512-JP38FYYpyqvUsz+Igqlc/JG6YO9PaKuvqjM3iGvaLqFnJ7TFmcLyy2IDrY0bI0qCQug8E9K+elv5ZNfw62ZJzA==}
 
-  '@actions/io@1.1.3':
-    resolution: {integrity: sha512-wi9JjgKLYS7U/z8PPbco+PvTb/nRWjeoFlJ1Qer83k/3C5PHQi28hiVdeE2kHXmIL99mQFawx8qt/JPjZilJ8Q==}
+  '@actions/io@2.0.0':
+    resolution: {integrity: sha512-Jv33IN09XLO+0HS79aaODsvIRyduiF7NY/F6LYeK5oeUmrsz7aFdRphQjFoESF4jS7lMauDOttKALcpapVDIAg==}
 
   '@adobe/css-tools@4.5.0':
     resolution: {integrity: sha512-6OzddxPio9UiWTCemp4N8cYLV2ZN1ncRnV1cVGtve7dhPOtRkleRyx32GQCYSwDYgaHU3USMm84tNsvKzRCa1Q==}
@@ -10518,22 +10516,22 @@ packages:
     peerDependencies:
       postcss-selector-parser: ^7.1.1
 
-  '@cypress/grep@5.1.0':
-    resolution: {integrity: sha512-n/8m5g2AuZf4thHhuo+rp7Fgkfm06k0uM9NlP0GrfWE5vaIJJ+8U10SOtjVj9bapjYI7l9RZiT87XSBU3wBFOA==}
+  '@cypress/grep@7.0.0':
+    resolution: {integrity: sha512-pk1EJaIzt8xQZYA47xvwA2mA+ajGd73mDSIdYeAxYRuyifLVZGhTf1FpuTktjPYGarkdLjWKzDSijGfJnn6lEA==}
     peerDependencies:
-      cypress: '>=10'
+      cypress: '>=15.10.0'
 
-  '@cypress/request@3.0.10':
-    resolution: {integrity: sha512-hauBrOdvu08vOsagkZ/Aju5XuiZx6ldsLfByg1htFeldhex+PeMrYauANzFsMJeAA0+dyPLbDoX2OYuvVoLDkQ==}
-    engines: {node: '>= 6'}
+  '@cypress/request@4.0.1':
+    resolution: {integrity: sha512-y20e+e6dFYkOUUJLVUZTsJRuTiXZaUQ32WD+R/ux/HBybbTx4ge7cNINcua0pU8+SNkKuRbOF12mBmzuzM8n5w==}
+    engines: {node: '>= 14.17.0'}
 
-  '@cypress/webpack-preprocessor@6.0.2':
-    resolution: {integrity: sha512-0+1+4iy4W9PE6R5ywBNKAZoFp8Sf//w3UJ+CKTqkcAjA29b+dtsD0iFT70DsYE0BMqUM1PO7HXFGbXllQ+bRAA==}
+  '@cypress/webpack-preprocessor@8.0.0':
+    resolution: {integrity: sha512-wbKJPC+UsPGrzFgM7M4g2EKDdGDSwZGYVfeJzZaeH77B0hRQYb/fjXmHX508nCYAlUny8527FAZd9Zx3W3aNiw==}
     peerDependencies:
       '@babel/core': 7.29.7
-      '@babel/preset-env': ^7.0.0
-      babel-loader: ^8.3 || ^9
-      webpack: ^4 || ^5
+      '@babel/preset-env': ^7.26.0
+      babel-loader: ^9 || ^10
+      webpack: ^5
 
   '@cypress/xvfb@1.2.4':
     resolution: {integrity: sha512-skbBzPggOVYCbnGgV+0dmBdW/s77ZkAOXIC1knS8NagwDjBrNC1LuXtQJeiN6l+m7lzmHtaoUw/ctJKdqkG57Q==}
@@ -11103,10 +11101,6 @@ packages:
         optional: true
       '@jest/expect':
         optional: true
-
-  '@fastify/busboy@2.1.1':
-    resolution: {integrity: sha512-vBZP4NlzfOlerQTnba4aqZoMhE/a9HY7HRqoOPaETQcSQuWEIyZMHGfVu6w9wGtGK5fED5qRs2DteVCjOH60sA==}
-    engines: {node: '>=14'}
 
   '@floating-ui/core@1.8.0':
     resolution: {integrity: sha512-0CIZ5itps/8x7BG8dEIhs53BvCUH2PCoogtakwRTut+Arm58sJooJ0AuZhLw2HJYIR5cMLNPBSS728sPho2khQ==}
@@ -15900,8 +15894,8 @@ packages:
   app-module-path@2.2.0:
     resolution: {integrity: sha512-gkco+qxENJV+8vFcDiiFhuoSvRXb2a/QPqpSoWhVz829VNJfOTnELbBmPmNKFxf3xdNnw4DWCkzkDaavcX/1YQ==}
 
-  arch@2.2.0:
-    resolution: {integrity: sha512-Of/R0wqp83cgHozfIYLbBMnej79U/SVGOOyuB3VVFv1NRM/PSFMK12x9KVtiYzJqmnU5WR2qp0Z5rHb7sWGnFQ==}
+  arch@3.0.0:
+    resolution: {integrity: sha512-AmIAC+Wtm2AU8lGfTtHsw0Y9Qtftx2YXEEtiBP10xFUtMOA+sHHx6OAddyL52mUKh1vsXQ6/w1mVDptZCyUt4Q==}
 
   archiver-utils@5.0.2:
     resolution: {integrity: sha512-wuLJMmIBQYCsGZgYLTy5FIB2pF6Lfb6cXMSF8Qywwk3t20zWnAi7zLcQFdKQmIB8wyZpY5ER38x08GbwtR2cLA==}
@@ -16821,13 +16815,13 @@ packages:
     resolution: {integrity: sha512-w0q/enDHhPLq44ovMGdQeeDLvwxwavsJX7oQGYt/LrBlYsyaxyDnp6z3QzFut/6kLLKnlcUVJLrpB7KBfgG/RA==}
     engines: {node: 10.* || >= 12.*}
 
-  cli-truncate@2.1.0:
-    resolution: {integrity: sha512-n8fOixwDD6b/ObinzTrp1ZKFzbgvKZvuz/TvejnLn1aQfC6r52XEx85FmuC+3HI+JM7coBRXUvNqEU2PHVrHpg==}
-    engines: {node: '>=8'}
-
   cli-truncate@4.0.0:
     resolution: {integrity: sha512-nPdaFdQ0h/GEigbPClz11D0v/ZJEwxmeVZGeMo3Z5StPtUTkA9o1lD6QwoirYiSDzbcwn2XcjwmCp68W1IS4TA==}
     engines: {node: '>=18'}
+
+  cli-truncate@5.2.0:
+    resolution: {integrity: sha512-xRwvIOMGrfOAnM1JYtqQImuaNtDEv9v6oIYAs4LIHwTiKee8uwvIi363igssOC0O5U04i4AlENs79LQLu9tEMw==}
+    engines: {node: '>=20'}
 
   cli-width@3.0.0:
     resolution: {integrity: sha512-FxqpkPPwu1HjuN93Omfm4h8uIanXofW0RxVEW3k5RKx+mJJYSthzNhp32Kzxxy3YAEZ/Dc/EWN1vZRY0+kOhbw==}
@@ -17349,8 +17343,8 @@ packages:
       axe-core: ^3 || ^4
       cypress: ^10 || ^11 || ^12 || ^13 || ^14 || ^15
 
-  cypress-data-session@2.8.7:
-    resolution: {integrity: sha512-LpQDjl6aOymjlAgAtxKinK1XY6RopmDcPZ3tvxqQzodvJdKfgEaiXgk4JQFfpOcDpnnT64F0dbGTahnZgV4opQ==}
+  cypress-data-session@3.0.0:
+    resolution: {integrity: sha512-rW2fvTQjPscLHwZpFWAy/vaQ2veqo6m6G4PID44/Ldlng0XUuH3w94CU8GeIfhmRBEXodZy4tDV244faW71Vgg==}
 
   cypress-file-upload@5.0.8:
     resolution: {integrity: sha512-+8VzNabRk3zG6x8f8BWArF/xA/W0VK4IZNx3MV0jFWrJS/qKn8eHfa5nU73P9fOQAgwHFJx7zjg4lwOnljMO8g==}
@@ -17364,22 +17358,22 @@ packages:
     peerDependencies:
       mocha: '>=3.1.2'
 
-  cypress-network-idle@1.15.0:
-    resolution: {integrity: sha512-8zU16zhc7S3nMl1NTEEcNsZYlJy/ZzP2zPTTrngGxyXH32Ipake/xfHLZsgrzeWCieiS2AVhQsakhWqFzO3hpw==}
+  cypress-network-idle@2.0.1:
+    resolution: {integrity: sha512-dw7QtnQKOOsFnWSGWvJ9D2TxcLHovW467JYLgOC8K913uUbAmY+sveoGz7EPqumvRDfWWZEKv+F8o+rxtLCQRQ==}
 
-  cypress-plugin-config@1.2.1:
-    resolution: {integrity: sha512-z+bQ7oyfDKun51HiCVNBOR+g38/nYRJ7zVdCZT2/9UozzE8P4iA1zF/yc85ePZLy5NOj/0atutoUPBBR5SqjSQ==}
+  cypress-plugin-config@2.0.0:
+    resolution: {integrity: sha512-C6xSF7xUon/zXEyqIi02zlUDwqaZeZoctJvSCaB9V1uQSOTF8gKWMZSgz19RrcYJmoJ/5h1eFnhLnL4wO9TYPA==}
 
   cypress-real-events@1.15.0:
     resolution: {integrity: sha512-in98xxTnnM9Z7lZBvvVozm99PBT2eEOjXRG5LKWyYvQnj9mGWXMiPNpfw7e7WiraBFh7XlXIxnE9Cu5o+52kQQ==}
     peerDependencies:
       cypress: ^4.x || ^5.x || ^6.x || ^7.x || ^8.x || ^9.x || ^10.x || ^11.x || ^12.x || ^13.x || ^14.x || ^15.x
 
-  cypress-recurse@1.37.1:
-    resolution: {integrity: sha512-Uk+gw1ignYH2DbfOhb23+59rtQrgbivXpF4pQDgxhPUbBQ0ZU2VQl4OJlUrQdzBfeXP7UiK+km1pSRsFciYl0w==}
+  cypress-recurse@1.37.2:
+    resolution: {integrity: sha512-HZ5vvrPTQD7SRuQyeLhoO0aCyuPz+xT9cB10WHx+AVM/ns3uRFIblamt1JR57uyWX4VaDYlPBXpyygkziujjjA==}
 
-  cypress@15.12.0:
-    resolution: {integrity: sha512-B2BRcudLfA4NZZP5QpA45J70bu1heCH59V1yKRLHAtiC49r7RV03X5ifUh7Nfbk8QNg93RAsc6oAmodm/+j0pA==}
+  cypress@15.21.1:
+    resolution: {integrity: sha512-ogHpHMj0XNlZA5MGzjg8SWHf0eMw9lTwVQRKjpcT1GzNTxNUjwnHA8YCG6nOJ8ThU+XZaUxJgpMYZnJ//8aDaw==}
     engines: {node: ^20.1.0 || ^22.0.0 || >=24.0.0}
     hasBin: true
 
@@ -18277,10 +18271,14 @@ packages:
     resolution: {integrity: sha512-gZptoV+SFHOHO57/5lmPvizMvSXrjFatP9qlVQf3meL/WHo9TxSoERygrMlESl19CPh95U86asTxohT8OprwDw==}
     engines: {node: '>=0.10.0'}
 
-  eslint-plugin-cypress@3.6.0:
-    resolution: {integrity: sha512-7IAMcBbTVu5LpWeZRn5a9mQ30y4hKp3AfTz+6nSD/x/7YyLMoBI6X7XjDLYI6zFvuy4Q4QVGl563AGEXGW/aSA==}
+  eslint-plugin-cypress@7.0.1:
+    resolution: {integrity: sha512-Jn2sV9rt8iiUYZY+iGY8fvV8iseJ6Tl1jngnLeSRyuHvYgxEbDUUFwNhwj1cr9gI4xCzTDh4mgXJ3YY7+dEMVg==}
     peerDependencies:
-      eslint: '>=7'
+      '@typescript-eslint/parser': '>=8'
+      eslint: '>=10'
+    peerDependenciesMeta:
+      '@typescript-eslint/parser':
+        optional: true
 
   eslint-plugin-depend@0.12.0:
     resolution: {integrity: sha512-bS5ESnC3eXDJPNv0RKkzRbLO45hRRLR/dleAUdbysXChWz1bAxa4MRh14EtDREn7fZieueqz4L7TfQQbzvdYHA==}
@@ -18744,8 +18742,8 @@ packages:
     resolution: {integrity: sha512-9ZonPT4ZAK4a+1pUPVPZJapbi7O5qbbJPdYw/NOQWZZbVLdDTYM3A4R9z/DpAM08IDaFGsvPgiGZ82WEwUDWjg==}
     engines: {node: '>=14.16'}
 
-  find-cypress-specs@1.54.6:
-    resolution: {integrity: sha512-rfz59+bIJx+APxFq8I8npLpnX1fxa20YPTPTJUM5mEsJP/oy5XnIn3tukYzdH69J0xRKKQfSaM17oKu+YPpBaw==}
+  find-cypress-specs@1.54.12:
+    resolution: {integrity: sha512-eTJi4qctSClNV5ZNveCq07D2cKdyreRXO6fPBx2zfknV+03WzJmxoOruNK7Ok41FvJNzf33wQyVygbO0XCvasQ==}
     engines: {node: '>=18'}
     hasBin: true
 
@@ -18754,10 +18752,6 @@ packages:
 
   find-root@1.1.0:
     resolution: {integrity: sha512-NKfW6bec6GfKc0SGx1e07QZY9PE99u0Bft/0rzSD5k3sO/vwkVUpDUKVm5Gpp5Ue3YfShPFTX2070tDs5kB9Ng==}
-
-  find-test-names@1.29.18:
-    resolution: {integrity: sha512-PmM4NQiyVVuM2t0FFoCDiliMppVYtIKFIEK1S2E9n+STDG/cpyXiKq5s2XQdF7AnQBeUftBdH5iEs3FUAgjfKA==}
-    hasBin: true
 
   find-test-names@1.29.19:
     resolution: {integrity: sha512-fSO2GXgOU6dH+FdffmRXYN/kLdnd8zkBGIZrKsmAdfLSFUUDLpDFF7+F/h+wjmjDWQmMgD8hPfJZR+igiEUQHQ==}
@@ -20703,18 +20697,13 @@ packages:
     engines: {node: '>=16'}
     hasBin: true
 
-  listr2@3.14.0:
-    resolution: {integrity: sha512-TyWI8G99GX9GjE54cJ+RrNMcIFBfwMPxc3XTFiAYGN4s10hWROGtOg7+O6u6LE3mNkyld7RSLE6nrKBvTfcs3g==}
-    engines: {node: '>=10.0.0'}
-    peerDependencies:
-      enquirer: '>= 2.3.0 < 3'
-    peerDependenciesMeta:
-      enquirer:
-        optional: true
-
   listr2@8.2.5:
     resolution: {integrity: sha512-iyAZCeyD+c1gPyE9qpFu8af0Y+MRtmKOncdGoA2S5EY8iFq99dmmvkNnHiWo+pj0s7yH7l3KPIgee77tKpXPWQ==}
     engines: {node: '>=18.0.0'}
+
+  listr2@9.0.5:
+    resolution: {integrity: sha512-ME4Fb83LgEgwNw96RKNvKV4VTLuXfoKudAmm2lP8Kk87KaMK0/Xrx/aAkMWmT8mDb+3MlFDspfbCs7adjRxA2g==}
+    engines: {node: '>=20.0.0'}
 
   lmdb@3.5.6:
     resolution: {integrity: sha512-j3uE8ReKNyUWDjhfEFSJqE/1DLtfTR5Z8yFzVHvBjAk37wNg7HdScjcv8ttPHRvrdgPQMPWxFFI0SsdBzI5lBw==}
@@ -20827,10 +20816,6 @@ packages:
   log-symbols@7.0.1:
     resolution: {integrity: sha512-ja1E3yCr9i/0hmBVaM0bfwDjnGy8I/s6PP4DFp+yP+a+mrHO4Rm7DtmnqROTUkHIkqffC84YY7AeqX6oFk0WFg==}
     engines: {node: '>=18'}
-
-  log-update@4.0.0:
-    resolution: {integrity: sha512-9fkkDevMefjg0mmzWFBW8YkFP91OrizzkW3diF7CpG+S2EYdy4+TVfGwz1zeF8x7hCx1ovSPTOE9Ngib74qqUg==}
-    engines: {node: '>=10'}
 
   log-update@6.1.0:
     resolution: {integrity: sha512-9ie8ItPR6tjY5uYJh8K/Zrv/RMZ5VOlOWvtZdEHYSTFKZfIBPQa9tOAEeAWhd+AnIneLJ22w5fjOYtoutpWq5w==}
@@ -23205,12 +23190,16 @@ packages:
   redux-devtools-extension@2.13.8:
     resolution: {integrity: sha512-8qlpooP2QqPtZHQZRhx3x3OP5skEV1py/zUdMY28WNAocbafxdG2tRD1MWE7sp8obGMNYuLWanhhQ7EQvT1FBg==}
     deprecated: Package moved to @redux-devtools/extension.
+    peerDependencies:
+      redux: ^3.1.0 || ^4.0.0
 
   redux-saga@1.3.0:
     resolution: {integrity: sha512-J9RvCeAZXSTAibFY0kGw6Iy4EdyDNW7k6Q+liwX+bsck7QVsU78zz8vpBRweEfANxnnlG/xGGeOvf6r8UXzNJQ==}
 
   redux-thunk@2.4.2:
     resolution: {integrity: sha512-+P3TjtnP0k/FEjcBL5FZpoovtvrTNT/UXd4/sluaSyrURlSlhLSzEdfsTBW7WsKB6yPvgd7q/iZPICFjW4o57Q==}
+    peerDependencies:
+      redux: ^4
 
   redux-thunk@3.1.0:
     resolution: {integrity: sha512-NW2r5T6ksUKXCabzhL9z+h206HQw/NJkcLm1GPImRQ8IzfXwRGqjVhKJGauHirT0DAuyy6hjdnMZaRoAcy0Klw==}
@@ -23981,10 +23970,6 @@ packages:
     resolution: {integrity: sha512-ZA6oR3T/pEyuqwMgAKT0/hAv8oAXckzbkmR0UkUosQ+Mc4RxGoJkRmwHgHufaenlyAgE1Mxgpdcrf75y6XcnDg==}
     engines: {node: '>=14.16'}
 
-  slice-ansi@3.0.0:
-    resolution: {integrity: sha512-pSyv7bSTC7ig9Dcgbw9AuRNUb5k5V6oDudjZoMBSr13qpLBG7tB+zgCkARjq7xIUgdz5P1Qe8u+rSGdouOOIyQ==}
-    engines: {node: '>=8'}
-
   slice-ansi@4.0.0:
     resolution: {integrity: sha512-qMCMfhY040cVHT43K9BFygqYbUPFZKHOg7K73mtTWJRb8pyP3fzf4Ixd5SzdEJQ6MRUg/WBnOLxghZtKKurENQ==}
     engines: {node: '>=10'}
@@ -23996,6 +23981,10 @@ packages:
   slice-ansi@7.1.2:
     resolution: {integrity: sha512-iOBWFgUX7caIZiuutICxVgX1SdxwAVFFKwt1EvMYYec/NWO5meOJ6K5uQxhrYBdQJne4KxiqZc+KptFOWFSI9w==}
     engines: {node: '>=18'}
+
+  slice-ansi@8.0.0:
+    resolution: {integrity: sha512-stxByr12oeeOyY2BlviTNQlYV5xOj47GirPr4yA1hE9JCtxfQN0+tVbkxwCtYDQWhEKWFHsEK48ORg5jrouCAg==}
+    engines: {node: '>=20'}
 
   slide@1.1.6:
     resolution: {integrity: sha512-NwrtjCg+lZoqhFU8fOwl4ay2ei8PaqCBOUV3/ektPY9trO1yQ1oXEfmHAhKArUVUr/hOHvy5f6AdP17dCM0zMw==}
@@ -24996,10 +24985,6 @@ packages:
   undici-types@7.16.0:
     resolution: {integrity: sha512-Zz+aZWSj8LE6zoxD+xrjh4VfkIG8Ya6LvYkZqtUQGJPZjYl53ypCaUwWqo7eI0x66KBGeRo+mlBEkMSeSZ38Nw==}
 
-  undici@5.29.0:
-    resolution: {integrity: sha512-raqeBD6NQK4SkWhQzeYKd1KmIG6dllBOTt55Rmkt4HtI9mwdWtJljnrXjAFUBLTSN67HWrOIZ3EPF4kjUw80Bg==}
-    engines: {node: '>=14.0'}
-
   undici@6.28.1:
     resolution: {integrity: sha512-zWpdTVD54H48CIybL0rWQ3ukpb9d23wM7eH5RtfdmeP70cWHNjtfo7P4vZX+5CoDcO53J4Pu5uXp7lNfjc6DRA==}
     engines: {node: '>=18.17'}
@@ -25968,21 +25953,21 @@ snapshots:
     optionalDependencies:
       express: 5.2.1(supports-color@10.2.2)
 
-  '@actions/core@1.11.1':
+  '@actions/core@2.0.3':
     dependencies:
-      '@actions/exec': 1.1.1
-      '@actions/http-client': 2.2.3
+      '@actions/exec': 2.0.0
+      '@actions/http-client': 3.0.2
 
-  '@actions/exec@1.1.1':
+  '@actions/exec@2.0.0':
     dependencies:
-      '@actions/io': 1.1.3
+      '@actions/io': 2.0.0
 
-  '@actions/http-client@2.2.3':
+  '@actions/http-client@3.0.2':
     dependencies:
       tunnel: 0.0.6
-      undici: 5.29.0
+      undici: 6.28.1
 
-  '@actions/io@1.1.3': {}
+  '@actions/io@2.0.0': {}
 
   '@adobe/css-tools@4.5.0': {}
 
@@ -27265,9 +27250,9 @@ snapshots:
     dependencies:
       postcss-selector-parser: 7.1.6
 
-  '@cypress/grep@5.1.0(@babel/core@7.29.7(supports-color@10.2.2))(cypress@15.12.0)(supports-color@10.2.2)':
+  '@cypress/grep@7.0.0(@babel/core@7.29.7(supports-color@10.2.2))(cypress@15.21.1)(supports-color@10.2.2)':
     dependencies:
-      cypress: 15.12.0
+      cypress: 15.21.1
       debug: 4.4.3(supports-color@10.2.2)
       find-test-names: 1.29.19(@babel/core@7.29.7(supports-color@10.2.2))(supports-color@10.2.2)
       globby: 11.1.0
@@ -27275,7 +27260,7 @@ snapshots:
       - '@babel/core'
       - supports-color
 
-  '@cypress/request@3.0.10':
+  '@cypress/request@4.0.1':
     dependencies:
       aws-sign2: 0.7.0
       aws4: 1.13.2
@@ -27294,9 +27279,8 @@ snapshots:
       safe-buffer: 5.2.1
       tough-cookie: 5.1.2
       tunnel-agent: 0.6.0
-      uuid: 8.3.2
 
-  '@cypress/webpack-preprocessor@6.0.2(@babel/core@7.29.7(supports-color@10.2.2))(@babel/preset-env@7.29.7(@babel/core@7.29.7(supports-color@10.2.2))(supports-color@10.2.2))(babel-loader@9.2.1(@babel/core@7.29.7(supports-color@10.2.2))(webpack@5.96.1))(supports-color@10.2.2)(webpack@5.96.1)':
+  '@cypress/webpack-preprocessor@8.0.0(@babel/core@7.29.7(supports-color@10.2.2))(@babel/preset-env@7.29.7(@babel/core@7.29.7(supports-color@10.2.2))(supports-color@10.2.2))(babel-loader@9.2.1(@babel/core@7.29.7(supports-color@10.2.2))(webpack@5.96.1))(supports-color@10.2.2)(webpack@5.96.1)':
     dependencies:
       '@babel/core': 7.29.7(supports-color@10.2.2)
       '@babel/preset-env': 7.29.7(@babel/core@7.29.7(supports-color@10.2.2))(supports-color@10.2.2)
@@ -27304,6 +27288,7 @@ snapshots:
       bluebird: 3.7.1
       debug: 4.4.3(supports-color@10.2.2)
       lodash: 4.18.1
+      semver: 7.8.0
       webpack: 5.96.1(@swc/core@1.15.40(@swc/helpers@0.5.19))(esbuild@0.27.2)(uglify-js@3.19.3)(webpack-cli@5.1.4)
     transitivePeerDependencies:
       - supports-color
@@ -28072,8 +28057,6 @@ snapshots:
       fast-check: 4.9.0
     optionalDependencies:
       '@jest/expect': 29.7.0(supports-color@10.2.2)
-
-  '@fastify/busboy@2.1.1': {}
 
   '@floating-ui/core@1.8.0':
     dependencies:
@@ -30921,7 +30904,7 @@ snapshots:
     dependencies:
       immer: 9.0.21
       redux: 4.2.1
-      redux-thunk: 2.4.2
+      redux-thunk: 2.4.2(redux@4.2.1)
       reselect: 4.1.8
     optionalDependencies:
       react: 18.2.0
@@ -33471,7 +33454,7 @@ snapshots:
 
   app-module-path@2.2.0: {}
 
-  arch@2.2.0: {}
+  arch@3.0.0: {}
 
   archiver-utils@5.0.2:
     dependencies:
@@ -34542,15 +34525,15 @@ snapshots:
     optionalDependencies:
       colors: 1.4.0
 
-  cli-truncate@2.1.0:
-    dependencies:
-      slice-ansi: 3.0.0
-      string-width: 4.2.3
-
   cli-truncate@4.0.0:
     dependencies:
       slice-ansi: 5.0.0
       string-width: 7.2.0
+
+  cli-truncate@5.2.0:
+    dependencies:
+      slice-ansi: 8.0.0
+      string-width: 8.2.2
 
   cli-width@3.0.0: {}
 
@@ -35077,22 +35060,22 @@ snapshots:
 
   csstype@3.2.3: {}
 
-  cypress-axe@1.7.0(axe-core@4.13.0)(cypress@15.12.0):
+  cypress-axe@1.7.0(axe-core@4.13.0)(cypress@15.21.1):
     dependencies:
       axe-core: 4.13.0
-      cypress: 15.12.0
+      cypress: 15.21.1
 
-  cypress-data-session@2.8.7(supports-color@10.2.2):
+  cypress-data-session@3.0.0(supports-color@10.2.2):
     dependencies:
-      cypress-plugin-config: 1.2.1
+      cypress-plugin-config: 2.0.0
       debug: 4.4.3(supports-color@10.2.2)
       simple-sha256: 1.1.0
     transitivePeerDependencies:
       - supports-color
 
-  cypress-file-upload@5.0.8(cypress@15.12.0):
+  cypress-file-upload@5.0.8(cypress@15.21.1):
     dependencies:
-      cypress: 15.12.0
+      cypress: 15.21.1
 
   cypress-multi-reporters@2.0.5(mocha@11.3.0)(supports-color@10.2.2):
     dependencies:
@@ -35103,48 +35086,45 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  cypress-network-idle@1.15.0: {}
+  cypress-network-idle@2.0.1: {}
 
-  cypress-plugin-config@1.2.1: {}
+  cypress-plugin-config@2.0.0: {}
 
-  cypress-real-events@1.15.0(cypress@15.12.0):
+  cypress-real-events@1.15.0(cypress@15.21.1):
     dependencies:
-      cypress: 15.12.0
+      cypress: 15.21.1
 
-  cypress-recurse@1.37.1:
+  cypress-recurse@1.37.2:
     dependencies:
       humanize-duration: 3.34.1
 
-  cypress@15.12.0:
+  cypress@15.21.1:
     dependencies:
-      '@cypress/request': 3.0.10
+      '@cypress/request': 4.0.1
       '@cypress/xvfb': 1.2.4(supports-color@8.1.1)
       '@types/sinonjs__fake-timers': 8.1.1
       '@types/sizzle': 2.3.10
       '@types/tmp': 0.2.6
-      arch: 2.2.0
+      arch: 3.0.0
       blob-util: 2.0.2
       bluebird: 3.7.2
       buffer: 5.7.1
       cachedir: 2.4.0
       chalk: 4.1.2
+      chrome-remote-interface: 0.33.3
       ci-info: 4.4.0
-      cli-cursor: 3.1.0
       cli-table3: 0.6.1
       commander: 6.2.1
       common-tags: 1.8.2
       dayjs: 1.11.23
       debug: 4.4.3(supports-color@8.1.1)
-      enquirer: 2.4.1
       eventemitter2: 6.4.7
       execa: 4.1.0
       executable: 4.1.1
-      extract-zip: 2.0.1(supports-color@8.1.1)
-      figures: 3.2.0
       fs-extra: 9.1.0
       hasha: 5.2.2
       is-installed-globally: 0.4.0
-      listr2: 3.14.0(enquirer@2.4.1)
+      listr2: 9.0.5
       lodash: 4.18.1
       log-symbols: 4.1.0
       minimist: 1.2.8
@@ -35157,9 +35137,11 @@ snapshots:
       systeminformation: 5.33.8
       tmp: 0.2.7
       tree-kill: 1.2.2
-      tslib: 1.14.1
       untildify: 4.0.0
       yauzl: 3.4.0
+    transitivePeerDependencies:
+      - bufferutil
+      - utf-8-validate
 
   d3-array@1.2.4: {}
 
@@ -36228,10 +36210,12 @@ snapshots:
     dependencies:
       requireindex: 1.2.0
 
-  eslint-plugin-cypress@3.6.0(eslint@8.57.0(supports-color@10.2.2)):
+  eslint-plugin-cypress@7.0.1(@typescript-eslint/parser@8.60.0(eslint@8.57.0(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3))(eslint@8.57.0(supports-color@10.2.2)):
     dependencies:
       eslint: 8.57.0(supports-color@10.2.2)
-      globals: 13.24.0
+      globals: 17.12.0
+    optionalDependencies:
+      '@typescript-eslint/parser': 8.60.0(eslint@8.57.0(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3)
 
   eslint-plugin-depend@0.12.0:
     dependencies:
@@ -36672,16 +36656,6 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  extract-zip@2.0.1(supports-color@8.1.1):
-    dependencies:
-      debug: 4.4.3(supports-color@8.1.1)
-      get-stream: 5.2.0
-      yauzl: 3.4.0
-    optionalDependencies:
-      '@types/yauzl': 2.10.3
-    transitivePeerDependencies:
-      - supports-color
-
   extsprintf@1.3.0: {}
 
   extsprintf@1.4.1: {}
@@ -36880,19 +36854,19 @@ snapshots:
       common-path-prefix: 3.0.0
       pkg-dir: 7.0.0
 
-  find-cypress-specs@1.54.6(@babel/core@7.29.7(supports-color@10.2.2))(supports-color@10.2.2):
+  find-cypress-specs@1.54.12(@babel/core@7.29.7(supports-color@10.2.2))(supports-color@10.2.2):
     dependencies:
-      '@actions/core': 1.11.1
+      '@actions/core': 2.0.3
       arg: 5.0.2
       console.table: 0.10.0
       debug: 4.4.3(supports-color@10.2.2)
-      find-test-names: 1.29.18(@babel/core@7.29.7(supports-color@10.2.2))(supports-color@10.2.2)
-      globby: 11.1.0
-      minimatch: 5.1.9
+      find-test-names: 1.29.19(@babel/core@7.29.7(supports-color@10.2.2))(supports-color@10.2.2)
+      minimatch: 10.2.6
       pluralize: 8.0.0
       require-and-forget: 1.0.1(supports-color@10.2.2)
       shelljs: 0.10.0
       spec-change: 1.11.21(supports-color@10.2.2)
+      tinyglobby: 0.2.17
       tsx: 4.23.13
     transitivePeerDependencies:
       - '@babel/core'
@@ -36901,18 +36875,6 @@ snapshots:
   find-my-way-ts@0.1.6: {}
 
   find-root@1.1.0: {}
-
-  find-test-names@1.29.18(@babel/core@7.29.7(supports-color@10.2.2))(supports-color@10.2.2):
-    dependencies:
-      '@babel/parser': 7.29.8
-      '@babel/plugin-syntax-jsx': 7.29.7(@babel/core@7.29.7(supports-color@10.2.2))
-      acorn-walk: 8.3.5
-      debug: 4.4.3(supports-color@10.2.2)
-      globby: 11.1.0
-      simple-bin-help: 1.8.0
-    transitivePeerDependencies:
-      - '@babel/core'
-      - supports-color
 
   find-test-names@1.29.19(@babel/core@7.29.7(supports-color@10.2.2))(supports-color@10.2.2):
     dependencies:
@@ -39318,22 +39280,18 @@ snapshots:
     dependencies:
       commander: 10.0.1
 
-  listr2@3.14.0(enquirer@2.4.1):
-    dependencies:
-      cli-truncate: 2.1.0
-      colorette: 2.0.20
-      log-update: 4.0.0
-      p-map: 4.0.0
-      rfdc: 1.4.1
-      rxjs: 7.8.2
-      through: 2.3.8
-      wrap-ansi: 7.0.0
-    optionalDependencies:
-      enquirer: 2.4.1
-
   listr2@8.2.5:
     dependencies:
       cli-truncate: 4.0.0
+      colorette: 2.0.20
+      eventemitter3: 5.0.4
+      log-update: 6.1.0
+      rfdc: 1.4.1
+      wrap-ansi: 9.0.2
+
+  listr2@9.0.5:
+    dependencies:
+      cli-truncate: 5.2.0
       colorette: 2.0.20
       eventemitter3: 5.0.4
       log-update: 6.1.0
@@ -39445,13 +39403,6 @@ snapshots:
     dependencies:
       is-unicode-supported: 2.1.0
       yoctocolors: 2.2.0
-
-  log-update@4.0.0:
-    dependencies:
-      ansi-escapes: 4.3.2
-      cli-cursor: 3.1.0
-      slice-ansi: 4.0.0
-      wrap-ansi: 6.2.0
 
   log-update@6.1.0:
     dependencies:
@@ -42378,17 +42329,21 @@ snapshots:
       reduce-reducers: 0.4.3
       to-camel-case: 1.0.0
 
-  redux-devtools-extension@2.13.8:
+  redux-devtools-extension@2.13.8(redux@5.0.1):
     dependencies:
-      redux: 4.2.1
+      redux: 5.0.1
 
   redux-saga@1.3.0:
     dependencies:
       '@redux-saga/core': 1.3.0
 
-  redux-thunk@2.4.2:
+  redux-thunk@2.4.2(redux@4.2.1):
     dependencies:
       redux: 4.2.1
+
+  redux-thunk@2.4.2(redux@5.0.1):
+    dependencies:
+      redux: 5.0.1
 
   redux-thunk@3.1.0(redux@5.0.1):
     dependencies:
@@ -43272,12 +43227,6 @@ snapshots:
 
   slash@5.1.0: {}
 
-  slice-ansi@3.0.0:
-    dependencies:
-      ansi-styles: 4.3.0
-      astral-regex: 2.0.0
-      is-fullwidth-code-point: 3.0.0
-
   slice-ansi@4.0.0:
     dependencies:
       ansi-styles: 4.3.0
@@ -43290,6 +43239,11 @@ snapshots:
       is-fullwidth-code-point: 4.0.0
 
   slice-ansi@7.1.2:
+    dependencies:
+      ansi-styles: 6.2.3
+      is-fullwidth-code-point: 5.1.0
+
+  slice-ansi@8.0.0:
     dependencies:
       ansi-styles: 6.2.3
       is-fullwidth-code-point: 5.1.0
@@ -44472,10 +44426,6 @@ snapshots:
       which-boxed-primitive: 1.1.1
 
   undici-types@7.16.0: {}
-
-  undici@5.29.0:
-    dependencies:
-      '@fastify/busboy': 2.1.1
 
   undici@6.28.1: {}
 
