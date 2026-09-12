@@ -55,8 +55,20 @@ const deleteExistingAlertIndices = async (esClient: Client, log: ToolingLog): Pr
   });
 };
 
+// Kibana's boot-time alerting init can recreate the Security Solution alert
+// index between our delete and the restore's alias wiring. When it does, the
+// restore surfaces one of two conflict shapes:
+//   - "open index with same name already exists" (index recreated)
+//   - "alias [...] has more than one write index" (recreated index + restored
+//     backing index both claim the write alias)
+// Both are the same boot race; both are cleared by delete + re-restore, which
+// is safe because the init fires once per boot.
 const isOpenIndexConflictError = (errors: string[]): boolean =>
-  errors.some((e) => e.includes('open index with same name already exists in the cluster'));
+  errors.some(
+    (e) =>
+      e.includes('open index with same name already exists in the cluster') ||
+      e.includes('has more than one write index')
+  );
 
 /**
  * Restore the shared security-alerts snapshot from GCS into the local
