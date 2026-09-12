@@ -224,7 +224,12 @@ class SavedObjectSaveModalComponent<T = void> extends React.Component<
     );
 
     return this.props.disableModal ? (
-      <div data-test-subj="savedObjectSaveModal" css={styles}>
+      // The caller owns the `EuiModal` shell, so this wrapper must be a flex column that can
+      // shrink; otherwise `EuiModalBody` never bounds its height and tall content clips the footer.
+      <div
+        data-test-subj="savedObjectSaveModal"
+        css={[styles, { display: 'flex', flexDirection: 'column', minBlockSize: 0 }]}
+      >
         {content}
       </div>
     ) : (
